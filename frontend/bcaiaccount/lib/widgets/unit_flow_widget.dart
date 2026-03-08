@@ -5,6 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/product_model.dart';
 
+/// ข้อมูล barcode + ราคาขายปลีก
+class _BarcodeInfo {
+  final String barcode;
+  final double? retailPrice;
+
+  _BarcodeInfo({required this.barcode, this.retailPrice});
+}
+
 /// โมเดลภายในสำหรับจัดกลุ่ม barcode ตามหน่วย
 class _UnitGroup {
   final String unitCode;
@@ -12,7 +20,7 @@ class _UnitGroup {
 
   /// อัตราส่วนเทียบหน่วยฐาน (ตัวตั้ง/ตัวหาร)
   final double ratio;
-  final List<String> barcodes;
+  final List<_BarcodeInfo> barcodes;
 
   _UnitGroup({
     required this.unitCode,
@@ -116,6 +124,15 @@ class UnitFlowWidget extends StatelessWidget {
     return 1;
   }
 
+  /// ดึงราคาขายปลีก (keynumber=1) จาก ProductBarcodeModel
+  double? _extractRetailPrice(ProductBarcodeModel item) {
+    if (item.prices == null || item.prices!.isEmpty) return null;
+    for (final p in item.prices!) {
+      if (p.keynumber == 1 && p.price > 0) return p.price;
+    }
+    return null;
+  }
+
   /// จัดกลุ่ม barcode ตามหน่วย + คำนวณ ratio
   /// เรียงตาม ratio น้อยไปมาก (หน่วยเล็กสุดก่อน)
   List<_UnitGroup> _buildUnitGroups() {
@@ -124,9 +141,13 @@ class UnitFlowWidget extends StatelessWidget {
     for (final item in productBarcodes) {
       final unitCode = item.itemunitcode;
       final ratio = _computeRatio(item);
+      final bcInfo = _BarcodeInfo(
+        barcode: item.barcode ?? '',
+        retailPrice: _extractRetailPrice(item),
+      );
 
       if (groupMap.containsKey(unitCode)) {
-        groupMap[unitCode]!.barcodes.add(item.barcode ?? '');
+        groupMap[unitCode]!.barcodes.add(bcInfo);
       } else {
         // ดึงชื่อหน่วยจากภาษาที่ใช้งานอยู่
         final unitName =
@@ -138,7 +159,7 @@ class UnitFlowWidget extends StatelessWidget {
           unitCode: unitCode,
           unitName: unitName.isNotEmpty ? unitName : unitCode,
           ratio: ratio,
-          barcodes: [item.barcode ?? ''],
+          barcodes: [bcInfo],
         );
       }
     }
@@ -241,9 +262,9 @@ class UnitFlowWidget extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
-          // barcode ในกลุ่มนี้
-          ...group.barcodes.map((bc) {
-            final isCurrent = bc == currentBarcode;
+          // barcode + ราคาขายปลีก ในกลุ่มนี้
+          ...group.barcodes.map((bcInfo) {
+            final isCurrent = bcInfo.barcode == currentBarcode;
             return Container(
               margin: const EdgeInsets.only(top: 2),
               padding:
@@ -257,15 +278,31 @@ class UnitFlowWidget extends StatelessWidget {
                     ? Border.all(color: accentColor, width: 1)
                     : null,
               ),
-              child: Text(
-                bc,
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w400,
-                  color: isCurrent ? accentColor : Colors.grey[600],
-                  fontFamily: 'monospace',
-                ),
-                textAlign: TextAlign.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    bcInfo.barcode,
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight:
+                          isCurrent ? FontWeight.w600 : FontWeight.w400,
+                      color: isCurrent ? accentColor : Colors.grey[600],
+                      fontFamily: 'monospace',
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  if (bcInfo.retailPrice != null)
+                    Text(
+                      '฿${_formatPrice(bcInfo.retailPrice!)}',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.green[700],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                ],
               ),
             );
           }),
@@ -455,13 +492,13 @@ class UnitFlowWidget extends StatelessWidget {
                         style: const TextStyle(fontSize: 12),
                       ),
                     ],
-                    // barcode ในกลุ่มนี้
+                    // barcode + ราคาขายปลีก ในกลุ่มนี้
                     const SizedBox(height: 4),
                     Wrap(
                       spacing: 6,
                       runSpacing: 4,
-                      children: group.barcodes.map((bc) {
-                        final isCurrent = bc == currentBarcode;
+                      children: group.barcodes.map((bcInfo) {
+                        final isCurrent = bcInfo.barcode == currentBarcode;
                         return Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
@@ -476,15 +513,31 @@ class UnitFlowWidget extends StatelessWidget {
                                         accentColor.withValues(alpha: 0.5))
                                 : null,
                           ),
-                          child: Text(
-                            bc,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontFamily: 'monospace',
-                              color: isCurrent
-                                  ? accentColor
-                                  : Colors.grey[600],
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                bcInfo.barcode,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontFamily: 'monospace',
+                                  color: isCurrent
+                                      ? accentColor
+                                      : Colors.grey[600],
+                                ),
+                              ),
+                              if (bcInfo.retailPrice != null) ...[
+                                const SizedBox(width: 6),
+                                Text(
+                                  '฿${_formatPrice(bcInfo.retailPrice!)}',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.green[700],
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         );
                       }).toList(),
@@ -510,5 +563,15 @@ class UnitFlowWidget extends StatelessWidget {
       return value.toInt().toString();
     }
     return value.toStringAsFixed(2);
+  }
+
+  /// จัดรูปแบบราคา — แสดง 2 ทศนิยมเสมอ + comma separator
+  String _formatPrice(double value) {
+    final parts = value.toStringAsFixed(2).split('.');
+    final intPart = parts[0].replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]},',
+    );
+    return '$intPart.${parts[1]}';
   }
 }
