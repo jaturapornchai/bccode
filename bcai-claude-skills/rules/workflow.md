@@ -30,8 +30,7 @@ curl http://localhost:8888/goapi/api/health
 
 ## Git Workflow
 - **Branch**: ใช้ `dev` branch เป็นหลัก
-- **Commit**: เมื่อ Jead สั่งเท่านั้น (ห้าม commit เอง)
-- **Push**: เมื่อ Jead สั่งเท่านั้น (ห้าม push เอง)
+- **Auto Push Rule (สำคัญมาก)**: ทุกครั้งที่มีการแก้ไข code → ต้อง commit + push to GitHub เสมอ เพื่อป้องกัน code หาย และสามารถเรียกกลับมาได้กรณี AI เข้าใจผิด หรือ user เข้าใจผิดทำให้ code พัง
 - **Commit message**: ภาษาอังกฤษ กระชับ ตรงประเด็น
 - **Git config**: ห้ามแก้ git config (user.email, user.name)
 
@@ -77,7 +76,6 @@ curl http://localhost:8888/goapi/api/health
 - [ ] บอกว่ามี skill/rule ที่ควร update (ถ้ามี)
 
 ## สิ่งที่ห้ามทำ (เด็ดขาด)
-- ห้าม commit/push โดยไม่ได้รับอนุญาต
 - ห้าม force push / reset hard
 - ห้าม deploy โดยไม่ build ก่อน
 - ห้ามลบไฟล์โดยไม่ถาม (ยกเว้น Jead สั่ง)
