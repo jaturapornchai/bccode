@@ -1,0 +1,36 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Secrets
+*.key
+*.env
+.env.*
+bootstrap.json
+
+# Build outputs
+*.exe
+*.dll
+*.so
+*.dylib
+tmp/
+
+# Go
+vendor/
+
+# Flutter
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+
+# Node
+node_modules/
+
+# Claude
+.claude/

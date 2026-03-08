@@ -1,0 +1,291 @@
+# 🔍 Coupon Reservation Status Checking API
+# ===============================================
+# ทดสอบการเช็คสถานะการจองคูปองจาก Transaction ID
+
+@baseUrl = http://localhost:8080
+@token = Bearer 88d9b7900bef3543ce1ac2c18e700ecc737ac610b669912e9d506a9136e2299b
+@transactionId = TXN-20250620-005
+
+# ==========================================================
+# 🔍 CHECK RESERVATION STATUS BY TRANSACTION ID
+# ==========================================================
+
+### 1. เช็คสถานะการจองด้วย Transaction ID (GET method)
+GET {{baseUrl}}/coupon/reservation/status?transaction_id={{transactionId}}
+Authorization: {{token}}
+Content-Type: application/json
+
+### Expected Success Response:
+# {
+#   "success": true,
+#   "data": {
+#     "transaction_id": "TXN-20250620-003",
+#     "reservations": [
+#       {
+#         "id": "reservation-id-123",
+#         "coupon_id": "coupon-id-456",
+#         "coupon_code": "SAVE100",
+#         "customer_id": "CUST001",
+#         "reserved_amount": 100.00,
+#         "status": 0,
+#         "status_name": "active",
+#         "reserved_at": "2025-06-20T10:30:00Z",
+#         "expires_at": "2025-06-20T10:45:00Z",
+#         "used_at": null,
+#         "canceled_at": null,
+#         "is_expired": false
+#       }
+#     ],
+#     "total_reserved": 100.00,
+#     "total_used": 0.00,
+#     "reservation_status": "active",
+#     "count": 1
+#   }
+# }
+
+### Expected Not Found Response:
+# {
+#   "success": true,
+#   "data": {
+#     "transaction_id": "TXN-20250620-003",
+#     "reservations": [],
+#     "total_reserved": 0.00,
+#     "total_used": 0.00,
+#     "reservation_status": "not_found",
+#     "count": 0
+#   }
+# }
+
+###
+
+### 2. เช็คสถานะการจองโดยไม่ใส่ Transaction ID (Error case)
+GET {{baseUrl}}/coupon/reservation/status
+Authorization: {{token}}
+Content-Type: application/json
+
+### Expected Error Response:
+# {
+#   "success": false,
+#   "message": "transaction_id is required"
+# }
+
+###
+
+### 3. เช็คสถานะการจองด้วย Transaction ID ที่ไม่มีอยู่
+GET {{baseUrl}}/coupon/reservation/status?transaction_id=TXN-20250620-003
+Authorization: {{token}}
+Content-Type: application/json
+
+# ==========================================================
+# 📋 DETAILED RESERVATION LOOKUP (POST method)
+# ==========================================================
+
+###
+
+### 4. ค้นหาข้อมูลการจองแบบละเอียด (Basic lookup)
+POST {{baseUrl}}/coupon/reservation/lookup
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "transaction_id": "{{transactionId}}"
+}
+
+### Expected Success Response:
+# {
+#   "success": true,
+#   "data": {
+#     "transaction_id": "TXN-20250620-003",
+#     "found": true,
+#     "reservations": [
+#       {
+#         "id": "reservation-id-123",
+#         "coupon_id": "coupon-id-456", 
+#         "coupon_code": "SAVE100",
+#         "customer_id": "CUST001",
+#         "reserved_amount": 100.00,
+#         "status": 0,
+#         "status_name": "active",
+#         "reserved_at": "2025-06-20T10:30:00Z",
+#         "expires_at": "2025-06-20T10:45:00Z",
+#         "used_at": null,
+#         "canceled_at": null,
+#         "is_expired": false
+#       }
+#     ],
+#     "summary": {
+#       "total_reservations": 1,
+#       "active_count": 1,
+#       "used_count": 0,
+#       "expired_count": 0,
+#       "cancelled_count": 0,
+#       "total_reserved": 100.00,
+#       "total_used": 0.00
+#     }
+#   }
+# }
+
+###
+
+### 5. ค้นหาข้อมูลการจองแบบละเอียด (รวมทุกสถานะ)
+POST {{baseUrl}}/coupon/reservation/lookup
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "transaction_id": "{{transactionId}}",
+  "include_expired": true,
+  "include_cancelled": true,
+  "include_used": true
+}
+
+###
+
+### 6. ค้นหาข้อมูลการจองโดยไม่ใส่ Transaction ID (Error case)
+POST {{baseUrl}}/coupon/reservation/lookup
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "include_expired": true
+}
+
+### Expected Error Response:
+# {
+#   "success": false,
+#   "message": "transaction_id is required"
+# }
+
+###
+
+### 7. ค้นหาข้อมูลการจองด้วย Invalid JSON
+POST {{baseUrl}}/coupon/reservation/lookup
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "transaction_id": "{{transactionId}}",
+  "include_expired": "invalid_boolean"
+}
+
+# ==========================================================
+# 🧪 TESTING DIFFERENT TRANSACTION IDS
+# ==========================================================
+
+###
+
+### 8. ทดสอบกับ Transaction ID รูปแบบต่างๆ
+GET {{baseUrl}}/coupon/reservation/status?transaction_id=TXN-001
+Authorization: {{token}}
+
+###
+
+GET {{baseUrl}}/coupon/reservation/status?transaction_id=PAYMENT-20250620-001
+Authorization: {{token}}
+
+###
+
+GET {{baseUrl}}/coupon/reservation/status?transaction_id=ORDER-ABC123
+Authorization: {{token}}
+
+###
+
+### 9. ทดสอบกับ Special Characters ใน Transaction ID
+GET {{baseUrl}}/coupon/reservation/status?transaction_id=TXN-2025/06/20-001
+Authorization: {{token}}
+
+###
+
+GET {{baseUrl}}/coupon/reservation/status?transaction_id=TXN%2D20250620%2D003
+Authorization: {{token}}
+
+# ==========================================================
+# 🔄 INTEGRATION TESTING WORKFLOW
+# ==========================================================
+
+###
+
+### 10. Workflow: สร้างการจอง → เช็คสถานะ → ใช้คูปอง → เช็คสถานะอีกครั้ง
+
+# Step 1: จองคูปอง (ต้องมี coupon_id ที่ถูกต้อง)
+# POST {{baseUrl}}/coupon/COUPON_ID_HERE/reserve
+# Authorization: {{token}}
+# Content-Type: application/json
+# 
+# {
+#   "customer_id": "CUST001",
+#   "transaction_id": "{{transactionId}}",
+#   "reserved_amount": 50.00
+# }
+
+# Step 2: เช็คสถานะการจองหลังจอง
+GET {{baseUrl}}/coupon/reservation/status?transaction_id={{transactionId}}
+Authorization: {{token}}
+
+# Step 3: ใช้คูปอง (ต้องมี coupon_id และ reservation_id)
+# POST {{baseUrl}}/coupon/COUPON_ID_HERE/use
+# Authorization: {{token}}
+# Content-Type: application/json
+# 
+# {
+#   "customer_id": "CUST001",
+#   "reservation_id": "RESERVATION_ID_FROM_STEP1",
+#   "transaction_id": "{{transactionId}}",
+#   "use_amount": 50.00
+# }
+
+# Step 4: เช็คสถานะการจองหลังใช้คูปอง
+GET {{baseUrl}}/coupon/reservation/status?transaction_id={{transactionId}}
+Authorization: {{token}}
+
+# ==========================================================
+# 📊 EXPECTED RESERVATION STATUS VALUES
+# ==========================================================
+
+# 🔢 **Reservation Status (Number):**
+# - 0: ReservationStatusActive (จองอยู่)
+# - 1: ReservationStatusUsed (ใช้แล้ว)
+# - 2: ReservationStatusExpired (หมดอายุ)
+# - 3: ReservationStatusCanceled (ยกเลิก)
+
+# 📝 **Reservation Status (String):**
+# - "active": มีการจองที่ยังใช้ได้
+# - "used": การจองถูกใช้แล้ว
+# - "expired": การจองหมดอายุแล้ว
+# - "cancelled": การจองถูกยกเลิก
+# - "mixed": มีการจองหลายสถานะ
+# - "not_found": ไม่พบการจอง
+
+# 🕐 **Time Fields:**
+# - reserved_at: เวลาที่จอง (UTC)
+# - expires_at: เวลาหมดอายุ (reserved_at + 15 minutes)
+# - used_at: เวลาที่ใช้คูปอง (ถ้ามี)
+# - canceled_at: เวลาที่ยกเลิก (ถ้ามี)
+
+# ==========================================================
+# 🔧 TROUBLESHOOTING GUIDE
+# ==========================================================
+
+# ❗ **Common Issues:**
+# - **"transaction_id is required"**: ต้องใส่ transaction_id ใน query parameter
+# - **"Unauthorized"**: ตรวจสอบ Bearer token
+# - **Empty reservations array**: Transaction ID ไม่มีการจองคูปอง
+# - **"not_found" status**: Transaction ID ไม่เคยมีการจองคูปอง
+
+# 💡 **Best Practices:**
+# - ใช้ Transaction ID ที่ unique และมีรูปแบบที่สม่ำเสมอ
+# - เช็คสถานะก่อนทำการใช้คูปอง
+# - เก็บ reservation_id ไว้ใช้ในการ operations อื่นๆ
+# - ตรวจสอบ expires_at เพื่อป้องกันการจองหมดอายุ
+
+# 🎯 **Use Cases:**
+# - ตรวจสอบว่า customer จองคูปองสำหรับ transaction นี้หรือไม่
+# - ดูประวัติการใช้คูปองของ transaction
+# - Debug การจองที่มีปัญหา
+# - Monitor การใช้งานคูปองแบบ real-time
+
+# ==========================================================
+# **Version**: 1.0.0  
+# **Last Updated**: June 20, 2025  
+# **Status**: Ready for Testing ✅
+# ==========================================================

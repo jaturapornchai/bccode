@@ -1,0 +1,209 @@
+package purchasereceive
+
+import (
+	pkgConfig "smlcloudplatform/internal/config"
+	"smlcloudplatform/internal/logger"
+	"smlcloudplatform/internal/transaction/models"
+	purchasePartialConfig "smlcloudplatform/internal/transaction/purchasepartial/config"
+	"smlcloudplatform/internal/transaction/transactionconsumer/services"
+	"smlcloudplatform/internal/transaction/transactionconsumer/stocktransaction"
+	"smlcloudplatform/internal/transaction/transactionconsumer/usecases"
+	"smlcloudplatform/pkg/microservice"
+	"time"
+)
+
+type PurchaseReceiveTransactionConsumer struct {
+	ms                   *microservice.Microservice
+	cfg                  pkgConfig.IConfig
+	svc                  IPurchaseReceiveTransactionConsumerService
+	txnPhaser            usecases.ITransactionPhaser[models.PurchaseReceiveTransactionPG]
+	stockPhaser          usecases.IStockTransactionPhaser[models.PurchaseReceiveTransactionPG]
+	stockConsumerService stocktransaction.IStockTransactionConsumerService
+}
+
+func NewPurchaseReceiveTransactionConsumer(
+	ms *microservice.Microservice,
+	cfg pkgConfig.IConfig,
+	svc IPurchaseReceiveTransactionConsumerService,
+	stockConsumerService stocktransaction.IStockTransactionConsumerService,
+	txnPhaser usecases.ITransactionPhaser[models.PurchaseReceiveTransactionPG],
+	stockPhaser usecases.IStockTransactionPhaser[models.PurchaseReceiveTransactionPG],
+) services.ITransactionDocConsumer {
+
+	return &PurchaseReceiveTransactionConsumer{
+		ms:                   ms,
+		cfg:                  cfg,
+		svc:                  svc,
+		txnPhaser:            txnPhaser,
+		stockPhaser:          stockPhaser,
+		stockConsumerService: stockConsumerService,
+		// svc:                  purchaseReceiveTransactionConsumerService,
+	}
+}
+
+func InitPurchaseReceiveTransactionConsumer(ms *microservice.Microservice, cfg pkgConfig.IConfig) services.ITransactionDocConsumer {
+
+	persister := ms.Persister(cfg.PersisterConfig())
+	producer := ms.Producer(cfg.MQConfig())
+
+	repo := NewPurchaseReceiveTransactionPGRepository(persister)
+	purchaseReceiveTransactionConsumerService := NewPurchaseReceiveTransactionService(repo)
+	stockService := stocktransaction.NewStockTransactionConsumerService(persister, producer)
+
+	purchaseReceiveTransactionPhaser := PurchaseReceiveTransactionPhaser{}
+	purchaseReceiveStockPhaser := PurchaseReceiveTransactionStockPhaser{}
+
+	purchaseReceiveTransactionConsumer := NewPurchaseReceiveTransactionConsumer(
+		ms,
+		cfg,
+		purchaseReceiveTransactionConsumerService,
+		stockService,
+		purchaseReceiveTransactionPhaser,
+		purchaseReceiveStockPhaser,
+	)
+	return purchaseReceiveTransactionConsumer
+}
+
+func (c *PurchaseReceiveTransactionConsumer) RegisterConsumer(ms *microservice.Microservice) {
+
+	trxConsumerGroup := pkgConfig.GetEnv("TRANSACTION_CONSUMER_GROUP", "transaction-consumer-group-01")
+	mq := microservice.NewMQ(c.cfg.MQConfig(), ms.Logger)
+
+	mqConfig := purchasePartialConfig.PurchasepartialMessageQueueConfig{}
+
+	mq.CreateTopicR(mqConfig.TopicCreated(), 5, 1, time.Hour*24*7)
+	mq.CreateTopicR(mqConfig.TopicUpdated(), 5, 1, time.Hour*24*7)
+	mq.CreateTopicR(mqConfig.TopicDeleted(), 5, 1, time.Hour*24*7)
+	mq.CreateTopicR(mqConfig.TopicBulkCreated(), 5, 1, time.Hour*24*7)
+	mq.CreateTopicR(mqConfig.TopicBulkUpdated(), 5, 1, time.Hour*24*7)
+	mq.CreateTopicR(mqConfig.TopicBulkDeleted(), 5, 1, time.Hour*24*7)
+
+	ms.Consume(c.cfg.MQConfig().URI(), mqConfig.TopicCreated(), trxConsumerGroup, time.Duration(-1), c.ConsumeOnCreateOrUpdate)
+	ms.Consume(c.cfg.MQConfig().URI(), mqConfig.TopicUpdated(), trxConsumerGroup, time.Duration(-1), c.ConsumeOnCreateOrUpdate)
+	ms.Consume(c.cfg.MQConfig().URI(), mqConfig.TopicDeleted(), trxConsumerGroup, time.Duration(-1), c.ConsumeOnDelete)
+	ms.Consume(c.cfg.MQConfig().URI(), mqConfig.TopicBulkCreated(), trxConsumerGroup, time.Duration(-1), c.ConsumeOnBulkCreateOrUpdate)
+	ms.Consume(c.cfg.MQConfig().URI(), mqConfig.TopicBulkUpdated(), trxConsumerGroup, time.Duration(-1), c.ConsumeOnBulkCreateOrUpdate)
+	ms.Consume(c.cfg.MQConfig().URI(), mqConfig.TopicBulkDeleted(), trxConsumerGroup, time.Duration(-1), c.ConsumeOnBulkDelete)
+
+}
+
+func (c *PurchaseReceiveTransactionConsumer) ConsumeOnCreateOrUpdate(ctx microservice.IContext) error {
+
+	msg := ctx.ReadInput()
+
+	transaction, err := c.txnPhaser.PhaseSingleDoc(msg)
+	if err != nil {
+		logger.GetLogger().Errorf("Cannot phase purchase partial to purchase receive transaction : %v", err.Error())
+		return err
+	}
+
+	err = c.svc.Upsert(transaction.ShopID, transaction.DocNo, *transaction)
+	if err != nil {
+		logger.GetLogger().Errorf("Cannot insert purchase receive transaction : %v", err.Error())
+		return err
+	}
+
+	stock, err := c.stockPhaser.PhaseSingleDoc(*transaction)
+	if err != nil {
+		logger.GetLogger().Errorf("Cannot phase purchase partial transaction to stock transaction : %v", err.Error())
+		return err
+	}
+
+	err = c.stockConsumerService.Upsert(transaction.ShopID, transaction.DocNo, *stock)
+	if err != nil {
+		logger.GetLogger().Errorf("Cannot insert stock transaction : %v", err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func (c *PurchaseReceiveTransactionConsumer) ConsumeOnBulkCreateOrUpdate(ctx microservice.IContext) error {
+
+	msg := ctx.ReadInput()
+	transactions, err := c.txnPhaser.PhaseMultipleDoc(msg)
+	if err != nil {
+		c.ms.Logger.Errorf("Cannot phase purchase partial to purchase receive transaction : %v", err.Error())
+		return err
+	}
+
+	for _, transaction := range *transactions {
+
+		err = c.svc.Upsert(transaction.ShopID, transaction.DocNo, transaction)
+		if err != nil {
+			logger.GetLogger().Errorf("Cannot insert purchase receive transaction : %v", err.Error())
+			return err
+		}
+
+		stock, err := c.stockPhaser.PhaseSingleDoc(transaction)
+		if err != nil {
+			logger.GetLogger().Errorf("Cannot phase purchase partial transaction to stock transaction : %v", err.Error())
+			return err
+		}
+
+		err = c.stockConsumerService.Upsert(transaction.ShopID, transaction.DocNo, *stock)
+		if err != nil {
+			logger.GetLogger().Errorf("Cannot insert stock transaction : %v", err.Error())
+			return err
+		}
+	}
+
+	return nil
+}
+func (c *PurchaseReceiveTransactionConsumer) ConsumeOnDelete(ctx microservice.IContext) error {
+
+	msg := ctx.ReadInput()
+	transaction, err := c.txnPhaser.PhaseSingleDoc(msg)
+	if err != nil {
+		logger.GetLogger().Errorf("Cannot phase purchase partial to purchase receive transaction : %v", err.Error())
+		return err
+	}
+
+	err = c.svc.Delete(transaction.ShopID, transaction.DocNo)
+	if err != nil {
+		c.ms.Logger.Errorf("Cannot delete purchase receive transaction : %v", err.Error())
+		return err
+	}
+
+	err = c.stockConsumerService.Delete(transaction.ShopID, transaction.DocNo)
+	if err != nil {
+		c.ms.Logger.Errorf("Cannot delete stock transaction : %v", err.Error())
+		return err
+	}
+
+	return nil
+}
+func (c *PurchaseReceiveTransactionConsumer) ConsumeOnBulkDelete(ctx microservice.IContext) error {
+
+	msg := ctx.ReadInput()
+	transactions, err := c.txnPhaser.PhaseMultipleDoc(msg)
+	if err != nil {
+		c.ms.Logger.Errorf("Cannot phase purchase partial to purchase receive transaction : %v", err.Error())
+		return err
+	}
+
+	for _, transaction := range *transactions {
+
+		err = c.svc.Delete(transaction.ShopID, transaction.DocNo)
+		if err != nil {
+			c.ms.Logger.Errorf("Cannot delete purchase receive transaction : %v", err.Error())
+			return err
+		}
+
+		err = c.stockConsumerService.Delete(transaction.ShopID, transaction.DocNo)
+		if err != nil {
+			c.ms.Logger.Errorf("Cannot delete stock transaction : %v", err.Error())
+			return err
+		}
+	}
+	return nil
+}
+
+func MigrationDatabase(ms *microservice.Microservice, cfg pkgConfig.IConfig) error {
+	pst := ms.Persister(cfg.PersisterConfig())
+	pst.AutoMigrate(
+		models.PurchaseReceiveTransactionPG{},
+		models.PurchaseReceiveTransactionDetailPG{},
+	)
+	return nil
+}

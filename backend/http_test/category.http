@@ -1,0 +1,29 @@
+@baseUrl = http://localhost:8088
+@auth = eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NDM1MjU2MjAsInVzZXJuYW1lIjoiZGV2MDEiLCJuYW1lIjoiZGV2IGRldiJ9.Bwy5jTgI2UGW_Wy0ULgMCZO8HtmzNqGnhC2yEZvmj0dw6O3Y_wbNyjHNsH5yy3B77jCTp82wpWJsvYmHvSdCCisRJTrQ1ZCk72TXnktz7QPTg5P343aeU77HYxp-2JKCcPEVxef0Qt1lj1gTSGDBWjWiOtjOx3MStq7tfiD_9d8ZP28zsF4Zd77pMD9HuJmTN5gBX--p7OpMnmWAEOLdExo3-6ZnI6Zo33Ur0msgx7hvzgdbyUZXOY7k9mdBcwCkcY1ewG8MsSJ3FfQ-G-MMUJbsPgzKR23L2RFfnW2ugtihufgntKBKBhvX5HbGwpvhMfxHQ1FzZ3bBLtJapz90ZJb0ASHa0_9rypZVKvjRFxWi9B6PsNOQUfFBp2CnP2L18Xv-XcsCTyuoTbxV8lnhkwhM2Iby8029LgE1HkPq1vUYf0NrMIUTW4W_LyitI2gTU7_fAH953w5M1FndkmExC9b-OS_dfbqvjdVhMwhHhVRoROPCRKN64jkheEiBxXjjhRJXYDHS18-XzaJjh-CV5JSZTPHAP4LrlfsHLRyG8f98Zyjh1hgIk1jvgJfAHZnwZUTQqpmytvmgNptBE21BzIaYYoIGcujVYnCAvl_XJywBpJgq6HaIP-IWbAFqAQJb9lIMr-JaYlPoDZjPsbMfO3xB-xD6VCguMUUtRDZfCF0
+@shopID = 23x1ZYVdE8mGDtnLh4xM6TqelFT
+@categoryID = 23x3JnAMBvB7vAq10ZfMxDcSmpj
+
+###
+POST {{baseUrl}}/shop/{{shopID}}/category
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+    "name1": "category name 2"
+}
+###
+GET {{baseUrl}}/shop/{{shopID}}/category
+Authorization: {{auth}}
+Content-Type: application/json
+###
+GET {{baseUrl}}/shop/{{shopID}}/category/{{categoryID}}
+Authorization: {{auth}}
+Content-Type: application/json
+###
+PUT {{baseUrl}}/shop/{{shopID}}/category/{{categoryID}}
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+    "name1": "category name 2"
+}

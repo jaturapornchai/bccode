@@ -1,0 +1,244 @@
+package kafka
+
+import (
+	"context"
+	"fmt"
+	"runtime/debug"
+
+	"smlcloudplatform/internal/goapi/logger"
+	"smlcloudplatform/internal/goapi/models"
+	"smlcloudplatform/internal/goapi/myglobal"
+	"smlcloudplatform/internal/goapi/mypg"
+	"smlcloudplatform/internal/goapi/process/build"
+)
+
+// OnConsumeMessageStockReceiveProductCreateOrUpdate - handles stock receive product create/update messages
+func OnConsumeMessageStockReceiveProductCreateOrUpdate(msg string) error {
+	return SafeConsumerWrapper("STOCK_RECEIVE_PRODUCT", func(msg string) error {
+		return ProcessStockReceiveProductDocument(TransStockReceiveProductDecode(msg))
+	})(msg)
+}
+
+// OnConsumeMessageStockReceiveProductDelete - handles stock receive product delete messages
+func OnConsumeMessageStockReceiveProductDelete(msg string) error {
+	logger.Info("OnConsumeMessageStockReceiveProductDelete: Processing deletion message")
+
+	docData := TransStockReceiveProductDecode(msg)
+	if docData.ShopId == "" || docData.DocNo == "" {
+		logger.Error("OnConsumeMessageStockReceiveProductDelete: Invalid data - missing ShopId or DocNo")
+		return fmt.Errorf("invalid stock receive product data")
+	}
+
+	return DeleteDocumentFromDatabases(context.Background(), docData.ShopId, docData.DocNo, TRANS_FLAG_STOCK_RECEIVE_PRODUCT)
+}
+
+// ProcessStockReceiveProductDocument - processes stock receive product document following standardized 10-step pattern
+func ProcessStockReceiveProductDocument(docData models.StockReceiveProductStruct) error {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Info("ProcessStockReceiveProductDocument: Panic recovered: %v", r)
+			logger.Info("ProcessStockReceiveProductDocument: Stack trace: %s", debug.Stack())
+		}
+	}()
+
+	logger.Info("ProcessStockReceiveProductDocument: Starting processing for DocNo=%s", docData.DocNo)
+	build.DatabaseChecker(docData.ShopId, false)
+
+	// Step 1: Convert Kafka message to ProcessMongoTransModel
+	logger.Info("ProcessStockReceiveProductDocument: Step 1 - Converting Kafka message to ProcessMongoTransModel")
+	processData := ConvertStockReceiveProductMongoDocToProcessModel(docData)
+
+	// Step 2: Connect to PostgreSQL
+	logger.Info("ProcessStockReceiveProductDocument: Step 2 - Connecting to PostgreSQL for shopId=%s", docData.ShopId)
+	db, err := mypg.PgSqlFastConnect(docData.ShopId)
+	if err != nil {
+		logger.Error("ProcessStockReceiveProductDocument: Failed to connect to PostgreSQL: %v", err)
+		return fmt.Errorf("failed to connect to PostgreSQL: %v", err)
+	}
+	// ใช้ connection pool ไม่ต้อง close
+	ctx := context.Background()
+
+	// Step 3: Delete existing documents from PostgreSQL
+	logger.Info("ProcessStockReceiveProductDocument: Step 3 - Deleting existing documents from PostgreSQL for DocNo=%s", docData.DocNo)
+	mypg.DeleteDocPgSql(ctx, db, docData.DocNo, TRANS_FLAG_STOCK_RECEIVE_PRODUCT)
+
+	// Step 4: Convert process model to build-doc structs
+	logger.Info("ProcessStockReceiveProductDocument: Step 4 - Converting process model to build-doc structs")
+	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, docData.ShopId)
+	docDetailStructs := MapStockReceiveProductToDocDetailStructs(processData, docData.ShopId)
+
+	// Step 5: Create document references
+	logger.Info("ProcessStockReceiveProductDocument: Step 5 - Creating document references")
+	var docRefStructs []models.DocRefStruct
+	for _, refNo := range processData.DocReferences {
+		docRefStructs = append(docRefStructs,
+			myglobal.MapDocRefStruct(processData.DocNo, processData.TransFlag, refNo))
+	}
+
+	// Step 6-9: Insert to PostgreSQL and ClickHouse using shared functions
+	err = InsertDocumentToPostgreSQL(ctx, db, docStruct, docRefStructs, docPaymentStruct, 6)
+	if err != nil {
+		return fmt.Errorf("failed to insert document to PostgreSQL: %w", err)
+	}
+
+	err = InsertDocDetailToPostgreSQL(ctx, db, docData.ShopId, docDetailStructs, 7)
+	if err != nil {
+		return fmt.Errorf("failed to insert doc details to PostgreSQL: %w", err)
+	}
+
+	err = InsertDocumentToClickHouse(ctx, docData.ShopId, docStruct, docRefStructs, docPaymentStruct, docDetailStructs, 8)
+	if err != nil {
+		return fmt.Errorf("failed to insert to ClickHouse: %w", err)
+	}
+
+	// Step 9: Calculate stock cost using global config
+	err = ProcessDocumentStockCalculation(db, docData.ShopId, docDetailStructs, 9)
+	if err != nil {
+		logger.Error("Failed to calculate stock cost: %v", err)
+		// Don't return error, just log it
+	}
+
+	// Step 10: Add to document wait process queues
+	logger.Info("ProcessStockReceiveProductDocument: Step 10 - Adding to document wait process queues")
+	mypg.AddToDocWaitProcessQueues(ctx, db, docData.DocNo, TRANS_FLAG_STOCK_RECEIVE_PRODUCT)
+
+	logger.Success("ProcessStockReceiveProductDocument: Successfully processed DocNo=%s", docData.DocNo)
+	return nil
+}
+
+// MapStockReceiveProductToDocDetailStructs - converts stock receive product to document detail structs
+func MapStockReceiveProductToDocDetailStructs(processData models.ProcessMongoTransModel, shopId string) []models.DocDetailStruct {
+	var docDetailStructs []models.DocDetailStruct
+
+	for i, detail := range processData.Details {
+		// For stock receive product transactions, use positive value to increase stock
+		docDetailStruct := models.DocDetailStruct{
+			DocDateTime:     processData.DocDateTime,
+			DocNo:           processData.DocNo,
+			LineNumber:      i + 1,
+			TransFlag:       TRANS_FLAG_STOCK_RECEIVE_PRODUCT,
+			CalcFlag:        1, // Stock Receive Product = increase stock
+			CalcSeq:         1,
+			ItemCode:        detail.ItemCode,
+			Description:     GetItemName(detail.ItemNames),
+			BarcodeMain:     detail.Barcode,
+			Barcode:         detail.Barcode,
+			UnitCode:        detail.UnitCode,
+			WhCode:          detail.WhCode,
+			LocationCode:    detail.LocationCode,
+			TotalQty:        detail.Qty,
+			Price:           detail.Price,
+			PriceExcludeVat: detail.PriceExcludeVat,
+			UnitStand:       1.0,
+			UnitDivide:      1.0,
+			DocRef:          detail.DocRef,
+			SumAmount:       detail.SumAmount,
+		}
+
+		docDetailStructs = append(docDetailStructs, docDetailStruct)
+	}
+
+	return docDetailStructs
+}
+
+// ConvertStockReceiveProductMongoDocToProcessModel - converts StockReceiveProductStruct to ProcessMongoTransModel
+func ConvertStockReceiveProductMongoDocToProcessModel(docData models.StockReceiveProductStruct) models.ProcessMongoTransModel {
+	logger.Info("ConvertStockReceiveProductMongoDocToProcessModel: Starting conversion for DocNo=%s", docData.DocNo)
+
+	// Convert details with nil checks
+	var details []models.ProcessMongoTransDetailModel
+	if docData.Details != nil {
+		logger.Info("ConvertStockReceiveProductToProcessModel: Processing %d details", len(docData.Details))
+		for i, detail := range docData.Details {
+			logger.Info("ConvertStockReceiveProductToProcessModel: Processing detail %d: ItemCode=%s", i+1, detail.ItemCode)
+
+			// Convert ItemNames from models.LanguageModel to models.LanguageModel with nil check
+			var itemNames []models.LanguageModel
+			if detail.ItemNames != nil {
+				for _, name := range detail.ItemNames {
+					itemNames = append(itemNames, models.LanguageModel{
+						Code:     name.Code,
+						Name:     name.Name,
+						IsAuto:   name.IsAuto,
+						IsDelete: name.IsDelete,
+					})
+				}
+			}
+
+			processDetail := models.ProcessMongoTransDetailModel{
+				ItemCode:        detail.ItemCode,
+				ItemNames:       itemNames,
+				Barcode:         detail.Barcode,
+				UnitCode:        detail.UnitCode,
+				LineNumber:      detail.LineNumber,
+				WhCode:          detail.WhCode,
+				LocationCode:    detail.LocationCode,
+				Qty:             detail.Qty,
+				Price:           detail.Price,
+				PriceExcludeVat: detail.PriceExcludeVat,
+				DocRef:          detail.DocRef,
+				SumAmount:       detail.SumAmount,
+			}
+			details = append(details, processDetail)
+		}
+	} else {
+		logger.Info("ConvertStockReceiveProductToProcessModel: WARNING - docData.Details is nil")
+	}
+
+	// Convert branch names from models.LanguageModel to models.LanguageModel with nil checks
+	var branchNames []models.LanguageModel
+	if docData.Branch.Names != nil {
+		logger.Info("ConvertStockReceiveProductToProcessModel: Processing %d branch names", len(docData.Branch.Names))
+		for _, name := range docData.Branch.Names {
+			branchNames = append(branchNames, models.LanguageModel{
+				Code:     name.Code,
+				Name:     name.Name,
+				IsAuto:   name.IsAuto,
+				IsDelete: name.IsDelete,
+			})
+		}
+	} else {
+		logger.Info("ConvertStockReceiveProductToProcessModel: WARNING - docData.Branch.Names is nil")
+	}
+
+	// Convert branch with nil checks
+	logger.Info("ConvertStockReceiveProductToProcessModel: Converting branch - Code=%s, GuidFixed=%s", docData.Branch.Code, docData.Branch.GuidFixed)
+	branch := models.BranchModel{
+		Code:      docData.Branch.Code,
+		GuidFixed: docData.Branch.GuidFixed,
+		Names:     branchNames,
+	}
+
+	logger.Info("ConvertStockReceiveProductToProcessModel: Creating final ProcessMongoTransModel")
+	result := models.ProcessMongoTransModel{
+		ShopId:           docData.ShopId,
+		BranchId:         docData.BranchId,
+		GuidFixed:        docData.GuidFixed,
+		DocNo:            docData.DocNo,
+		DocDateTime:      docData.DocDateTime,
+		TotalAmount:      docData.TotalAmount,
+		RoundAmount:      docData.RoundAmount,
+		PayCashAmount:    docData.PayCashAmount,
+		PayCashChange:    docData.PayCashChange,
+		PaymentDetailRaw: docData.PaymentDetailRaw,
+		SlipUrl:          docData.SlipUrl,
+		SaleChannelCode:  docData.SaleChannelCode,
+		DeliveryAmount:   docData.DeliveryAmount,
+		IsCancel:         docData.IsCancel,
+		CancelReason:     docData.CancelReason,
+		GuidPos:          docData.GuidPos,
+		Branch:           branch,
+		TransFlag:        TRANS_FLAG_STOCK_RECEIVE_PRODUCT,
+		Details:          details,
+		DocReferences:    []models.ProcessMongoDocReferenceModel{},
+	}
+	logger.Info("ConvertStockReceiveProductToProcessModel: Conversion completed successfully")
+	return result
+}
+
+// TransStockReceiveProductDecode - decodes transaction stock receive product JSON data
+func TransStockReceiveProductDecode(jsonData string) models.StockReceiveProductStruct {
+	var data models.StockReceiveProductStruct
+	DecodeKafkaMessage(jsonData, &data, "StockReceiveProduct")
+	return data
+}

@@ -1,0 +1,484 @@
+# 🔐 Coupon Reservation & Usage Workflow Testing
+# =================================================
+# ทดสอบระบบการจองและใช้คูปอง
+
+@baseUrl = http://localhost:8080
+@token = Bearer YOUR_AUTH_TOKEN_HERE
+@couponId = YOUR_COUPON_ID_HERE
+@customerId = CUST001
+@transactionId = TXN-20250620-001
+@reservationId = YOUR_RESERVATION_ID_HERE
+
+# ==========================================================
+# 📋 COUPON AVAILABILITY CHECKING
+# ==========================================================
+
+### 1. ตรวจสอบความพร้อมใช้งานของคูปอง
+GET {{baseUrl}}/coupon/{{couponId}}/availability?customer_id={{customerId}}
+Authorization: {{token}}
+Content-Type: application/json
+
+### Expected Success Response:
+# {
+#   "available": true,
+#   "remaining_value": 100.00,
+#   "status": 0,
+#   "is_expired": false,
+#   "message": "คูปองพร้อมใช้งาน"
+# }
+
+### Expected Error Response (Expired):
+# {
+#   "available": false,
+#   "remaining_value": 100.00,
+#   "status": 0,
+#   "is_expired": true,
+#   "message": "คูปองหมดอายุแล้ว"
+# }
+
+###
+
+### 2. ตรวจสอบคูปองที่ไม่มีอยู่
+GET {{baseUrl}}/coupon/INVALID_COUPON_ID/availability?customer_id={{customerId}}
+Authorization: {{token}}
+Content-Type: application/json
+
+### Expected Error Response:
+# {
+#   "available": false,
+#   "remaining_value": 0.00,
+#   "status": -1,
+#   "is_expired": false,
+#   "message": "ไม่พบคูปอง"
+# }
+
+# ==========================================================
+# 🔖 COUPON RESERVATION SYSTEM
+# ==========================================================
+
+###
+
+### 3. จองคูปอง (การจองจะหมดอายุใน 15 นาที)
+POST {{baseUrl}}/coupon/{{couponId}}/reserve
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "customer_id": "{{customerId}}",
+  "transaction_id": "{{transactionId}}",
+  "reserved_amount": 50.00
+}
+
+### Expected Success Response:
+# {
+#   "reservation_id": "generated-reservation-id",
+#   "coupon_id": "{{couponId}}",
+#   "coupon_code": "SAVE100",
+#   "transaction_id": "{{transactionId}}",
+#   "reserved_amount": 50.00,
+#   "expires_at": "2025-06-20T10:45:00Z",
+#   "reserved": true,
+#   "message": "จองคูปองสำเร็จ หมดอายุใน 15 นาที"
+# }
+
+### Expected Error Response (Already Reserved):
+# {
+#   "reservation_id": "",
+#   "coupon_id": "{{couponId}}",
+#   "coupon_code": "SAVE100",
+#   "transaction_id": "{{transactionId}}",
+#   "reserved_amount": 0.00,
+#   "expires_at": "0001-01-01T00:00:00Z",
+#   "reserved": false,
+#   "message": "คูปองถูกจองแล้ว"
+# }
+
+###
+
+### 4. จองคูปองซ้ำ (ควรได้ error)
+POST {{baseUrl}}/coupon/{{couponId}}/reserve
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "customer_id": "{{customerId}}",
+  "transaction_id": "{{transactionId}}",
+  "reserved_amount": 30.00
+}
+
+###
+
+### 5. จองคูปองด้วยจำนวนเกิน
+POST {{baseUrl}}/coupon/{{couponId}}/reserve
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "customer_id": "CUST002",
+  "transaction_id": "TXN-002",
+  "reserved_amount": 999999.00
+}
+
+### Expected Error Response:
+# {
+#   "reserved": false,
+#   "message": "จำนวนที่จองเกินมูลค่าคงเหลือของคูปอง"
+# }
+
+###
+
+### 6. จองคูปองด้วยข้อมูลไม่ครบ (Missing customer_id)
+POST {{baseUrl}}/coupon/{{couponId}}/reserve
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "transaction_id": "{{transactionId}}",
+  "reserved_amount": 50.00
+}
+
+### Expected Validation Error:
+# {
+#   "reserved": false,
+#   "message": "ข้อมูลไม่ครบถ้วน: customer_id จำเป็น"
+# }
+
+# ==========================================================
+# ✅ COUPON USAGE SYSTEM
+# ==========================================================
+
+###
+
+### 7. ใช้คูปองที่จองไว้
+POST {{baseUrl}}/coupon/{{couponId}}/use
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "customer_id": "{{customerId}}",
+  "reservation_id": "{{reservationId}}",
+  "transaction_id": "{{transactionId}}",
+  "use_amount": 50.00
+}
+
+### Expected Success Response:
+# {
+#   "used": true,
+#   "discount_amount": 50.00,
+#   "transaction_id": "{{transactionId}}",
+#   "remaining_value": 50.00,
+#   "message": "ใช้คูปองสำเร็จ"
+# }
+
+###
+
+### 8. ใช้คูปองโดยไม่ได้จองก่อน (ควรได้ error)
+POST {{baseUrl}}/coupon/{{couponId}}/use
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "customer_id": "CUST999",
+  "reservation_id": "INVALID_RESERVATION",
+  "transaction_id": "TXN-999",
+  "use_amount": 25.00
+}
+
+### Expected Error Response:
+# {
+#   "used": false,
+#   "discount_amount": 0.00,
+#   "transaction_id": "TXN-999",
+#   "remaining_value": 0.00,
+#   "message": "ไม่พบการจองคูปอง"
+# }
+
+###
+
+### 9. ใช้คูปองเกินจำนวนที่จอง
+POST {{baseUrl}}/coupon/{{couponId}}/use
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "customer_id": "{{customerId}}",
+  "reservation_id": "{{reservationId}}",
+  "transaction_id": "{{transactionId}}",
+  "use_amount": 999.00
+}
+
+### Expected Error Response:
+# {
+#   "used": false,
+#   "discount_amount": 0.00,
+#   "transaction_id": "{{transactionId}}",
+#   "remaining_value": 0.00,
+#   "message": "จำนวนที่ใช้เกินจำนวนที่จอง"
+# }
+
+###
+
+### 10. ใช้คูปองที่หมดอายุการจอง (หลัง 15 นาที)
+POST {{baseUrl}}/coupon/{{couponId}}/use
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "customer_id": "{{customerId}}",
+  "reservation_id": "EXPIRED_RESERVATION_ID",
+  "transaction_id": "{{transactionId}}",
+  "use_amount": 25.00
+}
+
+### Expected Error Response:
+# {
+#   "used": false,
+#   "discount_amount": 0.00,
+#   "transaction_id": "{{transactionId}}",
+#   "remaining_value": 0.00,
+#   "message": "การจองคูปองหมดอายุแล้ว"
+# }
+
+# ==========================================================
+# ❌ COUPON RESERVATION CANCELLATION
+# ==========================================================
+
+###
+
+### 11. ยกเลิกการจองคูปอง
+DELETE {{baseUrl}}/coupon/{{couponId}}/reserve
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "customer_id": "{{customerId}}",
+  "reservation_id": "{{reservationId}}"
+}
+
+### Expected Success Response:
+# {
+#   "success": true,
+#   "message": "ยกเลิกการจองคูปองสำเร็จ",
+#   "reservation_id": "{{reservationId}}"
+# }
+
+###
+
+### 12. ยกเลิกการจองที่ไม่มีอยู่
+DELETE {{baseUrl}}/coupon/{{couponId}}/reserve
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "customer_id": "{{customerId}}",
+  "reservation_id": "INVALID_RESERVATION_ID"
+}
+
+### Expected Error Response:
+# {
+#   "success": false,
+#   "message": "ไม่พบการจองคูปอง",
+#   "reservation_id": "INVALID_RESERVATION_ID"
+# }
+
+###
+
+### 13. ยกเลิกการจองด้วยลูกค้าผิด
+DELETE {{baseUrl}}/coupon/{{couponId}}/reserve
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "customer_id": "WRONG_CUSTOMER",
+  "reservation_id": "{{reservationId}}"
+}
+
+### Expected Error Response:
+# {
+#   "success": false,
+#   "message": "ไม่มีสิทธิ์ยกเลิกการจองนี้",
+#   "reservation_id": "{{reservationId}}"
+# }
+
+# ==========================================================
+# 🔄 COMPLETE WORKFLOW TESTING
+# ==========================================================
+
+###
+
+### 14. Workflow 1: จอง → ใช้ → สำเร็จ
+# Step 1: Reserve
+POST {{baseUrl}}/coupon/{{couponId}}/reserve
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "customer_id": "WORKFLOW_CUST001",
+  "transaction_id": "WORKFLOW_TXN001",
+  "reserved_amount": 25.00
+}
+
+# Step 2: Use (ต้องใช้ reservation_id จาก step 1)
+# POST {{baseUrl}}/coupon/{{couponId}}/use
+# {
+#   "customer_id": "WORKFLOW_CUST001",
+#   "reservation_id": "RESERVATION_ID_FROM_STEP1",
+#   "transaction_id": "WORKFLOW_TXN001",
+#   "use_amount": 25.00
+# }
+
+###
+
+### 15. Workflow 2: จอง → ยกเลิก → สำเร็จ
+# Step 1: Reserve
+POST {{baseUrl}}/coupon/{{couponId}}/reserve
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "customer_id": "WORKFLOW_CUST002",
+  "transaction_id": "WORKFLOW_TXN002",
+  "reserved_amount": 30.00
+}
+
+# Step 2: Cancel (ต้องใช้ reservation_id จาก step 1)
+# DELETE {{baseUrl}}/coupon/{{couponId}}/reserve
+# {
+#   "customer_id": "WORKFLOW_CUST002",
+#   "reservation_id": "RESERVATION_ID_FROM_STEP1"
+# }
+
+###
+
+### 16. Workflow 3: จอง → ใช้บางส่วน → ใช้ส่วนที่เหลือ
+# Step 1: Reserve
+POST {{baseUrl}}/coupon/{{couponId}}/reserve
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "customer_id": "WORKFLOW_CUST003",
+  "transaction_id": "WORKFLOW_TXN003",
+  "reserved_amount": 100.00
+}
+
+# Step 2: Use partial (30.00)
+# POST {{baseUrl}}/coupon/{{couponId}}/use
+# {
+#   "customer_id": "WORKFLOW_CUST003", 
+#   "reservation_id": "RESERVATION_ID_FROM_STEP1",
+#   "transaction_id": "WORKFLOW_TXN003_PART1",
+#   "use_amount": 30.00
+# }
+
+# Step 3: Use remaining (70.00)
+# POST {{baseUrl}}/coupon/{{couponId}}/use
+# {
+#   "customer_id": "WORKFLOW_CUST003",
+#   "reservation_id": "RESERVATION_ID_FROM_STEP1", 
+#   "transaction_id": "WORKFLOW_TXN003_PART2",
+#   "use_amount": 70.00
+# }
+
+# ==========================================================
+# ⏰ TIME-SENSITIVE TESTING
+# ==========================================================
+
+###
+
+### 17. ทดสอบการหมดอายุการจอง (ต้องรอ 15 นาที)
+# Step 1: Reserve
+POST {{baseUrl}}/coupon/{{couponId}}/reserve
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "customer_id": "TIMEOUT_TEST",
+  "transaction_id": "TIMEOUT_TXN",
+  "reserved_amount": 20.00
+}
+
+# Step 2: Wait 15+ minutes, then try to use
+# (This should fail with "การจองคูปองหมดอายุแล้ว")
+
+###
+
+### 18. ทดสอบการจองซ้อนทับ (Multiple concurrent reservations)
+# Multiple users trying to reserve the same coupon
+POST {{baseUrl}}/coupon/{{couponId}}/reserve
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "customer_id": "CONCURRENT_USER1",
+  "transaction_id": "CONCURRENT_TXN1",
+  "reserved_amount": 50.00
+}
+
+###
+
+POST {{baseUrl}}/coupon/{{couponId}}/reserve
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "customer_id": "CONCURRENT_USER2", 
+  "transaction_id": "CONCURRENT_TXN2",
+  "reserved_amount": 40.00
+}
+
+# Expected: First should succeed, second should fail
+
+# ==========================================================
+# 📊 BUSINESS RULES VERIFICATION 
+# ==========================================================
+
+# 🔐 **Reservation Rules:**
+# - ระยะเวลาจอง: 15 นาที
+# - 1 คูปอง = 1 การจองต่อครั้ง
+# - จองได้หลายส่วน (partial reservation)
+# - ต้องมี customer_id, transaction_id, reserved_amount
+
+# ✅ **Usage Rules:**
+# - ต้องจองก่อนใช้
+# - ใช้ได้ตามจำนวนที่จอง
+# - ใช้ได้หลายครั้งจากการจองเดียว
+# - ตรวจสอบ reservation_id ความถูกต้อง
+
+# ❌ **Cancellation Rules:**
+# - ยกเลิกได้เฉพาะเจ้าของการจอง
+# - ยกเลิกได้ก่อนหมดอายุ
+# - ยกเลิกแล้วคืนมูลค่าให้คูปอง
+
+# ⏰ **Time Management:**
+# - ใช้ UTC time ทุกที่
+# - Reservation expiry = Reserved_at + 15 minutes
+# - Auto cleanup expired reservations
+
+# ==========================================================
+# 🔧 TROUBLESHOOTING GUIDE
+# ==========================================================
+
+# ❗ **Common Issues:**
+# - **"ไม่พบการจองคูปอง"**: ตรวจสอบ reservation_id
+# - **"การจองหมดอายุ"**: จองใหม่หรือใช้ภายใน 15 นาที  
+# - **"จำนวนเกินการจอง"**: ตรวจสอบ use_amount <= reserved_amount
+# - **"คูปองถูกจองแล้ว"**: รอให้หมดอายุหรือยกเลิกก่อน
+
+# 💡 **Best Practices:**
+# - เก็บ reservation_id ไว้ใช้งาน
+# - ตั้ง timeout ให้น้อยกว่า 15 นาที
+# - ใช้ transaction_id ที่ unique
+# - ยกเลิกการจองถ้าไม่ใช้
+
+# 🎯 **Testing Tips:**
+# - อัปเดต @reservationId หลังจองสำเร็จ
+# - ทดสอบ edge cases ก่อนใช้จริง
+# - ใช้ customer_id ที่แตกต่างกันในแต่ละ test
+# - ตรวจสอบ response status codes
+
+# ==========================================================
+# **Version**: 1.0.0  
+# **Last Updated**: June 20, 2025  
+# **Status**: Production Ready ✅
+# ==========================================================

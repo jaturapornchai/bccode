@@ -1,0 +1,44 @@
+# syntax=docker/dockerfile:1
+
+##
+## Builder
+##
+FROM golang:1.26-alpine AS builder
+
+WORKDIR /go/app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+ADD . /go/app
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o goapi ./cmd/goapi/
+
+##
+## Deploy
+##
+FROM alpine:3.21
+
+RUN apk add --no-cache ca-certificates tzdata && update-ca-certificates
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+WORKDIR /app/
+
+COPY --from=builder /go/app/goapi .
+COPY ./assets/fonts/ /app/fonts/
+COPY ./assets/language/ /app/language/
+COPY ./tdict-std.txt /app/tdict-std.txt
+
+RUN chown -R appuser:appgroup /app
+
+ENV PORT=8888
+ENV TZ=Asia/Bangkok
+
+USER appuser
+
+EXPOSE 8888
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8888/version || exit 1
+
+ENTRYPOINT ["/app/goapi"]

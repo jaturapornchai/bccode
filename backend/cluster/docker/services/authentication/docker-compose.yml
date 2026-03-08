@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  authentication:
+    image: smlsoft/smlcloudplatform:authen
+    restart: always
+    expose:
+      - 8080
+    environment:
+      - ENVIRONMENT=production
+      - MONGODB_URI=mongodb://mongodb:27017/
+      - MONGODB_DB=smldev
+      - REDIS_CACHE_URI=redis:6379
+    labels:
+      - "traefik.http.routers.authentication.rule=(PathPrefix(`/`))"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.01'
+          memory: 50M
+    networks:
+      - backend
+#      - frontend
+
+networks:
+  backend:
+    external:
+      name: sml_service_backend
+#  frontend:
+#    external:
+#      name: sml_service_frontend

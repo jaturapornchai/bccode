@@ -1,0 +1,62 @@
+# Mac OS X files
+.DS_Store
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, build with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
+.glide/
+
+# Dependency directories (remove the comment below to include it)
+vendor/
+
+runtest
+
+*.key
+.scannerwork/*
+server/*/*
+
+mock/*.env
+
+/*.development
+*.development
+**.development
+*.local
+
+
+.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# Local History for Visual Studio Code
+.history/
+
+# Built Visual Studio Code Extensions
+*.vsix
+
+docs.sh
+cmd/app/tdict-std.txt
+cmd/app/*.crt
+
+*_debug_*
+
+# Build output / temp binaries
+tmp/
+app.log
+
+# Config (contains credentials — DO NOT commit)
+bootstrap.json

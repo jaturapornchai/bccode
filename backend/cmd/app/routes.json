@@ -1,0 +1,117 @@
+[
+  {
+    "method": "DELETE",
+    "path": "/shop/:shop_id/member/:id",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).DELETE.func1"
+  },
+  {
+    "method": "POST",
+    "path": "/inventory",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).POST.func1"
+  },
+  {
+    "method": "GET",
+    "path": "/inventory/:id",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).GET.func1"
+  },
+  {
+    "method": "GET",
+    "path": "/routes",
+    "name": "main.main.func1"
+  },
+  {
+    "method": "GET",
+    "path": "/",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).GET.func1"
+  },
+  {
+    "method": "POST",
+    "path": "/login",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).POST.func1"
+  },
+  {
+    "method": "POST",
+    "path": "/poslogin",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).POST.func1"
+  },
+  {
+    "method": "POST",
+    "path": "/register",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).POST.func1"
+  },
+  {
+    "method": "PUT",
+    "path": "/inventory/:id",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).PUT.func1"
+  },
+  {
+    "method": "DELETE",
+    "path": "/inventory/:id",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).DELETE.func1"
+  },
+  {
+    "method": "GET",
+    "path": "/shop/:id",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).GET.func1"
+  },
+  {
+    "method": "GET",
+    "path": "/shop/:shop_id/member",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).GET.func1"
+  },
+  {
+    "method": "PUT",
+    "path": "/shop/:shop_id/member/:id",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).PUT.func1"
+  },
+  {
+    "method": "DELETE",
+    "path": "/shop/:id",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).DELETE.func1"
+  },
+  {
+    "method": "POST",
+    "path": "/shop/:shop_id/member",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).POST.func1"
+  },
+  {
+    "method": "GET",
+    "path": "/inventory",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).GET.func1"
+  },
+  {
+    "method": "PUT",
+    "path": "/shop/:id",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).PUT.func1"
+  },
+  {
+    "method": "GET",
+    "path": "/shop/:shop_id/member/:id",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).GET.func1"
+  },
+  {
+    "method": "PUT",
+    "path": "/shop/:shop_id/member/:id/password",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).PUT.func1"
+  },
+  {
+    "method": "GET",
+    "path": "/inventorysync",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).GET.func1"
+  },
+  {
+    "method": "GET",
+    "path": "/profile",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).GET.func1"
+  },
+  {
+    "method": "GET",
+    "path": "/shop",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).GET.func1"
+  },
+  {
+    "method": "POST",
+    "path": "/shop",
+    "name": "smlcloudplatform/pkg/microservice.(*Microservice).POST.func1"
+  }
+]

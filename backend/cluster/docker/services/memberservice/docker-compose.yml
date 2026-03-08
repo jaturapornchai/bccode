@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  memberservice:
+    image: smlsoft/smlcloudplatform:member
+    restart: always
+    expose:
+      - 8080
+    environment:
+      - ENVIRONMENT=production
+      - MONGODB_URI=mongodb://mongodb:27017/
+      - MONGODB_DB=smldev
+      - REDIS_CACHE_URI=redis:6379
+      - KAFKA_SERVER_URL=kafka:9092
+    labels:
+      - "traefik.http.routers.memberservice.rule=(PathPrefix(`/member`))"
+    networks:
+      - backend
+
+networks:
+  backend:
+    external:
+      name: sml_service_backend

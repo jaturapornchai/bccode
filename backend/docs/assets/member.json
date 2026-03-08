@@ -1,0 +1,14 @@
+{
+    "Id": "-",
+    "ShopId": "",
+    "Telephone": "",
+    "Name": "",
+    "Surname": "",
+    "TaxId" : "",
+    "ContactType" : 0,
+    "PersonalType" : 0,
+    "BranchType" : 0,
+    "BranchCode" : "",
+    "Address": "",
+    "ZipCode" : ""
+}

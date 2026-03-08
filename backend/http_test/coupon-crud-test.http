@@ -1,0 +1,712 @@
+# 🎫 Basic Coupon CRUD Operations
+# =================================
+# ทดสอบการจัดการคูปองพื้นฐาน
+
+@baseUrl = http://localhost:8080
+@token = Bearer YOUR_AUTH_TOKEN_HERE
+@customerId = CUST001
+@couponId = YOUR_COUPON_ID_HERE
+
+# ==========================================================
+# 📋 SYSTEM INFORMATION
+# ==========================================================
+
+### Get Coupon Types
+GET {{baseUrl}}/coupon-type
+Authorization: {{token}}
+Content-Type: application/json
+
+### Expected Response:
+# [
+#   {
+#     "id": 0,
+#     "name": "ลดตามมูลค่า",
+#     "description": "ส่วนลดตามจำนวนเงิน"
+#   },
+#   {
+#     "id": 1,
+#     "name": "ลดตามเปอร์เซ็นต์",
+#     "description": "ส่วนลดตามเปอร์เซ็นต์"
+#   },
+#   {
+#     "id": 2,
+#     "name": "คูปองแทนเงินสด",
+#     "description": "ใช้แทนเงินสด"
+#   }
+# ]
+
+###
+
+### Get Coupon Status
+GET {{baseUrl}}/coupon-status
+Authorization: {{token}}
+Content-Type: application/json
+
+### Expected Response:
+# [
+#   {
+#     "id": 0,
+#     "name": "ปกติ",
+#     "description": "คูปองใช้งานได้"
+#   },
+#   {
+#     "id": 1,
+#     "name": "ยกเลิก",
+#     "description": "คูปองถูกยกเลิก"
+#   }
+# ]
+
+# ==========================================================
+# ➕ CREATE COUPON
+# ==========================================================
+
+###
+
+### Create Value Discount Coupon (ลดตามมูลค่า)
+POST {{baseUrl}}/coupon
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "couponcode": "SAVE100",
+  "names": [
+    {
+      "code": "th",
+      "name": "คูปองส่วนลด 100 บาท",
+      "isauto": false,
+      "isdelete": false
+    },
+    {
+      "code": "en",
+      "name": "100 Baht Discount Coupon",
+      "isauto": false,
+      "isdelete": false
+    }
+  ],
+  "couponvalue": 100.00,
+  "remainingvalue": 100.00,
+  "issueddate": "2025-06-20T00:00:00Z",
+  "expirydate": "2025-12-31T23:59:59Z",
+  "coupontype": 0,
+  "customercode": "{{customerId}}",
+  "remark": "คูปองทดสอบระบบ",
+  "status": 0,
+  "isonetimeuse": false
+}
+
+### Expected Response:
+# {
+#   "success": true,
+#   "message": "Coupon created successfully",
+#   "data": {
+#     "id": "generated-coupon-id"
+#   }
+# }
+
+###
+
+### Create Percentage Discount Coupon (ลดตามเปอร์เซ็นต์)
+POST {{baseUrl}}/coupon
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "couponcode": "SAVE15PERCENT",
+  "names": [
+    {
+      "code": "th",
+      "name": "คูปองส่วนลด 15%",
+      "isauto": false,
+      "isdelete": false
+    },
+    {
+      "code": "en",
+      "name": "15% Discount Coupon",
+      "isauto": false,
+      "isdelete": false
+    }
+  ],
+  "couponvalue": 15.00,
+  "remainingvalue": 15.00,
+  "issueddate": "2025-06-20T00:00:00Z",
+  "expirydate": "2025-12-31T23:59:59Z",
+  "coupontype": 1,
+  "customercode": "",
+  "remark": "คูปองส่วนลดเปอร์เซ็นต์",
+  "status": 0,
+  "isonetimeuse": false
+}
+
+###
+
+### Create Cash Voucher Coupon (คูปองแทนเงินสด)
+POST {{baseUrl}}/coupon
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "couponcode": "CASH300",
+  "names": [
+    {
+      "code": "th",
+      "name": "คูปองเงินสด 300 บาท",
+      "isauto": false,
+      "isdelete": false
+    },
+    {
+      "code": "en",
+      "name": "300 Baht Cash Voucher",
+      "isauto": false,
+      "isdelete": false
+    }
+  ],
+  "couponvalue": 300.00,
+  "remainingvalue": 300.00,
+  "issueddate": "2025-06-20T00:00:00Z",
+  "expirydate": "2025-12-31T23:59:59Z",
+  "coupontype": 2,
+  "customercode": "{{customerId}}",
+  "remark": "คูปองแทนเงินสด",
+  "status": 0,
+  "isonetimeuse": true
+}
+
+###
+
+### Create One-Time Use Coupon (ใช้ครั้งเดียว)
+POST {{baseUrl}}/coupon
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "couponcode": "ONETIME50",
+  "names": [
+    {
+      "code": "th",
+      "name": "คูปองใช้ครั้งเดียว 50 บาท",
+      "isauto": false,
+      "isdelete": false
+    }
+  ],
+  "couponvalue": 50.00,
+  "remainingvalue": 50.00,
+  "issueddate": "2025-06-20T00:00:00Z",
+  "expirydate": "2025-12-31T23:59:59Z",
+  "coupontype": 0,
+  "customercode": "{{customerId}}",
+  "remark": "คูปองใช้ครั้งเดียว",
+  "status": 0,
+  "isonetimeuse": true
+}
+
+# ==========================================================
+# 📖 READ COUPON
+# ==========================================================
+
+###
+
+### Get All Coupons (with pagination)
+GET {{baseUrl}}/coupon?page=1&limit=10
+Authorization: {{token}}
+Content-Type: application/json
+
+### Expected Response:
+# {
+#   "success": true,
+#   "data": [
+#     {
+#       "id": "coupon-id",
+#       "couponcode": "SAVE100",
+#       "names": [...],
+#       "couponvalue": 100.00,
+#       "remainingvalue": 100.00,
+#       "issueddate": "2025-06-20T00:00:00Z",
+#       "expirydate": "2025-12-31T23:59:59Z",
+#       "coupontype": 0,
+#       "customercode": "CUST001",
+#       "remark": "คูปองทดสอบระบบ",
+#       "status": 0,
+#       "isonetimeuse": false
+#     }
+#   ],
+#   "pagination": {
+#     "page": 1,
+#     "limit": 10,
+#     "total": 4,
+#     "totalPage": 1
+#   }
+# }
+
+###
+
+### Search Coupons by Code
+GET {{baseUrl}}/coupon?q=SAVE100
+Authorization: {{token}}
+Content-Type: application/json
+
+###
+
+### Search Coupons by Customer
+GET {{baseUrl}}/coupon?q={{customerId}}
+Authorization: {{token}}
+Content-Type: application/json
+
+###
+
+### Get Coupon by ID
+GET {{baseUrl}}/coupon/{{couponId}}
+Authorization: {{token}}
+Content-Type: application/json
+
+### Expected Response:
+# {
+#   "success": true,
+#   "data": {
+#     "id": "{{couponId}}",
+#     "couponcode": "SAVE100",
+#     "names": [
+#       {
+#         "code": "th",
+#         "name": "คูปองส่วนลด 100 บาท",
+#         "isauto": false,
+#         "isdelete": false
+#       }
+#     ],
+#     "couponvalue": 100.00,
+#     "remainingvalue": 100.00,
+#     "issueddate": "2025-06-20T00:00:00Z",
+#     "expirydate": "2025-12-31T23:59:59Z",
+#     "coupontype": 0,
+#     "customercode": "CUST001",
+#     "remark": "คูปองทดสอบระบบ",
+#     "status": 0,
+#     "isonetimeuse": false
+#   }
+# }
+
+# ==========================================================
+# ✏️ UPDATE COUPON
+# ==========================================================
+
+###
+
+### Update Coupon Information
+PUT {{baseUrl}}/coupon/{{couponId}}
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "couponcode": "SAVE100",
+  "names": [
+    {
+      "code": "th",
+      "name": "คูปองส่วนลด 100 บาท (แก้ไข)",
+      "isauto": false,
+      "isdelete": false
+    },
+    {
+      "code": "en",
+      "name": "100 Baht Discount Coupon (Updated)",
+      "isauto": false,
+      "isdelete": false
+    }
+  ],
+  "couponvalue": 100.00,
+  "remainingvalue": 75.00,
+  "issueddate": "2025-06-20T00:00:00Z",
+  "expirydate": "2025-12-31T23:59:59Z",
+  "coupontype": 0,
+  "customercode": "{{customerId}}",
+  "remark": "คูปองทดสอบระบบ (ใช้ไปแล้ว 25 บาท)",
+  "status": 0,
+  "isonetimeuse": false
+}
+
+### Expected Response:
+# {
+#   "success": true,
+#   "message": "Coupon updated successfully",
+#   "data": {
+#     "id": "{{couponId}}"
+#   }
+# }
+
+###
+
+### Update Coupon Status to Canceled
+PUT {{baseUrl}}/coupon/{{couponId}}
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "couponcode": "SAVE100",
+  "names": [
+    {
+      "code": "th",
+      "name": "คูปองส่วนลด 100 บาท (ยกเลิก)",
+      "isauto": false,
+      "isdelete": false
+    }
+  ],
+  "couponvalue": 100.00,
+  "remainingvalue": 75.00,
+  "issueddate": "2025-06-20T00:00:00Z",
+  "expirydate": "2025-12-31T23:59:59Z",
+  "coupontype": 0,
+  "customercode": "{{customerId}}",
+  "remark": "คูปองถูกยกเลิก",
+  "status": 1,
+  "isonetimeuse": false
+}
+
+###
+
+### Update Coupon Expiry Date
+PUT {{baseUrl}}/coupon/{{couponId}}
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "couponcode": "SAVE100",
+  "names": [
+    {
+      "code": "th",
+      "name": "คูปองส่วนลด 100 บาท",
+      "isauto": false,
+      "isdelete": false
+    }
+  ],
+  "couponvalue": 100.00,
+  "remainingvalue": 100.00,
+  "issueddate": "2025-06-20T00:00:00Z",
+  "expirydate": "2026-06-30T23:59:59Z",
+  "coupontype": 0,
+  "customercode": "{{customerId}}",
+  "remark": "ขยายอายุคูปอง",
+  "status": 0,
+  "isonetimeuse": false
+}
+
+# ==========================================================
+# 🗑️ DELETE COUPON
+# ==========================================================
+
+###
+
+### Delete Coupon by ID
+DELETE {{baseUrl}}/coupon/{{couponId}}
+Authorization: {{token}}
+Content-Type: application/json
+
+### Expected Response:
+# {
+#   "success": true,
+#   "message": "Coupon deleted successfully",
+#   "data": {
+#     "id": "{{couponId}}"
+#   }
+# }
+
+###
+
+### Try to Get Deleted Coupon (Should return 404)
+GET {{baseUrl}}/coupon/{{couponId}}
+Authorization: {{token}}
+Content-Type: application/json
+
+### Expected Error Response:
+# {
+#   "success": false,
+#   "message": "Coupon not found",
+#   "error": "COUPON_NOT_FOUND"
+# }
+
+# ==========================================================
+# 📦 BULK OPERATIONS
+# ==========================================================
+
+###
+
+### Bulk Create Coupons
+POST {{baseUrl}}/coupon/bulk
+Authorization: {{token}}
+Content-Type: application/json
+
+[
+  {
+    "couponcode": "BULK001",
+    "names": [
+      {
+        "code": "th",
+        "name": "คูปองกลุ่ม 1 - 25 บาท",
+        "isauto": false,
+        "isdelete": false
+      }
+    ],
+    "couponvalue": 25.00,
+    "remainingvalue": 25.00,
+    "issueddate": "2025-06-20T00:00:00Z",
+    "expirydate": "2025-12-31T23:59:59Z",
+    "coupontype": 0,
+    "customercode": "{{customerId}}",
+    "remark": "คูปองจากการสร้างกลุ่ม",
+    "status": 0,
+    "isonetimeuse": true
+  },
+  {
+    "couponcode": "BULK002",
+    "names": [
+      {
+        "code": "th",
+        "name": "คูปองกลุ่ม 2 - 35 บาท",
+        "isauto": false,
+        "isdelete": false
+      }
+    ],
+    "couponvalue": 35.00,
+    "remainingvalue": 35.00,
+    "issueddate": "2025-06-20T00:00:00Z",
+    "expirydate": "2025-12-31T23:59:59Z",
+    "coupontype": 0,
+    "customercode": "{{customerId}}",
+    "remark": "คูปองจากการสร้างกลุ่ม",
+    "status": 0,
+    "isonetimeuse": true
+  },
+  {
+    "couponcode": "BULK003",
+    "names": [
+      {
+        "code": "th",
+        "name": "คูปองกลุ่ม 3 - 10%",
+        "isauto": false,
+        "isdelete": false
+      }
+    ],
+    "couponvalue": 10.00,
+    "remainingvalue": 10.00,
+    "issueddate": "2025-06-20T00:00:00Z",
+    "expirydate": "2025-12-31T23:59:59Z",
+    "coupontype": 1,
+    "customercode": "",
+    "remark": "คูปองเปอร์เซ็นต์จากการสร้างกลุ่ม",
+    "status": 0,
+    "isonetimeuse": false
+  }
+]
+
+### Expected Response:
+# {
+#   "success": true,
+#   "message": "Bulk coupon creation completed",
+#   "data": {
+#     "created": 3,
+#     "failed": 0,
+#     "ids": [
+#       "bulk-coupon-id-1",
+#       "bulk-coupon-id-2", 
+#       "bulk-coupon-id-3"
+#     ]
+#   }
+# }
+
+# ==========================================================
+# ❌ ERROR HANDLING TESTS
+# ==========================================================
+
+###
+
+### Create Coupon with Invalid Data (Missing required fields)
+POST {{baseUrl}}/coupon
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "couponcode": "",
+  "names": [],
+  "couponvalue": -10.00,
+  "remainingvalue": -5.00,
+  "issueddate": "invalid-date",
+  "expirydate": "2020-01-01T00:00:00Z",
+  "coupontype": 999,
+  "customercode": "",
+  "remark": "Invalid coupon test",
+  "status": 0,
+  "isonetimeuse": false
+}
+
+### Expected Validation Error:
+# {
+#   "success": false,
+#   "message": "Validation failed",
+#   "errors": [
+#     "couponcode is required",
+#     "names must contain at least one item",
+#     "couponvalue must be greater than 0",
+#     "remainingvalue cannot be negative",
+#     "issueddate must be a valid date",
+#     "expirydate must be after issueddate",
+#     "coupontype must be 0, 1, or 2"
+#   ]
+# }
+
+###
+
+### Create Coupon with Duplicate Code
+POST {{baseUrl}}/coupon
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "couponcode": "SAVE100",
+  "names": [
+    {
+      "code": "th",
+      "name": "คูปองซ้ำ",
+      "isauto": false,
+      "isdelete": false
+    }
+  ],
+  "couponvalue": 50.00,
+  "remainingvalue": 50.00,
+  "issueddate": "2025-06-20T00:00:00Z",
+  "expirydate": "2025-12-31T23:59:59Z",
+  "coupontype": 0,
+  "customercode": "{{customerId}}",
+  "remark": "ทดสอบรหัสซ้ำ",
+  "status": 0,
+  "isonetimeuse": false
+}
+
+### Expected Error:
+# {
+#   "success": false,
+#   "message": "Coupon code already exists",
+#   "error": "DUPLICATE_COUPON_CODE"
+# }
+
+###
+
+### Get Non-Existent Coupon
+GET {{baseUrl}}/coupon/INVALID_COUPON_ID
+Authorization: {{token}}
+Content-Type: application/json
+
+### Expected Error:
+# {
+#   "success": false,
+#   "message": "Coupon not found",
+#   "error": "COUPON_NOT_FOUND"
+# }
+
+###
+
+### Update Non-Existent Coupon
+PUT {{baseUrl}}/coupon/INVALID_COUPON_ID
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "couponcode": "INVALID",
+  "names": [
+    {
+      "code": "th",
+      "name": "คูปองไม่มีอยู่",
+      "isauto": false,
+      "isdelete": false
+    }
+  ],
+  "couponvalue": 100.00,
+  "remainingvalue": 100.00,
+  "issueddate": "2025-06-20T00:00:00Z",
+  "expirydate": "2025-12-31T23:59:59Z",
+  "coupontype": 0,
+  "customercode": "{{customerId}}",
+  "remark": "อัปเดตคูปองที่ไม่มี",
+  "status": 0,
+  "isonetimeuse": false
+}
+
+### Expected Error:
+# {
+#   "success": false,
+#   "message": "Coupon not found",
+#   "error": "COUPON_NOT_FOUND"
+# }
+
+###
+
+### Delete Non-Existent Coupon
+DELETE {{baseUrl}}/coupon/INVALID_COUPON_ID
+Authorization: {{token}}
+Content-Type: application/json
+
+### Expected Error:
+# {
+#   "success": false,
+#   "message": "Coupon not found",
+#   "error": "COUPON_NOT_FOUND"
+# }
+
+# ==========================================================
+# 📋 BUSINESS RULES VERIFICATION
+# ==========================================================
+
+# 🎫 **Coupon Types:**
+# - Type 0: Value Discount (ลดตามมูลค่า)
+# - Type 1: Percentage Discount (ลดตามเปอร์เซ็นต์)
+# - Type 2: Cash Voucher (คูปองแทนเงินสด)
+
+# 📅 **Date Rules:**
+# - issueddate <= current_date <= expirydate
+# - Use UTC timezone for all dates
+# - expirydate must be after issueddate
+
+# 💰 **Value Rules:**
+# - couponvalue > 0
+# - remainingvalue >= 0
+# - remainingvalue <= couponvalue
+
+# 🔄 **Usage Rules:**
+# - isonetimeuse = true: ใช้ครั้งเดียวหมด
+# - isonetimeuse = false: ใช้ได้หลายครั้งจนหมดมูลค่า
+
+# 👤 **Customer Rules:**
+# - customercode = "": ใช้ได้ทุกคน
+# - customercode = "CUSTXXX": ใช้ได้เฉพาะลูกค้านั้น
+
+# ⚡ **Status Rules:**
+# - status = 0: Active (ใช้งานได้)
+# - status = 1: Canceled (ยกเลิก)
+
+# ==========================================================
+# 🔧 TROUBLESHOOTING TIPS
+# ==========================================================
+
+# ❗ **Common Issues:**
+# - **401 Unauthorized**: ตรวจสอบ access token
+# - **400 Bad Request**: ตรวจสอบ JSON format และ required fields
+# - **404 Not Found**: ตรวจสอบ coupon ID ที่ใช้
+# - **409 Conflict**: รหัสคูปองซ้ำ
+
+# 💡 **Best Practices:**
+# - ใช้ UTC timezone สำหรับ dates
+# - เก็บ coupon ID ไว้ใช้ในการทดสอบ
+# - ตรวจสอบ remaining value ก่อนใช้
+# - ใช้ unique coupon codes
+# - ลบคูปองทดสอบหลังเสร็จ
+
+# 🎯 **Testing Sequence:**
+# 1. System Info (Types, Status)
+# 2. Create Coupons (各種類型)
+# 3. Read Operations (List, Get, Search)
+# 4. Update Operations (Info, Status, Dates)
+# 5. Delete Operations (Single, Verify)
+# 6. Bulk Operations (Create)
+# 7. Error Handling (Invalid data, Not found)
+
+# ==========================================================
+# **Version**: 1.0.0  
+# **Last Updated**: June 20, 2025  
+# **Status**: Production Ready ✅
+# ==========================================================

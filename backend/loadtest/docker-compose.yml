@@ -1,0 +1,53 @@
+version: "3.9"
+services:
+  xcloudx1:
+    image: cloudpt
+    environment:
+      - SERVICE_PORT=8080
+      - PUBLIC_KEY_PATH=./config/public.key
+      - PRIVATE_KEY_PATH=./config/private.key
+      - MONGO_URI=mongodb://root:rootx@mongox:27017/
+      - MONGO_DB=smldev
+    ports:
+      - "8085:8080"
+    volumes:
+      - ./.env:/root/.env
+      - ./config:/root/config
+    networks:
+      - default
+
+  xcloudx2:
+    image: cloudpt
+    environment:
+      - SERVICE_PORT=8080
+      - PUBLIC_KEY_PATH=./config/public.key
+      - PRIVATE_KEY_PATH=./config/private.key
+      - MONGO_URI=mongodb://root:rootx@mongox:27017/
+      - MONGO_DB=smldev
+    ports:
+      - "8086:8080"
+    volumes:
+      - ./.env:/root/.env
+      - ./config:/root/config
+    networks:
+      - default
+  xcloudx3:
+    image: cloudpt
+    environment:
+      - SERVICE_PORT=8080
+      - PUBLIC_KEY_PATH=./config/public.key
+      - PRIVATE_KEY_PATH=./config/private.key
+      - MONGO_URI=mongodb://root:rootx@mongox:27017/
+      - MONGO_DB=smldev
+    ports:
+      - "8087:8080"
+    volumes:
+      - ./.env:/root/.env
+      - ./config:/root/config
+    networks:
+      - default
+
+networks:
+  default:
+    external: true
+    name: mynet

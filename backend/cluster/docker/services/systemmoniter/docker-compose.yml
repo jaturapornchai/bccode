@@ -1,0 +1,51 @@
+version: '3'
+
+services:
+  mongo-express:
+    image: mongo-express:latest
+    restart: always
+    expose:
+      - 8081
+    environment:
+      - ME_CONFIG_SITE_BASEURL=/mongoui
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+    networks:
+      - frontend
+      - backend
+    labels:
+      - "traefik.http.routers.mongoui.rule=(PathPrefix(`/mongoui`))"
+  redis-ui:
+    image: redislabs/redisinsight
+    restart: always
+#    expose:
+#      - 8001
+    ports:
+      - 8001:8001
+    networks:
+      - backend
+#      - frontend
+#    labels:
+#      - "traefik.http.routers.redisui.rule=(PathPrefix(`/redisui`))"
+#      - "traefik.http.routers.redisui.middlewares=redisui-middleware"
+#      - "traefik.http.middlewares.redisui-middleware.stripprefix.prefixes=/redisui"
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    restart: always
+    expose:
+      - 8080
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=smlcloudplatform-kafka
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
+      - SERVER_SERVLET_CONTEXT_PATH=/kafkaui
+    labels:
+      - "traefik.http.routers.kafkaui.rule=(PathPrefix(`/kafkaui`))"      
+    networks:
+      - backend
+networks:
+  frontend:
+    external:
+      name: sml_service_frontend
+  backend:
+    external:
+      name: sml_service_backend

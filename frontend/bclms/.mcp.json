@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "bc-standards": {
+      "type": "sse",
+      "url": "http://localhost:3100/sse"
+    }
+  }
+}

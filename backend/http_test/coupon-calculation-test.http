@@ -1,0 +1,501 @@
+# 💰 Coupon Calculation API Testing
+# ====================================
+# ทดสอบ API สำหรับคำนวนส่วนลดจากคูปอง
+
+@baseUrl = http://localhost:8080
+@token = Bearer YOUR_AUTH_TOKEN_HERE
+
+# ==========================================================
+# 🧮 BASIC CALCULATION TESTS
+# ==========================================================
+
+### 1. คำนวนคูปองลดตามมูลค่า (Value Discount)
+POST {{baseUrl}}/coupon/calculate
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "order_amount": 1000.00,
+  "coupons": [
+    {
+      "coupon_code": "VALUE100",
+      "use_amount": 100.00
+    }
+  ],
+  "customer_id": "CUST001"
+}
+
+### Expected Response:
+# {
+#   "success": true,
+#   "total_discount": 100.00,
+#   "total_cash_voucher": 0.00,
+#   "final_amount": 900.00,
+#   "coupon_results": [
+#     {
+#       "coupon_code": "VALUE100",
+#       "coupon_type": 0,
+#       "coupon_type_name": "ลดตามมูลค่า",
+#       "discount_amount": 100.00,
+#       "cash_voucher_amount": 0.00,
+#       "used_amount": 100.00,
+#       "remaining_value": 0.00,
+#       "applied": true,
+#       "message": "คำนวนสำเร็จ"
+#     }
+#   ]
+# }
+
+###
+
+### 2. คำนวนคูปองลดตามเปอร์เซ็นต์ (Percentage Discount)
+POST {{baseUrl}}/coupon/calculate
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "order_amount": 500.00,
+  "coupons": [
+    {
+      "coupon_code": "PERCENT20",
+      "use_amount": 20.00
+    }
+  ],
+  "customer_id": "CUST002"
+}
+
+### Expected Response:
+# {
+#   "success": true,
+#   "total_discount": 100.00,
+#   "total_cash_voucher": 0.00,
+#   "final_amount": 400.00,
+#   "coupon_results": [
+#     {
+#       "coupon_code": "PERCENT20",
+#       "coupon_type": 1,
+#       "coupon_type_name": "ลดตามเปอร์เซ็นต์",
+#       "discount_amount": 100.00,
+#       "cash_voucher_amount": 0.00,
+#       "used_amount": 20.00,
+#       "remaining_value": 0.00,
+#       "applied": true,
+#       "message": "คำนวนสำเร็จ"
+#     }
+#   ]
+# }
+
+###
+
+### 3. คำนวนคูปองแทนเงินสด (Cash Voucher)
+POST {{baseUrl}}/coupon/calculate
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "order_amount": 1000.00,
+  "coupons": [
+    {
+      "coupon_code": "CASH500",
+      "use_amount": 500.00
+    }
+  ],
+  "customer_id": "CUST003"
+}
+
+### Expected Response:
+# {
+#   "success": true,
+#   "total_discount": 0.00,
+#   "total_cash_voucher": 500.00,
+#   "final_amount": 500.00,
+#   "coupon_results": [
+#     {
+#       "coupon_code": "CASH500",
+#       "coupon_type": 2,
+#       "coupon_type_name": "คูปองแทนเงินสด",
+#       "discount_amount": 0.00,
+#       "cash_voucher_amount": 500.00,
+#       "used_amount": 500.00,
+#       "remaining_value": 0.00,
+#       "applied": true,
+#       "message": "คำนวนสำเร็จ"
+#     }
+#   ]
+# }
+
+# ==========================================================
+# 🔗 MULTIPLE COUPONS CALCULATION (CASCADING)
+# ==========================================================
+
+###
+
+### 4. คำนวนหลายคูปองรวมกัน (Mixed Types)
+POST {{baseUrl}}/coupon/calculate
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "order_amount": 2000.00,
+  "coupons": [
+    {
+      "coupon_code": "VALUE100",
+      "use_amount": 100.00
+    },
+    {
+      "coupon_code": "PERCENT10",
+      "use_amount": 10.00
+    },
+    {
+      "coupon_code": "CASH200",
+      "use_amount": 200.00
+    }
+  ],
+  "customer_id": "CUST001"
+}
+
+### Expected Cascading Logic:
+# Step 1: Original Amount = 2000.00
+# Step 2: Apply Value Discount (-100.00) = 1900.00  
+# Step 3: Apply Percentage (10% of 1900.00 = -190.00) = 1710.00
+# Step 4: Apply Cash Voucher (-200.00) = 1510.00
+# Final Amount = 1510.00
+
+###
+
+### 5. คำนวนคูปองแบบใช้บางส่วน (Partial Usage)
+POST {{baseUrl}}/coupon/calculate
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "order_amount": 300.00,
+  "coupons": [
+    {
+      "coupon_code": "VALUE500",
+      "use_amount": 250.00
+    }
+  ],
+  "customer_id": "CUST004"
+}
+
+### Expected Response (Partial Use):
+# {
+#   "success": true,
+#   "total_discount": 250.00,
+#   "total_cash_voucher": 0.00,
+#   "final_amount": 50.00,
+#   "coupon_results": [
+#     {
+#       "coupon_code": "VALUE500",
+#       "coupon_type": 0,
+#       "coupon_type_name": "ลดตามมูลค่า",
+#       "discount_amount": 250.00,
+#       "cash_voucher_amount": 0.00,
+#       "used_amount": 250.00,
+#       "remaining_value": 250.00,
+#       "applied": true,
+#       "message": "คำนวนสำเร็จ"
+#     }
+#   ]
+# }
+
+# ==========================================================
+# ⚠️ ERROR CASE TESTING
+# ==========================================================
+
+###
+
+### 6. คูปองไม่พบ (Coupon Not Found)
+POST {{baseUrl}}/coupon/calculate
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "order_amount": 1000.00,
+  "coupons": [
+    {
+      "coupon_code": "NOTFOUND123",
+      "use_amount": 100.00
+    }
+  ],
+  "customer_id": "CUST001"
+}
+
+### Expected Error Response:
+# {
+#   "success": false,
+#   "total_discount": 0.00,
+#   "total_cash_voucher": 0.00,
+#   "final_amount": 1000.00,
+#   "coupon_results": [],
+#   "errors": [
+#     {
+#       "coupon_code": "NOTFOUND123",
+#       "error": "คูปองไม่พบ",
+#       "code": "COUPON_NOT_FOUND"
+#     }
+#   ]
+# }
+
+###
+
+### 7. คูปองหมดอายุ (Expired Coupon)
+POST {{baseUrl}}/coupon/calculate
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "order_amount": 1000.00,
+  "coupons": [
+    {
+      "coupon_code": "EXPIRED001",
+      "use_amount": 100.00
+    }
+  ],
+  "customer_id": "CUST001"
+}
+
+### Expected Error Response:
+# {
+#   "success": false,
+#   "total_discount": 0.00,
+#   "total_cash_voucher": 0.00,
+#   "final_amount": 1000.00,
+#   "coupon_results": [],
+#   "errors": [
+#     {
+#       "coupon_code": "EXPIRED001",
+#       "error": "คูปองหมดอายุแล้ว",
+#       "code": "COUPON_EXPIRED"
+#     }
+#   ]
+# }
+
+###
+
+### 8. คูปองหมดมูลค่า (Zero Remaining Value)
+POST {{baseUrl}}/coupon/calculate
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "order_amount": 1000.00,
+  "coupons": [
+    {
+      "coupon_code": "ZERO001",
+      "use_amount": 100.00
+    }
+  ],
+  "customer_id": "CUST001"
+}
+
+### Expected Error Response:
+# {
+#   "success": false,
+#   "total_discount": 0.00,
+#   "total_cash_voucher": 0.00,
+#   "final_amount": 1000.00,
+#   "coupon_results": [],
+#   "errors": [
+#     {
+#       "coupon_code": "ZERO001",
+#       "error": "คูปองหมดมูลค่าแล้ว",
+#       "code": "INSUFFICIENT_COUPON_VALUE"
+#     }
+#   ]
+# }
+
+###
+
+### 9. ใช้เกินมูลค่าคูปอง (Exceed Coupon Value)
+POST {{baseUrl}}/coupon/calculate
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "order_amount": 1000.00,
+  "coupons": [
+    {
+      "coupon_code": "VALUE100",
+      "use_amount": 150.00
+    }
+  ],
+  "customer_id": "CUST001"
+}
+
+### Expected Error Response:
+# {
+#   "success": false,
+#   "total_discount": 0.00,
+#   "total_cash_voucher": 0.00,
+#   "final_amount": 1000.00,
+#   "coupon_results": [],
+#   "errors": [
+#     {
+#       "coupon_code": "VALUE100",
+#       "error": "จำนวนเงินที่ขอใช้เกินมูลค่าคงเหลือของคูปอง",
+#       "code": "EXCEED_COUPON_VALUE"
+#     }
+#   ]
+# }
+
+# ==========================================================
+# 🔧 EDGE CASES & COMPLEX SCENARIOS
+# ==========================================================
+
+###
+
+### 10. คำนวนกับยอดสั่งซื้อ 0 บาท
+POST {{baseUrl}}/coupon/calculate
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "order_amount": 0.00,
+  "coupons": [
+    {
+      "coupon_code": "VALUE100",
+      "use_amount": 50.00
+    }
+  ],
+  "customer_id": "CUST001"
+}
+
+###
+
+### 11. คำนวนเปอร์เซ็นต์กับยอดเล็กน้อย
+POST {{baseUrl}}/coupon/calculate
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "order_amount": 10.00,
+  "coupons": [
+    {
+      "coupon_code": "PERCENT50",
+      "use_amount": 50.00
+    }
+  ],
+  "customer_id": "CUST001"
+}
+
+###
+
+### 12. คำนวนคูปองแทนเงินสดเกินยอดสั่งซื้อ
+POST {{baseUrl}}/coupon/calculate
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "order_amount": 200.00,
+  "coupons": [
+    {
+      "coupon_code": "CASH500",
+      "use_amount": 500.00
+    }
+  ],
+  "customer_id": "CUST001"
+}
+
+### Expected Response (ไม่ควรติดลบ):
+# {
+#   "success": true,
+#   "total_discount": 0.00,
+#   "total_cash_voucher": 200.00,
+#   "final_amount": 0.00,
+#   "coupon_results": [
+#     {
+#       "coupon_code": "CASH500",
+#       "coupon_type": 2,
+#       "coupon_type_name": "คูปองแทนเงินสด",
+#       "discount_amount": 0.00,
+#       "cash_voucher_amount": 200.00,
+#       "used_amount": 200.00,
+#       "remaining_value": 300.00,
+#       "applied": true,
+#       "message": "คำนวนสำเร็จ"
+#     }
+#   ]
+# }
+
+###
+
+### 13. คำนวนคูปองหลายตัวแบบผสม Success + Error
+POST {{baseUrl}}/coupon/calculate
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "order_amount": 1000.00,
+  "coupons": [
+    {
+      "coupon_code": "VALUE100",
+      "use_amount": 100.00
+    },
+    {
+      "coupon_code": "NOTFOUND456",
+      "use_amount": 50.00
+    },
+    {
+      "coupon_code": "PERCENT10",
+      "use_amount": 10.00
+    }
+  ],
+  "customer_id": "CUST001"
+}
+
+### Expected Mixed Response:
+# {
+#   "success": true,
+#   "total_discount": 190.00,
+#   "total_cash_voucher": 0.00,
+#   "final_amount": 810.00,
+#   "coupon_results": [
+#     {
+#       "coupon_code": "VALUE100",
+#       "applied": true,
+#       "discount_amount": 100.00,
+#       "message": "คำนวนสำเร็จ"
+#     },
+#     {
+#       "coupon_code": "PERCENT10",
+#       "applied": true,
+#       "discount_amount": 90.00,
+#       "message": "คำนวนสำเร็จ"
+#     }
+#   ],
+#   "errors": [
+#     {
+#       "coupon_code": "NOTFOUND456",
+#       "error": "คูปองไม่พบ",
+#       "code": "COUPON_NOT_FOUND"
+#     }
+#   ]
+# }
+
+# ==========================================================
+# 💡 CALCULATION BUSINESS RULES
+# ==========================================================
+
+# 🔢 **คำนวนลำดับ (Calculation Order):**
+# 1. Value Discount (ลดตามมูลค่า) - ลดก่อน
+# 2. Percentage Discount (ลดตามเปอร์เซ็นต์) - คำนวนจากยอดหลังลดแล้ว
+# 3. Cash Voucher (คยปองแทนเงินสด) - ใช้เป็นเงินทอน
+
+# 📊 **ประเภทคูปอง (Coupon Types):**
+# - Type 0: Value Discount (ลดตามมูลค่า)
+# - Type 1: Percentage Discount (ลดตามเปอร์เซ็นต์) 
+# - Type 2: Cash Voucher (คูปองแทนเงินสด)
+
+# ⚡ **หลักการคำนวน:**
+# - ส่วนลดไม่เกินยอดสั่งซื้อ
+# - คูปองแทนเงินสดสามารถทำให้ยอดเป็น 0 ได้
+# - เปอร์เซ็นต์คำนวนจากยอดหลังหักส่วนลดแล้ว
+# - คูปองที่ไม่สามารถใช้ได้จะอยู่ใน errors array
+
+# ==========================================================
+# **Version**: 1.0.0  
+# **Last Updated**: June 20, 2025  
+# **Status**: Production Ready ✅
+# ==========================================================

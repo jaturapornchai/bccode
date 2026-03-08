@@ -1,0 +1,28 @@
+# BC AI Backend — Cline/Roo Rules
+
+## Project
+- Go 1.26, module: `smlcloudplatform`
+- Unified backend: mainapi (cloud platform) + goapi (BI/analytics)
+- Framework: Echo v4
+- DB: MongoDB, PostgreSQL, ClickHouse, Kafka, Redis
+
+## Structure
+- `cmd/goapi/` → goapi entry point (port 8888)
+- `cmd/app/` → mainapi entry point (port 8080)
+- `internal/goapi/` → all goapi packages (handlers, mydb, mypg, myclickhouse, myglobal, models, mcp, etc.)
+- `pkg/` → mainapi shared packages
+- Import path: `smlcloudplatform/internal/goapi/...`
+
+## ABSOLUTE RULES
+1. Config: bootstrap.json ONLY — NEVER use .env files
+   - Loader: `internal/goapi/setupconfig/loader.go`
+   - Docker mount: `bootstrap.json:/app/bootstrap.json:rw`
+   - Windows: `C:/Windows/Temp/bcdev/config/bootstrap.json`
+2. Docker stack in docker-compose.yml:
+   - goapi: 8888, Dockerfile.goapi (no CGO)
+   - mainapi: 9090→8080, Dockerfile (CGO + librdkafka)
+   - MongoDB: 27017, PostgreSQL: 5432, ClickHouse: 8123/9000, Redis: 6379, Kafka: 9092
+3. Thai language in logs/comments is normal
+4. Logger: `logger.Info()`, `logger.Error()`, `logger.Success()`, `logger.Warn()`
+5. Database: `mydb.DatabaseManager` with circuit breaker + retry
+6. MCP SSE endpoint: `GET /mcp/sse`

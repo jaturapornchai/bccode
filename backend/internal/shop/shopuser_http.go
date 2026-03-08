@@ -1,0 +1,448 @@
+package shop
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"smlcloudplatform/internal/authentication/models"
+	"smlcloudplatform/internal/config"
+	common "smlcloudplatform/internal/models"
+	"smlcloudplatform/internal/utils"
+	"smlcloudplatform/pkg/microservice"
+)
+
+type IShopMemberHttp interface{}
+
+type ShopMemberHttp struct {
+	ms  *microservice.Microservice
+	svc IShopUserService
+}
+
+func NewShopMemberHttp(ms *microservice.Microservice, cfg config.IConfig) *ShopMemberHttp {
+
+	pst := ms.MongoPersister(cfg.MongoPersisterConfig())
+	repo := NewShopUserRepository(pst)
+	svc := NewShopUserService(repo)
+	return &ShopMemberHttp{
+		svc: svc,
+		ms:  ms,
+	}
+}
+
+func (h *ShopMemberHttp) RegisterHttp() {
+	h.ms.GET("/user/permissions", h.ListShopUser)
+	h.ms.GET("/shop/users", h.ListUserInShop)
+
+	h.ms.PUT("/shop/permission", h.SaveUserPermissionShop)
+	h.ms.GET("/shop/permission/:username", h.InfoShopUser)
+	h.ms.DELETE("/shop/permission/:username", h.DeleteUserPermissionShop)
+
+	// Cleanup endpoint สำหรับลบ users ที่ username ว่าง
+	h.ms.DELETE("/shop/users/cleanup", h.CleanupEmptyUsers)
+
+	// Public endpoint สำหรับ sync LINE data จาก lineoa-liff (LIFF callback)
+	h.ms.POST("/line-sync", h.SyncLineData)
+
+	// Endpoint สำหรับให้ผู้ใช้อัปเดต LINE data ของตัวเอง (ใช้จาก Flutter)
+	h.ms.PUT("/profile/my-line", h.SaveMyLineData)
+}
+
+// List Shop User godoc
+// @Description get shopuser
+// @Tags		ShopUser
+// @Param		q		query	string		false  "Search Value"
+// @Param		page	query	integer		false  "Page"
+// @Param		limit	query	integer		false  "Limit"
+// @Accept 		json
+// @Success		200	{array}		common.ApiResponse
+// @Failure		401 {object}	common.AuthResponseFailed
+// @Security     AccessToken
+// @Router /shop/users [get]
+func (h ShopMemberHttp) ListUserInShop(ctx microservice.IContext) error {
+	userInfo := ctx.UserInfo()
+	shopID := userInfo.ShopID
+
+	if userInfo.Role != models.ROLE_OWNER {
+		ctx.Response(http.StatusOK, &common.ApiResponse{
+			Success: false,
+			Message: "permission denied",
+		})
+
+		return errors.New("permission denied")
+	}
+
+	pageable := utils.GetPageable(ctx.QueryParam)
+
+	docList, pagination, err := h.svc.ListUserInShop(shopID, pageable)
+
+	if err != nil {
+		ctx.ResponseError(400, "find failed")
+		h.ms.Logger.Error("HTTP:: SearchShopUser " + err.Error())
+		return err
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success:    true,
+		Pagination: pagination,
+		Data:       docList,
+	})
+	return nil
+}
+
+// Get Shop User godoc
+// @Description get shopuser info by username
+// @Tags		ShopUser
+// @Param		username	path     string  true  "username"
+// @Accept 		json
+// @Success		200	{array}		common.ApiResponse
+// @Failure		401 {object}	common.AuthResponseFailed
+// @Security     AccessToken
+// @Router /shop/permission/{username} [get]
+func (h ShopMemberHttp) InfoShopUser(ctx microservice.IContext) error {
+	userInfo := ctx.UserInfo()
+	shopID := userInfo.ShopID
+
+	// if userInfo.Role != models.ROLE_OWNER {
+	// 	ctx.Response(http.StatusOK, &common.ApiResponse{
+	// 		Success: false,
+	// 		Message: "permission denied",
+	// 	})
+
+	// 	return errors.New("permission denied")
+	// }
+
+	username := ctx.Param("username")
+
+	if len(username) < 1 {
+		ctx.ResponseError(400, "username invalid")
+		return nil
+	}
+
+	doc, err := h.svc.InfoShopByUser(shopID, username)
+
+	if err != nil {
+		ctx.ResponseError(400, "find failed")
+		h.ms.Logger.Error("HTTP:: SearchShopUser " + err.Error())
+		return err
+	}
+
+	// Debug log
+	h.ms.Logger.Debug("InfoShopUser - username: " + username)
+	h.ms.Logger.Debug("InfoShopUser - LineUserID: " + doc.LineUserID)
+	h.ms.Logger.Debug("InfoShopUser - LineDisplayName: " + doc.LineDisplayName)
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Data:    doc,
+	})
+	return nil
+}
+
+// List Shop By User godoc
+// @Description get shopuser
+// @Tags		ShopUser
+// @Param		q		query	string		false  "Search Value"
+// @Param		page	query	integer		false  "Page"
+// @Param		limit	query	integer		false  "Limit"
+// @Accept 		json
+// @Success		200	{array}		common.ApiResponse
+// @Failure		401 {object}	common.AuthResponseFailed
+// @Security     AccessToken
+// @Router /user/permissions [get]
+func (h ShopMemberHttp) ListShopUser(ctx microservice.IContext) error {
+	userInfo := ctx.UserInfo()
+	authUsername := userInfo.Username
+
+	if userInfo.Role != models.ROLE_OWNER {
+		ctx.Response(http.StatusOK, &common.ApiResponse{
+			Success: false,
+			Message: "permission denied",
+		})
+
+		return errors.New("permission denied")
+	}
+
+	pageable := utils.GetPageable(ctx.QueryParam)
+
+	docList, pagination, err := h.svc.ListShopByUser(authUsername, pageable)
+
+	if err != nil {
+		ctx.ResponseError(400, "find failed")
+		h.ms.Logger.Error("HTTP:: SearchShopUser " + err.Error())
+		return err
+	}
+
+	ctx.Response(http.StatusOK,
+		common.ApiResponse{
+			Success:    true,
+			Pagination: pagination,
+			Data:       docList,
+		})
+	return nil
+}
+
+// Save Permission Shop User godoc
+// @Description save shopuser permission and profile (position, department, LINE, approval)
+// @Tags		ShopUser
+// @Param		UserRoleRequest  body      models.UserRoleRequest  true  "UserRoleRequest"
+// @Accept 		json
+// @Success		200	{array}		common.ApiResponse
+// @Failure		401 {object}	common.AuthResponseFailed
+// @Security     AccessToken
+// @Router /shop/permission [put]
+func (h ShopMemberHttp) SaveUserPermissionShop(ctx microservice.IContext) error {
+	userInfo := ctx.UserInfo()
+	authUsername := userInfo.Username
+	shopID := userInfo.ShopID
+
+	if userInfo.Role != models.ROLE_OWNER {
+		ctx.Response(http.StatusOK, &common.ApiResponse{
+			Success: false,
+			Message: "permission denied",
+		})
+
+		return errors.New("permission denied")
+	}
+
+	input := ctx.ReadInput()
+
+	userRoleReq := &models.UserRoleRequest{}
+	err := json.Unmarshal([]byte(input), &userRoleReq)
+
+	if err != nil {
+		ctx.ResponseError(400, err.Error())
+		return err
+	}
+
+	// Debug log
+	h.ms.Logger.Debug("SaveUserPermissionShop - input: " + input)
+	h.ms.Logger.Debug("SaveUserPermissionShop - LineUserID: " + userRoleReq.LineUserID)
+	h.ms.Logger.Debug("SaveUserPermissionShop - LineDisplayName: " + userRoleReq.LineDisplayName)
+
+	// ใช้ SaveUserFullProfile เพื่อบันทึกข้อมูลทั้งหมด (รวม position, department, LINE, approval)
+	err = h.svc.SaveUserFullProfile(shopID, authUsername, userRoleReq)
+	if err != nil {
+		ctx.ResponseError(400, err.Error())
+		return err
+	}
+	ctx.Response(http.StatusOK,
+		common.ApiResponse{
+			Success: true,
+		})
+
+	return nil
+}
+
+// Delete Shop User godoc
+// @Description get shopuser info by username
+// @Tags		ShopUser
+// @Param		username	path     string  true  "username"
+// @Accept 		json
+// @Success		200	{array}		common.ApiResponse
+// @Failure		401 {object}	common.AuthResponseFailed
+// @Security     AccessToken
+// @Router /shop/permission/{username} [delete]
+func (h ShopMemberHttp) DeleteUserPermissionShop(ctx microservice.IContext) error {
+	userInfo := ctx.UserInfo()
+	authUsername := userInfo.Username
+	shopID := userInfo.ShopID
+
+	// Debug log
+	h.ms.Logger.Debug("DeleteUserPermissionShop - authUsername: " + authUsername)
+	h.ms.Logger.Debug("DeleteUserPermissionShop - shopID: " + shopID)
+
+	if userInfo.Role != models.ROLE_OWNER {
+		ctx.Response(http.StatusOK, &common.ApiResponse{
+			Success: false,
+			Message: "permission denied",
+		})
+
+		return errors.New("permission denied")
+	}
+
+	username := ctx.Param("username")
+
+	// Debug log
+	h.ms.Logger.Debug("DeleteUserPermissionShop - target username: " + username)
+
+	if len(username) < 1 {
+		h.ms.Logger.Error("DeleteUserPermissionShop - username is empty!")
+		ctx.ResponseError(400, "username invalid")
+		return nil
+	}
+
+	err := h.svc.DeleteUserPermissionShop(shopID, authUsername, username)
+
+	if err != nil {
+		h.ms.Logger.Error("DeleteUserPermissionShop - error: " + err.Error())
+		ctx.ResponseError(400, err.Error())
+		return err
+	}
+
+	h.ms.Logger.Debug("DeleteUserPermissionShop - success for: " + username)
+	ctx.Response(http.StatusOK,
+		common.ApiResponse{
+			Success: true,
+		})
+
+	return nil
+}
+
+// CleanupEmptyUsers - ลบ users ที่ username ว่างออกจากระบบ
+// @Description cleanup users with empty username
+// @Tags		ShopUser
+// @Accept 		json
+// @Success		200	{object}	common.ApiResponse
+// @Failure		401 {object}	common.AuthResponseFailed
+// @Security    AccessToken
+// @Router /shop/users/cleanup [delete]
+func (h ShopMemberHttp) CleanupEmptyUsers(ctx microservice.IContext) error {
+	userInfo := ctx.UserInfo()
+	shopID := userInfo.ShopID
+
+	// ต้องเป็น Owner เท่านั้น
+	if userInfo.Role != models.ROLE_OWNER {
+		ctx.Response(http.StatusOK, &common.ApiResponse{
+			Success: false,
+			Message: "permission denied",
+		})
+		return nil
+	}
+
+	h.ms.Logger.Debug("CleanupEmptyUsers - shopID: " + shopID)
+
+	// ลบ users ที่ username ว่าง
+	deletedCount, err := h.svc.CleanupEmptyUsers(shopID)
+
+	if err != nil {
+		h.ms.Logger.Error("CleanupEmptyUsers - error: " + err.Error())
+		ctx.ResponseError(400, err.Error())
+		return err
+	}
+
+	h.ms.Logger.Debug("CleanupEmptyUsers - deleted count: " + fmt.Sprintf("%d", deletedCount))
+	ctx.Response(http.StatusOK,
+		common.ApiResponse{
+			Success: true,
+			Message: fmt.Sprintf("Deleted %d empty users", deletedCount),
+			Data:    map[string]int64{"deleted_count": deletedCount},
+		})
+
+	return nil
+}
+
+// LineSyncRequest - request body สำหรับ sync LINE data
+type LineSyncRequest struct {
+	ShopID          string `json:"shop_id"`
+	Username        string `json:"username"`
+	EmployeeCode    string `json:"employee_code"` // alias for username
+	LineUserID      string `json:"line_user_id"`
+	LineDisplayName string `json:"line_display_name"`
+	LinePictureURL  string `json:"line_picture_url"`
+	APIKey          string `json:"api_key"` // สำหรับ authentication
+}
+
+// SyncLineData - Public endpoint สำหรับ sync LINE data จาก lineoa-liff
+// @Description sync LINE data from LIFF callback
+// @Tags		ShopUser
+// @Param		LineSyncRequest  body      LineSyncRequest  true  "LineSyncRequest"
+// @Accept 		json
+// @Success		200	{object}	common.ApiResponse
+// @Router /line-sync [post]
+func (h ShopMemberHttp) SyncLineData(ctx microservice.IContext) error {
+	input := ctx.ReadInput()
+
+	req := &LineSyncRequest{}
+	err := json.Unmarshal([]byte(input), &req)
+
+	if err != nil {
+		ctx.ResponseError(400, "Invalid request body")
+		return err
+	}
+
+	h.ms.Logger.Debug("SyncLineData - input: " + input)
+
+	// ใช้ employee_code หรือ username
+	username := req.Username
+	if username == "" {
+		username = req.EmployeeCode
+	}
+
+	if req.ShopID == "" || username == "" {
+		ctx.ResponseError(400, "shop_id and username/employee_code are required")
+		return errors.New("missing required fields")
+	}
+
+	// Sync LINE data
+	err = h.svc.SyncLineData(req.ShopID, username, req.LineUserID, req.LineDisplayName, req.LinePictureURL)
+
+	if err != nil {
+		h.ms.Logger.Error("SyncLineData - error: " + err.Error())
+		ctx.ResponseError(400, err.Error())
+		return err
+	}
+
+	h.ms.Logger.Debug("SyncLineData - success for: " + username + " in shop: " + req.ShopID)
+	ctx.Response(http.StatusOK,
+		common.ApiResponse{
+			Success: true,
+			Message: "LINE data synced successfully",
+		})
+
+	return nil
+}
+
+// MyLineDataRequest - request body สำหรับ user อัปเดต LINE data ของตัวเอง
+type MyLineDataRequest struct {
+	LineUserID      string `json:"line_user_id"`
+	LineDisplayName string `json:"line_display_name"`
+	LinePictureURL  string `json:"line_picture_url"`
+}
+
+// SaveMyLineData - ให้ผู้ใช้อัปเดต LINE data ของตัวเอง (ใช้จาก Flutter หลัง LIFF linking)
+// @Description save user's own LINE data
+// @Tags		ShopUser
+// @Param		MyLineDataRequest  body      MyLineDataRequest  true  "MyLineDataRequest"
+// @Accept 		json
+// @Success		200	{object}	common.ApiResponse
+// @Failure		401 {object}	common.AuthResponseFailed
+// @Security    AccessToken
+// @Router /profile/my-line [put]
+func (h ShopMemberHttp) SaveMyLineData(ctx microservice.IContext) error {
+	userInfo := ctx.UserInfo()
+	shopID := userInfo.ShopID
+	username := userInfo.Username
+
+	input := ctx.ReadInput()
+
+	req := &MyLineDataRequest{}
+	err := json.Unmarshal([]byte(input), &req)
+
+	if err != nil {
+		ctx.ResponseError(400, "Invalid request body")
+		return err
+	}
+
+	h.ms.Logger.Debug("SaveMyLineData - user: " + username + " in shop: " + shopID)
+	h.ms.Logger.Debug("SaveMyLineData - LineUserID: " + req.LineUserID)
+	h.ms.Logger.Debug("SaveMyLineData - LineDisplayName: " + req.LineDisplayName)
+
+	// บันทึก LINE data ของตัวเอง
+	err = h.svc.SaveMyLineData(shopID, username, req.LineUserID, req.LineDisplayName, req.LinePictureURL)
+
+	if err != nil {
+		h.ms.Logger.Error("SaveMyLineData - error: " + err.Error())
+		ctx.ResponseError(400, err.Error())
+		return err
+	}
+
+	h.ms.Logger.Debug("SaveMyLineData - success for: " + username)
+	ctx.Response(http.StatusOK,
+		common.ApiResponse{
+			Success: true,
+			Message: "LINE data saved successfully",
+		})
+
+	return nil
+}

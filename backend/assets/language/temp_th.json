@@ -1,0 +1,9778 @@
+[
+  {
+    "code": "code",
+    "text": "code"
+  },
+  {
+    "code": "menu_master",
+    "text": "ข้อมูลหลัก"
+  },
+  {
+    "code": "address",
+    "text": "ที่อยู่"
+  },
+  {
+    "code": "all",
+    "text": "ทั้งหมด"
+  },
+  {
+    "code": "amount",
+    "text": "จำนวน"
+  },
+  {
+    "code": "and",
+    "text": "และ"
+  },
+  {
+    "code": "append",
+    "text": "เพิ่ม"
+  },
+  {
+    "code": "authorization_code",
+    "text": "ยกเลิก"
+  },
+  {
+    "code": "back",
+    "text": "กลับ"
+  },
+  {
+    "code": "bank",
+    "text": "ธนาคาร"
+  },
+  {
+    "code": "barcode",
+    "text": "บาร์โค้ด"
+  },
+  {
+    "code": "bill_cancel",
+    "text": "ยกเลิกใบเสร็จ"
+  },
+  {
+    "code": "bill_discount_save",
+    "text": "บิลนี้ประหยัด"
+  },
+  {
+    "code": "bill_pay_list",
+    "text": "รายการรับเงิน"
+  },
+  {
+    "code": "blank",
+    "text": "ว่าง"
+  },
+  {
+    "code": "cancel",
+    "text": "ยกเลิก"
+  },
+  {
+    "code": "cancel_order",
+    "text": "ยกเลิกรายการ Order Station"
+  },
+  {
+    "code": "card_number",
+    "text": "เลขที่บัตร"
+  },
+  {
+    "code": "cash",
+    "text": "เงินสด"
+  },
+  {
+    "code": "cheque",
+    "text": "เช็ค"
+  },
+  {
+    "code": "choose_item_delete",
+    "text": "เลือกรายการที่ต้องการลบ"
+  },
+  {
+    "code": "chosen",
+    "text": "เลือกแล้ว"
+  },
+  {
+    "code": "clear_cash",
+    "text": "ล้างเงินสด"
+  },
+  {
+    "code": "clear_hold_bill",
+    "text": "ลบบิลพัก"
+  },
+  {
+    "code": "close",
+    "text": "ปิด"
+  },
+  {
+    "code": "close_table",
+    "text": "สรุปบิล/ปิดโต๊ะ"
+  },
+  {
+    "code": "color",
+    "text": "สี"
+  },
+  {
+    "code": "combine_table",
+    "text": "รวมโต๊ะ"
+  },
+  {
+    "code": "confirm",
+    "text": "ยืนยัน"
+  },
+  {
+    "code": "confirm_delete",
+    "text": "ต้องการลบข้อมูลหรือไม่"
+  },
+  {
+    "code": "confirm_close_tab_title",
+    "text": "ยืนยันการปิด Tab"
+  },
+  {
+    "code": "confirm_close_tab_message",
+    "text": "คุณต้องการปิด Tab นี้หรือไม่?"
+  },
+  {
+    "code": "count",
+    "text": "ลำดับ"
+  },
+  {
+    "code": "coupon",
+    "text": "คูปอง"
+  },
+  {
+    "code": "credit_card",
+    "text": "บัตรเครดิต"
+  },
+  {
+    "code": "credit_card_save",
+    "text": "บันทึกบัตรเครดิต"
+  },
+  {
+    "code": "customer",
+    "text": "ลูกค้า"
+  },
+  {
+    "code": "customer_group",
+    "text": "กลุ่มลูกค้า"
+  },
+  {
+    "code": "data_editing",
+    "text": "มีการแก้ไขข้อมูล"
+  },
+  {
+    "code": "delete",
+    "text": "ลบ"
+  },
+  {
+    "code": "delete_confirm",
+    "text": "ต้องการลบหรือไม่"
+  },
+  {
+    "code": "delete_picture",
+    "text": "ลบรูป"
+  },
+  {
+    "code": "delete_success",
+    "text": "ลบสำเร็จ"
+  },
+  {
+    "code": "description",
+    "text": "รายละเอียด"
+  },
+  {
+    "code": "detail",
+    "text": "รายละเอียด"
+  },
+  {
+    "code": "discount",
+    "text": "ส่วนลด"
+  },
+  {
+    "code": "discount_and_promoiton",
+    "text": "รายการส่วนลด/โปรโมชั่น"
+  },
+  {
+    "code": "discount_cancel",
+    "text": "ยกเลิกส่วนลด"
+  },
+  {
+    "code": "discount_plus",
+    "text": "ลดอีก"
+  },
+  {
+    "code": "doc_date",
+    "text": "วันที่"
+  },
+  {
+    "code": "doc_no",
+    "text": "เลขที่"
+  },
+  {
+    "code": "doc_number",
+    "text": "เอกสารเลขที่"
+  },
+  {
+    "code": "doc_time",
+    "text": "เวลา"
+  },
+  {
+    "code": "edit",
+    "text": "แก้ไข"
+  },
+  {
+    "code": "edit_success",
+    "text": "แก้ไขสำเร็จ"
+  },
+  {
+    "code": "emp_code",
+    "text": "รหัสพนักงาน"
+  },
+  {
+    "code": "exit",
+    "text": "ออก"
+  },
+  {
+    "code": "get_hold_bill",
+    "text": "ดึงบิลพัก"
+  },
+  {
+    "code": "good_return",
+    "text": "รับคืนสินค้า"
+  },
+  {
+    "code": "group_root",
+    "text": "กลุ่มหลัก"
+  },
+  {
+    "code": "hold_bill",
+    "text": "พักบิล"
+  },
+  {
+    "code": "info",
+    "text": "รายละเอียด"
+  },
+  {
+    "code": "is",
+    "text": "เป็น"
+  },
+  {
+    "code": "item_code",
+    "text": "รหัสสินค้า"
+  },
+  {
+    "code": "item_name",
+    "text": "ชื่อสินค้า"
+  },
+  {
+    "code": "item_not_found",
+    "text": "ไม่พบสินค้า"
+  },
+  {
+    "code": "leave_this_screen",
+    "text": "ต้องการออกจากหน้าจอนี้หรือไม่"
+  },
+  {
+    "code": "line",
+    "text": "บรรทัด"
+  },
+  {
+    "code": "list",
+    "text": "รายการ"
+  },
+  {
+    "code": "login",
+    "text": "เข้าสู่ระบบ"
+  },
+  {
+    "code": "main_screen",
+    "text": "หน้าหลัก"
+  },
+  {
+    "code": "max",
+    "text": "สูงสุด"
+  },
+  {
+    "code": "minus",
+    "text": "ลด"
+  },
+  {
+    "code": "money_symbol",
+    "text": "บาท"
+  },
+  {
+    "code": "move_table",
+    "text": "ย้ายโต๊ะ"
+  },
+  {
+    "code": "name",
+    "text": "ชื่อ"
+  },
+  {
+    "code": "no",
+    "text": "ไม่"
+  },
+  {
+    "code": "not_delete_success",
+    "text": "ลบไม่สำเร็จ"
+  },
+  {
+    "code": "not_edit_success",
+    "text": "แก้ไขไม่สำเร็จ"
+  },
+  {
+    "code": "not_success_save",
+    "text": "บันทึกไม่สำเร็จ"
+  },
+  {
+    "code": "ok",
+    "text": "รับทราบ"
+  },
+  {
+    "code": "one",
+    "text": "หนึ่ง"
+  },
+  {
+    "code": "open_cash_drawer",
+    "text": "เปิดลิ้นชัก"
+  },
+  {
+    "code": "open_table",
+    "text": "เปิดโต๊ะใหม่"
+  },
+  {
+    "code": "order_will_lost",
+    "text": "รายการจะถูกยกเลิก"
+  },
+  {
+    "code": "password",
+    "text": "รหัสผ่าน"
+  },
+  {
+    "code": "pay",
+    "text": "จ่ายชำระ"
+  },
+  {
+    "code": "pay_amount",
+    "text": "ชำระเงิน"
+  },
+  {
+    "code": "piece",
+    "text": "รายการ"
+  },
+  {
+    "code": "plus",
+    "text": "เพิ่ม"
+  },
+  {
+    "code": "pos_number",
+    "text": "หมายเลขเครื่องPOS"
+  },
+  {
+    "code": "pos_screen",
+    "text": "หน้าจอขาย"
+  },
+  {
+    "code": "press_for_select_group",
+    "text": "กดเพื่อเลือกกลุ่ม"
+  },
+  {
+    "code": "price",
+    "text": "ราคา"
+  },
+  {
+    "code": "price_update",
+    "text": "แก้ราคา"
+  },
+  {
+    "code": "print_bill_full",
+    "text": "ใบกำกับอย่างเต็ม"
+  },
+  {
+    "code": "product_group",
+    "text": "กลุ่มสินค้า"
+  },
+  {
+    "code": "product_group_detail",
+    "text": "รายละเอียดกลุ่มสินค้า"
+  },
+  {
+    "code": "product_group_name",
+    "text": "ชื่อกลุ่มสินค้า"
+  },
+  {
+    "code": "product_unit",
+    "text": "หน่วยนับ"
+  },
+  {
+    "code": "promptpay",
+    "text": "พร้อมเพย์"
+  },
+  {
+    "code": "qty",
+    "text": "จำนวน"
+  },
+  {
+    "code": "qty_update",
+    "text": "แก้จำนวน"
+  },
+  {
+    "code": "receive_money",
+    "text": "รับเงินทอน"
+  },
+  {
+    "code": "remark",
+    "text": "หมายเหตุ"
+  },
+  {
+    "code": "reprint_bill",
+    "text": "พิมพ์ใบเสร็จใหม่"
+  },
+  {
+    "code": "restart",
+    "text": "เริ่มใหม่"
+  },
+  {
+    "code": "rolus",
+    "text": "ตำแหน่ง"
+  },
+  {
+    "code": "save",
+    "text": "บันทึก"
+  },
+  {
+    "code": "save_error",
+    "text": "บันทึกไม่สำเร็จ"
+  },
+  {
+    "code": "save_success",
+    "text": "บันทึกสำเร็จ"
+  },
+  {
+    "code": "search",
+    "text": "ค้นหา"
+  },
+  {
+    "code": "search_customer",
+    "text": "ค้นหาลูกค้า"
+  },
+  {
+    "code": "search_product",
+    "text": "ค้นหาสินค้า"
+  },
+  {
+    "code": "select_card_type",
+    "text": "เลือกประเภทบัตร"
+  },
+  {
+    "code": "select_employee",
+    "text": "พนักงานขาย"
+  },
+  {
+    "code": "select_group",
+    "text": "เลือกกลุ่ม"
+  },
+  {
+    "code": "select_member",
+    "text": "ลูกค้า"
+  },
+  {
+    "code": "select_picture",
+    "text": "เลือกรูปภาพ"
+  },
+  {
+    "code": "select_table_first",
+    "text": "เลือกโต๊ะก่อนทำรายการ"
+  },
+  {
+    "code": "send",
+    "text": "บันทึกนำส่งเงิน"
+  },
+  {
+    "code": "send_cash",
+    "text": "เงินสด"
+  },
+  {
+    "code": "send_coupon",
+    "text": "คูปอง"
+  },
+  {
+    "code": "send_credit",
+    "text": "บัตรเครดิต"
+  },
+  {
+    "code": "send_money",
+    "text": "ส่งเงิน"
+  },
+  {
+    "code": "send_promtpay",
+    "text": "พร้อมเพย์"
+  },
+  {
+    "code": "send_total",
+    "text": "รวมมูลค่านำส่ง"
+  },
+  {
+    "code": "send_transfer",
+    "text": "เงินโอน"
+  },
+  {
+    "code": "send_wallet",
+    "text": "เงินโอน"
+  },
+  {
+    "code": "show",
+    "text": "แสดง"
+  },
+  {
+    "code": "speech_to_text_off",
+    "text": "ปิดเสียงพูดแล้ว"
+  },
+  {
+    "code": "speech_to_text_on",
+    "text": "เปิดเสียงพูดแล้ว"
+  },
+  {
+    "code": "split_table",
+    "text": "แยกโต๊ะ"
+  },
+  {
+    "code": "surname",
+    "text": "นามสกุล"
+  },
+  {
+    "code": "table",
+    "text": "โต๊ะ"
+  },
+  {
+    "code": "take_photo",
+    "text": "ถ่ายรูป"
+  },
+  {
+    "code": "telephone",
+    "text": "หมายเลขโทรศัพท์"
+  },
+  {
+    "code": "telephone_primary",
+    "text": "หมายเลขโทรศัพท์หลัก"
+  },
+  {
+    "code": "telephone_secondary",
+    "text": "หมายเลขโทรศัพท์สำรอง"
+  },
+  {
+    "code": "thankyou",
+    "text": "ขอบคุณ"
+  },
+  {
+    "code": "title",
+    "text": "dede POS"
+  },
+  {
+    "code": "total",
+    "text": "รวม"
+  },
+  {
+    "code": "total_after_discount_and_promoiton",
+    "text": "รวมเงินหลังหักส่วนลด/โปรโมชั่น"
+  },
+  {
+    "code": "total_amount",
+    "text": "รวมเงินทั้งสิ้น"
+  },
+  {
+    "code": "total_diff",
+    "text": "เงินทอน"
+  },
+  {
+    "code": "total_discount",
+    "text": "รวมส่วนลดทั้งสิ้น"
+  },
+  {
+    "code": "total_more_diff",
+    "text": "ต้องชำระอีก"
+  },
+  {
+    "code": "total_pay_amount",
+    "text": "ยอดชำระรวมทั้งสิ้น"
+  },
+  {
+    "code": "total_pay_amount_card",
+    "text": "ยอดชำระด้วยบัตรเครดิต"
+  },
+  {
+    "code": "total_pay_amount_cash",
+    "text": "ยอดชำระด้วยเงินสด"
+  },
+  {
+    "code": "total_pay_amount_cheque",
+    "text": "ยอดชำระด้วยเช็ค"
+  },
+  {
+    "code": "total_pay_amount_coupon",
+    "text": "รวมหักคูปอง"
+  },
+  {
+    "code": "total_pay_amount_diff",
+    "text": "ยอดคงเหลือหรือปัดเศษ"
+  },
+  {
+    "code": "total_pay_amount_discount",
+    "text": "รวมหักส่วนลด"
+  },
+  {
+    "code": "total_pay_amount_half",
+    "text": "ยอดชำระด้วยคนละครึ่ง"
+  },
+  {
+    "code": "total_pay_amount_promptpay",
+    "text": "ยอดชำระด้วยพร้อมเพย์"
+  },
+  {
+    "code": "total_pay_amount_transfer",
+    "text": "ยอดชำระด้วยการโอน"
+  },
+  {
+    "code": "total_pay_amount_wallet",
+    "text": "ยอดชำระด้วยWallet"
+  },
+  {
+    "code": "total_pay_bill",
+    "text": "ชำระเงินทั้งหมด"
+  },
+  {
+    "code": "total_qty",
+    "text": "รวมจำนวน"
+  },
+  {
+    "code": "transfer",
+    "text": "เงินโอน"
+  },
+  {
+    "code": "unit_code",
+    "text": "รหัสหน่วยนับ"
+  },
+  {
+    "code": "unit_name",
+    "text": "ชื่อหน่วยนับ"
+  },
+  {
+    "code": "wallet",
+    "text": "วอลเล็ต"
+  },
+  {
+    "code": "warning",
+    "text": "แจ้งเตือน"
+  },
+  {
+    "code": "yes",
+    "text": "ใช่"
+  },
+  {
+    "code": "product_name",
+    "text": "ชื่อสินค้า"
+  },
+  {
+    "code": "add_option",
+    "text": "เพิ่มตัวเลือก"
+  },
+  {
+    "code": "option_name",
+    "text": "ชื่อตัวเลือก"
+  },
+  {
+    "code": "add_choice",
+    "text": "เพิ่มทางเลือก"
+  },
+  {
+    "code": "choice_name",
+    "text": "ชื่อทางเลือก"
+  },
+  {
+    "code": "option_max_select_choice",
+    "text": "เลือกได้สูงสุด"
+  },
+  {
+    "code": "choice_product_stock_qty",
+    "text": "จำนวนตัดสต๊อก"
+  },
+  {
+    "code": "choice_add_price_percent",
+    "text": "ราคาเพิ่ม (จำนวนเงิน,เปอร์เซ็นต์)"
+  },
+  {
+    "code": "choice_is_stock",
+    "text": "ตัดสต๊อก"
+  },
+  {
+    "code": "product_code",
+    "text": "รหัสสินค้า"
+  },
+  {
+    "code": "choice_stock_qty",
+    "text": "จำนวนตัดสต๊อก"
+  },
+  {
+    "code": "choice",
+    "text": "เงื่อนไข"
+  },
+  {
+    "code": "option",
+    "text": "ตัวเลือก"
+  },
+  {
+    "code": "option_min_select_choice",
+    "text": "เลือกได้น้อยสุด"
+  },
+  {
+    "code": "customer_group",
+    "text": "กลุ่มลูกค้า"
+  },
+  {
+    "code": "customer_group_code",
+    "text": "รหัสกลุ่มลูกค้า"
+  },
+  {
+    "code": "customer_group_name",
+    "text": "ชื่อกลุ่มลูกค้า"
+  },
+  {
+    "code": "customer",
+    "text": "ลูกค้า"
+  },
+  {
+    "code": "customer_code",
+    "text": "รหัสลูกค้า"
+  },
+  {
+    "code": "customer_name",
+    "text": "ชื่อลูกค้า"
+  },
+  {
+    "code": "tax_address_1",
+    "text": "ที่อยู่เอกสารภาษี 1"
+  },
+  {
+    "code": "tax_address_2",
+    "text": "ที่อยู่เอกสารภาษี 2"
+  },
+  {
+    "code": "tax_address_3",
+    "text": "ที่อยู่เอกสารภาษี 3"
+  },
+  {
+    "code": "address_country",
+    "text": "ประเทศ"
+  },
+  {
+    "code": "address_province",
+    "text": "จังหวัด"
+  },
+  {
+    "code": "address_district",
+    "text": "อำเภอ"
+  },
+  {
+    "code": "address_sub_district",
+    "text": "ตำบล"
+  },
+  {
+    "code": "address_zipcode",
+    "text": "รหัสไปรษณีย์"
+  },
+  {
+    "code": "contace",
+    "text": "ผู้ติดต่อ"
+  },
+  {
+    "code": "address_location_pin",
+    "text": "ตำแหน่งในแผนที่"
+  },
+  {
+    "code": "address_location_pin_sucess",
+    "text": "กำหนดตำแหน่งแล้ว"
+  },
+  {
+    "code": "customer_tax_id_card_number",
+    "text": "เลขที่บัตรประชาชน"
+  },
+  {
+    "code": "customer_tax_id_bussiness",
+    "text": "เลขที่ผู้เสียภาษี"
+  },
+  {
+    "code": "customer_email",
+    "text": "อีเมล"
+  },
+  {
+    "code": "add_picture",
+    "text": "เพิ่มรูปภาพ"
+  },
+  {
+    "code": "add_address_shipping",
+    "text": "เพิ่มที่อยู่ส่งสินค้า"
+  },
+  {
+    "code": "shipping_address_1",
+    "text": "ที่อยู่ส่งสินค้า 1"
+  },
+  {
+    "code": "shipping_address_2",
+    "text": "ที่อยู่ส่งสินค้า 2"
+  },
+  {
+    "code": "shipping_address_3",
+    "text": "ที่อยู่ส่งสินค้า 3"
+  },
+  {
+    "code": "shipping_telephone_primary",
+    "text": "หมายเลขโทรศัพท์ที่ส่งสินค้า"
+  },
+  {
+    "code": "shipping_telephone_secondary",
+    "text": "หมายเลขโทรศัพท์สำรองที่ส่งสินค้า"
+  },
+  {
+    "code": "product",
+    "text": "สินค้า"
+  },
+  {
+    "code": "product_unit_standard",
+    "text": "หน่วยนับมาตรฐาน"
+  },
+  {
+    "code": "product_single_unit",
+    "text": "หน่วยนับเดี่ยว"
+  },
+  {
+    "code": "product_multi_unit",
+    "text": "หลายหน่วยนับ"
+  },
+  {
+    "code": "product_unit_stand",
+    "text": "ตัวตั้ง"
+  },
+  {
+    "code": "product_unit_divider",
+    "text": "ตัวหาร"
+  },
+  {
+    "code": "product_unit_code",
+    "text": "รหัสหน่วยนับ"
+  },
+  {
+    "code": "product_unit_name",
+    "text": "ชื่อหน่วยนับ"
+  },
+  {
+    "code": "product_unit_add",
+    "text": "เพิ่มหน่วยนับ"
+  },
+  {
+    "code": "product_unit_stock_count",
+    "text": "ใช้นับสต๊อก"
+  },
+  {
+    "code": "product_unit_cost",
+    "text": "หน่วยต้นทุน"
+  },
+  {
+    "code": "product_is_stock",
+    "text": "สินค้ามีสต๊อก"
+  },
+  {
+    "code": "procust_is_service",
+    "text": "บริการไม่มีสต๊อก"
+  },
+  {
+    "code": "product_vat_type_1",
+    "text": "สินค้ามีภาษีมูลค่าเพิ่ม"
+  },
+  {
+    "code": "product_vat_type_2",
+    "text": "สินค้ายกเว้นภาษีมูลค่าเพิ่ม"
+  },
+  {
+    "code": "product_use_point_1",
+    "text": "คิดคะแนนสะสม"
+  },
+  {
+    "code": "product_use_point_2",
+    "text": "ไม่คิดคะแนนสะสม"
+  },
+  {
+    "code": "product_image_add",
+    "text": "เพิ่มรูปภาพ"
+  },
+  {
+    "code": "customer_individual",
+    "text": "บุคคลธรรมดา"
+  },
+  {
+    "code": "customer_company",
+    "text": "นิติบุคคล"
+  },
+  {
+    "code": "product_option_choice_type_multi",
+    "text": "เลือกได้หลายเงื่อนไข"
+  },
+  {
+    "code": "product_option_choice_type_single",
+    "text": "เลือกได้เงื่อนไขเดียว"
+  },
+  {
+    "code": "product_is_service",
+    "text": "ประเภทสินค้าบริการ"
+  },
+  {
+    "code": "after_discount",
+    "text": "หลังหักส่วนลด"
+  },
+  {
+    "code": "qr_code",
+    "text": "คิวอาร์โค๊ด"
+  },
+  {
+    "code": "money_transfer",
+    "text": "เงินโอน"
+  },
+  {
+    "code": "cheque",
+    "text": "เช็ค"
+  },
+  {
+    "code": "total_amount_product_service",
+    "text": "รวมสินค้าและบริการ"
+  },
+  {
+    "code": "total_payment_amount",
+    "text": "ยอดรวมชำระเงิน"
+  },
+  {
+    "code": "money_change",
+    "text": "เงินทอน"
+  },
+  {
+    "code": "money_transfer",
+    "text": "เงินโอน"
+  },
+  {
+    "code": "not_ready",
+    "text": "ไม่พร้อมใช้งาน"
+  },
+  {
+    "code": "printer",
+    "text": "เครื่องพิมพ์"
+  },
+  {
+    "code": "signin",
+    "text": "ลงชื่อเข้าใช้งาน"
+  },
+  {
+    "code": "signup",
+    "text": "ลงทะเบียนเข้าใช้งาน"
+  },
+  {
+    "code": "signin_desciption",
+    "text": "ใช้อีเมลหรือบริการอื่นของคุณเพื่อใช้งาน Dede account"
+  },
+  {
+    "code": "singin_with",
+    "text": "ลงชื่อเข้าใช้ด้วย"
+  },
+  {
+    "code": "singin_with_telephone",
+    "text": "ลงชื่อเข้าใช้ด้วยหมายเลขโทรศัพท์มือถือ"
+  },
+  {
+    "code": "login_user",
+    "text": "เข้าสู่ระบบผู้ใช้งาน"
+  },
+  {
+    "code": "user_have_account",
+    "text": "หากคุณไม่มีบัญชี ?"
+  },
+  {
+    "code": "accept_term",
+    "text": "เมื่อดำเนินการต่อไป คุณได้ยอมรับ "
+  },
+  {
+    "code": "another_login",
+    "text": "เข้าสุ่ระบบด้วยวิธีอื่น"
+  },
+  {
+    "code": "signUp_with",
+    "text": "สมัครใช้งานด้วย"
+  },
+  {
+    "code": "signUp_with",
+    "text": "สมัครใช้งานด้วยวิธีอื่น"
+  },
+  {
+    "code": "userif_have",
+    "text": "หากคุณมีบัญชีอยู่แล้ว"
+  },
+  {
+    "code": "select_shop",
+    "text": "เลือกกิจการ"
+  },
+  {
+    "code": "shop_count",
+    "text": "จำนวนกิจการทั้งหมด"
+  },
+  {
+    "code": "shop",
+    "text": "กิจการ"
+  },
+  {
+    "code": "selected_shop",
+    "text": "เลือกข้อมูล"
+  },
+  {
+    "code": "account_chart",
+    "text": "ผังบัญชี"
+  },
+  {
+    "code": "account_entry",
+    "text": "บันทึกรายการบัญชี"
+  },
+  {
+    "code": "img",
+    "text": "รูปภาพ"
+  },
+  {
+    "code": "user",
+    "text": "ผู้ใช้งาน"
+  },
+  {
+    "code": "search",
+    "text": "ค้นหา"
+  },
+  {
+    "code": "accGroup",
+    "text": "สำหรับชุดบัญชี :"
+  },
+  {
+    "code": "closing_entry",
+    "text": "รวมรายการปิดบัญชีสิ้นปี "
+  },
+  {
+    "code": "sincetime",
+    "text": "ช่วงระหว่างวันที่"
+  },
+  {
+    "code": "totime",
+    "text": "ถึงวันที่"
+  },
+  {
+    "code": "process ",
+    "text": "ประมวลผล"
+  },
+  {
+    "code": "statement",
+    "text": "รายงานทางการเงิน"
+  },
+  {
+    "code": "trial",
+    "text": "งบทดลอง"
+  },
+  {
+    "code": "account_name",
+    "text": "ชื่อบัญชี"
+  },
+  {
+    "code": "account_code",
+    "text": "รหัสบัญชี"
+  },
+  {
+    "code": "balanceamount",
+    "text": "ยอดยกมา"
+  },
+  {
+    "code": "monthly_statement",
+    "text": "ยอดประจำงวด"
+  },
+  {
+    "code": "nextbalanceamount",
+    "text": "ยอดสะสม"
+  },
+  {
+    "code": "debit",
+    "text": "เดบิต"
+  },
+  {
+    "code": "credit",
+    "text": "เครดิต"
+  },
+  {
+    "code": "amount",
+    "text": "ยอดรวม"
+  },
+  {
+    "code": "export",
+    "text": "ส่งออก"
+  },
+  {
+    "code": "date",
+    "text": "วันที่"
+  },
+  {
+    "code": "docno",
+    "text": "เลขที่เอกสาร"
+  },
+  {
+    "code": "description",
+    "text": "รายละเอียด"
+  },
+  {
+    "code": "ledger",
+    "text": "บัญชีแยกประเภท"
+  },
+  {
+    "code": "journal",
+    "text": "ข้อมูลรายวัน"
+  },
+  {
+    "code": "vat",
+    "text": "ข้อมููลภาษี"
+  },
+  {
+    "code": "taxes",
+    "text": "ภาษีถูกหัก / หัก ณ ที่จ่าย"
+  },
+  {
+    "code": "img_name",
+    "text": "ชื่อรูป"
+  },
+  {
+    "code": "by",
+    "text": "โดย"
+  },
+  {
+    "code": "from_acc_code",
+    "text": "ผังบัญชีที่"
+  },
+  {
+    "code": "to_acc_code",
+    "text": "ถึงผังบัญชีที่"
+  },
+  {
+    "code": "acctive_ac",
+    "text": "ผังบัญชีที่ี่ไม่เคลื่อนไหว"
+  },
+  {
+    "code": "range_acc",
+    "text": "เลือกช่วงผังบัญชี"
+  },
+  {
+    "code": "balancesheet",
+    "text": "งบดุล"
+  },
+  {
+    "code": "enddate",
+    "text": "สิ้นสุดวันที่"
+  },
+  {
+    "code": "all_acc",
+    "text": "แสดงผังบัญชีทั้งหมด"
+  },
+  {
+    "code": "consolidate_acc",
+    "text": "รหัสผังบัญชีคุม"
+  },
+  {
+    "code": "status",
+    "text": "สถานะ"
+  },
+  {
+    "code": "chart_of_acc",
+    "text": "รหัสผังบัญชี"
+  },
+  {
+    "code": "acc_years",
+    "text": "ปีบัญชี"
+  },
+  {
+    "code": "acc_period",
+    "text": "งวดบัญชี"
+  },
+  {
+    "code": "Profit_loss",
+    "text": "งบกำไรขาดทุน"
+  },
+  {
+    "code": "terms",
+    "text": "ข้อตกลงในการใช้งาน"
+  },
+  {
+    "code": "read",
+    "text": "อ่าน"
+  },
+  {
+    "code": "privacy",
+    "text": "นโยบายความเป็นส่วนตัว ของเรา"
+  },
+  {
+    "code": "remember",
+    "text": "จดจำรหัสผ่าน"
+  },
+  {
+    "code": "forgot_pass",
+    "text": "ลืมรหัสผ่าน?"
+  },
+  {
+    "code": "or",
+    "text": "หรือ"
+  },
+  {
+    "code": "email",
+    "text": "อีเมลล์"
+  },
+  {
+    "code": "username",
+    "text": "ชื่อ"
+  },
+  {
+    "code": "con_password",
+    "text": "ยืนยันรหัสผ่าน"
+  },
+  {
+    "code": "turn_of",
+    "text": "ปิด"
+  },
+  {
+    "code": "acc_level",
+    "text": "ระดับบัญชี"
+  },
+  {
+    "code": "acc_cat",
+    "text": "หมวดบัญชี"
+  },
+  {
+    "code": "acc_balance_type",
+    "text": "ด้านบัญชี"
+  },
+  {
+    "code": "docno_ref",
+    "text": "เลขที่เอกสารอ้างอิง"
+  },
+  {
+    "code": "doc_date",
+    "text": "เอกสารวันที่"
+  },
+  {
+    "code": "docdate_ref",
+    "text": "วันที่อ้างอิง"
+  },
+  {
+    "code": "type",
+    "text": "ประเภทรายการ"
+  },
+  {
+    "code": "close_entry",
+    "text": "ปิดบัญชี"
+  },
+  {
+    "code": "general",
+    "text": "ทั่วไป"
+  },
+  {
+    "code": "remove",
+    "text": "ลบ"
+  },
+  {
+    "code": "add",
+    "text": "เพิ่ม"
+  },
+  {
+    "code": "move",
+    "text": "ย้าย"
+  },
+  {
+    "code": "vat_base",
+    "text": "ฐานภาษี"
+  },
+  {
+    "code": "vat_exem",
+    "text": "ยอดยกเว้นภาษี"
+  },
+  {
+    "code": "vat_date",
+    "text": "วันที่ใบกำกับ"
+  },
+  {
+    "code": "vat_num",
+    "text": "เลขที่ใบกำกับ"
+  },
+  {
+    "code": "tax_payer",
+    "text": "เลขประจำตัวผู้เสียภาษี/เลขที่บัตรประชาชน"
+  },
+  {
+    "code": "organize",
+    "text": "สถานประกอบการ"
+  },
+  {
+    "code": "head_of",
+    "text": "สำนักงานใหญ่"
+  },
+  {
+    "code": "sub_of",
+    "text": "สาขา"
+  },
+  {
+    "code": "sub_of_number",
+    "text": "ลำดับสาขา"
+  },
+  {
+    "code": "vat_year",
+    "text": "ปีภาษี"
+  },
+  {
+    "code": "vat_month",
+    "text": "เดือนภาษี"
+  },
+  {
+    "code": "vat_rate",
+    "text": "อัตราภาษี (%)"
+  },
+  {
+    "code": "vatinfo",
+    "text": "ภาษี"
+  },
+  {
+    "code": "vat_type",
+    "text": "ประเภทภาษี"
+  },
+  {
+    "code": "vat_input",
+    "text": "ภาษีซื้อ"
+  },
+  {
+    "code": "vat_output",
+    "text": "ภาษีขาย"
+  },
+  {
+    "code": "normal",
+    "text": "ปกติ"
+  },
+  {
+    "code": "not_refund",
+    "text": "ขอคืนไม่ได้"
+  },
+  {
+    "code": "nort_due",
+    "text": "ยังไม่ถึงกำหนดชำระ"
+  },
+  {
+    "code": "vat_amount",
+    "text": "ยอดภาษี"
+  },
+  {
+    "code": "additonal",
+    "text": "ยื่นเพิ่มเติม"
+  },
+  {
+    "code": "add ",
+    "text": "เพิ่ม"
+  },
+  {
+    "code": "group_code",
+    "text": "รหัสกลุ่ม"
+  },
+  {
+    "code": "group_name",
+    "text": "ชื่อกลุ่ม"
+  },
+  {
+    "code": "staff",
+    "text": "พนักงาน"
+  },
+  {
+    "code": "wallet_provider",
+    "text": "ผู้ให้บริการกระเป๋าเงิน"
+  },
+  {
+    "code": "thai_qr",
+    "text": "ชำระด้วยไทยคิวอาร์โค๊ด"
+  },
+  {
+    "code": "product_category",
+    "text": "หมวดสินค้า"
+  },
+  {
+    "code": "product_group_code",
+    "text": "กลุ่มสินค้า"
+  },
+  {
+    "code": "must",
+    "text": "ต้องเลือก"
+  },
+  {
+    "code": "product_category",
+    "text": "หมวดสินค้า"
+  },
+  {
+    "code": "staff",
+    "text": "พนักงาน"
+  },
+  {
+    "code": "wallet_provider",
+    "text": "ผู้ให้บริการกระเป๋าเงิน"
+  },
+  {
+    "code": "thai_qr",
+    "text": "ชำระเงินด้วยไทยคิวอาร์โค๊ด"
+  },
+  {
+    "code": "product_category_name",
+    "text": "ชื่อหมวดสินค้า"
+  },
+  {
+    "code": "select_category",
+    "text": "เลือกหมวด"
+  },
+  {
+    "code": "company_branch",
+    "text": "สาขา"
+  },
+  {
+    "code": "book_bank",
+    "text": "สมุดธนาคาร"
+  },
+  {
+    "code": "connect_kitchen_printer",
+    "text": "เชื่อมต่อเครื่องพิมพ์ห้องครัว"
+  },
+  {
+    "code": "holidays",
+    "text": "วันหยุดพิเศษ"
+  },
+  {
+    "code": "company",
+    "text": "บริษัท"
+  },
+  {
+    "code": "table_map",
+    "text": "แผนผังโต๊ะ"
+  },
+  {
+    "code": "kitchen",
+    "text": "ห้องครัว"
+  },
+  {
+    "code": "product_category_list",
+    "text": "จัดสินค้าในหมวดสินค้า"
+  },
+  {
+    "code": "menu_setup",
+    "text": "ค่าเริ่มต้น"
+  },
+  {
+    "code": "employee",
+    "text": "พนักงาน"
+  },
+  {
+    "code": "workday",
+    "text": "วันทำงาน"
+  },
+  {
+    "code": "product_bom",
+    "text": "สูตรผลิต"
+  },
+  {
+    "code": "company_branch_department",
+    "text": "แผนก"
+  },
+  {
+    "code": "company_type",
+    "text": "ประเภทธุรกิจ"
+  },
+  {
+    "code": "unit",
+    "text": "หน่วยนับ"
+  },
+  {
+    "code": "use",
+    "text": "ใช้"
+  },
+  {
+    "code": "choose_color",
+    "text": "เลือกสี"
+  },
+  {
+    "code": "use_color",
+    "text": "ใช้สี"
+  },
+  {
+    "code": "select_product_category",
+    "text": "เลือกหมวดสินค้า"
+  },
+  {
+    "code": "branch_number",
+    "text": "หมายเลขสาขา"
+  },
+  {
+    "code": "branch",
+    "text": "สาขา"
+  },
+  {
+    "code": "head_office",
+    "text": "สำนักงานใหญ่"
+  },
+  {
+    "code": "group",
+    "text": "กลุ่ม"
+  },
+  {
+    "code": "company_branch_name",
+    "text": "ชื่อสาขา"
+  },
+  {
+    "code": "company_email_owner",
+    "text": "อีเมลเจ้าของ"
+  },
+  {
+    "code": "company_telephone",
+    "text": "หมายเลขโทรศัพท์"
+  },
+  {
+    "code": "company_tax_id",
+    "text": "เลขที่ผู้เสียภาษี"
+  },
+  {
+    "code": "company_longitude",
+    "text": "ลองติจูด"
+  },
+  {
+    "code": "company_address",
+    "text": "ที่อยู่"
+  },
+  {
+    "code": "company_email_staff",
+    "text": "อีเมลแอดมิน"
+  },
+  {
+    "code": "company_name",
+    "text": "ชื่อบริษัท"
+  },
+  {
+    "code": "company_latitude",
+    "text": "ละติจูด"
+  },
+  {
+    "code": "menu_home",
+    "text": "หน้าแรก"
+  },
+  {
+    "code": "qr_payment",
+    "text": "จ่ายด้วย QR"
+  },
+  {
+    "code": "number",
+    "text": "หมายเลข"
+  },
+  {
+    "code": "bookBank_code",
+    "text": "รหัสสมุดธนาคาร"
+  },
+  {
+    "code": "inactive",
+    "text": "ปิดใช้งาน"
+  },
+  {
+    "code": "xxx",
+    "text": ""
+  },
+  {
+    "code": "Active",
+    "text": "ใช้งาน"
+  },
+  {
+    "code": "citizen_id",
+    "text": "รหัสบัตรประชาชน"
+  },
+  {
+    "code": "qr_name",
+    "text": "ชื่อ QR"
+  },
+  {
+    "code": "qr_provider",
+    "text": "ผู้ให้บริการคิวอาร์โค๊ด"
+  },
+  {
+    "code": "citizen_id",
+    "text": "รหัสบัตรประชาชน"
+  },
+  {
+    "code": "Active",
+    "text": "ใช้งาน"
+  },
+  {
+    "code": "qr_name",
+    "text": "ชื่อ QR"
+  },
+  {
+    "code": "qr_provider",
+    "text": "ผู้ให้บริการคิวอาร์โค๊ด"
+  },
+  {
+    "code": "bank_code",
+    "text": "รหัสธนาคาร"
+  },
+  {
+    "code": "bank_name",
+    "text": "ชื่อธนาคาร"
+  },
+  {
+    "code": "Table_number",
+    "text": "เลขโต๊ะ"
+  },
+  {
+    "code": "Tables",
+    "text": "โต๊ะ"
+  },
+  {
+    "code": "Table_name",
+    "text": "ชื่อโต๊ะ"
+  },
+  {
+    "code": "zone",
+    "text": "โซน"
+  },
+  {
+    "code": "kitchen_code",
+    "text": "รหัสครัว"
+  },
+  {
+    "code": "kitchen_name",
+    "text": "ชื่อครัว"
+  },
+  {
+    "code": "spare",
+    "text": ""
+  },
+  {
+    "code": "primary",
+    "text": "หลัก"
+  },
+  {
+    "code": "employee_code",
+    "text": "รหัสพนักงาน"
+  },
+  {
+    "code": "product_employee",
+    "text": ""
+  },
+  {
+    "code": "employee_name",
+    "text": "ชื่อพนักงาน"
+  },
+  {
+    "code": "kitchenprinter",
+    "text": ""
+  },
+  {
+    "code": "printer_primary",
+    "text": "เครื่องพิมพ์"
+  },
+  {
+    "code": "printer_secondary",
+    "text": "เครื่องพิมพ์สำรอง"
+  },
+  {
+    "code": "kitchen_printer",
+    "text": "เครื่องพิมพ์ห้องครัว"
+  },
+  {
+    "code": "kitchen_secondary",
+    "text": ""
+  },
+  {
+    "code": "colors",
+    "text": "สี"
+  },
+  {
+    "code": "color_code",
+    "text": "รหัสสี"
+  },
+  {
+    "code": "color_choose",
+    "text": "เลือกสี"
+  },
+  {
+    "code": "color_name",
+    "text": "ชื่อสี"
+  },
+  {
+    "code": "book_bank_code",
+    "text": "รหัสสมุดบัญชี"
+  },
+  {
+    "code": "book_bank_name",
+    "text": "ชื่อสมุดบัญชี"
+  },
+  {
+    "code": "pass_book",
+    "text": "เลขที่บัญชี"
+  },
+  {
+    "code": "wallet_code",
+    "text": "รหัสกระเป๋าเงิน"
+  },
+  {
+    "code": "wallet provider",
+    "text": "ผู้ให้บริการกระเป๋าเงิน"
+  },
+  {
+    "code": "active",
+    "text": "ใช้งาน"
+  },
+  {
+    "code": "bookbank",
+    "text": "สมุดบัญชีธนาคาร"
+  },
+  {
+    "code": "bookbank_code",
+    "text": "รหัสสมุดบัญชี"
+  },
+  {
+    "code": "add_product_to_department",
+    "text": "เพิ่มสินค้าให้แผนก"
+  },
+  {
+    "code": "add_product_to_branch",
+    "text": "เพิ่มสินค้าให้สาขา"
+  },
+  {
+    "code": "add_product_from_data_center",
+    "text": "เพิ่มสินค้าจากฐานข้อมูลกลาง"
+  },
+  {
+    "code": "product_option",
+    "text": "ตัวเลือกสินค้า"
+  },
+  {
+    "code": "product_location",
+    "text": "พื้นที่เก็บ"
+  },
+  {
+    "code": "product_ware_house",
+    "text": "คลัง"
+  },
+  {
+    "code": "product_shelf",
+    "text": "ชั้นวางสินค้า"
+  },
+  {
+    "code": "product_price_list",
+    "text": "ตารางราคา"
+  },
+  {
+    "code": "menu_transaction",
+    "text": "ข้อมูลประจำวัน"
+  },
+  {
+    "code": "transaction_purchase",
+    "text": "ซื้อสินค้า"
+  },
+  {
+    "code": "transaction",
+    "text": "ขายสินค้า"
+  },
+  {
+    "code": "transaction_purchase_return",
+    "text": "ส่งคืนสินค้า"
+  },
+  {
+    "code": "transaction_stock_transfer",
+    "text": "โอนสินค้า"
+  },
+  {
+    "code": "transaction_sale_return",
+    "text": "รับคืนสินค้า"
+  },
+  {
+    "code": "transaction_stock_receive_product",
+    "text": "รับสินค้า"
+  },
+  {
+    "code": "transaction_purchase_partial",
+    "text": "รับสินค้าแบบทยอย"
+  },
+  {
+    "code": "transaction_stock_pick_up_product",
+    "text": "เบิกสินค้า"
+  },
+  {
+    "code": "transaction_sale",
+    "text": "ขายสินค้า"
+  },
+  {
+    "code": "invalid_date",
+    "text": "วันที่ไม่ถูกต้อง"
+  },
+  {
+    "code": "company_telephone = 8",
+    "text": ""
+  },
+  {
+    "code": "company_telephone = 10",
+    "text": ""
+  },
+  {
+    "code": "company_telephone = 9",
+    "text": ""
+  },
+  {
+    "code": "company_email_owner  = 11",
+    "text": ""
+  },
+  {
+    "code": "company_email_owner  = 13",
+    "text": ""
+  },
+  {
+    "code": "company_email_owner  = 12",
+    "text": ""
+  },
+  {
+    "code": "company_longitude  = 18",
+    "text": ""
+  },
+  {
+    "code": "company_email_staff  = 14",
+    "text": ""
+  },
+  {
+    "code": "company_email_staff  = 15",
+    "text": ""
+  },
+  {
+    "code": "company_latitude  = 17",
+    "text": ""
+  },
+  {
+    "code": "company_email_staff  = 16",
+    "text": ""
+  },
+  {
+    "code": "company_telephone = 26",
+    "text": ""
+  },
+  {
+    "code": "company_email_owner  = 28",
+    "text": ""
+  },
+  {
+    "code": "company_email_staff  = 32",
+    "text": ""
+  },
+  {
+    "code": "company_latitude  = 33",
+    "text": ""
+  },
+  {
+    "code": "company_telephone = 25",
+    "text": ""
+  },
+  {
+    "code": "company_telephone = 24",
+    "text": ""
+  },
+  {
+    "code": "company_longitude  = 34",
+    "text": ""
+  },
+  {
+    "code": "company_email_owner  = 27",
+    "text": ""
+  },
+  {
+    "code": "company_email_staff  = 30",
+    "text": ""
+  },
+  {
+    "code": "company_tax_id  = 19",
+    "text": ""
+  },
+  {
+    "code": "company_email_staff  = 31",
+    "text": ""
+  },
+  {
+    "code": "company_email_owner  = 29",
+    "text": ""
+  },
+  {
+    "code": "company_latitude  = 34",
+    "text": ""
+  },
+  {
+    "code": "company_email_staff  = 34",
+    "text": ""
+  },
+  {
+    "code": "company_telephone = 34",
+    "text": ""
+  },
+  {
+    "code": "company_email_owner  = 34",
+    "text": ""
+  },
+  {
+    "code": "company_tax_id  = 34",
+    "text": ""
+  },
+  {
+    "code": "company_longitude  = 0",
+    "text": ""
+  },
+  {
+    "code": "company_email_staff  = 0",
+    "text": ""
+  },
+  {
+    "code": "company_telephone = 0",
+    "text": ""
+  },
+  {
+    "code": "company_tax_id  = 0",
+    "text": ""
+  },
+  {
+    "code": "company_latitude  = 0",
+    "text": ""
+  },
+  {
+    "code": "company_email_owner  = 0",
+    "text": ""
+  },
+  {
+    "code": "company_email_staff  = 1",
+    "text": ""
+  },
+  {
+    "code": "company_email_owner  = 1",
+    "text": ""
+  },
+  {
+    "code": "company_telephone = 1",
+    "text": ""
+  },
+  {
+    "code": "company_tax_id  = 1",
+    "text": ""
+  },
+  {
+    "code": "company_latitude  = 1",
+    "text": ""
+  },
+  {
+    "code": "company_longitude  = 1",
+    "text": ""
+  },
+  {
+    "code": "company_tax_id  = 2",
+    "text": ""
+  },
+  {
+    "code": "company_email_staff  = 2",
+    "text": ""
+  },
+  {
+    "code": "company_email_owner  = 2",
+    "text": ""
+  },
+  {
+    "code": "company_telephone = 2",
+    "text": ""
+  },
+  {
+    "code": "company_longitude  = 2",
+    "text": ""
+  },
+  {
+    "code": "company_latitude  = 2",
+    "text": ""
+  },
+  {
+    "code": "employee_email",
+    "text": "อีเมล์"
+  },
+  {
+    "code": "doc_supplier_name",
+    "text": "ชื่อเจ้าหนี้"
+  },
+  {
+    "code": "doc_supplier_code",
+    "text": "รหัสเจ้าหนี้"
+  },
+  {
+    "code": "sale_name",
+    "text": "ชื่อพนักงาน"
+  },
+  {
+    "code": "sale_code",
+    "text": "รหัสพนักงาน"
+  },
+  {
+    "code": "vat_exclude",
+    "text": "ราคาไม่รวมภาษี"
+  },
+  {
+    "code": "vat_include",
+    "text": "ราคารวมภาษี"
+  },
+  {
+    "code": "var_rate",
+    "text": "อัตราภาษี"
+  },
+  {
+    "code": "add_new_line",
+    "text": "เพิ่มรายการใหม่"
+  },
+  {
+    "code": "add_new_line_by_barcode",
+    "text": "เพิ่มรายการใหม่ด้วยบาร์โค้ด"
+  },
+  {
+    "code": "add_new_line_by_search",
+    "text": "เพิ่มรายการใหม่ด้วยการค้นหา"
+  },
+  {
+    "code": "product_price",
+    "text": "ราคา"
+  },
+  {
+    "code": "product_total",
+    "text": "รวม"
+  },
+  {
+    "code": "product_qty",
+    "text": "จำนวน"
+  },
+  {
+    "code": "product_amount",
+    "text": "รวมทั้งสิ้น"
+  },
+  {
+    "code": "product_discount",
+    "text": "ส่วนลด"
+  },
+  {
+    "code": "product_vat",
+    "text": "ภาษี"
+  },
+  {
+    "code": "line_number",
+    "text": "ลำดับ"
+  },
+  {
+    "code": "doc_discount",
+    "text": "ส่วนลด"
+  },
+  {
+    "code": "open",
+    "text": "เปิด"
+  },
+  {
+    "code": "doc_total_amount",
+    "text": "ยอดรวมทั้งสิ้น"
+  },
+  {
+    "code": "doc_except_vat_amount",
+    "text": "ยอดรวมสินค้ายกเว้นภาษี"
+  },
+  {
+    "code": "doc_vat_amount",
+    "text": "ภาษีมูลค่าเพิ่ม"
+  },
+  {
+    "code": "doc_discount_amount",
+    "text": "ยอดส่วนลด"
+  },
+  {
+    "code": "doc_after_vat_amount",
+    "text": "ยอดรวมสินค้ามีภาษี"
+  },
+  {
+    "code": "off",
+    "text": "ปิด"
+  },
+  {
+    "code": "sunday",
+    "text": "วันอาทิตย์"
+  },
+  {
+    "code": "wendesday",
+    "text": "วันพุธ"
+  },
+  {
+    "code": "erorworkday group not found\"",
+    "text": ""
+  },
+  {
+    "code": "thursday",
+    "text": "วันพฤหัสบดี"
+  },
+  {
+    "code": "monday",
+    "text": "วันจันทร์"
+  },
+  {
+    "code": "saturday",
+    "text": "วันเสาร์"
+  },
+  {
+    "code": "tuesday",
+    "text": "วันอังคาร"
+  },
+  {
+    "code": "friday",
+    "text": "วันศุกร์"
+  },
+  {
+    "code": "desc",
+    "text": "เรียงจากมากไปน้อย"
+  },
+  {
+    "code": "table_number",
+    "text": "เลขที่โต๊ะ"
+  },
+  {
+    "code": "tables",
+    "text": "โต๊ะ"
+  },
+  {
+    "code": "table_name",
+    "text": "ชื่อโต๊ะ"
+  },
+  {
+    "code": "doc_ref_date",
+    "text": "วันที่เอกสารอ้างอิง"
+  },
+  {
+    "code": "doc_ref",
+    "text": "เอกสารอ้างอิง"
+  },
+  {
+    "code": "product_locationcode",
+    "text": "ที่เก็บ"
+  },
+  {
+    "code": "product_whcode",
+    "text": "คลัง"
+  },
+  {
+    "code": "warehouse_name",
+    "text": "ชื่อคลัง"
+  },
+  {
+    "code": "warehouse_code",
+    "text": "รหัสคลัง"
+  },
+  {
+    "code": "product_warehouse",
+    "text": "คลังสินค้า"
+  },
+  {
+    "code": "warehousecode",
+    "text": "รหัสคลัง"
+  },
+  {
+    "code": "warehouse",
+    "text": "คลัง"
+  },
+  {
+    "code": "location_name",
+    "text": "ชื่อที่เก็บสินค้า"
+  },
+  {
+    "code": "location_code",
+    "text": "รหัสที่เก็บสินค้า"
+  },
+  {
+    "code": "location_code_duplicate",
+    "text": "กีอปปี้รหัสที่เก็บสินค้า"
+  },
+  {
+    "code": "supplier",
+    "text": "เจ้าหนี้"
+  },
+  {
+    "code": "address_for_billing",
+    "text": "ที่อยู่ในการออกใบกำกับ"
+  },
+  {
+    "code": "country_code",
+    "text": "รหัสประเทศ"
+  },
+  {
+    "code": "district_code",
+    "text": "รหัสเขต"
+  },
+  {
+    "code": "province_code",
+    "text": "รหัสจังหวัด"
+  },
+  {
+    "code": "zip_code",
+    "text": "รหัสไปรษณีย์\r"
+  },
+  {
+    "code": "subdistrict_code",
+    "text": "รหัสตำบล"
+  },
+  {
+    "code": "guid",
+    "text": ""
+  },
+  {
+    "code": "address_for_shipping",
+    "text": "ที่อยู่จัดส่ง"
+  },
+  {
+    "code": "customer_image",
+    "text": "รูปภาพลูกค้า"
+  },
+  {
+    "code": "inquiry_type",
+    "text": "ประเภทรายการ"
+  },
+  {
+    "code": "tax_docno",
+    "text": "เลขที่ใบกำกับภาษี"
+  },
+  {
+    "code": "please_input_tax_docno",
+    "text": "กรุณากรอกเลขที่เอกสารภาษี"
+  },
+  {
+    "code": "tax_doc_date",
+    "text": "วันที่ใบกำกับภาษี"
+  },
+  {
+    "code": "tax_doc",
+    "text": "ใบกำกับภาษี"
+  },
+  {
+    "code": "address_for_shipping 2",
+    "text": "ที่อยุ่สำหรับจัดส่ง 2"
+  },
+  {
+    "code": "address_for_shipping 1",
+    "text": "ที่อยุ่สำหรับจัดส่ง 1"
+  },
+  {
+    "code": "address_for_shipping 3",
+    "text": "ที่อยุ่สำหรับจัดส่ง 3"
+  },
+  {
+    "code": "vat_zero",
+    "text": "ภาษีอัตราศูนย์"
+  },
+  {
+    "code": "vat_none",
+    "text": "ไม่กระทบภาษี"
+  },
+  {
+    "code": "search_item",
+    "text": "ค้นหาสินค้า"
+  },
+  {
+    "code": "doc_before_vat_amount",
+    "text": "ยอดก่อนภาษี"
+  },
+  {
+    "code": "doc_expert_vat_amount",
+    "text": "ยอดยกเว้นภาษี"
+  },
+  {
+    "code": "doc_total_value",
+    "text": "รวมมูลค่า"
+  },
+  {
+    "code": "supplier_name",
+    "text": "ชื่อเจ้าหนี้"
+  },
+  {
+    "code": "supplier_code",
+    "text": "รหัสเจ้าหนี้"
+  },
+  {
+    "code": "doc_customer_code",
+    "text": "รหัสลูกค้า"
+  },
+  {
+    "code": "transaction_returnproduct",
+    "text": "รับคืนจากการเบิก"
+  },
+  {
+    "code": "doc_customer_name",
+    "text": "ชื่อลูกค้า"
+  },
+  {
+    "code": "shelf_name",
+    "text": "ชื่อชั้นวาง"
+  },
+  {
+    "code": "shelf_code",
+    "text": "รหัสชั้นวาง"
+  },
+  {
+    "code": "shelf_add",
+    "text": "เพิ่มชั้นวาง"
+  },
+  {
+    "code": "transaction_stock_return_product",
+    "text": "รับคืนจากการเบิก"
+  },
+  {
+    "code": "transaction_adjust",
+    "text": "ปรับปรุงสต๊อก"
+  },
+  {
+    "code": "transaction_purchasereturn",
+    "text": "ส่งคืนสินค้า"
+  },
+  {
+    "code": "transaction_salereturn",
+    "text": "รับคืนจากการขาย"
+  },
+  {
+    "code": "shelf_code_1",
+    "text": "รหัสชั้ั้นวาง 1"
+  },
+  {
+    "code": "shelf_code_2",
+    "text": "รหัสชั้นวาง 2"
+  },
+  {
+    "code": "adjust_type",
+    "text": "ประเภทการปรับปรุง"
+  },
+  {
+    "code": "increase",
+    "text": "ปรับปรุงสต๊อกเพิ่ม"
+  },
+  {
+    "code": "decrease",
+    "text": "ปรับปรุงสต๊อกลด"
+  },
+  {
+    "code": "product_cost",
+    "text": "ต้นทุน"
+  },
+  {
+    "code": "product_customergroupmodel",
+    "text": ""
+  },
+  {
+    "code": "customergroupmodel_name",
+    "text": "ชื่อกลุ่มลููกค้า"
+  },
+  {
+    "code": "customergroupmodel_code",
+    "text": "รหัสกลุ่มลูกค้า"
+  },
+  {
+    "code": "product_list",
+    "text": "รายการสินค้า"
+  },
+  {
+    "code": "total_value",
+    "text": "มูลค่า"
+  },
+  {
+    "code": "total_value_vat",
+    "text": "มูลค่าภาษี"
+  },
+  {
+    "code": "total_after_vat",
+    "text": "มูลค่าหลังหักภาษี"
+  },
+  {
+    "code": "total_before_vat",
+    "text": "มูลค่าก่อนภาษี"
+  },
+  {
+    "code": "discount_amount",
+    "text": "มูลค่าส่วนลด"
+  },
+  {
+    "code": "total_except_vat",
+    "text": "มูลค่ายกเว้นภาษี"
+  },
+  {
+    "code": "doc_header",
+    "text": "เอกสาร"
+  },
+  {
+    "code": "doc_details",
+    "text": "รายการสินค้า"
+  },
+  {
+    "code": "location",
+    "text": "ที่เก็บ"
+  },
+  {
+    "code": "add_list",
+    "text": "เพิ่มรายการ"
+  },
+  {
+    "code": "company_code",
+    "text": "รหัสบริษัท"
+  },
+  {
+    "code": "business_code",
+    "text": "รหัสประเภทธุรกิจ"
+  },
+  {
+    "code": "business_type",
+    "text": "ชื่อประเภทธุรกิจ"
+  },
+  {
+    "code": "business_name",
+    "text": "ชื่อประเภทธุรกิจ"
+  },
+  {
+    "code": "from_warehouse",
+    "text": "จากคลัง"
+  },
+  {
+    "code": "to_location",
+    "text": "ที่เก็บ"
+  },
+  {
+    "code": "select_warehouse",
+    "text": "เลือกคลัง"
+  },
+  {
+    "code": "select_location_from_warehouse",
+    "text": "เลือกที่เก็บ"
+  },
+  {
+    "code": "company_department",
+    "text": "แผนก"
+  },
+  {
+    "code": "bank",
+    "text": "ธนาคาร"
+  },
+  {
+    "code": "barcode",
+    "text": "สินค้า"
+  },
+  {
+    "code": "menu_master",
+    "text": "ข้อมูลหลัก"
+  },
+  {
+    "code": "update",
+    "text": "บันทึก"
+  },
+  {
+    "code": "enter_qty",
+    "text": "จำนวน"
+  },
+  {
+    "code": "enter_price",
+    "text": "ราคา"
+  },
+  {
+    "code": "enter_discount",
+    "text": "ส่วนลด"
+  },
+  {
+    "code": "product_to_location",
+    "text": "ที่เก็บ"
+  },
+  {
+    "code": "product_to_ware_house",
+    "text": "ไปที่คลัง"
+  },
+  {
+    "code": "to_warehouse",
+    "text": "ไปที่คลัง"
+  },
+  {
+    "code": "confirm_save",
+    "text": "ต้องการบันทึกเอกสารใช่หรือไม่"
+  },
+  {
+    "code": "alert",
+    "text": "ยืนยันการทำรายการ"
+  },
+  {
+    "code": "department",
+    "text": "แผนก"
+  },
+  {
+    "code": "department_code",
+    "text": "รหัสแผนก"
+  },
+  {
+    "code": "department_name",
+    "text": "ชื่อแผนก"
+  },
+  {
+    "code": "connect_device_printer",
+    "text": "เชื่อมต่อเครื่องพิมพ์"
+  },
+  {
+    "code": "devices",
+    "text": "อุปกรณ์"
+  },
+  {
+    "code": "coppy_confirm",
+    "text": "ยืนยันคัดลอก"
+  },
+  {
+    "code": "companybranch",
+    "text": "สาขา"
+  },
+  {
+    "code": "company_branch_code",
+    "text": "รหัสสาขา"
+  },
+  {
+    "code": "add_department_to_branch",
+    "text": "เพิ่มแผนกในสาขา"
+  },
+  {
+    "code": "no_select_branch",
+    "text": "ไม่ได้เลือกสาขา"
+  },
+  {
+    "code": "select_company_branch",
+    "text": "กรุณาเลือกสาขา"
+  },
+  {
+    "code": "no_select_department",
+    "text": "ไม่ได้เลือกแผนก"
+  },
+  {
+    "code": "unit_standard",
+    "text": "หน่วยนับเริ่มต้น"
+  },
+  {
+    "code": "unit_cost",
+    "text": "หน่วยนับต้นทุน"
+  },
+  {
+    "code": "select_unit",
+    "text": "เลือกหน่วยนับ"
+  },
+  {
+    "code": "docdate",
+    "text": "วันที่ เอกสาร"
+  },
+  {
+    "code": "employee_not_found",
+    "text": "ไม่พบลูกค้า"
+  },
+  {
+    "code": "supplier not found",
+    "text": "ไม่พบ"
+  },
+  {
+    "code": "confirm_update",
+    "text": "ยืนยัน แก้ไข"
+  },
+  {
+    "code": "customer not found",
+    "text": "ไม่พบลูกค้า"
+  },
+  {
+    "code": "discount_cant_more_than_value",
+    "text": "ส่วนลดเเพงกว่าราคาขาย"
+  },
+  {
+    "code": "salename",
+    "text": "ชื่อพนักงานขาย"
+  },
+  {
+    "code": "no_select_product",
+    "text": "ไม่ได้เลือกสินค้า"
+  },
+  {
+    "code": "use_subbarcodes",
+    "text": "แสดงบาร์โค้ดย่อย"
+  },
+  {
+    "code": "bigerthan",
+    "text": "ใหญ่กว่า"
+  },
+  {
+    "code": "smaller",
+    "text": "เล็กกว่า"
+  },
+  {
+    "code": "bigger",
+    "text": "ใหญ่กว่า"
+  },
+  {
+    "code": "add_barcode",
+    "text": "เพิ่ม บาร์โค้ด"
+  },
+  {
+    "code": "branch_code",
+    "text": "รหัสสาขา"
+  },
+  {
+    "code": "select_company_department",
+    "text": "กรุณาเลือกแผนก"
+  },
+  {
+    "code": "customer_display",
+    "text": "ตั้งค่า ลูกค้า"
+  },
+  {
+    "code": "cashier",
+    "text": "แคชเชียร์"
+  },
+  {
+    "code": "kitchen_display",
+    "text": "ตั้งค่าห้องครัว"
+  },
+  {
+    "code": "devices_code",
+    "text": "รหัสอุปกรณ์"
+  },
+  {
+    "code": "devices_name",
+    "text": "ชื่่ออุปกรณ์"
+  },
+  {
+    "code": "chef_que_display",
+    "text": "ตั้งค่า เชฟ"
+  },
+  {
+    "code": "staff_name",
+    "text": "ชื่อ พนักงาน"
+  },
+  {
+    "code": "order",
+    "text": "รายการ"
+  },
+  {
+    "code": "staff_code",
+    "text": "รหัสพนักงาน"
+  },
+  {
+    "code": "company_department_2",
+    "text": "สาขา"
+  },
+  {
+    "code": "product_type",
+    "text": "ประเภทสินค้า"
+  },
+  {
+    "code": "itemtype",
+    "text": "ประเภทสินค้า"
+  },
+  {
+    "code": "issumpoint",
+    "text": "คะแนนสะสม"
+  },
+  {
+    "code": "product_use_dividend_2",
+    "text": "ไม่คิดเงินปันผล"
+  },
+  {
+    "code": "product_use_dividend_1",
+    "text": "คิดเงินปันผล"
+  },
+  {
+    "code": "isdividend",
+    "text": "เงินปันผล"
+  },
+  {
+    "code": "fund_code",
+    "text": "รหัสกองทุน"
+  },
+  {
+    "code": "credit_day",
+    "text": "จำนวนวันเครดิต"
+  },
+  {
+    "code": "config",
+    "text": "กำหนดค่า"
+  },
+  {
+    "code": "systemconfig",
+    "text": "ตั้งค่าระบบ"
+  },
+  {
+    "code": "system_config",
+    "text": "ตั้งค่าระบบ"
+  },
+  {
+    "code": "point_system",
+    "text": "ระบบแต้มสะสม"
+  },
+  {
+    "code": "point_system_description",
+    "text": "จัดการการตั้งค่าระบบแต้มสะสมสำหรับลูกค้า"
+  },
+  {
+    "code": "save_success",
+    "text": "บันทึกสำเร็จ"
+  },
+  {
+    "code": "save_failed",
+    "text": "บันทึกไม่สำเร็จ"
+  },
+  {
+    "code": "save",
+    "text": "บันทึก"
+  },
+  {
+    "code": "select_language",
+    "text": "เลือกภาษา"
+  },
+  {
+    "code": "sale_channel",
+    "text": "ช่องทางการขาย"
+  },
+  {
+    "code": "sale_channel_name",
+    "text": "ชื่อช่องทางการขาย"
+  },
+  {
+    "code": "sale_channel_code",
+    "text": "รหัสช่องทางการขาย"
+  },
+  {
+    "code": "transport_channel",
+    "text": "ช่องทางจัดส่ง"
+  },
+  {
+    "code": "transport_channel_code",
+    "text": "รหัสช่องทางจัดส่ง"
+  },
+  {
+    "code": "image",
+    "text": "รูปภาพ"
+  },
+  {
+    "code": "transport_channel_name",
+    "text": "ชื่อช่องทางจัดส่ง"
+  },
+  {
+    "code": "sale_channel_gptype",
+    "text": "ประเภท GP"
+  },
+  {
+    "code": "sale_channel_gp",
+    "text": "ค่า GP"
+  },
+  {
+    "code": "sale_channel_gptype_percent",
+    "text": "%"
+  },
+  {
+    "code": "sale_channel_gptype_baht",
+    "text": "บาท"
+  },
+  {
+    "code": "load_success",
+    "text": "ดึงข้อมูลสำเร็จ"
+  },
+  {
+    "code": "load_language_success",
+    "text": "ดึงข้้อมูลภาษาสำเร็จ"
+  },
+  {
+    "code": "transportchannel_name",
+    "text": "ชื่อช่องทางการจัดส่ง"
+  },
+  {
+    "code": "transportchannel_code",
+    "text": "รหัสช่องทางการจัดส่ง"
+  },
+  {
+    "code": "add_language",
+    "text": "เพิ่ม ภาษา"
+  },
+  {
+    "code": "update_success",
+    "text": "อัพเดทข้อมูลสำเร็จ"
+  },
+  {
+    "code": "item_display_barcode",
+    "text": ""
+  },
+  {
+    "code": "item_display_price",
+    "text": ""
+  },
+  {
+    "code": "deviceprinter",
+    "text": "เครื่องปริ้นท์"
+  },
+  {
+    "code": "device",
+    "text": "อุปกรณ์"
+  },
+  {
+    "code": "printer_bluetooth",
+    "text": "เครื่ื่องปริ้นท์บลูทูธ"
+  },
+  {
+    "code": "printer_name",
+    "text": "ชื่อเครื่องปริ้นท์"
+  },
+  {
+    "code": "printer_ip",
+    "text": "IP  เครื่องปริ้นท์"
+  },
+  {
+    "code": "printer_code",
+    "text": "รหัสเครื่องรปิ้นท์"
+  },
+  {
+    "code": "duration",
+    "text": "ช่วงเวลา"
+  },
+  {
+    "code": "on",
+    "text": "เปิด"
+  },
+  {
+    "code": "hours",
+    "text": "ชั่วโมง"
+  },
+  {
+    "code": "display",
+    "text": "แสดง"
+  },
+  {
+    "code": "item_display_all",
+    "text": ""
+  },
+  {
+    "code": "item_display_sku",
+    "text": ""
+  },
+  {
+    "code": "product_is_ref",
+    "text": "สินค้าอ้างอิง"
+  },
+  {
+    "code": "ref_barcode",
+    "text": "บาร์โค้ดอ้างอิง"
+  },
+  {
+    "code": "reference_barcode",
+    "text": "บาร์โค้ดอ้างอิง"
+  },
+  {
+    "code": "use_reference_barcode",
+    "text": "ใช้บาร์โค้ดอ้างอิง"
+  },
+  {
+    "code": "xqty",
+    "text": ""
+  },
+  {
+    "code": "xunit",
+    "text": ""
+  },
+  {
+    "code": "biggersmaller",
+    "text": "ใหญ่กว่าน้อยกว่า"
+  },
+  {
+    "code": "stand",
+    "text": ""
+  },
+  {
+    "code": "product_unit_divide",
+    "text": ""
+  },
+  {
+    "code": "address_for_shipping 4",
+    "text": ""
+  },
+  {
+    "code": "address_for_shipping 6",
+    "text": ""
+  },
+  {
+    "code": "address_for_shipping 5",
+    "text": ""
+  },
+  {
+    "code": "address_for_shipping 8",
+    "text": ""
+  },
+  {
+    "code": "address_for_shipping 7",
+    "text": ""
+  },
+  {
+    "code": "address_for_shipping 9",
+    "text": ""
+  },
+  {
+    "code": "address_for_shipping 10",
+    "text": ""
+  },
+  {
+    "code": "address_for_shipping 11",
+    "text": ""
+  },
+  {
+    "code": "use_reference_barcode  (1)",
+    "text": ""
+  },
+  {
+    "code": "บาร์โค้ดอ้างอิง/หน่วยนับ",
+    "text": ""
+  },
+  {
+    "code": "qty1",
+    "text": ""
+  },
+  {
+    "code": "standvalue",
+    "text": ""
+  },
+  {
+    "code": "dividevalue",
+    "text": ""
+  },
+  {
+    "code": "product_is_set",
+    "text": "สินค้าชุด"
+  },
+  {
+    "code": "creditcard",
+    "text": ""
+  },
+  {
+    "code": "cashamount",
+    "text": ""
+  },
+  {
+    "code": "cash_amount",
+    "text": "จำนวนเงิน"
+  },
+  {
+    "code": "book_number",
+    "text": ""
+  },
+  {
+    "code": "booknumber",
+    "text": ""
+  },
+  {
+    "code": "creditnumber",
+    "text": "เลขบัตรเครดิต"
+  },
+  {
+    "code": "charge",
+    "text": ""
+  },
+  {
+    "code": "debtor",
+    "text": "ลูกหนี้"
+  },
+  {
+    "code": "creditor",
+    "text": "เจ้าหนี้"
+  },
+  {
+    "code": "creditor_name",
+    "text": "ชื่อเจ้าหนี้"
+  },
+  {
+    "code": "creditor_code",
+    "text": "รหัสเจ้าหนี้"
+  },
+  {
+    "code": "transaction_pay",
+    "text": "จ่ายชำระ"
+  },
+  {
+    "code": "transaction_paid",
+    "text": "รับชำระ"
+  },
+  {
+    "code": "paid_close",
+    "text": "ปิดยอด"
+  },
+  {
+    "code": "paid_select",
+    "text": "เลือกรายการ"
+  },
+  {
+    "code": "paid_type",
+    "text": "ประเภทการชำระ"
+  },
+  {
+    "code": "paid_input",
+    "text": "ระบุจำนวนเงิน"
+  },
+  {
+    "code": "doc_type",
+    "text": "ประเภทเอกสาร"
+  },
+  {
+    "code": "payment_amount",
+    "text": "ยอดชำระ"
+  },
+  {
+    "code": "balance",
+    "text": "จำนวนคงเหลือ"
+  },
+  {
+    "code": "debtor_name",
+    "text": "ชื่อลูกหนี้"
+  },
+  {
+    "code": "debtor_code",
+    "text": "รหัสลูกหนี้"
+  },
+  {
+    "code": "bankcode",
+    "text": ""
+  },
+  {
+    "code": "passbook",
+    "text": ""
+  },
+  {
+    "code": "book_bank_no",
+    "text": ""
+  },
+  {
+    "code": "passbook_code",
+    "text": ""
+  },
+  {
+    "code": "bank_book",
+    "text": ""
+  },
+  {
+    "code": "select_bank",
+    "text": "เลือกธนาคาร"
+  },
+  {
+    "code": "bank_book_code",
+    "text": ""
+  },
+  {
+    "code": "book_bank_image",
+    "text": "รูปสมุดบัญชี"
+  },
+  {
+    "code": "account_number",
+    "text": ""
+  },
+  {
+    "code": "report_product",
+    "text": "รายงานสินค้า"
+  },
+  {
+    "code": "report_debtor",
+    "text": "รายงานลูกหนี้"
+  },
+  {
+    "code": "report_bookbank",
+    "text": "รายงานสมุดบัญชีธนาคาร"
+  },
+  {
+    "code": "report_purchase",
+    "text": "รายงานการซื้อสินค้า"
+  },
+  {
+    "code": "report_creditor",
+    "text": "รายงานเจ้าหนี้"
+  },
+  {
+    "code": "money",
+    "text": ""
+  },
+  {
+    "code": "get_money",
+    "text": ""
+  },
+  {
+    "code": "receivemoney",
+    "text": ""
+  },
+  {
+    "code": "receive_cash",
+    "text": "มูลค่า รับ/จ่าย ชำระ"
+  },
+  {
+    "code": "debtor_group",
+    "text": "กลุ่มลูกหนี้"
+  },
+  {
+    "code": "creditor_group",
+    "text": "กลุ่มเจ้าหนี้"
+  },
+  {
+    "code": "clone_option",
+    "text": "ดึงตัวเลือก"
+  },
+  {
+    "code": "item_type",
+    "text": ""
+  },
+  {
+    "code": "company_branch_address",
+    "text": "ที่อยู่สาขา"
+  },
+  {
+    "code": "company_branch_phone",
+    "text": "เบอร์โทรสาขา"
+  },
+  {
+    "code": "report_pay",
+    "text": "รายงานการจ่ายเงิน"
+  },
+  {
+    "code": "report_pickup",
+    "text": "รายงานการเบิกสินค้า"
+  },
+  {
+    "code": "report_saleinvoicereturn",
+    "text": "รายงานรับคืน/ลดหนี้"
+  },
+  {
+    "code": "report_transfer",
+    "text": "รายงานการโอนสินค้า"
+  },
+  {
+    "code": "report_stockadjustment",
+    "text": "รายงานการปรับปรุงสต๊อก"
+  },
+  {
+    "code": "report_receive",
+    "text": "รายงานการรับสินค้า"
+  },
+  {
+    "code": "report_paid",
+    "text": "รายงานการรับเงิน"
+  },
+  {
+    "code": "report_saleinvoice",
+    "text": "รายงานการขาย"
+  },
+  {
+    "code": "report_returnproduct",
+    "text": "รายงานรับคืนจากการเบิก"
+  },
+  {
+    "code": "report_purchasereturn",
+    "text": "รายงานส่งคืน/ลดหนี้"
+  },
+  {
+    "code": "employee_phone",
+    "text": "เบอร์โทร"
+  },
+  {
+    "code": "employee_address",
+    "text": "ที่อยู่"
+  },
+  {
+    "code": "fundcode",
+    "text": "รหัสกองทุน"
+  },
+  {
+    "code": "disciption",
+    "text": "หมายเหตุ"
+  },
+  {
+    "code": "transfer_detail",
+    "text": "รายละเอียดโอนเงิน"
+  },
+  {
+    "code": "add_transfer",
+    "text": "เพิ่มรายการโอน"
+  },
+  {
+    "code": "chargevalue",
+    "text": "มูลค่ายอด Charge"
+  },
+  {
+    "code": "totalnetworth",
+    "text": "มูลค่าสุทธิ"
+  },
+  {
+    "code": "chargeword",
+    "text": "Charge (% หรือ บาท)"
+  },
+  {
+    "code": "add_credit",
+    "text": "เพิ่มบัตรเครดิต"
+  },
+  {
+    "code": "credit_detail",
+    "text": "รายละเอียดบัตรเครดิต"
+  },
+  {
+    "code": "choice_no_stock",
+    "text": "ไม่ตัดสต๊อก"
+  },
+  {
+    "code": "add_docref",
+    "text": "ดึงเอกสารอ้างอิง"
+  },
+  {
+    "code": "docreferences",
+    "text": "เอกสารอ้างอิง"
+  },
+  {
+    "code": "payment_details",
+    "text": "รายละเอียดการจ่ายเงิน"
+  },
+  {
+    "code": "add_docref_purchasereturn",
+    "text": "อ้างอิงเอกสารซื้อสินค้า"
+  },
+  {
+    "code": "add_docref_salereturn",
+    "text": "อ้างอิงเอกสารขายสินค้า"
+  },
+  {
+    "code": "add_docref_stockreturnproduct",
+    "text": "อ้างอิงเอกสารเบิกสินค้า"
+  },
+  {
+    "code": "pin_code",
+    "text": "Cashier PIN"
+  },
+  {
+    "code": "filter",
+    "text": "ค้นหา"
+  },
+  {
+    "code": "filter_debtor_group",
+    "text": "ค้นหากลุ่มลูกหนี้"
+  },
+  {
+    "code": "is_member",
+    "text": "เป็นสมาชิก"
+  },
+  {
+    "code": "not_member",
+    "text": "ไม่เป็นสมาชิก"
+  },
+  {
+    "code": "filter_credit_group",
+    "text": "ค้นหากลุ่มเจ้าหนี้"
+  },
+  {
+    "code": "debtor_image",
+    "text": "รูปภาพ"
+  },
+  {
+    "code": "category_close",
+    "text": "ปิดใช้งาน"
+  },
+  {
+    "code": "category_use",
+    "text": "เปิดใช้งาน"
+  },
+  {
+    "code": "success_save",
+    "text": "บันทึกสำเร็จ"
+  },
+  {
+    "code": "return_credit_purchaser",
+    "text": "ส่งคืนเจ้าหนี้"
+  },
+  {
+    "code": "reduce_credit_purchaser",
+    "text": "ลดหนี้/ราคาผิด เจ้าหนี้ (ไม่กระทบสต๊อก)"
+  },
+  {
+    "code": "return_cash_purchaser",
+    "text": "ส่งคืนเงินสด"
+  },
+  {
+    "code": "reduce_cash_purchaser",
+    "text": "ลดหนี้/ราคาผิด เงินสด (ไม่กระทบสต๊อก)"
+  },
+  {
+    "code": "reduce_credit_sale",
+    "text": "ลดหนี้/ราคาผิด ลูกหนี้ (ไม่กระทบสต๊อก)"
+  },
+  {
+    "code": "return_credit_sale",
+    "text": "รับคืนลูกหนี้"
+  },
+  {
+    "code": "reduce_cash_sale",
+    "text": "ลดหนี้/ราคาผิด เงินสด (ไม่กระทบสต๊อก)"
+  },
+  {
+    "code": "return_cash_sale",
+    "text": "รับคืนเงินสด"
+  },
+  {
+    "code": "payment_less",
+    "text": "ยอดจ่ายเงินน้อยกว่ามูลค่าเอกสาร"
+  },
+  {
+    "code": "payment_over",
+    "text": "ยอดจ่ายเงินเกินมูลค่าเอกสาร"
+  },
+  {
+    "code": "no_custcode",
+    "text": "ไม่พบข้อมูล"
+  },
+  {
+    "code": "please_input_custcode_creditor",
+    "text": "กรุณาเลือกเจ้าหนี้"
+  },
+  {
+    "code": "please_input_custcode_debtor",
+    "text": "กรุณาเลือกลูกหนี้"
+  },
+  {
+    "code": "is_manual_amount",
+    "text": "บันทึกยอดเงินเอง"
+  },
+  {
+    "code": "vattype_purchase",
+    "text": "ประเภทภาษีซื้อ"
+  },
+  {
+    "code": "inquirytype_sale",
+    "text": "ประเภทรายการขาย"
+  },
+  {
+    "code": "vattype_sale",
+    "text": "ประเภทภาษีขาย"
+  },
+  {
+    "code": "inquirytype_purchase",
+    "text": "ประเภทรายการซื้อ"
+  },
+  {
+    "code": "select_accountchart",
+    "text": "เลือกผังบัญชี"
+  },
+  {
+    "code": "transaction_type",
+    "text": "ประเภทการขาย"
+  },
+  {
+    "code": "pos",
+    "text": "ขายหน้าร้าน"
+  },
+  {
+    "code": "merchant",
+    "text": "ขายหลังร้าน"
+  },
+  {
+    "code": "filter_transaction",
+    "text": "ค้นหาตามประเภทการขาย"
+  },
+  {
+    "code": "report_movement",
+    "text": "รายงานเคลื่อนไหว"
+  },
+  {
+    "code": "promotion",
+    "text": "โปรโมชั่น"
+  },
+  {
+    "code": "select_promotion",
+    "text": "เลือกโปรโมชั่น"
+  },
+  {
+    "code": "promotion_name",
+    "text": "ชื่อโปรโมชั่น"
+  },
+  {
+    "code": "promotion_code",
+    "text": "รหัสโปรโมชั่น"
+  },
+  {
+    "code": "discount_text",
+    "text": "ข้อความส่วนลด"
+  },
+  {
+    "code": "qty_limit",
+    "text": "จำนวนที่ต้องซื้อ"
+  },
+  {
+    "code": "promotion_qty",
+    "text": "จำนวนที่แถม"
+  },
+  {
+    "code": "limit_amount",
+    "text": "มูลค่าที่ต้องซื้อ"
+  },
+  {
+    "code": "customer_only",
+    "text": "สำหรับสมาชิกเท่านั้น"
+  },
+  {
+    "code": "promotion_include",
+    "text": "สินค้าที่ร่วมรายการ"
+  },
+  {
+    "code": "include_product",
+    "text": "สินค้าที่แถม"
+  },
+  {
+    "code": "add_product",
+    "text": "เพิ่มสินค้า"
+  },
+  {
+    "code": "from_date",
+    "text": "จากวันที่"
+  },
+  {
+    "code": "to_date",
+    "text": "ถึงวันที่"
+  },
+  {
+    "code": "product_list_promotion",
+    "text": "ระบุสินค้าจัดโปรโมชั่น"
+  },
+  {
+    "code": "price_sale",
+    "text": "ราคาขาย"
+  },
+  {
+    "code": "qty_minimum",
+    "text": "จำนวนขั้นต่ำ"
+  },
+  {
+    "code": "promotion_discount",
+    "text": "ลดราคา"
+  },
+  {
+    "code": "add_detail",
+    "text": "เพิ่มเงื่อนไข"
+  },
+  {
+    "code": "member_only",
+    "text": "เฉพาะลูกค้าสมาชิก"
+  },
+  {
+    "code": "by_amount",
+    "text": "ตามมูลค่า"
+  },
+  {
+    "code": "by_qty",
+    "text": "ตามจำนวน"
+  },
+  {
+    "code": "product_free_promotion",
+    "text": "ระบุสินค้าของแถม"
+  },
+  {
+    "code": "amount_minimum",
+    "text": "มูลค่าขั้นต่ำ"
+  },
+  {
+    "code": "qty_free",
+    "text": "จำนวนแถม"
+  },
+  {
+    "code": "remove_all_detail",
+    "text": "ต้องการลบรายละเอียดทั้งหมด ?"
+  },
+  {
+    "code": "header_receipt_pos",
+    "text": "ข้อความหัวใบเสร็จ"
+  },
+  {
+    "code": "footer_receipt_pos",
+    "text": "ข้อความท้ายใบเสร็จ"
+  },
+  {
+    "code": "order_type",
+    "text": "ประเภทสั่งอาหาร"
+  },
+  {
+    "code": "order_type_code",
+    "text": "รหัสประเภทการ Order Station"
+  },
+  {
+    "code": "order_type_name",
+    "text": "ชื่อประเภทการ Order Station"
+  },
+  {
+    "code": "price_adult",
+    "text": "ราคา (ผู้ใหญ่)"
+  },
+  {
+    "code": "price_child",
+    "text": "ราคา (เด็ก)"
+  },
+  {
+    "code": "add_order_type",
+    "text": "เพิ่มประเภทการ Order Station / เครื่องดื่ม"
+  },
+  {
+    "code": "alacarte",
+    "text": "อลาระดับ"
+  },
+  {
+    "code": "charge_price",
+    "text": "คิดราคาเพิ่ม"
+  },
+  {
+    "code": "order_type_search",
+    "text": "ค้นหาตามประเภท Order Station"
+  },
+  {
+    "code": "report_getpay",
+    "text": "รายงานการจ่ายชำระ"
+  },
+  {
+    "code": "report_getpaid",
+    "text": "รายงานการรับชำระ"
+  },
+  {
+    "code": "user_name",
+    "text": "ชื่อผู้ใช้งาน"
+  },
+  {
+    "code": "user_role",
+    "text": "สิทธิ์ผู้ใช้งาน"
+  },
+  {
+    "code": "role_user",
+    "text": "ระดับผู้ใช้งาน"
+  },
+  {
+    "code": "role_admin",
+    "text": "ระดับแอดมิน"
+  },
+  {
+    "code": "role_owner",
+    "text": "ระดับเจ้าของร้าน"
+  },
+  {
+    "code": "product_is_alacarte",
+    "text": "อลาคาส"
+  },
+  {
+    "code": "add_product_to_kitchen",
+    "text": "เพิ่มสินค้าให้ครัว"
+  },
+  {
+    "code": "kitchen_list",
+    "text": "รายการห้องครัว"
+  },
+  {
+    "code": "select_kitchen",
+    "text": "กรุณาเลือกห้องครัว"
+  },
+  {
+    "code": "is_split_unit_print",
+    "text": "พิมพ์ใบจัดอาหารแบบแยก"
+  },
+  {
+    "code": "zone_name",
+    "text": "ชื่อโซน"
+  },
+  {
+    "code": "zone_code",
+    "text": "รหัสโซน"
+  },
+  {
+    "code": "table_code",
+    "text": "เลขที่โต๊ะ"
+  },
+  {
+    "code": "is_only_employee",
+    "text": "แสดงเฉพาะพนักงาน"
+  },
+  {
+    "code": "add_remark",
+    "text": "เพิ่มหมายเหตุ"
+  },
+  {
+    "code": "remark_name",
+    "text": "ชื่อหมายเหตุ"
+  },
+  {
+    "code": "remove_remark",
+    "text": "ลบหมายเหตุ"
+  },
+  {
+    "code": "product_is_material",
+    "text": "สินค้าวัตถุดิบ"
+  },
+  {
+    "code": "pos_setting",
+    "text": "กำหนดรหัสเครื่อง POS"
+  },
+  {
+    "code": "pos_setting_code",
+    "text": "รหัสเครื่อง POS"
+  },
+  {
+    "code": "pos_setting_devicenumber",
+    "text": "หมายเลขเครื่อง"
+  },
+  {
+    "code": "pos_setting_taxinv",
+    "text": "รูปแบบเลขที่เอกสารอย่างเต็ม"
+  },
+  {
+    "code": "pos_setting_inv",
+    "text": "รูปแบบเลขที่เอกสารอย่างย่อ"
+  },
+  {
+    "code": "select_reciept_form",
+    "text": "เลือกรูปแบบใบเสร็จ"
+  },
+  {
+    "code": "select_location",
+    "text": "เลือกพื้นที่เก็บ"
+  },
+  {
+    "code": "adjust_cost",
+    "text": "ปรับปรุงต้นทุน"
+  },
+  {
+    "code": "product_price_adjust",
+    "text": "ต้นทุน"
+  },
+  {
+    "code": "employee_list",
+    "text": "รายชื่อพนักงาน"
+  },
+  {
+    "code": "add_employee",
+    "text": "เพิ่มพนักงาน"
+  },
+  {
+    "code": "serch_employee",
+    "text": "ค้นหาพนักงาน"
+  },
+  {
+    "code": "permistion",
+    "text": "สิทธิ์การใช้งาน"
+  },
+  {
+    "code": "active_pin",
+    "text": "ยีนยัน"
+  },
+  {
+    "code": "enter_pin",
+    "text": "กรอกรหัส PIN"
+  },
+  {
+    "code": "active_pin_success",
+    "text": "ยีนยันสำเร็จ"
+  },
+  {
+    "code": "not_active_pin",
+    "text": "ยังไม่ได้ยืนยัน"
+  },
+  {
+    "code": "doc_format",
+    "text": "กำหนดรูปแบบเอกสาร"
+  },
+  {
+    "code": "select_menu",
+    "text": "เมนู"
+  },
+  {
+    "code": "desciption",
+    "text": "คำอธิบายเอกสาร"
+  },
+  {
+    "code": "doc_format_type",
+    "text": "รูปแบบเอกสาร"
+  },
+  {
+    "code": "qty_running",
+    "text": "จำนวน running"
+  },
+  {
+    "code": "example",
+    "text": "ตัวอย่าง"
+  },
+  {
+    "code": "doc_format_code",
+    "text": "รหัสเอกสาร"
+  },
+  {
+    "code": "action_code",
+    "text": "รหัสหน้าจอ"
+  },
+  {
+    "code": "add_description",
+    "text": "เพิ่มรายละเอียด"
+  },
+  {
+    "code": "isentryselfaccount",
+    "text": "ลงรายตัว"
+  },
+  {
+    "code": "reset_pin_code",
+    "text": "Reset PIN"
+  },
+  {
+    "code": "confirm_reset_pin_code",
+    "text": "ยืนยันการ Reset PIN"
+  },
+  {
+    "code": "reset_pin",
+    "text": "Reset PIN"
+  },
+  {
+    "code": "reset",
+    "text": "Reset "
+  },
+  {
+    "code": "action",
+    "text": "Acton"
+  },
+  {
+    "code": "use_pos",
+    "text": "สามารถใช้ POS ได้"
+  },
+  {
+    "code": "menu",
+    "text": "เมนู"
+  },
+  {
+    "code": "create_default_data",
+    "text": "ต้องการเพิ่มค่าเริ่มต้นหรือไม่"
+  },
+  {
+    "code": "verification_pin",
+    "text": "Verification PIN"
+  },
+  {
+    "code": "buddhist_calendar",
+    "text": "พุทธศักราช"
+  },
+  {
+    "code": "anno_domini",
+    "text": "คริสศักราช"
+  },
+  {
+    "code": "document_format",
+    "text": "รูปแบบเอกสาร"
+  },
+  {
+    "code": "format_manual",
+    "text": "กำหนดรูปแบบเอง"
+  },
+  {
+    "code": "format_manual_description",
+    "text": "สามารถแก้ไขรูปแบบเอกสารได้"
+  },
+  {
+    "code": "product_type_code",
+    "text": "รหัสประเภทสินค้า"
+  },
+  {
+    "code": "product_type_name",
+    "text": "ชื่อประเภทสินค้า"
+  },
+  {
+    "code": "product_type_search",
+    "text": "ค้นหาประเภทสินค้า"
+  },
+  {
+    "code": "pos_setting_sale_return",
+    "text": "รูปแบบเอกสารเลขที่รับคืน"
+  },
+  {
+    "code": "pos_setting_prefix",
+    "text": "รหัสเอกสาร"
+  },
+  {
+    "code": "confirm_reset_pin_code_detail",
+    "text": "ต้องการรีเซ็ทรหัสเริ่มต้นเป็น 12345 ใช่หรือไหม ?"
+  },
+  {
+    "code": "please_select_company_branch",
+    "text": "*กรุณาเลือกสาขา "
+  },
+  {
+    "code": "please_select_warehouse",
+    "text": "*กรุณาเลือกคลัง"
+  },
+  {
+    "code": "pos_setting_doccode",
+    "text": "รหัสเอกสาร"
+  },
+  {
+    "code": "wallet_payment",
+    "text": "ผู้บริการกระเป๋าเงิน Wallet"
+  },
+  {
+    "code": "wallet_name",
+    "text": "ชื่อกระเป๋าเงิน"
+  },
+  {
+    "code": "bill_design",
+    "text": "ออกแบบใบเสร็จรับเงิน"
+  },
+  {
+    "code": "slip_design",
+    "text": "ออกแบบใบเสร็จรับเงิน"
+  },
+  {
+    "code": "bill_header",
+    "text": "หัวบิล"
+  },
+  {
+    "code": "bill_totals",
+    "text": "ยอดรวมบิล"
+  },
+  {
+    "code": "bill_details",
+    "text": "รายละเอียดบิล"
+  },
+  {
+    "code": "bill_footer",
+    "text": "ท้ายบิล"
+  },
+  {
+    "code": "bill_detail",
+    "text": "รายละเอียดบิล"
+  },
+  {
+    "code": "bill_total",
+    "text": "ยอดรวมบิล"
+  },
+  {
+    "code": "qrcode_code",
+    "text": "รหัส"
+  },
+  {
+    "code": "telephone_or_citizen_id",
+    "text": "หมายเลขโทรศัพท์ / รหัสบัตรประชาชน"
+  },
+  {
+    "code": "api_key",
+    "text": "Api Key"
+  },
+  {
+    "code": "qr_code_code",
+    "text": "รหัส"
+  },
+  {
+    "code": "qr_code_name",
+    "text": "ชื่อ QR"
+  },
+  {
+    "code": "ejournal",
+    "text": "E-journal"
+  },
+  {
+    "code": "receipt_list",
+    "text": "รูปแบบใบเสร็จ"
+  },
+  {
+    "code": "receipt_name",
+    "text": "ชื่อรูปแบบใบเสร็จ"
+  },
+  {
+    "code": "require",
+    "text": "บังคับเลือก"
+  },
+  {
+    "code": "qrcode_list",
+    "text": "QR CODE "
+  },
+  {
+    "code": "add_qrcode",
+    "text": "เพิ่ม QR CODE"
+  },
+  {
+    "code": "serch_qrcode",
+    "text": "ค้นหา QR CODE"
+  },
+  {
+    "code": "slip_type",
+    "text": "รูปแบบใบเสร็จ"
+  },
+  {
+    "code": "add_branch",
+    "text": "เพิ่มสาขา"
+  },
+  {
+    "code": "serch_branch",
+    "text": "ค้นหาสาขา"
+  },
+  {
+    "code": "pass_book_branch",
+    "text": "สาขาธนาคาร"
+  },
+  {
+    "code": "itemcode",
+    "text": "รหัสสินค้า"
+  },
+  {
+    "code": "vat_register",
+    "text": "จดทะเบียนภาษีมูลค่าเพิ่ม"
+  },
+  {
+    "code": "vat_no_register",
+    "text": "ไม่จดทะเบียนภาษีมูลค่าเพิ่ม"
+  },
+  {
+    "code": "table_order",
+    "text": "แผนผังโต๊ะ"
+  },
+  {
+    "code": "no_setting_table",
+    "text": "กรุณาเพิ่มโต๊ะ"
+  },
+  {
+    "code": "pos_media",
+    "text": "สื่อโฆษณา"
+  },
+  {
+    "code": "pos_media_code",
+    "text": "รหัสสื่อโฆษณา"
+  },
+  {
+    "code": "pos_media_name",
+    "text": "ชื่อสื่อโฆษณา"
+  },
+  {
+    "code": "add_media",
+    "text": "เพิ่มสื่อโฆษณา"
+  },
+  {
+    "code": "from_time",
+    "text": "จากเวลา"
+  },
+  {
+    "code": "from_to",
+    "text": "ถึงเวลา"
+  },
+  {
+    "code": "display_time",
+    "text": "เวลาแสดง (วินาที)"
+  },
+  {
+    "code": "day_of_week",
+    "text": "วันแสดง"
+  },
+  {
+    "code": "select_media",
+    "text": "กรุณาเลือกสื่อโฆษณา"
+  },
+  {
+    "code": "pos_media_search",
+    "text": "ค้นหาสื่อโฆษณา"
+  },
+  {
+    "code": "to_time_must_be_later_than_from_time",
+    "text": "เวลาไม่ถูกต้อง"
+  },
+  {
+    "code": "search_qr_provider",
+    "text": "ค้นหา QR CODE"
+  },
+  {
+    "code": "timezone",
+    "text": "เขตเวลา"
+  },
+  {
+    "code": "food_type",
+    "text": "ประเภทอาหาร"
+  },
+  {
+    "code": "drink",
+    "text": "เครื่องดื่ม"
+  },
+  {
+    "code": "food",
+    "text": "อาหาร"
+  },
+  {
+    "code": "other",
+    "text": "อื่น ๆ "
+  },
+  {
+    "code": "alcohol",
+    "text": "เครื่องดื่มแอลกอฮอล์"
+  },
+  {
+    "code": "add_time_for_sale",
+    "text": "เพิ่มเวลาการขาย"
+  },
+  {
+    "code": "time_for_sale",
+    "text": "เวลาการขาย"
+  },
+  {
+    "code": "buddhist",
+    "text": "พุทธศักราช"
+  },
+  {
+    "code": "christian",
+    "text": "คริสต์ศักราช"
+  },
+  {
+    "code": "header_names",
+    "text": "ชื่อหัวใบเสร็จ"
+  },
+  {
+    "code": "import_product",
+    "text": "นำเข้าสินค้า"
+  },
+  {
+    "code": "report_product_balance",
+    "text": "รายงานสินค้าคงเหลือ"
+  },
+  {
+    "code": "balance_qty",
+    "text": "ยอดคงเหลือ"
+  },
+  {
+    "code": "average_cost",
+    "text": "ต้นทุนเฉลี่ย"
+  },
+  {
+    "code": "balance_amount",
+    "text": "มูลค่าคงเหลือ"
+  },
+  {
+    "code": "transaction_stock_balance",
+    "text": "บันทึกสินค้ายกมา"
+  },
+  {
+    "code": "store_id",
+    "text": "STORE ID"
+  },
+  {
+    "code": "terminal_id",
+    "text": "TERMINAL ID"
+  },
+  {
+    "code": "access_code",
+    "text": "ACCESS CODE"
+  },
+  {
+    "code": "biller_id",
+    "text": "BILLER ID"
+  },
+  {
+    "code": "lugen",
+    "text": "Lugen"
+  },
+  {
+    "code": "biller_code",
+    "text": "BILLER CODE"
+  },
+  {
+    "code": "merchant_name",
+    "text": "MERCHANT NAME"
+  },
+  {
+    "code": "gl_process",
+    "text": "ประมาลผลบัญชี"
+  },
+  {
+    "code": "report_vatsale",
+    "text": "รายงานภาษีขาย"
+  },
+  {
+    "code": "report_vatpurchase",
+    "text": "รายงานภาษีซื้อ"
+  },
+  {
+    "code": "report_salebydebtor",
+    "text": "รายงานซื้อสะสมตามสมาชิก"
+  },
+  {
+    "code": "total_success",
+    "text": "สถานะสำเร็จ"
+  },
+  {
+    "code": "total_documnet",
+    "text": "ยอดรวมเอกสาร"
+  },
+  {
+    "code": "process_gl",
+    "text": "ประมาลผลบัญชี"
+  },
+  {
+    "code": "purchase",
+    "text": "ซื้อสินค้า"
+  },
+  {
+    "code": "sale invoice return",
+    "text": "รับคืนสินค้า"
+  },
+  {
+    "code": "purchase return",
+    "text": "ส่งคืนสินค้า"
+  },
+  {
+    "code": "stock receive product",
+    "text": "รับสินค้า"
+  },
+  {
+    "code": "saleinvoice",
+    "text": "ขายสินค้า"
+  },
+  {
+    "code": "stock return product",
+    "text": "รับคืนจากการเบิก"
+  },
+  {
+    "code": "stock adjustment",
+    "text": "ปรับปรุงสต็อก"
+  },
+  {
+    "code": "stock pickup product",
+    "text": "เบิกสินค้า"
+  },
+  {
+    "code": "stock transfer",
+    "text": "โอนสินค้า"
+  },
+  {
+    "code": "lugent_line_pay",
+    "text": "Lugent LinePay"
+  },
+  {
+    "code": "lugent_promptpay",
+    "text": "Lugent PromptPay"
+  },
+  {
+    "code": "bank_charge",
+    "text": "Bank Charge"
+  },
+  {
+    "code": "lugent_true_money",
+    "text": "Lugent TrueMoney"
+  },
+  {
+    "code": "lugent_alipay",
+    "text": "Lugent AliPay"
+  },
+  {
+    "code": "customer_charge",
+    "text": "Customer Charge"
+  },
+  {
+    "code": "isusecreadit",
+    "text": "ขายเงินเชื่อได้"
+  },
+  {
+    "code": "paid",
+    "text": "รับชำระ"
+  },
+  {
+    "code": "account_group",
+    "text": "ชุดบัญชี"
+  },
+  {
+    "code": "account_book",
+    "text": "สมุดบัญชี"
+  },
+  {
+    "code": "money_end_day",
+    "text": "เงินเข้าสิ้นวัน"
+  },
+  {
+    "code": "money_now",
+    "text": "เงินเข้าทันที"
+  },
+  {
+    "code": "money_next_day",
+    "text": "เงินเข้าวันถัดไป"
+  },
+  {
+    "code": "select_bank_template",
+    "text": "เลือกธนาคาร"
+  },
+  {
+    "code": "select_all",
+    "text": "เลือกทั้งหมด"
+  },
+  {
+    "code": "select_transportchannel_template",
+    "text": "เลือกช่องทางการจัดส่ง"
+  },
+  {
+    "code": "select_salechannel_template",
+    "text": "เลือกช่องทางการขาย"
+  },
+  {
+    "code": "select_unit_template",
+    "text": "เลือกหน่วยนับ"
+  },
+  {
+    "code": "not_found",
+    "text": "ไม่พบข้อมูล"
+  },
+  {
+    "code": "select_qrcode_template",
+    "text": "เลือก Qrcode"
+  },
+  {
+    "code": "add_creditcard",
+    "text": "เพิ่มบัตรเครดิต"
+  },
+  {
+    "code": "creditcard_list",
+    "text": "รายการเครดิตการ์ด"
+  },
+  {
+    "code": "transfers_list",
+    "text": "รายการเงินโอน"
+  },
+  {
+    "code": "max_discount",
+    "text": "ส่วนลดสูงสุด"
+  },
+  {
+    "code": "discount_over_max_discount",
+    "text": "ส่วนลดเกินที่กำหนด"
+  },
+  {
+    "code": "report_cancel",
+    "text": "รายงานข้อมูลที่ถูกยกเลิก"
+  },
+  {
+    "code": "pay_channel",
+    "text": "ช่องทางการจ่ายชำระเงิน"
+  },
+  {
+    "code": "discountformula_example",
+    "text": "สูตรส่วนลด เช่น 5%,10,3%,20 = ลด 5% แล้วลดอีก 10 บาท แล้วลดอีก 3% แล้วลดอีก 20 บาท"
+  },
+  {
+    "code": "clear",
+    "text": "ยกเลิก"
+  },
+  {
+    "code": "please_select_bank",
+    "text": "กรุณาเลือกธนาคาร"
+  },
+  {
+    "code": "print_success",
+    "text": "พิมพ์สำเร็จ"
+  },
+  {
+    "code": "check_daily",
+    "text": "ตรวจสอบข้อมูลรายวัน"
+  },
+  {
+    "code": "daily_info",
+    "text": "ข้อมูลรายวัน"
+  },
+  {
+    "code": "add_cheque",
+    "text": "เพิ่มเช็ค"
+  },
+  {
+    "code": "cheque_number",
+    "text": "เลขที่เช็ค"
+  },
+  {
+    "code": "due_date",
+    "text": "วันที่สั่งจ่าย"
+  },
+  {
+    "code": "add_coupon",
+    "text": "เพิ่มคูปอง"
+  },
+  {
+    "code": "coupon_number",
+    "text": "หมายเลขคูปอง"
+  },
+  {
+    "code": "provider_code",
+    "text": "PROVIDER CODE"
+  },
+  {
+    "code": "provider_name",
+    "text": "PROVIDER NAME"
+  },
+  {
+    "code": "add_qr",
+    "text": "เพิ่ม QR CODE"
+  },
+  {
+    "code": "list_transfer",
+    "text": "รายการโอน"
+  },
+  {
+    "code": "list_creditcard",
+    "text": "รายการบัตรเครดิต"
+  },
+  {
+    "code": "list_coupon",
+    "text": "รายการคูปอง"
+  },
+  {
+    "code": "list_cheque",
+    "text": "รายการเช็ค"
+  },
+  {
+    "code": "list_qr",
+    "text": "รายการ QR CODE"
+  },
+  {
+    "code": "detail_discount_formula",
+    "text": "ส่วนลดก่อนชำระเงิน"
+  },
+  {
+    "code": "total_amount_after_discount",
+    "text": "ยอดรวมหลังหักส่วนลดท้ายบิล"
+  },
+  {
+    "code": "total_discount_vat_amount",
+    "text": "ส่วนลดสินค้ามีภาษี"
+  },
+  {
+    "code": "total_detail_total_discount",
+    "text": "รวมส่วนลดก่อนชำระเงิน"
+  },
+  {
+    "code": "total_amount_before_discount",
+    "text": "ยอดรวมก่อนหักส่วนลดท้ายบิล"
+  },
+  {
+    "code": "total_discount_except_vat_amount",
+    "text": "ส่วนลดสินค้ายกเว้นภาษี"
+  },
+  {
+    "code": "round_amount",
+    "text": "ปัดเศษ"
+  },
+  {
+    "code": "detail_total_amount",
+    "text": "ยอดรวมก่อนหักส่วนลดท้ายบิล"
+  },
+  {
+    "code": "retail_store",
+    "text": "ร้านค้าปลีก"
+  },
+  {
+    "code": "restaurant",
+    "text": "ร้านอาหาร"
+  },
+  {
+    "code": "sum_pay",
+    "text": "ยอดรวมสุทธิ"
+  },
+  {
+    "code": "discount_bill",
+    "text": "ส่วนลดท้ายบิล"
+  },
+  {
+    "code": "qty_product",
+    "text": "จำนวนชิ้น"
+  },
+  {
+    "code": "debtor_vf",
+    "text": "สมาชิก/ลูกหนี้"
+  },
+  {
+    "code": "dashboard",
+    "text": "หน้าแรก"
+  },
+  {
+    "code": "discount_word",
+    "text": "ส่วนลดท้ายบิล"
+  },
+  {
+    "code": "please_payment",
+    "text": "กรุณาชำระเงิน"
+  },
+  {
+    "code": "back",
+    "text": "กลับ"
+  },
+  {
+    "code": "order_setting",
+    "text": "กำหนดเครื่อง Order Station"
+  },
+  {
+    "code": "order_setting_doc_format",
+    "text": "รูปแบบเลขที่เอกสาร"
+  },
+  {
+    "code": "order_setting_code",
+    "text": "รหัสเครื่อง Order Station"
+  },
+  {
+    "code": "machine_employee",
+    "text": "เครื่องพนักงาน"
+  },
+  {
+    "code": "machine_customer",
+    "text": "เครื่องลูกค้า"
+  },
+  {
+    "code": "select_table",
+    "text": "เลือกโต๊ะ"
+  },
+  {
+    "code": "table_search",
+    "text": "ค้นหาโต๊ะ"
+  },
+  {
+    "code": "confirm_cancel_pin",
+    "text": "ยกเลิก PIN"
+  },
+  {
+    "code": "how_to_cancel_pin",
+    "text": "ต้องการยกเลิก PIN ใช่หรือไม่"
+  },
+  {
+    "code": "qr_code_order",
+    "text": "สร้าง QR CODE  Order Station"
+  },
+  {
+    "code": "sale_channel_list",
+    "text": "ช่องทางการขาย"
+  },
+  {
+    "code": "serch_sale_channel",
+    "text": "ค้นหาช่องทางการขาย"
+  },
+  {
+    "code": "add_sale_channel",
+    "text": "เพิ่มช่องทางการขาย"
+  },
+  {
+    "code": "use_image",
+    "text": "ใช้รูปภาพ"
+  },
+  {
+    "code": "select_picture_cover",
+    "text": "เลือกรูปภาพหน้าปก"
+  },
+  {
+    "code": "image_cover",
+    "text": "รูปหน้าปก"
+  },
+  {
+    "code": "add_order_station",
+    "text": "เพิ่มเครื่อง Order Station"
+  },
+  {
+    "code": "name_order_station",
+    "text": "ชื่อเครื่อง Order Station"
+  },
+  {
+    "code": "order_station_id_already_exists",
+    "text": "รหัสเครื่อง Order Stationซ้ำ"
+  },
+  {
+    "code": "please_save_order_setting",
+    "text": "กรุณาบันทึกข้อมูลก่อน active pin code"
+  },
+  {
+    "code": "order_code",
+    "text": "หมายเลข Order Station"
+  },
+  {
+    "code": "select_template_order_setting",
+    "text": "ตั้งค่าครื่อง Order Station"
+  },
+  {
+    "code": "template_order_setting_search",
+    "text": "ค้นหาตั้งค่าเครื่อง Order Station"
+  },
+  {
+    "code": "template_order_setting_name",
+    "text": "ชื่อตั้งค่าเครื่อง Order Station"
+  },
+  {
+    "code": "template_order_setting_code",
+    "text": "รหัสตั้งค่าเครื่อง Order Station"
+  },
+  {
+    "code": "template_order_setting",
+    "text": "ตั้งค่าเครื่อง Order Station"
+  },
+  {
+    "code": "add_template_order_setting",
+    "text": "เพิ่มตั้งค่าเครื่อง Order Station"
+  },
+  {
+    "code": "order_template_setting",
+    "text": "ตั้งค่าเครื่อง Order Station"
+  },
+  {
+    "code": "order_template_setting_code",
+    "text": "รหัส Order Station"
+  },
+  {
+    "code": "type_order_setting",
+    "text": "รูปแบบการตั้งค่า"
+  },
+  {
+    "code": "delete_picture_cover",
+    "text": "ลบรูปหน้าปก"
+  },
+  {
+    "code": "logo",
+    "text": "โลโก้ร้าน"
+  },
+  {
+    "code": "pin_unlock",
+    "text": "รหัสปลดล็อค"
+  },
+  {
+    "code": "is_stock_for_restaurant",
+    "text": "สต็อคสำหรับร้านอาหาร"
+  },
+  {
+    "code": "select_map_location",
+    "text": "เลือกตำแหน่ง"
+  },
+  {
+    "code": "select_group_number",
+    "text": "เลือกลำดับ"
+  },
+  {
+    "code": "group_number",
+    "text": "ลำดับที่"
+  },
+  {
+    "code": "please_select_group_number",
+    "text": "กรุณาเลือกลำดับ"
+  },
+  {
+    "code": "category_group_number",
+    "text": "ลำดับหมวด"
+  },
+  {
+    "code": "qr_type",
+    "text": "ประเภท QR Wallet"
+  },
+  {
+    "code": "secert_key",
+    "text": "Secert Key"
+  },
+  {
+    "code": "token_key",
+    "text": "Token Key"
+  },
+  {
+    "code": "category_group_number",
+    "text": "ลำดับหมวด"
+  },
+  {
+    "code": "kitchen_group_number",
+    "text": "ลำดับห้องครัว"
+  },
+  {
+    "code": "table_group_number",
+    "text": "ลำดับโต๊ะ"
+  },
+  {
+    "code": "zone_group_number",
+    "text": "ลำดับโซน"
+  },
+  {
+    "code": "manufacturer_code",
+    "text": "รหัสผู้ผลิต"
+  },
+  {
+    "code": "manufacturer_name",
+    "text": "ชื่อผู้ผลิต"
+  },
+  {
+    "code": "line_notify",
+    "text": "แจ้งเตือนผ่าน LINE"
+  },
+  {
+    "code": "token",
+    "text": "Token"
+  },
+  {
+    "code": "out_of_stock",
+    "text": "เตือนเมื่อสินค้าหมด"
+  },
+  {
+    "code": "save_bill",
+    "text": "เตือนเมื่อมีการบันทึกใบเสร็จ"
+  },
+  {
+    "code": "near_out_of_stock",
+    "text": "เตือนเมื่อสินค้าใกล้หมด (เหลือต่ำกว่าจุดผลิต)"
+  },
+  {
+    "code": "enable_notify",
+    "text": "เปิดการแจ้งเตือน"
+  },
+  {
+    "code": "token_is_valid",
+    "text": "Token นี้สามารถใช้ได้"
+  },
+  {
+    "code": "token_is_invalid",
+    "text": "Token นี้สามารถไม่ใช้ได้"
+  },
+  {
+    "code": "please_select_template_order_setting",
+    "text": "กรุณาเลือกรูปแบบการตั้งค่าเครื่อง Order Station"
+  },
+  {
+    "code": "next",
+    "text": "ถัดไป"
+  },
+  {
+    "code": "logout",
+    "text": "ออกจากระบบ"
+  },
+  {
+    "code": "create_shop",
+    "text": "สร้างร้านค้า"
+  },
+  {
+    "code": "please_enter_value",
+    "text": "กรุณากรอกข้อมูล"
+  },
+  {
+    "code": "step_1_select_language",
+    "text": "ขั้นตอนที่ 1 เลือกภาษา"
+  },
+  {
+    "code": "step_2_enter_shop_name",
+    "text": "ขั้นตอนที่ 2 กรอกข้อมูลร้านค้า"
+  },
+  {
+    "code": "are_you_sure_you_want_to_delete_this_item",
+    "text": "ต้องการลบข้อมูลใช่หรือไม่ ?"
+  },
+  {
+    "code": "file_size_exceeds_2_mb",
+    "text": "ขนาดไฟล์เกิน 2.0 MB"
+  },
+  {
+    "code": "please_select_a_file_that_does_not_exceed_2_mb",
+    "text": "กรุณาเลือกไฟล์ที่ขนาดไม่เกิน 2 .0 MB"
+  },
+  {
+    "code": "file_size",
+    "text": "ขนาดไฟล์ปัจุบัน"
+  },
+  {
+    "code": "save_failed",
+    "text": "บันทึกไม่สำเร็จ"
+  },
+  {
+    "code": "import_product_from_excel_file_size_2mb",
+    "text": "ไฟล์นำเข้าสินค้า .xlsx ขนาดไม่เกิน 2.0 MB"
+  },
+  {
+    "code": "how_do_you_want_to_discard_the_data",
+    "text": "ต้องการยกเลิกไฟล์"
+  },
+  {
+    "code": "data_uploaded",
+    "text": "ยกเลิกไฟล์นำเข้า"
+  },
+  {
+    "code": "total_item",
+    "text": "จำนวนรายการ"
+  },
+  {
+    "code": "please_select_a_file",
+    "text": "กรุณาเลือกไฟล์นำเข้ายอดยกมา"
+  },
+  {
+    "code": "download_file_excel_ex_sample_stock_balance",
+    "text": "ดาวน์โหลด ไฟล์นำเข้ายอดยกมา"
+  },
+  {
+    "code": "import_product_balance",
+    "text": "นำเข้าสินค้ายกมา"
+  },
+  {
+    "code": "import_stock_balance_from_excel_file_size_2mb",
+    "text": "ไฟล์นำเข้าสินค้ายกมา .xlsx ขนาดไม่เกิน 2.0 MB"
+  },
+  {
+    "code": "download_file_excel_ex_sample_product",
+    "text": "ดาวน์โหลด ไฟล์นำเข้าสินค้า"
+  },
+  {
+    "code": "have barcode not found in product",
+    "text": "ไม่มีบาร์โค้ดในระบบกรุณาตรวจสอบ"
+  },
+  {
+    "code": "product_price_member",
+    "text": "ราคาสมาชิก"
+  },
+  {
+    "code": "confirm_import_product",
+    "text": "ยืนยันการนำเข้าสินค้า"
+  },
+  {
+    "code": "confirm_import_product_file_name",
+    "text": "นำเข้าสินค้าจากไฟล์"
+  },
+  {
+    "code": "select_language_import",
+    "text": "เลือกภาษาที่นำเข้า"
+  },
+  {
+    "code": "product_dimension",
+    "text": "มิติสินค้า"
+  },
+  {
+    "code": "product_dimension_name",
+    "text": "ชื่อมิติสินค้า"
+  },
+  {
+    "code": "add_dimension",
+    "text": "เพิ่มรายละเอียดมิติ"
+  },
+  {
+    "code": "level_dimension",
+    "text": "ระดับมิติ"
+  },
+  {
+    "code": "dimension_code",
+    "text": "รหัสมิติ"
+  },
+  {
+    "code": "dimension_name",
+    "text": "ชื่อมิติ"
+  },
+  {
+    "code": "dimension_search",
+    "text": "ค้นหามิติ"
+  },
+  {
+    "code": "ref_dimension_is_disabled",
+    "text": "ไม่สามารถใช้งานได้เนื่องจากสถานะปิดอยู่"
+  },
+  {
+    "code": "export_success",
+    "text": "Download สำเร็จ"
+  },
+  {
+    "code": "not_export_success",
+    "text": "Download ไม่สำเร็จ"
+  },
+  {
+    "code": "company_data",
+    "text": "ข้อมูลบริษัท"
+  },
+  {
+    "code": "select_branch",
+    "text": "เลือกสาขา"
+  },
+  {
+    "code": "report",
+    "text": "รายงาน"
+  },
+  {
+    "code": "import_product_image",
+    "text": "นำเข้ารูปภาพสินค้า"
+  },
+  {
+    "code": "import_product_image_file_only_jpg_png",
+    "text": "นำเข้าได้เฉพาะไฟล์ .jpg .png"
+  },
+  {
+    "code": "file_name",
+    "text": "ชื่อไฟล์"
+  },
+  {
+    "code": "file_name_barcode_not_found",
+    "text": "ชื่อไฟล์ไม่ตรงกับบาร์โค้ดในระบบ"
+  },
+  {
+    "code": "upload_image",
+    "text": "อัพโหลดรูปภาพ"
+  },
+  {
+    "code": "add_image",
+    "text": "เพิ่มรูปภาพ"
+  },
+  {
+    "code": "dimension_detail",
+    "text": "รายละเอียดมิติ"
+  },
+  {
+    "code": "delete_dimension_detail",
+    "text": "ลบรายละเอียดมิติ"
+  },
+  {
+    "code": "contact_information",
+    "text": "ข้อมูลติดต่อ"
+  },
+  {
+    "code": "video",
+    "text": "วีดีโอ"
+  },
+  {
+    "code": "company_branch_data",
+    "text": "ข้อมูลสาขา"
+  },
+  {
+    "code": "business_type_search",
+    "text": "ค้นหาประเภทธุรกิจ"
+  },
+  {
+    "code": "business_type_name",
+    "text": "ชื่อประเภทธุรกิจ"
+  },
+  {
+    "code": "business_type_code",
+    "text": "รหัสประเภทธุรกิจ"
+  },
+  {
+    "code": "url_video",
+    "text": "ลิงค์วีดีโอ"
+  },
+  {
+    "code": "upload_video",
+    "text": "อัพโหลดวีดีโอ"
+  },
+  {
+    "code": "uri",
+    "text": "ลิงค์วีดีโอ"
+  },
+  {
+    "code": "choice_is_select",
+    "text": "เลือกให้เลย"
+  },
+  {
+    "code": "business_type_not_match_branch",
+    "text": "ประเภทธุรกิจไม่พบข้อมูลสาขา"
+  },
+  {
+    "code": "please_select_business_type",
+    "text": "กรุณาเลือกประเภทธุรกิจ"
+  },
+  {
+    "code": "select_business_type",
+    "text": "เลือกประเภทธุรกิจ"
+  },
+  {
+    "code": "branch_selected",
+    "text": "ตามสาขา"
+  },
+  {
+    "code": "filter_product",
+    "text": "ค้นหาสินค้า"
+  },
+  {
+    "code": "register_with_phone_number",
+    "text": "สมัครสมาชิกด้วยเบอร์โทรศัพท์"
+  },
+  {
+    "code": "trans_flag",
+    "text": "เมนู"
+  },
+  {
+    "code": "out",
+    "text": "ออก"
+  },
+  {
+    "code": "in",
+    "text": "เข้า"
+  },
+  {
+    "code": "please_select_barcode",
+    "text": "กรุณาเลือกบาร์โค้ดสินค้า"
+  },
+  {
+    "code": "report_salebydate",
+    "text": "รายงานยอดขายตามวัน"
+  },
+  {
+    "code": "total_exceptvat",
+    "text": "ยอดยกเว้นภาษี"
+  },
+  {
+    "code": "total_vatvalue",
+    "text": "ยอดภาษี"
+  },
+  {
+    "code": "total_beforevat",
+    "text": "ยอดก่อนภาษี"
+  },
+  {
+    "code": "loading",
+    "text": "กำลังโหลดข้อมูล..."
+  },
+  {
+    "code": "select_filter",
+    "text": "ค้นหาข้อมูล"
+  },
+  {
+    "code": "report_receivemoney",
+    "text": "รายงานรับเงินตามวัน"
+  },
+  {
+    "code": "transfer_amount",
+    "text": "เงินโอน"
+  },
+  {
+    "code": "credit_amount",
+    "text": "เครดิต"
+  },
+  {
+    "code": "coupon_amount",
+    "text": "คูปอง"
+  },
+  {
+    "code": "cheque_amount",
+    "text": "เช็ค"
+  },
+  {
+    "code": "show_detail",
+    "text": "แสดงรายละเอียด"
+  },
+  {
+    "code": "confirm_cancel",
+    "text": "ยืนยันการยกเลิก"
+  },
+  {
+    "code": "print",
+    "text": "พิมพ์"
+  },
+  {
+    "code": "text_form_taxid",
+    "text": "เลขที่ประจำตัวผู้เสียภาษีอากร"
+  },
+  {
+    "code": "text_form_tax_invoice",
+    "text": "ใบกำกับภาษี"
+  },
+  {
+    "code": "text_form_customer",
+    "text": "ผู้ซื้อ"
+  },
+  {
+    "code": "text_form_address",
+    "text": "ที่อยู่"
+  },
+  {
+    "code": "text_form_tax_id",
+    "text": "เลขประจำกับผู้เสียภาษีอากร"
+  },
+  {
+    "code": "text_form_text_money",
+    "text": "จำนวนเงิน (ตัวอักษร)"
+  },
+  {
+    "code": "text_form_discount",
+    "text": "หักส่วนลด"
+  },
+  {
+    "code": "text_form_total_amount",
+    "text": "ยอดเงินสุทธิ"
+  },
+  {
+    "code": "text_form_total_vat",
+    "text": "ภาษีมูลค่าเพิ่ม"
+  },
+  {
+    "code": "text_form_total_after_discount",
+    "text": "รวมเป็นเงิน"
+  },
+  {
+    "code": "text_form_total",
+    "text": "รวมมูลค่าสินค้า"
+  },
+  {
+    "code": "text_form_total_except_vat",
+    "text": "มูลค่ายกเว้นภาษี"
+  },
+  {
+    "code": "text_form_credit_note/tax_invoice",
+    "text": "ใบลดหนี้ / ใบกำกับภาษี"
+  },
+  {
+    "code": "text_form_receipt/tax_invoice",
+    "text": "ใบเสร็จรับเงิน / ใบกำกับภาษี"
+  },
+  {
+    "code": "text_form_tax_invoice_date",
+    "text": "วันที่ใบกำกับภาษี"
+  },
+  {
+    "code": "text_form_tax_invoice_number",
+    "text": "เลขที่ใบกำกับภาษี"
+  },
+  {
+    "code": "text_form_ref_total_original",
+    "text": "มูลค่าตามใบกำกับภาษีเดิม"
+  },
+  {
+    "code": "text_form_ref_total_correct",
+    "text": "มูลค่าที่ถูกต้อง"
+  },
+  {
+    "code": "text_form_ref_total_diff",
+    "text": "ผลต่าง"
+  },
+  {
+    "code": "product_semi_finished",
+    "text": "สินค้ากึ่งสำเร็จรูป"
+  },
+  {
+    "code": "ref_barcode_is_sub_barcode",
+    "text": "บาร์โค้ดนี้ถูกอ้างอิงไปแล้ว"
+  },
+  {
+    "code": "product_boom",
+    "text": "สูตรผลิต"
+  },
+  {
+    "code": "use_product_boom",
+    "text": "ใช้ระบบสูตรผลิต"
+  },
+  {
+    "code": "show_sum_by_date",
+    "text": "แสดงยอดรวมตามวัน"
+  },
+  {
+    "code": "how_to_print",
+    "text": "ต้องการปริ้นเอกสารหรือไม่ ?"
+  },
+  {
+    "code": "Trans falg not found",
+    "text": "ไม่พบ trans falg"
+  },
+  {
+    "code": "report_name",
+    "text": "ชื่อรายงาน"
+  },
+  {
+    "code": "report_code",
+    "text": "รหัสรายงาน"
+  },
+  {
+    "code": "reason",
+    "text": "เหตุผลในการยกเลิก"
+  },
+  {
+    "code": "report_group",
+    "text": "ประเภทรายงาน"
+  },
+  {
+    "code": "is_discount_point_of_purchase",
+    "text": "ลดราคา ณ จุดขาย"
+  },
+  {
+    "code": "is_for_restaurant",
+    "text": "ทานที่ร้าน"
+  },
+  {
+    "code": "is_for_takeaway",
+    "text": "กลับบ้าน"
+  },
+  {
+    "code": "is_for_delivery",
+    "text": "เดลิเวอรี่"
+  },
+  {
+    "code": "show_time_for_sale",
+    "text": " แสดงเวลาการขาย"
+  },
+  {
+    "code": "is_for_customer",
+    "text": "ลูกค้าสามารถสั่งได้"
+  },
+  {
+    "code": "is_for_customer_preorder",
+    "text": "ระบบสั่งอาหารล่วงหน้า"
+  },
+  {
+    "code": "from_customer_code",
+    "text": "จากรหัสลูกค้า"
+  },
+  {
+    "code": "to_customer_code",
+    "text": "ถึงรหัสลูกค้า"
+  },
+  {
+    "code": "clear_all",
+    "text": "ลบทั้งหมด"
+  },
+  {
+    "code": "show_iscancel",
+    "text": "แสดงเอกสารที่ถูกยกเลิก"
+  },
+  {
+    "code": "to_sale",
+    "text": "ถึงพนักงาน"
+  },
+  {
+    "code": "from_sale",
+    "text": "จากพนักงาน"
+  },
+  {
+    "code": "inquiry_cash",
+    "text": "เงินสด"
+  },
+  {
+    "code": "sale_merchant",
+    "text": "แสดงเฉพาะรายการขายหลังร้าน"
+  },
+  {
+    "code": "sale_all",
+    "text": "ทั้งหมด"
+  },
+  {
+    "code": "inquiry_all",
+    "text": "ทั้งหมด"
+  },
+  {
+    "code": "inquiry_credit",
+    "text": "เงินเชื่อ"
+  },
+  {
+    "code": "sale_pos",
+    "text": "แสดงเฉพาะรายการขายหน้าร้าน"
+  },
+  {
+    "code": "sale_type",
+    "text": "ประเภทการขาย"
+  },
+  {
+    "code": "merchant_id",
+    "text": "Merchant ID"
+  },
+  {
+    "code": "from_group",
+    "text": "จากกลุ่มสินค้า"
+  },
+  {
+    "code": "to_barcode",
+    "text": "ถึงรหัสสินค้า"
+  },
+  {
+    "code": "to_group",
+    "text": "ถึงกลุ่มสินค้า"
+  },
+  {
+    "code": "from_barcode",
+    "text": "จากรหัสสินค้า"
+  },
+  {
+    "code": "is_use_alert",
+    "text": "แสดงคำเตือน"
+  },
+  {
+    "code": "alert_description",
+    "text": "รายละเอียดคำเตือน"
+  },
+  {
+    "code": "is_preorder",
+    "text": "แจ้งเตือนระบบ Preorder"
+  },
+  {
+    "code": "show_iscost",
+    "text": "แสดงต้นทุนสินค้า"
+  },
+  {
+    "code": "not_success_process_report",
+    "text": "ประมวลผลรายงานไม่สำเร็จ"
+  },
+  {
+    "code": "error",
+    "text": "Error"
+  },
+  {
+    "code": "success",
+    "text": "สำเร็จ"
+  },
+  {
+    "code": "processing",
+    "text": "กำลังประมวลผล"
+  },
+  {
+    "code": "product_is_not_stock",
+    "text": "สินค้าไม่นับสต็อก"
+  },
+  {
+    "code": "to",
+    "text": "ถึง"
+  },
+  {
+    "code": "please_enter_pin",
+    "text": "*กรุณากรอกหมายเลข PIN"
+  },
+  {
+    "code": "file_format_error",
+    "text": "รูปแบบไฟล์ไม่ถูกต้อง"
+  },
+  {
+    "code": "product_exist",
+    "text": "มีสินค้าในระบบ"
+  },
+  {
+    "code": "product_duplicate",
+    "text": "สินค้าซ้ำในไฟล์นำเข้า"
+  },
+  {
+    "code": "product_new",
+    "text": "สินค้าใหม่"
+  },
+  {
+    "code": "product_unit_not_exist",
+    "text": "ไม่มีหน่วยนับในระบบ"
+  },
+  {
+    "code": "servicecharge",
+    "text": "Service charge"
+  },
+  {
+    "code": "to_supplier_code",
+    "text": "จากรหัสเจ้าหนี้"
+  },
+  {
+    "code": "from_supplier_code",
+    "text": "ถึงรหัสเจ้าหนี้"
+  },
+  {
+    "code": "show_product_bom",
+    "text": "ดูสูตรการผลิต"
+  },
+  {
+    "code": "no_bom_this_product",
+    "text": "ไม่มีสูตรผลิต"
+  },
+  {
+    "code": "select_image",
+    "text": "เลือกรูปภาพ"
+  },
+  {
+    "code": "select_video",
+    "text": "เลือกวีดีโอ"
+  },
+  {
+    "code": "no_video",
+    "text": "ไม่มีวีดีโอ"
+  },
+  {
+    "code": "copy_uri_success",
+    "text": "คัลลอก URL สำเร็จ"
+  },
+  {
+    "code": "file_download_pdf",
+    "text": "ประเภทไฟล์ .pdf"
+  },
+  {
+    "code": "file_download_excel",
+    "text": "ประเภทไฟล์ .xlsx"
+  },
+  {
+    "code": "select_columns",
+    "text": "เลือกคอลัมม์"
+  },
+  {
+    "code": "advance_setting",
+    "text": "กำหนดเอง"
+  },
+  {
+    "code": "cut_stock_by_bom",
+    "text": "ตัดสต๊อกตามสูตรผลิด (BOM)"
+  },
+  {
+    "code": "text_form_ref_invoice_number",
+    "text": "เลขที่อ้างอิง"
+  },
+  {
+    "code": "text_form_ref_invoice_date",
+    "text": "วันที่อ้างอิง"
+  },
+  {
+    "code": "withdraw_for_your_own_use",
+    "text": "เบิกใช้เอง"
+  },
+  {
+    "code": "pick_up_damaged_items",
+    "text": "เบิกของเสียหาย"
+  },
+  {
+    "code": "withdraw_production",
+    "text": "เบิกผลิต"
+  },
+  {
+    "code": "is_use_delivery",
+    "text": "ช่องทางการขาย"
+  },
+  {
+    "code": "is_use_transport",
+    "text": "ช่องทางการจัดส่ง"
+  },
+  {
+    "code": "transportchannel_amount",
+    "text": "ค่าจัดส่ง"
+  },
+  {
+    "code": "delivery",
+    "text": "เดลิเวอรี่"
+  },
+  {
+    "code": "apikey",
+    "text": "API Key"
+  },
+  {
+    "code": "get_api_key",
+    "text": "GET"
+  },
+  {
+    "code": "copy_api_key_success",
+    "text": "คัลลอก URL สำเร็จ"
+  },
+  {
+    "code": "product_price_delivery",
+    "text": "ราคาตามช่องทาง"
+  },
+  {
+    "code": "material_type",
+    "text": "ประเภทวัตถุดิบ"
+  },
+  {
+    "code": "product_general",
+    "text": "ทั่วไป"
+  },
+  {
+    "code": "product_material",
+    "text": "วัตถุดิบ"
+  },
+  {
+    "code": "cost_standard",
+    "text": "ต้นทุนมาตรฐาน"
+  },
+  {
+    "code": "payment_rounding",
+    "text": "การปัดเศษ"
+  },
+  {
+    "code": "coupon_usage_type",
+    "text": "ประเภทการใช้งานคูปอง"
+  },
+  {
+    "code": "coupon_multiple_use",
+    "text": "ใช้ได้หลายใบ"
+  },
+  {
+    "code": "coupon_can_use_multiple",
+    "text": "คูปองสามารถใช้ได้หลายใบต่อบิล"
+  },
+  {
+    "code": "coupon_single_use",
+    "text": "ใช้ได้ใบเดียว"
+  },
+  {
+    "code": "coupon_can_use_once",
+    "text": "คูปองสามารถใช้ได้ใบเดียวต่อบิล"
+  },
+  {
+    "code": "bank_transfer",
+    "text": "การโอนเงิน"
+  },
+  {
+    "code": "qrcode",
+    "text": "QR Code"
+  },
+  {
+    "code": "enable_rounding",
+    "text": "เปิดการปัดเศษ"
+  },
+  {
+    "code": "lower_bound",
+    "text": "ต่ำสุด"
+  },
+  {
+    "code": "upper_bound",
+    "text": "สูงสุด"
+  },
+  {
+    "code": "round_to",
+    "text": "ปัดเศษเป็น"
+  },
+  {
+    "code": "add_rule",
+    "text": "เพิ่มการปัดเศษ"
+  },
+  {
+    "code": "brand",
+    "text": "ยี่ห้อสินค้า"
+  },
+  {
+    "code": "select_brand",
+    "text": "เลือกยี่ห้อสินค้า"
+  },
+  {
+    "code": "category",
+    "text": "หมวดสินค้า"
+  },
+  {
+    "code": "select_category",
+    "text": "เลือกหมวดสินค้า"
+  },
+  {
+    "code": "class",
+    "text": "ระดับ"
+  },
+  {
+    "code": "select_class",
+    "text": "เลือกระดับ"
+  },
+  {
+    "code": "design",
+    "text": "รูปทรง"
+  },
+  {
+    "code": "select_design",
+    "text": "เลือกรูปทรง"
+  },
+  {
+    "code": "grade",
+    "text": "เกรด"
+  },
+  {
+    "code": "select_grade",
+    "text": "เลือกเกรด"
+  },
+  {
+    "code": "model",
+    "text": "รุ่น"
+  },
+  {
+    "code": "select_model",
+    "text": "เลือกรุ่น"
+  },
+  {
+    "code": "select_group_main",
+    "text": "เลือกกลุ่มสินค้าหลัก"
+  },
+  {
+    "code": "group_main",
+    "text": "กลุ่มสินค้าหลัก"
+  },
+  {
+    "code": "group_sub1",
+    "text": "กลุ่มสินค้าย่อย 1"
+  },
+  {
+    "code": "select_group_sub1",
+    "text": "เลือกกลุ่มสินค้าย่อย 1"
+  },
+  {
+    "code": "group_sub2",
+    "text": "กลุ่มสินค้าย่อย 2"
+  },
+  {
+    "code": "select_group_sub2",
+    "text": "เลือกกลุ่มสินค้าย่อย 2"
+  },
+  {
+    "code": "pattern",
+    "text": "รูปแบบสินค้า"
+  },
+  {
+    "code": "select_pattern",
+    "text": "เลือกรูปแบบสินค้า"
+  },
+  {
+    "code": "select_",
+    "text": "เลือก"
+  },
+  {
+    "code": "no_data_found",
+    "text": "ไม่พบข้อมูล"
+  },
+  {
+    "code": "menu_report",
+    "text": "รายงาน"
+  },
+  {
+    "code": "brand_code",
+    "text": "รหัสยี่ห้อสินค้า"
+  },
+  {
+    "code": "brand_name",
+    "text": "ชื่อยี่ห้อสินค้า"
+  },
+  {
+    "code": "category_code",
+    "text": "รหัสหมวดสินค้า"
+  },
+  {
+    "code": "category_name",
+    "text": "ชื่อหมวดสินค้า"
+  },
+  {
+    "code": "class_code",
+    "text": "รหัสระดับ"
+  },
+  {
+    "code": "class_name",
+    "text": "ชื่อระดับ"
+  },
+  {
+    "code": "design_code",
+    "text": "รหัสรูปทรง"
+  },
+  {
+    "code": "design_name",
+    "text": "ชื่อรูปทรง"
+  },
+  {
+    "code": "grade_code",
+    "text": "รหัสเกรด"
+  },
+  {
+    "code": "grade_name",
+    "text": "ชื่อเกรด"
+  },
+  {
+    "code": "model_code",
+    "text": "รหัสรุ่น"
+  },
+  {
+    "code": "model_name",
+    "text": "ชื่อรุ่น"
+  },
+  {
+    "code": "pattern_code",
+    "text": "รหัสรูปแบบ"
+  },
+  {
+    "code": "pattern_name",
+    "text": "ชื่อรูปแบบ"
+  },
+  {
+    "code": "group_main_code",
+    "text": "รหัสกลุ่มสินค้าหลัก"
+  },
+  {
+    "code": "group_main_name",
+    "text": "ชื่อกลุ่มสินค้าหลัก"
+  },
+  {
+    "code": "group_sub1_code",
+    "text": "รหัสกลุ่มสินค้าย่อย 1"
+  },
+  {
+    "code": "group_sub1_name",
+    "text": "ชื่อกลุ่มสินค้าย่อย 1"
+  },
+  {
+    "code": "group_sub2_code",
+    "text": "รหัสกลุ่มสินค้าย่อย 2"
+  },
+  {
+    "code": "group_sub2_name",
+    "text": "ชื่อกลุ่มสินค้าย่อย 2"
+  },
+  {
+    "code": "coupon_code",
+    "text": "รหัสคูปอง"
+  },
+  {
+    "code": "coupon_name",
+    "text": "ชื่อคูปอง"
+  },
+  {
+    "code": "coupon_type",
+    "text": "ประเภทคูปอง"
+  },
+  {
+    "code": "coupon_value",
+    "text": "มูลค่าคูปอง"
+  },
+  {
+    "code": "percentage",
+    "text": "เปอร์เซ็นต์"
+  },
+  {
+    "code": "fixed_amount",
+    "text": "จำนวนเงินคงที่"
+  },
+  {
+    "code": "cash_discount",
+    "text": "ส่วนลดเงินสด"
+  },
+  {
+    "code": "issued_date",
+    "text": "วันที่ออก"
+  },
+  {
+    "code": "expiry_date",
+    "text": "วันที่หมดอายุ"
+  },
+  {
+    "code": "max_usage_count",
+    "text": "จำนวนครั้งสูงสุดที่ใช้ได้"
+  },
+  {
+    "code": "max_usage_per_customer",
+    "text": "จำนวนครั้งสูงสุดต่อลูกค้า"
+  },
+  {
+    "code": "is_one_time_use",
+    "text": "ใช้ได้ครั้งเดียว"
+  },
+  {
+    "code": "customer_codes",
+    "text": "รหัสลูกค้า"
+  },
+  {
+    "code": "customer_codes_hint",
+    "text": "คั่นด้วยจุลภาค เช่น C001, C002"
+  },
+  {
+    "code": "select_customer",
+    "text": "เลือกลูกค้า"
+  },
+  {
+    "code": "selected_customers",
+    "text": "ลูกค้าที่เลือก"
+  },
+  {
+    "code": "added_customer",
+    "text": "เพิ่มลูกค้าแล้ว"
+  },
+  {
+    "code": "customer_already_exists",
+    "text": "ลูกค้านี้มีอยู่แล้ว"
+  },
+  {
+    "code": "use_button_to_select",
+    "text": "ใช้ปุ่มเลือกลูกค้า"
+  },
+  {
+    "code": "add_customer",
+    "text": "เพิ่มลูกค้า"
+  },
+  {
+    "code": "no_customers_selected",
+    "text": "ยังไม่มีลูกค้าที่เลือก"
+  },
+  {
+    "code": "tap_add_customer_to_start",
+    "text": "แตะปุ่มเพิ่มลูกค้าเพื่อเริ่มต้น"
+  },
+  {
+    "code": "coupon_code_required",
+    "text": "กรุณากรอกรหัสคูปอง"
+  },
+  {
+    "code": "coupon_value_required",
+    "text": "กรุณากรอกมูลค่าคูปอง"
+  },
+  {
+    "code": "coupon_product_conditions",
+    "text": "เงื่อนไขสินค้า"
+  },
+  {
+    "code": "coupon_product_condition_description",
+    "text": "กำหนดเงื่อนไขสินค้าที่ใช้คูปองได้ หากไม่ระบุ คูปองจะใช้ได้กับทุกสินค้า"
+  },
+  {
+    "code": "product_codes",
+    "text": "รหัสสินค้า"
+  },
+  {
+    "code": "group_codes",
+    "text": "รหัสกลุ่มสินค้า"
+  },
+  {
+    "code": "group_subone_codes",
+    "text": "รหัสกลุ่มย่อย 1"
+  },
+  {
+    "code": "group_subtwo_codes",
+    "text": "รหัสกลุ่มย่อย 2"
+  },
+  {
+    "code": "brand_codes",
+    "text": "รหัสแบรนด์"
+  },
+  {
+    "code": "design_codes",
+    "text": "รหัสดีไซน์"
+  },
+  {
+    "code": "model_codes",
+    "text": "รหัสโมเดล"
+  },
+  {
+    "code": "pattern_codes",
+    "text": "รหัสลาย"
+  },
+  {
+    "code": "grade_codes",
+    "text": "รหัสเกรด"
+  },
+  {
+    "code": "category_codes",
+    "text": "รหัสหมวดหมู่"
+  },
+  {
+    "code": "class_codes",
+    "text": "รหัสคลาส"
+  },
+  {
+    "code": "minimum_purchase_amount",
+    "text": "ยอดซื้อขั้นต่ำ"
+  },
+  {
+    "code": "minimum_amount",
+    "text": "ยอดขั้นต่ำ"
+  },
+  {
+    "code": "set_amount",
+    "text": "กำหนดยอด"
+  },
+  {
+    "code": "coupon_no_condition_set",
+    "text": "ยังไม่มีเงื่อนไข"
+  },
+  {
+    "code": "coupon_no_minimum_amount",
+    "text": "ไม่กำหนดยอดซื้อขั้นต่ำ"
+  },
+  {
+    "code": "coupon_confirm_delete_customer",
+    "text": "ยืนยันการลบลูกค้า"
+  },
+  {
+    "code": "coupon_confirm_delete_code",
+    "text": "ยืนยันการลบรหัส"
+  },
+  {
+    "code": "coupon_minimum_amount_dialog_title",
+    "text": "กำหนดยอดซื้อขั้นต่ำ"
+  },
+  {
+    "code": "coupon_minimum_amount_hint",
+    "text": "ระบุยอดซื้อขั้นต่ำที่ต้องการ"
+  },
+  {
+    "code": "coupon_minimum_amount_description",
+    "text": "ลูกค้าต้องซื้อสินค้าให้ครบยอดขั้นต่ำนี้จึงจะใช้คูปองได้"
+  },
+  {
+    "code": "coupon_amount_must_greater_zero",
+    "text": "ยอดเงินต้องมากกว่า 0"
+  },
+  {
+    "code": "coupon_amount_saved",
+    "text": "บันทึกยอดขั้นต่ำแล้ว"
+  },
+  {
+    "code": "coupon_amount_removed",
+    "text": "ลบยอดขั้นต่ำแล้ว"
+  },
+  {
+    "code": "delivery_note",
+    "text": "ใบส่งของ"
+  },
+  {
+    "code": "transaction_accrual_receive",
+    "text": "ตั้งหนี้จากการทยอยรับ"
+  },
+  {
+    "code": "transaction_sale_order",
+    "text": "ใบสั่งขาย"
+  },
+  {
+    "code": "transaction_quotation",
+    "text": "ใบเสนอราคา"
+  },
+  {
+    "code": "transaction_purchase_order",
+    "text": "ใบสั่งซื้อ"
+  },
+  {
+    "code": "transaction_quotation",
+    "text": "ใบเสนอราคา"
+  },
+  {
+    "code": "transaction_advance_payment",
+    "text": "จ่ายเงินล่วงหน้า"
+  },
+  {
+    "code": "main_menu",
+    "text": "เมนูหลัก"
+  },
+  {
+    "code": "work_page",
+    "text": "หน้างาน"
+  },
+  {
+    "code": "new_work_page",
+    "text": "เปิดหน้างานใหม่"
+  },
+  {
+    "code": "cart_system",
+    "text": "ระบบตะกร้าสินค้า"
+  },
+  {
+    "code": "switch_shop_confirm",
+    "text": "ยืนยันการสลับร้าน"
+  },
+  {
+    "code": "close_all_tabs",
+    "text": "หน้าจอจะปิดงานทั้งหมด"
+  },
+  {
+    "code": "work_data_lost",
+    "text": "ข้อมูลที่กำลังทำงานอยู่จะหายหมด"
+  },
+  {
+    "code": "confirm_switch_shop",
+    "text": "คุณต้องการสลับร้านหรือไม่?"
+  },
+  {
+    "code": "switch_shop",
+    "text": "สลับร้าน"
+  },
+  {
+    "code": "logout_confirm",
+    "text": "ยืนยันออกจากระบบ"
+  },
+  {
+    "code": "confirm_logout",
+    "text": "คุณต้องการออกจากระบบหรือไม่?"
+  },
+  {
+    "code": "select_language_thai",
+    "text": "เลือกภาษา ไทย"
+  },
+  {
+    "code": "search_shop",
+    "text": "ค้นหาร้าน..."
+  },
+  {
+    "code": "filter_all",
+    "text": "ทั้งหมด"
+  },
+  {
+    "code": "filter_frequent",
+    "text": "ใช้บ่อย"
+  },
+  {
+    "code": "filter_recent",
+    "text": "ใช้ล่าสุด"
+  },
+  {
+    "code": "no_shop_found",
+    "text": "ไม่พบร้านค้า"
+  },
+  {
+    "code": "try_different_search",
+    "text": "ลองค้นหาด้วยคำอื่น"
+  },
+  {
+    "code": "create_new_shop",
+    "text": "กรุณาสร้างร้านค้าใหม่"
+  },
+  {
+    "code": "owner",
+    "text": "เจ้าของ"
+  },
+  {
+    "code": "in_use",
+    "text": "ใช้งานอยู่"
+  },
+  {
+    "code": "search_shop_placeholder",
+    "text": "ค้นหาร้าน..."
+  },
+  {
+    "code": "search_branch_placeholder",
+    "text": "ค้นหาสาขา..."
+  },
+  {
+    "code": "no_branch_found",
+    "text": "ไม่พบสาขา"
+  },
+  {
+    "code": "create_new_branch",
+    "text": "กรุณาสร้างสาขาใหม่"
+  },
+  {
+    "code": "check_product",
+    "text": "ตรวจสอบสินค้า"
+  },
+  {
+    "code": "inventory_report",
+    "text": "รายงานสินค้าคงเหลือ"
+  },
+  {
+    "code": "other_reports",
+    "text": "รายงานอื่นๆ"
+  },
+  {
+    "code": "check_data",
+    "text": "ตรวจสอบข้อมูล"
+  },
+  {
+    "code": "design_form",
+    "text": "ออกแบบฟอร์ม"
+  },
+  {
+    "code": "create_sub_shop",
+    "text": "สร้างร้านย่อย"
+  },
+  {
+    "code": "set_loyalty_points",
+    "text": "กำหนดแต้มสะสม"
+  },
+  {
+    "code": "set_coupons",
+    "text": "กำหนดคูปอง"
+  },
+  {
+    "code": "print_product_label",
+    "text": "พิมพ์ Label สินค้า"
+  },
+  {
+    "code": "product_price_edit_history",
+    "text": "ประวัติการแก้ไขราคาสินค้า"
+  },
+  {
+    "code": "receive_back_advance_payment",
+    "text": "รับคืนเงินล่วงหน้า"
+  },
+  {
+    "code": "pay_deposit",
+    "text": "จ่ายเงินมัดจำ"
+  },
+  {
+    "code": "receive_back_deposit",
+    "text": "รับคืนเงินมัดจำ"
+  },
+  {
+    "code": "gradual_product_receipt",
+    "text": "รับสินค้าแบบทยอย"
+  },
+  {
+    "code": "set_debt_from_gradual_receipt",
+    "text": "ตั้งหนี้จากการทยอยรับสินค้า"
+  },
+  {
+    "code": "receive_advance_payment",
+    "text": "รับเงินล่วงหน้า"
+  },
+  {
+    "code": "return_advance_payment",
+    "text": "คืนเงินล่วงหน้า"
+  },
+  {
+    "code": "receive_deposit",
+    "text": "รับเงินมัดจำ"
+  },
+  {
+    "code": "return_deposit",
+    "text": "คืนเงินมัดจำ"
+  },
+  {
+    "code": "sales_report",
+    "text": "รายงานยอดขาย"
+  },
+  {
+    "code": "sales_report_by_date",
+    "text": "รายงานยอดขาย ตามวันที่"
+  },
+  {
+    "code": "product_movement",
+    "text": "เคลื่อนไหวสินค้า"
+  },
+  {
+    "code": "payment_received_report_by_date",
+    "text": "รายงานรับเงิน ตามวันที่"
+  },
+  {
+    "code": "debt_reduction_return_report",
+    "text": "รายงานลดหนี้/รับคืน"
+  },
+  {
+    "code": "gradual_receipt_report",
+    "text": "รายงานรับสินค้าแบบทยอยรับ"
+  },
+  {
+    "code": "gross_profit_by_document_report",
+    "text": "รายงานกำไรขั้นต้นตามเอกสาร"
+  },
+  {
+    "code": "gross_profit_by_product_report",
+    "text": "รายงานกำไรขั้นต้นตามสินค้า"
+  },
+  {
+    "code": "report_condition_date_range",
+    "text": "ช่วงวันที่รายงาน"
+  },
+  {
+    "code": "report_condition_start_date",
+    "text": "วันที่เริ่มต้น"
+  },
+  {
+    "code": "report_condition_end_date",
+    "text": "วันที่สิ้นสุด"
+  },
+  {
+    "code": "report_condition_select_branch",
+    "text": "เลือกสาขา"
+  },
+  {
+    "code": "report_condition_click_select_branch",
+    "text": "คลิกเพื่อเลือกสาขา"
+  },
+  {
+    "code": "report_condition_specify_date",
+    "text": "กรุณาระบุช่วงวันที่และตัวเลือกการแสดงผล"
+  },
+  {
+    "code": "export_report_select_format",
+    "text": "เลือกประเภทการส่งออกรายงาน"
+  },
+  {
+    "code": "report_condition_close",
+    "text": "ปิด"
+  },
+  {
+    "code": "report_condition_as_of_date",
+    "text": "ณ วันที่"
+  },
+  {
+    "code": "report_condition_select_barcode",
+    "text": "เลือกสินค้า"
+  },
+  {
+    "code": "report_condition_click_select_barcode",
+    "text": "คลิกเพื่อเลืิอกสินค้า"
+  },
+  {
+    "code": "export_report_pdf_desc",
+    "text": "ส่งออกรายงานเป็นไฟล์ PDF"
+  },
+  {
+    "code": "export_report_excel_desc",
+    "text": "ส่งออกรายงานเป็นไฟล์ Excel"
+  },
+  {
+    "code": "export_report_close",
+    "text": "ปิด"
+  },
+  {
+    "code": "export_report_start",
+    "text": "เริ่มการส่งออกรายงาน"
+  },
+  {
+    "code": "report_condition_cancel",
+    "text": "ยกเลิก"
+  },
+  {
+    "code": "report_condition_search",
+    "text": "ค้นหา"
+  },
+  {
+    "code": "confirm_processing",
+    "text": "ยืนยันการประมวลผล"
+  },
+  {
+    "code": "this_task_takes_long_time",
+    "text": "การทำงานนี้ใช้เวลานาน"
+  },
+  {
+    "code": "need_rebuild_calculation_system",
+    "text": "เพราะต้องสร้างระบบคำนวณใหม่ทั้งหมด"
+  },
+  {
+    "code": "do_you_want_to_continue",
+    "text": "คุณต้องการดำเนินการต่อหรือไม่?"
+  },
+  {
+    "code": "processing_command_sent_working_in_background",
+    "text": "ส่งคำสั่งประมวลผลแล้ว กำลังทำงานในพื้นหลัง..."
+  },
+  {
+    "code": "receive_send_money_pos",
+    "text": "การรับเงิน/การส่งเงิน (POS)"
+  },
+  {
+    "code": "import_product_data",
+    "text": "นำเข้าข้อมูลสินค้า"
+  },
+  {
+    "code": "manage_knowledge_base",
+    "text": "จัดการ Knowledge Base"
+  },
+  {
+    "code": "purchase_list",
+    "text": "รายการซื้อ"
+  },
+  {
+    "code": "sales_list",
+    "text": "รายการขาย"
+  },
+  {
+    "code": "stock_list",
+    "text": "รายการสต็อก"
+  },
+  {
+    "code": "payment_list",
+    "text": "รายการชำระเงิน"
+  },
+  {
+    "code": "accounting_list",
+    "text": "รายการบัญชี"
+  },
+  {
+    "code": "manage_products",
+    "text": "จัดการสินค้า"
+  },
+  {
+    "code": "manage_database",
+    "text": "จัดการฐานข้อมูล"
+  },
+  {
+    "code": "manage_customers_creditors",
+    "text": "จัดการลูกค้า/เจ้าหนี้"
+  },
+  {
+    "code": "sales_settings",
+    "text": "ตั้งค่าการขาย"
+  },
+  {
+    "code": "master_data",
+    "text": "ข้อมูลหลัก"
+  },
+  {
+    "code": "restaurant_cafe",
+    "text": "ร้านอาหาร/คาเฟ่"
+  },
+  {
+    "code": "system_settings",
+    "text": "การตั้งค่าระบบ"
+  },
+  {
+    "code": "company_settings",
+    "text": "การตั้งค่าบริษัท"
+  },
+  {
+    "code": "no_data",
+    "text": "ไม่มีข้อมูล"
+  },
+  {
+    "code": "no_data_to_display",
+    "text": "ไม่มีข้อมูลที่จะแสดง"
+  },
+  {
+    "code": "no_items_yet",
+    "text": "ยังไม่มีรายการ"
+  },
+  {
+    "code": "do_you_want_to_delete",
+    "text": "ต้องการลบข้อมูลใช่หรือไม่?"
+  },
+  {
+    "code": "time",
+    "text": "เวลา"
+  },
+  {
+    "code": "tax",
+    "text": "ภาษี"
+  },
+  {
+    "code": "note",
+    "text": "หมายเหตุ"
+  },
+  {
+    "code": "import",
+    "text": "นำเข้า"
+  },
+  {
+    "code": "select",
+    "text": "เลือก"
+  },
+  {
+    "code": "please_select",
+    "text": "กรุณาเลือก"
+  },
+  {
+    "code": "please_enter",
+    "text": "กรุณาระบุ"
+  },
+  {
+    "code": "required",
+    "text": "จำเป็น"
+  },
+  {
+    "code": "optional",
+    "text": "ไม่จำเป็น"
+  },
+  {
+    "code": "submit",
+    "text": "ส่ง"
+  },
+  {
+    "code": "refresh",
+    "text": "รีเฟรช"
+  },
+  {
+    "code": "view",
+    "text": "ดู"
+  },
+  {
+    "code": "download",
+    "text": "ดาวน์โหลด"
+  },
+  {
+    "code": "upload",
+    "text": "อัพโหลด"
+  },
+  {
+    "code": "product_delete_data",
+    "text": "ลบข้อมูลสินค้า"
+  },
+  {
+    "code": "system_notification",
+    "text": "แจ้งเตือนระบบ"
+  },
+  {
+    "code": "product_save_success",
+    "text": "บันทึก ข้อมูลสินค้า สำเร็จ!"
+  },
+  {
+    "code": "product_update_success",
+    "text": "แก้ไข ข้อมูลสินค้า สำเร็จ!"
+  },
+  {
+    "code": "product_delete_confirm",
+    "text": "ต้องการลบข้อมูลสินค้าใช่หรือไม่?"
+  },
+  {
+    "code": "product_name_3",
+    "text": "ชื่อสินค้า 3"
+  },
+  {
+    "code": "product_name_4",
+    "text": "ชื่อสินค้า 4"
+  },
+  {
+    "code": "product_name_5",
+    "text": "ชื่อสินค้า 5"
+  },
+  {
+    "code": "description_1",
+    "text": "รายละเอียด 1"
+  },
+  {
+    "code": "description_2",
+    "text": "รายละเอียด 2"
+  },
+  {
+    "code": "description_3",
+    "text": "รายละเอียด 3"
+  },
+  {
+    "code": "description_4",
+    "text": "รายละเอียด 4"
+  },
+  {
+    "code": "description_5",
+    "text": "รายละเอียด 5"
+  },
+  {
+    "code": "item_reference_code",
+    "text": "รหัสสินค้าอ้างอิง"
+  },
+  {
+    "code": "unit_reference_code",
+    "text": "รหัสหน่วยนับอ้างอิง"
+  },
+  {
+    "code": "unit_numerator",
+    "text": "หน่วย (ตัวตั้ง)"
+  },
+  {
+    "code": "unit_denominator",
+    "text": "หน่วย (ตัวหาร)"
+  },
+  {
+    "code": "unit_name_2",
+    "text": "ชื่อหน่วยนับ 2"
+  },
+  {
+    "code": "unit_name_3",
+    "text": "ชื่อหน่วยนับ 3"
+  },
+  {
+    "code": "unit_name_4",
+    "text": "ชื่อหน่วยนับ 4"
+  },
+  {
+    "code": "unit_name_5",
+    "text": "ชื่อหน่วยนับ 5"
+  },
+  {
+    "code": "select_addon_option",
+    "text": "เลือกตัวเลือกเสริม"
+  },
+  {
+    "code": "add_addon_option",
+    "text": "เพิ่มตัวเลือกเสริม"
+  },
+  {
+    "code": "sub_options",
+    "text": "ตัวเลือกย่อย: "
+  },
+  {
+    "code": "delete_addon_option",
+    "text": "ลบตัวเลือกเสริม"
+  },
+  {
+    "code": "photo_gallery",
+    "text": "คลังรูปภาพ"
+  },
+  {
+    "code": "product_already_exists",
+    "text": "สินค้ามีอยู่แล้ว"
+  },
+  {
+    "code": "unit_not_exist",
+    "text": "หน่วยสินค้าไม่มีอยู่"
+  },
+  {
+    "code": "file_size_limit_exceeded",
+    "text": "ขนาดไฟล์เกิน 2 MB"
+  },
+  {
+    "code": "please_select_file_not_exceed_2mb",
+    "text": "กรุณาเลือกไฟล์ที่ไม่เกิน 2 MB"
+  },
+  {
+    "code": "file_size_label",
+    "text": "ขนาดไฟล์"
+  },
+  {
+    "code": "price_member",
+    "text": "ราคาสมาชิก"
+  },
+  {
+    "code": "error_occurred",
+    "text": "เกิดข้อผิดพลาด"
+  },
+  {
+    "code": "select_import_language",
+    "text": "เลือกภาษาการนำเข้า"
+  },
+  {
+    "code": "loading_data",
+    "text": "กำลังโหลดข้อมูล..."
+  },
+  {
+    "code": "selling_price",
+    "text": "ราคาขาย"
+  },
+  {
+    "code": "import_status",
+    "text": "สถานะการนำเข้า"
+  },
+  {
+    "code": "add_new_line_with_barcode",
+    "text": "เพิ่มบรรทัดใหม่ด้วยบาร์โค้ด"
+  },
+  {
+    "code": "confirm_delete_data",
+    "text": "คุณต้องการลบข้อมูลหรือไม่"
+  },
+  {
+    "code": "confirm_import_file",
+    "text": "ยืนยันการนำเข้าไฟล์"
+  },
+  {
+    "code": "invalid_file_format",
+    "text": "รูปแบบไฟล์ไม่ถูกต้อง"
+  },
+  {
+    "code": "operation_started",
+    "text": "เริ่มดำเนินการแล้ว"
+  },
+  {
+    "code": "update_failed",
+    "text": "อัพเดทไม่สำเร็จ"
+  },
+  {
+    "code": "delete_failed",
+    "text": "ลบไม่สำเร็จ"
+  },
+  {
+    "code": "verify_failed",
+    "text": "ตรวจสอบไม่สำเร็จ"
+  },
+  {
+    "code": "import_completed",
+    "text": "นำเข้าเสร็จสิ้น"
+  },
+  {
+    "code": "product_import_completed",
+    "text": "นำเข้าสินค้าเสร็จสมบูรณ์"
+  },
+  {
+    "code": "ready_for_new_import",
+    "text": "พร้อมสำหรับการนำเข้าใหม่"
+  },
+  {
+    "code": "import_product_from_excel",
+    "text": "นำเข้าสินค้าจากไฟล์ Excel ขนาดไม่เกิน 2MB"
+  },
+  {
+    "code": "download_sample_excel",
+    "text": "ดาวน์โหลดไฟล์ตัวอย่าง Excel สินค้า"
+  },
+  {
+    "code": "saving_data",
+    "text": "กำลังบันทึกข้อมูล"
+  },
+  {
+    "code": "status_label",
+    "text": "สถานะ"
+  },
+  {
+    "code": "please_wait",
+    "text": "กรุณารอสักครู่..."
+  },
+  {
+    "code": "loading_customer_data",
+    "text": "กำลังโหลดข้อมูลลูกค้า"
+  },
+  {
+    "code": "loading_coupon_data",
+    "text": "กำลังโหลดข้อมูลคูปอง"
+  },
+  {
+    "code": "cart_delete_result",
+    "text": "ผลการลบตะกร้า"
+  },
+  {
+    "code": "failed",
+    "text": "ไม่สำเร็จ"
+  },
+  {
+    "code": "doc_reference",
+    "text": "เอกสารอ้างอิง"
+  },
+  {
+    "code": "reference_date",
+    "text": "วันที่อ้างอิง"
+  },
+  {
+    "code": "cart_name_label",
+    "text": "ชื่อตะกร้า"
+  },
+  {
+    "code": "note_label",
+    "text": "หมายเหตุ"
+  },
+  {
+    "code": "discount_from_points",
+    "text": "ส่วนลดจากแต้ม"
+  },
+  {
+    "code": "discount_from_coupon",
+    "text": "ส่วนลดจากคูปอง"
+  },
+  {
+    "code": "advance_payment",
+    "text": "เงินล่วงหน้า"
+  },
+  {
+    "code": "points",
+    "text": "แต้ม"
+  },
+  {
+    "code": "use_points",
+    "text": "ใช้แต้ม"
+  },
+  {
+    "code": "points_value",
+    "text": "มูลค่าแต้ม"
+  },
+  {
+    "code": "points_code",
+    "text": "รหัสสะสมแต้ม"
+  },
+  {
+    "code": "points_received",
+    "text": "แต้มที่ได้รับ"
+  },
+  {
+    "code": "event_quantity",
+    "text": "จำนวนเหตุการณ์"
+  },
+  {
+    "code": "additional_options",
+    "text": "ตัวเลือกเพิ่มเติม"
+  },
+  {
+    "code": "options_found",
+    "text": "พบตัวเลือก"
+  },
+  {
+    "code": "items_text",
+    "text": "รายการ"
+  },
+  {
+    "code": "price_colon",
+    "text": "ราคา"
+  },
+  {
+    "code": "no_additional_options",
+    "text": "ไม่มีตัวเลือกเพิ่มเติม"
+  },
+  {
+    "code": "searching_document",
+    "text": "กำลังค้นหาเอกสาร..."
+  },
+  {
+    "code": "error_update_data",
+    "text": "เกิดข้อผิดพลาดในการอัพเดทข้อมูล"
+  },
+  {
+    "code": "document_already_exists",
+    "text": "มีอยู่ในรายการแล้ว"
+  },
+  {
+    "code": "error_add_reference",
+    "text": "เกิดข้อผิดพลาดในการเพิ่มเอกสารอ้างอิง"
+  },
+  {
+    "code": "error_process_document",
+    "text": "เกิดข้อผิดพลาดในการประมวลผลเอกสาร"
+  },
+  {
+    "code": "error_calculate_total",
+    "text": "เกิดข้อผิดพลาดในการคำนวณยอดรวม"
+  },
+  {
+    "code": "error_add_product",
+    "text": "เกิดข้อผิดพลาดในการเพิ่มรายการสินค้า"
+  },
+  {
+    "code": "no_barcode_cannot_select",
+    "text": "รายการนี้ไม่มีบาร์โค้ด ไม่สามารถเลือกเอกสารอ้างอิงได้"
+  },
+  {
+    "code": "update_reference_doc",
+    "text": "อัพเดทเอกสารอ้างอิง"
+  },
+  {
+    "code": "no_product_in_po",
+    "text": "ไม่มีสินค้าบาร์โค้ดในใบ PO นี้"
+  },
+  {
+    "code": "customer_code_changed_warning",
+    "text": "มีการแก้ไขรหัสลูกค้า อาจจะทำให้ราคาสินค้าผิดพลาด"
+  },
+  {
+    "code": "delete_reference_and_products",
+    "text": "ลบเอกสารอ้างอิงและรายการสินค้าที่เกี่ยวข้องแล้ว"
+  },
+  {
+    "code": "please_select_product",
+    "text": "โปรดเลือกรายการสินค้า"
+  },
+  {
+    "code": "hide_preview",
+    "text": "ซ่อน Preview"
+  },
+  {
+    "code": "show_preview",
+    "text": "แสดง Preview"
+  },
+  {
+    "code": "updating_data",
+    "text": "กำลังอัพเดทข้อมูล..."
+  },
+  {
+    "code": "deleting_data",
+    "text": "กำလังลบข้อมูล..."
+  },
+  {
+    "code": "deleting_multiple_data",
+    "text": "กำลังลบข้อมูลหลายรายการ..."
+  },
+  {
+    "code": "fetching_data",
+    "text": "กำลังดึงข้อมูล..."
+  },
+  {
+    "code": "creating_full_tax_invoice",
+    "text": "กำลังสร้างใบกำกับภาษีแบบเต็ม..."
+  },
+  {
+    "code": "delete_multiple_success",
+    "text": "ลบข้อมูลหลายรายการสำเร็จ"
+  },
+  {
+    "code": "delete_multiple_failed",
+    "text": "ลบข้อมูลหลายรายการไม่สำเร็จ"
+  },
+  {
+    "code": "create_full_tax_invoice_success",
+    "text": "สร้างใบกำกับภาษีแบบเต็มสำเร็จ"
+  },
+  {
+    "code": "create_full_tax_invoice_failed",
+    "text": "สร้างใบกำกับภาษีแบบเต็มไม่สำเร็จ"
+  },
+  {
+    "code": "confirm_full_tax_invoice",
+    "text": "คุณต้องการออกใบกำกับภาษีเต็มรูปแบบสำหรับเอกสารหรือไม่?"
+  },
+  {
+    "code": "wrong_name_address",
+    "text": "ชื่อ/ที่อยู่ ผิด"
+  },
+  {
+    "code": "wrong_date",
+    "text": "วันที่ผิด"
+  },
+  {
+    "code": "wrong_quantity_value",
+    "text": "จำนวน/มูลค่าผิด"
+  },
+  {
+    "code": "wrong_product",
+    "text": "สินค้าผิด"
+  },
+  {
+    "code": "from",
+    "text": "จาก"
+  },
+  {
+    "code": "position",
+    "text": "ตำแหน่ง"
+  },
+  {
+    "code": "select_label",
+    "text": "เลือก"
+  },
+  {
+    "code": "no_product_items",
+    "text": "ยังไม่มีรายการสินค้า"
+  },
+  {
+    "code": "press_add_product_button",
+    "text": "กดปุ่ม เพิ่มสินค้า เพื่อเริ่มต้น"
+  },
+  {
+    "code": "tap_add_product_button",
+    "text": "แตะปุ่ม เพิ่มสินค้า เพื่อเริ่มต้น"
+  },
+  {
+    "code": "delete_item_at",
+    "text": "ลบรายการที่"
+  },
+  {
+    "code": "press_to_delete_item",
+    "text": "กดเพื่อลบรายการนี้"
+  },
+  {
+    "code": "delete_item",
+    "text": "ลบรายการ"
+  },
+  {
+    "code": "note_with_colon",
+    "text": "หมายเหตุ:"
+  },
+  {
+    "code": "press_to_edit_note",
+    "text": "กดเพื่อแก้ไขหมายเหตุ"
+  },
+  {
+    "code": "additional_options_count",
+    "text": "ตัวเลือกเพิ่มเติม"
+  },
+  {
+    "code": "items_label",
+    "text": "รายการ"
+  },
+  {
+    "code": "press_to_edit_options",
+    "text": "กดเพื่อแก้ไขตัวเลือกเพิ่มเติม"
+  },
+  {
+    "code": "options",
+    "text": "ตัวเลือก"
+  },
+  {
+    "code": "item_at",
+    "text": "รายการที่"
+  },
+  {
+    "code": "unit_label",
+    "text": "หน่วย:"
+  },
+  {
+    "code": "press_to_edit_product_item",
+    "text": "กดเพื่อแก้ไขรายการสินค้า"
+  },
+  {
+    "code": "press_to_select_product",
+    "text": "กดเพื่อเลือกสินค้า"
+  },
+  {
+    "code": "press_to_edit_quantity",
+    "text": "กดเพื่อแก้ไขจำนวน"
+  },
+  {
+    "code": "press_to_edit_price",
+    "text": "กดเพื่อแก้ไขราคา"
+  },
+  {
+    "code": "press_to_edit_barcode",
+    "text": "กดเພื่อแก้ไขบาร์โค้ด"
+  },
+  {
+    "code": "press_to_select_warehouse",
+    "text": "กดเพื่อเลือกคลังสินค้า"
+  },
+  {
+    "code": "press_to_select_location",
+    "text": "กดเพื่อเลือกตำแหน่ง"
+  },
+  {
+    "code": "press_to_edit_data",
+    "text": "กดเพื่อแก้ไขข้อมูล"
+  },
+  {
+    "code": "sequence_number",
+    "text": "ລំดับ"
+  },
+  {
+    "code": "data_field",
+    "text": "ข้อมูล"
+  },
+  {
+    "code": "items",
+    "text": "รายการ"
+  },
+  {
+    "code": "quantity",
+    "text": "จำนวน"
+  },
+  {
+    "code": "press_to_edit_product",
+    "text": "กดเพื่อแก้ไขรายการสินค้า"
+  },
+  {
+    "code": "supplement_options",
+    "text": "ตัวเลือกเสริม"
+  },
+  {
+    "code": "product_registry",
+    "text": "ทะเบียนสินค้า"
+  },
+  {
+    "code": "purchase_product",
+    "text": "ซื้อสินค้า"
+  },
+  {
+    "code": "test_send_message",
+    "text": "ทดสอบการส่งข้อความ"
+  },
+  {
+    "code": "file_saved_successfully",
+    "text": "บันทึกไฟล์เรียบร้อยแล้ว"
+  },
+  {
+    "code": "load_data_failed",
+    "text": "โหลดข้อมูลไม่สำเร็จ"
+  },
+  {
+    "code": "additional_language",
+    "text": "ภาษาเพิ่มเติม"
+  },
+  {
+    "code": "select_data_language",
+    "text": "เลือกภาษาข้อมูล"
+  },
+  {
+    "code": "pdf.save_dialog_title",
+    "text": "บันทึกไฟล์ PDF"
+  },
+  {
+    "code": "pdf.save_success",
+    "text": "บันทึกไฟล์เรียบร้อยแล้ว"
+  },
+  {
+    "code": "error.api_call_failed",
+    "text": "เกิดข้อผิดพลาดในการเรียก API"
+  },
+  {
+    "code": "error.connection_failed",
+    "text": "เกิดข้อผิดพลาดในการเชื่อมต่อ"
+  },
+  {
+    "code": "import.action.created",
+    "text": "สร้างใหม่"
+  },
+  {
+    "code": "import.action.updated",
+    "text": "อัปเดต"
+  },
+  {
+    "code": "import.action.unchanged",
+    "text": "ไม่เปลี่ยนแปลง"
+  },
+  {
+    "code": "otp.verify_identity",
+    "text": "ยืนยันตัวตน"
+  },
+  {
+    "code": "otp.message_sent",
+    "text": "ระบบได้ทำการส่ง OTP ไปที่หมายเลขโทรศัพท์"
+  },
+  {
+    "code": "otp.verify_button",
+    "text": "ยืนยัน"
+  },
+  {
+    "code": "edit_failed",
+    "text": "แก้ไขไม่สำเร็จ"
+  },
+  {
+    "code": "shop_name",
+    "text": "ร้าน"
+  },
+  {
+    "code": "process",
+    "text": "ประมวลผล"
+  },
+  {
+    "code": "sequence",
+    "text": "ลำดับ"
+  },
+  {
+    "code": "remaining_unit",
+    "text": "หน่วยนับคงเหลือ"
+  },
+  {
+    "code": "document_type",
+    "text": "ประเภทเอกสาร"
+  },
+  {
+    "code": "item_count",
+    "text": "จำนวนรายการ"
+  },
+  {
+    "code": "point_setting",
+    "text": "กำหนดแต้มสะสม"
+  },
+  {
+    "code": "take_new_photo",
+    "text": "ถ่ายรูปใหม่"
+  },
+  {
+    "code": "select_new_image",
+    "text": "เลือกรูปใหม่"
+  },
+  {
+    "code": "no_delivery_price_in_pos",
+    "text": "version POS : ไม่มีราคา deliver"
+  },
+  {
+    "code": "add_payment_entry",
+    "text": "เพิ่มรายการรับชำระ"
+  },
+  {
+    "code": "sub_pattern_name",
+    "text": "ชื่อรูปแบบย่อย"
+  },
+  {
+    "code": "add_sub_item",
+    "text": "เพิ่มรายการย่อย"
+  },
+  {
+    "code": "import_success",
+    "text": "Import สำเร็จ"
+  },
+  {
+    "code": "no_data_found_in_excel",
+    "text": "ไม่พบข้อมูลในไฟล์ Excel"
+  },
+  {
+    "code": "import_error",
+    "text": "เกิดข้อผิดพลาดในการ Import"
+  },
+  {
+    "code": "no_product_selected",
+    "text": "ยังไม่เลือกสินค้า"
+  },
+  {
+    "code": "invalid_format",
+    "text": "รูปแบบไม่ถูกต้อง"
+  },
+  {
+    "code": "cannot_save",
+    "text": "ไม่สามารถบันทึกได้"
+  },
+  {
+    "code": "please_check_time_format",
+    "text": "โปรดตรวจสอบรูปแบบเวลา เช่น เวลาแต่ละช่วงทับซ้อนกัน เวลาเปิดและปิดตรงกัน"
+  },
+  {
+    "code": "no_valid_data_in_excel",
+    "text": "ไม่พบข้อมูลที่ถูกต้องในไฟล์ Excel"
+  },
+  {
+    "code": "daily_data",
+    "text": "ข้อมูลรายวัน"
+  },
+  {
+    "code": "shopping_cart_system",
+    "text": "ระบบตะกร้าสินค้า"
+  },
+  {
+    "code": "latest_number",
+    "text": "เลขที่ล่าสุด"
+  },
+  {
+    "code": "latest_date",
+    "text": "วันที่ล่าสุด"
+  },
+  {
+    "code": "document_value",
+    "text": "มูลค่าเอกสาร"
+  },
+  {
+    "code": "option_detail.add_sub_option",
+    "text": "เพิ่มตัวเลือกย่อย"
+  },
+  {
+    "code": "option_detail.edit_sub_option",
+    "text": "แก้ไขตัวเลือกย่อย"
+  },
+  {
+    "code": "option_detail.please_specify_barcode",
+    "text": "กรุณาระบุ Barcode"
+  },
+  {
+    "code": "option_detail.option_group_name_1",
+    "text": "ชื่อกลุ่มตัวเลือก 1"
+  },
+  {
+    "code": "option_detail.option_group_name_2",
+    "text": "ชื่อกลุ่มตัวเลือก 2"
+  },
+  {
+    "code": "option_detail.option_group_name_3",
+    "text": "ชื่อกลุ่มตัวเลือก 3"
+  },
+  {
+    "code": "option_detail.option_group_name_4",
+    "text": "ชื่อกลุ่มตัวเลือก 4"
+  },
+  {
+    "code": "option_detail.option_group_name_5",
+    "text": "ชื่อกลุ่มตัวเลือก 5"
+  },
+  {
+    "code": "option_detail.please_specify_option_group_name",
+    "text": "กรุณาระบุ ชื่อกลุ่มตัวเลือก"
+  },
+  {
+    "code": "option_detail.price",
+    "text": "ราคา"
+  },
+  {
+    "code": "option_detail.please_specify_price",
+    "text": "กรุณาระบุ ราคา"
+  },
+  {
+    "code": "option_detail.quantity",
+    "text": "จำนวน"
+  },
+  {
+    "code": "option_detail.maximum_quantity",
+    "text": "จำนวนสูงสุด"
+  },
+  {
+    "code": "option_detail.suggest_code",
+    "text": "รหัสแนะนำ"
+  },
+  {
+    "code": "option_detail.unit",
+    "text": "หน่วยนับ"
+  },
+  {
+    "code": "option_detail.select_immediately",
+    "text": "เลือกให้เลย"
+  },
+  {
+    "code": "option_detail.default_value",
+    "text": "ค่าเริ่มต้น"
+  },
+  {
+    "code": "import_product_detail.no_data",
+    "text": "ไม่มีข้อมูล"
+  },
+  {
+    "code": "import_product_detail.product_import_details",
+    "text": "รายละเอียดการนำเข้าสินค้า"
+  },
+  {
+    "code": "import_product_detail.total",
+    "text": "ทั้งหมด"
+  },
+  {
+    "code": "import_product_detail.items",
+    "text": "รายการ"
+  },
+  {
+    "code": "import_product_detail.showing",
+    "text": "แสดง"
+  },
+  {
+    "code": "import_product_detail.search",
+    "text": "ค้นหา"
+  },
+  {
+    "code": "import_product_detail.search_hint",
+    "text": "ค้นหาจาก Barcode, รหัสสินค้า, ชื่อสินค้า..."
+  },
+  {
+    "code": "import_product_detail.all",
+    "text": "ทั้งหมด"
+  },
+  {
+    "code": "import_product_detail.unchanged",
+    "text": "เหมือนกัน"
+  },
+  {
+    "code": "import_product_detail.no_data_found",
+    "text": "ไม่พบข้อมูลที่ค้นหา"
+  },
+  {
+    "code": "import_product_detail.product_code",
+    "text": "รหัสสินค้า"
+  },
+  {
+    "code": "import_product_detail.product_name",
+    "text": "ชื่อสินค้า"
+  },
+  {
+    "code": "import_product_detail.unit",
+    "text": "หน่วยนับ"
+  },
+  {
+    "code": "database_master_info.data_by_type",
+    "text": "ข้อมูลตามประเภท"
+  },
+  {
+    "code": "database_master_info.refresh",
+    "text": "รีเฟรช"
+  },
+  {
+    "code": "database_master_info.data_type",
+    "text": "ประเภทข้อมูล"
+  },
+  {
+    "code": "database_master_info.item_count",
+    "text": "จำนวนรายการ"
+  },
+  {
+    "code": "database_master_info.product",
+    "text": "สินค้า (product)"
+  },
+  {
+    "code": "database_master_info.productbarcode",
+    "text": "บาร์โค้ดสินค้า (productbarcode)"
+  },
+  {
+    "code": "database_master_info.customer",
+    "text": "ลูกค้า (customer)"
+  },
+  {
+    "code": "database_master_info.debtor",
+    "text": "ลูกหนี้ (debtor)"
+  },
+  {
+    "code": "database_master_info.creditor",
+    "text": "เจ้าหนี้ (creditor)"
+  },
+  {
+    "code": "database_master_info.ic_warehouse",
+    "text": "คลังสินค้า (ic_warehouse)"
+  },
+  {
+    "code": "database_master_info.ic_shelf",
+    "text": "ชั้นวางสินค้า (ic_shelf)"
+  },
+  {
+    "code": "database_master_info.doc",
+    "text": "เอกสาร (doc)"
+  },
+  {
+    "code": "database_master_info.docdetail",
+    "text": "รายละเอียดเอกสาร (docdetail)"
+  },
+  {
+    "code": "point_transaction.received_points",
+    "text": "ได้รับแต้ม"
+  },
+  {
+    "code": "point_transaction.used_points",
+    "text": "ใช้แต้ม"
+  },
+  {
+    "code": "point_transaction.add_points",
+    "text": "เพิ่มแต้ม"
+  },
+  {
+    "code": "add_points",
+    "text": "เพิ่มแต้ม"
+  },
+  {
+    "code": "point_transaction.unknown",
+    "text": "ไม่ทราบ"
+  },
+  {
+    "code": "point_transaction.points_code",
+    "text": "รหัสแต้ม"
+  },
+  {
+    "code": "point_transaction.balance_before",
+    "text": "ยอดก่อน"
+  },
+  {
+    "code": "point_transaction.balance_after",
+    "text": "ยอดหลัง"
+  },
+  {
+    "code": "point_transaction.points_history",
+    "text": "ประวัติการใช้แต้ม"
+  },
+  {
+    "code": "point_transaction.error_occurred",
+    "text": "เกิดข้อผิดพลาด"
+  },
+  {
+    "code": "point_transaction.no_points_history_found",
+    "text": "ไม่พบประวัติการใช้แต้ม"
+  },
+  {
+    "code": "import_failed",
+    "text": "นำเข้าไม่สำเร็จ"
+  },
+  {
+    "code": "import_success_with_existing_units",
+    "text": "นำเข้าสำเร็จ - หน่วยนับที่มีอยู่แล้ว"
+  },
+  {
+    "code": "template_download_success",
+    "text": "ดาวน์โหลดไฟล์ template สำเร็จ"
+  },
+  {
+    "code": "template_download_failed",
+    "text": "ดาวน์โหลดไฟล์ไม่สำเร็จ"
+  },
+  {
+    "code": "cannot_load_from_main_shop",
+    "text": "ไม่สามารถโหลดข้อมูลจากร้านหลักได้"
+  },
+  {
+    "code": "promotion_type_1",
+    "text": "แถมสินค้า เมื่อซื้อสินค้าครบตามจำนวน"
+  },
+  {
+    "code": "promotion_type_2",
+    "text": "ส่วนลดเงินสด หรือเปอร์เซ็นต์ เมื่อซื้อครบตามจำนวน"
+  },
+  {
+    "code": "promotion_type_3",
+    "text": "ซื้อสินค้าตาม List แล้วแถมสินค้าตาม List"
+  },
+  {
+    "code": "promotion_type_4",
+    "text": "ราคาพิเศษ เมื่อซื้อครบตามจำนวน"
+  },
+  {
+    "code": "promotion_type_5",
+    "text": "ซื้อครบตามจำนวน ลดเปอร์เซ็นต์หรือจำนวนเงิน"
+  },
+  {
+    "code": "promotion_type_6",
+    "text": "ซื้อครบ xxx บาท แถมสินค้า xx ชิ้น"
+  },
+  {
+    "code": "promotion_type_7",
+    "text": "ซื้อบิลครบ xxx บาท ส่วนลดเพิ่มอีก xxx บาท หรือ x%"
+  },
+  {
+    "code": "promotion_type_8",
+    "text": "ซื้อบิลครบ xxx บาท ได้สินค้ารางวัล (Bonus)"
+  },
+  {
+    "code": "barcode_already_exists",
+    "text": "บาร์โค้ดนี้มีอยู่แล้ว!"
+  },
+  {
+    "code": "storage_area",
+    "text": "พื้นที่เก็บ"
+  },
+  {
+    "code": "product_type_label",
+    "text": "ประเภทสินค้า"
+  },
+  {
+    "code": "tax_type_label",
+    "text": "ประเภทภาษี"
+  },
+  {
+    "code": "member_point_label",
+    "text": "คะแนนสะสมสมาชิก"
+  },
+  {
+    "code": "unit_style_label",
+    "text": "ลักษณะหน่วยนับ"
+  },
+  {
+    "code": "products_added_all_success",
+    "text": "เพิ่มสินค้าทั้งหมดแล้ว"
+  },
+  {
+    "code": "add_all_products",
+    "text": "เพิ่มสินค้าทั้งหมด"
+  },
+  {
+    "code": "try_again",
+    "text": "ลองใหม่"
+  },
+  {
+    "code": "no_products_found",
+    "text": "ไม่พบรายการสินค้า"
+  },
+  {
+    "code": "start_search_products",
+    "text": "เริ่มต้นค้นหาสินค้า"
+  },
+  {
+    "code": "pieces",
+    "text": "ชิ้น"
+  },
+  {
+    "code": "add_from_shelf",
+    "text": "เพิ่มจากชั้นวาง"
+  },
+  {
+    "code": "no_products_selected",
+    "text": "ไม่มีสินค้าที่เลือก"
+  },
+  {
+    "code": "select_products_from_left",
+    "text": "เลือกสินค้าจากรายการด้านซ้ายเพื่อเพิ่มลงในรายการนี้"
+  },
+  {
+    "code": "edit_all_quantities",
+    "text": "แก้ไขจำนวนพร้อมกันทั้งหมด"
+  },
+  {
+    "code": "quantity_to_print",
+    "text": "จำนวนที่ต้องการพิมพ์"
+  },
+  {
+    "code": "confirm_clear_products",
+    "text": "ยืนยันการล้างรายการสินค้า"
+  },
+  {
+    "code": "confirm_clear_products_message",
+    "text": "คุณต้องการล้างรายการสินค้าทั้งหมดใช่หรือไม่?"
+  },
+  {
+    "code": "edit_quantity",
+    "text": "แก้ไขจำนวน"
+  },
+  {
+    "code": "product_already_selected",
+    "text": "สินค้านี้ถูกเลือกไปแล้ว"
+  },
+  {
+    "code": "select_this_product",
+    "text": "เลือกสินค้านี้"
+  },
+  {
+    "code": "no_products_to_add",
+    "text": "ไม่พบรายการสินค้าที่จะเพิ่ม"
+  },
+  {
+    "code": "clear_list",
+    "text": "ล้างรายการ"
+  },
+  {
+    "code": "confirm_clear_selected_products",
+    "text": "ต้องการล้างรายการสินค้าที่เลือกทั้งหมดหรือไม่?"
+  },
+  {
+    "code": "selected_products",
+    "text": "เลือกสินค้า"
+  },
+  {
+    "code": "add_to_shelf",
+    "text": "เพิ่มเข้าชั้นวาง"
+  },
+  {
+    "code": "confirm_add_products",
+    "text": "ยืนยันการเพิ่มสินค้า"
+  },
+  {
+    "code": "want_to_add_products",
+    "text": "ต้องการเพิ่มสินค้า"
+  },
+  {
+    "code": "items_to_shelf",
+    "text": "รายการ เข้าชั้นวาง"
+  },
+  {
+    "code": "question_mark",
+    "text": "หรือไม่?"
+  },
+  {
+    "code": "shelf_update_success",
+    "text": "อัปเดตข้อมูลชั้นวางสำเร็จ"
+  },
+  {
+    "code": "shelf_update_failed",
+    "text": "อัปเดตข้อมูลไม่สำเร็จ"
+  },
+  {
+    "code": "shelf",
+    "text": "ชั้นวาง"
+  },
+  {
+    "code": "products_in_shelf",
+    "text": "สินค้าในชั้นวาง"
+  },
+  {
+    "code": "selected_count",
+    "text": "เลือกแล้ว"
+  },
+  {
+    "code": "no_products_in_shelf",
+    "text": "ไม่มีสินค้าในชั้นวางนี้"
+  },
+  {
+    "code": "select_products_tab",
+    "text": "เลือกสินค้า"
+  },
+  {
+    "code": "products_in_shelf_tab",
+    "text": "สินค้าในชั้นวาง"
+  },
+  {
+    "code": "add_supplement_option",
+    "text": "เพิ่มตัวเลือกเสริม"
+  },
+  {
+    "code": "edit_supplement_option",
+    "text": "แก้ไขตัวเลือกเสริม"
+  },
+  {
+    "code": "option_group_name_1",
+    "text": "ชื่อกลุ่มตัวเลือก 1"
+  },
+  {
+    "code": "option_group_name_2",
+    "text": "ชื่อกลุ่มตัวเลือก 2"
+  },
+  {
+    "code": "option_group_name_3",
+    "text": "ชื่อกลุ่มตัวเลือก 3"
+  },
+  {
+    "code": "option_group_name_4",
+    "text": "ชื่อกลุ่มตัวเลือก 4"
+  },
+  {
+    "code": "option_group_name_5",
+    "text": "ชื่อกลุ่มตัวเลือก 5"
+  },
+  {
+    "code": "please_specify_option_group_name",
+    "text": "กรุณาระบุ ชื่อกลุ่มตัวเลือก"
+  },
+  {
+    "code": "option_choices",
+    "text": "ตัวเลือก"
+  },
+  {
+    "code": "option_example_text",
+    "text": "เช่น เยลลี่, ขนาดใหญ่, น้ำตาล 50%"
+  },
+  {
+    "code": "add_sub_option",
+    "text": "เพิ่มตัวเลือกย่อย"
+  },
+  {
+    "code": "delete_sub_option",
+    "text": "ลบตัวเลือกย่อย"
+  },
+  {
+    "code": "option_details",
+    "text": "รายละเอียดตัวเลือก"
+  },
+  {
+    "code": "option_details_example",
+    "text": "เช่น ต้องเลือกอย่างน้อย 1 อย่าง, ไม่บังคับ"
+  },
+  {
+    "code": "customer_must_select_option_question",
+    "text": "ลูกค้าจำเป็นต้องเลือกตัวเลือกนี้หรือไม่ ?"
+  },
+  {
+    "code": "required_to_select",
+    "text": "จำเป็นต้องเลือก"
+  },
+  {
+    "code": "not_required",
+    "text": "ไม่บังคับ"
+  },
+  {
+    "code": "customer_can_select_how_many_sub_options_question",
+    "text": "ลูกค้าสามารถเลือกตัวเลือกย่อยได้กี่อย่าง ?"
+  },
+  {
+    "code": "one_item_only",
+    "text": "1 อย่างเท่านั้น"
+  },
+  {
+    "code": "multiple_items",
+    "text": "หลายอย่าง"
+  },
+  {
+    "code": "maximum_selectable",
+    "text": "เลือกได้สูงสุด"
+  },
+  {
+    "code": "delete_supplement_option_data",
+    "text": "ลบข้อมูลตัวเลือกเสริม"
+  },
+  {
+    "code": "save_supplement_option_success",
+    "text": "บันทึก ตัวเลือกเสริม สำเร็จ!"
+  },
+  {
+    "code": "edit_supplement_option_success",
+    "text": "แก้ไข ตัวเลือกเสริม สำเร็จ!"
+  },
+  {
+    "code": "confirm_delete_supplement_option_question",
+    "text": "ต้องการลบ ตัวเลือกเสริม ใช่หรือไม่?"
+  },
+  {
+    "code": "name_1_prefix",
+    "text": "ชื่อ 1 :  "
+  },
+  {
+    "code": "price_prefix",
+    "text": "ราคา : + "
+  },
+  {
+    "code": "baht_suffix",
+    "text": " บาท"
+  },
+  {
+    "code": "audit_products",
+    "text": "ตรวจสอบสินค้า"
+  },
+  {
+    "code": "audit_product_data",
+    "text": "ตรวจสอบข้อมูลสินค้า"
+  },
+  {
+    "code": "audit_barcode_without_item_code",
+    "text": "ตรวจสอบ Barcode ที่ไม่มีรหัสสินค้า"
+  },
+  {
+    "code": "audit_barcode_unit_ratio_error",
+    "text": "ตรวจสอบ Barcode ที่ไม่อัตราส่วนหน่วยนับผิดพลาด"
+  },
+  {
+    "code": "audit_barcode_non_1_1_ratio_no_ref",
+    "text": "ตรวจสอบ Barcode ที่อัตราส่วนไม่ใช่ 1:1 (หน่วยย่อย) และยังไม่มี Barcode อ้างอิง"
+  },
+  {
+    "code": "audit_products_with_multiple_units",
+    "text": "ตรวจสอบสินค้าที่มีหลายหน่วยนับ"
+  },
+  {
+    "code": "audit_barcode_without_item_code_header",
+    "text": "** ตรวจสอบบาร์โค้ดที่ไม่มีรหัสสินค้า **"
+  },
+  {
+    "code": "audit_barcode_without_item_code_no_error",
+    "text": "ตรวจสอบบาร์โค้ดที่ไม่มีรหัสสินค้า ไม่พบข้อผิดพลาด"
+  },
+  {
+    "code": "item_code_not_found",
+    "text": "ไม่พบรหัสสินค้า"
+  },
+  {
+    "code": "audit_barcode_unit_ratio_error_header",
+    "text": "** ตรวจสอบบาร์โค้ดที่อัตราส่วนหน่วยนับผิดพลาด **"
+  },
+  {
+    "code": "audit_barcode_unit_ratio_error_no_error",
+    "text": "ตรวจสอบบาร์โค้ดที่อัตราส่วนหน่วยนับผิดพลาด ไม่พบข้อผิดพลาด"
+  },
+  {
+    "code": "unit_ratio_error",
+    "text": "อัตราส่วนหน่วยนับผิดพลาด"
+  },
+  {
+    "code": "audit_barcode_non_1_1_ratio_no_ref_header",
+    "text": "** ตรวจสอบบาร์โค้ดที่มีอัตราส่วนไม่ใช่ 1:1 (หน่วยย่อย) และยังไม่มี Barcode อ้างอิง **"
+  },
+  {
+    "code": "audit_barcode_non_1_1_ratio_no_ref_no_error",
+    "text": "ตรวจสอบบาร์โค้ดที่มีอัตราส่วนไม่ใช่ 1:1 (หน่วยย่อย) และยังไม่มี Barcode อ้างอิง ไม่พบข้อผิดพลาด"
+  },
+  {
+    "code": "select_audit_type",
+    "text": "เลือกประเภทการตรวจสอบ"
+  },
+  {
+    "code": "by_item",
+    "text": "รายตัวสินค้า"
+  },
+  {
+    "code": "specify_item_code",
+    "text": "ระบุรหัสสินค้า"
+  },
+  {
+    "code": "enter_item_code_to_audit",
+    "text": "กรอกรหัสสินค้าที่ต้องการตรวจสอบ"
+  },
+  {
+    "code": "audit",
+    "text": "ตรวจสอบ"
+  },
+  {
+    "code": "audit_products_with_multiple_units_no_error",
+    "text": "ตรวจสอบสินค้าที่มีหลายหน่วยนับ ไม่พบข้อผิดพลาด"
+  },
+  {
+    "code": "item_no_multiple_units_or_not_found",
+    "text": "ไม่มีหลายหน่วยนับ หรือไม่พบข้อมูล"
+  },
+  {
+    "code": "item_code_colon",
+    "text": "รหัสสินค้า:"
+  },
+  {
+    "code": "ratio",
+    "text": "อัตราส่วน"
+  },
+  {
+    "code": "coupon_error_code_required",
+    "text": "กรุณาระบุรหัสคูปอง"
+  },
+  {
+    "code": "coupon_error_value_required",
+    "text": "กรุณาระบุค่าส่วนลด"
+  },
+  {
+    "code": "coupon_error_max_usage_required",
+    "text": "กรุณาระบุจำนวนใช้ทั้งหมด"
+  },
+  {
+    "code": "coupon_error_issued_date_required",
+    "text": "กรุณาระบุวันที่ออกคูปอง"
+  },
+  {
+    "code": "coupon_error_expiry_date_required",
+    "text": "กรุณาระบุวันหมดอายุ"
+  },
+  {
+    "code": "coupon_error_name_required",
+    "text": "กรุณาระบุชื่อคูปองอย่างน้อย 1 ภาษา"
+  },
+  {
+    "code": "coupon_error_value_invalid",
+    "text": "ค่าส่วนลดต้องเป็นตัวเลขและมากกว่า 0"
+  },
+  {
+    "code": "coupon_error_max_usage_invalid",
+    "text": "จำนวนใช้ทั้งหมดต้องเป็นตัวเลขและมากกว่า 0"
+  },
+  {
+    "code": "coupon_error_percentage_max",
+    "text": "เปอร์เซ็นต์ส่วนลดต้องไม่เกิน 100"
+  },
+  {
+    "code": "coupon_error_expiry_before_issued",
+    "text": "วันหมดอายุต้องมาหลังวันที่ออกคูปอง"
+  },
+  {
+    "code": "coupon_error_network",
+    "text": "ไม่สามารถเชื่อมต่อเครือข่ายได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต"
+  },
+  {
+    "code": "coupon_error_validation",
+    "text": "ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบและลองอีกครั้ง"
+  },
+  {
+    "code": "coupon_error_duplicate",
+    "text": "รหัสคูปองนี้มีอยู่แล้วในระบบ"
+  },
+  {
+    "code": "coupon_error_not_found",
+    "text": "ไม่พบข้อมูลคูปอง"
+  },
+  {
+    "code": "coupon_error_permission",
+    "text": "คุณไม่มีสิทธิ์ในการดำเนินการนี้"
+  },
+  {
+    "code": "coupon_error_timeout",
+    "text": "หมดเวลาในการเชื่อมต่อ กรุณาลองอีกครั้ง"
+  },
+  {
+    "code": "coupon_error_server",
+    "text": "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์ กรุณาติดต่อผู้ดูแลระบบ"
+  },
+  {
+    "code": "coupon_error_create_failed",
+    "text": "ไม่สามารถสร้างคูปองได้ กรุณาลองอีกครั้ง"
+  },
+  {
+    "code": "coupon_error_update_failed",
+    "text": "ไม่สามารถแก้ไขคูปองได้ กรุณาลองอีกครั้ง"
+  },
+  {
+    "code": "coupon_error_delete_failed",
+    "text": "ไม่สามารถลบคูปองได้ กรุณาลองอีกครั้ง"
+  },
+  {
+    "code": "coupon_error_load_failed",
+    "text": "ไม่สามารถโหลดข้อมูลคูปองได้"
+  },
+  {
+    "code": "coupon_error_search_failed",
+    "text": "การค้นหาล้มเหลว กรุณาลองอีกครั้ง"
+  },
+  {
+    "code": "coupon_error_general",
+    "text": "เกิดข้อผิดพลาด กรุณาลองอีกครั้ง"
+  },
+  {
+    "code": "coupon_error_no_product_selected",
+    "text": "กรุณาเลือกสินค้า"
+  },
+  {
+    "code": "coupon_error_no_product_to_remove",
+    "text": "ไม่มีสินค้าให้ลบ"
+  },
+  {
+    "code": "coupon_error_invalid_product",
+    "text": "สินค้าไม่ถูกต้อง"
+  },
+  {
+    "code": "coupon_error_no_customer_selected",
+    "text": "กรุณาเลือกลูกค้า"
+  },
+  {
+    "code": "coupon_error_no_customer_to_remove",
+    "text": "ไม่มีลูกค้าให้ลบ"
+  },
+  {
+    "code": "coupon_error_invalid_customer",
+    "text": "ข้อมูลลูกค้าไม่ถูกต้อง"
+  },
+  {
+    "code": "coupon_success_created",
+    "text": "สร้างคูปองสำเร็จ"
+  },
+  {
+    "code": "coupon_success_updated",
+    "text": "แก้ไขคูปองสำเร็จ"
+  },
+  {
+    "code": "coupon_success_deleted",
+    "text": "ลบคูปองสำเร็จ"
+  },
+  {
+    "code": "coupon_success_product_added",
+    "text": "เพิ่มสินค้าสำเร็จ"
+  },
+  {
+    "code": "coupon_success_product_removed",
+    "text": "ลบสินค้าสำเร็จ"
+  },
+  {
+    "code": "coupon_success_customer_added",
+    "text": "เพิ่มลูกค้าสำเร็จ"
+  },
+  {
+    "code": "coupon_success_customer_removed",
+    "text": "ลบลูกค้าสำเร็จ"
+  },
+  {
+    "code": "coupon_success_operation",
+    "text": "ดำเนินการสำเร็จ"
+  },
+  {
+    "code": "coupon_section_basic_info",
+    "text": "ข้อมูลพื้นฐาน"
+  },
+  {
+    "code": "coupon_hint_code_example",
+    "text": "เช่น SAVE20, NEWYEAR2025"
+  },
+  {
+    "code": "coupon_hint_name",
+    "text": "ชื่อคูปองที่จะแสดงให้ลูกค้า"
+  },
+  {
+    "code": "coupon_section_type_value",
+    "text": "ประเภทและค่าส่วนลด"
+  },
+  {
+    "code": "coupon_section_conditions",
+    "text": "กำหนดเงื่อนไข"
+  },
+  {
+    "code": "coupon_issued_date",
+    "text": "วันที่ออกคูปอง"
+  },
+  {
+    "code": "coupon_expiry_date",
+    "text": "วันหมดอายุ"
+  },
+  {
+    "code": "coupon_max_usage_total",
+    "text": "จำนวนใช้ทั้งหมด"
+  },
+  {
+    "code": "coupon_hint_usage_example",
+    "text": "เช่น 100, 500"
+  },
+  {
+    "code": "coupon_max_usage_per_customer",
+    "text": "จำนวนใช้ต่อลูกค้า"
+  },
+  {
+    "code": "coupon_hint_unlimited",
+    "text": "ไม่จำกัด"
+  },
+  {
+    "code": "coupon_section_customers",
+    "text": "กำหนดลูกค้า"
+  },
+  {
+    "code": "coupon_section_remark",
+    "text": "หมายเหตุ"
+  },
+  {
+    "code": "coupon_remark_label",
+    "text": "หมายเหตุเพิ่มเติม"
+  },
+  {
+    "code": "coupon_hint_remark",
+    "text": "ข้อมูลเพิ่มเติมเกี่ยวกับคูปอง"
+  },
+  {
+    "code": "coupon_confirm_delete_customer",
+    "text": "ยืนยันการลบ"
+  },
+  {
+    "code": "coupon_type_label",
+    "text": "ประเภทคูปอง *"
+  },
+  {
+    "code": "coupon_type_fixed_amount",
+    "text": "จำนวนเงิน"
+  },
+  {
+    "code": "coupon_type_fixed_amount_desc",
+    "text": "ลดเป็นบาท"
+  },
+  {
+    "code": "coupon_type_percentage",
+    "text": "เปอร์เซ็นต์"
+  },
+  {
+    "code": "coupon_type_percentage_desc",
+    "text": "ลดเป็น %"
+  },
+  {
+    "code": "coupon_type_cash",
+    "text": "เงินสด"
+  },
+  {
+    "code": "coupon_type_cash_desc",
+    "text": "คืนเงินสด"
+  },
+  {
+    "code": "coupon_status_options",
+    "text": "สถานะและตัวเลือก"
+  },
+  {
+    "code": "coupon_status_active",
+    "text": "เปิดใช้งาน"
+  },
+  {
+    "code": "coupon_one_time_use",
+    "text": "ใช้ได้ครั้งเดียว"
+  },
+  {
+    "code": "coupon_customer_codes_label",
+    "text": "รหัสลูกค้าที่ใช้ได้"
+  },
+  {
+    "code": "coupon_customer_empty_hint",
+    "text": "หากไม่ระบุ รหัสลูกค้า คูปองนี้จะใช้ได้กับลูกค้าทุกคน"
+  },
+  {
+    "code": "coupon_selected_customers",
+    "text": "ลูกค้าที่เลือก"
+  },
+  {
+    "code": "coupon_customer_all",
+    "text": "(ว่างเปล่า = ทุกคน)"
+  },
+  {
+    "code": "coupon_tooltip_remove_customer",
+    "text": "ลบลูกค้า"
+  },
+  {
+    "code": "coupon_button_select_customer",
+    "text": "เลือกลูกค้า"
+  },
+  {
+    "code": "coupon_button_add_customer",
+    "text": "เพิ่มลูกค้า"
+  },
+  {
+    "code": "coupon_help_no_customer",
+    "text": "หากไม่เลือกลูกค้า คูปองนี้จะใช้ได้กับลูกค้าทุกคน"
+  },
+  {
+    "code": "coupon_value_fixed_amount",
+    "text": "จำนวนเงินส่วนลด"
+  },
+  {
+    "code": "coupon_value_percentage",
+    "text": "เปอร์เซ็นต์ส่วนลด"
+  },
+  {
+    "code": "coupon_value_cash_back",
+    "text": "จำนวนเงินสดคืน"
+  },
+  {
+    "code": "coupon_value_default",
+    "text": "ค่าส่วนลด"
+  },
+  {
+    "code": "coupon_hint_fixed_amount",
+    "text": "เช่น 100 (หมายถึง 100 บาท)"
+  },
+  {
+    "code": "coupon_hint_percentage",
+    "text": "เช่น 10 (หมายถึง 10%)"
+  },
+  {
+    "code": "coupon_hint_cash_back",
+    "text": "เช่น 50 (หมายถึง 50 บาทคืน)"
+  },
+  {
+    "code": "coupon_hint_value_default",
+    "text": "ระบุค่าส่วนลด"
+  },
+  {
+    "code": "kb_title",
+    "text": "จัดการ Knowledge Base"
+  },
+  {
+    "code": "kb_please_select_branch_before_upload",
+    "text": "กรุณาเลือกสาขาก่อนอัพโหลด"
+  },
+  {
+    "code": "kb_upload_success",
+    "text": "อัพโหลดเอกสารสำเร็จ"
+  },
+  {
+    "code": "kb_error_occurred",
+    "text": "เกิดข้อผิดพลาด"
+  },
+  {
+    "code": "kb_upload_error",
+    "text": "เกิดข้อผิดพลาดในการอัพโหลด"
+  },
+  {
+    "code": "kb_confirm_delete",
+    "text": "ยืนยันการลบ"
+  },
+  {
+    "code": "kb_delete_document_question",
+    "text": "คุณต้องการลบเอกสาร"
+  },
+  {
+    "code": "kb_or_not",
+    "text": "หรือไม่?"
+  },
+  {
+    "code": "kb_delete_success",
+    "text": "ลบเอกสารสำเร็จ"
+  },
+  {
+    "code": "kb_enable_document_success",
+    "text": "เปิดใช้งานเอกสารสำเร็จ"
+  },
+  {
+    "code": "kb_disable_document_success",
+    "text": "ปิดใช้งานเอกสารสำเร็จ"
+  },
+  {
+    "code": "kb_work_all_time",
+    "text": "ทำงานตลอดเวลา"
+  },
+  {
+    "code": "kb_change_to_work_all_time",
+    "text": "เปลี่ยนเป็นทำงานตลอดเวลา"
+  },
+  {
+    "code": "kb_change_to_use_time_period",
+    "text": "เปลี่ยนเป็นใช้ช่วงเวลาที่กำหนด"
+  },
+  {
+    "code": "kb_no_date_set",
+    "text": "ไม่ได้กำหนดวันที่"
+  },
+  {
+    "code": "kb_condition",
+    "text": "เงื่อนไข:"
+  },
+  {
+    "code": "kb_to",
+    "text": "ถึง"
+  },
+  {
+    "code": "kb_select_start_date",
+    "text": "เลือกวันที่เริ่มต้น"
+  },
+  {
+    "code": "kb_select_end_date",
+    "text": "เลือกวันที่สิ้นสุด"
+  },
+  {
+    "code": "kb_date_cleared",
+    "text": "ล้างวันที่เรียบร้อยแล้ว"
+  },
+  {
+    "code": "kb_date_set_success",
+    "text": "กำหนดวันที่เรียบร้อยแล้ว"
+  },
+  {
+    "code": "kb_date_set_error",
+    "text": "เกิดข้อผิดพลาดในการกำหนดวันที่"
+  },
+  {
+    "code": "kb_documents_knowledge_base",
+    "text": "เอกสาร Knowledge Base"
+  },
+  {
+    "code": "kb_select_branch_description",
+    "text": "เลือกสาขา ทุกสาขาหมายถึงเอกสารที่ใช้ได้กับทุกสาขา ถ้าเลือกสาขาใดสาขาหนึ่งจะแสดงเฉพาะเอกสารของสาขานั้น"
+  },
+  {
+    "code": "kb_loading_branch_data",
+    "text": "กำลังโหลดข้อมูลสาขา..."
+  },
+  {
+    "code": "kb_all_branches",
+    "text": "ทุกสาขา"
+  },
+  {
+    "code": "kb_upload_document",
+    "text": "อัพโหลดเอกสาร"
+  },
+  {
+    "code": "kb_refresh",
+    "text": "รีเฟรช"
+  },
+  {
+    "code": "kb_no_documents",
+    "text": "ไม่มีเอกสาร"
+  },
+  {
+    "code": "kb_click_upload_to_add",
+    "text": "คลิกปุ่มอัพโหลดเพื่อเพิ่มเอกสาร"
+  },
+  {
+    "code": "kb_size",
+    "text": "ขนาด:"
+  },
+  {
+    "code": "kb_uploaded_at",
+    "text": "อัพโหลดเมื่อ:"
+  },
+  {
+    "code": "kb_uploader",
+    "text": "ผู้อัพโหลด:"
+  },
+  {
+    "code": "kb_description",
+    "text": "รายละเอียด:"
+  },
+  {
+    "code": "kb_working_status",
+    "text": "ทำงานอยู่:"
+  },
+  {
+    "code": "kb_on",
+    "text": "เปิด"
+  },
+  {
+    "code": "kb_off",
+    "text": "ปิด"
+  },
+  {
+    "code": "kb_set_time_period",
+    "text": "กำหนดช่วงเวลา"
+  },
+  {
+    "code": "kb_start",
+    "text": "เริ่ม:"
+  },
+  {
+    "code": "kb_select_date",
+    "text": "เลือกวันที่"
+  },
+  {
+    "code": "kb_chatbot_welcome",
+    "text": "สวัสดีครับ! ผมเป็น AI Assistant พร้อมช่วยเหลือคุณเกี่ยวกับเอกสารใน Knowledge Base"
+  },
+  {
+    "code": "sale_return.no_data",
+    "text": "ไม่พบข้อมูลการขายคืน"
+  },
+  {
+    "code": "sale_return.load_more",
+    "text": "โหลดข้อมูลเพิ่มเติม"
+  },
+  {
+    "code": "sale_return.date",
+    "text": "วันที่"
+  },
+  {
+    "code": "sale_return.doc_number",
+    "text": "เลขที่เอกสาร"
+  },
+  {
+    "code": "sale_return.customer",
+    "text": "ลูกค้า"
+  },
+  {
+    "code": "sale_return.product_value",
+    "text": "มูลค่าสินค้า"
+  },
+  {
+    "code": "sale_return.discount",
+    "text": "ส่วนลด"
+  },
+  {
+    "code": "sale_return.after_discount",
+    "text": "หลังหักส่วนลด"
+  },
+  {
+    "code": "sale_return.tax_exempt",
+    "text": "ยกเว้นภาษี"
+  },
+  {
+    "code": "sale_return.before_tax",
+    "text": "ก่อนภาษี"
+  },
+  {
+    "code": "sale_return.tax_value",
+    "text": "มูลค่าภาษี"
+  },
+  {
+    "code": "sale_return.net_value",
+    "text": "มูลค่าสุทธิ"
+  },
+  {
+    "code": "transaction_detail",
+    "text": "รายละเอียด"
+  },
+  {
+    "code": "transaction_branch",
+    "text": "สาขา"
+  },
+  {
+    "code": "transaction_close",
+    "text": "ปิด"
+  },
+  {
+    "code": "transaction_loading_detail",
+    "text": "กำลังโหลดรายละเอียด..."
+  },
+  {
+    "code": "transaction_try_again",
+    "text": "ลองใหม่"
+  },
+  {
+    "code": "transaction_no_detail_data",
+    "text": "ไม่พบข้อมูลรายละเอียด"
+  },
+  {
+    "code": "transaction_general_customer",
+    "text": "ลูกค้าทั่วไป"
+  },
+  {
+    "code": "transaction_customer_info",
+    "text": "ข้อมูลลูกค้า"
+  },
+  {
+    "code": "transaction_customer_name",
+    "text": "ชื่อลูกค้า"
+  },
+  {
+    "code": "transaction_customer_code",
+    "text": "รหัสลูกค้า"
+  },
+  {
+    "code": "transaction_summary",
+    "text": "ยอดสรุป"
+  },
+  {
+    "code": "transaction_product_value",
+    "text": "มูลค่าสินค้า"
+  },
+  {
+    "code": "transaction_before_vat",
+    "text": "ก่อน VAT"
+  },
+  {
+    "code": "transaction_grand_total",
+    "text": "ยอดรวมทั้งสิ้น"
+  },
+  {
+    "code": "transaction_product_list",
+    "text": "รายการสินค้า"
+  },
+  {
+    "code": "transaction_items",
+    "text": "รายการ"
+  },
+  {
+    "code": "transaction_product",
+    "text": "สินค้า"
+  },
+  {
+    "code": "transaction_quantity",
+    "text": "จำนวน"
+  },
+  {
+    "code": "transaction_price",
+    "text": "ราคา"
+  },
+  {
+    "code": "transaction_total",
+    "text": "ยอดรวม"
+  },
+  {
+    "code": "transaction_no_products",
+    "text": "ไม่มีรายการสินค้า"
+  },
+  {
+    "code": "chatbot_ai_assistant",
+    "text": "AI Assistant"
+  },
+  {
+    "code": "chatbot_ready_to_help",
+    "text": "พร้อมช่วยเหลือคุณ"
+  },
+  {
+    "code": "chatbot_welcome_message",
+    "text": "สวัสดีครับ! ผมเป็น AI Assistant พร้อมช่วยเหลือคุณ มีอะไรให้ช่วยไหมครับ?"
+  },
+  {
+    "code": "chatbot_clear_messages",
+    "text": "ล้างข้อความ"
+  },
+  {
+    "code": "chatbot_confirm_clear_title",
+    "text": "ยืนยันการล้างข้อความ"
+  },
+  {
+    "code": "chatbot_confirm_clear_message",
+    "text": "คุณต้องการล้างข้อความทั้งหมดหรือไม่?"
+  },
+  {
+    "code": "chatbot_cancel",
+    "text": "ยกเลิก"
+  },
+  {
+    "code": "chatbot_welcome_short",
+    "text": "สวัสดีครับ! มีอะไรให้ช่วยไหมครับ?"
+  },
+  {
+    "code": "chatbot_error_message",
+    "text": "ขอโทษครับ เกิดข้อผิดพลาด:"
+  },
+  {
+    "code": "chatbot_type_message",
+    "text": "พิมพ์ข้อความ..."
+  },
+  {
+    "code": "daily_sales_report",
+    "text": "รายงานยอดขายประจำวัน"
+  },
+  {
+    "code": "loading_details",
+    "text": "กำลังโหลดรายละเอียด..."
+  },
+  {
+    "code": "retry",
+    "text": "ลองใหม่"
+  },
+  {
+    "code": "no_detail_data",
+    "text": "ไม่พบข้อมูลรายละเอียด"
+  },
+  {
+    "code": "date_information",
+    "text": "ข้อมูลวันที่"
+  },
+  {
+    "code": "report_date",
+    "text": "วันที่ออกรายงาน"
+  },
+  {
+    "code": "transaction_count",
+    "text": "จำนวนธุรกรรม"
+  },
+  {
+    "code": "summary",
+    "text": "ยอดสรุป"
+  },
+  {
+    "code": "product_value",
+    "text": "มูลค่าสินค้า"
+  },
+  {
+    "code": "before_vat",
+    "text": "ก่อน VAT"
+  },
+  {
+    "code": "grand_total",
+    "text": "ยอดรวมทั้งสิ้น"
+  },
+  {
+    "code": "transactions",
+    "text": "รายการธุรกรรม"
+  },
+  {
+    "code": "document_no",
+    "text": "เลขที่เอกสาร"
+  },
+  {
+    "code": "no_transactions",
+    "text": "ไม่มีรายการธุรกรรม"
+  },
+  {
+    "code": "report_payment_daily_title",
+    "text": "รายงานการรับชำระเงินประจำวัน"
+  },
+  {
+    "code": "net_value",
+    "text": "มูลค่าสุทธิ"
+  },
+  {
+    "code": "rounding",
+    "text": "ปัดเศษ"
+  },
+  {
+    "code": "payment_cash",
+    "text": "เงินสด"
+  },
+  {
+    "code": "payment_transfer",
+    "text": "โอนเงิน"
+  },
+  {
+    "code": "payment_credit_card",
+    "text": "บัตรเครดิต"
+  },
+  {
+    "code": "payment_cheque",
+    "text": "เช็ค"
+  },
+  {
+    "code": "payment_coupon",
+    "text": "คูปอง"
+  },
+  {
+    "code": "payment_qr_code",
+    "text": "QR Code"
+  },
+  {
+    "code": "payment_credit",
+    "text": "เงินเชื่อ"
+  },
+  {
+    "code": "no_payment_items",
+    "text": "ไม่มีรายการชำระเงิน"
+  },
+  {
+    "code": "document_number",
+    "text": "เลขที่เอกสาร"
+  },
+  {
+    "code": "customer_general",
+    "text": "ลูกค้าทั่วไป"
+  },
+  {
+    "code": "sale_daily_report_no_data",
+    "text": "ไม่มีข้อมูลที่จะแสดง"
+  },
+  {
+    "code": "sale_daily_report_date",
+    "text": "วันที่"
+  },
+  {
+    "code": "sale_daily_report_product_value",
+    "text": "มูลค่าสินค้า"
+  },
+  {
+    "code": "sale_daily_report_discount",
+    "text": "ส่วนลด"
+  },
+  {
+    "code": "sale_daily_report_after_discount",
+    "text": "หลังหักส่วนลด"
+  },
+  {
+    "code": "sale_daily_report_except_vat",
+    "text": "ยกเว้นภาษี"
+  },
+  {
+    "code": "sale_daily_report_before_vat",
+    "text": "ก่อนภาษี"
+  },
+  {
+    "code": "sale_daily_report_vat_value",
+    "text": "มูลค่าภาษี"
+  },
+  {
+    "code": "sale_daily_report_net_value",
+    "text": "มูลค่าสุทธิ"
+  },
+  {
+    "code": "payment_daily_no_data",
+    "text": "ไม่พบข้อมูลการชำระเงิน"
+  },
+  {
+    "code": "payment_daily_date_column",
+    "text": "วันที่"
+  },
+  {
+    "code": "payment_daily_total_amount_column",
+    "text": "มูลค่ารวม"
+  },
+  {
+    "code": "payment_daily_round_amount_column",
+    "text": "มูลค่าปัดเศษ"
+  },
+  {
+    "code": "payment_daily_after_round_column",
+    "text": "หลังปัดเศษ"
+  },
+  {
+    "code": "payment_daily_cash_column",
+    "text": "เงินสด"
+  },
+  {
+    "code": "payment_daily_transfer_column",
+    "text": "เงินโอน"
+  },
+  {
+    "code": "payment_daily_credit_card_column",
+    "text": "บัตรเครดิต"
+  },
+  {
+    "code": "payment_daily_cheque_column",
+    "text": "เช็ค"
+  },
+  {
+    "code": "payment_daily_coupon_column",
+    "text": "คูปอง"
+  },
+  {
+    "code": "payment_daily_qr_code_column",
+    "text": "QR Code"
+  },
+  {
+    "code": "payment_daily_net_payment_column",
+    "text": "ชำระสุทธิ"
+  },
+  {
+    "code": "form_design_show_json_panel",
+    "text": "แสดง JSON Panel"
+  },
+  {
+    "code": "form_design_new_form",
+    "text": "ฟอร์มใหม่"
+  },
+  {
+    "code": "form_design_created_with_designer",
+    "text": "ฟอร์มที่สร้างด้วย Form Designer"
+  },
+  {
+    "code": "form_design_save_form",
+    "text": "บันทึกฟอร์ม"
+  },
+  {
+    "code": "form_design_save_success",
+    "text": "บันทึกฟอร์มสำเร็จ"
+  },
+  {
+    "code": "form_design_error",
+    "text": "เกิดข้อผิดพลาด"
+  },
+  {
+    "code": "form_design_load_success",
+    "text": "โหลดฟอร์มสำเร็จ"
+  },
+  {
+    "code": "form_design_form_info",
+    "text": "ข้อมูลฟอร์ม"
+  },
+  {
+    "code": "form_design_form_name",
+    "text": "ชื่อฟอร์ม"
+  },
+  {
+    "code": "form_design_description",
+    "text": "คำอธิบาย"
+  },
+  {
+    "code": "form_design_paper_size",
+    "text": "ขนาดกระดาษ"
+  },
+  {
+    "code": "form_design_cancel",
+    "text": "ยกเลิก"
+  },
+  {
+    "code": "form_design_save",
+    "text": "บันทึก"
+  },
+  {
+    "code": "form_design_preview_form",
+    "text": "ดูตัวอย่างฟอร์ม"
+  },
+  {
+    "code": "form_design_design_form",
+    "text": "ออกแบบฟอร์ม"
+  },
+  {
+    "code": "form_design_zoom",
+    "text": "ซูม"
+  },
+  {
+    "code": "form_design_hide_ruler",
+    "text": "ซ่อนไม้บรรทัด"
+  },
+  {
+    "code": "form_design_show_ruler",
+    "text": "แสดงไม้บรรทัด"
+  },
+  {
+    "code": "form_design_hide_json",
+    "text": "ซ่อน JSON"
+  },
+  {
+    "code": "form_design_show_json",
+    "text": "แสดง JSON"
+  },
+  {
+    "code": "form_design_set_global_bg",
+    "text": "ตั้งพื้นหลังทั้งหมด"
+  },
+  {
+    "code": "form_design_edit",
+    "text": "แก้ไข"
+  },
+  {
+    "code": "form_design_preview",
+    "text": "ดูตัวอย่าง"
+  },
+  {
+    "code": "form_design_load_form",
+    "text": "โหลดฟอร์ม"
+  },
+  {
+    "code": "form_design_apply_changes",
+    "text": "ใช้การเปลี่ยนแปลง"
+  },
+  {
+    "code": "form_design_reset",
+    "text": "รีเซ็ต"
+  },
+  {
+    "code": "form_design_apply_changes_success",
+    "text": "ใช้การเปลี่ยนแปลงสำเร็จ"
+  },
+  {
+    "code": "form_design_json_invalid",
+    "text": "JSON ไม่ถูกต้อง"
+  },
+  {
+    "code": "sale_report_no_data",
+    "text": "ไม่มีข้อมูลที่จะแสดง"
+  },
+  {
+    "code": "sale_report_date",
+    "text": "วันที่"
+  },
+  {
+    "code": "sale_report_doc_number",
+    "text": "เลขที่เอกสาร"
+  },
+  {
+    "code": "sale_report_customer",
+    "text": "ลูกค้า"
+  },
+  {
+    "code": "sale_report_doc_type",
+    "text": "ประเภทเอกสาร"
+  },
+  {
+    "code": "sale_report_product_value",
+    "text": "มูลค่าสินค้า"
+  },
+  {
+    "code": "sale_report_discount",
+    "text": "ส่วนลด"
+  },
+  {
+    "code": "sale_report_after_discount",
+    "text": "หลังหักส่วนลด"
+  },
+  {
+    "code": "sale_report_tax_exempt",
+    "text": "ยกเว้นภาษี"
+  },
+  {
+    "code": "sale_report_before_tax",
+    "text": "ก่อนภาษี"
+  },
+  {
+    "code": "sale_report_tax_value",
+    "text": "มูลค่าภาษี"
+  },
+  {
+    "code": "sale_report_net_value",
+    "text": "มูลค่าสุทธิ"
+  },
+  {
+    "code": "sale_report_general_customer",
+    "text": "ลูกค้าทั่วไป"
+  },
+  {
+    "code": "no_purchase_partial_report_data",
+    "text": "ไม่พบข้อมูลรายงานรับสินค้าแบบทยอยรับ"
+  },
+  {
+    "code": "reference_document",
+    "text": "เอกสารอ้างอิง"
+  },
+  {
+    "code": "tax_exempt",
+    "text": "ยกเว้นภาษี"
+  },
+  {
+    "code": "before_tax",
+    "text": "ก่อนภาษี"
+  },
+  {
+    "code": "tax_value",
+    "text": "มูลค่าภาษี"
+  },
+  {
+    "code": "stock_movement_no_data",
+    "text": "ไม่มีข้อมูลที่จะแสดง"
+  },
+  {
+    "code": "stock_movement_date",
+    "text": "วันที่"
+  },
+  {
+    "code": "stock_movement_time",
+    "text": "เวลา"
+  },
+  {
+    "code": "stock_movement_transaction_type",
+    "text": "ประเภทรายการ"
+  },
+  {
+    "code": "stock_movement_document_no",
+    "text": "เลขที่เอกสาร"
+  },
+  {
+    "code": "stock_movement_warehouse",
+    "text": "คลัง"
+  },
+  {
+    "code": "stock_movement_location",
+    "text": "ที่เก็บ"
+  },
+  {
+    "code": "stock_movement_unit",
+    "text": "หน่วย"
+  },
+  {
+    "code": "stock_movement_qty_in",
+    "text": "จำนวนเพิ่ม"
+  },
+  {
+    "code": "stock_movement_cost_in",
+    "text": "ต้นทุนเพิ่ม"
+  },
+  {
+    "code": "stock_movement_value_in",
+    "text": "มูลค่าเพิ่ม"
+  },
+  {
+    "code": "stock_movement_qty_out",
+    "text": "จำนวนลด"
+  },
+  {
+    "code": "stock_movement_cost_out",
+    "text": "ต้นทุนลด"
+  },
+  {
+    "code": "stock_movement_value_out",
+    "text": "มูลค่าลด"
+  },
+  {
+    "code": "stock_movement_balance_qty",
+    "text": "จำนวนคงเหลือ"
+  },
+  {
+    "code": "stock_movement_average_cost",
+    "text": "ต้นทุนเฉลี่ย"
+  },
+  {
+    "code": "stock_movement_balance_amount",
+    "text": "มูลค่าคงเหลือ"
+  },
+  {
+    "code": "stock_movement_purchase",
+    "text": "ซื้อสินค้า"
+  },
+  {
+    "code": "stock_movement_receive_partial",
+    "text": "รับสินค้าแบบทะยอยรับ"
+  },
+  {
+    "code": "stock_movement_return_goods",
+    "text": "รับคืนสินค้า"
+  },
+  {
+    "code": "stock_movement_transfer_in",
+    "text": "โอนเข้า"
+  },
+  {
+    "code": "stock_movement_opening_balance",
+    "text": "สินค้ายกมา"
+  },
+  {
+    "code": "stock_movement_return_from_issue",
+    "text": "รับคืนจากการเบิก"
+  },
+  {
+    "code": "stock_movement_receive_goods",
+    "text": "รับสินค้า"
+  },
+  {
+    "code": "stock_movement_adjust_increase",
+    "text": "ปรับปรุงเพิ่ม"
+  },
+  {
+    "code": "stock_movement_return_to_supplier",
+    "text": "ส่งคืนสินค้า"
+  },
+  {
+    "code": "stock_movement_sale",
+    "text": "ขายสินค้า"
+  },
+  {
+    "code": "stock_movement_transfer_out",
+    "text": "โอนออก"
+  },
+  {
+    "code": "stock_movement_issue",
+    "text": "เบิกสินค้า"
+  },
+  {
+    "code": "stock_movement_adjust_decrease",
+    "text": "ปรับปรุงลด"
+  },
+  {
+    "code": "product_list_item_selected",
+    "text": "สินค้านี้ถูกเลือกไปแล้ว"
+  },
+  {
+    "code": "product_list_item_select",
+    "text": "เลือกสินค้านี้"
+  },
+  {
+    "code": "report_dedebi_sales_title",
+    "text": "รายงานยอดขาย"
+  },
+  {
+    "code": "report_dedebi_hide_cancelled_docs",
+    "text": "ไม่แสดงเอกสารยกเลิก"
+  },
+  {
+    "code": "report_dedebi_all",
+    "text": "ทั้งหมด"
+  },
+  {
+    "code": "report_dedebi_hide_filter_panel",
+    "text": "ซ่อนแผงตัวกรอง"
+  },
+  {
+    "code": "report_dedebi_show_filter_panel",
+    "text": "แสดงแผงตัวกรอง"
+  },
+  {
+    "code": "report_dedebi_set_search_conditions",
+    "text": "ตั้งค่าเงื่อนไขการค้นหา"
+  },
+  {
+    "code": "report_dedebi_refresh_data",
+    "text": "รีเฟรชข้อมูล"
+  },
+  {
+    "code": "report_dedebi_export_report",
+    "text": "ส่งออกรายงาน"
+  },
+  {
+    "code": "report_dedebi_generating_report",
+    "text": "กำลังเริ่มสร้างรายงาน..."
+  },
+  {
+    "code": "report_dedebi_loading_data",
+    "text": "กำลังโหลดข้อมูล..."
+  },
+  {
+    "code": "report_dedebi_loading_new_page",
+    "text": "กำลังโหลดหน้าใหม่..."
+  },
+  {
+    "code": "report_dedebi_try_again",
+    "text": "ลองใหม่"
+  },
+  {
+    "code": "report_dedebi_sales_dedebi_title",
+    "text": "รายงานยอดขาย Dedebi"
+  },
+  {
+    "code": "report_dedebi_set_conditions_to_view",
+    "text": "กำหนดเงื่อนไขการค้นหาเพื่อดูข้อมูล"
+  },
+  {
+    "code": "report_dedebi_please_wait",
+    "text": "กรุณารอสักครู่..."
+  },
+  {
+    "code": "report_dedebi_showing_items",
+    "text": "แสดง"
+  },
+  {
+    "code": "report_dedebi_items",
+    "text": "รายการ"
+  },
+  {
+    "code": "report_dedebi_first_page",
+    "text": "หน้าแรก"
+  },
+  {
+    "code": "report_dedebi_previous_page",
+    "text": "หน้าก่อนหน้า"
+  },
+  {
+    "code": "report_dedebi_next_page",
+    "text": "หน้าถัดไป"
+  },
+  {
+    "code": "report_dedebi_last_page",
+    "text": "หน้าสุดท้าย"
+  },
+  {
+    "code": "report_dedebi_error_occurred",
+    "text": "เกิดข้อผิดพลาด"
+  },
+  {
+    "code": "report_dedebi_change_conditions",
+    "text": "เปลี่ยนเงื่อนไข"
+  },
+  {
+    "code": "report_dedebi_clear_data",
+    "text": "ล้างข้อมูล"
+  },
+  {
+    "code": "report_dedebi_search_before_export",
+    "text": "กรุณาค้นหาข้อมูลก่อนส่งออก"
+  },
+  {
+    "code": "report_dedebi_select_date_range",
+    "text": "กรุณาเลือกช่วงวันที่"
+  },
+  {
+    "code": "report_dedebi_from_date_not_exceed_to_date",
+    "text": "วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด"
+  },
+  {
+    "code": "report_dedebi_date_range_max_1_year",
+    "text": "ช่วงวันที่ต้องไม่เกิน 1 ปี"
+  },
+  {
+    "code": "report_dedebi_token_not_found",
+    "text": "ไม่พบ Token การเชื่อมต่อ กรุณาเข้าสู่ระบบใหม่"
+  },
+  {
+    "code": "report_dedebi_sale_type",
+    "text": "ขาย"
+  },
+  {
+    "code": "report_dedebi_preparing_report_data",
+    "text": "กำลังเตรียมข้อมูลรายงาน..."
+  },
+  {
+    "code": "report_dedebi_error_sending_request",
+    "text": "เกิดข้อผิดพลาดในการส่งคำขอ"
+  },
+  {
+    "code": "report_dedebi_payment_daily_title",
+    "text": "รายงานรับเงิน ตามวันที่"
+  },
+  {
+    "code": "report_dedebi_sale_daily_title",
+    "text": "รายงานยอดขาย ตามวันที่"
+  },
+  {
+    "code": "receivelist_title",
+    "text": "รายการรับจ่ายสินค้า"
+  },
+  {
+    "code": "receivelist_document_number",
+    "text": "เลขที่เอกสาร"
+  },
+  {
+    "code": "receivelist_date",
+    "text": "วันที่"
+  },
+  {
+    "code": "receivelist_transaction_type",
+    "text": "ประเภทรายการ"
+  },
+  {
+    "code": "receivelist_receive_goods",
+    "text": "รับสินค้า"
+  },
+  {
+    "code": "receivelist_issue_goods",
+    "text": "จ่ายสินค้า"
+  },
+  {
+    "code": "receivelist_member",
+    "text": "สมาชิก"
+  },
+  {
+    "code": "receivelist_member_name",
+    "text": "ชื่อสมาชิก"
+  },
+  {
+    "code": "receivelist_employee",
+    "text": "พนักงาน"
+  },
+  {
+    "code": "receivelist_total_value",
+    "text": "รวมมูลค่า"
+  },
+  {
+    "code": "receivelist_item",
+    "text": "รายการ"
+  },
+  {
+    "code": "receivelist_quantity",
+    "text": "จำนวน"
+  },
+  {
+    "code": "receivelist_value",
+    "text": "มูลค่า"
+  },
+  {
+    "code": "receivelist_type",
+    "text": "ประเภท"
+  },
+  {
+    "code": "receivelist_grand_total",
+    "text": "รวมทั้งหมด"
+  },
+  {
+    "code": "receivelist_search",
+    "text": "ค้นหา"
+  },
+  {
+    "code": "chatbot_connection_timeout",
+    "text": "Connection timeout - กรุณาตรวจสอบการเชื่อมต่อ"
+  },
+  {
+    "code": "chatbot_cannot_connect_to_server",
+    "text": "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้"
+  },
+  {
+    "code": "chatbot_check_api_server",
+    "text": "กรุณาตรวจสอบว่า API Server ทำงานอยู่หรือไม่"
+  },
+  {
+    "code": "chatbot_reset_conversation",
+    "text": "เริ่มการสนทนาใหม่"
+  },
+  {
+    "code": "chatbot_reset_confirmation",
+    "text": "คุณต้องการล้างประวัติการสนทนาและเริ่มใหม่หรือไม่?"
+  },
+  {
+    "code": "chatbot_start_new",
+    "text": "เริ่มใหม่"
+  },
+  {
+    "code": "chatbot_welcome_emoji",
+    "text": "สวัสดีครับ! ผมเป็น AI Assistant พร้อมช่วยเหลือคุณ 😊"
+  },
+  {
+    "code": "chatbot_expand",
+    "text": "ขยาย"
+  },
+  {
+    "code": "chatbot_minimize",
+    "text": "ย่อ"
+  },
+  {
+    "code": "chatbot_close",
+    "text": "ปิด"
+  },
+  {
+    "code": "chatbot_copy",
+    "text": "Copy"
+  },
+  {
+    "code": "chatbot_copied_message",
+    "text": "คัดลอกข้อความแล้ว"
+  },
+  {
+    "code": "chatbot_ai_usage",
+    "text": "AI Usage"
+  },
+  {
+    "code": "chatbot_response_empty",
+    "text": "Response is empty"
+  },
+  {
+    "code": "chatbot_analyze_product",
+    "text": "วิเคราะห์สินค้านี้"
+  },
+  {
+    "code": "chatbot_product_name",
+    "text": "ชื่อ"
+  },
+  {
+    "code": "chatbot_product_code",
+    "text": "รหัส"
+  },
+  {
+    "code": "chatbot_product_barcode",
+    "text": "บาร์โค้ด"
+  },
+  {
+    "code": "chatbot_product_unit",
+    "text": "หน่วย"
+  },
+  {
+    "code": "stock_balance_report",
+    "text": "สินค้าคงเหลือ"
+  },
+  {
+    "code": "hide_filter_panel",
+    "text": "ซ่อนแผงตัวกรอง"
+  },
+  {
+    "code": "show_filter_panel",
+    "text": "แสดงแผงตัวกรอง"
+  },
+  {
+    "code": "set_search_conditions",
+    "text": "ตั้งค่าเงื่อนไขการค้นหา"
+  },
+  {
+    "code": "export_report",
+    "text": "Export รายงาน"
+  },
+  {
+    "code": "refresh_data",
+    "text": "รีเฟรชข้อมูล"
+  },
+  {
+    "code": "generating_report_start",
+    "text": "กำลังเริ่มสร้างรายงาน..."
+  },
+  {
+    "code": "loading_new_page",
+    "text": "กำลังโหลดหน้าใหม่..."
+  },
+  {
+    "code": "dedebi_sales_report",
+    "text": "รายงานยอดขาย Dedebi"
+  },
+  {
+    "code": "set_conditions_to_view_data",
+    "text": "กำหนดเงื่อนไขการค้นหาเพื่อดูข้อมูล"
+  },
+  {
+    "code": "showing_items",
+    "text": "แสดง"
+  },
+  {
+    "code": "from_total_items",
+    "text": "จากทั้งหมด"
+  },
+  {
+    "code": "first_page",
+    "text": "หน้าแรก"
+  },
+  {
+    "code": "previous_page",
+    "text": "หน้าก่อนหน้า"
+  },
+  {
+    "code": "next_page",
+    "text": "หน้าถัดไป"
+  },
+  {
+    "code": "last_page",
+    "text": "หน้าสุดท้าย"
+  },
+  {
+    "code": "change_conditions",
+    "text": "เปลี่ยนเงื่อนไข"
+  },
+  {
+    "code": "clear_data",
+    "text": "ล้างข้อมูล"
+  },
+  {
+    "code": "no_report_data_for_export",
+    "text": "ไม่พบข้อมูลรายงานสำหรับ Export"
+  },
+  {
+    "code": "no_token_please_login_again",
+    "text": "ไม่พบ Token การเชื่อมต่อ กรุณาเข้าสู่ระบบใหม่"
+  },
+  {
+    "code": "preparing_report_data",
+    "text": "กำลังเตรียมข้อมูลรายงาน..."
+  },
+  {
+    "code": "error_in_request",
+    "text": "เกิดข้อผิดพลาดในการส่งคำขอ"
+  },
+  {
+    "code": "report_filter_all",
+    "text": "ทั้งหมด"
+  },
+  {
+    "code": "report_group_product",
+    "text": "สินค้า"
+  },
+  {
+    "code": "report_group_debtor",
+    "text": "ลูกหนี้"
+  },
+  {
+    "code": "report_group_creditor",
+    "text": "เจ้าหนี้"
+  },
+  {
+    "code": "report_group_bank",
+    "text": "ธนาคาร"
+  },
+  {
+    "code": "month_january",
+    "text": "มกราคม"
+  },
+  {
+    "code": "month_february",
+    "text": "กุมภาพันธ์"
+  },
+  {
+    "code": "month_march",
+    "text": "มีนาคม"
+  },
+  {
+    "code": "month_april",
+    "text": "เมษายน"
+  },
+  {
+    "code": "month_may",
+    "text": "พฤษภาคม"
+  },
+  {
+    "code": "month_june",
+    "text": "มิถุนายน"
+  },
+  {
+    "code": "month_july",
+    "text": "กรกฎาคม"
+  },
+  {
+    "code": "month_august",
+    "text": "สิงหาคม"
+  },
+  {
+    "code": "month_september",
+    "text": "กันยายน"
+  },
+  {
+    "code": "month_october",
+    "text": "ตุลาคม"
+  },
+  {
+    "code": "month_november",
+    "text": "พฤศจิกายน"
+  },
+  {
+    "code": "month_december",
+    "text": "ธันวาคม"
+  },
+  {
+    "code": "กรุณาเลือกสินค้าก่อน",
+    "text": "กรุณาเลือกสินค้าก่อน"
+  },
+  {
+    "code": "เลือกรูปแบบการพิมพ์",
+    "text": "เลือกรูปแบบการพิมพ์"
+  },
+  {
+    "code": "เลือกสีข้อความราคาและกรอบ",
+    "text": "เลือกสีข้อความราคาและกรอบ"
+  },
+  {
+    "code": "bill_add_column",
+    "text": "เพิ่มColumn"
+  },
+  {
+    "code": "bill_text",
+    "text": "ข้อความ"
+  },
+  {
+    "code": "bill_image",
+    "text": "รูปภาพ"
+  },
+  {
+    "code": "bill_add_row",
+    "text": "เพิ่มRow"
+  },
+  {
+    "code": "bill_delete_column",
+    "text": "ลบColumn"
+  },
+  {
+    "code": "bill_add_detail",
+    "text": "เพิ่มรายละเอียด"
+  },
+  {
+    "code": "bill_close",
+    "text": "ปิด"
+  },
+  {
+    "code": "bill_design_code",
+    "text": "รหัส"
+  },
+  {
+    "code": "bill_design_name",
+    "text": "ชื่อ"
+  },
+  {
+    "code": "bill_design_detail",
+    "text": "รายละเอียด"
+  },
+  {
+    "code": "import_product_file_confirm_import",
+    "text": "ยืนยันการนำเข้าข้อมูล"
+  },
+  {
+    "code": "import_product_file_cancel",
+    "text": "ยกเลิก"
+  },
+  {
+    "code": "import_product_file_confirm",
+    "text": "ยืนยัน"
+  },
+  {
+    "code": "import_product_file_close",
+    "text": "ปิด"
+  },
+  {
+    "code": "import_product_file_title",
+    "text": "นำเข้าข้อมูลสินค้าจากไฟล์"
+  },
+  {
+    "code": "import_product_file_select_file",
+    "text": "เลือกไฟล์"
+  },
+  {
+    "code": "import_product_file_back_to_main",
+    "text": "กลับหน้าหลัก"
+  },
+  {
+    "code": "import_product_file_excel_only",
+    "text": "รูปแบบไฟล์ Excel (.xlsx) เท่านั้น"
+  },
+  {
+    "code": "import_product_file_max_size",
+    "text": "ขนาดไฟล์สูงสุด: 500 MB"
+  },
+  {
+    "code": "import_product_file_latest_file",
+    "text": "ไฟล์ล่าสุด"
+  },
+  {
+    "code": "import_product_file_upload_complete",
+    "text": "อัปโหลดเรียบร้อยแล้ว"
+  },
+  {
+    "code": "import_product_file_importing",
+    "text": "กำลังนำเข้าข้อมูล..."
+  },
+  {
+    "code": "import_product_file_uploading",
+    "text": "กำลังอัปโหลด..."
+  },
+  {
+    "code": "import_product_file_upload_success",
+    "text": "อัปโหลดสำเร็จ!"
+  },
+  {
+    "code": "import_product_file_import_product_barcode",
+    "text": "นำเข้าสินค้า/Barcode"
+  },
+  {
+    "code": "import_product_file_duplicate_barcode_found",
+    "text": "พบ Barcode ซ้ำ"
+  },
+  {
+    "code": "import_product_file_duplicate_barcode_detail",
+    "text": "รายละเอียด Barcode ซ้ำ:"
+  },
+  {
+    "code": "import_product_file_duplicate_count",
+    "text": "ซ้ำ"
+  },
+  {
+    "code": "import_product_file_row_found",
+    "text": "แถวที่พบ"
+  },
+  {
+    "code": "import_product_file_fix_duplicates_msg",
+    "text": "กรุณาแก้ไขไฟล์ Excel ให้ barcode ไม่ซ้ำกันก่อนนำเข้าอีกครั้ง"
+  },
+  {
+    "code": "import_product_file_error_found",
+    "text": "พบข้อผิดพลาด"
+  },
+  {
+    "code": "import_product_file_import_result",
+    "text": "ผลการนำเข้าข้อมูล"
+  },
+  {
+    "code": "import_product_file_file",
+    "text": "ไฟล์"
+  },
+  {
+    "code": "import_product_file_time_used",
+    "text": "เวลาที่ใช้"
+  },
+  {
+    "code": "import_product_file_excel_rows",
+    "text": "แถวใน Excel"
+  },
+  {
+    "code": "import_product_file_products_in_system",
+    "text": "สินค้าในระบบ"
+  },
+  {
+    "code": "import_product_file_new_products",
+    "text": "สินค้าใหม่"
+  },
+  {
+    "code": "import_product_file_updated",
+    "text": "อัปเดต"
+  },
+  {
+    "code": "import_product_file_unchanged",
+    "text": "ไม่เปลี่ยนแปลง"
+  },
+  {
+    "code": "import_product_file_success",
+    "text": "สำเร็จ"
+  },
+  {
+    "code": "import_product_file_error",
+    "text": "ข้อผิดพลาด"
+  },
+  {
+    "code": "import_product_file_import_detail",
+    "text": "รายละเอียดการนำเข้า"
+  },
+  {
+    "code": "import_product_file_view_all_details",
+    "text": "ดูรายละเอียดทั้งหมด"
+  },
+  {
+    "code": "import_product_file_view_duplicate_list",
+    "text": "ดูรายการ Barcode ซ้ำ"
+  },
+  {
+    "code": "import_product_file_size",
+    "text": "ขนาด"
+  },
+  {
+    "code": "report_dedebi_sale_return_title",
+    "text": "รายงานลดหนี้/รับคืน"
+  },
+  {
+    "code": "report_dedebi_sale_return_dedebi_title",
+    "text": "รายงานยอดขาย Dedebi"
+  },
+  {
+    "code": "report_dedebi_sale_return_date_range_exceeds_1_year",
+    "text": "ช่วงวันที่ต้องไม่เกิน 1 ปี"
+  },
+  {
+    "code": "report_dedebi_sale_return_date_start_must_not_exceed_end",
+    "text": "วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด"
+  },
+  {
+    "code": "report_dedebi_sale_return_token_not_found",
+    "text": "ไม่พบ Token การเชื่อมต่อ กรุณาเข้าสู่ระบบใหม่"
+  },
+  {
+    "code": "report_dedebi_sale_return_preparing_report_data",
+    "text": "กำลังเตรียมข้อมูลรายงาน..."
+  },
+  {
+    "code": "report_dedebi_sale_return_error_sending_request",
+    "text": "เกิดข้อผิดพลาดในการส่งคำขอ"
+  },
+  {
+    "code": "report_dedebi_sale_return_please_search_before_export",
+    "text": "กรุณาค้นหาข้อมูลก่อนส่งออก"
+  },
+  {
+    "code": "report_dedebi_sale_return_clear_data",
+    "text": "ล้างข้อมูล"
+  },
+  {
+    "code": "report_dedebi_please_select_date_range",
+    "text": "กรุณาเลือกช่วงวันที่"
+  },
+  {
+    "code": "purchase_partial_report_title",
+    "text": "รายงานรับสินค้าแบบทยอยรับ"
+  },
+  {
+    "code": "purchase_partial_report_dedebi_title",
+    "text": "รายงานรับสินค้าแบบทยอยรับ Dedebi"
+  },
+  {
+    "code": "generating_report",
+    "text": "กำลังเริ่มสร้างรายงาน..."
+  },
+  {
+    "code": "set_search_conditions_to_view_data",
+    "text": "กำหนดเงื่อนไขการค้นหาเพื่อดูข้อมูล"
+  },
+  {
+    "code": "please_search_data_before_export",
+    "text": "กรุณาค้นหาข้อมูลก่อนส่งออก"
+  },
+  {
+    "code": "please_select_date_range",
+    "text": "กรุณาเลือกช่วงวันที่"
+  },
+  {
+    "code": "start_date_must_not_exceed_end_date",
+    "text": "วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด"
+  },
+  {
+    "code": "date_range_must_not_exceed_1_year",
+    "text": "ช่วงวันที่ต้องไม่เกิน 1 ปี"
+  },
+  {
+    "code": "token_not_found_please_login_again",
+    "text": "ไม่พบ Token การเชื่อมต่อ กรุณาเข้าสู่ระบบใหม่"
+  },
+  {
+    "code": "report_stock_movement",
+    "text": "เคลื่อนไหวของสต็อก"
+  },
+  {
+    "code": "report_stock_movement_with_product",
+    "text": "เคลื่อนไหวของสต็อก : "
+  },
+  {
+    "code": "hide_filter_panel",
+    "text": "ซ่อนแผงตัวกรอง"
+  },
+  {
+    "code": "show_filter_panel",
+    "text": "แสดงแผงตัวกรอง"
+  },
+  {
+    "code": "set_search_conditions",
+    "text": "ตั้งค่าเงื่อนไขการค้นหา"
+  },
+  {
+    "code": "refresh_data",
+    "text": "รีเฟรชข้อมูล"
+  },
+  {
+    "code": "export_report",
+    "text": "ส่งออกรายงาน"
+  },
+  {
+    "code": "report_sale_dedebi",
+    "text": "รายงานยอดขาย Dedebi"
+  },
+  {
+    "code": "set_conditions_to_view_data",
+    "text": "กำหนดเงื่อนไขการค้นหาเพื่อดูข้อมูล"
+  },
+  {
+    "code": "starting_report_generation",
+    "text": "กำลังเริ่มสร้างรายงาน..."
+  },
+  {
+    "code": "loading_data",
+    "text": "กำลังโหลดข้อมูล..."
+  },
+  {
+    "code": "loading_new_page",
+    "text": "กำลังโหลดหน้าใหม่..."
+  },
+  {
+    "code": "please_wait",
+    "text": "กรุณารอสักครู่..."
+  },
+  {
+    "code": "show_items_range",
+    "text": "แสดง"
+  },
+  {
+    "code": "items_per_page",
+    "text": "รายการ"
+  },
+  {
+    "code": "first_page",
+    "text": "หน้าแรก"
+  },
+  {
+    "code": "previous_page",
+    "text": "หน้าก่อนหน้า"
+  },
+  {
+    "code": "next_page",
+    "text": "หน้าถัดไป"
+  },
+  {
+    "code": "last_page",
+    "text": "หน้าสุดท้าย"
+  },
+  {
+    "code": "error_occurred",
+    "text": "เกิดข้อผิดพลาด"
+  },
+  {
+    "code": "try_again",
+    "text": "ลองใหม่"
+  },
+  {
+    "code": "change_conditions",
+    "text": "เปลี่ยนเงื่อนไข"
+  },
+  {
+    "code": "clear_data",
+    "text": "ล้างข้อมูล"
+  },
+  {
+    "code": "please_select_date_range",
+    "text": "กรุณาเลือกช่วงวันที่"
+  },
+  {
+    "code": "start_date_must_not_exceed_end_date",
+    "text": "วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด"
+  },
+  {
+    "code": "date_range_must_not_exceed_1_year",
+    "text": "ช่วงวันที่ต้องไม่เกิน 1 ปี"
+  },
+  {
+    "code": "token_not_found_please_login_again",
+    "text": "ไม่พบ Token การเชื่อมต่อ กรุณาเข้าสู่ระบบใหม่"
+  },
+  {
+    "code": "preparing_report_data",
+    "text": "กำลังเตรียมข้อมูลรายงาน..."
+  },
+  {
+    "code": "error_sending_request",
+    "text": "เกิดข้อผิดพลาดในการส่งคำขอ: "
+  },
+  {
+    "code": "please_search_data_before_export",
+    "text": "กรุณาค้นหาข้อมูลก่อนส่งออก"
+  },
+  {
+    "code": "select_all_warehouses",
+    "text": "เลือกคลังสินค้าทั้งหมด"
+  },
+  {
+    "code": "deselect_all_warehouses",
+    "text": "ไม่เลือกคลังสินค้าทั้งหมด"
+  },
+  {
+    "code": "select_all_locations",
+    "text": "เลือกที่เก็บสินค้าทั้งหมด"
+  },
+  {
+    "code": "deselect_all_locations",
+    "text": "ไม่เลือกที่เก็บสินค้าทั้งหมด"
+  },
+  {
+    "code": "no",
+    "text": "ไม่"
+  },
+  {
+    "code": "import_from_excel",
+    "text": "นำเข้าจาก Excel"
+  },
+  {
+    "code": "download_template",
+    "text": "ดาวน์โหลดแม่แบบ"
+  },
+  {
+    "code": "loyalty_code",
+    "text": "รหัสสะสมแต้ม"
+  },
+  {
+    "code": "cart",
+    "text": "ตะกร้า"
+  },
+  {
+    "code": "deduct_deposit",
+    "text": "ตัดเงินมัดจำ"
+  },
+  {
+    "code": "deposit",
+    "text": "เงินมัดจำ"
+  },
+  {
+    "code": "deduct_advance_payment",
+    "text": "ตัดเงินล่วงหน้า"
+  },
+  {
+    "code": "advance_payment",
+    "text": "เงินล่วงหน้า"
+  },
+  {
+    "code": "add_text",
+    "text": "เพิ่มข้อความ"
+  },
+  {
+    "code": "add_rectangle",
+    "text": "เพิ่มกรอบ"
+  },
+  {
+    "code": "add_table",
+    "text": "เพิ่มตาราง"
+  },
+  {
+    "code": "add_image",
+    "text": "เพิ่มรูปภาพ"
+  },
+  {
+    "code": "set_background",
+    "text": "ตั้งพื้นหลัง"
+  },
+  {
+    "code": "remove_background",
+    "text": "ลบพื้นหลัง"
+  },
+  {
+    "code": "download_excel_template",
+    "text": "ดาวน์โหลดแม่แบบ Excel"
+  },
+  {
+    "code": "import_excel",
+    "text": "นำเข้าจาก Excel"
+  },
+  {
+    "code": "validation_result",
+    "text": "ผลการตรวจสอบข้อมูล"
+  },
+  {
+    "code": "total_rows",
+    "text": "จำนวนแถวทั้งหมด"
+  },
+  {
+    "code": "valid_rows",
+    "text": "แถวที่ถูกต้อง"
+  },
+  {
+    "code": "error_rows",
+    "text": "แถวที่ผิดพลาด"
+  },
+  {
+    "code": "error_details",
+    "text": "รายละเอียดข้อผิดพลาด"
+  },
+  {
+    "code": "row",
+    "text": "แถว"
+  },
+  {
+    "code": "more_errors",
+    "text": "ข้อผิดพลาดเพิ่มเติม"
+  },
+  {
+    "code": "proceed_import",
+    "text": "ดำเนินการนำเข้า"
+  },
+  {
+    "code": "importing_data",
+    "text": "กำลังนำเข้าข้อมูล"
+  },
+  {
+    "code": "progress",
+    "text": "ความคืบหน้า"
+  },
+  {
+    "code": "processed",
+    "text": "ประมวลผลแล้ว"
+  },
+  {
+    "code": "success",
+    "text": "สำเร็จ"
+  },
+  {
+    "code": "errors",
+    "text": "ผิดพลาด"
+  },
+  {
+    "code": "import_completed",
+    "text": "นำเข้าเสร็จสิ้น"
+  },
+  {
+    "code": "template_download_success",
+    "text": "ดาวน์โหลดแม่แบบสำเร็จ"
+  },
+  {
+    "code": "template_download_failed",
+    "text": "ดาวน์โหลดแม่แบบไม่สำเร็จ"
+  },
+  {
+    "code": "import_failed",
+    "text": "นำเข้าข้อมูลไม่สำเร็จ"
+  },
+  {
+    "code": "error_occurred",
+    "text": "เกิดข้อผิดพลาด"
+  },
+  {
+    "code": "ok",
+    "text": "ตกลง"
+  },
+  {
+    "code": "select_import_mode",
+    "text": "เลือกโหมดการนำเข้า"
+  },
+  {
+    "code": "import_mode_description",
+    "text": "คุณต้องการตรวจสอบข้อมูลก่อนนำเข้า หรือนำเข้าทันที?"
+  },
+  {
+    "code": "validate_only",
+    "text": "ตรวจสอบข้อมูล"
+  },
+  {
+    "code": "validate_only_description",
+    "text": "ตรวจสอบความถูกต้องของข้อมูลก่อน (แนะนำ)"
+  },
+  {
+    "code": "report_vat_sale",
+    "text": "รายงานภาษีขาย"
+  },
+  {
+    "code": "report_vat_buy",
+    "text": "รายงานภาษีซื้อ"
+  },
+  {
+    "code": "import_directly",
+    "text": "นำเข้าทันที"
+  },
+  {
+    "code": "import_directly_description",
+    "text": "นำเข้าข้อมูลเข้าระบบโดยตรง"
+  },
+  {
+    "code": "you_have_accepted",
+    "text": "คุณได้ยอมรับ"
+  },
+  {
+    "code": "terms_of_use",
+    "text": "ข้อกำหนดในการใช้บริการ"
+  },
+  {
+    "code": "privacy_policy",
+    "text": "นโยบายความเป็นส่วนตัว"
+  },
+  {
+    "code":"export_report_file_ready",
+    "text":"ไฟล์รายงานพร้อมดาวน์โหลดแล้ว"
+  },
+  {
+    "code":"export_report_download",
+    "text":"ดาวน์โหลดรายงาน"
+  },
+  {
+    "code":"export_report_complete",
+    "text":"การส่งออกรายงานเสร็จสมบูรณ์"
+  },
+  {
+    "code":"export_report_filename",
+    "text":"ชื่อไฟล์รายงาน:"
+  },
+  {
+    "code":"export_report_check_status",
+    "text":"ตรวจสอบสถานะการส่งออกรายงาน"
+  }
+]

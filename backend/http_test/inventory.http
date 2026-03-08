@@ -1,0 +1,55 @@
+@baseUrl = http://localhost:8088
+@auth = Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NDQ1NTQwNzUsInVzZXJuYW1lIjoiZGV2MDEiLCJuYW1lIjoiZGV2IGRldiJ9.Y-jQP3ZmziY70R-2f4Y2a46u5A6NVv_0u3jZYxfw568WkggzqRzJJIbn4C6epxrJn5OlAllnz6v0mHQJq94efzKNFqS8QLC-1_DprS4yy2fDKjJ51kMhhg7vY8IXNPA8VlzMGV6szljSOEGXA4qiovZ1PJIXEi3sFGvEmuLEsDO6FAj6PX-vcfDje-_hcBXvgMd1bjG5b7S2XgSRhr0nnoFrytu5x6tq0fUKFDyEXseq51jiDRmQXjxDEti5RHuHt448A5BqG3kg4xzwE3LxKDfaGf8qi1uWkcgztu3V55zhTeMzESS4mUmASDA7d6DMJPai3599euiniOC_VoKlbcWgAMfAmnlJSF1MWEtO824He6N8pBRnbXA8RekJVkI8lr4Jt7AbBkFFp2KP6ClzMvV5gT7lyUKmpQavLJl1A86WIAbgETUfdd6cVoXuINi5urDnXBC7ThGb3PYrUKA3Zg1zL6mA-mmSRp-VMvhORZT4yGixnEXbbOj69JdKtSxhdtQplnT8o2rcthTkBvcLpbXPTiYXnkNuAn5DUdFhDpffQU9tZjGmmK-f3o6m2YuMm5TET8Prh0la5yTbDsWC2EgUhgPORwnzwDDeQjmz5yXLuLxGjsq-b4OSR-zqc7oQuqPgEoz7OP38k2dSk3rkD0S7g4YNyRDdWJBaQLXWP9k
+
+@shopID = 23xK48ZSaDPzoxZVXIbV8w6kFVw
+
+@invID = 23xKQVcEJvtYC8INxKzF6ykI3QT
+
+###
+POST {{baseUrl}}/shop/{{shopID}}/inventory
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+    "itemSku": "dev01",
+    "shopId": "23twO9nFtgsLGAuQ9JXPzi3C65N",
+    "categoryGuid": "cat1234",
+    "lineNumber": 1,
+    "price": 99.0,
+    "recommended": false,
+    "haveImage": false,
+    "activated": true,
+    "name1": "Name 1",
+    "description1": "Description 1"
+}
+
+###
+GET {{baseUrl}}/shop/{{shopID}}/inventory
+Authorization: {{auth}}
+Content-Type: application/json
+
+###
+GET {{baseUrl}}/shop/{{shopID}}/inventory/{{invID}}
+Authorization: {{auth}}
+Content-Type: application/json
+
+###
+PUT {{baseUrl}}/shop/{{shopID}}/inventory/{{invID}}
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+    "itemSku": "dev01",
+    "categoryGuid": "cat1234",
+    "lineNumber": 1,
+    "price": 99.0,
+    "recommended": false,
+    "haveImage": false,
+    "activated": true,
+    "name1": "Name 3 Edited",
+    "description1": "Description 3"
+}
+###
+DELETE {{baseUrl}}/shop/{{shopID}}/inventory/{{invID}}
+Authorization: {{auth}}
+Content-Type: application/json

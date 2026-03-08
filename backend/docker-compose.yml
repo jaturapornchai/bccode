@@ -1,0 +1,176 @@
+# ========================================
+# BC AI Backend - Docker Compose
+# ใช้ไฟล์เดียวกันทุก environment (Docker Desktop, VPS, Production)
+# ========================================
+#
+# PORT STANDARD (กฏมาตรฐาน — ใช้ทุกที่เหมือนกัน):
+# ┌─────────────────────┬────────┬────────────────────────────────┐
+# │ Service             │ Port   │ หมายเหตุ                      │
+# ├─────────────────────┼────────┼────────────────────────────────┤
+# │ MainAPI (Gateway)   │  8888  │ 0.0.0.0 — จุดเข้าเดียว        │
+# │   /goapi/*          │        │   → goapi (embedded)          │
+# │   /*                │        │   → mainapi routes            │
+# ├─────────────────────┼────────┼────────────────────────────────┤
+# │ MongoDB             │ 27017  │ NATIVE (systemd) — ไม่อยู่ Docker │
+# │ PostgreSQL          │  5432  │ NATIVE (systemd) — ไม่อยู่ Docker │
+# │ Redis               │  6379  │ 127.0.0.1                     │
+# │ ClickHouse HTTP     │ 18123  │ 127.0.0.1 (native=8123)       │
+# │ ClickHouse Native   │ 19000  │ 127.0.0.1 (native=9000)       │
+# │ Kafka (KRaft)       │  9092  │ 127.0.0.1                     │
+# │ SeaweedFS Master    │  9333  │ 127.0.0.1                     │
+# │ SeaweedFS Filer     │ 18888  │ 127.0.0.1                     │
+# │ SeaweedFS S3        │ 18333  │ 127.0.0.1                     │
+# └─────────────────────┴────────┴────────────────────────────────┘
+# Local: http://localhost:8888
+# MongoDB + PostgreSQL = NATIVE (ไม่อยู่ใน Docker — ข้อมูลปลอดภัย)
+# Docker containers เข้า DB ผ่าน host.docker.internal
+
+services:
+  # ─── Infrastructure ───────────────────────
+
+  # MongoDB + PostgreSQL = NATIVE (systemd service บน host)
+  # Docker containers เข้าผ่าน host.docker.internal:27017 / :5432
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: clickhouse
+    ports:
+      - "127.0.0.1:18123:8123"
+      - "127.0.0.1:19000:9000"
+    environment:
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: JeadSanit19682511
+      TZ: Asia/Bangkok
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - clickhouse-logs:/var/log/clickhouse-server
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  kafka:
+    image: confluentinc/confluent-local:latest
+    container_name: kafka
+    ports:
+      - "127.0.0.1:9092:9092"
+    environment:
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # ─── Object Storage (SeaweedFS) ──────────
+
+  seaweedfs-master:
+    image: chrislusf/seaweedfs:latest
+    container_name: seaweedfs-master
+    command: "master -ip=seaweedfs-master -mdir=/data -defaultReplication=000"
+    ports:
+      - "127.0.0.1:9333:9333"
+    volumes:
+      - seaweedfs-master-data:/data
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  seaweedfs-volume:
+    image: chrislusf/seaweedfs:latest
+    container_name: seaweedfs-volume
+    command: "volume -mserver=seaweedfs-master:9333 -dir=/data -max=100 -ip=seaweedfs-volume -port=8080"
+    depends_on:
+      - seaweedfs-master
+    volumes:
+      - seaweedfs-volume-data:/data
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  seaweedfs-filer:
+    image: chrislusf/seaweedfs:latest
+    container_name: seaweedfs-filer
+    command: "filer -master=seaweedfs-master:9333 -s3 -s3.config=/etc/seaweedfs/s3.json -s3.port=8333"
+    depends_on:
+      - seaweedfs-master
+      - seaweedfs-volume
+    ports:
+      - "127.0.0.1:18888:8888"
+      - "127.0.0.1:18333:8333"
+    volumes:
+      - seaweedfs-filer-data:/data
+      - ./cluster/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # ─── Application (จุดเข้าเดียว port 8888) ──
+  # mainapi มี goapi embedded อยู่แล้วใต้ /goapi/*
+  # ไม่ต้องใช้ reverse proxy — mainapi เสิร์ฟทุกอย่างเอง
+
+  mainapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mainapi
+    depends_on:
+      - redis
+      - kafka
+      - clickhouse
+      - seaweedfs-filer
+    ports:
+      - "8888:8888"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+    environment:
+      GO_ENV: development
+      DEV_API_MODE: "2"
+      SERVICE_PORT: "8888"
+      LOG_LEVEL: DEBUG
+      TZ: Asia/Bangkok
+      KAFKA_SERVER_URL: "kafka:29092"
+      FIREBASE_PROJECT_ID: "test06-a1240"
+      GODEBUG: "x509negativeserial=1"
+      DEPLOY_TOKEN: "${DEPLOY_TOKEN:-}"
+      DEPLOY_REPO_DIR: "${DEPLOY_REPO_DIR:-/opt/bcaicloud/backend}"
+      DEPLOY_COMPOSE_FILE: "${DEPLOY_COMPOSE_FILE:-docker-compose.yml}"
+    volumes:
+      - ./bootstrap.json:/app/bootstrap.json:rw
+      - ./tdict-std.txt:/app/tdict-std.txt
+      - ./docs/swagger.json:/app/docs/swagger.json:ro
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+  clickhouse-data:
+  clickhouse-logs:
+  kafka-data:
+  seaweedfs-master-data:
+  seaweedfs-volume-data:
+  seaweedfs-filer-data:

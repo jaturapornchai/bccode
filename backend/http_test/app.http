@@ -1,0 +1,11 @@
+@baseUrl = http://localhost:8088
+
+###
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+    "username": "dev01",
+    "password": "dev"
+}
+

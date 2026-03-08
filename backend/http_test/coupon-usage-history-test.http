@@ -1,0 +1,146 @@
+# 🎫 Coupon Usage History API Testing Suite
+# =================================================================
+# 📋 INSTRUCTIONS:
+# 1. Install "REST Client" extension by Huachao Mao in VS Code
+# 2. Replace variables below with your actual server values
+# 3. Click "Send Request" above each HTTP request to test
+# 4. Follow the testing sequence for best results
+
+# 🔧 CONFIGURATION VARIABLES
+@host = http://localhost:8080
+@token = 88d9b7900bef3543ce1ac2c18e700ecc737ac610b669912e9d506a9136e2299b
+
+# 📋 TEST DATA VARIABLES
+@couponId = COUP001
+@couponCode = SAVE100
+@customerId = CUST001
+@customerCode = C001
+@saleInvoiceId = INV001
+@saleInvoiceNumber = IV202506210001
+@transactionId = TXN001
+@reservationId = RES001
+
+### ทดสอบ Coupon Usage History API
+### 
+### 1. สร้างประวัติการใช้คูปอง
+POST {{host}}/coupon/usage-history
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "coupon_id": "{{couponId}}",
+  "coupon_code": "{{couponCode}}",
+  "customer_id": "{{customerId}}",
+  "customer_code": "{{customerCode}}",
+  "customer_name": "นายทดสอบ ระบบ",
+  "sale_invoice_id": "{{saleInvoiceId}}",
+  "sale_invoice_number": "{{saleInvoiceNumber}}",
+  "transaction_id": "{{transactionId}}",
+  "reservation_id": "{{reservationId}}",
+  "used_amount": 100.00,
+  "discount_amount": 100.00,
+  "cash_voucher_amount": 0.00,
+  "order_amount": 1500.00,
+  "coupon_type": 0,
+  "coupon_value": 100.00,
+  "remark": "ใช้คูปองลดราคา 100 บาท"
+}
+
+### 2. ค้นหาประวัติการใช้คูปองทั้งหมด
+POST {{host}}/coupon/usage-history/search
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "page": 1,
+  "page_size": 20
+}
+
+### 3. ค้นหาประวัติการใช้คูปองตามรหัสคูปอง
+GET {{host}}/coupon/usage-history/by-coupon?coupon_id={{couponId}}&page=1&page_size=10
+Authorization: Bearer {{token}}
+
+### 4. ค้นหาประวัติการใช้คูปองตามรหัสลูกค้า
+GET {{host}}/coupon/customer/usage-history?customer_id={{customerId}}&page=1&page_size=10
+Authorization: Bearer {{token}}
+
+### 5. ค้นหาประวัติการใช้คูปองตามรหัสใบกำกับสินค้า
+GET {{host}}/coupon/sale-invoice/usage-history?sale_invoice_id={{saleInvoiceId}}
+Authorization: Bearer {{token}}
+
+### 6. ค้นหาประวัติการใช้คูปองตาม Transaction ID
+GET {{host}}/coupon/transaction/usage-history?transaction_id={{transactionId}}
+Authorization: Bearer {{token}}
+
+### 7. ค้นหาประวัติการใช้คูปองแบบละเอียด (ด้วยเงื่อนไขต่างๆ)
+POST {{host}}/coupon/usage-history/search
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "coupon_code": "SAVE",
+  "customer_id": "{{customerId}}",
+  "start_date": "2025-06-01T00:00:00Z",
+  "end_date": "2025-06-30T23:59:59Z",
+  "page": 1,
+  "page_size": 20
+}
+
+### 8. ค้นหาประวัติการใช้คูปองตามเลขที่ใบกำกับสินค้า
+POST {{host}}/coupon/usage-history/search
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "sale_invoice_number": "{{saleInvoiceNumber}}",
+  "page": 1,
+  "page_size": 10
+}
+
+### 9. ทดสอบสร้างประวัติหลายรายการ
+POST {{host}}/coupon/usage-history
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "coupon_id": "COUP002",
+  "coupon_code": "PERCENT10",
+  "customer_id": "CUST002",
+  "customer_code": "C002",
+  "customer_name": "นางสาวทดสอบ ระบบ2",
+  "sale_invoice_id": "INV002",
+  "sale_invoice_number": "IV202506200002",
+  "transaction_id": "TXN002",
+  "reservation_id": "RES002",
+  "used_amount": 50.00,
+  "discount_amount": 200.00,
+  "cash_voucher_amount": 0.00,
+  "order_amount": 2000.00,
+  "coupon_type": 1,
+  "coupon_value": 10.00,
+  "remark": "ใช้คูปองลด 10%"
+}
+
+### 10. ทดสอบคูปองแทนเงินสด
+POST {{host}}/coupon/usage-history
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "coupon_id": "COUP003",
+  "coupon_code": "CASH300",
+  "customer_id": "CUST003",
+  "customer_code": "C003",
+  "customer_name": "นายทดสอบ คูปองเงินสด",
+  "sale_invoice_id": "INV003",
+  "sale_invoice_number": "IV202506200003",
+  "transaction_id": "TXN003",
+  "reservation_id": "RES003",
+  "used_amount": 300.00,
+  "discount_amount": 0.00,
+  "cash_voucher_amount": 300.00,
+  "order_amount": 500.00,
+  "coupon_type": 2,
+  "coupon_value": 300.00,
+  "remark": "ใช้คูปองแทนเงินสด 300 บาท"
+}

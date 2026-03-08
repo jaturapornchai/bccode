@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  inventory:
+    image: smlsoft/smlcloudplatform:imageuploadservice
+    restart: always
+    expose:
+      - 8080
+    environment:
+      - ENVIRONMENT=production
+      - REDIS_CACHE_URI=redis:6379
+      - STORAGE_DATA_PATH=/data
+      - STORAGE_DATA_URI=http://192.168.2.209:8080/images
+    volumes:
+      - ./data:/data
+    labels:
+      - "traefik.http.routers.imageservice.rule=(PathPrefix(`/upload`) || PathPrefix(`/images`))"
+    networks:
+      - backend
+
+networks:
+  backend:
+    external:
+      name: sml_service_backend

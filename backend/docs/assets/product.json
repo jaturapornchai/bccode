@@ -1,0 +1,39 @@
+{
+  "activated": true,
+  "barcodes": [
+    {
+      "barcode": "string",
+      "id": "string",
+      "price": 0,
+      "unit": "string"
+    }
+  ],
+  "categoryGuid": "string",
+  "description1": "string",
+  "description2": "string",
+  "description3": "string",
+  "description4": "string",
+  "description5": "string",
+  "guidFixed": "string",
+  "haveImage": true,
+  "id": "string",
+  "itemSku": "string",
+  "lineNumber": 0,
+  "shopId": "string",
+  "name1": "string",
+  "name2": "string",
+  "name3": "string",
+  "name4": "string",
+  "name5": "string",
+  "price": 0,
+  "recommended": true,
+  "unitList": [
+    {
+      "activated": true,
+      "divisor": 0,
+      "minuend": 0,
+      "unitGuid": "string",
+      "unitName": "string"
+    }
+  ]
+}

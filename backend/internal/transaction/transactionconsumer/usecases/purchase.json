@@ -1,0 +1,280 @@
+[
+    {
+      "id": "64892cc629aadf6b6dbf7a0d",
+      "shopid": "2IZS0jFeRXWPidSupyXN7zQIlaS",
+      "guidfixed": "2RB7CgETzvJh18OdSA1GB20Mpoy",
+      "docno": "PU2023061400001",
+      "totaldiscount": 0,
+      "totalbeforevat": 70.09345794392523,
+      "guidref": "8215d24a-7971-42cb-9c00-9b6e0873f5fa",
+      "docdatetime": "2023-06-14T02:57:21.22Z",
+      "docrefno": "",
+      "docrefdate": "2023-06-14T02:57:21.22Z",
+      "doctype": 0,
+      "custcode": "AP001",
+      "custnames": [
+        {
+          "code": "th",
+          "name": "เงินสด",
+          "isauto": false,
+          "isdelete": false
+        }
+      ],
+      "totalexceptvat": 0,
+      "cashiercode": "",
+      "details": [
+        {
+          "sumamount": 75,
+          "locationnames": [
+            {
+              "code": "th",
+              "name": "01",
+              "isauto": false,
+              "isdelete": false
+            }
+          ],
+          "sumamountexcludevat": 70.09345794392523,
+          "dividevalue": 1,
+          "standvalue": 1,
+          "inquirytype": 1,
+          "price": 15,
+          "barcode": "888555",
+          "unitcode": "PCS",
+          "towhcode": "01",
+          "tolocationcode": "01",
+          "totalvaluevat": 4.906542056074766,
+          "itemguid": "2R5l6850nN6y0NO61MmFilEGXAk",
+          "shelfcode": "",
+          "totalqty": 5,
+          "calcflag": 1,
+          "vattype": 1,
+          "towhnames": [
+            {
+              "code": "th",
+              "name": "01",
+              "isauto": false,
+              "isdelete": false
+            }
+          ],
+          "itemnames": [
+            {
+              "code": "th",
+              "name": "สินค้าตัวแรก 2",
+              "isauto": false,
+              "isdelete": false
+            }
+          ],
+          "linenumber": 0,
+          "whnames": [
+            {
+              "code": "th",
+              "name": "01",
+              "isauto": false,
+              "isdelete": false
+            }
+          ],
+          "averagecost": 0,
+          "laststatus": 0,
+          "taxtype": 0,
+          "itemcode": "888555",
+          "ispos": 0,
+          "multiunit": true,
+          "priceexcludevat": 14.018691588785046,
+          "locationcode": "01",
+          "itemtype": 0,
+          "remark": "",
+          "qty": 5,
+          "discount": "",
+          "docdatetime": "2023-06-14T02:57:35.062Z",
+          "whcode": "01",
+          "tolocationnames": [
+            {
+              "code": "th",
+              "name": "01",
+              "isauto": false,
+              "isdelete": false
+            }
+          ],
+          "discountamount": 0,
+          "unitnames": [
+            {
+              "code": "th",
+              "name": "PCS",
+              "isauto": false,
+              "isdelete": false
+            }
+          ],
+          "sumofcost": 0,
+          "vatcal": 0,
+          "docref": "",
+          "docrefdatetime": "2023-06-14T02:57:35.063Z"
+        }
+      ],
+      "inquirytype": 1,
+      "discountword": "",
+      "totalcost": 0,
+      "totalvatvalue": 4.906542056074766,
+      "totalamount": 75,
+      "taxdocdate": "2023-06-14T02:57:21.22Z",
+      "salecode": "",
+      "posid": "",
+      "salename": "",
+      "membercode": "",
+      "vatrate": 7,
+      "totalvalue": 75,
+      "taxdocno": "",
+      "docreftype": 0,
+      "vattype": 1,
+      "totalaftervat": 75,
+      "transflag": 12,
+      "status": 0,
+      "iscancel": false,
+      "paymentdetail": {
+        "cashamounttext": "",
+        "cashamount": 75,
+        "paymentcreditcards": [],
+        "paymenttransfers": []
+      },
+      "description": "",
+      "ismanualamount": false
+    },
+    {
+      "id": "64907162e4a1b77f403791f1",
+      "shopid": "2IZS0jFeRXWPidSupyXN7zQIlaS",
+      "guidfixed": "2RQge2M7kFpCvxLd5Adh8MKta0H",
+      "docno": "PU2023061900001",
+      "totaldiscount": 0,
+      "totalbeforevat": 80,
+      "guidref": "8ae08acf-26f0-4666-8862-d0ff1f70edd7",
+      "docdatetime": "2023-06-19T15:16:11.192Z",
+      "docrefno": "",
+      "docrefdate": "2023-06-19T15:16:11.192Z",
+      "doctype": 0,
+      "custcode": "AP001",
+      "custnames": [
+        {
+          "code": "th",
+          "name": "เงินสด",
+          "isauto": false,
+          "isdelete": false
+        }
+      ],
+      "totalexceptvat": 0,
+      "cashiercode": "",
+      "details": [
+        {
+          "sumamount": 80,
+          "locationnames": [
+            {
+              "code": "th",
+              "name": "01",
+              "isauto": false,
+              "isdelete": false
+            }
+          ],
+          "sumamountexcludevat": 80,
+          "dividevalue": 1,
+          "standvalue": 1,
+          "inquirytype": 1,
+          "price": 8,
+          "barcode": "885999",
+          "unitcode": "PACK",
+          "towhcode": "01",
+          "tolocationcode": "01",
+          "totalvaluevat": 0,
+          "itemguid": "2R5nndIVjLNOy9qNs6GNvQpQdEq",
+          "shelfcode": "",
+          "totalqty": 10,
+          "calcflag": 1,
+          "vattype": 3,
+          "towhnames": [
+            {
+              "code": "th",
+              "name": "01",
+              "isauto": false,
+              "isdelete": false
+            }
+          ],
+          "itemnames": [
+            {
+              "code": "th",
+              "name": "สินค้าแพ็ค",
+              "isauto": false,
+              "isdelete": false
+            }
+          ],
+          "linenumber": 0,
+          "whnames": [
+            {
+              "code": "th",
+              "name": "01",
+              "isauto": false,
+              "isdelete": false
+            }
+          ],
+          "averagecost": 0,
+          "laststatus": 0,
+          "taxtype": 0,
+          "itemcode": "",
+          "ispos": 0,
+          "multiunit": true,
+          "priceexcludevat": 8,
+          "locationcode": "01",
+          "itemtype": 0,
+          "remark": "",
+          "qty": 10,
+          "discount": "",
+          "docdatetime": "2023-06-19T15:16:27.76Z",
+          "whcode": "01",
+          "tolocationnames": [
+            {
+              "code": "th",
+              "name": "01",
+              "isauto": false,
+              "isdelete": false
+            }
+          ],
+          "discountamount": 0,
+          "unitnames": [
+            {
+              "code": "th",
+              "name": " แพ็ค",
+              "isauto": false,
+              "isdelete": false
+            }
+          ],
+          "sumofcost": 0,
+          "vatcal": 0,
+          "docref": "",
+          "docrefdatetime": "2023-06-19T15:16:27.76Z"
+        }
+      ],
+      "inquirytype": 1,
+      "discountword": "",
+      "totalcost": 0,
+      "totalvatvalue": 0,
+      "totalamount": 80,
+      "taxdocdate": "2023-06-19T15:16:11.192Z",
+      "salecode": "",
+      "posid": "",
+      "salename": "",
+      "membercode": "",
+      "vatrate": 7,
+      "totalvalue": 80,
+      "taxdocno": "",
+      "docreftype": 0,
+      "vattype": 3,
+      "totalaftervat": 80,
+      "transflag": 12,
+      "status": 0,
+      "iscancel": false,
+      "paymentdetail": {
+        "cashamounttext": "",
+        "cashamount": 80,
+        "paymentcreditcards": [],
+        "paymenttransfers": []
+      },
+      "description": "",
+      "ismanualamount": false
+    }
+  ]

@@ -1,0 +1,150 @@
+package mypostgres
+
+import (
+	"context"
+	"database/sql"
+	"smlcloudplatform/internal/goapi/logger"
+	"time"
+)
+
+// InitQueueSchema - สร้างตารางและ functions สำหรับ Queue System
+func InitQueueSchema(db *sql.DB) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	logger.Info("กำลังตรวจสอบและสร้าง Queue Schema...")
+
+	// SQL สำหรับสร้างตารางและ functions
+	schemaSQL := `
+-- Table: queues
+CREATE TABLE IF NOT EXISTS queues (
+    id BIGSERIAL PRIMARY KEY,
+    shop_id VARCHAR(100) NOT NULL,
+    doc_no VARCHAR(100) NOT NULL,
+    trans_flag VARCHAR(10) NOT NULL,
+    retry_count INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    processed_at TIMESTAMP NULL,
+    error_message TEXT NULL
+);
+
+-- Table: dead_letter_queue
+CREATE TABLE IF NOT EXISTS dead_letter_queue (
+    id BIGSERIAL PRIMARY KEY,
+    shop_id VARCHAR(100) NOT NULL,
+    doc_no VARCHAR(100) NOT NULL,
+    trans_flag VARCHAR(10) NOT NULL,
+    retry_count INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL,
+    failed_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    error_message TEXT NOT NULL
+);
+
+-- Table: distributed_locks
+CREATE TABLE IF NOT EXISTS distributed_locks (
+    lock_key VARCHAR(500) PRIMARY KEY,
+    owner VARCHAR(100) NOT NULL,
+    acquired_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMP NOT NULL
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_queues_shop_status ON queues(shop_id, status);
+CREATE INDEX IF NOT EXISTS idx_queues_created_at ON queues(created_at);
+CREATE INDEX IF NOT EXISTS idx_queues_status ON queues(status);
+CREATE INDEX IF NOT EXISTS idx_dlq_shop_id ON dead_letter_queue(shop_id);
+CREATE INDEX IF NOT EXISTS idx_dlq_failed_at ON dead_letter_queue(failed_at);
+CREATE INDEX IF NOT EXISTS idx_locks_expires_at ON distributed_locks(expires_at);
+CREATE INDEX IF NOT EXISTS idx_queues_pop ON queues(shop_id, created_at) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS idx_queues_active_shops ON queues(shop_id) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS idx_queues_processing ON queues(shop_id, processed_at) WHERE status = 'processing';
+
+-- Function: อัปเดต updated_at อัตโนมัติ
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger: อัปเดต updated_at
+DROP TRIGGER IF EXISTS update_queues_updated_at ON queues;
+CREATE TRIGGER update_queues_updated_at
+    BEFORE UPDATE ON queues
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Function: ทำความสะอาด expired locks
+CREATE OR REPLACE FUNCTION cleanup_expired_locks()
+RETURNS INTEGER AS $$
+DECLARE
+    deleted_count INTEGER;
+BEGIN
+    DELETE FROM distributed_locks
+    WHERE expires_at < NOW();
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    RETURN deleted_count;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function: ดึงงานจาก queue
+CREATE OR REPLACE FUNCTION pop_from_queue(p_shop_id VARCHAR)
+RETURNS TABLE(
+    id BIGINT,
+    shop_id VARCHAR,
+    doc_no VARCHAR,
+    trans_flag VARCHAR,
+    retry_count INTEGER,
+    created_at TIMESTAMP
+) AS $$
+BEGIN
+    RETURN QUERY
+    UPDATE queues
+    SET status = 'processing',
+        processed_at = NOW()
+    WHERE queues.id = (
+        SELECT queues.id
+        FROM queues
+        WHERE queues.shop_id = p_shop_id
+          AND queues.status = 'pending'
+        ORDER BY queues.created_at ASC
+        LIMIT 1
+        FOR UPDATE SKIP LOCKED
+    )
+    RETURNING
+        queues.id,
+        queues.shop_id,
+        queues.doc_no,
+        queues.trans_flag,
+        queues.retry_count,
+        queues.created_at;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function: ดึง active shops
+CREATE OR REPLACE FUNCTION get_active_shops()
+RETURNS TABLE(shop_id VARCHAR, queue_count BIGINT) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT q.shop_id, COUNT(*) as queue_count
+    FROM queues q
+    WHERE q.status = 'pending'
+    GROUP BY q.shop_id
+    ORDER BY queue_count DESC;
+END;
+$$ LANGUAGE plpgsql;
+`
+
+	// Execute schema SQL
+	_, err := db.ExecContext(ctx, schemaSQL)
+	if err != nil {
+		logger.Error("Failed to initialize queue schema: %v", err)
+		return err
+	}
+
+	logger.Success("✅ Queue Schema initialized successfully")
+	return nil
+}

@@ -1,0 +1,571 @@
+# 🎫 Complete Coupon API Testing Suite
+# =================================================================
+# 📋 INSTRUCTIONS:
+# 1. Install "REST Client" extension by Huachao Mao in VS Code
+# 2. Replace variables below with your actual server values
+# 3. Click "Send Request" above each HTTP request to test
+# 4. Follow the testing sequence for best results
+# 5. Update variables with response IDs as needed
+
+# 🔧 CONFIGURATION VARIABLES
+@baseUrl = http://localhost:8080
+@accessToken = 88d9b7900bef3543ce1ac2c18e700ecc737ac610b669912e9d506a9136e2299b
+@customerId = A001
+@transactionId = TXN-20250620-001
+
+# 📋 TEST DATA VARIABLES (Update during testing)
+@couponCode = TEST-CASH500
+@couponId = 2yijG2MthbSb5i8v6fbZYchkYhi
+@reservationId = 68555fb8f75634e744f00e46
+@shopId = YOUR_SHOP_ID_HERE
+
+# ==========================================================
+# 🔍 SYSTEM INFORMATION APIs
+# ==========================================================
+
+### Get Coupon Types
+GET {{baseUrl}}/coupon-type
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+### Get Coupon Status
+GET {{baseUrl}}/coupon-status
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+# ==========================================================
+# 🎫 COUPON CRUD OPERATIONS
+# ==========================================================
+
+### 1. Create Value Discount Coupon (ลดตามมูลค่า)
+POST {{baseUrl}}/coupon
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "couponcode": "{{couponCode}}",
+  "names": [
+    {
+      "code": "th",
+      "name": "คูปองส่วนลด 100 บาท",
+      "isauto": false,
+      "isdelete": false
+    },
+    {
+      "code": "en",
+      "name": "100 Baht Discount Coupon", 
+      "isauto": false,
+      "isdelete": false
+    }
+  ],
+  "couponvalue": 100.00,
+  "remainingvalue": 100.00,
+  "issueddate": "2025-06-20T00:00:00Z",
+  "expirydate": "2025-12-31T23:59:59Z",
+  "coupontype": 0,
+  "customercode": "{{customerId}}",
+  "remark": "คูปองทดสอบระบบ",
+  "status": 0,
+  "isonetimeuse": false
+}
+
+###
+
+### 2. Create Percentage Discount Coupon (ลดตามเปอร์เซ็นต์)
+POST {{baseUrl}}/coupon
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "couponcode": "SAVE20PERCENT",
+  "names": [
+    {
+      "code": "th",
+      "name": "คูปองส่วนลด 20%",
+      "isauto": false,
+      "isdelete": false
+    },
+    {
+      "code": "en",
+      "name": "20% Discount Coupon",
+      "isauto": false,
+      "isdelete": false
+    }
+  ],
+  "couponvalue": 20.00,
+  "remainingvalue": 20.00,
+  "issueddate": "2025-06-20T00:00:00Z",
+  "expirydate": "2025-12-31T23:59:59Z",
+  "coupontype": 1,
+  "customercode": "",
+  "remark": "คูปองส่วนลดเปอร์เซ็นต์",
+  "status": 0,
+  "isonetimeuse": false
+}
+
+###
+
+### 3. Create Cash Voucher Coupon (คูปองแทนเงินสด)
+POST {{baseUrl}}/coupon
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "couponcode": "CASH500",
+  "names": [
+    {
+      "code": "th",
+      "name": "คูปองเงินสด 500 บาท",
+      "isauto": false,
+      "isdelete": false
+    },
+    {
+      "code": "en",
+      "name": "500 Baht Cash Voucher",
+      "isauto": false,
+      "isdelete": false
+    }
+  ],
+  "couponvalue": 500.00,
+  "remainingvalue": 500.00,
+  "issueddate": "2025-06-20T00:00:00Z",
+  "expirydate": "2025-12-31T23:59:59Z",
+  "coupontype": 2,
+  "customercode": "{{customerId}}",
+  "remark": "คูปองแทนเงินสด",
+  "status": 0,
+  "isonetimeuse": false
+}
+
+###
+
+### 4. Get All Coupons (with pagination)
+GET {{baseUrl}}/coupon?page=1&limit=10
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+###
+
+### 5. Search Coupons by Code
+GET {{baseUrl}}/coupon?q={{couponCode}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+###
+
+### 6. Get Coupon by ID
+GET {{baseUrl}}/coupon/{{couponId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+###
+
+### 7. Update Coupon
+PUT {{baseUrl}}/coupon/{{couponId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "couponcode": "{{couponCode}}",
+  "names": [
+    {
+      "code": "th",
+      "name": "คูปองส่วนลด 100 บาท (แก้ไข)",
+      "isauto": false,
+      "isdelete": false
+    },
+    {
+      "code": "en",
+      "name": "100 Baht Discount Coupon (Updated)",
+      "isauto": false,
+      "isdelete": false
+    }
+  ],
+  "couponvalue": 100.00,
+  "remainingvalue": 75.00,
+  "issueddate": "2025-06-20T00:00:00Z",
+  "expirydate": "2025-12-31T23:59:59Z",
+  "coupontype": 0,
+  "customercode": "{{customerId}}",
+  "remark": "คูปองทดสอบระบบ (แก้ไข)",
+  "status": 0,
+  "isonetimeuse": false
+}
+
+###
+
+### 8. Delete Coupon
+DELETE {{baseUrl}}/coupon/{{couponId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+# ==========================================================
+# 💰 COUPON CALCULATION API
+# ==========================================================
+
+### 9. Calculate Single Value Discount Coupon
+POST {{baseUrl}}/coupon/calculate
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "order_amount": 566.00,
+  "coupons": [
+    {
+      "coupon_code": "{{couponCode}}"
+
+    }
+  ],
+  "customer_id": "{{customerId}}"
+}
+
+###
+
+### 10. Calculate Percentage Discount Coupon
+POST {{baseUrl}}/coupon/calculate
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "order_amount": 500.00,
+  "coupons": [
+    {
+      "coupon_code": "SAVE20PERCENT",
+      "use_amount": 20.00
+    }
+  ],
+  "customer_id": "{{customerId}}"
+}
+
+###
+
+### 11. Calculate Cash Voucher Coupon
+POST {{baseUrl}}/coupon/calculate
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "order_amount": 1000.00,
+  "coupons": [
+    {
+      "coupon_code": "CASH500",
+      "use_amount": 500.00
+    }
+  ],
+  "customer_id": "{{customerId}}"
+}
+
+###
+
+### 12. Calculate Multiple Coupons (Cascading)
+POST {{baseUrl}}/coupon/calculate
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "order_amount": 566.00,
+  "coupons": [
+        {
+      "coupon_code": "CASH200"
+    },
+    {
+      "coupon_code": "WELCOME100"
+    },
+    {
+      "coupon_code": "{{couponCode}}"
+    }
+
+  ],
+  "customer_id": "{{customerId}}"
+}
+
+# ==========================================================
+# 🔐 COUPON RESERVATION & USAGE WORKFLOW
+# ==========================================================
+
+### 13. Check Coupon Availability
+GET {{baseUrl}}/coupon/{{couponId}}/availability?customer_id={{customerId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+###
+
+### 14. Reserve Coupon (15 minutes expiry)
+POST {{baseUrl}}/coupon/{{couponId}}/reserve
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "customer_id": "{{customerId}}",
+  "transaction_id": "TXN-20250620-005",
+  "reserved_amount": 100
+}
+
+###
+
+### 15. Use Coupon (after reservation)
+POST {{baseUrl}}/coupon/{{couponId}}/use
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "customer_id": "{{customerId}}",
+  "reservation_id": "68556b27172b7953056b62cf",
+  "transaction_id": "TXN-20250620-004",
+  "use_amount": 400.00
+}
+
+###
+
+### 16. Cancel Coupon Reservation
+DELETE {{baseUrl}}/coupon/{{couponId}}/reserve
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "customer_id": "{{customerId}}",
+  "reservation_id": "{{reservationId}}"
+}
+
+# ==========================================================
+# 📦 BULK OPERATIONS
+# ==========================================================
+
+### 17. Bulk Create Coupons
+POST {{baseUrl}}/coupon/bulk
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+[
+  {
+    "couponcode": "BULK001",
+    "names": [
+      {
+        "code": "th",
+        "name": "คูปองกลุ่ม 1",
+        "isauto": false,
+        "isdelete": false
+      }
+    ],
+    "couponvalue": 50.00,
+    "remainingvalue": 50.00,
+    "issueddate": "2025-06-20T00:00:00Z",
+    "expirydate": "2025-12-31T23:59:59Z",
+    "coupontype": 0,
+    "customercode": "{{customerId}}",
+    "remark": "คูปองจากการสร้างกลุ่ม",
+    "status": 0,
+    "isonetimeuse": true
+  },
+  {
+    "couponcode": "BULK002",
+    "names": [
+      {
+        "code": "th",
+        "name": "คูปองกลุ่ม 2",
+        "isauto": false,
+        "isdelete": false
+      }
+    ],
+    "couponvalue": 75.00,
+    "remainingvalue": 75.00,
+    "issueddate": "2025-06-20T00:00:00Z",
+    "expirydate": "2025-12-31T23:59:59Z",
+    "coupontype": 0,
+    "customercode": "{{customerId}}",
+    "remark": "คูปองจากการสร้างกลุ่ม",
+    "status": 0,
+    "isonetimeuse": true
+  }
+]
+
+# ==========================================================
+# 🧪 EDGE CASE TESTING
+# ==========================================================
+
+### 18. Test Expired Coupon (Past Date)
+POST {{baseUrl}}/coupon
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "couponcode": "EXPIRED001",
+  "names": [
+    {
+      "code": "th",
+      "name": "คูปองหมดอายุ",
+      "isauto": false,
+      "isdelete": false
+    }
+  ],
+  "couponvalue": 100.00,
+  "remainingvalue": 100.00,
+  "issueddate": "2024-01-01T00:00:00Z",
+  "expirydate": "2024-12-31T23:59:59Z",
+  "coupontype": 0,
+  "customercode": "{{customerId}}",
+  "remark": "คูปองทดสอบหมดอายุ",
+  "status": 0,
+  "isonetimeuse": false
+}
+
+###
+
+### 19. Test Zero Value Coupon
+POST {{baseUrl}}/coupon
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "couponcode": "ZERO001",
+  "names": [
+    {
+      "code": "th",
+      "name": "คูปองหมดมูลค่า",
+      "isauto": false,
+      "isdelete": false
+    }
+  ],
+  "couponvalue": 100.00,
+  "remainingvalue": 0.00,
+  "issueddate": "2025-06-20T00:00:00Z",
+  "expirydate": "2025-12-31T23:59:59Z",
+  "coupontype": 0,
+  "customercode": "{{customerId}}",
+  "remark": "คูปองทดสอบหมดมูลค่า",
+  "status": 0,
+  "isonetimeuse": false
+}
+
+###
+
+### 20. Test Canceled Coupon
+POST {{baseUrl}}/coupon
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "couponcode": "CANCELED001",
+  "names": [
+    {
+      "code": "th",
+      "name": "คูปองถูกยกเลิก",
+      "isauto": false,
+      "isdelete": false
+    }
+  ],
+  "couponvalue": 100.00,
+  "remainingvalue": 100.00,
+  "issueddate": "2025-06-20T00:00:00Z",
+  "expirydate": "2025-12-31T23:59:59Z",
+  "coupontype": 0,
+  "customercode": "{{customerId}}",
+  "remark": "คูปองทดสอบยกเลิก",
+  "status": 1,
+  "isonetimeuse": false
+}
+
+# ==========================================================
+# 📜 COUPON USAGE HISTORY APIs
+# ==========================================================
+
+### Create Usage History (Manual Entry)
+POST {{baseUrl}}/coupon/usage-history
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "coupon_id": "{{couponId}}",
+  "coupon_code": "{{couponCode}}",
+  "customer_id": "{{customerId}}",
+  "customer_code": "A001",
+  "customer_name": "นายทดสอบ ระบบ",
+  "sale_invoice_id": "INV-{{transactionId}}",
+  "sale_invoice_number": "IV202506200001",
+  "transaction_id": "{{transactionId}}",
+  "reservation_id": "{{reservationId}}",
+  "used_amount": 100.00,
+  "discount_amount": 100.00,
+  "cash_voucher_amount": 0.00,
+  "order_amount": 1500.00,
+  "coupon_type": 0,
+  "coupon_value": 100.00,
+  "remark": "ทดสอบการบันทึกประวัติการใช้คูปอง"
+}
+
+###
+
+### Get All Usage History (with pagination)
+POST {{baseUrl}}/coupon/usage-history/search
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "page": 1,
+  "page_size": 20
+}
+
+###
+
+### Get Usage History by Coupon
+GET {{baseUrl}}/coupon/usage-history/by-coupon?coupon_id={{couponId}}&page=1&page_size=10
+Authorization: Bearer {{accessToken}}
+
+###
+
+### Get Usage History by Customer
+GET {{baseUrl}}/coupon/customer/usage-history?customer_id={{customerId}}&page=1&page_size=10
+Authorization: Bearer {{accessToken}}
+
+###
+
+### Get Usage History by Sale Invoice
+GET {{baseUrl}}/coupon/sale-invoice/usage-history?sale_invoice_id=INV-{{transactionId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### Get Usage History by Transaction ID
+GET {{baseUrl}}/coupon/transaction/usage-history?transaction_id={{transactionId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### Search Usage History with Filters
+POST {{baseUrl}}/coupon/usage-history/search
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "coupon_code": "TEST",
+  "customer_id": "{{customerId}}",
+  "start_date": "2025-06-01T00:00:00Z",
+  "end_date": "2025-06-30T23:59:59Z",
+  "page": 1,
+  "page_size": 20
+}
+
+# ==========================================================
+# 📋 TROUBLESHOOTING TIPS
+# ==========================================================
+
+# 🔧 **Common Issues:**
+# - **401 Unauthorized**: Check access token validity
+# - **Coupon not found**: Verify coupon ID in variables
+# - **Expired coupon**: Check issueddate/expirydate in UTC
+# - **Insufficient value**: Check remainingvalue vs use_amount
+# - **Reservation expired**: Reservations expire in 15 minutes
+
+# 🎯 **Best Practices:**
+# - Update @couponId after creating coupons
+# - Update @reservationId after reserving
+# - Use UTC timestamps for dates
+# - Test with small amounts first
+# - Clean up test data after testing
+
+# ==========================================================
+# **Version**: 2.0.0  
+# **Last Updated**: June 20, 2025  
+# **Compatible with**: Latest Coupon System API
+# **Status**: Ready for Production ✅
+# ==========================================================

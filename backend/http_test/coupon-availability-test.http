@@ -1,0 +1,63 @@
+### Test Coupon Availability API
+### Test case 1: Check availability of one-time use coupon (not reserved/used)
+GET {{host}}/coupon/{{coupon_id}}/availability?customer_id={{customer_id}}
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+### Test case 2: Reserve one-time use coupon
+POST {{host}}/coupon/{{coupon_id}}/reserve
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "customer_id": "{{customer_id}}",
+  "transaction_id": "TXN-001"
+}
+
+### Test case 3: Check availability of one-time use coupon after reservation (should be false)
+GET {{host}}/coupon/{{coupon_id}}/availability?customer_id={{customer_id}}
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+### Test case 4: Check availability of multi-use coupon (should show remaining usage reduced by active reservations)
+GET {{host}}/coupon/{{multi_use_coupon_id}}/availability?customer_id={{customer_id}}
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+### Test case 5: Reserve multi-use coupon
+POST {{host}}/coupon/{{multi_use_coupon_id}}/reserve
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "customer_id": "{{customer_id}}",
+  "transaction_id": "TXN-002"
+}
+
+### Test case 6: Check availability of multi-use coupon after reservation
+GET {{host}}/coupon/{{multi_use_coupon_id}}/availability?customer_id={{customer_id}}
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+### Test case 7: Cancel reservation and check availability again
+DELETE {{host}}/coupon/{{coupon_id}}/reserve
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "customer_id": "{{customer_id}}",
+  "reservation_id": "{{reservation_id}}"
+}
+
+### Test case 8: Check availability after canceling reservation (should be available again)
+GET {{host}}/coupon/{{coupon_id}}/availability?customer_id={{customer_id}}
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+### Variables for testing:
+# {{host}} = your API host
+# {{access_token}} = your authentication token
+# {{coupon_id}} = ID of one-time use coupon
+# {{multi_use_coupon_id}} = ID of multi-use coupon
+# {{customer_id}} = customer ID for testing
+# {{reservation_id}} = reservation ID returned from reserve API

@@ -1,0 +1,4 @@
+
+// Price History methods
+func (svc ProductBarcodeHttpService) GetPriceHistory(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error) {
+return svc.priceHistorySvc.GetPriceHistory(shopID, filters, pageable)}func (svc ProductBarcodeHttpService) GetPriceHistoryByBarcode(shopID string, barcode string, pageable micromodels.Pageable) ([]models.ProductPriceHistoryInfo, mongopagination.PaginationData, error) {return svc.priceHistorySvc.GetPriceHistoryByBarcode(shopID, barcode, pageable)} /Users/dulyapathintawang/Dev/servicejov/cloudplateform/smlcloudplatform/internal/product/productbarcode/services/productbarcode_price_history_methods.go

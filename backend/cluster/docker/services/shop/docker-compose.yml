@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  shop:
+    image: smlsoft/smlcloudplatform:shop
+    restart: always
+    expose:
+      - 8080
+    environment:
+      - ENVIRONMENT=production
+      - MONGODB_URI=mongodb://mongodb:27017/
+      - MONGODB_DB=smldev
+      - REDIS_CACHE_URI=redis:6379
+    labels:
+      - "traefik.http.routers.shop.rule=(PathPrefix(`/shop`))"
+    networks:
+      - backend
+
+networks:
+  backend:
+    external:
+      name: sml_service_backend

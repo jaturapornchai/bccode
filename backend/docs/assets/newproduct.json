@@ -1,0 +1,86 @@
+{
+    "id": "refId",
+    "shopId": "string",
+    "barcode": "",
+    "unit_name": "",
+    "price": 0,
+    "images": [
+        {
+            "image_guid": "xxxxx",
+            "uri": ""
+        },
+        {
+            "image_guid": "xxxxx",
+            "uri": ""
+        }
+    ],
+    "name1": "string",
+    "name2": "string",
+    "name3": "string",
+    "name4": "string",
+    "name5": "string",
+    "unit_name1": "",
+    "unit_name2": "",
+    "unit_name3": "",
+    "unit_name4": "",
+    "unit_name5": "",
+    "member_price": 0,
+    "categoryGuid": "string",
+    "description1": "string",
+    "description2": "string",
+    "description3": "string",
+    "description4": "string",
+    "description5": "string",
+    "recommended": true,
+    "options": [
+        {
+            "code": "เส้น",
+            "name1-5": "เส้น",
+            "choices": [
+                {
+                    "suggestcode": "xxxxxxxxx",
+                    "name1-5": "ปรกติ",
+                    "price": 0,
+                    "barcode": "",
+                    "qty": ""
+                },
+                {
+                    "suggestcode": "xxxxxxxxxxxxx",
+                    "name1-5": "ปรกติ",
+                    "price": 0
+                },
+                {
+                    "suggestcode": "xxxxxxxxx",
+                    "name1-5": "ปรกติ",
+                    "price": 0
+                }
+            ],
+            "required": true,
+            "select_mode": "MULTISELECT,SINGLESELECT",
+            "maxselected": 1
+        },
+        {
+            "code": "topping",
+            "name1-5": "",
+            "choices": [
+                {
+                    "suggest_code": "xxxxxxxxx",
+                    "name1-5": "พิเศษ",
+                    "price": 10
+                },
+                {
+                    "suggest_code": "xxxxxxxxx",
+                    "name1-5": "จัมโบ้",
+                    "price": 20
+                }
+            ],
+            "required": false,
+            "select_mode": "MULTISELECT,SINGLESELECT",
+            "max_selected": 0
+        }
+    ],
+    "tags": [
+        "noodle",
+        "ก๋วยเตี๋ยว"
+    ]
+}

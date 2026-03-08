@@ -1,0 +1,88 @@
+
+## Add Journal
+
+POST http://localhost:8080/journal
+
+{
+  "docno": "BAL6501-00000001",
+  "docdate": "2022-01-01T01:00:00Z",
+  "accountdescription": "ยอดยกมา",
+  "accountgroup": "01",
+  "accountperiod": 0,
+  "accountyear": 2565,
+  "amount": 2300000,
+  "batchId": "",
+  "journaldetail": [
+    {
+      "accountcode": "12101",
+      "accountname": "เงินฝากธนาคาร บัญชี 1 (เงินล้าน)",
+      "debitamount": 2300000,
+      "creditamount": 0
+    },
+    {
+      "accountcode": "32010",
+      "accountname": "ทุน - เงินล้าน",
+      "debitamount": 0,
+      "creditamount": 2300000
+    }
+  ],
+  "parid": "00000"
+}
+
+# Add Journal Bluk
+
+POST http://localhost:8080/journal/bulk
+
+[
+  {
+    "docno": "LOAN6505-00000001",
+      "docdate": "2022-05-20T09:00:00+07:00",
+      "accountdescription": "ปล่อยกู้ให้แก่สมาชิก",
+      "accountgroup": "01",
+      "accountperiod": 0,
+      "accountyear": 2565,
+      "amount": 20000,
+      "batchId": "",
+      "journaldetail": [
+        {
+          "accountcode": "13010",
+          "accountname": "ลูกหนี้เงินกู้ - บัญชี 1 (เงินล้าน)",
+          "debitamount": 20000,
+          "creditamount": 0
+        },
+        {
+          "accountcode": "12101",
+          "accountname": "เงินฝากธนาคาร บัญชี 1 (เงินล้าน)",
+          "debitamount": 0,
+          "creditamount": 20000
+        }
+        
+      ],
+      "parid": "00000"
+  },
+  {
+    "docno": "FEE6505-00000001",
+      "docdate": "2022-05-20T09:00:00+07:00",
+      "accountdescription": "ค่าธรรมเนียมการกู้ยืมของสมาชิก",
+      "accountgroup": "01",
+      "accountperiod": 0,
+      "accountyear": 2565,
+      "amount": 20,
+      "batchId": "",
+      "journaldetail": [
+        {
+          "accountcode": "11010",
+          "accountname": "เงินสด - บัญชี 1",
+          "debitamount": 20,
+          "creditamount": 0
+        },
+        {
+          "accountcode": "43020",
+          "accountname": "รายได้ - ค่าธรรมเนียม-ขอกู้",
+          "debitamount": 0,
+          "creditamount": 20
+        }
+      ],
+      "parid": "00000"
+  }
+]

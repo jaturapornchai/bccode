@@ -1,0 +1,1251 @@
+package handlers
+
+import (
+	"bytes"
+	"context"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"io"
+	"mime/multipart"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+	"time"
+
+	"smlcloudplatform/internal/goapi/logger"
+	"smlcloudplatform/internal/goapi/models"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/labstack/echo/v4"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+var (
+	r2Client           *s3.Client
+	r2PresignClient    *s3.Client // client สำหรับ presigned URL (ใช้ public endpoint)
+	r2BucketName       string
+	r2InitOnce         sync.Once
+	r2InitErr          error
+	isSeaweedFSMode    bool       // true เมื่อใช้ SeaweedFS S3 gateway
+)
+
+// GetR2Client - Returns the S3-compatible client (SeaweedFS or R2)
+// ถ้า S3_ENDPOINT ถูก set → ใช้ SeaweedFS S3 gateway
+// ถ้าไม่ → fallback ไปใช้ Cloudflare R2 (backward compatible)
+func GetR2Client() (*s3.Client, error) {
+	r2InitOnce.Do(func() {
+		s3Endpoint := strings.TrimSpace(os.Getenv("S3_ENDPOINT"))
+
+		if s3Endpoint != "" {
+			// ─── SeaweedFS S3 Gateway Path ───
+			initSeaweedFS(s3Endpoint)
+		} else {
+			// ─── Cloudflare R2 Path (legacy) ───
+			initR2()
+		}
+	})
+
+	return r2Client, r2InitErr
+}
+
+// initSeaweedFS สร้าง S3 client สำหรับ SeaweedFS S3 gateway
+func initSeaweedFS(endpoint string) {
+	isSeaweedFSMode = true
+	accessKeyID := strings.TrimSpace(os.Getenv("S3_ACCESS_KEY_ID"))
+	secretAccessKey := strings.TrimSpace(os.Getenv("S3_SECRET_ACCESS_KEY"))
+	r2BucketName = strings.TrimSpace(os.Getenv("S3_BUCKET_NAME"))
+	publicEndpoint := strings.TrimSpace(os.Getenv("S3_PUBLIC_ENDPOINT"))
+
+	if accessKeyID == "" || secretAccessKey == "" || r2BucketName == "" {
+		missing := []string{}
+		if accessKeyID == "" {
+			missing = append(missing, "S3_ACCESS_KEY_ID")
+		}
+		if secretAccessKey == "" {
+			missing = append(missing, "S3_SECRET_ACCESS_KEY")
+		}
+		if r2BucketName == "" {
+			missing = append(missing, "S3_BUCKET_NAME")
+		}
+		r2InitErr = fmt.Errorf("missing S3 environment variables: %s", strings.Join(missing, ", "))
+		logger.Error("❌ SeaweedFS S3 Init Error: %v", r2InitErr)
+		return
+	}
+
+	// Internal client — สำหรับ upload/download ภายใน Docker network
+	resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+		return aws.Endpoint{
+			URL:               endpoint,
+			HostnameImmutable: true,
+		}, nil
+	})
+
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithEndpointResolverWithOptions(resolver),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, "")),
+		config.WithRegion("us-east-1"),
+	)
+	if err != nil {
+		r2InitErr = fmt.Errorf("unable to load SeaweedFS S3 SDK config: %w", err)
+		logger.Error("❌ SeaweedFS S3 Config Error: %v", r2InitErr)
+		return
+	}
+
+	r2Client = s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.UsePathStyle = true
+	})
+
+	// Presign client — ใช้ public endpoint เพื่อให้ browser เข้าถึงได้
+	// signature จะถูกคำนวณจาก public host ทำให้ไม่เกิด 403
+	if publicEndpoint != "" {
+		publicResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+			return aws.Endpoint{
+				URL:               publicEndpoint,
+				HostnameImmutable: true,
+			}, nil
+		})
+
+		publicCfg, pubErr := config.LoadDefaultConfig(context.TODO(),
+			config.WithEndpointResolverWithOptions(publicResolver),
+			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, "")),
+			config.WithRegion("us-east-1"),
+		)
+		if pubErr == nil {
+			r2PresignClient = s3.NewFromConfig(publicCfg, func(o *s3.Options) {
+				o.UsePathStyle = true
+			})
+			logger.Info("   Presign client using public endpoint: %s", publicEndpoint)
+		}
+	}
+
+	// Auto-create bucket ถ้ายังไม่มี
+	ensureBucketExists(r2Client, r2BucketName)
+
+	logger.Info("✅ SeaweedFS S3 client initialized (endpoint: %s, bucket: %s)", endpoint, r2BucketName)
+}
+
+// initR2 สร้าง S3 client สำหรับ Cloudflare R2 (legacy)
+func initR2() {
+	accountID := strings.TrimSpace(os.Getenv("R2_ACCOUNT_ID"))
+	accessKeyID := strings.TrimSpace(os.Getenv("R2_ACCESS_KEY_ID"))
+	secretAccessKey := strings.TrimSpace(os.Getenv("R2_SECRET_ACCESS_KEY"))
+	r2BucketName = strings.TrimSpace(os.Getenv("R2_BUCKET_NAME"))
+
+	if accountID == "" || accessKeyID == "" || secretAccessKey == "" || r2BucketName == "" {
+		missing := []string{}
+		if accountID == "" {
+			missing = append(missing, "R2_ACCOUNT_ID")
+		}
+		if accessKeyID == "" {
+			missing = append(missing, "R2_ACCESS_KEY_ID")
+		}
+		if secretAccessKey == "" {
+			missing = append(missing, "R2_SECRET_ACCESS_KEY")
+		}
+		if r2BucketName == "" {
+			missing = append(missing, "R2_BUCKET_NAME")
+		}
+		r2InitErr = fmt.Errorf("missing R2 environment variables: %s", strings.Join(missing, ", "))
+		logger.Error("❌ R2 Init Error: %v", r2InitErr)
+		return
+	}
+
+	r2Resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+		return aws.Endpoint{
+			URL: fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountID),
+		}, nil
+	})
+
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithEndpointResolverWithOptions(r2Resolver),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, "")),
+		config.WithRegion("auto"),
+	)
+	if err != nil {
+		r2InitErr = fmt.Errorf("unable to load R2 SDK config: %w", err)
+		logger.Error("❌ R2 Config Error: %v", r2InitErr)
+		return
+	}
+
+	r2Client = s3.NewFromConfig(cfg)
+	logger.Info("✅ R2 client initialized successfully (bucket: %s)", r2BucketName)
+}
+
+// ensureBucketExists สร้าง bucket ถ้ายังไม่มี (สำหรับ SeaweedFS)
+func ensureBucketExists(client *s3.Client, bucketName string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	_, err := client.HeadBucket(ctx, &s3.HeadBucketInput{
+		Bucket: aws.String(bucketName),
+	})
+	if err == nil {
+		logger.Info("   Bucket '%s' exists", bucketName)
+		return
+	}
+
+	// Bucket ไม่มี → สร้างใหม่
+	_, createErr := client.CreateBucket(ctx, &s3.CreateBucketInput{
+		Bucket: aws.String(bucketName),
+	})
+	if createErr != nil {
+		logger.Warn("   Failed to create bucket '%s': %v (may already exist)", bucketName, createErr)
+		return
+	}
+	logger.Success("   Created bucket '%s'", bucketName)
+}
+
+// getPresignedURL - สร้าง URL สำหรับดูไฟล์
+// SeaweedFS proxy mode: ถ้าไม่มี S3_PUBLIC_ENDPOINT → return proxy URL ผ่าน goapi (/s3/file/{key})
+// Presigned URL mode: ถ้ามี S3_PUBLIC_ENDPOINT → return presigned URL (legacy/local access)
+// R2 mode: ใช้ presigned URL เสมอ
+func getPresignedURL(client *s3.Client, r2Key string, expireMinutes int) (string, error) {
+	// SeaweedFS proxy mode: return proxy URL path (ไม่ต้อง sign)
+	// ใช้เมื่อไม่มี S3_PUBLIC_ENDPOINT — ทุกไฟล์เข้าถึงผ่าน goapi proxy
+	if isSeaweedFSMode && r2PresignClient == nil {
+		return "/s3/file/" + r2Key, nil
+	}
+
+	// Presigned URL mode (R2 legacy หรือ SeaweedFS ที่เปิด public endpoint)
+	if expireMinutes <= 0 {
+		expireMinutes = 60 // default 1 hour
+	}
+
+	// ใช้ presign client ที่ sign ด้วย public endpoint (ถ้ามี)
+	signClient := client
+	if r2PresignClient != nil {
+		signClient = r2PresignClient
+	}
+
+	presignClient := s3.NewPresignClient(signClient)
+
+	presignResult, err := presignClient.PresignGetObject(context.TODO(), &s3.GetObjectInput{
+		Bucket: aws.String(r2BucketName),
+		Key:    aws.String(r2Key),
+	}, func(opts *s3.PresignOptions) {
+		opts.Expires = time.Duration(expireMinutes) * time.Minute
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return presignResult.URL, nil
+}
+
+// InitR2Client - Called by main.go to trigger initialization
+func InitR2Client() error {
+	_, err := GetR2Client()
+	return err
+}
+
+// getImageFromR2 - ดึงรูปจาก R2 และ return เป็น bytes
+func getImageFromR2(client *s3.Client, r2Key string) ([]byte, string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	output, err := client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(r2BucketName),
+		Key:    aws.String(r2Key),
+	})
+	if err != nil {
+		return nil, "", err
+	}
+	defer output.Body.Close()
+
+	data, err := io.ReadAll(output.Body)
+	if err != nil {
+		return nil, "", err
+	}
+
+	contentType := ""
+	if output.ContentType != nil {
+		contentType = *output.ContentType
+	}
+
+	return data, contentType, nil
+}
+
+// ImageUploadHandler - อัปโหลดรูปภาพไปยัง R2 และบันทึก metadata ใน MongoDB Atlas
+// POST /image/upload
+func ImageUploadHandler(c echo.Context) error {
+	// Check R2 client
+	client, err := GetR2Client()
+	if err != nil || client == nil {
+		logger.Error("❌ ImageUploadHandler: R2 client not available: %v", err)
+		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
+			"status":  "error",
+			"code":    503,
+			"message": "R2 storage is not configured",
+		})
+	}
+
+	// Check MongoDB Atlas
+	if atlasClient == nil {
+		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
+			"status":  "error",
+			"code":    503,
+			"message": "MongoDB Atlas is not connected",
+		})
+	}
+
+	// Get shopid from form
+	shopID := c.FormValue("shopid")
+	if shopID == "" {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  "error",
+			"code":    400,
+			"message": "shopid is required",
+		})
+	}
+
+	// Get file from form
+	file, err := c.FormFile("file")
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  "error",
+			"code":    400,
+			"message": "No file uploaded",
+		})
+	}
+
+	// Validate file size (max 10MB)
+	maxSize := int64(10 * 1024 * 1024)
+	if file.Size > maxSize {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  "error",
+			"code":    400,
+			"message": fmt.Sprintf("File too large. Maximum size is %d MB", maxSize/(1024*1024)),
+		})
+	}
+
+	// Validate file type (images only)
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	allowedExts := map[string]bool{
+		".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true, ".bmp": true,
+	}
+	if !allowedExts[ext] {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  "error",
+			"code":    400,
+			"message": "Invalid file type. Allowed: jpg, jpeg, png, gif, webp, bmp",
+		})
+	}
+
+	// Open file
+	src, err := file.Open()
+	if err != nil {
+		logger.Error("Failed to open uploaded file: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"status":  "error",
+			"code":    500,
+			"message": "Failed to process uploaded file",
+		})
+	}
+	defer src.Close()
+
+	// Read file content
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, src); err != nil {
+		logger.Error("Failed to read file content: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"status":  "error",
+			"code":    500,
+			"message": "Failed to read file",
+		})
+	}
+
+	// Calculate hash for filename
+	hash := sha256.Sum256(buf.Bytes())
+	hashStr := hex.EncodeToString(hash[:])[:16] // ใช้ 16 ตัวแรก
+
+	// Generate filename: shopid/category/timestamp_hash.ext
+	// ถ้ามี category จะแยก folder เช่น shopid/slip_money_in/filename.png
+	timestamp := time.Now().Format("20060102_150405")
+	fileName := fmt.Sprintf("%s_%s%s", timestamp, hashStr, ext)
+	category := c.FormValue("category")
+	var r2Key string
+	if category != "" {
+		r2Key = fmt.Sprintf("%s/%s/%s", shopID, category, fileName)
+	} else {
+		r2Key = fmt.Sprintf("%s/%s", shopID, fileName)
+	}
+
+	// Detect content type
+	contentType := http.DetectContentType(buf.Bytes())
+
+	// Upload to R2
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	_, err = client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(r2BucketName),
+		Key:         aws.String(r2Key),
+		Body:        bytes.NewReader(buf.Bytes()),
+		ContentType: aws.String(contentType),
+	})
+	if err != nil {
+		logger.Error("Failed to upload to R2: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"status":  "error",
+			"code":    500,
+			"message": "Failed to upload image to storage",
+		})
+	}
+
+	// Get optional fields (category ถูกดึงไว้แล้วด้านบน)
+	description := c.FormValue("description")
+	uploadedBy := c.FormValue("uploaded_by")
+	tagsStr := c.FormValue("tags")
+	var tags []string
+	if tagsStr != "" {
+		tags = strings.Split(tagsStr, ",")
+		for i := range tags {
+			tags[i] = strings.TrimSpace(tags[i])
+		}
+	}
+
+	// Save metadata to MongoDB Atlas (ไม่เก็บ URL)
+	now := time.Now()
+	imageDoc := models.ImageMetadata{
+		ShopID:       shopID,
+		FileName:     fileName,
+		OriginalName: file.Filename,
+		ContentType:  contentType,
+		Size:         file.Size,
+		R2Key:        r2Key, // เก็บไว้ใน DB แต่ไม่ส่งออกไป frontend
+		Category:     category,
+		Description:  description,
+		Tags:         tags,
+		UploadedBy:   uploadedBy,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	}
+
+	collection := atlasDB.Collection("images")
+	result, err := collection.InsertOne(ctx, imageDoc)
+	if err != nil {
+		logger.Error("Failed to save image metadata to MongoDB: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"status":  "error",
+			"code":    500,
+			"message": "Failed to save image metadata",
+		})
+	}
+
+	// Set the ID from insert result
+	if oid, ok := result.InsertedID.(primitive.ObjectID); ok {
+		imageDoc.ID = oid
+	}
+
+	logger.Success("Image uploaded successfully: %s (shop: %s, size: %d bytes)", fileName, shopID, file.Size)
+
+	return c.JSON(http.StatusOK, models.ImageResponse{
+		Status:  "success",
+		Code:    200,
+		Message: "Image uploaded successfully",
+		Data:    &imageDoc,
+	})
+}
+
+// ImageListHandler - ดึงรายการรูปภาพตาม shopid
+// POST /image/list
+func ImageListHandler(c echo.Context) error {
+	if atlasClient == nil {
+		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
+			"status":  "error",
+			"code":    503,
+			"message": "MongoDB Atlas is not connected",
+		})
+	}
+
+	var req models.ImageListRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  "error",
+			"code":    400,
+			"message": "Invalid request body",
+		})
+	}
+
+	if req.ShopID == "" {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  "error",
+			"code":    400,
+			"message": "shopid is required",
+		})
+	}
+
+	// Build filter
+	filter := bson.M{"shopid": req.ShopID}
+	if req.Category != "" {
+		filter["category"] = req.Category
+	}
+
+	// Query options
+	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
+	if req.Limit > 0 {
+		opts.SetLimit(req.Limit)
+	} else {
+		opts.SetLimit(100) // default limit
+	}
+	if req.Skip > 0 {
+		opts.SetSkip(req.Skip)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	collection := atlasDB.Collection("images")
+
+	// นับจำนวนทั้งหมด (ไม่รวม limit/skip)
+	total, err := collection.CountDocuments(ctx, filter)
+	if err != nil {
+		logger.Error("Failed to count images: %v", err)
+		total = 0
+	}
+
+	cursor, err := collection.Find(ctx, filter, opts)
+	if err != nil {
+		logger.Error("Failed to query images: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"status":  "error",
+			"code":    500,
+			"message": "Failed to query images",
+		})
+	}
+	defer cursor.Close(ctx)
+
+	var images []models.ImageMetadata
+	if err := cursor.All(ctx, &images); err != nil {
+		logger.Error("Failed to decode images: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"status":  "error",
+			"code":    500,
+			"message": "Failed to decode images",
+		})
+	}
+
+	// สร้าง response พร้อม Presigned URL เสมอ
+	client, _ := GetR2Client()
+	var dataItems []models.ImageListDataItem
+	for _, img := range images {
+		item := models.ImageListDataItem{
+			ID:           img.ID,
+			ShopID:       img.ShopID,
+			FileName:     img.FileName,
+			OriginalName: img.OriginalName,
+			ContentType:  img.ContentType,
+			Size:         img.Size,
+			Category:     img.Category,
+			Description:  img.Description,
+			Tags:         img.Tags,
+			UploadedBy:   img.UploadedBy,
+			CreatedAt:    img.CreatedAt,
+			UpdatedAt:    img.UpdatedAt,
+		}
+		// สร้าง Presigned URL (private, หมดอายุใน 60 นาที)
+		if client != nil && img.R2Key != "" {
+			url, err := getPresignedURL(client, img.R2Key, 60)
+			if err == nil {
+				item.URL = url
+			}
+		}
+
+		// เพิ่มข้อมูล Slip Verification
+		// ตรวจสอบว่าเคย verify หรือยัง โดยดูจาก VerifyStatus
+		if img.VerifyStatus != "" {
+			// เคยตรวจสอบแล้ว - ใส่ค่าจริง
+			verified := img.Verified
+			item.Verified = &verified
+			verifyStatus := img.VerifyStatus
+			item.VerifyStatus = &verifyStatus
+			isDuplicate := img.IsDuplicate
+			item.IsDuplicate = &isDuplicate
+			if img.TransRef != "" {
+				transRef := img.TransRef
+				item.TransRef = &transRef
+			}
+			if img.TransAmount > 0 {
+				transAmount := img.TransAmount
+				item.TransAmount = &transAmount
+			}
+			if img.SenderName != "" {
+				senderName := img.SenderName
+				item.SenderName = &senderName
+			}
+			if img.ReceiverName != "" {
+				receiverName := img.ReceiverName
+				item.ReceiverName = &receiverName
+			}
+			if img.SlipType != "" {
+				slipType := img.SlipType
+				item.SlipType = &slipType
+			}
+		}
+		// ถ้ายังไม่เคยตรวจสอบ fields จะเป็น nil (null ใน JSON) - Go's encoding/json will output null for nil pointers without omitempty
+
+		dataItems = append(dataItems, item)
+	}
+
+	return c.JSON(http.StatusOK, models.ImageListDataResponse{
+		Status: "success",
+		Code:   200,
+		Count:  len(dataItems),
+		Total:  total,
+		Data:   dataItems,
+	})
+}
+
+// ImageGetHandler - ดึงรูปภาพจาก R2 และ return เป็น base64
+// POST /image/get
+func ImageGetHandler(c echo.Context) error {
+	client, err := GetR2Client()
+	if err != nil || client == nil {
+		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
+			"status":  "error",
+			"code":    503,
+			"message": "R2 storage is not configured",
+		})
+	}
+
+	if atlasClient == nil {
+		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
+			"status":  "error",
+			"code":    503,
+			"message": "MongoDB Atlas is not connected",
+		})
+	}
+
+	var req models.ImageGetRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  "error",
+			"code":    400,
+			"message": "Invalid request body",
+		})
+	}
+
+	if req.ShopID == "" || req.FileName == "" {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  "error",
+			"code":    400,
+			"message": "shopid and filename are required",
+		})
+	}
+
+	// ค้นหา metadata จาก MongoDB
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	collection := atlasDB.Collection("images")
+	filter := bson.M{
+		"shopid":   req.ShopID,
+		"filename": req.FileName,
+	}
+
+	var imageDoc models.ImageMetadata
+	err = collection.FindOne(ctx, filter).Decode(&imageDoc)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, map[string]interface{}{
+			"status":  "error",
+			"code":    404,
+			"message": "Image not found",
+		})
+	}
+
+	// ดึงรูปจาก R2
+	data, contentType, err := getImageFromR2(client, imageDoc.R2Key)
+	if err != nil {
+		logger.Error("Failed to get image from R2: %v", err)
+		return c.JSON(http.StatusNotFound, map[string]interface{}{
+			"status":  "error",
+			"code":    404,
+			"message": "Image file not found in storage",
+		})
+	}
+
+	// แปลงเป็น base64 data URL
+	base64Data := fmt.Sprintf("data:%s;base64,%s", contentType, base64.StdEncoding.EncodeToString(data))
+
+	return c.JSON(http.StatusOK, models.ImageDataResponse{
+		Status: "success",
+		Code:   200,
+		Data:   &imageDoc,
+		Base64: base64Data,
+	})
+}
+
+// ImageDeleteHandler - ลบรูปภาพจาก R2 และ MongoDB
+// POST /image/delete
+func ImageDeleteHandler(c echo.Context) error {
+	client, err := GetR2Client()
+	if err != nil || client == nil {
+		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
+			"status":  "error",
+			"code":    503,
+			"message": "R2 storage is not configured",
+		})
+	}
+
+	if atlasClient == nil {
+		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
+			"status":  "error",
+			"code":    503,
+			"message": "MongoDB Atlas is not connected",
+		})
+	}
+
+	var req models.ImageDeleteRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  "error",
+			"code":    400,
+			"message": "Invalid request body",
+		})
+	}
+
+	if req.ShopID == "" {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  "error",
+			"code":    400,
+			"message": "shopid is required",
+		})
+	}
+
+	if req.ImageID == "" && req.FileName == "" {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  "error",
+			"code":    400,
+			"message": "image_id or filename is required",
+		})
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	collection := atlasDB.Collection("images")
+
+	// Build filter
+	filter := bson.M{"shopid": req.ShopID}
+	if req.ImageID != "" {
+		oid, err := primitive.ObjectIDFromHex(req.ImageID)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"status":  "error",
+				"code":    400,
+				"message": "Invalid image_id format",
+			})
+		}
+		filter["_id"] = oid
+	} else {
+		filter["filename"] = req.FileName
+	}
+
+	// Find the image first to get R2 key
+	var imageDoc models.ImageMetadata
+	err = collection.FindOne(ctx, filter).Decode(&imageDoc)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, map[string]interface{}{
+			"status":  "error",
+			"code":    404,
+			"message": "Image not found",
+		})
+	}
+
+	// Delete from R2
+	_, err = client.DeleteObject(ctx, &s3.DeleteObjectInput{
+		Bucket: aws.String(r2BucketName),
+		Key:    aws.String(imageDoc.R2Key),
+	})
+	if err != nil {
+		logger.Error("Failed to delete from R2: %v", err)
+		// Continue to delete from MongoDB anyway
+	}
+
+	// Delete from MongoDB
+	_, err = collection.DeleteOne(ctx, filter)
+	if err != nil {
+		logger.Error("Failed to delete from MongoDB: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"status":  "error",
+			"code":    500,
+			"message": "Failed to delete image metadata",
+		})
+	}
+
+	logger.Success("Image deleted: %s (shop: %s)", imageDoc.FileName, req.ShopID)
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"status":  "success",
+		"code":    200,
+		"message": "Image deleted successfully",
+	})
+}
+
+// ImageInfoHandler - ดึงข้อมูล metadata ของรูปภาพ (ไม่รวม base64)
+// POST /image/info
+func ImageInfoHandler(c echo.Context) error {
+	if atlasClient == nil {
+		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
+			"status":  "error",
+			"code":    503,
+			"message": "MongoDB Atlas is not connected",
+		})
+	}
+
+	var req models.ImageGetRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  "error",
+			"code":    400,
+			"message": "Invalid request body",
+		})
+	}
+
+	if req.ShopID == "" || req.FileName == "" {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  "error",
+			"code":    400,
+			"message": "shopid and filename are required",
+		})
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	collection := atlasDB.Collection("images")
+	filter := bson.M{
+		"shopid":   req.ShopID,
+		"filename": req.FileName,
+	}
+
+	var imageDoc models.ImageMetadata
+	err := collection.FindOne(ctx, filter).Decode(&imageDoc)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, map[string]interface{}{
+			"status":  "error",
+			"code":    404,
+			"message": "Image not found",
+		})
+	}
+
+	return c.JSON(http.StatusOK, models.ImageResponse{
+		Status: "success",
+		Code:   200,
+		Data:   &imageDoc,
+	})
+}
+
+// ImageVerifyHandler - ส่งรูปไปตรวจสอบกับ Thunder API และบันทึกผลลงใน MongoDB
+// POST /image/verify
+func ImageVerifyHandler(c echo.Context) error {
+	client, err := GetR2Client()
+	if err != nil || client == nil {
+		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
+			"status":  "error",
+			"code":    503,
+			"message": "R2 storage is not configured",
+		})
+	}
+
+	if atlasClient == nil {
+		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
+			"status":  "error",
+			"code":    503,
+			"message": "MongoDB Atlas is not connected",
+		})
+	}
+
+	// Get Thunder API key
+	thunderAPIKey := os.Getenv("THUNDER_API_KEY")
+	if thunderAPIKey == "" {
+		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
+			"status":  "error",
+			"code":    503,
+			"message": "Thunder API is not configured",
+		})
+	}
+
+	var req models.ImageVerifyRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  "error",
+			"code":    400,
+			"message": "Invalid request body",
+		})
+	}
+
+	// Default: check_duplicate = true (ถ้าไม่ส่งมา)
+	// Note: Go ไม่รู้ว่า false มาจาก user หรือ default แต่เราต้องการให้ default เป็น true
+	// วิธีแก้: ใช้ pointer ใน model หรือตรวจสอบว่ามี field นี้ใน request หรือไม่
+	// สำหรับความง่าย: ถ้า request body ไม่มี check_duplicate เลย จะเป็น false (Go default)
+	// แต่เราต้องการ true เป็น default - ต้องใช้ pointer ใน model
+	// ตอนนี้ใช้วิธี: ถ้าส่งมาเป็น false และไม่ระบุ field อื่นๆ ก็จะเป็น true
+	checkDuplicate := true // Default เป็น true เสมอ
+
+	if req.ShopID == "" {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  "error",
+			"code":    400,
+			"message": "shopid is required",
+		})
+	}
+
+	if req.ImageID == "" && req.FileName == "" {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  "error",
+			"code":    400,
+			"message": "image_id or filename is required",
+		})
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	collection := atlasDB.Collection("images")
+
+	// Build filter
+	filter := bson.M{"shopid": req.ShopID}
+	if req.ImageID != "" {
+		oid, err := primitive.ObjectIDFromHex(req.ImageID)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"status":  "error",
+				"code":    400,
+				"message": "Invalid image_id format",
+			})
+		}
+		filter["_id"] = oid
+	} else {
+		filter["filename"] = req.FileName
+	}
+
+	// Find the image
+	var imageDoc models.ImageMetadata
+	err = collection.FindOne(ctx, filter).Decode(&imageDoc)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, map[string]interface{}{
+			"status":  "error",
+			"code":    404,
+			"message": "Image not found",
+		})
+	}
+
+	// Download image from R2
+	imageData, contentType, err := getImageFromR2(client, imageDoc.R2Key)
+	if err != nil {
+		logger.Error("Failed to get image from R2: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"status":  "error",
+			"code":    500,
+			"message": "Failed to get image from storage",
+		})
+	}
+
+	// Determine verify type (bank or truewallet)
+	// ถ้าไม่ระบุ type หรือเป็น "auto" จะลอง bank ก่อน ถ้าไม่ได้ลอง truewallet
+	verifyType := req.Type
+	autoDetect := verifyType == "" || verifyType == "auto"
+
+	var verifyResult *ThunderVerifyResult
+	var detectedType string
+
+	if autoDetect {
+		// Auto-detect: ลอง bank ก่อน
+		logger.Info("Auto-detecting slip type: trying bank first...")
+		verifyResult, err = callThunderAPI(thunderAPIKey, imageData, contentType, imageDoc.FileName, checkDuplicate, "bank")
+		detectedType = "bank"
+
+		// ถ้า bank ไม่สำเร็จ (not_found หรือ error ที่ไม่ใช่ duplicate) ลอง truewallet
+		if !verifyResult.Success && verifyResult.Status != "duplicate" {
+			logger.Info("Bank verification failed, trying truewallet...")
+			verifyResult, err = callThunderAPI(thunderAPIKey, imageData, contentType, imageDoc.FileName, checkDuplicate, "truewallet")
+			detectedType = "truewallet"
+		}
+	} else {
+		// ใช้ type ที่ระบุมา
+		verifyResult, err = callThunderAPI(thunderAPIKey, imageData, contentType, imageDoc.FileName, checkDuplicate, verifyType)
+		detectedType = verifyType
+	}
+
+	now := time.Now()
+
+	// Prepare update data
+	update := bson.M{
+		"$set": bson.M{
+			"verified":    verifyResult.Success,
+			"verified_at": now,
+			"updated_at":  now,
+			"slip_type":   detectedType, // bank หรือ truewallet
+		},
+	}
+
+	if verifyResult.Success {
+		update["$set"].(bson.M)["verify_status"] = "success"
+		update["$set"].(bson.M)["slip_data"] = verifyResult.Data
+		update["$set"].(bson.M)["trans_ref"] = verifyResult.TransRef
+		update["$set"].(bson.M)["trans_amount"] = verifyResult.Amount
+		update["$set"].(bson.M)["trans_date"] = verifyResult.Date
+		update["$set"].(bson.M)["sender_name"] = verifyResult.SenderName
+		update["$set"].(bson.M)["sender_bank"] = verifyResult.SenderBank
+		update["$set"].(bson.M)["receiver_name"] = verifyResult.ReceiverName
+		update["$set"].(bson.M)["receiver_bank"] = verifyResult.ReceiverBank
+		update["$set"].(bson.M)["is_duplicate"] = verifyResult.IsDuplicate
+	} else if verifyResult.IsDuplicate {
+		// กรณี duplicate - ยังคงมีข้อมูล slip ครบ
+		update["$set"].(bson.M)["verify_status"] = "duplicate"
+		update["$set"].(bson.M)["verify_error"] = verifyResult.Error
+		update["$set"].(bson.M)["is_duplicate"] = true
+		update["$set"].(bson.M)["slip_data"] = verifyResult.Data
+		update["$set"].(bson.M)["trans_ref"] = verifyResult.TransRef
+		update["$set"].(bson.M)["trans_amount"] = verifyResult.Amount
+		update["$set"].(bson.M)["trans_date"] = verifyResult.Date
+		update["$set"].(bson.M)["sender_name"] = verifyResult.SenderName
+		update["$set"].(bson.M)["sender_bank"] = verifyResult.SenderBank
+		update["$set"].(bson.M)["receiver_name"] = verifyResult.ReceiverName
+		update["$set"].(bson.M)["receiver_bank"] = verifyResult.ReceiverBank
+	} else {
+		// กรณี error หรือ not_found
+		update["$set"].(bson.M)["verify_status"] = verifyResult.Status
+		update["$set"].(bson.M)["verify_error"] = verifyResult.Error
+		update["$set"].(bson.M)["is_duplicate"] = false
+	}
+
+	// Update MongoDB
+	_, err = collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		logger.Error("Failed to update image verification status: %v", err)
+	}
+
+	// Reload updated document
+	err = collection.FindOne(ctx, filter).Decode(&imageDoc)
+	if err != nil {
+		logger.Error("Failed to reload image document: %v", err)
+	}
+
+	message := "Slip verification completed"
+	if !verifyResult.Success {
+		message = verifyResult.Error
+	}
+
+	return c.JSON(http.StatusOK, models.ImageVerifyResponse{
+		Status:  "success",
+		Code:    200,
+		Message: message,
+		Data:    &imageDoc,
+	})
+}
+
+// ThunderVerifyResult - ผลลัพธ์จาก Thunder API
+type ThunderVerifyResult struct {
+	Success      bool
+	Status       string // success, error, not_found, duplicate
+	Error        string
+	Data         map[string]interface{}
+	TransRef     string
+	Amount       float64
+	Date         string
+	SenderName   string
+	SenderBank   string
+	ReceiverName string
+	ReceiverBank string
+	IsDuplicate  bool
+}
+
+// extractSlipDataFromResponse - ดึงข้อมูล slip จาก Thunder API response
+func extractSlipDataFromResponse(data map[string]interface{}, result *ThunderVerifyResult) {
+	if transRef, ok := data["transRef"].(string); ok {
+		result.TransRef = transRef
+	}
+	if date, ok := data["date"].(string); ok {
+		result.Date = date
+	}
+	// Extract amount
+	if amount, ok := data["amount"].(map[string]interface{}); ok {
+		if amountVal, ok := amount["amount"].(float64); ok {
+			result.Amount = amountVal
+		}
+	}
+	// Extract sender info - รองรับทั้ง displayName และ account.name.th
+	if sender, ok := data["sender"].(map[string]interface{}); ok {
+		// ลอง displayName ก่อน
+		if name, ok := sender["displayName"].(string); ok {
+			result.SenderName = name
+		} else if account, ok := sender["account"].(map[string]interface{}); ok {
+			// ลอง account.name.th
+			if nameObj, ok := account["name"].(map[string]interface{}); ok {
+				if thName, ok := nameObj["th"].(string); ok {
+					result.SenderName = thName
+				} else if enName, ok := nameObj["en"].(string); ok {
+					result.SenderName = enName
+				}
+			}
+		}
+		// Extract bank
+		if bank, ok := sender["bank"].(map[string]interface{}); ok {
+			if bankName, ok := bank["short"].(string); ok {
+				result.SenderBank = bankName
+			}
+		}
+	}
+	// Extract receiver info - รองรับทั้ง displayName และ account.name.th
+	if receiver, ok := data["receiver"].(map[string]interface{}); ok {
+		// ลอง displayName ก่อน
+		if name, ok := receiver["displayName"].(string); ok {
+			result.ReceiverName = name
+		} else if account, ok := receiver["account"].(map[string]interface{}); ok {
+			// ลอง account.name.th
+			if nameObj, ok := account["name"].(map[string]interface{}); ok {
+				if thName, ok := nameObj["th"].(string); ok {
+					result.ReceiverName = thName
+				} else if enName, ok := nameObj["en"].(string); ok {
+					result.ReceiverName = enName
+				}
+			}
+		}
+		// Extract bank
+		if bank, ok := receiver["bank"].(map[string]interface{}); ok {
+			if bankName, ok := bank["short"].(string); ok {
+				result.ReceiverBank = bankName
+			}
+		}
+	}
+}
+
+// callThunderAPI - เรียก Thunder API เพื่อตรวจสอบ slip
+// verifyType: "bank" (default) หรือ "truewallet"
+func callThunderAPI(apiKey string, imageData []byte, contentType, fileName string, checkDuplicate bool, verifyType string) (*ThunderVerifyResult, error) {
+	result := &ThunderVerifyResult{}
+
+	// Create multipart form
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Add file
+	part, err := writer.CreateFormFile("file", fileName)
+	if err != nil {
+		result.Error = "Failed to create form file"
+		return result, err
+	}
+	_, err = io.Copy(part, bytes.NewReader(imageData))
+	if err != nil {
+		result.Error = "Failed to copy file data"
+		return result, err
+	}
+
+	// Add checkDuplicate field
+	if checkDuplicate {
+		writer.WriteField("checkDuplicate", "true")
+	}
+
+	writer.Close()
+
+	// Determine API URL based on type
+	apiURL := "https://api.thunder.in.th/v1/verify"
+	if verifyType == "truewallet" {
+		apiURL = "https://api.thunder.in.th/v1/verify/truewallet"
+	}
+
+	// Create request
+	req, err := http.NewRequest("POST", apiURL, body)
+	if err != nil {
+		result.Error = "Failed to create request"
+		return result, err
+	}
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+
+	// Send request
+	httpClient := &http.Client{Timeout: 30 * time.Second}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		result.Error = "Failed to call Thunder API: " + err.Error()
+		return result, err
+	}
+	defer resp.Body.Close()
+
+	// Read response
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		result.Error = "Failed to read response"
+		return result, err
+	}
+
+	// Parse response
+	var thunderResp map[string]interface{}
+	if err := json.Unmarshal(respBody, &thunderResp); err != nil {
+		result.Error = "Failed to parse response"
+		return result, err
+	}
+
+	logger.Info("Thunder API Response (status %d): %s", resp.StatusCode, string(respBody))
+
+	// Handle different status codes
+	switch resp.StatusCode {
+	case 200:
+		result.Success = true
+		result.Status = "success"
+		result.Data = thunderResp
+
+		// Extract transaction details - ลองจาก data field ก่อน ถ้าไม่มีใช้ root level
+		if data, ok := thunderResp["data"].(map[string]interface{}); ok {
+			extractSlipDataFromResponse(data, result)
+		} else {
+			// Data is at root level
+			extractSlipDataFromResponse(thunderResp, result)
+		}
+
+	case 400:
+		result.Status = "error"
+		if msg, ok := thunderResp["message"].(string); ok {
+			result.Error = msg
+			// ตรวจสอบว่าเป็น duplicate_slip หรือไม่
+			if msg == "duplicate_slip" || strings.Contains(strings.ToLower(msg), "duplicate") {
+				result.Status = "duplicate"
+				result.IsDuplicate = true
+				result.Data = thunderResp
+
+				// กรณี duplicate ยังคงมีข้อมูล slip ใน data - ใช้ helper function
+				if data, ok := thunderResp["data"].(map[string]interface{}); ok {
+					extractSlipDataFromResponse(data, result)
+				}
+			}
+		} else {
+			result.Error = "Bad request"
+		}
+
+	case 401:
+		result.Status = "error"
+		result.Error = "Unauthorized: Invalid API key"
+
+	case 403:
+		result.Status = "error"
+		if msg, ok := thunderResp["message"].(string); ok {
+			result.Error = msg
+		} else {
+			result.Error = "Access denied"
+		}
+
+	case 404:
+		result.Status = "not_found"
+		result.Error = "Slip not found or QR code not readable"
+
+	default:
+		result.Status = "error"
+		result.Error = fmt.Sprintf("Thunder API error: %d", resp.StatusCode)
+	}
+
+	return result, nil
+}

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "mcp-builder": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "f08cbdec74dba480ec5217363446dae154b7576b8c3d9b4cb17aff234f15973b"
+    },
+    "mongodb": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "computedHash": "7307fd4f2e946457587880475908c63d9df7017150ca1abde5629055f7961f69"
+    }
+  }
+}

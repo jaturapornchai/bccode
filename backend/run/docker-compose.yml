@@ -1,0 +1,32 @@
+version: "3"
+services:
+  mainsvc:
+    image: "smlcloudplatform"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8089:8089"
+    environment:
+      - SERVICE_PORT=8089
+      - MONGODB_URI=mongodb+srv://doadmin:8Lpfn6203W4U51XK@db-mongodb-sgp1-pos-356fc016.mongo.ondigitalocean.com/?ssl=true&tlsCAFile=/root/ca-certificate.crt
+      - MONGODB_DB=bcaiclouddb
+      - MONGODB_DEBUG=true
+      - REDIS_CACHE_URI=redisx:6379
+      - KAFKA_SERVER_URL=kafka:9093
+      - POSTGRES_HOST=178.128.55.234
+      - POSTGRES_PORT=5533
+      - POSTGRES_DB_NAME=dedeposdev
+      - POSTGRES_USERNAME=postgres
+      - POSTGRES_PASSWORD=XnDLdWQnU4jBnR
+      - POSTGRES_SSL_MODE=disable
+      - POSTGRES_LOGGER_LEVEL=debug
+
+    volumes:
+      - /Users/userplant/Dev/smlcloudplatform/cmd/app/ca-certificate.crt:/root/ca-certificate.crt:ro
+    networks:
+      - "cloud"
+networks:
+  cloud:
+    name: sml_cloud_network
+    external: true

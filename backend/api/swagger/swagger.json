@@ -1,0 +1,364 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "BC AI Cloud Platform API",
+    "version": "1.0.0",
+    "title": "BC AI Cloud Platform API",
+    "contact": {
+      "email": "dev@smlsoft.com"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+  "tags": [
+    {
+      "name": "Health"
+    },
+    {
+      "name": "inventory",
+      "description": "default service"
+    },
+    {
+      "name": "admins",
+      "description": "Secured Admin-only calls"
+    },
+    {
+      "name": "developers",
+      "description": "Operations available to regular developers"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "ok"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/inventory": {
+      "get": {
+        "tags": [
+          "inventory",
+          "developers"
+        ],
+        "summary": "searches inventory",
+        "description": "By passing in the appropriate options, you can search for\navailable inventory in the system\n",
+        "operationId": "searchInventory",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "pass an optional search string for looking up inventory",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "number of records to skip for pagination",
+            "required": false,
+            "type": "integer",
+            "minimum": 0,
+            "format": "int32"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "maximum number of records to return",
+            "required": false,
+            "type": "integer",
+            "maximum": 50,
+            "minimum": 0,
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "search results matching criteria",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Inventory"
+              }
+            }
+          },
+          "400": {
+            "description": "bad input parameter"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "adds an inventory item",
+        "description": "Adds an item to the system",
+        "operationId": "addInventory",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "inventoryItem",
+            "description": "Inventory item to add",
+            "required": false,
+            "schema": {
+              "$ref": "#/definitions/Inventory"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "item created"
+          },
+          "400": {
+            "description": "invalid input, object invalid"
+          },
+          "409": {
+            "description": "an existing item already exists"
+          }
+        }
+      }
+    },
+    "/inventory/{id}": {
+      "get": {
+        "tags": [
+          "inventory"
+        ],
+        "operationId": "getInventoryInfo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of pet to return",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "search results matching criteria",
+            "schema": {
+              "$ref": "#/definitions/Inventory"
+            }
+          },
+          "400": {
+            "description": "bad input parameter"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "inventory"
+        ],
+        "description": "Adds an item to the system",
+        "operationId": "editInventory",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of pet to return",
+            "required": true
+          },
+          {
+            "in": "body",
+            "name": "inventoryItem",
+            "description": "Inventory item to add",
+            "required": false,
+            "schema": {
+              "$ref": "#/definitions/Inventory"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "item created"
+          },
+          "400": {
+            "description": "invalid input, object invalid"
+          },
+          "409": {
+            "description": "an existing item already exists"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "inventory"
+        ],
+        "description": "Adds an item to the system",
+        "operationId": "deleteInventory",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of pet to return",
+            "required": true
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "item created"
+          },
+          "400": {
+            "description": "invalid input, object invalid"
+          },
+          "409": {
+            "description": "an existing item already exists"
+          }
+        }
+      }
+    },
+    "/inventorysync": {
+      "get": {
+        "tags": [
+          "inventory"
+        ],
+        "operationId": "getInventorySync",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "get Item For Sync",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/BarcodeSync"
+              }
+            }
+          },
+          "500": {
+            "description": "Server Error"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Inventory": {
+      "type": "object",
+      "properties": {
+        "product_id": {
+          "type": "string"
+        },
+        "item_sku": {
+          "type": "string"
+        },
+        "product_name": {
+          "type": "string",
+          "example": "Widget Adapter"
+        },
+        "barcodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Barcode"
+          }
+        },
+        "pictures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ProductPicture"
+          }
+        },
+        "latest_update": {
+          "type": "string"
+        }
+      }
+    },
+    "Barcode": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "barcode": {
+          "type": "string"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number"
+        }
+      }
+    },
+    "ProductPicture": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "image_uri": {
+          "type": "string"
+        }
+      }
+    },
+    "InventoryDescription": {
+      "type": "object",
+      "properties": {
+        "lang": {
+          "type": "string"
+        },
+        "product_name": {
+          "type": "string"
+        },
+        "unit_name": {
+          "type": "string"
+        }
+      }
+    },
+    "BarcodeSync": {
+      "type": "object",
+      "properties": {
+        "product_code": {
+          "type": "string"
+        },
+        "barcode": {
+          "type": "string"
+        },
+        "latest_update": {
+          "type": "string",
+          "format": "date-time",
+          "example": "2016-08-29T09:12:33.001+0000"
+        },
+        "image_uri": {
+          "type": "string"
+        },
+        "description": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/InventoryDescription"
+          }
+        }
+      }
+    }
+  }
+}

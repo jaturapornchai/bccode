@@ -1,0 +1,14 @@
+{
+  "identities": [
+    {
+      "name": "bcdev",
+      "credentials": [
+        {
+          "accessKey": "bcdev-access-key",
+          "secretKey": "bcdev-secret-key"
+        }
+      ],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}

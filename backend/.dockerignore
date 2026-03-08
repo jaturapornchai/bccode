@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+.github
+
+# Documentation
+*.md
+# NOTE: docs/ is NOT excluded — it contains Swagger/OpenAPI generated code
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+tmp/
+
+# Test files
+*_test.go
+test/
+coverage.txt
+
+# Build artifacts
+bin/
+dist/
+*.exe
+
+# Dependencies (downloaded during build)
+vendor/
+
+# Environment files
+.env
+.env.*
+!.env.development.local
+
+# Docker
+docker-compose*.yml
+.dockerignore
+
+# Load test
+loadtest/

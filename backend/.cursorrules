@@ -1,0 +1,44 @@
+# BC AI Backend — Cursor Rules
+
+## Project
+- Go 1.26 module `smlcloudplatform` — unified backend (mainapi + goapi)
+- Framework: Echo v4
+- Databases: MongoDB, PostgreSQL, ClickHouse, Kafka, Redis
+
+## Structure
+- `cmd/goapi/` — goapi entry point (port 8888, BI/analytics)
+- `cmd/app/` — mainapi entry point (port 8080, cloud platform)
+- `internal/goapi/` — goapi packages (handlers, mydb, mypg, myclickhouse, myglobal, etc.)
+- `pkg/` — shared utilities (mainapi)
+- goapi imports: `smlcloudplatform/internal/goapi/...`
+
+## CRITICAL: Config Rules
+- ALL config from `bootstrap.json` ONLY — loaded via `internal/goapi/setupconfig/loader.go`
+- NEVER use `.env` files, `godotenv`, `env_file` in docker-compose
+- bootstrap.json path: `/app/bootstrap.json` (Docker), `C:/Windows/Temp/bcdev/config/bootstrap.json` (Windows)
+- Docker mount: `bootstrap.json:/app/bootstrap.json:rw`
+
+## Docker Stack (docker-compose.yml)
+- goapi: port 8888, Dockerfile.goapi (no CGO)
+- mainapi: port 9090→8080, Dockerfile (CGO + librdkafka)
+- MongoDB: mongo:7 port 27017
+- PostgreSQL: postgres:16-alpine port 5432
+- ClickHouse: clickhouse-server:latest port 8123/9000
+- Redis: redis:7-alpine port 6379
+- Kafka: cp-kafka:7.7.1 port 9092 (internal: kafka:29092)
+
+## Build
+- goapi: `go build ./cmd/goapi/` (no CGO)
+- mainapi: `CGO_ENABLED=1 go build -tags musl main.go`
+- Docker: `docker compose build goapi && docker compose up -d`
+
+## Code Style
+- Thai language OK in logs/comments
+- Logger: `logger.Info()`, `logger.Error()`, `logger.Success()`
+- Database via `mydb.DatabaseManager` with circuit breaker
+- Echo responses: `c.JSON(status, data)`
+
+## MCP Server
+- SSE: `GET /mcp/sse` (Claude Desktop)
+- Tools: `GET /mcp/tools`
+- Health: `GET /mcp/health`
