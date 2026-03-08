@@ -1061,6 +1061,17 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                       ),
                     ),
                   ),
+                  Expanded(
+                    flex: 4,
+                    child: Text(
+                      global.language("price_retail"),
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
                   if (showImage)
                     const Expanded(
                       flex: 1,
@@ -2047,6 +2058,14 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
             ),
           ),
         ),
+        Expanded(
+          flex: 4,
+          child: Text(
+            _getRetailPrice(value),
+            style: textStyle,
+            textAlign: TextAlign.right,
+          ),
+        ),
         if (showImage) _buildImageWidget(value, key),
         if (showCheckBox)
           Expanded(
@@ -2055,6 +2074,17 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
           ),
       ],
     );
+  }
+
+  String _getRetailPrice(ProductBarcodeModel value) {
+    if (value.prices == null || value.prices!.isEmpty) return '0';
+    for (final p in value.prices!) {
+      if (p.keynumber == 1) {
+        if (p.price <= 0) return '0';
+        return global.moneyFormat.format(p.price);
+      }
+    }
+    return '0';
   }
 
   Widget _buildImageWidget(
