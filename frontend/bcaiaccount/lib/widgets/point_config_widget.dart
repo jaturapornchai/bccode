@@ -64,7 +64,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               spreadRadius: 1,
               blurRadius: 10,
               offset: const Offset(0, 2),
@@ -106,7 +106,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Row(
@@ -275,7 +275,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.blue.withOpacity(0.2),
+                    color: Colors.blue.withValues(alpha: 0.2),
                     blurRadius: 8,
                     spreadRadius: 1,
                   )
@@ -317,7 +317,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
               style: TextStyle(
                 fontSize: 12,
                 color: isSelected
-                    ? Colors.white.withOpacity(0.9)
+                    ? Colors.white.withValues(alpha: 0.9)
                     : Colors.grey.shade600,
               ),
             ),
@@ -914,7 +914,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.3),
+              color: Colors.white.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -1153,14 +1153,3 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
   }
 }
 
-extension ColorExtension on Color {
-  /// Returns a new Color with the specified alpha value
-  Color withValues({int? red, int? green, int? blue, double? alpha}) {
-    return Color.fromARGB(
-      (alpha != null) ? (alpha * 255).round() : this.alpha,
-      red ?? this.red,
-      green ?? this.green,
-      blue ?? this.blue,
-    );
-  }
-}

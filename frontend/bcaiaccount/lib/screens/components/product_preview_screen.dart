@@ -4,17 +4,22 @@ import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:smlaicloud/model/price_model.dart';
 import 'package:smlaicloud/model/product_model.dart';
+import 'package:smlaicloud/widgets/unit_flow_widget.dart';
 
 class ProductPreviewScreen extends StatelessWidget {
   final ProductBarcodeModel screenData;
   final List<PriceModel> priceList;
   final Uint8List? imageWeb;
 
+  /// รายการ barcode ทั้งหมดของสินค้านี้ (สำหรับแสดงแผนผังหน่วยนับ)
+  final List<ProductBarcodeModel> allProductBarcodes;
+
   const ProductPreviewScreen({
     super.key,
     required this.screenData,
     required this.priceList,
     this.imageWeb,
+    this.allProductBarcodes = const [],
   });
 
   String _productTypeName(int productType) {
@@ -75,6 +80,17 @@ class ProductPreviewScreen extends StatelessWidget {
               screenData.refbarcodes!.isNotEmpty) ...[
             _divider(),
             _buildRefBarcodeSection(),
+          ],
+          // === แผนผังหน่วยนับ ===
+          if (allProductBarcodes.length > 1) ...[
+            _divider(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: UnitFlowWidget(
+                productBarcodes: allProductBarcodes,
+                currentBarcode: screenData.barcode ?? '',
+              ),
+            ),
           ],
           // === BOM ===
           if (screenData.bom?.isNotEmpty == true) ...[

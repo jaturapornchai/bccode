@@ -95,7 +95,7 @@ bcai-claude-skills/
 
 ### 8. การทำงานข้าม Project
 - **Backend (Go)** `D:\bcdev\backend` — อ่าน+แก้ได้
-- **Frontend (Flutter)** `D:\bcdev\bcaiaccount` — อ่าน+แก้ได้
+- **Frontend (Flutter)** `D:\bcdev\frontend\bcaiaccount` — อ่าน+แก้ได้
 - **สามารถตรวจ source code ข้ามไปมาได้** และแก้ไขได้ทั้งคู่ถ้าจำเป็น
 - **bcai-claude-skills** `D:\bcdev\bcai-claude-skills` — อ่าน+update ได้ (เป็นหน้าที่ของ AI)
 - **ระวังโครงสร้างข้อมูล** — แก้ฝั่งหนึ่งต้องตรวจอีกฝั่ง (ดู `rules/erp-conventions.md`)

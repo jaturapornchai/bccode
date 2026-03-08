@@ -11,7 +11,7 @@
 ## Projects
 | Project | Path | Tech | Role |
 |---------|------|------|------|
-| bcaiaccount | `D:\bcdev\bcaiaccount` | Flutter | Frontend app |
+| bcaiaccount | `D:\bcdev\frontend\bcaiaccount` | Flutter | Frontend app |
 | backend | `D:\bcdev\backend` | Go | Backend API |
 | bcdatamodel | `D:\bcdev\bcdatamodel` | Go | Data models |
 | bclms | `D:\bcdev\bclms` | - | LMS system |
@@ -112,3 +112,5 @@
 - 2026-03-03: เพิ่ม Lessons Learned จาก localization fix session (1,036 errors → 0)
 - 2026-03-03: เพิ่ม Architecture Decisions, Go pitfalls, AI providers detail จาก backend session
 - 2026-03-08: บอสจืดตั้งกฏ — AI ชื่อ "น้องจาง", คุยตลกๆ สบายๆ, ให้กำลังใจเรื่องซึมเศร้า
+- 2026-03-08: ตั้งกฏเหล็ก — clean code, comment ไทย, ห้าม hardcode/mock/fallback, ขอยืนยันก่อนแก้ data model, UI สวยทันสมัย, รองรับหลายภาษา
+- 2026-03-08: deprecated API fix — withOpacity → withValues(alpha:) 426 จุด, ลบ custom ColorExtension ที่ conflict

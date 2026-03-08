@@ -29,6 +29,7 @@ import 'package:smlaicloud/screen_search/product_search_screen.dart';
 import 'package:smlaicloud/screen_search/product_type_search_screen.dart';
 import 'package:smlaicloud/screen_search/supplier_search_screen.dart';
 import 'package:smlaicloud/screens/config/product_bom_widget.dart';
+import 'package:smlaicloud/widgets/unit_flow_widget.dart';
 import 'package:smlaicloud/screens/components/product_preview_screen.dart';
 import 'package:smlaicloud/utils/image_tooltip.dart';
 import 'package:smlaicloud/utils/util.dart';
@@ -2082,7 +2083,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
         border: Border.all(color: Colors.grey, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.5),
+            color: Colors.grey.withValues(alpha: 0.5),
             spreadRadius: 1,
             blurRadius: 1,
             offset: const Offset(1, 1),
@@ -6922,6 +6923,22 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
         ),
       ),
     );
+    // แผนผังการแปลงหน่วยสินค้า — รวบรวม barcode ทั้งหมดจาก itemcode เดียวกัน
+    if (screenData.itemcode != null && screenData.itemcode!.isNotEmpty) {
+      final allBarcodesForProduct = listData
+          .where((item) => item.itemcode == screenData.itemcode)
+          .toList();
+      formWidgets.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: UnitFlowWidget(
+            productBarcodes: allBarcodesForProduct,
+            currentBarcode: selectBarcode,
+          ),
+        ),
+      );
+    }
+
     if (isSaveAllow) {
       formWidgets.add(
         Container(
@@ -7173,7 +7190,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
         ],
       ),
       body: LoaderOverlay(
-        overlayColor: Colors.black.withOpacity(0.8),
+        overlayColor: Colors.black.withValues(alpha: 0.8),
         child: RawKeyboardListener(
           focusNode: FocusNode(),
           onKey: (RawKeyEvent event) {
@@ -7208,6 +7225,11 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                                   screenData: screenData,
                                   priceList: priceList,
                                   imageWeb: imageWeb,
+                                  allProductBarcodes: listData
+                                      .where((item) =>
+                                          item.itemcode ==
+                                          screenData.itemcode)
+                                      .toList(),
                                 ),
                               ]
                             : formWidgets,
