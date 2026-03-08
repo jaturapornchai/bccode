@@ -280,7 +280,7 @@ func executeSearch(db *sql.DB, conditions []string, args []interface{}, argIdx i
 		SELECT COALESCE(pb.guidfixed,''), pb.barcode, COALESCE(pb.name0,''), COALESCE(pb.unitcode,''), COALESCE(pb.unitname,''),
 			   COALESCE(pb.itemcode,''), COALESCE(pb.groupcode,''), COALESCE(pb.groupnames,''),
 			   COALESCE(pb.price1,0), COALESCE(pb.imageuri,''),
-			   COALESCE(pb.standvalue,0), COALESCE(pb.dividevalue,0),
+			   COALESCE(pb.barcoderefunitstand,0), COALESCE(pb.barcoderefunitdivide,0),
 			   COALESCE(p.balanceqty,0), COALESCE(p.balanceqtyword,'')
 		FROM productbarcode pb
 		LEFT JOIN product p ON p.itemcode = pb.itemcode
