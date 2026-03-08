@@ -13,7 +13,7 @@ Plan → Implement → Build → Deploy → Test → Push
 6. **Push**: `git push` เมื่อ Jead สั่ง (ห้าม push เอง)
 
 ## Deploy Flow (Docker Desktop)
-เมื่อ Jead บอก "deploy" หรือ "ทดสอบ":
+**Auto Deploy Rule (สำคัญมาก)**: ทุกครั้งที่มีการแก้ไข backend code → ต้อง deploy to Docker Desktop ใหม่เสมอ เพื่อให้ API ใหม่ทำงานได้ทันที
 ```bash
 # 1. Build check
 go build ./cmd/goapi/
