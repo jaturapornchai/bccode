@@ -100,9 +100,9 @@ class UnitFlowWidget extends StatelessWidget {
   }
 
   /// คำนวณ ratio จาก ProductBarcodeModel
-  /// ลำดับ: refbarcodes.standvalue/dividevalue → top-level standvalue/dividevalue → 1
+  /// ลำดับ: refbarcodes → top-level standvalue → allUnitNames (PG enriched) → 1
   double _computeRatio(ProductBarcodeModel item) {
-    // ลำดับ 1: จาก refbarcodes (ข้อมูลถูกต้องที่สุด)
+    // ลำดับ 1: จาก refbarcodes (ข้อมูลจาก MongoDB detail)
     if (item.refbarcodes != null && item.refbarcodes!.isNotEmpty) {
       final ref = item.refbarcodes!.first;
       final dv = ref.dividevalue > 0 ? ref.dividevalue : 1.0;
@@ -112,7 +112,37 @@ class UnitFlowWidget extends StatelessWidget {
     final sv = item.standvalue ?? 0;
     final dv = (item.dividevalue ?? 0) > 0 ? item.dividevalue! : 1.0;
     if (sv > 0) return sv / dv;
-    // ลำดับ 3: ถือเป็นหน่วยฐาน
+    // ลำดับ 3: parse จาก allUnitNames (PG list API enriched)
+    // Format: "ชิ้น, โหล(12 ชิ้น), กล่อง(40 ชิ้น)"
+    if (item.allUnitNames.isNotEmpty) {
+      final unitName =
+          (item.itemunitnames != null && item.itemunitnames!.isNotEmpty)
+              ? global.activeLangName(item.itemunitnames!)
+              : item.itemunitcode;
+      final ratio = _parseRatioFromUnitNames(item.allUnitNames, unitName);
+      if (ratio > 0) return ratio;
+    }
+    // ลำดับ 4: ถือเป็นหน่วยฐาน
+    return 1;
+  }
+
+  /// Parse ratio จาก allUnitNames text
+  /// Input: "ชิ้น, โหล(12 ชิ้น), กล่อง(40 ชิ้น)"
+  /// "โหล(12 ชิ้น)" → ratio=12, "ชิ้น" (no parens) → ratio=1
+  double _parseRatioFromUnitNames(String allUnitNames, String targetUnitName) {
+    if (targetUnitName.isEmpty) return 1;
+    final parts = allUnitNames.split(', ');
+    for (final part in parts) {
+      final match =
+          RegExp(r'^(.+?)\((\d+(?:\.\d+)?)\s+.+\)$').firstMatch(part.trim());
+      if (match != null) {
+        if (match.group(1)!.trim() == targetUnitName) {
+          return double.tryParse(match.group(2)!) ?? 1;
+        }
+      } else if (part.trim() == targetUnitName) {
+        return 1;
+      }
+    }
     return 1;
   }
 
