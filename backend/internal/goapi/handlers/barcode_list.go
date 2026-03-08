@@ -47,6 +47,8 @@ type BarcodeListItem struct {
 	GroupNames string  `json:"groupnames"`
 	Price1           float64 `json:"price1"`
 	ImageUri         string  `json:"imageuri"`
+	StandValue       float64 `json:"standvalue"`
+	DivideValue      float64 `json:"dividevalue"`
 	UnitCount        int     `json:"unit_count"`
 	AllUnitNames     string  `json:"all_unit_names"`
 	BalanceQty       float64 `json:"balance_qty"`
@@ -278,6 +280,7 @@ func executeSearch(db *sql.DB, conditions []string, args []interface{}, argIdx i
 		SELECT COALESCE(pb.guidfixed,''), pb.barcode, COALESCE(pb.name0,''), COALESCE(pb.unitcode,''), COALESCE(pb.unitname,''),
 			   COALESCE(pb.itemcode,''), COALESCE(pb.groupcode,''), COALESCE(pb.groupnames,''),
 			   COALESCE(pb.price1,0), COALESCE(pb.imageuri,''),
+			   COALESCE(pb.standvalue,0), COALESCE(pb.dividevalue,0),
 			   COALESCE(p.balanceqty,0), COALESCE(p.balanceqtyword,'')
 		FROM productbarcode pb
 		LEFT JOIN product p ON p.itemcode = pb.itemcode
@@ -302,6 +305,7 @@ func executeSearch(db *sql.DB, conditions []string, args []interface{}, argIdx i
 			&item.GuidFixed, &item.Barcode, &item.Name, &item.UnitCode, &item.UnitName,
 			&item.ItemCode, &item.GroupCode, &item.GroupNames,
 			&price, &item.ImageUri,
+			&item.StandValue, &item.DivideValue,
 			&item.BalanceQty, &item.BalanceFormatted,
 		); err != nil {
 			logger.Error("BarcodeListHandler: scan: %v", err)
@@ -545,6 +549,8 @@ func formatBarcodeItems(items []BarcodeListItem) []map[string]interface{} {
 			"groupnames":         []map[string]string{{"code": "th", "name": item.GroupNames}},
 			"prices":             []map[string]interface{}{{"keynumber": 1, "price": item.Price1}},
 			"imageuri":           item.ImageUri,
+			"standvalue":        item.StandValue,
+			"dividevalue":       item.DivideValue,
 			"unit_count":         item.UnitCount,
 			"all_unit_names":     item.AllUnitNames,
 			"balance_qty":        item.BalanceQty,
