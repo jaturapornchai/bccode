@@ -1,0 +1,35 @@
+import json
+
+translations_data = {
+    "translations": [
+        {"code": "chatbot_welcome_message", "th": "สวัสดีครับ! ผมเป็น AI Assistant พร้อมช่วยเหลือคุณ มีอะไรให้ช่วยไหมครับ?", "lo": "ສະບາຍດີ! ຂ້ອຍແມ່ນ AI Assistant ພ້ອມຊ່ວຍເຫຼືອທ່ານ ມີຫຍັງໃຫ້ຊ່ວຍບໍ່?", "en": "Hello! I'm AI Assistant ready to help you. How can I help you?", "cn": "您好！我是AI助手，随时为您服务。有什么可以帮您的吗？", "ja": "こんにちは！私はAIアシスタントです。お手伝いできることはありますか？", "ko": "안녕하세요! 저는 AI 어시스턴트입니다. 무엇을 도와드릴까요?", "my": "မင်္ဂလာပါ။ ကျွန်ုပ်သည် AI Assistant ဖြစ်ပြီး သင့်ကို ကူညီရန် အဆင်သင့်ဖြစ်ပါသည်။ အကူအညီလိုပါသလား။", "km": "សួស្តី! ខ្ញុំជា AI Assistant ត្រៀមជួយអ្នក។ តើមានអ្វីឲ្យជួយទេ?", "vi": "Xin chào! Tôi là AI Assistant sẵn sàng giúp đỡ bạn. Tôi có thể giúp gì cho bạn?"},
+        {"code": "chatbot_error_message", "th": "ขอโทษครับ เกิดข้อผิดพลาด", "lo": "ຂໍໂທດ ເກີດຄວາມຜິດພາດ", "en": "Sorry, an error occurred", "cn": "抱歉，发生错误", "ja": "申し訳ございません、エラーが発生しました", "ko": "죄송합니다. 오류가 발생했습니다", "my": "တောင်းပန်ပါသည်။ အမှားတစ်ခု ဖြစ်ပေါ်ခဲ့သည်", "km": "សុំទោស មានកំហុសកើតឡើង", "vi": "Xin lỗi, đã xảy ra lỗi"},
+        {"code": "chatbot_connection_timeout", "th": "Connection timeout - กรุณาตรวจสอบการเชื่อมต่อ", "lo": "Connection timeout - ກະລຸນາກວດສອບການເຊື່ອມຕໍ່", "en": "Connection timeout - Please check your connection", "cn": "连接超时 - 请检查您的连接", "ja": "接続タイムアウト - 接続を確認してください", "ko": "연결 시간 초과 - 연결을 확인하세요", "my": "Connection timeout - သင်၏ ချိတ်ဆက်မှုကို စစ်ဆေးပါ", "km": "Connection timeout - សូមពិនិត្យការតភ្ជាប់របស់អ្នក", "vi": "Hết thời gian kết nối - Vui lòng kiểm tra kết nối của bạn"},
+        {"code": "chatbot_cannot_connect_to_server", "th": "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้", "lo": "ບໍ່ສາມາດເຊື່ອມຕໍ່ກັບເຊີເວີໄດ້", "en": "Cannot connect to server", "cn": "无法连接到服务器", "ja": "サーバーに接続できません", "ko": "서버에 연결할 수 없습니다", "my": "ဆာဗာနှင့် ချိတ်ဆက်၍မရပါ", "km": "មិនអាចភ្ជាប់ទៅម៉ាស៊ីនមេបានទេ", "vi": "Không thể kết nối với máy chủ"},
+        {"code": "chatbot_check_api_server", "th": "กรุณาตรวจสอบว่า API Server ทำงานอยู่หรือไม่", "lo": "ກະລຸນາກວດສອບວ່າ API Server ເຮັດວຽກຢູ່ບໍ່", "en": "Please check if API Server is running", "cn": "请检查API服务器是否正在运行", "ja": "APIサーバーが実行中かどうか確認してください", "ko": "API 서버가 실행 중인지 확인하세요", "my": "API Server လုပ်ဆောင်နေခြင်း ရှိ/မရှိ စစ်ဆေးပါ", "km": "សូមពិនិត្យមើលថាតើ API Server កំពុងដំណើរការឬទេ", "vi": "Vui lòng kiểm tra xem API Server có đang chạy không"},
+        {"code": "chatbot_reset_conversation", "th": "เริ่มการสนทนาใหม่", "lo": "ເລີ່ມການສົນທະນາໃໝ່", "en": "Start new conversation", "cn": "开始新对话", "ja": "新しい会話を始める", "ko": "새 대화 시작", "my": "စကားဝိုင်းအသစ် စတင်ပါ", "km": "ចាប់ផ្តើមការសន្ទនាថ្មី", "vi": "Bắt đầu cuộc trò chuyện mới"},
+        {"code": "chatbot_reset_confirmation", "th": "คุณต้องการล้างประวัติการสนทนาและเริ่มใหม่หรือไม่?", "lo": "ທ່ານຕ້ອງການລ້າງປະຫວັດການສົນທະນາແລະເລີ່ມໃໝ່ບໍ່?", "en": "Do you want to clear chat history and start over?", "cn": "您想清除聊天记录并重新开始吗？", "ja": "チャット履歴をクリアして最初からやり直しますか？", "ko": "채팅 기록을 지우고 다시 시작하시겠습니까?", "my": "စကားဝိုင်းမှတ်တမ်းကို ဖျက်ပြီး အစမှ စတင်လိုပါသလား။", "km": "តើអ្នកចង់សម្អាតប្រវត្តិការសន្ទនា និងចាប់ផ្តើមឡើងវិញទេ?", "vi": "Bạn có muốn xóa lịch sử trò chuyện và bắt đầu lại không?"},
+        {"code": "chatbot_cancel", "th": "ยกเลิก", "lo": "ຍົກເລີກ", "en": "Cancel", "cn": "取消", "ja": "キャンセル", "ko": "취소", "my": "မလုပ်တော့", "km": "បោះបង់", "vi": "Hủy"},
+        {"code": "chatbot_start_new", "th": "เริ่มใหม่", "lo": "ເລີ່ມໃໝ່", "en": "Start New", "cn": "开始新的", "ja": "新規開始", "ko": "새로 시작", "my": "အသစ်စတင်ပါ", "km": "ចាប់ផ្តើមថ្មី", "vi": "Bắt đầu mới"},
+        {"code": "chatbot_welcome_emoji", "th": "สวัสดีครับ! ผมเป็น AI Assistant พร้อมช่วยเหลือคุณ 😊", "lo": "ສະບາຍດີ! ຂ້ອຍแມ່ນ AI Assistant ພ້ອມຊ່ວຍເຫຼືອທ່ານ 😊", "en": "Hello! I'm AI Assistant ready to help you 😊", "cn": "您好！我是AI助手，随时为您服务 😊", "ja": "こんにちは！私はAIアシスタントです 😊", "ko": "안녕하세요! 저는 AI 어시스턴트입니다 😊", "my": "မင်္ဂလာပါ။ ကျွန်ုပ်သည် AI Assistant ဖြစ်ပါသည် 😊", "km": "សួស្តី! ខ្ញុំជា AI Assistant ត្រៀមជួយអ្នក 😊", "vi": "Xin chào! Tôi là AI Assistant sẵn sàng giúp đỡ bạn 😊"},
+        {"code": "chatbot_ready_to_help", "th": "พร้อมช่วยเหลือคุณ", "lo": "ພ້ອມຊ່ວຍເຫຼືອທ່ານ", "en": "Ready to help you", "cn": "随时为您服务", "ja": "お手伝いします", "ko": "도와드릴 준비가 되었습니다", "my": "သင့်ကို ကူညီရန် အဆင်သင့်", "km": "ត្រៀមជួយអ្នក", "vi": "Sẵn sàng giúp đỡ bạn"},
+        {"code": "chatbot_expand", "th": "ขยาย", "lo": "ຂະຫຍາຍ", "en": "Expand", "cn": "展开", "ja": "展開", "ko": "확장", "my": "ချဲ့ပါ", "km": "បង្ហាញ", "vi": "Mở rộng"},
+        {"code": "chatbot_minimize", "th": "ย่อ", "lo": "ຫຍໍ້", "en": "Minimize", "cn": "最小化", "ja": "最小化", "ko": "최소화", "my": "ချုံ့ပါ", "km": "បង្រួម", "vi": "Thu nhỏ"},
+        {"code": "chatbot_close", "th": "ปิด", "lo": "ປິດ", "en": "Close", "cn": "关闭", "ja": "閉じる", "ko": "닫기", "my": "ပိတ်ပါ", "km": "បិទ", "vi": "Đóng"},
+        {"code": "chatbot_type_message", "th": "พิมพ์ข้อความ...", "lo": "ພິມຂໍ້ຄວາມ...", "en": "Type message...", "cn": "输入消息...", "ja": "メッセージを入力...", "ko": "메시지 입력...", "my": "စာတိုရိုက်ပါ...", "km": "វាយសារ...", "vi": "Nhập tin nhắn..."},
+        {"code": "chatbot_copy", "th": "Copy", "lo": "ສຳເນົາ", "en": "Copy", "cn": "复制", "ja": "コピー", "ko": "복사", "my": "မိတ္တူကူးယူ", "km": "ចម្លង", "vi": "Sao chép"},
+        {"code": "chatbot_copied_message", "th": "คัดลอกข้อความแล้ว", "lo": "ສຳເນົາຂໍ້ຄວາມແລ້ວ", "en": "Message copied", "cn": "已复制消息", "ja": "メッセージをコピーしました", "ko": "메시지 복사됨", "my": "စာတိုကို မိတ္တူကူးယူပြီးပါပြီ", "km": "បានចម្លងសាររួចហើយ", "vi": "Đã sao chép tin nhắn"},
+        {"code": "chatbot_ai_usage", "th": "AI Usage", "lo": "AI Usage", "en": "AI Usage", "cn": "AI使用情况", "ja": "AI使用状況", "ko": "AI 사용량", "my": "AI အသုံးပြုမှု", "km": "ការប្រើប្រាស់ AI", "vi": "Sử dụng AI"},
+        {"code": "chatbot_response_empty", "th": "Response is empty", "lo": "ຄຳຕອບວ່າງເປົ່າ", "en": "Response is empty", "cn": "响应为空", "ja": "レスポンスが空です", "ko": "응답이 비어 있습니다", "my": "တုံ့ပြန်ချက် ဗလာဖြစ်နေသည်", "km": "ការឆ្លើយតបទទេ", "vi": "Phản hồi trống"},
+        {"code": "chatbot_analyze_product", "th": "วิเคราะห์สินค้านี้", "lo": "ວິເຄາະສິນຄ້ານີ້", "en": "Analyze this product", "cn": "分析此产品", "ja": "この製品を分析", "ko": "이 제품 분석", "my": "ဤထုတ်ကုန်ကို ခွဲခြမ်းစိတ်ဖြာပါ", "km": "វិភាគផលិតផលនេះ", "vi": "Phân tích sản phẩm này"},
+        {"code": "chatbot_product_name", "th": "ชื่อ", "lo": "ຊື່", "en": "Name", "cn": "名称", "ja": "名前", "ko": "이름", "my": "အမည်", "km": "ឈ្មោះ", "vi": "Tên"},
+        {"code": "chatbot_product_code", "th": "รหัส", "lo": "ລະຫັດ", "en": "Code", "cn": "代码", "ja": "コード", "ko": "코드", "my": "ကုဒ်", "km": "កូដ", "vi": "Mã"},
+        {"code": "chatbot_product_barcode", "th": "บาร์โค้ด", "lo": "ບາໂຄດ", "en": "Barcode", "cn": "条形码", "ja": "バーコード", "ko": "바코드", "my": "ဘားကုဒ်", "km": "បារកូដ", "vi": "Mã vạch"},
+        {"code": "chatbot_product_unit", "th": "หน่วย", "lo": "ຫົວໜ່ວຍ", "en": "Unit", "cn": "单位", "ja": "単位", "ko": "단위", "my": "ယူနစ်", "km": "ឯកតា", "vi": "Đơn vị"}
+    ]
+}
+
+with open('ui_translations_to_add.json', 'w', encoding='utf-8') as f:
+    json.dump(translations_data, f, ensure_ascii=False, indent=2)
+
+print(f"✓ Created translation file with {len(translations_data['translations'])} entries")

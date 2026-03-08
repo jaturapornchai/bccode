@@ -1,0 +1,41 @@
+{
+  "_comment": "คำแปลสำหรับหน้า Login Shop Screen",
+  "translations": [
+    {
+      "code": "select_language_thai",
+      "th": "เลือกภาษา ไทย",
+      "en": "Select Language Thai",
+      "lo": "ເລືອກພາສາໄທ",
+      "cn": "选择泰语",
+      "ja": "タイ語を選択",
+      "ko": "태국어 선택",
+      "my": "ထိုင်းဘာသာ ရွေးချယ်ပါ",
+      "km": "ជ្រើសរើសភាសាថៃ",
+      "vi": "Chọn Tiếng Thái"
+    },
+    {
+      "code": "search_shop_placeholder",
+      "th": "ค้นหาร้าน...",
+      "en": "Search shop...",
+      "lo": "ຄົ້ນຫາຮ້ານ...",
+      "cn": "搜索商店...",
+      "ja": "店舗を検索...",
+      "ko": "매장 검색...",
+      "my": "ဆိုင်ရှာဖွေရန်...",
+      "km": "ស្វែងរកហាង...",
+      "vi": "Tìm kiếm cửa hàng..."
+    },
+    {
+      "code": "search_branch_placeholder",
+      "th": "ค้นหาสาขา...",
+      "en": "Search branch...",
+      "lo": "ຄົ້ນຫາສາຂາ...",
+      "cn": "搜索分店...",
+      "ja": "支店を検索...",
+      "ko": "지점 검색...",
+      "my": "ဘဏ်ခွဲရှာဖွေရန်...",
+      "km": "ស្វែងរកសាខា...",
+      "vi": "Tìm kiếm chi nhánh..."
+    }
+  ]
+}

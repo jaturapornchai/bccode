@@ -1,0 +1,178 @@
+{
+  "project_info": {
+    "project_number": "183871505957",
+    "project_id": "dedepos",
+    "storage_bucket": "dedepos.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:183871505957:android:259560e2a480d0ed07a1cc",
+        "android_client_info": {
+          "package_name": "com.dedezoom.smlaicloud"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "183871505957-7co3akl7smnhbpr4009vgmd7ht1iesfn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBHfJ-wnQfzD4BSQeXggora43ygd5sRwcU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "183871505957-7co3akl7smnhbpr4009vgmd7ht1iesfn.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "183871505957-93bglibtnlmgnb7ftp9i8dli08dn27nm.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.smlsoft.dedepos"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:183871505957:android:fbcd8488f548caec07a1cc",
+        "android_client_info": {
+          "package_name": "com.smlsoft.smlaicloud"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "183871505957-f4afcfn804071c18ujqjlgb1gth2d7kv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.smlsoft.smlaicloud",
+            "certificate_hash": "ae435517d2590dd6a68ad8b218ca9abc4b70f650"
+          }
+        },
+        {
+          "client_id": "183871505957-7co3akl7smnhbpr4009vgmd7ht1iesfn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBHfJ-wnQfzD4BSQeXggora43ygd5sRwcU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "183871505957-7co3akl7smnhbpr4009vgmd7ht1iesfn.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "183871505957-93bglibtnlmgnb7ftp9i8dli08dn27nm.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.smlsoft.dedepos"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:183871505957:android:c01d036da3abad4307a1cc",
+        "android_client_info": {
+          "package_name": "com.smlsoft.dedepos"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "183871505957-ml5v5cqb1h0qd6rb0fn9l1h8gio9vqcc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.smlsoft.dedepos",
+            "certificate_hash": "ae435517d2590dd6a68ad8b218ca9abc4b70f650"
+          }
+        },
+        {
+          "client_id": "183871505957-7co3akl7smnhbpr4009vgmd7ht1iesfn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBHfJ-wnQfzD4BSQeXggora43ygd5sRwcU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "183871505957-7co3akl7smnhbpr4009vgmd7ht1iesfn.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "183871505957-93bglibtnlmgnb7ftp9i8dli08dn27nm.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.smlsoft.dedepos"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:183871505957:android:67aed3eed5d298a307a1cc",
+        "android_client_info": {
+          "package_name": "com.smlsoft.dedeposfirebaselogin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "183871505957-qv4v4kipjpj1htjktbqong27pta4p1df.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.smlsoft.dedeposfirebaselogin",
+            "certificate_hash": "a5135241f4af5eeed1c871da2fb315a9b4400da8"
+          }
+        },
+        {
+          "client_id": "183871505957-7co3akl7smnhbpr4009vgmd7ht1iesfn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBHfJ-wnQfzD4BSQeXggora43ygd5sRwcU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "183871505957-7co3akl7smnhbpr4009vgmd7ht1iesfn.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "183871505957-93bglibtnlmgnb7ftp9i8dli08dn27nm.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.smlsoft.dedepos"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

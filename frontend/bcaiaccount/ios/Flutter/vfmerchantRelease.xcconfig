@@ -1,0 +1,6 @@
+#include "Generated.xcconfig"
+
+FLUTTER_TARGET=lib/main_vfmerchant.dart
+ASSET_PREFIX=vfmerchant
+BUNDLE_NAME=VF Merchant
+BUNDLE_DISPLAY_NAME=VF Merchant

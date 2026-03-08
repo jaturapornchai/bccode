@@ -1,0 +1,684 @@
+import 'package:smlaicloud/bloc/department/department_bloc.dart';
+import 'package:smlaicloud/bloc/product/product_bloc.dart';
+import 'package:smlaicloud/bloc/product_barcode/product_barcode_bloc.dart';
+import 'package:smlaicloud/model/department_model.dart';
+import 'package:smlaicloud/model/global_model.dart';
+import 'package:smlaicloud/model/product_department_model.dart';
+import 'package:smlaicloud/model/product_model.dart';
+import 'package:smlaicloud/screen_search/company_branch_search_screen.dart';
+import 'package:smlaicloud/screen_search/department_in_branch_search_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:split_view/split_view.dart';
+import 'package:smlaicloud/global.dart' as global;
+import 'package:flutter_draggable_gridview/flutter_draggable_gridview.dart';
+
+class AddProductToDepartmentScreen extends StatefulWidget {
+  const AddProductToDepartmentScreen({super.key});
+
+  @override
+  State<AddProductToDepartmentScreen> createState() =>
+      AddProductToDepartmentScreenState();
+}
+
+class AddProductToDepartmentScreenState
+    extends State<AddProductToDepartmentScreen>
+    with SingleTickerProviderStateMixin {
+  TextEditingController searchController = TextEditingController();
+  List<DraggableGridItem> draggableGridItemList = [];
+  bool loadingData = false;
+  bool isDataChange = false;
+  FocusNode searchFocusNode = FocusNode(skipTraversal: true);
+  final _debouncer = global.Debouncer(1000);
+  ScrollController listScrollController = ScrollController();
+  List<ProductBarcodeModel> listData = [];
+  List<ProductBarcodeModel> productList = [];
+  String searchText = "";
+  String selectedBranchGuid = "";
+  String selectedBranchCode = "";
+  String selectedBranchNames = "";
+  String selectedDepartmentCode = "";
+  String selectedDepartmentNames = "";
+  late SplitViewController splitViewController;
+  List<String>? selectBarcode;
+  ProductDepartmentModel? productDepartmentModel;
+  List<DepartmentModel>? listDepartmentModel;
+
+  @override
+  void initState() {
+    loadDataList("");
+    listScrollController.addListener(onScrollList);
+    splitViewController = SplitViewController(
+      limits: [null, WeightLimit(min: 0.2, max: 0.8)],
+    );
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  void discardData({required Function callBack}) {
+    if (isDataChange) {
+      showDialog<String>(
+        context: context,
+        builder: (BuildContext context) => AlertDialog(
+          title: Text(global.language('data_editing')),
+          content: Text(global.language('leave_this_screen')),
+          actions: <Widget>[
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () => Navigator.pop(context),
+              child: Text(global.language('no')),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+              onPressed: () {
+                Navigator.pop(context);
+                callBack();
+              },
+              child: Text(global.language('yes')),
+            ),
+          ],
+        ),
+      );
+    } else {
+      callBack();
+    }
+  }
+
+  Widget listObject(int index, ProductBarcodeModel value) {
+    return GestureDetector(
+      onTap: () {},
+      onDoubleTap: () {},
+      child: Container(
+        color: (index % 2 == 0)
+            ? global.theme.columnAlternateEvenColor
+            : global.theme.columnAlternateOddColor,
+        padding: EdgeInsets.only(
+          left: 10,
+          right: 10,
+          top: global.deviceConfig.listDataLineSpace,
+          bottom: global.deviceConfig.listDataLineSpace,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 5,
+              child: Text(
+                value.barcode!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Expanded(
+              flex: 10,
+              child: Text(
+                global.packName(value.names!),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            IconButton(
+              onPressed:
+                  selectedBranchGuid.isEmpty || selectedDepartmentCode.isEmpty
+                  ? null
+                  : () {
+                      bool found = false;
+                      for (int i = 0; i < productList.length; i++) {
+                        if (productList[i].guidfixed == value.guidfixed) {
+                          found = true;
+                          break;
+                        }
+                      }
+                      if (found == false) {
+                        isDataChange = true;
+                        productList.add(
+                          ProductBarcodeModel(
+                            guidfixed: value.guidfixed,
+                            barcode: value.barcode,
+                            names: value.names!,
+                            itemcode: value.itemcode,
+                          ),
+                        );
+                        setState(() {});
+                      }
+                    },
+              icon: const Icon(Icons.add),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget listProduct(int index, ProductBarcodeModel value) {
+    return GestureDetector(
+      onTap: () {},
+      onDoubleTap: () {},
+      child: Container(
+        color: (index % 2 == 0)
+            ? global.theme.columnAlternateEvenColor
+            : global.theme.columnAlternateOddColor,
+        padding: EdgeInsets.only(
+          left: 10,
+          right: 10,
+          top: global.deviceConfig.listDataLineSpace,
+          bottom: global.deviceConfig.listDataLineSpace,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 5,
+              child: Text(
+                value.barcode!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Expanded(
+              flex: 10,
+              child: Text(
+                global.packName(value.names!),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            IconButton(
+              onPressed: () {
+                isDataChange = true;
+                productList.removeAt(productList.indexOf(value));
+                setState(() {});
+              },
+              icon: const Icon(Icons.delete),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void loadDataList(String search) {
+    setState(() {
+      loadingData = true;
+    });
+    searchText = search;
+    context.read<ProductBarcodeBloc>().add(
+      ProductBarcodeLoadList(
+        offset: (listData.isEmpty) ? 0 : listData.length,
+        limit: global.loadDataPerPage,
+        search: search,
+        branchcode: global.companyBranchSelectData.code,
+        businesstypecode: global.companyBranchSelectData.businesstype!.code!,
+      ),
+    );
+  }
+
+  Widget listScreen() {
+    return Scaffold(
+      resizeToAvoidBottomInset: true,
+      body: Column(
+        children: [
+          Container(
+            height: 40,
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    onSubmitted: (value) {
+                      searchFocusNode.requestFocus();
+                    },
+                    onChanged: (value) {
+                      _debouncer.run(() {
+                        setState(() {
+                          listData = [];
+                        });
+                        loadDataList(value);
+                      });
+                    },
+                    autofocus: false,
+                    focusNode: searchFocusNode,
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      isDense: true,
+                      contentPadding: const EdgeInsets.only(
+                        top: 0,
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                      ),
+                      border: InputBorder.none,
+                      hintText: global.language('search'),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(color: global.theme.appBarColor, height: 6),
+          Container(
+            key: const Key('barcode_list'),
+            padding: const EdgeInsets.only(
+              left: 10,
+              right: 10,
+              top: 5,
+              bottom: 5,
+            ),
+            color: global.theme.columnHeaderColor,
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: Text(
+                    global.language("barcode"),
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 10,
+                  child: Text(
+                    global.language("product_name"),
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              controller: listScrollController,
+              children: listData
+                  .map((value) => listObject(listData.indexOf(value), value))
+                  .toList(),
+            ),
+          ),
+          if (loadingData)
+            Center(
+              child: LoadingAnimationWidget.staggeredDotsWave(
+                color: Colors.blue,
+                size: 50,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void onScrollList() {
+    if (listScrollController.offset >=
+            listScrollController.position.maxScrollExtent &&
+        !listScrollController.position.outOfRange) {
+      loadDataList(searchText);
+    }
+  }
+
+  Widget gridView() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          padding: const EdgeInsets.all(5),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.only(bottom: 5),
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          discardData(
+                            callBack: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const CompanyBranchSearchScreen(word: ""),
+                                ),
+                              ).then((value) {
+                                setState(() {
+                                  SearchGuidCodeNameModel result = value;
+                                  if (result.isCancel == false) {
+                                    selectedBranchGuid = result.guid;
+                                    selectedBranchCode = result.code;
+                                    selectedBranchNames = global.packName(
+                                      result.names,
+                                    );
+                                  }
+                                });
+                              });
+                            },
+                          );
+                        },
+                        child: Text(
+                          (selectedBranchGuid.isEmpty)
+                              ? global.language("select_company_branch")
+                              : selectedBranchNames,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.only(left: 5, bottom: 5),
+                    width: 100,
+                    height: 50,
+                    child: ElevatedButton(
+                      child: const Icon(Icons.save, color: Colors.white),
+                      onPressed: () {
+                        setState(() {
+                          selectBarcode = [];
+
+                          for (int i = 0; i < productList.length; i++) {
+                            selectBarcode!.add(productList[i].barcode!);
+                          }
+                          productDepartmentModel = ProductDepartmentModel(
+                            branchcode: selectedBranchCode,
+                            departmentcode: selectedDepartmentCode,
+                            productcodes: selectBarcode,
+                          );
+
+                          context.read<ProductBloc>().add(
+                            ProductDepartmentSave(
+                              productDepartmentModel: productDepartmentModel!,
+                            ),
+                          );
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.only(bottom: 5),
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: selectedBranchCode.isEmpty
+                      ? null
+                      : () {
+                          discardData(
+                            callBack: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      DepartmentInBranchSearchScreen(
+                                        guid: selectedBranchGuid,
+                                      ),
+                                ),
+                              ).then((value) {
+                                setState(() {
+                                  SearchGuidCodeNameModel result = value;
+                                  if (result.isCancel == false) {
+                                    productList = [];
+                                    selectedDepartmentCode = result.code;
+                                    selectedDepartmentNames = global.packName(
+                                      result.names,
+                                    );
+                                    context.read<ProductBloc>().add(
+                                      ProductDepartmentGet(
+                                        branchcode: selectedBranchCode,
+                                        departmentcode: selectedDepartmentCode,
+                                      ),
+                                    );
+                                  }
+                                });
+                              });
+                            },
+                          );
+                        },
+                  child: Text(
+                    (selectedDepartmentCode.isEmpty)
+                        ? global.language("select_company_department")
+                        : selectedDepartmentNames,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: (productList.isEmpty)
+                    ? Column(
+                        children: [
+                          Container(
+                            key: const Key('product_list_header'),
+                            padding: const EdgeInsets.only(
+                              left: 10,
+                              right: 10,
+                              top: 5,
+                              bottom: 5,
+                            ),
+                            color: global.theme.columnHeaderColor,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 5,
+                                  child: Text(
+                                    global.language("barcode"),
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 10,
+                                  child: Text(
+                                    global.language("product_name"),
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Center(
+                            child: Text(global.language("no_select_product")),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        children: [
+                          Container(
+                            key: const Key('product_list_header'),
+                            padding: const EdgeInsets.only(
+                              left: 10,
+                              right: 10,
+                              top: 5,
+                              bottom: 5,
+                            ),
+                            color: global.theme.columnHeaderColor,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 5,
+                                  child: Text(
+                                    global.language("barcode"),
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 10,
+                                  child: Text(
+                                    global.language("product_name"),
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: ListView(
+                              children: productList
+                                  .map(
+                                    (value) => listProduct(
+                                      productList.indexOf(value),
+                                      value,
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return MultiBlocListener(
+          listeners: [
+            BlocListener<ProductBarcodeBloc, ProductBarcodeState>(
+              listener: (context, state) {
+                // Load
+                if (state is ProductBarcodeLoadSuccess) {
+                  setState(() {
+                    loadingData = false;
+                    if (state.productBarcodes.isNotEmpty) {
+                      listData.addAll(state.productBarcodes);
+                    }
+                  });
+                }
+                if (state is DepartmentLoadFailed) {
+                  setState(() {
+                    loadingData = false;
+                  });
+                }
+              },
+            ),
+            BlocListener<ProductBloc, ProductState>(
+              listener: (context, state) {
+                // Load
+                if (state is ProductDepartmentGetSuccess) {
+                  setState(() {
+                    if (state.products.isNotEmpty) {
+                      productList.addAll(state.products);
+                    }
+                  });
+                }
+                if (state is ProductDepartmentUpdateSuccess) {
+                  setState(() {
+                    global.showSnackBar(
+                      context,
+                      Icon(Icons.edit, color: Colors.white),
+                      global.language('edit_success'),
+                      Colors.blue,
+                    );
+
+                    setState(() {
+                      isDataChange = false;
+                      productList = [];
+                      searchText = "";
+                      selectedBranchGuid = "";
+                      selectedBranchCode = "";
+                      selectedBranchNames = "";
+                      selectedDepartmentCode = "";
+                      selectedDepartmentNames = "";
+                    });
+                  });
+                }
+                if (state is ProductDepartmentUpdateFailed) {
+                  setState(() {
+                    global.showSnackBar(
+                      context,
+                      Icon(Icons.edit, color: Colors.white),
+                      "${global.language('edit_failed')} : ${state.message}",
+                      Colors.red,
+                    );
+                  });
+                }
+              },
+            ),
+          ],
+          child: Scaffold(
+            resizeToAvoidBottomInset: true,
+            appBar: AppBar(
+              backgroundColor: global.theme.appBarColor,
+              automaticallyImplyLeading: false,
+              title: Text(global.language('add_product_to_Department')),
+              leading: IconButton(
+                focusNode: FocusNode(skipTraversal: true),
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  discardData(
+                    callBack: () {
+                      Navigator.pop(context);
+                    },
+                  );
+                },
+              ),
+            ),
+            body: (constraints.maxWidth < 800.0)
+                ? SplitView(
+                    controller: splitViewController,
+                    gripSize: 8,
+                    gripColor: global.theme.appBarColor,
+                    gripColorActive: Colors.blue,
+                    viewMode: SplitViewMode.Vertical,
+                    indicator: const SplitIndicator(
+                      viewMode: SplitViewMode.Vertical,
+                    ),
+                    activeIndicator: const SplitIndicator(
+                      viewMode: SplitViewMode.Vertical,
+                      isActive: true,
+                    ),
+                    children: [listScreen(), gridView()],
+                  )
+                : SplitView(
+                    controller: splitViewController,
+                    gripSize: 8,
+                    gripColor: global.theme.appBarColor,
+                    gripColorActive: Colors.blue,
+                    viewMode: SplitViewMode.Horizontal,
+                    indicator: const SplitIndicator(
+                      viewMode: SplitViewMode.Horizontal,
+                    ),
+                    activeIndicator: const SplitIndicator(
+                      viewMode: SplitViewMode.Horizontal,
+                      isActive: true,
+                    ),
+                    children: [listScreen(), gridView()],
+                  ),
+          ),
+        );
+      },
+    );
+  }
+}

@@ -1,0 +1,6 @@
+#include "Generated.xcconfig"
+
+FLUTTER_TARGET=lib/main_smlaicloud.dart
+ASSET_PREFIX=smlaicloud
+BUNDLE_NAME=SML AiCLoud
+BUNDLE_DISPLAY_NAME=SML AiCLoud

@@ -1,0 +1,294 @@
+[
+  {
+    "count": 4,
+    "path": "lib/screens/config/pattern_screen.dart",
+    "strings": [
+      "บันทึกสำเร็จ",
+      "ชื่อรูปแบบย่อย (${global.config.languages[j].name})",
+      "เพิ่มรายการย่อย",
+      "บันทึก"
+    ]
+  },
+  {
+    "count": 4,
+    "path": "lib/screens/config/product_barcode_screen.dart",
+    "strings": [
+      "ไม่",
+      "ใช้รูปภาพ",
+      "ใช้สี",
+      "เลือกสี (เพื่อแสดงตัวอย่างสีในระบบ)"
+    ]
+  },
+  {
+    "count": 4,
+    "path": "lib/screens/transaction/transaction_paid.dart",
+    "strings": [
+      "เพิ่มรายการรับชำระ",
+      "รวมจำนวนเงิน",
+      "ยอดคงเหลือ",
+      "ยอดชำระ"
+    ]
+  },
+  {
+    "count": 5,
+    "path": "lib/screens/config/creditor_screen.dart",
+    "strings": [
+      "ไม่พบข้อมูลที่ถูกต้องในไฟล์ Excel",
+      "เกิดข้อผิดพลาดในการ Import: $e",
+      "ไม่",
+      "Import สำเร็จ ${state.savedCount} รายการ",
+      "Import ไม่สำเร็จ: ${state.message}"
+    ]
+  },
+  {
+    "count": 6,
+    "path": "lib/screens/config/product_category_list_screen.dart",
+    "strings": [
+      "Import สำเร็จ: ${importedData.length} รายการ",
+      "ไม่พบข้อมูลในไฟล์ Excel",
+      "เกิดข้อผิดพลาดในการ Import: $e",
+      "ยังไม่เลือกสินค้า",
+      "แก้ไขสำเร็จ",
+      "แก้ไขไม่สำเร็จ : ${state.message}"
+    ]
+  },
+  {
+    "count": 6,
+    "path": "lib/screens/config/work_day_screen.dart",
+    "strings": [
+      "รูปแบบไม่ถูกต้อง",
+      "รูปแบบไม่ถูกต้อง",
+      "รูปแบบไม่ถูกต้อง",
+      "รูปแบบไม่ถูกต้อง",
+      "ไม่สามารถบันทึกได้",
+      "โปรดตรวจสอบรูปแบบเวลา เช่น เวลาแต่ละช่วงทับซ้อนกัน เวลาเปิดและปิดตรงกัน"
+    ]
+  },
+  {
+    "count": 7,
+    "path": "lib/screens/report/report_stock_widget.dart",
+    "strings": [
+      "เลือกคลังสินค้าทั้งหมด",
+      "ไม่เลือกคลังสินค้าทั้งหมด",
+      "เลือกคลังสินค้าที่ต้องการรายงาน (สามารถเลือกได้หลายรายการ ถ้าไม่เลือกจะรายงานทั้งหมด)",
+      "คลังสินค้า ${wareHouse.code}",
+      "เลือกที่เก็บสินค้าทั้งหมด",
+      "ไม่เลือกที่เก็บสินค้าทั้งหมด",
+      "เลือกที่เก็บสินค้าที่ต้องการรายงาน (สามารถเลือกได้หลายรายการ ถ้าไม่เลือกจะรายงานทั้งหมด)"
+    ]
+  },
+  {
+    "count": 7,
+    "path": "lib/screens/transaction/transaction_edit.dart",
+    "strings": [
+      "ผลการลบตะกร้า: ${success ?",
+      "ไม่สำเร็จ",
+      "เอกสารที่เลือกไม่มีหมายเลขเอกสาร",
+      "ไม่ต้องเพิ่มรายการสินค้าสำหรับ transaction type: ${widget.type}",
+      "ไม่มีรายการสินค้าในเอกสารอ้างอิง",
+      "ลบตะกร้า ID: $cartId ผ่าน CartWebSocketService",
+      "เกิดข้อผิดพลาดในการลบตะกร้า: $e"
+    ]
+  },
+  {
+    "count": 8,
+    "path": "lib/screens/config/product_screen/product_screen_edit.dart",
+    "strings": [
+      "ประเภทสินค้า",
+      "ประเภทภาษี",
+      "คะแนนสะสมสมาชิก",
+      "ลักษณะหน่วยนับ",
+      "ใหญ่กว่า",
+      "เล็กกว่า",
+      "1 ${unitNameCostTextController.text} เท่ากับ",
+      "เท่ากับ"
+    ]
+  },
+  {
+    "count": 8,
+    "path": "lib/screens/dashboard/database_doc_info.dart",
+    "strings": [
+      "ข้อมูลรายวัน",
+      "ระบบตะกร้าสินค้า",
+      "รีเฟรช",
+      "ประเภทเอกสาร",
+      "จำนวน",
+      "เลขที่ล่าสุด",
+      "วันที่ล่าสุด",
+      "มูลค่าเอกสาร"
+    ]
+  },
+  {
+    "count": 8,
+    "path": "lib/screens/report/report_main_screen.dart",
+    "strings": [
+      "สินค้า",
+      "คลัง",
+      "พื้นที่เก็บ",
+      "หน่วยนับ",
+      "จำนวน",
+      "ราคา",
+      "ส่วนลด",
+      "รวมมูลค่า"
+    ]
+  },
+  {
+    "count": 9,
+    "path": "lib/screens/config/point_transaction_screen.dart",
+    "strings": [
+      "ได้รับแต้ม",
+      "ใช้แต้ม",
+      "ไม่ทราบ",
+      "รหัสแต้ม: ${transaction.pointscode}",
+      "ยอดก่อน: ${transaction.balancebefore}",
+      "ยอดหลัง: ${transaction.balanceafter}",
+      "ประวัติการใช้แต้ม",
+      "เกิดข้อผิดพลาด: ${state.message}",
+      "ไม่พบประวัติการใช้แต้ม"
+    ]
+  },
+  {
+    "count": 9,
+    "path": "lib/screens/config/promotion_screen.dart",
+    "strings": [
+      "แถมสินค้า เมื่อซื้อสินค้าครบตามจำนวน",
+      "ส่วนลดเงินสด หรือเปอร์เซ็นต์ เมื่อซื้อครบตามจำนวน",
+      "ซื้อสินค้าตาม List แล้วแถมสินค้าตาม List",
+      "ราคาพิเศษ เมื่อซื้อครบตามจำนวน",
+      "ซื้อครบตามจำนวน ลดเปอร์เซ็นต์หรือจำนวนเงิน",
+      "ซื้อครบ xxx บาท แถมสินค้า xx ชิ้น",
+      "ซื้อบิลครบ xxx บาท ส่วนลดเพิ่มอีก xxx บาท หรือ x%",
+      "ซื้อบิลครบ xxx บาท ได้สินค้ารางวัล (Bonus)",
+      "ไม่"
+    ]
+  },
+  {
+    "count": 10,
+    "path": "lib/screens/chatbot/chatbot_screen.dart",
+    "strings": [
+      "สวัสดีครับ! ผมเป็น AI Assistant พร้อมช่วยเหลือคุณ มีอะไรให้ช่วยไหมครับ?",
+      "ขอโทษครับ เกิดข้อผิดพลาด: $e",
+      "พร้อมช่วยเหลือคุณ",
+      "ล้างข้อความ",
+      "ยืนยันการล้างข้อความ",
+      "คุณต้องการล้างข้อความทั้งหมดหรือไม่?",
+      "ยกเลิก",
+      "สวัสดีครับ! มีอะไรให้ช่วยไหมครับ?",
+      "ล้างข้อความ",
+      "พิมพ์ข้อความ..."
+    ]
+  },
+  {
+    "count": 10,
+    "path": "lib/screens/config/product_category_screen.dart",
+    "strings": [
+      "มีการแก้ไขข้อมูล",
+      "ต้องการออกจากหน้าจอนี้ ใช่หรือไม่",
+      "ไม่",
+      "ใช่",
+      "บันทึกสำเร็จ",
+      "บันทึกไม่สำเร็จ : ${state.message}",
+      "แก้ไขสำเร็จ",
+      "แก้ไขไม่สำเร็จ : ${state.message}",
+      "ลบสำเร็จ",
+      "ลบสำเร็จ"
+    ]
+  },
+  {
+    "count": 10,
+    "path": "lib/screens/config/product_unit_screen.dart",
+    "strings": [
+      "นำเข้าไม่สำเร็จ: ${e.toString()}",
+      "นำเข้าสำเร็จ",
+      "นำเข้าสำเร็จ - หน่วยนับที่มีอยู่แล้ว: $existingCodes",
+      "นำเข้าสำเร็จ: $resultMessage",
+      "ดาวน์โหลดไฟล์ template สำเร็จ",
+      "ดาวน์โหลดไฟล์ไม่สำเร็จ",
+      "เกิดข้อผิดพลาด: ${e.toString()}",
+      "เกิดข้อผิดพลาด: ${e.toString()}",
+      "ไม่สามารถโหลดข้อมูลจากร้านหลักได้: ${state.message}",
+      "นำเข้าไม่สำเร็จ: ${state.message}"
+    ]
+  },
+  {
+    "count": 13,
+    "path": "lib/screens/dashboard/database_master_info.dart",
+    "strings": [
+      "ข้อมูลตามประเภท",
+      "รีเฟรช",
+      "ประเภทข้อมูล",
+      "จำนวนรายการ",
+      "สินค้า (product)",
+      "บาร์โค้ดสินค้า (productbarcode)",
+      "ลูกค้า (customer)",
+      "ลูกหนี้ (debtor)",
+      "เจ้าหนี้ (creditor)",
+      "คลังสินค้า (ic_warehouse)",
+      "ชั้นวางสินค้า (ic_shelf)",
+      "เอกสาร (doc)",
+      "รายละเอียดเอกสาร (docdetail)"
+    ]
+  },
+  {
+    "count": 14,
+    "path": "lib/screens/formdesign/form_design_example.dart",
+    "strings": [
+      "ระบบออกแบบฟอร์ม",
+      "สร้างฟอร์มต่างๆ เช่น:\\n",
+      "• ใบสั่งซื้อ\\n",
+      "• ใบรับจอง\\n",
+      "• ใบเสนอราคา\\n",
+      "• ใบกำกับสินค้า\\n",
+      "• ใบเสร็จรับเงิน",
+      "เปิดระบบออกแบบฟอร์ม",
+      "คุณสมบัติ:\\n",
+      "✓ เลือกขนาดกระดาษ A4, B5\\n",
+      "✓ แบ่งส่วน Header, Detail, Footer\\n",
+      "✓ เพิ่ม Text, Image, Table, Rectangle\\n",
+      "✓ ตั้งภาพพื้นหลัง\\n",
+      "✓ บันทึก/โหลด JSON"
+    ]
+  },
+  {
+    "count": 15,
+    "path": "lib/screens/config/debtor_screen.dart",
+    "strings": [
+      "ไม่พบข้อมูลที่ถูกต้องในไฟล์ Excel",
+      "เกิดข้อผิดพลาดในการ Import: $e",
+      "✅ พบ group code: $code → guid: ${foundGroup.guidfixed}",
+      "⚠️ ไม่พบ group code: $code",
+      "ดาวน์โหลดไฟล์ template สำเร็จ",
+      "ดาวน์โหลดไฟล์ไม่สำเร็จ",
+      "เกิดข้อผิดพลาด: ${e.toString()}",
+      "ไม่",
+      "รหัสสะสมแต้ม",
+      "ระดับราคา",
+      "แต้มคงเหลือ",
+      "ประวัติ",
+      "โหลดข้อมูลล้มเหลว: ${state.message}",
+      "Import สำเร็จ ${state.savedCount} รายการ",
+      "Import ไม่สำเร็จ: ${state.message}"
+    ]
+  },
+  {
+    "count": 15,
+    "path": "lib/screens/import/import_product_detail_screen.dart",
+    "strings": [
+      "ไม่มีข้อมูล",
+      "รายละเอียดการนำเข้าสินค้า",
+      "ทั้งหมด ${widget.importResult.comparison?.products.length ?? 0} รายการ",
+      "แสดง ${_filteredProducts.length} รายการ",
+      "ค้นหา",
+      "ค้นหาจาก Barcode, รหัสสินค้า, ชื่อสินค้า...",
+      "ทั้งหมด (${widget.importResult.comparison?.products.length ?? 0})",
+      "เหมือนกัน (${widget.importResult.comparison?.unchangedCount ?? 0})",
+      "ไม่พบข้อมูลที่ค้นหา",
+      "รหัสสินค้า",
+      "ชื่อสินค้า",
+      "หน่วยนับ",
+      "รหัสสินค้า",
+      "ชื่อสินค้า",
+      "หน่วยนับ"
+    ]
+  }
+]

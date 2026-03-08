@@ -1,0 +1,68 @@
+# BC AI Cloud Flutter App — Cursor Rules
+
+## Project
+- Flutter multi-platform app (Web, Windows, Android, iOS)
+- Package: `smlaicloud`
+- State: BLoC pattern | HTTP: Dio | Auth: Firebase + JWT
+
+## CRITICAL: MCP-First Standard
+
+**MCP มีไว้สำหรับ AI tools เท่านั้น** (Claude Code, Claude Desktop, Cursor, VSCode)
+- ให้ AI ดู DB schema, query data, วิเคราะห์ข้อมูล, เช็คว่า backend มี API อะไรบ้าง
+- เชื่อมจากทุก AI client ผ่าน SSE protocol มาตรฐาน
+- **ไม่ใช่สำหรับ Flutter app เรียกโดยตรง** — Flutter ใช้ REST API ปกติผ่าน Dio
+
+**กฏสำหรับ AI:**
+1. เรียก `GET /goapi/mcp/tools` ดู tools ที่มีก่อนเสมอ
+2. ใช้ MCP เป็น source of truth — ถ้าไม่มี → เขียน prompt ใน `prompts/api_requests/`
+3. ห้าม AI อ่าน backend code โดยตรง — ต้องผ่าน MCP เท่านั้น
+
+### ห้ามอ่าน backend code โดยเด็ดขาด
+- NEVER read/browse/search files in `c:\bcdev\backend\` or any backend folder
+- NEVER reference backend source code, handlers, models, or migrations
+
+### เมื่อ API ที่ต้องการยังไม่มี
+- NEVER modify backend code directly
+- Write an **API Specification Prompt** in `prompts/api_requests/{feature}.md`
+- Can create Flutter frontend code with mock data / placeholder while waiting
+
+## MCP Endpoints
+- Base URL: `http://localhost:9090/goapi`
+- SSE: `GET /goapi/mcp/sse`
+- Tools: `GET /goapi/mcp/tools`
+- Health: `GET /goapi/mcp/health`
+- Message: `POST /goapi/mcp/message`
+- Invoke: `POST /goapi/mcp/invoke`
+- Auth: `X-API-Key` header or `?api_key=` query param
+
+## MCP Tools (30+ tools)
+**เรียก `GET /goapi/mcp/tools` เพื่อดูรายการล่าสุดเสมอ**
+- `search_products`, `get_daily_sales`, `get_sales_by_date_range`, `get_top_selling_products`, `get_monthly_summary`
+- `get_dashboard_kpis`, `get_dashboard_summary`, `get_business_health`
+- `get_profit_analysis`, `get_financial_summary`, `get_accounts_receivable`, `get_accounts_payable`, `get_cash_flow`
+- `get_inventory_value`, `get_inventory_status`, `get_low_stock_alerts`, `get_dead_stock`, `get_inventory_turnover`
+- `get_top_customers`, `get_customer_growth`, `get_customer_segments`
+- `get_yoy_comparison`, `get_mom_comparison`
+- `get_database_schema`, `execute_query`, `query_database`, `get_table_sample`
+- `query_mongodb`, `list_mongodb_collections`, `aggregate_mongodb`
+- `query_clickhouse`, `list_clickhouse_tables`
+
+## Backend URLs (web/config.json)
+- MainAPI: `http://localhost:9090` (auth, CRUD, organizations)
+- GoAPI: `http://localhost:9090/goapi` (BI/analytics + MCP — รวมเข้า MainAPI แล้ว)
+
+## Flavors
+- `bcaidev` (DEV), `bcaiuat` (UAT), `bcaiprod` (PROD)
+
+## Build
+```bash
+flutter build web -t lib/main_bcaidev.dart --release
+flutter run -t lib/main_bcaidev.dart
+```
+
+## Code Style
+- Thai in logs/comments OK
+- Logger: `AppLogger.info()`, `.error()`, `.debug()`, `.warning()`
+- BLoC pattern with events/states
+- Dio client via `api/client.dart`
+- Token: `global.appConfig.getString("token")`

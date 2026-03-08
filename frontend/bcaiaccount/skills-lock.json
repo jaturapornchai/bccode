@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "skills": {
+    "flutter": {
+      "source": "alinaqi/claude-bootstrap",
+      "sourceType": "github",
+      "computedHash": "462bf6f86e24a51f090177b381a2eb51e7652724e6aea3d4d622b4e6e2c35297"
+    },
+    "flutter-animations": {
+      "source": "madteacher/mad-agents-skills",
+      "sourceType": "github",
+      "computedHash": "0c62d299cfdb82a8a22eadcb9b58c998cb6ceb85368a342689143a0278e4c7bb"
+    },
+    "flutter-expert": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "computedHash": "247127e54cf58b670ef4b757bbbd0a3a2d2a306506b4ad2d85131df6f5715391"
+    }
+  }
+}

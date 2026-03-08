@@ -1,0 +1,61 @@
+[
+  {
+    "file": "C:/bcdev/bcaiaccount/lib/model/bi_report/bi_sale_report_data.dart",
+    "count": 2,
+    "strings": [
+      "= ทั้งหมด,",
+      "= ขาย,"
+    ]
+  },
+  {
+    "file": "C:/bcdev/bcaiaccount/lib/model/bi_report/entity_selection_model.dart",
+    "count": 2,
+    "strings": [
+      ");\n  }\n\n  /// แปลงรายการ Entity ที่เลือกเป็น String สำหรับแสดงผล\n  /// รูปแบบ: \"ชื่อ Entity1, ชื่อ Entity2, ชื่อ Entity3\"\n  String getEntityDisplayString() {\n    if (selectedEntities.isEmpty) return",
+      "กดเพื่อเลือกบาร์โค้ด (ทั้งหมด)"
+    ]
+  },
+  {
+    "file": "C:/bcdev/bcaiaccount/lib/screens/dashboard/cubit/database_info_cubit.dart",
+    "count": 2,
+    "strings": [
+      "));\n        return;\n      }\n\n      // แปลงผลลัพธ์เป็น List<Map<String, dynamic>>\n      final data = rows.map((row) {\n        return {",
+      "เกิดข้อผิดพลาด: $e"
+    ]
+  },
+  {
+    "file": "C:/bcdev/bcaiaccount/lib/screens/dashboard/cubit/database_master_info_cubit.dart",
+    "count": 2,
+    "strings": [
+      ",\n      ];\n\n      final response = await pgSqlSelectGroup(queries);\n\n      List<Map<String, dynamic>> data = [];\n\n      // ประมวลผลข้อมูลจากแต่ละ query\n      if (response[",
+      "เกิดข้อผิดพลาด: $e"
+    ]
+  },
+  {
+    "file": "C:/bcdev/bcaiaccount/lib/bloc/list_shop/list_shop_bloc.dart",
+    "count": 3,
+    "strings": [
+      ");\n\n              // แสดง JSON ในรูปแบบที่อ่านง่าย\n              try {\n                String prettyJson = const JsonEncoder.withIndent(",
+      ",\n                );\n              }\n\n              // แสดงรายละเอียดแต่ละ field\n              if (shopData is Map) {\n                AppLogger.debug(",
+      ");\n            }\n            // ข้าม item ที่มีปัญหาและดำเนินการต่อ\n            continue;\n          }\n        }\n\n        if (kDebugMode) {\n          AppLogger.info("
+    ]
+  },
+  {
+    "file": "C:/bcdev/bcaiaccount/lib/bloc/login_bloc/login_bloc.dart",
+    "count": 3,
+    "strings": [
+      ";\n      if (kIsWeb == false) {\n        // เอา timezone จาก DateTime.now()\n        currentTimeZone = DateTime.now().timeZoneName;\n      } else {\n        currentTimeZone =",
+      "ติดต่อ Server ไม่ได้ : $exception",
+      "ติดต่อ Server ไม่ได้ : $e"
+    ]
+  },
+  {
+    "file": "C:/bcdev/bcaiaccount/lib/usersystem/otp/telephone_screen.dart",
+    "count": 3,
+    "strings": [
+      "กรุณาบันทึกหมายเลขโทรศัพท์",
+      "หมายเลขโทรศัพท์ เพื่อยืนยันตัวตน",
+      "ยืนยัน"
+    ]
+  }
+]

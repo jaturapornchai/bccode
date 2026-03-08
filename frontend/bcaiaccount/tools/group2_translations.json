@@ -1,0 +1,52 @@
+{
+  "translations": [
+    {
+      "code": "point_setting",
+      "th": "กำหนดแต้มสะสม",
+      "lo": "ກໍານົດຄະແນນສະສົມ",
+      "en": "Point Setting",
+      "cn": "积分设置",
+      "vi": "Cài đặt điểm",
+      "km": "ការកំណត់ពិន្ទុ",
+      "ja": "ポイント設定",
+      "my": "အမှတ်သတ်မှတ်ခြင်း",
+      "zh": "積分設置"
+    },
+    {
+      "code": "take_new_photo",
+      "th": "ถ่ายรูปใหม่",
+      "lo": "ຖ່າຍຮູບໃໝ່",
+      "en": "Take new photo",
+      "cn": "重新拍照",
+      "vi": "Chụp ảnh mới",
+      "km": "ថតរូបថ្មី",
+      "ja": "新しい写真を撮る",
+      "my": "ဓာတ်ပုံအသစ်ရိုက်ပါ",
+      "zh": "重新拍照"
+    },
+    {
+      "code": "select_new_image",
+      "th": "เลือกรูปใหม่",
+      "lo": "ເລືອກຮູບໃໝ່",
+      "en": "Select new image",
+      "cn": "选择新图片",
+      "vi": "Chọn ảnh mới",
+      "km": "ជ្រើសរូបថ្មី",
+      "ja": "新しい画像を選択",
+      "my": "ပုံအသစ်ရွေးပါ",
+      "zh": "選擇新圖片"
+    },
+    {
+      "code": "no_delivery_price_in_pos",
+      "th": "version POS : ไม่มีราคา deliver",
+      "lo": "version POS : ບໍ່ມີລາຄາສົ່ງ",
+      "en": "POS version : No delivery price",
+      "cn": "POS 版本：无配送价格",
+      "vi": "Phiên bản POS : Không có giá giao hàng",
+      "km": "កំណែ POS : មិនមានតម្លៃដឹកជញ្ជូន",
+      "ja": "POSバージョン：配達料金なし",
+      "my": "POS ဗားရှင်း : ပို့ဆောင်ရေးစျေးနှုန်းမရှိ",
+      "zh": "POS 版本：無配送價格"
+    }
+  ]
+}

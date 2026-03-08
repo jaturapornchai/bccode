@@ -1,0 +1,315 @@
+{
+  "id": "1696147400000",
+  "name": "ใบเสร็จรับเงิน/ใบกำกับภาษี",
+  "description": "แบบฟอร์มใบเสร็จรับเงิน/ใบกำกับภาษี แบบเต็มรูปแบบ",
+  "paperSize": "A4",
+  "header": {
+    "id": "header",
+    "type": "header",
+    "height": 200,
+    "elements": [
+      {
+        "id": "title",
+        "type": "text",
+        "x": 350,
+        "y": 15,
+        "width": 200,
+        "height": 50,
+        "text": "ใบเสร็จรับเงิน/ใบกำกับภาษี\nReceipt/Tax Invoice",
+        "fontSize": 14,
+        "fontWeight": 6,
+        "color": 4278190080,
+        "textAlign": 1
+      },
+      {
+        "id": "original",
+        "type": "text",
+        "x": 420,
+        "y": 65,
+        "width": 60,
+        "height": 20,
+        "text": "ต้นฉบับ",
+        "fontSize": 12,
+        "fontWeight": 6,
+        "color": 4278190080,
+        "textAlign": 1
+      },
+      {
+        "id": "seller_label",
+        "type": "text",
+        "x": 50,
+        "y": 15,
+        "width": 250,
+        "height": 80,
+        "text": "บริษัท ผู้ขายทดสอบ จำกัด (สำนักงานใหญ่)\n999 หมู่ 999 ถ.สาทร 999 แขวงสีลม\nเขตบางรัก กรุงเทพมหานคร 10500\nเลขประจำตัวผู้เสียภาษี 1234567890999\nโทร. 0912345678 อีเมล seller@test.com",
+        "fontSize": 10,
+        "color": 4278190080,
+        "textAlign": 0
+      },
+      {
+        "id": "buyer_label",
+        "type": "text",
+        "x": 50,
+        "y": 105,
+        "width": 70,
+        "height": 80,
+        "text": "ลูกค้า\nที่อยู่",
+        "fontSize": 10,
+        "fontWeight": 6,
+        "color": 4278190080,
+        "textAlign": 0
+      },
+      {
+        "id": "buyer_info",
+        "type": "text",
+        "x": 125,
+        "y": 105,
+        "width": 220,
+        "height": 80,
+        "text": "บริษัท ผู้ซื้อทดสอบ จำกัด สำนักงานใหญ่\nที่อยู่ 99 หมู่ 99 ถ.สาทร 99 แขวงสีลม เขตบางรัก กรุงเทพมหานคร 10500\nเลขประจำตัวผู้เสียภาษี 1234567890123\nโทร. 00812345678 อีเมล buyer@test.com",
+        "fontSize": 9,
+        "color": 4278190080,
+        "textAlign": 0
+      },
+      {
+        "id": "doc_no_label",
+        "type": "text",
+        "x": 380,
+        "y": 105,
+        "width": 50,
+        "height": 40,
+        "text": "เลขที่\nวันที่",
+        "fontSize": 10,
+        "fontWeight": 6,
+        "color": 4278190080,
+        "textAlign": 0
+      },
+      {
+        "id": "doc_no_value",
+        "type": "text",
+        "x": 435,
+        "y": 105,
+        "width": 110,
+        "height": 40,
+        "text": "TIV20210500001\n22/12/2564",
+        "fontSize": 10,
+        "color": 4278190080,
+        "textAlign": 0
+      }
+    ],
+    "backgroundImagePath": null
+  },
+  "detail": {
+    "id": "detail",
+    "type": "detail",
+    "height": 450,
+    "elements": [
+      {
+        "id": "items_table",
+        "type": "table",
+        "x": 50,
+        "y": 10,
+        "width": 495,
+        "height": 200,
+        "rows": 8,
+        "columns": 7,
+        "tableData": [
+          ["ลำดับ", "รายการ", "จำนวน", "หน่วย", "ราคา/หน่วย", "ส่วนลด", "จำนวนเงิน"],
+          ["1", "สินค้าราคารวมรถ", "2", "กล่อง", "50.00", "0.00", "100.00 บาท"],
+          ["2", "สินค้าราคาทรรศี่อง", "10", "กล่อง", "25.00", "0.00", "250.00 บาท"],
+          ["", "", "", "", "", "", ""],
+          ["", "", "", "", "", "", ""],
+          ["", "", "", "", "", "", ""],
+          ["", "", "", "", "", "", ""],
+          ["", "", "", "", "", "", ""]
+        ],
+        "borderColor": 4278190080,
+        "borderWidth": 1
+      },
+      {
+        "id": "remark_label",
+        "type": "text",
+        "x": 50,
+        "y": 220,
+        "width": 70,
+        "height": 20,
+        "text": "หมายเหตุ",
+        "fontSize": 10,
+        "fontWeight": 6,
+        "color": 4278190080,
+        "textAlign": 0
+      },
+      {
+        "id": "summary_box",
+        "type": "rectangle",
+        "x": 350,
+        "y": 220,
+        "width": 195,
+        "height": 120,
+        "borderColor": 4278190080,
+        "borderWidth": 1
+      },
+      {
+        "id": "summary_labels",
+        "type": "text",
+        "x": 360,
+        "y": 225,
+        "width": 120,
+        "height": 110,
+        "text": "ส่วนลด\nรวมเป็นเงิน (ก่อน Vat)\nภาษีมูลค่าเพิ่ม 7%\nจำนวนเงินทั้งสิ้น",
+        "fontSize": 10,
+        "color": 4278190080,
+        "textAlign": 2
+      },
+      {
+        "id": "summary_values",
+        "type": "text",
+        "x": 480,
+        "y": 225,
+        "width": 60,
+        "height": 110,
+        "text": "0.00\n350.00\n24.50\n374.50",
+        "fontSize": 10,
+        "color": 4278190080,
+        "textAlign": 2
+      },
+      {
+        "id": "summary_currency",
+        "type": "text",
+        "x": 540,
+        "y": 225,
+        "width": 30,
+        "height": 110,
+        "text": "บาท\nบาท\nบาท\nบาท",
+        "fontSize": 10,
+        "color": 4278190080,
+        "textAlign": 0
+      },
+      {
+        "id": "receiver_label",
+        "type": "text",
+        "x": 50,
+        "y": 360,
+        "width": 100,
+        "height": 20,
+        "text": "ผู้รับเงิน",
+        "fontSize": 10,
+        "fontWeight": 6,
+        "color": 4278190080,
+        "textAlign": 0
+      },
+      {
+        "id": "receiver_company",
+        "type": "text",
+        "x": 150,
+        "y": 360,
+        "width": 180,
+        "height": 20,
+        "text": "บริษัท ผู้ขายทดสอบ จำกัด",
+        "fontSize": 10,
+        "color": 4278190080,
+        "textAlign": 0
+      }
+    ],
+    "backgroundImagePath": null
+  },
+  "footer": {
+    "id": "footer",
+    "type": "footer",
+    "height": 150,
+    "elements": [
+      {
+        "id": "footer_divider",
+        "type": "line",
+        "x": 50,
+        "y": 5,
+        "width": 495,
+        "height": 2,
+        "borderColor": 4278190080,
+        "borderWidth": 1
+      },
+      {
+        "id": "payment_info",
+        "type": "text",
+        "x": 50,
+        "y": 15,
+        "width": 250,
+        "height": 60,
+        "text": "ชำระเงินโดย: เงินสด / เช็ค / โอน\nธนาคาร: __________________\nสาขา: ____________________\nเลขที่เช็ค: ________________",
+        "fontSize": 9,
+        "color": 4278190080,
+        "textAlign": 0
+      },
+      {
+        "id": "signature_buyer",
+        "type": "rectangle",
+        "x": 50,
+        "y": 85,
+        "width": 150,
+        "height": 60,
+        "borderColor": 4278190080,
+        "borderWidth": 1
+      },
+      {
+        "id": "signature_buyer_label",
+        "type": "text",
+        "x": 60,
+        "y": 90,
+        "width": 130,
+        "height": 50,
+        "text": "ผู้ซื้อ\n\n_____________________\n(                              )",
+        "fontSize": 10,
+        "color": 4278190080,
+        "textAlign": 1
+      },
+      {
+        "id": "signature_seller",
+        "type": "rectangle",
+        "x": 220,
+        "y": 85,
+        "width": 150,
+        "height": 60,
+        "borderColor": 4278190080,
+        "borderWidth": 1
+      },
+      {
+        "id": "signature_seller_label",
+        "type": "text",
+        "x": 230,
+        "y": 90,
+        "width": 130,
+        "height": 50,
+        "text": "ผู้รับเงิน\n\n_____________________\n(                              )",
+        "fontSize": 10,
+        "color": 4278190080,
+        "textAlign": 1
+      },
+      {
+        "id": "signature_approve",
+        "type": "rectangle",
+        "x": 390,
+        "y": 85,
+        "width": 150,
+        "height": 60,
+        "borderColor": 4278190080,
+        "borderWidth": 1
+      },
+      {
+        "id": "signature_approve_label",
+        "type": "text",
+        "x": 400,
+        "y": 90,
+        "width": 130,
+        "height": 50,
+        "text": "ผู้อนุมัติ\n\n_____________________\n(                              )",
+        "fontSize": 10,
+        "color": 4278190080,
+        "textAlign": 1
+      }
+    ],
+    "backgroundImagePath": null
+  },
+  "globalBackgroundImagePath": null,
+  "createdAt": "2024-10-01T00:00:00.000Z",
+  "updatedAt": "2024-10-01T00:00:00.000Z"
+}

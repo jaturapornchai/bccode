@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+        }
+        button {
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow: auto;
+        }
+        .info {
+            background-color: #e9f7ef;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .endpoints {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .endpoint {
+            background-color: #f1f1f1;
+            padding: 15px;
+            border-radius: 5px;
+            flex: 1;
+            min-width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Flutter Web API Connection Test</h1>
+    
+    <div class="info">
+        <h2>Environment Information</h2>
+        <p><strong>Browser:</strong> <span id="browser"></span></p>
+        <p><strong>Connection:</strong> <span id="connection"></span></p>
+        <p><strong>CORS Status:</strong> <span id="corsStatus">Unknown (Test an endpoint to check)</span></p>
+    </div>
+    
+    <div class="endpoints">
+        <div class="endpoint">
+            <h3>API Version Test</h3>
+            <p>Tests the version endpoint of the API server</p>
+            <button id="testVersion">Test API Version</button>
+            <pre id="versionResult">Results will appear here...</pre>
+        </div>
+        
+        <div class="endpoint">
+            <h3>Report API Test</h3>
+            <p>Tests the report API endpoint</p>
+            <button id="testReport">Test Report API</button>
+            <pre id="reportResult">Results will appear here...</pre>
+        </div>
+        
+        <div class="endpoint">
+            <h3>Clickhouse API Test</h3>
+            <p>Tests the Clickhouse API endpoint</p>
+            <button id="testClickhouse">Test Clickhouse API</button>
+            <pre id="clickhouseResult">Results will appear here...</pre>
+        </div>
+    </div>
+
+    <script>
+        // Display environment info
+        document.getElementById('browser').textContent = navigator.userAgent;
+        document.getElementById('connection').textContent = navigator.onLine ? 'Online' : 'Offline';
+        
+        document.getElementById('testVersion').addEventListener('click', async () => {
+            try {
+                const apiPath = 'https://goapi.uat.dedepos.com';
+                const url = `${apiPath}/version`;
+                
+                console.log('Calling API:', url);
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    }
+                });
+                
+                const data = await response.text();
+                document.getElementById('versionResult').textContent = 'Success:\n' + data;
+                document.getElementById('corsStatus').textContent = 'OK';
+                document.getElementById('corsStatus').style.color = 'green';
+            } catch (error) {
+                document.getElementById('versionResult').textContent = 'Error:\n' + error.message;
+                console.error('Error:', error);
+                document.getElementById('corsStatus').textContent = 'Failed (CORS issue likely)';
+                document.getElementById('corsStatus').style.color = 'red';
+            }
+        });
+
+        document.getElementById('testReport').addEventListener('click', async () => {
+            try {
+                const apiPath = 'https://api.dedepos.com/apireport';
+                const url = `${apiPath}/reportget`;
+                
+                console.log('Calling API:', url);
+                const response = await fetch(url + '?cmd=test', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    }
+                });
+                
+                const data = await response.json();
+                document.getElementById('reportResult').textContent = 'Success:\n' + JSON.stringify(data, null, 2);
+                document.getElementById('corsStatus').textContent = 'OK';
+                document.getElementById('corsStatus').style.color = 'green';
+            } catch (error) {
+                document.getElementById('reportResult').textContent = 'Error:\n' + error.message;
+                console.error('Error:', error);
+                document.getElementById('corsStatus').textContent = 'Failed (CORS issue likely)';
+                document.getElementById('corsStatus').style.color = 'red';
+            }
+        });
+
+        document.getElementById('testClickhouse').addEventListener('click', async () => {
+            try {
+                const apiPath = 'https://api.dev.dedepos.com/apireport/clickhouse';
+                const url = `${apiPath}/select`;
+                
+                console.log('Calling API:', url);
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        query: "SELECT 1"
+                    })
+                });
+                
+                const data = await response.json();
+                document.getElementById('clickhouseResult').textContent = 'Success:\n' + JSON.stringify(data, null, 2);
+                document.getElementById('corsStatus').textContent = 'OK';
+                document.getElementById('corsStatus').style.color = 'green';
+            } catch (error) {
+                document.getElementById('clickhouseResult').textContent = 'Error:\n' + error.message;
+                console.error('Error:', error);
+                document.getElementById('corsStatus').textContent = 'Failed (CORS issue likely)';
+                document.getElementById('corsStatus').style.color = 'red';
+            }
+        });
+    </script>
+</body>
+</html>
