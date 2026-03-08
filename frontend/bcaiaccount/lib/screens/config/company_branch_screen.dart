@@ -2814,7 +2814,7 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
                               Container(
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue.withOpacity(0.1),
+                                  color: Colors.blue.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: const Icon(

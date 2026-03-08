@@ -131,7 +131,7 @@ class ProductListItem extends StatelessWidget {
         border: Border.all(color: Colors.grey, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.5),
+            color: Colors.grey.withValues(alpha: 0.5),
             spreadRadius: 1,
             blurRadius: 1,
             offset: const Offset(1, 1),

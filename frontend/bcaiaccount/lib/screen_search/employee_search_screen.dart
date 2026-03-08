@@ -156,7 +156,7 @@ class EmployeeSearchScreenState extends State<EmployeeSearchScreen>
                   borderRadius: BorderRadius.circular(2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.5),
+                      color: Colors.grey.withValues(alpha: 0.5),
                       spreadRadius: 5,
                       blurRadius: 7,
                       offset: const Offset(0, 2),

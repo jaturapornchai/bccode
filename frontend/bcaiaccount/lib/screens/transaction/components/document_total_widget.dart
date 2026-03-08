@@ -17,7 +17,7 @@ class DocumentTotalWidget extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey[300]!),
-        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.15), spreadRadius: 1, blurRadius: 4, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.15), spreadRadius: 1, blurRadius: 4, offset: const Offset(0, 2))],
       ),
       child: Column(children: _buildFinancialSummary()),
     );

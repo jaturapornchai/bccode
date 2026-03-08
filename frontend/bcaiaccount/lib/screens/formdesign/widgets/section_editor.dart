@@ -304,7 +304,7 @@ class _SectionEditorState extends State<SectionEditor> {
                 border: Border.all(color: Colors.blue, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(2, 2),
                   ),
@@ -343,7 +343,7 @@ class _SectionEditorState extends State<SectionEditor> {
                         height: element.height * zoom,
                         decoration: BoxDecoration(
                           color: selectedElement?.id == element.id
-                              ? Colors.blue.withOpacity(0.1)
+                              ? Colors.blue.withValues(alpha: 0.1)
                               : element.backgroundColor,
                           border: Border.all(
                             color: selectedElement?.id == element.id

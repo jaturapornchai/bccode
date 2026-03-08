@@ -547,14 +547,14 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
                   borderRadius: BorderRadius.circular(8),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.3),
+                      color: Colors.grey.withValues(alpha: 0.3),
                       spreadRadius: 1,
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
                   ],
                   border: Border.all(
-                    color: Colors.grey.withOpacity(0.3),
+                    color: Colors.grey.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),

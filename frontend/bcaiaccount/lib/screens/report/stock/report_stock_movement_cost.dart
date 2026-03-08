@@ -128,7 +128,7 @@ class _ReportStockMovementCostState extends State<ReportStockMovementCost>
     subtitleStyle = TextStyle(
       fontSize: 14,
       fontWeight: FontWeight.w500,
-      color: primaryColor.withOpacity(0.8),
+      color: primaryColor.withValues(alpha: 0.8),
     );
 
     normalStyle = TextStyle(fontSize: 13, color: Colors.grey.shade800);
@@ -136,7 +136,7 @@ class _ReportStockMovementCostState extends State<ReportStockMovementCost>
     emphasisStyle = TextStyle(
       fontSize: 13,
       fontWeight: FontWeight.w500,
-      color: primaryColor.withOpacity(0.9),
+      color: primaryColor.withValues(alpha: 0.9),
     );
 
     highlightStyle = TextStyle(
@@ -992,7 +992,7 @@ class _ReportStockMovementCostState extends State<ReportStockMovementCost>
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 3,
                   offset: Offset(0, 1),
                 ),
@@ -1100,12 +1100,12 @@ class _ReportStockMovementCostState extends State<ReportStockMovementCost>
               ],
             ),
             SizedBox(height: 8),
-            Divider(color: Colors.white.withOpacity(0.3), height: 24),
+            Divider(color: Colors.white.withValues(alpha: 0.3), height: 24),
             Text(
               "เลือกเงื่อนไขการแสดงผลรายงานเคลื่อนไหวสินค้า/ต้นทุน",
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.white.withOpacity(0.85),
+                color: Colors.white.withValues(alpha: 0.85),
               ),
             ),
           ],
@@ -1683,7 +1683,7 @@ class _ReportStockMovementCostState extends State<ReportStockMovementCost>
         border: Border.all(color: Colors.blue.shade100),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 6,
             offset: Offset(0, 2),
           ),
@@ -1777,7 +1777,7 @@ class _ReportStockMovementCostState extends State<ReportStockMovementCost>
                     dense: true,
                     leading: CircleAvatar(
                       radius: 16,
-                      backgroundColor: primaryColor.withOpacity(0.1),
+                      backgroundColor: primaryColor.withValues(alpha: 0.1),
                       foregroundColor: primaryColor,
                       child: Text(
                         "${index + 1}",
@@ -2174,7 +2174,7 @@ class _ReportStockMovementCostState extends State<ReportStockMovementCost>
                   ),
                 ],
               ),
-              Divider(color: Colors.white.withOpacity(0.2), height: 16),
+              Divider(color: Colors.white.withValues(alpha: 0.2), height: 16),
               Text(
                 "ข้อมูล ณ วันที่ ${conditionFinalDate.day}/${conditionFinalDate.month}/${conditionFinalDate.year}",
                 style: TextStyle(color: Colors.white, fontSize: 13),
@@ -2183,7 +2183,7 @@ class _ReportStockMovementCostState extends State<ReportStockMovementCost>
               Text(
                 global.language("report_zoom_tip"),
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                   fontSize: 12,
                 ),
               ),
@@ -2500,7 +2500,7 @@ class _ReportStockMovementCostState extends State<ReportStockMovementCost>
             indicatorColor: Colors.white,
             indicatorWeight: 3,
             labelColor: Colors.white,
-            unselectedLabelColor: Colors.white.withOpacity(0.7),
+            unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
             labelStyle: TextStyle(fontWeight: FontWeight.bold),
             tabs: [
               Tab(

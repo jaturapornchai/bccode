@@ -29,7 +29,7 @@ class FormPreview extends StatelessWidget {
           border: Border.all(color: Colors.grey),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.5),
+              color: Colors.grey.withValues(alpha: 0.5),
               spreadRadius: 2,
               blurRadius: 5,
               offset: const Offset(0, 3),

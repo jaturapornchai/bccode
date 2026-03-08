@@ -1906,7 +1906,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                 Container(
                   width: double.infinity,
                   height: double.infinity,
-                  color: Colors.white.withOpacity(0.95),
+                  color: Colors.white.withValues(alpha: 0.95),
                   child: Center(
                     child: Container(
                       padding: const EdgeInsets.all(40),
@@ -1916,7 +1916,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             blurRadius: 20,
                             offset: const Offset(0, 4),
                           ),

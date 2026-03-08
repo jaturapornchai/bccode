@@ -133,7 +133,7 @@ class LanguageItem extends StatelessWidget {
                 color: isDefault
                     ? Theme.of(
                         context,
-                      ).colorScheme.primaryContainer.withOpacity(0.3)
+                      ).colorScheme.primaryContainer.withValues(alpha: 0.3)
                     : null,
               ),
               child: Row(

@@ -12,7 +12,7 @@ class LoadingOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black.withOpacity(0.5),
+      color: Colors.black.withValues(alpha: 0.5),
       child: Center(
         child: Container(
           padding: const EdgeInsets.all(24),
@@ -21,12 +21,12 @@ class LoadingOverlay extends StatelessWidget {
             color: global.theme.backgroundColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: global.theme.appBarColor.withOpacity(0.2),
+              color: global.theme.appBarColor.withValues(alpha: 0.2),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withValues(alpha: 0.15),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -64,7 +64,7 @@ class LoadingOverlay extends StatelessWidget {
               Text(
                 subtitle ?? global.language('please_wait'),
                 style: TextStyle(
-                  color: Colors.black87.withOpacity(0.6),
+                  color: Colors.black87.withValues(alpha: 0.6),
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
                 ),

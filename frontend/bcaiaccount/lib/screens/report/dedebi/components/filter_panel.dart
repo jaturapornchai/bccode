@@ -413,7 +413,7 @@ class FilterPanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: iconColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Icon(icon, size: 14, color: iconColor),

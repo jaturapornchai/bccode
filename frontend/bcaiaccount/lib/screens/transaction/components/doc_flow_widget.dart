@@ -125,7 +125,7 @@ class _DocFlowWidgetState extends State<DocFlowWidget> {
       children: [
         Container(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(color: _primaryColor.withOpacity(0.15), borderRadius: BorderRadius.circular(14)),
+          decoration: BoxDecoration(color: _primaryColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)),
           child: const Icon(Icons.alt_route, color: _primaryColor, size: 20),
         ),
         SizedBox(width: 12),
@@ -140,7 +140,7 @@ class _DocFlowWidgetState extends State<DocFlowWidget> {
   Widget _buildCountPill({required String label, required int count, required Color color}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(20)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -284,8 +284,8 @@ class _DocFlowWidgetState extends State<DocFlowWidget> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _primaryColor.withOpacity(0.3), width: 2),
-        boxShadow: [BoxShadow(color: _primaryColor.withOpacity(0.15), blurRadius: 12, offset: const Offset(0, 6))],
+        border: Border.all(color: _primaryColor.withValues(alpha: 0.3), width: 2),
+        boxShadow: [BoxShadow(color: _primaryColor.withValues(alpha: 0.15), blurRadius: 12, offset: const Offset(0, 6))],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -322,9 +322,9 @@ class _LaneHeader extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -317,7 +317,7 @@ class _CompanyScreenState extends State<CompanyScreen>
                           decoration: BoxDecoration(
                             color: Theme.of(
                               context,
-                            ).primaryColor.withOpacity(0.1),
+                            ).primaryColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
@@ -377,7 +377,7 @@ class _CompanyScreenState extends State<CompanyScreen>
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.teal.withOpacity(0.1),
+                              color: Colors.teal.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(
@@ -421,7 +421,7 @@ class _CompanyScreenState extends State<CompanyScreen>
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: Colors.teal.withOpacity(0.1),
+                                color: Colors.teal.withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
@@ -593,7 +593,7 @@ class _CompanyScreenState extends State<CompanyScreen>
                 borderRadius: BorderRadius.circular(4),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.2),
+                    color: Colors.grey.withValues(alpha: 0.2),
                     blurRadius: 3,
                     offset: const Offset(0, 1),
                   ),
@@ -649,7 +649,7 @@ class _CompanyScreenState extends State<CompanyScreen>
               ),
             ),
             fillColor: isRequired
-                ? Theme.of(context).primaryColor.withOpacity(0.05)
+                ? Theme.of(context).primaryColor.withValues(alpha: 0.05)
                 : Colors.white,
             filled: true,
           ),
@@ -687,7 +687,7 @@ class _CompanyScreenState extends State<CompanyScreen>
           final isDefault = index == 0;
 
           return Container(
-            color: isDefault ? Colors.teal.withOpacity(0.05) : null,
+            color: isDefault ? Colors.teal.withValues(alpha: 0.05) : null,
             child: ListTile(
               leading: Container(
                 width: 40,
@@ -713,7 +713,7 @@ class _CompanyScreenState extends State<CompanyScreen>
                         borderRadius: BorderRadius.circular(4),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.2),
+                            color: Colors.grey.withValues(alpha: 0.2),
                             blurRadius: 3,
                             offset: const Offset(0, 1),
                           ),
@@ -753,7 +753,7 @@ class _CompanyScreenState extends State<CompanyScreen>
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.teal.withOpacity(0.1),
+                              color: Colors.teal.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(color: Colors.teal.shade200),
                             ),
@@ -909,7 +909,7 @@ class _CompanyScreenState extends State<CompanyScreen>
                             borderRadius: BorderRadius.circular(4),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.grey.withOpacity(0.2),
+                                color: Colors.grey.withValues(alpha: 0.2),
                                 blurRadius: 3,
                                 offset: const Offset(0, 1),
                               ),

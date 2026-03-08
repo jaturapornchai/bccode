@@ -24,9 +24,9 @@ class CouponTypeValueWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
       decoration: BoxDecoration(
-        color: global.theme.appBarColor.withOpacity(0.08),
+        color: global.theme.appBarColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: global.theme.appBarColor.withOpacity(0.2)),
+        border: Border.all(color: global.theme.appBarColor.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -183,7 +183,7 @@ class CouponTypeValueWidget extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isSelected
-              ? global.theme.buttonColor.withOpacity(0.1)
+              ? global.theme.buttonColor.withValues(alpha: 0.1)
               : Colors.white,
           border: Border.all(
             color: isSelected ? global.theme.buttonColor : Colors.grey[300]!,

@@ -195,8 +195,8 @@ class DocumentProductListWidget extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 4),
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: const Color(0xFF2A6F97).withOpacity(0.1),
-          border: Border.all(color: const Color(0xFF2A6F97).withOpacity(0.3)),
+          color: const Color(0xFF2A6F97).withValues(alpha: 0.1),
+          border: Border.all(color: const Color(0xFF2A6F97).withValues(alpha: 0.3)),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
@@ -295,7 +295,7 @@ class DocumentProductListWidget extends StatelessWidget {
                     children: [
                       Text(
                         global.language("to"),
-                        style: TextStyle(fontSize: 11, color: const Color(0xFF2A6F97).withOpacity(0.8), fontWeight: FontWeight.w500),
+                        style: TextStyle(fontSize: 11, color: const Color(0xFF2A6F97).withValues(alpha: 0.8), fontWeight: FontWeight.w500),
                       ),
                       SizedBox(height: 2),
                       Row(
@@ -561,9 +561,9 @@ class DocumentProductListWidget extends StatelessWidget {
               showDialogCommand(header.code, index, screenData.details![index]);
             },
             borderRadius: BorderRadius.circular(6),
-            hoverColor: const Color(0xFF2A6F97).withOpacity(0.1),
-            splashColor: const Color(0xFF2A6F97).withOpacity(0.2),
-            focusColor: const Color(0xFF2A6F97).withOpacity(0.15),
+            hoverColor: const Color(0xFF2A6F97).withValues(alpha: 0.1),
+            splashColor: const Color(0xFF2A6F97).withValues(alpha: 0.2),
+            focusColor: const Color(0xFF2A6F97).withValues(alpha: 0.15),
             child: TweenAnimationBuilder<double>(
               duration: const Duration(milliseconds: 300),
               tween: Tween(begin: 0.0, end: 1.0),
@@ -857,8 +857,8 @@ class DocumentProductListWidget extends StatelessWidget {
                           showDialogCommand('product_name', index, detail);
                         },
                         borderRadius: BorderRadius.circular(10),
-                        splashColor: const Color(0xFF2A6F97).withOpacity(0.1),
-                        focusColor: const Color(0xFF2A6F97).withOpacity(0.15),
+                        splashColor: const Color(0xFF2A6F97).withValues(alpha: 0.1),
+                        focusColor: const Color(0xFF2A6F97).withValues(alpha: 0.15),
                         child: Padding(
                           padding: const EdgeInsets.all(8),
                           child: Column(
@@ -869,7 +869,7 @@ class DocumentProductListWidget extends StatelessWidget {
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(color: const Color(0xFF2A6F97).withOpacity(0.1), borderRadius: BorderRadius.circular(3)),
+                                    decoration: BoxDecoration(color: const Color(0xFF2A6F97).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(3)),
                                     child: Text(
                                       '#${index + 1}',
                                       style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF2A6F97)),
@@ -1280,7 +1280,7 @@ class DocumentProductListWidget extends StatelessWidget {
       case 'product_amount':
         return const Color(0xFF2A6F97);
       case 'product_price':
-        return const Color(0xFF2A6F97).withOpacity(0.8);
+        return const Color(0xFF2A6F97).withValues(alpha: 0.8);
       case 'product_qty':
         return Colors.orange[700]!;
       case 'line_number':

@@ -33,7 +33,7 @@ class SelectedProductGridItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.1),
+      shadowColor: Colors.black.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -76,7 +76,7 @@ class SelectedProductGridItem extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(15),
                       ),
                       child: Icon(
@@ -207,7 +207,7 @@ class SelectedProductGridItem extends StatelessWidget {
                               child: Container(
                                 height: 26,
                                 decoration: BoxDecoration(
-                                  color: product.copies > 1 ? Colors.red.shade100.withOpacity(0.7) : Colors.grey.shade100,
+                                  color: product.copies > 1 ? Colors.red.shade100.withValues(alpha: 0.7) : Colors.grey.shade100,
                                   borderRadius: const BorderRadius.only(
                                     topLeft: Radius.circular(6),
                                     bottomLeft: Radius.circular(6),
@@ -263,7 +263,7 @@ class SelectedProductGridItem extends StatelessWidget {
                               child: Container(
                                 height: 26,
                                 decoration: BoxDecoration(
-                                  color: product.copies < 99 ? Colors.green.shade100.withOpacity(0.7) : Colors.grey.shade100,
+                                  color: product.copies < 99 ? Colors.green.shade100.withValues(alpha: 0.7) : Colors.grey.shade100,
                                   borderRadius: const BorderRadius.only(
                                     topRight: Radius.circular(6),
                                     bottomRight: Radius.circular(6),

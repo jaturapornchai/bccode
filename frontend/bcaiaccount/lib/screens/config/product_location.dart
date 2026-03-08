@@ -1764,7 +1764,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.05),
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(8),
                 topRight: Radius.circular(8),
@@ -1802,7 +1802,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                       ),
                       backgroundColor: Theme.of(
                         context,
-                      ).primaryColor.withOpacity(0.1),
+                      ).primaryColor.withValues(alpha: 0.1),
                       side: BorderSide.none,
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                     ),
@@ -1816,7 +1816,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        backgroundColor: Colors.green.withOpacity(0.1),
+                        backgroundColor: Colors.green.withValues(alpha: 0.1),
                         labelStyle: TextStyle(color: Colors.green.shade700),
                         side: BorderSide.none,
                         padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -2167,7 +2167,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                         ? Theme.of(context).primaryColor
                         : Colors.grey.shade400,
                     backgroundColor: (hasCode || hasName)
-                        ? Theme.of(context).primaryColor.withOpacity(0.1)
+                        ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
                         : Colors.grey.shade100,
                     padding: const EdgeInsets.all(8),
                   ),
@@ -2182,7 +2182,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                     icon: const Icon(Icons.delete_outline, size: 18),
                     style: IconButton.styleFrom(
                       foregroundColor: Colors.red.shade600,
-                      backgroundColor: Colors.red.withOpacity(0.1),
+                      backgroundColor: Colors.red.withValues(alpha: 0.1),
                       padding: const EdgeInsets.all(8),
                     ),
                     tooltip: global.language("delete_shelf"),

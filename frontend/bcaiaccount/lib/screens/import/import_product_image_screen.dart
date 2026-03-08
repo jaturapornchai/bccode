@@ -117,7 +117,7 @@ class ImportProductImageScreenState extends State<ImportProductImageScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           margin: const EdgeInsets.symmetric(horizontal: 5),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
+            color: color.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(

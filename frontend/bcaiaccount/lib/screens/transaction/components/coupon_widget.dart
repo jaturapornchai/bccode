@@ -109,7 +109,7 @@ class _CouponWidgetState extends State<CouponWidget> {
         Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Icon(icon, size: 16, color: color),
@@ -174,7 +174,7 @@ class _CouponWidgetState extends State<CouponWidget> {
               decoration: BoxDecoration(
                 color: _getCouponTypeColor(
                   coupon.coupontype ?? "0",
-                ).withOpacity(0.1),
+                ).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(

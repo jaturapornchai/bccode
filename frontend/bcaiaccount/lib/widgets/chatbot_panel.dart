@@ -217,7 +217,7 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
         color: primaryDarkColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -228,7 +228,7 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(Icons.smart_toy, size: 24, color: Colors.white),
@@ -286,7 +286,7 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: primaryColor.withOpacity(0.1),
+                color: primaryColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.smart_toy, size: 20, color: primaryColor),
@@ -311,7 +311,7 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -360,7 +360,7 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
               margin: const EdgeInsets.only(left: 8),
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: userMessageColor.withOpacity(0.2),
+                color: userMessageColor.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.person, size: 20, color: userMessageColor),
@@ -381,7 +381,7 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
             margin: const EdgeInsets.only(right: 8),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.1),
+              color: primaryColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(Icons.smart_toy, size: 20, color: primaryColor),
@@ -416,7 +416,7 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, -2),
           ),

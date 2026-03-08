@@ -1483,7 +1483,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1536,7 +1536,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                           decoration: BoxDecoration(
                             gradient: LinearGradient(colors: [Colors.green[400]!, Colors.green[600]!]),
                             borderRadius: BorderRadius.circular(17.5),
-                            boxShadow: [BoxShadow(color: Colors.green.withOpacity(0.3), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2))],
+                            boxShadow: [BoxShadow(color: Colors.green.withValues(alpha: 0.3), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2))],
                           ),
                           child: Center(
                             child: Text(
@@ -1625,7 +1625,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(colors: [Colors.green[400]!, Colors.green[600]!]),
                         borderRadius: BorderRadius.circular(17.5),
-                        boxShadow: [BoxShadow(color: Colors.green.withOpacity(0.3), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2))],
+                        boxShadow: [BoxShadow(color: Colors.green.withValues(alpha: 0.3), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2))],
                       ),
                       child: Center(
                         child: Text(

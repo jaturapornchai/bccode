@@ -2342,7 +2342,7 @@ class _PdfViewerDialogState extends State<_PdfViewerDialog> {
             width: 320,
             decoration: BoxDecoration(
               color: Colors.white,
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(-2, 0))],
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(-2, 0))],
             ),
             child: _SettingsPanel(
               pageSize: _pageSize,
@@ -2570,7 +2570,7 @@ class _SettingsPanelState extends State<_SettingsPanel> {
             onChanged(options[index]);
             onChangeEnd();
           },
-          selectedColor: global.theme.appBarColor.withOpacity(0.3),
+          selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
           backgroundColor: Colors.grey[200],
         );
       }),
@@ -2623,7 +2623,7 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     label: Text(size),
                     selected: isSelected,
                     onSelected: (_) => widget.onPageSizeChanged(size),
-                    selectedColor: global.theme.appBarColor.withOpacity(0.3),
+                    selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
                     backgroundColor: Colors.grey[200],
                   );
                 }).toList(),
@@ -2640,14 +2640,14 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     label: Row(mainAxisSize: MainAxisSize.min, children: [ Icon(Icons.portrait, size: 18), SizedBox(width: 4), Text(global.language("portrait"))]),
                     selected: widget.orientation == 'P',
                     onSelected: (_) => widget.onOrientationChanged('P'),
-                    selectedColor: global.theme.appBarColor.withOpacity(0.3),
+                    selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
                     backgroundColor: Colors.grey[200],
                   ),
                   ChoiceChip(
                     label: Row(mainAxisSize: MainAxisSize.min, children: [ Icon(Icons.landscape, size: 18), SizedBox(width: 4), Text(global.language("landscape"))]),
                     selected: widget.orientation == 'L',
                     onSelected: (_) => widget.onOrientationChanged('L'),
-                    selectedColor: global.theme.appBarColor.withOpacity(0.3),
+                    selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
                     backgroundColor: Colors.grey[200],
                   ),
                 ],
@@ -2678,7 +2678,7 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     label: Text(displayName, style: const TextStyle(fontSize: 11)),
                     selected: isSelected,
                     onSelected: (_) => widget.onFontFamilyChanged(font),
-                    selectedColor: global.theme.appBarColor.withOpacity(0.3),
+                    selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
                     backgroundColor: Colors.grey[200],
                   );
                 }).toList(),
@@ -2761,14 +2761,14 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     label: Row(mainAxisSize: MainAxisSize.min, children: [ Icon(Icons.color_lens, size: 18), SizedBox(width: 4), Text(global.language("color"))]),
                     selected: widget.colorMode,
                     onSelected: (_) => widget.onColorModeChanged(true),
-                    selectedColor: global.theme.appBarColor.withOpacity(0.3),
+                    selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
                     backgroundColor: Colors.grey[200],
                   ),
                   ChoiceChip(
                     label: Row(mainAxisSize: MainAxisSize.min, children: [ Icon(Icons.invert_colors, size: 18), SizedBox(width: 4), Text(global.language("black_and_white"))]),
                     selected: !widget.colorMode,
                     onSelected: (_) => widget.onColorModeChanged(false),
-                    selectedColor: global.theme.appBarColor.withOpacity(0.3),
+                    selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
                     backgroundColor: Colors.grey[200],
                   ),
                 ],
@@ -2789,7 +2789,7 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     ]),
                     selected: widget.showDualCurrency && widget.isMultiCurrency,
                     onSelected: widget.isMultiCurrency ? (_) => widget.onShowDualCurrencyChanged(true) : null,
-                    selectedColor: global.theme.appBarColor.withOpacity(0.3),
+                    selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
                     backgroundColor: Colors.grey[200],
                     disabledColor: Colors.grey[100],
                   ),
@@ -2797,7 +2797,7 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     label: Row(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.attach_money, size: 18), const SizedBox(width: 4), Text(global.language("single_currency"))]),
                     selected: !widget.showDualCurrency || !widget.isMultiCurrency,
                     onSelected: widget.isMultiCurrency ? (_) => widget.onShowDualCurrencyChanged(false) : null,
-                    selectedColor: global.theme.appBarColor.withOpacity(0.3),
+                    selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
                     backgroundColor: Colors.grey[200],
                   ),
                 ],
@@ -2827,7 +2827,7 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     label: Text(displayName),
                     selected: isSelected,
                     onSelected: (_) => widget.onThemeChanged(theme.name),
-                    selectedColor: previewColor.withOpacity(0.3),
+                    selectedColor: previewColor.withValues(alpha: 0.3),
                     backgroundColor: Colors.grey[200],
                   );
                 }).toList(),
@@ -2847,7 +2847,7 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       decoration: BoxDecoration(
-                        color: isSelected ? global.theme.appBarColor.withOpacity(0.15) : Colors.grey[100],
+                        color: isSelected ? global.theme.appBarColor.withValues(alpha: 0.15) : Colors.grey[100],
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: isSelected ? global.theme.appBarColor : Colors.grey[300]!, width: isSelected ? 2 : 1),
                       ),
@@ -2896,7 +2896,7 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     label: Text(global.language("buddhist_era")),
                     selected: widget.dateSettings.yearFormat == PdfYearFormat.buddhist,
                     onSelected: (_) => widget.onDateSettingsChanged(widget.dateSettings.copyWith(yearFormat: PdfYearFormat.buddhist)),
-                    selectedColor: global.theme.appBarColor.withOpacity(0.3),
+                    selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
                     backgroundColor: Colors.grey[200],
                   ),
                   SizedBox(width: 8),
@@ -2904,7 +2904,7 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     label: Text(global.language("christian_era")),
                     selected: widget.dateSettings.yearFormat == PdfYearFormat.christian,
                     onSelected: (_) => widget.onDateSettingsChanged(widget.dateSettings.copyWith(yearFormat: PdfYearFormat.christian)),
-                    selectedColor: global.theme.appBarColor.withOpacity(0.3),
+                    selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
                     backgroundColor: Colors.grey[200],
                   ),
                 ],
@@ -2921,7 +2921,7 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     label: Text(displayName, style: const TextStyle(fontSize: 11)),
                     selected: isSelected,
                     onSelected: (_) => widget.onDateSettingsChanged(widget.dateSettings.copyWith(dateFormat: format)),
-                    selectedColor: global.theme.appBarColor.withOpacity(0.3),
+                    selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
                     backgroundColor: Colors.grey[200],
                   );
                 }).toList(),
@@ -2948,7 +2948,7 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: isSelected ? global.theme.appBarColor.withOpacity(0.2) : Colors.grey[100],
+                        color: isSelected ? global.theme.appBarColor.withValues(alpha: 0.2) : Colors.grey[100],
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: isSelected ? global.theme.appBarColor : Colors.grey[300]!, width: isSelected ? 2 : 1),
                       ),

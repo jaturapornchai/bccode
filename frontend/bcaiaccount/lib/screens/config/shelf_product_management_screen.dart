@@ -296,7 +296,7 @@ class ShelfProductManagementScreenState
               borderRadius: BorderRadius.circular(2),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.5),
+                  color: Colors.grey.withValues(alpha: 0.5),
                   spreadRadius: 5,
                   blurRadius: 7,
                   offset: const Offset(0, 2),
@@ -795,7 +795,7 @@ class ShelfProductManagementScreenState
 
     return Container(
       color: productAlreadySelected
-          ? Colors.green.withOpacity(0.2)
+          ? Colors.green.withValues(alpha: 0.2)
           : (isEvenRow ? Colors.grey[50] : Colors.white),
       child: ListTile(
         dense: true,
@@ -833,7 +833,7 @@ class ShelfProductManagementScreenState
   /// สร้าง Widget สำหรับสินค้าที่มีอยู่ในชั้นวางแล้ว
   Widget buildShelfProductItem(ShelfProductDisplayModel product) {
     return Container(
-      color: product.isSelected ? Colors.red.withOpacity(0.2) : null,
+      color: product.isSelected ? Colors.red.withValues(alpha: 0.2) : null,
       child: CheckboxListTile(
         dense: true,
         value: product.isSelected,

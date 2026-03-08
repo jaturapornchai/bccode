@@ -390,7 +390,7 @@ Future<LocationModel?> showWareHouseLocationDialog(
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF2A6F97).withOpacity(0.1),
+                                        color: const Color(0xFF2A6F97).withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: const Icon(Icons.inventory_2_outlined, color: Color(0xFF2A6F97), size: 20),
@@ -535,7 +535,7 @@ Future<LocationModel?> showWareHouseLocationDefualtDialog(
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF2A6F97).withOpacity(0.1),
+                                        color: const Color(0xFF2A6F97).withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: const Icon(Icons.inventory_2_outlined, color: Color(0xFF2A6F97), size: 20),
@@ -662,7 +662,7 @@ Future<WarehouseModel?> showWareHouseDialog(
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF2A6F97).withOpacity(0.1),
+                                  color: const Color(0xFF2A6F97).withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Icon(Icons.warehouse, color: Color(0xFF2A6F97), size: 20),
@@ -781,7 +781,7 @@ Future<WarehouseModel?> showWareHouseDefualtDialog(
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF2A6F97).withOpacity(0.1),
+                                  color: const Color(0xFF2A6F97).withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Icon(Icons.warehouse, color: Color(0xFF2A6F97), size: 20),
@@ -1077,7 +1077,7 @@ Future<SaveConfirmResult?> showEnhancedSaveConfirmDialog(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [primaryColor, primaryColor.withOpacity(0.8)],
+                        colors: [primaryColor, primaryColor.withValues(alpha: 0.8)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -1091,7 +1091,7 @@ Future<SaveConfirmResult?> showEnhancedSaveConfirmDialog(
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(icon, color: Colors.white, size: 28),
@@ -1115,7 +1115,7 @@ Future<SaveConfirmResult?> showEnhancedSaveConfirmDialog(
                                     ? global.language("new_document")
                                     : global.language("edit_document"),
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.85),
+                                  color: Colors.white.withValues(alpha: 0.85),
                                   fontSize: 13,
                                 ),
                               ),
@@ -1175,7 +1175,7 @@ Future<SaveConfirmResult?> showEnhancedSaveConfirmDialog(
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                               decoration: BoxDecoration(
-                                color: printAfterSave ? primaryColor.withOpacity(0.1) : Colors.grey[100],
+                                color: printAfterSave ? primaryColor.withValues(alpha: 0.1) : Colors.grey[100],
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: printAfterSave ? primaryColor : Colors.grey[300]!,

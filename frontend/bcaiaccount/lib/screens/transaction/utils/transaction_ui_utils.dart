@@ -311,7 +311,7 @@ class TransactionUIUtils {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: headerColor.withOpacity(0.1),
+                                    color: headerColor.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Icon(leadingIcon, color: headerColor, size: 20),

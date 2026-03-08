@@ -287,7 +287,7 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
           hintText: global.language('specify_details'),
           prefixIcon: Icons.description_outlined,
           iconColor: const Color(0xFF2A6F97),
-          focusColor: const Color(0xFF2A6F97).withOpacity(0.7),
+          focusColor: const Color(0xFF2A6F97).withValues(alpha: 0.7),
         ),
         onChanged: (value) {
           widget.screenData.details![index].description = value;
@@ -459,7 +459,7 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
             hintText: global.language('specify_details'),
             prefixIcon: Icons.description_outlined,
             iconColor: const Color(0xFF2A6F97),
-            focusColor: const Color(0xFF2A6F97).withOpacity(0.7),
+            focusColor: const Color(0xFF2A6F97).withValues(alpha: 0.7),
           ),
           onChanged: (value) {
             widget.screenData.details![index].description = value;

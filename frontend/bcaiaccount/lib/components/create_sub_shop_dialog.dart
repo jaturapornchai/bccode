@@ -101,10 +101,10 @@ class CreateSubShopDialog {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: primaryLightColor.withOpacity(0.1),
+                      color: primaryLightColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: primaryColor.withOpacity(0.3),
+                        color: primaryColor.withValues(alpha: 0.3),
                         width: 1,
                       ),
                     ),

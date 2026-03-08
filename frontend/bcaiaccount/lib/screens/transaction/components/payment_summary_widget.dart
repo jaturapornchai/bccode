@@ -229,7 +229,7 @@ class PaymentSummaryWidget extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: (hasAmount ? Colors.blue.shade100 : Colors.grey.shade200)
-                    .withOpacity(0.5),
+                    .withValues(alpha: 0.5),
                 blurRadius: 6,
                 offset: const Offset(0, 3),
               ),
@@ -292,8 +292,8 @@ class PaymentSummaryWidget extends StatelessWidget {
                   icon,
                   size: 70,
                   color: hasAmount
-                      ? Colors.blue.shade300.withOpacity(0.1)
-                      : Colors.grey.shade300.withOpacity(0.3),
+                      ? Colors.blue.shade300.withValues(alpha: 0.1)
+                      : Colors.grey.shade300.withValues(alpha: 0.3),
                 ),
               ),
             ],

@@ -217,7 +217,7 @@ class _ReportStockBalanceLocationBarcodeState
     var header = Container(
       decoration: BoxDecoration(
         color: headerColor,
-        border: Border.all(color: primaryColor.withOpacity(0.5)),
+        border: Border.all(color: primaryColor.withValues(alpha: 0.5)),
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(8),
           topRight: Radius.circular(8),
@@ -527,12 +527,12 @@ class _ReportStockBalanceLocationBarcodeState
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: Offset(0, 5),
           ),
         ],
-        border: Border.all(color: primaryColor.withOpacity(0.3)),
+        border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -540,7 +540,7 @@ class _ReportStockBalanceLocationBarcodeState
           Container(
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.1),
+              color: primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
@@ -636,7 +636,7 @@ class _ReportStockBalanceLocationBarcodeState
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 4,
                 offset: Offset(0, 2),
               ),
@@ -667,7 +667,7 @@ class _ReportStockBalanceLocationBarcodeState
                   height: 24,
                   margin: EdgeInsets.only(left: 8),
                   child: VerticalDivider(
-                    color: primaryColor.withOpacity(0.3),
+                    color: primaryColor.withValues(alpha: 0.3),
                     thickness: 1,
                   ),
                 ),
@@ -699,7 +699,7 @@ class _ReportStockBalanceLocationBarcodeState
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: primaryColor.withOpacity(0.3),
+                  color: primaryColor.withValues(alpha: 0.3),
                   blurRadius: 10,
                   offset: Offset(0, 4),
                 ),
@@ -728,7 +728,7 @@ class _ReportStockBalanceLocationBarcodeState
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -745,7 +745,7 @@ class _ReportStockBalanceLocationBarcodeState
                     "รายงานนี้แสดงยอดคงเหลือของสินค้าตามคลังสินค้าและตำแหน่งที่เก็บ ช่วยให้คุณติดตามสินค้าได้อย่างมีประสิทธิภาพ",
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
                 ],
@@ -827,9 +827,9 @@ class _ReportStockBalanceLocationBarcodeState
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    color: secondaryColor.withOpacity(0.05),
+                    color: secondaryColor.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: secondaryColor.withOpacity(0.2)),
+                    border: Border.all(color: secondaryColor.withValues(alpha: 0.2)),
                   ),
                   child: SwitchListTile(
                     title: Text(
@@ -857,7 +857,7 @@ class _ReportStockBalanceLocationBarcodeState
                       padding: EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: reportCondition.showOnlyBalance
-                            ? secondaryColor.withOpacity(0.1)
+                            ? secondaryColor.withValues(alpha: 0.1)
                             : Colors.grey.shade200,
                         shape: BoxShape.circle,
                       ),
@@ -1074,7 +1074,7 @@ class _ReportStockBalanceLocationBarcodeState
                                       elevation: 1,
                                       shadowColor: Colors.grey.shade200,
                                       side: BorderSide(
-                                        color: secondaryColor.withOpacity(0.3),
+                                        color: secondaryColor.withValues(alpha: 0.3),
                                       ),
                                       deleteIconColor: errorColor,
                                       shape: RoundedRectangleBorder(
@@ -1183,7 +1183,7 @@ class _ReportStockBalanceLocationBarcodeState
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: Offset(0, 5),
                 ),
@@ -1224,7 +1224,7 @@ class _ReportStockBalanceLocationBarcodeState
                       backgroundColor: secondaryColor,
                       foregroundColor: Colors.white,
                       elevation: 3,
-                      shadowColor: secondaryColor.withOpacity(0.5),
+                      shadowColor: secondaryColor.withValues(alpha: 0.5),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -1265,7 +1265,7 @@ class _ReportStockBalanceLocationBarcodeState
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: Offset(0, 5),
           ),
@@ -1307,9 +1307,9 @@ class _ReportStockBalanceLocationBarcodeState
       processWidgetStatus = Container(
         padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: infoColor.withOpacity(0.1),
+          color: infoColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: infoColor.withOpacity(0.3)),
+          border: Border.all(color: infoColor.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
@@ -1362,9 +1362,9 @@ class _ReportStockBalanceLocationBarcodeState
           processWidgetStatus = Container(
             padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: successColor.withOpacity(0.1),
+              color: successColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: successColor.withOpacity(0.3)),
+              border: Border.all(color: successColor.withValues(alpha: 0.3)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1410,9 +1410,9 @@ class _ReportStockBalanceLocationBarcodeState
           processWidgetStatus = Container(
             padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: errorColor.withOpacity(0.1),
+              color: errorColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: errorColor.withOpacity(0.3)),
+              border: Border.all(color: errorColor.withValues(alpha: 0.3)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1447,9 +1447,9 @@ class _ReportStockBalanceLocationBarcodeState
         processWidgetStatus = Container(
           padding: EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: errorColor.withOpacity(0.1),
+            color: errorColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: errorColor.withOpacity(0.3)),
+            border: Border.all(color: errorColor.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1490,7 +1490,7 @@ class _ReportStockBalanceLocationBarcodeState
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 spreadRadius: 1,
                 blurRadius: 4,
                 offset: Offset(0, 2),
@@ -1518,7 +1518,7 @@ class _ReportStockBalanceLocationBarcodeState
                   ),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -1542,7 +1542,7 @@ class _ReportStockBalanceLocationBarcodeState
                           child: Container(
                             padding: EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -1563,7 +1563,7 @@ class _ReportStockBalanceLocationBarcodeState
                           child: Container(
                             padding: EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -1582,7 +1582,7 @@ class _ReportStockBalanceLocationBarcodeState
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -1590,14 +1590,14 @@ class _ReportStockBalanceLocationBarcodeState
                     Icon(
                       Icons.calendar_today,
                       size: 16,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                     SizedBox(width: 8),
                     Text(
                       "ข้อมูล ณ วันที่ ${conditionFinalDate.day}/${conditionFinalDate.month}/${conditionFinalDate.year}",
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
                     ),
                   ],
@@ -2052,7 +2052,7 @@ class _ReportStockBalanceLocationBarcodeState
                 decoration: BoxDecoration(
                   color: primaryColor,
                   border: Border(
-                    top: BorderSide(color: primaryColor.withOpacity(0.2)),
+                    top: BorderSide(color: primaryColor.withValues(alpha: 0.2)),
                   ),
                 ),
                 child: Row(

@@ -122,7 +122,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -147,7 +147,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: global.theme.primaryColor.withOpacity(0.3),
+                  color: global.theme.primaryColor.withValues(alpha: 0.3),
                   blurRadius: 15,
                   offset: const Offset(0, 5),
                 ),
@@ -286,7 +286,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: accentColor.withOpacity(0.15),
+            color: accentColor.withValues(alpha: 0.15),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -314,7 +314,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
                   gradient: LinearGradient(
                     colors: [
                       accentColor,
-                      accentColor.withOpacity(0.7),
+                      accentColor.withValues(alpha: 0.7),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -322,7 +322,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: accentColor.withOpacity(0.3),
+                      color: accentColor.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -464,7 +464,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -488,7 +488,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: global.theme.primaryColor.withOpacity(0.3),
+                    color: global.theme.primaryColor.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -556,7 +556,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             Colors.blue[50]!,
-            Colors.blue[100]!.withOpacity(0.5),
+            Colors.blue[100]!.withValues(alpha: 0.5),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -578,7 +578,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.blue.withOpacity(0.3),
+                  color: Colors.blue.withValues(alpha: 0.3),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -636,7 +636,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -661,7 +661,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF00B900).withOpacity(0.4),
+                  color: const Color(0xFF00B900).withValues(alpha: 0.4),
                   blurRadius: 15,
                   offset: const Offset(0, 5),
                 ),
@@ -701,10 +701,10 @@ class AccountDeletionHelpScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFF00B900).withOpacity(0.1),
+              color: const Color(0xFF00B900).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(30),
               border: Border.all(
-                color: const Color(0xFF00B900).withOpacity(0.3),
+                color: const Color(0xFF00B900).withValues(alpha: 0.3),
                 width: 2,
               ),
             ),
@@ -760,7 +760,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF00B900).withOpacity(0.4),
+                      color: const Color(0xFF00B900).withValues(alpha: 0.4),
                       blurRadius: 15,
                       offset: const Offset(0, 6),
                     ),
@@ -802,7 +802,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
+                      color: Colors.black.withValues(alpha: 0.08),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),

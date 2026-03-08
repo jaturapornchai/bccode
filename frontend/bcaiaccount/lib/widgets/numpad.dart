@@ -122,7 +122,7 @@ class _NumberPadState extends State<NumberPad> {
                   borderRadius: BorderRadius.circular(4),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.5),
+                      color: Colors.grey.withValues(alpha: 0.5),
                       spreadRadius: 2,
                       blurRadius: 2,
                     ),
@@ -148,7 +148,7 @@ class _NumberPadState extends State<NumberPad> {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.5),
+                    color: Colors.grey.withValues(alpha: 0.5),
                     spreadRadius: 2,
                     blurRadius: 2,
                     offset: const Offset(0, 1),

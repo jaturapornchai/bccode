@@ -123,7 +123,7 @@ class ReportStockBalanceItemWareHouseLocationState
     subtitleStyle = TextStyle(
       fontSize: 14,
       fontWeight: FontWeight.w500,
-      color: primaryColor.withOpacity(0.8),
+      color: primaryColor.withValues(alpha: 0.8),
     );
 
     normalStyle = TextStyle(fontSize: 13, color: Colors.grey.shade800);
@@ -131,7 +131,7 @@ class ReportStockBalanceItemWareHouseLocationState
     emphasisStyle = TextStyle(
       fontSize: 13,
       fontWeight: FontWeight.w500,
-      color: primaryColor.withOpacity(0.9),
+      color: primaryColor.withValues(alpha: 0.9),
     );
 
     highlightStyle = TextStyle(
@@ -1080,7 +1080,7 @@ class ReportStockBalanceItemWareHouseLocationState
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 3,
                   offset: Offset(0, 1),
                 ),
@@ -1162,13 +1162,13 @@ class ReportStockBalanceItemWareHouseLocationState
               ],
             ),
             SizedBox(height: 8),
-            Divider(color: Colors.white.withOpacity(0.3), height: 24),
+            Divider(color: Colors.white.withValues(alpha: 0.3), height: 24),
             Text(
               "แสดงข้อมูลสินค้าคงเหลือตามสินค้า คลัง และที่เก็บ",
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Colors.white.withOpacity(0.95),
+                color: Colors.white.withValues(alpha: 0.95),
               ),
             ),
             SizedBox(height: 8),
@@ -1176,7 +1176,7 @@ class ReportStockBalanceItemWareHouseLocationState
               "เลือกรูปแบบรายงานและเงื่อนไขต่างๆ ด้านล่างเพื่อสร้างรายงานตามที่ต้องการ",
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.white.withOpacity(0.85),
+                color: Colors.white.withValues(alpha: 0.85),
               ),
             ),
           ],
@@ -1287,7 +1287,7 @@ class ReportStockBalanceItemWareHouseLocationState
         padding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         decoration: BoxDecoration(
           color: isSelected
-              ? secondaryColor.withOpacity(0.3)
+              ? secondaryColor.withValues(alpha: 0.3)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
@@ -1324,7 +1324,7 @@ class ReportStockBalanceItemWareHouseLocationState
                     style: TextStyle(
                       fontSize: 13,
                       color: isSelected
-                          ? primaryColor.withOpacity(0.8)
+                          ? primaryColor.withValues(alpha: 0.8)
                           : Colors.grey.shade600,
                     ),
                   ),
@@ -2024,7 +2024,7 @@ class ReportStockBalanceItemWareHouseLocationState
                   ),
                 ],
               ),
-              Divider(color: Colors.white.withOpacity(0.2), height: 16),
+              Divider(color: Colors.white.withValues(alpha: 0.2), height: 16),
               Text(
                 "ข้อมูล ณ วันที่ ${conditionFinalDate.day}/${conditionFinalDate.month}/${conditionFinalDate.year}",
                 style: TextStyle(color: Colors.white, fontSize: 13),
@@ -2033,7 +2033,7 @@ class ReportStockBalanceItemWareHouseLocationState
               Text(
                 global.language("report_zoom_tip"),
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                   fontSize: 12,
                 ),
               ),
@@ -2340,7 +2340,7 @@ class ReportStockBalanceItemWareHouseLocationState
             indicatorColor: Colors.white,
             indicatorWeight: 3,
             labelColor: Colors.white,
-            unselectedLabelColor: Colors.white.withOpacity(0.7),
+            unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
             labelStyle: TextStyle(fontWeight: FontWeight.bold),
             tabs: [
               Tab(

@@ -454,7 +454,7 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -473,7 +473,7 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
   Widget _buildLoadingOverlay() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.8),
+        color: Colors.white.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Center(
@@ -645,7 +645,7 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),

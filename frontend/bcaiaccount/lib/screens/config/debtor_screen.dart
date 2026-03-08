@@ -513,7 +513,7 @@ class DebtorScreenState extends State<DebtorScreen>
                     Text(
                       '${global.language("processing")} $itemCount ${global.language("items")}',
                       style: TextStyle(
-                        color: Colors.black87.withOpacity(0.6),
+                        color: Colors.black87.withValues(alpha: 0.6),
                         fontSize: 13,
                         fontWeight: FontWeight.w400,
                       ),

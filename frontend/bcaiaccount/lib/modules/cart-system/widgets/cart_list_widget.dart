@@ -241,7 +241,7 @@ class _CartCard extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: _getStatusColor().withOpacity(0.1),
+                      color: _getStatusColor().withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: _getStatusColor(), width: 1),
                     ),
@@ -427,7 +427,7 @@ class _CartCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEE4D2D).withOpacity(0.1),
+                  color: const Color(0xFFEE4D2D).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(

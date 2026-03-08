@@ -573,7 +573,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
                   child: Container(
                     width: 300,
                     height: 300,
-                    decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.05)),
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.05)),
                   ),
                 ),
                 Positioned(
@@ -582,7 +582,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
                   child: Container(
                     width: 400,
                     height: 400,
-                    decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.05)),
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.05)),
                   ),
                 ),
                 Positioned(
@@ -591,7 +591,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
                   child: Container(
                     width: 150,
                     height: 150,
-                    decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.03)),
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.03)),
                   ),
                 ),
                 // Main content
@@ -665,7 +665,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(24),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 30, offset: const Offset(0, 15))],
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 30, offset: const Offset(0, 15))],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -798,7 +798,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: LinearGradient(colors: [const Color(0xFF3949AB), const Color(0xFF5C6BC0)]),
-            boxShadow: [BoxShadow(color: const Color(0xFF3949AB).withOpacity(0.4), blurRadius: 20, spreadRadius: 2)],
+            boxShadow: [BoxShadow(color: const Color(0xFF3949AB).withValues(alpha: 0.4), blurRadius: 20, spreadRadius: 2)],
           ),
           child: CircleAvatar(
             radius: 50,
@@ -833,7 +833,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+          decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
           child: Text(
             "${_loginText("welcome")}!",
             style: TextStyle(color: Colors.green[700], fontWeight: FontWeight.w500),
@@ -851,7 +851,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
               backgroundColor: const Color(0xFF3949AB),
               foregroundColor: Colors.white,
               elevation: 4,
-              shadowColor: const Color(0xFF3949AB).withOpacity(0.4),
+              shadowColor: const Color(0xFF3949AB).withValues(alpha: 0.4),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             onPressed: () {
@@ -1076,7 +1076,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 10))],
       ),
       child: Image.asset("assets/icons/logo_marine_new_color_white.png", height: 80),
     );
@@ -1119,7 +1119,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
               prefixIcon: Container(
                 margin: EdgeInsets.all(iconMargin),
                 padding: EdgeInsets.all(iconPadding),
-                decoration: BoxDecoration(color: const Color(0xFF3949AB).withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                decoration: BoxDecoration(color: const Color(0xFF3949AB).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
                 child: Icon(Icons.person_outline_rounded, color: const Color(0xFF3949AB), size: iconSize),
               ),
               contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: contentPaddingV),
@@ -1150,7 +1150,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
               prefixIcon: Container(
                 margin: EdgeInsets.all(iconMargin),
                 padding: EdgeInsets.all(iconPadding),
-                decoration: BoxDecoration(color: const Color(0xFF3949AB).withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                decoration: BoxDecoration(color: const Color(0xFF3949AB).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
                 child: Icon(Icons.lock_outline_rounded, color: const Color(0xFF3949AB), size: iconSize),
               ),
               suffixIcon: ExcludeFocus(
@@ -1216,7 +1216,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
               gradient: _isLoggingIn ? null : LinearGradient(colors: [const Color(0xFF3949AB), const Color(0xFF5C6BC0)]),
               color: _isLoggingIn ? Colors.grey[300] : null,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: _isLoggingIn ? null : [BoxShadow(color: const Color(0xFF3949AB).withOpacity(0.4), blurRadius: 15, offset: const Offset(0, 8))],
+              boxShadow: _isLoggingIn ? null : [BoxShadow(color: const Color(0xFF3949AB).withValues(alpha: 0.4), blurRadius: 15, offset: const Offset(0, 8))],
             ),
             child: ElevatedButton(
               focusNode: FocusNode(canRequestFocus: false),
@@ -1823,7 +1823,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 32),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00B900).withOpacity(0.1),
+                      color: const Color(0xFF00B900).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: const Color(0xFF00B900), width: 3),
                     ),
@@ -2519,13 +2519,13 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: padding),
-      decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
       child: Column(
         children: [
           RichText(
             textAlign: TextAlign.center,
             text: TextSpan(
-              style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: fontSize, height: 1.5),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: fontSize, height: 1.5),
               children: <TextSpan>[
                 TextSpan(text: _loginText('you_have_accepted')),
                 TextSpan(
@@ -2544,7 +2544,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
           RichText(
             textAlign: TextAlign.center,
             text: TextSpan(
-              style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: fontSize),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: fontSize),
               children: <TextSpan>[
                 TextSpan(text: _loginText('read')),
                 TextSpan(

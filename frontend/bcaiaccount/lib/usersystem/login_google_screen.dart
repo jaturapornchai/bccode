@@ -422,25 +422,25 @@ class LoginGoogleScreenState extends State<LoginGoogleScreen> {
             borderRadius: const BorderRadius.all(Radius.circular(10)),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.3),
+                color: Colors.grey.withValues(alpha: 0.3),
                 blurRadius: 10.0,
                 spreadRadius: 2.0,
                 offset: const Offset(-2.0, -2.0),
               ),
               BoxShadow(
-                color: Colors.grey.withOpacity(0.5),
+                color: Colors.grey.withValues(alpha: 0.5),
                 blurRadius: 10.0,
                 spreadRadius: 2.0,
                 offset: const Offset(2.0, 2.0),
               ),
               BoxShadow(
-                color: Colors.grey.withOpacity(0.3),
+                color: Colors.grey.withValues(alpha: 0.3),
                 blurRadius: 10.0,
                 spreadRadius: 2.0,
                 offset: const Offset(2.0, -2.0),
               ),
               BoxShadow(
-                color: Colors.grey.withOpacity(0.3),
+                color: Colors.grey.withValues(alpha: 0.3),
                 blurRadius: 10.0,
                 spreadRadius: 2.0,
                 offset: const Offset(-2.0, 2.0),

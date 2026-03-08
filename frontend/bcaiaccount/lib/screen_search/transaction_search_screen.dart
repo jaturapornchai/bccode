@@ -3139,7 +3139,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border(left: BorderSide(color: Colors.grey[300]!, width: 1)),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(-2, 0))],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(-2, 0))],
         ),
         child: contentWidget,
       );

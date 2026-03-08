@@ -116,7 +116,7 @@ class _ReportStockBalanceWhBarcodeState
     subtitleStyle = TextStyle(
       fontSize: 14,
       fontWeight: FontWeight.w500,
-      color: primaryColor.withOpacity(0.8),
+      color: primaryColor.withValues(alpha: 0.8),
     );
 
     normalStyle = TextStyle(fontSize: 13, color: Colors.grey.shade800);
@@ -124,7 +124,7 @@ class _ReportStockBalanceWhBarcodeState
     emphasisStyle = TextStyle(
       fontSize: 13,
       fontWeight: FontWeight.w500,
-      color: primaryColor.withOpacity(0.9),
+      color: primaryColor.withValues(alpha: 0.9),
     );
 
     highlightStyle = TextStyle(
@@ -655,7 +655,7 @@ class _ReportStockBalanceWhBarcodeState
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 3,
                   offset: Offset(0, 1),
                 ),
@@ -763,13 +763,13 @@ class _ReportStockBalanceWhBarcodeState
               ],
             ),
             SizedBox(height: 8),
-            Divider(color: Colors.white.withOpacity(0.3), height: 24),
+            Divider(color: Colors.white.withValues(alpha: 0.3), height: 24),
             Text(
               "ตามคลังสินค้า -> สินค้า",
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Colors.white.withOpacity(0.95),
+                color: Colors.white.withValues(alpha: 0.95),
               ),
             ),
             SizedBox(height: 8),
@@ -777,7 +777,7 @@ class _ReportStockBalanceWhBarcodeState
               "รายงานนี้แสดงยอดคงเหลือของสินค้าแยกตามคลังสินค้า โดยสามารถเลือกวันที่ต้องการดูข้อมูล และกรองข้อมูลตามสินค้าและคลังสินค้าที่ต้องการได้",
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.white.withOpacity(0.85),
+                color: Colors.white.withValues(alpha: 0.85),
               ),
             ),
           ],
@@ -1422,7 +1422,7 @@ class _ReportStockBalanceWhBarcodeState
                   ),
                 ],
               ),
-              Divider(color: Colors.white.withOpacity(0.2), height: 16),
+              Divider(color: Colors.white.withValues(alpha: 0.2), height: 16),
               Text(
                 "ข้อมูล ณ วันที่ ${conditionFinalDate.day}/${conditionFinalDate.month}/${conditionFinalDate.year}",
                 style: TextStyle(color: Colors.white, fontSize: 13),
@@ -1431,7 +1431,7 @@ class _ReportStockBalanceWhBarcodeState
               Text(
                 global.language("report_zoom_tip"),
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                   fontSize: 12,
                 ),
               ),
@@ -1748,7 +1748,7 @@ class _ReportStockBalanceWhBarcodeState
             indicatorColor: Colors.white,
             indicatorWeight: 3,
             labelColor: Colors.white,
-            unselectedLabelColor: Colors.white.withOpacity(0.7),
+            unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
             labelStyle: TextStyle(fontWeight: FontWeight.bold),
             tabs: [
               Tab(

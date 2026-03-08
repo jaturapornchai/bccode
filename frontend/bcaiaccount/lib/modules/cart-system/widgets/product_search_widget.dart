@@ -267,7 +267,7 @@ class _ProductSearchWidgetState extends State<ProductSearchWidget> with Automati
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(8),
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))],
+                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))],
                           ),
                           child: TextField(
                             controller: _searchController,
@@ -338,7 +338,7 @@ class _ProductSearchWidgetState extends State<ProductSearchWidget> with Automati
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Row(
@@ -933,7 +933,7 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
                             // แสดง placeholder ระหว่างโหลด
                             return Container(
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [itemColor.withOpacity(0.3), itemColor.withOpacity(0.6)]),
+                                gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [itemColor.withValues(alpha: 0.3), itemColor.withValues(alpha: 0.6)]),
                               ),
                               child: Center(
                                 child: CircularProgressIndicator(
@@ -1394,7 +1394,7 @@ class _ShopeeProductListCardState extends State<_ShopeeProductListCard> {
                           loadingBuilder: (context, child, loadingProgress) {
                             if (loadingProgress == null) return child;
                             return Container(
-                              decoration: BoxDecoration(gradient: LinearGradient(colors: [itemColor.withOpacity(0.3), itemColor.withOpacity(0.6)])),
+                              decoration: BoxDecoration(gradient: LinearGradient(colors: [itemColor.withValues(alpha: 0.3), itemColor.withValues(alpha: 0.6)])),
                               child: Center(
                                 child: CircularProgressIndicator(
                                   value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null,

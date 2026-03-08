@@ -1072,7 +1072,7 @@ class _KnowledgeBaseScreenContentState
                     child: Container(
                       width: 8,
                       color: _isDragging
-                          ? primaryColor.withOpacity(0.3)
+                          ? primaryColor.withValues(alpha: 0.3)
                           : Colors.grey[300],
                       child: Center(
                         child: Container(
@@ -1107,7 +1107,7 @@ class _KnowledgeBaseScreenContentState
         color: const Color(0xFF0D47A1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -1312,8 +1312,8 @@ class _KnowledgeBaseScreenContentState
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: isActive
-                ? Colors.green.withOpacity(0.1)
-                : Colors.grey.withOpacity(0.1),
+                ? Colors.green.withValues(alpha: 0.1)
+                : Colors.grey.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(

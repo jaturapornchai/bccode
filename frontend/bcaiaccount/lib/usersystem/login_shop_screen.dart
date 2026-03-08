@@ -618,7 +618,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
             child: Icon(icon, color: Colors.white, size: 22),
           ),
         ),
@@ -686,11 +686,11 @@ class LoginShopScreenState extends State<LoginShopScreen> {
             padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
             ),
             child: CircleAvatar(
               radius: 22,
-              backgroundColor: Colors.white.withOpacity(0.2),
+              backgroundColor: Colors.white.withValues(alpha: 0.2),
               // ถ้ามี photourl (จาก LINE Login) ให้แสดงรูป ถ้าไม่มีให้แสดงตัวอักษรตัวแรกของชื่อ
               backgroundImage: global.userLoginData.photourl.isNotEmpty
                   ? NetworkImage(global.userLoginData.photourl)
@@ -717,7 +717,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
                   global.userLoginData.name.isNotEmpty
                       ? global.userLoginData.name
                       : global.userLoginData.email,
-                  style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.w500),
+                  style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.w500),
                   overflow: TextOverflow.ellipsis,
                 ),
                 // แสดง email ถ้ามีและต่างจากชื่อ
@@ -725,7 +725,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
                     global.userLoginData.email != global.userLoginData.name)
                   Text(
                     global.userLoginData.email,
-                    style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.7)),
+                    style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.7)),
                     overflow: TextOverflow.ellipsis,
                   ),
               ],
@@ -798,9 +798,9 @@ class LoginShopScreenState extends State<LoginShopScreen> {
           child: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: isDestructive ? Colors.red.withOpacity(0.2) : Colors.white.withOpacity(0.15),
+              color: isDestructive ? Colors.red.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: isDestructive ? Colors.red.withOpacity(0.3) : Colors.white.withOpacity(0.2)),
+              border: Border.all(color: isDestructive ? Colors.red.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.2)),
             ),
             child: customWidget ?? Icon(icon, color: isDestructive ? Colors.red[100] : Colors.white, size: 22),
           ),
@@ -1055,7 +1055,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
         decoration: BoxDecoration(
           gradient: LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
           borderRadius: BorderRadius.circular(24),
-          boxShadow: [BoxShadow(color: gradient[0].withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 8), spreadRadius: 0)],
+          boxShadow: [BoxShadow(color: gradient[0].withValues(alpha: 0.35), blurRadius: 16, offset: const Offset(0, 8), spreadRadius: 0)],
         ),
         child: Material(
           color: Colors.transparent,
@@ -1075,7 +1075,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
                     child: Container(
                       width: 80,
                       height: 80,
-                      decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.1)),
+                      decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.1)),
                     ),
                   ),
                   // Main content - แสดง icon และชื่อร้าน
@@ -1085,7 +1085,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
                     children: [
                       Container(
                         padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(16)),
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(16)),
                         child: Icon(shopIcon, size: 36, color: Colors.white),
                       ),
                       const SizedBox(height: 10),
@@ -1114,7 +1114,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
                             decoration: BoxDecoration(
                               color: Colors.amber,
                               borderRadius: BorderRadius.circular(20),
-                              boxShadow: [BoxShadow(color: Colors.amber.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 2))],
+                              boxShadow: [BoxShadow(color: Colors.amber.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 2))],
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -1135,7 +1135,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(20),
-                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 2))],
+                              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 2))],
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -1281,7 +1281,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
         decoration: BoxDecoration(
           gradient: LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
           borderRadius: BorderRadius.circular(24),
-          boxShadow: [BoxShadow(color: gradient[0].withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 8), spreadRadius: 0)],
+          boxShadow: [BoxShadow(color: gradient[0].withValues(alpha: 0.35), blurRadius: 16, offset: const Offset(0, 8), spreadRadius: 0)],
         ),
         child: Material(
           color: Colors.transparent,
@@ -1314,7 +1314,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
                     child: Container(
                       width: 80,
                       height: 80,
-                      decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.1)),
+                      decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.1)),
                     ),
                   ),
                   // Main content - ใช้ FittedBox เพื่อ scale down เมื่อ content ใหญ่เกินไป (รองรับ zoom)
@@ -1328,7 +1328,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
                         children: [
                           Container(
                             padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(16)),
+                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(16)),
                             child: Icon(branchIcon, size: 36, color: Colors.white),
                           ),
                           const SizedBox(height: 14),
@@ -1353,7 +1353,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 2))],
+                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 2))],
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,

@@ -362,14 +362,14 @@ class LoginScreenState extends State<LoginScreen> {
             boxShadow: [
               // เงาด้านบนซ้าย
               BoxShadow(
-                color: Colors.grey.withOpacity(0.3),
+                color: Colors.grey.withValues(alpha: 0.3),
                 blurRadius: 10.0,
                 spreadRadius: 2.0,
                 offset: const Offset(-2.0, -2.0), // shadow direction: top left
               ),
               // เงาด้านล่างขวา
               BoxShadow(
-                color: Colors.grey.withOpacity(0.5),
+                color: Colors.grey.withValues(alpha: 0.5),
                 blurRadius: 10.0,
                 spreadRadius: 2.0,
                 offset: const Offset(
@@ -379,14 +379,14 @@ class LoginScreenState extends State<LoginScreen> {
               ),
               // เงาด้านบนขวา
               BoxShadow(
-                color: Colors.grey.withOpacity(0.3),
+                color: Colors.grey.withValues(alpha: 0.3),
                 blurRadius: 10.0,
                 spreadRadius: 2.0,
                 offset: const Offset(2.0, -2.0), // shadow direction: top right
               ),
               // เงาด้านล่างซ้าย
               BoxShadow(
-                color: Colors.grey.withOpacity(0.3),
+                color: Colors.grey.withValues(alpha: 0.3),
                 blurRadius: 10.0,
                 spreadRadius: 2.0,
                 offset: const Offset(

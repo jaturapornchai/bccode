@@ -203,7 +203,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
 
     return Container(
       decoration: BoxDecoration(
-        boxShadow: [BoxShadow(color: gradientColors[0].withOpacity(0.35), spreadRadius: 0, blurRadius: 12, offset: const Offset(0, 6))],
+        boxShadow: [BoxShadow(color: gradientColors[0].withValues(alpha: 0.35), spreadRadius: 0, blurRadius: 12, offset: const Offset(0, 6))],
         borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: gradientColors),
       ),
@@ -222,7 +222,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                   child: Container(
                     width: 50,
                     height: 50,
-                    decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.1)),
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.1)),
                   ),
                 ),
                 Center(
@@ -235,7 +235,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                         if (icon != null) ...[
                           Container(
                             padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                             child: Icon(icon, size: 26, color: Colors.white),
                           ),
                           const SizedBox(height: 10),
@@ -606,8 +606,8 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: primaryColor.withOpacity(0.3), width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2))],
+        border: Border.all(color: primaryColor.withValues(alpha: 0.3), width: 1),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -853,8 +853,8 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: primaryColor.withOpacity(0.3), width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2))],
+        border: Border.all(color: primaryColor.withValues(alpha: 0.3), width: 1),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2))],
       ),
       child: SelectionArea(
         // ✅ เพิ่ม SelectionArea เพื่อให้เลือกข้อความได้
@@ -937,7 +937,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
-                  shadows: [Shadow(offset: const Offset(1.5, 1.5), blurRadius: 3.0, color: Colors.black.withOpacity(0.4))],
+                  shadows: [Shadow(offset: const Offset(1.5, 1.5), blurRadius: 3.0, color: Colors.black.withValues(alpha: 0.4))],
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -963,7 +963,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             gradient: LinearGradient(
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
-              colors: [Colors.white, primaryLightColor.withOpacity(0.3), Colors.white.withOpacity(0.9)],
+              colors: [Colors.white, primaryLightColor.withValues(alpha: 0.3), Colors.white.withValues(alpha: 0.9)],
               stops: const [0.0, 0.5, 1.0],
             ),
           ),
@@ -972,7 +972,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.only(left: 10, right: 10, top: 4, bottom: 4),
-                color: primaryDarkColor.withOpacity(0.95),
+                color: primaryDarkColor.withValues(alpha: 0.95),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1242,7 +1242,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
 
                               return Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(20)),
+                                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20)),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -1256,7 +1256,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                             displayName,
                                             style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
                                           ),
-                                        if (email.isNotEmpty) Text(email, style: TextStyle(fontSize: 10, color: Colors.white.withOpacity(0.8))),
+                                        if (email.isNotEmpty) Text(email, style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.8))),
                                       ],
                                     ),
                                     const SizedBox(width: 8),
@@ -1354,9 +1354,9 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
           type: BottomNavigationBarType.fixed,
           elevation: 10.0,
           currentIndex: global.activeIndexMenu,
-          backgroundColor: primaryDarkColor.withOpacity(0.95),
+          backgroundColor: primaryDarkColor.withValues(alpha: 0.95),
           selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.white.withOpacity(.60),
+          unselectedItemColor: Colors.white.withValues(alpha: .60),
           selectedLabelStyle: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 14,

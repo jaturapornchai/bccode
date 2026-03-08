@@ -2530,7 +2530,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.5),
+            color: Colors.grey.withValues(alpha: 0.5),
             spreadRadius: 5,
             blurRadius: 7,
             offset: const Offset(0, 3), // changes position of shadow
@@ -3148,7 +3148,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                           children: [
                             Container(
                               padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(color: const Color(0xFF2A6F97).withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                              decoration: BoxDecoration(color: const Color(0xFF2A6F97).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
                               child: const Icon(Icons.inventory_2_outlined, color: Color(0xFF2A6F97), size: 18),
                             ),
                             SizedBox(width: 8),
@@ -3179,7 +3179,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                           children: [
                             Container(
                               padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(color: const Color(0xFF2A6F97).withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                              decoration: BoxDecoration(color: const Color(0xFF2A6F97).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
                               child: const Icon(Icons.description_outlined, color: Color(0xFF2A6F97), size: 18),
                             ),
                             SizedBox(width: 8),

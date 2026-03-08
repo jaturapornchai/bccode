@@ -593,13 +593,13 @@ class _SegmentedButtonDefaultOverlay extends WidgetStateProperty<Color?>
   @override
   Color? resolve(Set<WidgetState> states) {
     if (states.contains(WidgetState.pressed)) {
-      return overlay.withOpacity(0.12);
+      return overlay.withValues(alpha: 0.12);
     }
     if (states.contains(WidgetState.hovered)) {
-      return overlay.withOpacity(0.08);
+      return overlay.withValues(alpha: 0.08);
     }
     if (states.contains(WidgetState.focused)) {
-      return overlay.withOpacity(0.12);
+      return overlay.withValues(alpha: 0.12);
     }
     return null;
   }
@@ -1083,7 +1083,7 @@ class _SegmentedButtonDefaultsM3 extends SegmentedButtonThemeData {
         Set<WidgetState> states,
       ) {
         if (states.contains(WidgetState.disabled)) {
-          return _colors.onSurface.withOpacity(0.38);
+          return _colors.onSurface.withValues(alpha: 0.38);
         }
         if (states.contains(WidgetState.selected)) {
           if (states.contains(WidgetState.pressed)) {
@@ -1112,23 +1112,23 @@ class _SegmentedButtonDefaultsM3 extends SegmentedButtonThemeData {
       overlayColor: WidgetStateProperty.resolveWith((Set<WidgetState> states) {
         if (states.contains(WidgetState.selected)) {
           if (states.contains(WidgetState.pressed)) {
-            return _colors.onSecondaryContainer.withOpacity(0.12);
+            return _colors.onSecondaryContainer.withValues(alpha: 0.12);
           }
           if (states.contains(WidgetState.hovered)) {
-            return _colors.onSecondaryContainer.withOpacity(0.08);
+            return _colors.onSecondaryContainer.withValues(alpha: 0.08);
           }
           if (states.contains(WidgetState.focused)) {
-            return _colors.onSecondaryContainer.withOpacity(0.12);
+            return _colors.onSecondaryContainer.withValues(alpha: 0.12);
           }
         } else {
           if (states.contains(WidgetState.pressed)) {
-            return _colors.onSurface.withOpacity(0.12);
+            return _colors.onSurface.withValues(alpha: 0.12);
           }
           if (states.contains(WidgetState.hovered)) {
-            return _colors.onSurface.withOpacity(0.08);
+            return _colors.onSurface.withValues(alpha: 0.08);
           }
           if (states.contains(WidgetState.focused)) {
-            return _colors.onSurface.withOpacity(0.12);
+            return _colors.onSurface.withValues(alpha: 0.12);
           }
         }
         return null;
@@ -1138,7 +1138,7 @@ class _SegmentedButtonDefaultsM3 extends SegmentedButtonThemeData {
       iconSize: const WidgetStatePropertyAll<double?>(18.0),
       side: WidgetStateProperty.resolveWith((Set<WidgetState> states) {
         if (states.contains(WidgetState.disabled)) {
-          return BorderSide(color: _colors.onSurface.withOpacity(0.12));
+          return BorderSide(color: _colors.onSurface.withValues(alpha: 0.12));
         }
         return BorderSide(color: _colors.outline);
       }),

@@ -262,9 +262,9 @@ class _ImportProductDetailScreenState extends State<ImportProductDetailScreen> {
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: product.actionColor.withOpacity(0.1),
+                          color: product.actionColor.withValues(alpha: 0.1),
                           border: Border.all(
-                            color: product.actionColor.withOpacity(0.3),
+                            color: product.actionColor.withValues(alpha: 0.3),
                             width: 2,
                           ),
                           borderRadius: BorderRadius.circular(8),

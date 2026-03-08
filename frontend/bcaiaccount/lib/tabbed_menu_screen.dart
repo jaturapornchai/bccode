@@ -257,7 +257,7 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: primaryColor.withOpacity(0.9),
+                color: primaryColor.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -309,7 +309,7 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
           boxShadow: isActive
               ? [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),
@@ -349,7 +349,7 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     color: isActive
-                        ? Colors.white.withOpacity(0.25)
+                        ? Colors.white.withValues(alpha: 0.25)
                         : Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -388,7 +388,7 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
               color: Colors.grey.shade100,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -435,7 +435,7 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                                 borderRadius: BorderRadius.circular(20),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: primaryColor.withOpacity(0.3),
+                                    color: primaryColor.withValues(alpha: 0.3),
                                     blurRadius: 4,
                                     offset: const Offset(0, 2),
                                   ),

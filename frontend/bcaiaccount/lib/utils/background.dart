@@ -249,7 +249,7 @@ class CloudHighlightPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.4)
+      ..color = Colors.white.withValues(alpha: 0.4)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5)
       ..blendMode = BlendMode.screen;
 
@@ -302,14 +302,14 @@ class CloudPainter extends CustomPainter {
         Offset(size.width / 2, size.height),
         [
           Colors.white,
-          Colors.white.withOpacity(0.85),
+          Colors.white.withValues(alpha: 0.85),
         ],
       )
       ..style = PaintingStyle.fill;
 
     // เพิ่ม blur effect เพื่อให้ขอบเมฆนุ่มขึ้น
     final shadowPaint = Paint()
-      ..color = Colors.white.withOpacity(0.6)
+      ..color = Colors.white.withValues(alpha: 0.6)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
 
     // ใช้ Path แทนการวาดวงกลมเพื่อให้มีรูปร่างที่ซับซ้อนและสวยงามขึ้น
@@ -367,13 +367,13 @@ class CloudPainter extends CustomPainter {
         Offset(size.width / 2, size.height),
         [
           Colors.white,
-          Colors.white.withOpacity(0.8),
+          Colors.white.withValues(alpha: 0.8),
         ],
       )
       ..style = PaintingStyle.fill;
 
     final shadowPaint = Paint()
-      ..color = Colors.white.withOpacity(0.5)
+      ..color = Colors.white.withValues(alpha: 0.5)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
 
     final width = size.width;
@@ -422,7 +422,7 @@ class CloudPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     final shadowPaint = Paint()
-      ..color = Colors.white.withOpacity(0.7)
+      ..color = Colors.white.withValues(alpha: 0.7)
       ..style = PaintingStyle.fill
       ..maskFilter = const MaskFilter.blur(BlurStyle.outer, 4);
 

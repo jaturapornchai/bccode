@@ -195,9 +195,9 @@ class CouponProductConditionWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
       decoration: BoxDecoration(
-        color: global.theme.appBarColor.withOpacity(0.08),
+        color: global.theme.appBarColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: global.theme.appBarColor.withOpacity(0.2)),
+        border: Border.all(color: global.theme.appBarColor.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -220,16 +220,16 @@ class CouponProductConditionWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: global.theme.appBarColor.withOpacity(0.05),
+        color: global.theme.appBarColor.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: global.theme.appBarColor.withOpacity(0.2)),
+        border: Border.all(color: global.theme.appBarColor.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
           Icon(
             Icons.info_outline,
             size: 20,
-            color: global.theme.appBarColor.withOpacity(0.7),
+            color: global.theme.appBarColor.withValues(alpha: 0.7),
           ),
           SizedBox(width: 10),
           Expanded(
@@ -274,7 +274,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                 Icon(
                   icon,
                   size: 18,
-                  color: global.theme.appBarColor.withOpacity(0.7),
+                  color: global.theme.appBarColor.withValues(alpha: 0.7),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -289,7 +289,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                 if (isEditMode)
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: global.theme.appBarColor.withOpacity(
+                      backgroundColor: global.theme.appBarColor.withValues(alpha:
                         0.08,
                       ),
                       foregroundColor: global.theme.appBarColor,
@@ -301,7 +301,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(6),
                         side: BorderSide(
-                          color: global.theme.appBarColor.withOpacity(0.2),
+                          color: global.theme.appBarColor.withValues(alpha: 0.2),
                         ),
                       ),
                     ),
@@ -355,10 +355,10 @@ class CouponProductConditionWidget extends StatelessWidget {
       ),
       deleteIcon: isEditMode ? const Icon(Icons.close, size: 16) : null,
       onDeleted: isEditMode ? () => onRemoveCode(code, type) : null,
-      backgroundColor: global.theme.appBarColor.withOpacity(0.1),
+      backgroundColor: global.theme.appBarColor.withValues(alpha: 0.1),
       labelStyle: TextStyle(color: global.theme.appBarColor),
       deleteIconColor: Colors.grey[600],
-      side: BorderSide(color: global.theme.appBarColor.withOpacity(0.3)),
+      side: BorderSide(color: global.theme.appBarColor.withValues(alpha: 0.3)),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     );
   }
@@ -385,7 +385,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                 Icon(
                   Icons.payments,
                   size: 18,
-                  color: global.theme.appBarColor.withOpacity(0.7),
+                  color: global.theme.appBarColor.withValues(alpha: 0.7),
                 ),
                 SizedBox(width: 8),
                 Text(
@@ -400,7 +400,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                 if (isEditMode)
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: global.theme.appBarColor.withOpacity(
+                      backgroundColor: global.theme.appBarColor.withValues(alpha:
                         0.08,
                       ),
                       foregroundColor: global.theme.appBarColor,
@@ -412,7 +412,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(6),
                         side: BorderSide(
-                          color: global.theme.appBarColor.withOpacity(0.2),
+                          color: global.theme.appBarColor.withValues(alpha: 0.2),
                         ),
                       ),
                     ),
@@ -433,12 +433,12 @@ class CouponProductConditionWidget extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: hasMinimum
-                    ? global.theme.appBarColor.withOpacity(0.05)
+                    ? global.theme.appBarColor.withValues(alpha: 0.05)
                     : Colors.grey[100],
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
                   color: hasMinimum
-                      ? global.theme.appBarColor.withOpacity(0.2)
+                      ? global.theme.appBarColor.withValues(alpha: 0.2)
                       : Colors.grey[300]!,
                 ),
               ),

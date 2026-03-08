@@ -753,7 +753,7 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -1043,7 +1043,7 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -1203,7 +1203,7 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
               margin: const EdgeInsets.only(right: 6),
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: userMessageColor.withOpacity(0.2),
+                color: userMessageColor.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.person, size: 14, color: Colors.white),
@@ -1457,7 +1457,7 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
               margin: const EdgeInsets.only(left: 6),
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: primaryColor.withOpacity(0.1),
+                color: primaryColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.smart_toy, size: 14, color: primaryColor),
@@ -1603,7 +1603,7 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
             margin: const EdgeInsets.only(left: 6),
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.1),
+              color: primaryColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(Icons.smart_toy, size: 14, color: primaryColor),
@@ -2015,7 +2015,7 @@ class _WebViewDialogState extends State<_WebViewDialog> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
