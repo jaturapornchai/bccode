@@ -6094,10 +6094,10 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                                       '')
                                   ? DecorationImage(
                                       image: NetworkImage(
-                                        screenData
+                                        global.resolveFileUrl(screenData
                                             .options![optionIndex]
                                             .choices[choiceIndex]
-                                            .imageuri!,
+                                            .imageuri!),
                                       ),
                                       fit: BoxFit.fill,
                                     )
@@ -6757,23 +6757,21 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                               });
                             }
                           }
-                        : () {
+                        : () async {
                             FocusScope.of(context).unfocus();
-                            setState(() async {
-                              final XFile? photo = await imagePicker.pickImage(
-                                source: ImageSource.gallery,
-                                maxHeight: 480,
-                                maxWidth: 640,
-                                imageQuality: 60,
-                              );
-                              if (photo != null) {
-                                var f = await photo.readAsBytes();
-                                setState(() {
-                                  imageWeb = f;
-                                  imageFile = File(photo.path);
-                                });
-                              }
-                            });
+                            final XFile? photo = await imagePicker.pickImage(
+                              source: ImageSource.gallery,
+                              maxHeight: 480,
+                              maxWidth: 640,
+                              imageQuality: 60,
+                            );
+                            if (photo != null) {
+                              var f = await photo.readAsBytes();
+                              setState(() {
+                                imageWeb = f;
+                                imageFile = File(photo.path);
+                              });
+                            }
                           },
                     icon: Icon(Icons.folder),
                     label: Text(global.language("select_picture")),
@@ -6846,9 +6844,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                             image: MemoryImage(imageWeb!),
                             fit: BoxFit.fill,
                           )
-                        : (screenData.imageuri != '')
+                        : (screenData.imageuri != null && screenData.imageuri!.isNotEmpty)
                         ? DecorationImage(
-                            image: NetworkImage(screenData.imageuri!),
+                            image: NetworkImage(global.resolveFileUrl(screenData.imageuri!)),
                           )
                         : const DecorationImage(
                             image: AssetImage('assets/img/noimage.png'),
