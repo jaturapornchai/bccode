@@ -294,7 +294,7 @@ class UnitFlowWidget extends StatelessWidget {
                   ),
                   if (bcInfo.retailPrice != null)
                     Text(
-                      '฿${_formatPrice(bcInfo.retailPrice!)}',
+                      _formatPrice(bcInfo.retailPrice!),
                       style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.w500,
@@ -529,7 +529,7 @@ class UnitFlowWidget extends StatelessWidget {
                               if (bcInfo.retailPrice != null) ...[
                                 const SizedBox(width: 6),
                                 Text(
-                                  '฿${_formatPrice(bcInfo.retailPrice!)}',
+                                  _formatPrice(bcInfo.retailPrice!),
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w600,
