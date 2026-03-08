@@ -166,7 +166,7 @@ class ProductPreviewScreen extends StatelessWidget {
                           ? MemoryImage(imageWeb!) as ImageProvider
                           : (screenData.imageuri != null &&
                                   screenData.imageuri!.isNotEmpty)
-                              ? NetworkImage(screenData.imageuri!)
+                              ? NetworkImage(global.resolveFileUrl(screenData.imageuri!))
                                   as ImageProvider
                               : const AssetImage('assets/img/noimage.png'),
                       fit: BoxFit.contain,

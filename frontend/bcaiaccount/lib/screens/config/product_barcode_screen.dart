@@ -2094,12 +2094,11 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
     return Expanded(
       flex: 1,
       child:
-          (value.imageuri!.isNotEmpty ||
-              1 == 1) // Consider revising this condition
+          value.imageuri!.isNotEmpty
           ? ImageTooltip(
               key: key,
-              image: Image.network(value.imageuri!),
-              child: _buildImageContainer(value.imageuri!),
+              image: Image.network(global.resolveFileUrl(value.imageuri!)),
+              child: _buildImageContainer(global.resolveFileUrl(value.imageuri!)),
             )
           : Container(),
     );

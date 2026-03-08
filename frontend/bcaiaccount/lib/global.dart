@@ -2749,10 +2749,24 @@ String goApiUrlPath(String endpoint) {
 }
 
 /// แปลง file URL จาก API response เป็น full URL
+/// - ถ้าเป็น Docker internal URL (seaweedfs-filer) → rewrite ผ่าน goapi S3 proxy
 /// - ถ้าเป็น full URL (http/https) → ใช้ตรงๆ (backward compatible)
 /// - ถ้าเป็น relative path (เช่น /s3/file/...) → ต่อ goapi base URL ข้างหน้า
 String resolveFileUrl(String url) {
   if (url.isEmpty) return url;
+
+  // Docker internal hostname → rewrite ผ่าน goapi S3 proxy
+  if (url.contains('seaweedfs-filer')) {
+    final uri = Uri.parse(url);
+    final pathSegments = uri.pathSegments;
+    // path = /bucket/key... → ข้ามชื่อ bucket (segment แรก) ส่งเฉพาะ key ผ่าน proxy
+    if (pathSegments.length > 1) {
+      final key = pathSegments.sublist(1).join('/');
+      return goApiUrlPath('s3/file/$key');
+    }
+    return url;
+  }
+
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
 
   // สร้าง goapi base URL
