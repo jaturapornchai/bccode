@@ -173,11 +173,13 @@ class UnitFlowWidget extends StatelessWidget {
 
       children.add(_buildUnitNode(group, isSelected, accentColor));
 
-      // ลูกศรพร้อมตัวคูณ
+      // ลูกศรพร้อมตัวคูณ (เทียบกับหน่วยฐาน)
       if (i < groups.length - 1) {
+        final baseRatio = groups.first.ratio;
         final nextGroup = groups[i + 1];
-        final multiplier =
-            group.ratio > 0 ? nextGroup.ratio / group.ratio : nextGroup.ratio;
+        final multiplier = baseRatio > 0
+            ? nextGroup.ratio / baseRatio
+            : nextGroup.ratio;
         children.add(_buildArrow(multiplier, accentColor));
       }
     }
@@ -333,19 +335,7 @@ class UnitFlowWidget extends StatelessWidget {
       final isSelected = group.unitCode == currentUnitCode;
       final isBase = i == 0;
 
-      // คำนวณอัตราแปลงกับหน่วยก่อนหน้า
-      double? multiplierPrev;
-      String? prevUnitName;
-      String? prevUnitCode;
-      if (i > 0) {
-        final prev = groups[i - 1];
-        multiplierPrev =
-            prev.ratio > 0 ? group.ratio / prev.ratio : group.ratio;
-        prevUnitName = prev.unitName;
-        prevUnitCode = prev.unitCode;
-      }
-
-      // อัตราแปลงกับหน่วยฐาน
+      // อัตราแปลงกับหน่วยฐานเสมอ (ทุกหน่วย ref ไปที่ base unit)
       final ratioToBase =
           baseGroup.ratio > 0 ? group.ratio / baseGroup.ratio : group.ratio;
 
@@ -435,8 +425,8 @@ class UnitFlowWidget extends StatelessWidget {
                         ],
                       ],
                     ),
-                    // อัตราแปลงหน่วย
-                    if (!isBase && multiplierPrev != null) ...[
+                    // อัตราแปลงหน่วย (เทียบหน่วยฐานเสมอ)
+                    if (!isBase) ...[
                       const SizedBox(height: 4),
                       Text.rich(
                         TextSpan(children: [
@@ -455,7 +445,7 @@ class UnitFlowWidget extends StatelessWidget {
                           ),
                           TextSpan(
                             text:
-                                '${_formatNumber(multiplierPrev)} ${prevUnitName ?? ''} (${prevUnitCode ?? ''})',
+                                '${_formatNumber(ratioToBase)} ${baseGroup.unitName} (${baseGroup.unitCode})',
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               color: accentColor,
@@ -464,18 +454,6 @@ class UnitFlowWidget extends StatelessWidget {
                         ]),
                         style: const TextStyle(fontSize: 12),
                       ),
-                      // แสดงเทียบหน่วยฐานถ้าห่างมากกว่า 1 ระดับ
-                      if (i > 1)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text(
-                            '= ${_formatNumber(ratioToBase)} ${baseGroup.unitName} (${baseGroup.unitCode})',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey[500],
-                            ),
-                          ),
-                        ),
                     ],
                     // barcode ในกลุ่มนี้
                     const SizedBox(height: 4),
