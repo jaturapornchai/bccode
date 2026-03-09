@@ -4875,6 +4875,33 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                   floatingLabelBehavior: FloatingLabelBehavior.always,
                   border: const OutlineInputBorder(),
                   labelText: priceList[priceIndex].names[0].name,
+                  suffixIcon: isEditMode
+                      ? IconButton(
+                          icon: const Icon(Icons.calculate_outlined, size: 18),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                              minWidth: 30, minHeight: 30),
+                          onPressed: () async {
+                            final result = await showNumPadDialog(
+                              context,
+                              title: priceList[priceIndex].names[0].name ?? '',
+                              initialValue: screenData
+                                          .prices![priceIndex].price ==
+                                      0.0
+                                  ? ''
+                                  : screenData.prices![priceIndex].price
+                                      .toString(),
+                            );
+                            if (result != null && result.isNotEmpty) {
+                              setState(() {
+                                isDataChange = true;
+                                screenData.prices![priceIndex].price =
+                                    double.parse(result.replaceAll(',', ''));
+                              });
+                            }
+                          },
+                        )
+                      : null,
                 ),
               ),
             ),
@@ -5005,20 +5032,62 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
       );
     }
 
+    // ลดราคา ณ จุดขาย + แสดงเวลาการขาย (combined row)
     formWidgets.add(
       Padding(
-        padding: EdgeInsets.only(left: 10, right: 10, bottom: 15),
+        padding: const EdgeInsets.only(left: 10, right: 10, bottom: 4),
         child: Row(
           children: [
-            Switch(
-              value: screenData.isdiscountpointofpurchase!,
-              onChanged: (bool? value) {
-                setState(() {
-                  screenData.isdiscountpointofpurchase = value ?? false;
-                });
-              },
+            Expanded(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Switch(
+                    value: screenData.isdiscountpointofpurchase!,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        screenData.isdiscountpointofpurchase = value ?? false;
+                      });
+                    },
+                  ),
+                  Flexible(
+                    child: Text(
+                      global.language("is_discount_point_of_purchase"),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            Text(global.language("is_discount_point_of_purchase")),
+            Expanded(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Switch(
+                    value: isShowTimeForSale,
+                    onChanged: (value) {
+                      setState(() {
+                        isShowTimeForSale = value;
+                        if (!isShowTimeForSale) {
+                          timeForSales.clear();
+                          mediaFromDateController.clear();
+                          mediaToDateController.clear();
+                          mediaFromTimeController.clear();
+                          mediaToTimeController.clear();
+                          dayOfWeekSeleted.clear();
+                        }
+                      });
+                    },
+                  ),
+                  Flexible(
+                    child: Text(
+                      "${global.language("show_time_for_sale")} ${(timeForSales.isNotEmpty) ? "(${timeForSales.length})" : ""}",
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -5165,37 +5234,12 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
       );
     }
 
-    /// เวลาการขาย
+    /// เวลาการขาย (switch อยู่ใน combined row ด้านบนแล้ว)
     formWidgets.add(
       Padding(
         padding: EdgeInsets.only(left: 10, right: 10, bottom: 15),
         child: Column(
           children: [
-            Row(
-              children: [
-                Switch(
-                  value: isShowTimeForSale,
-                  onChanged: (value) {
-                    setState(() {
-                      isShowTimeForSale = value;
-
-                      if (!isShowTimeForSale) {
-                        timeForSales.clear();
-                        mediaFromDateController.clear();
-                        mediaToDateController.clear();
-                        mediaFromTimeController.clear();
-                        mediaToTimeController.clear();
-                        dayOfWeekSeleted.clear();
-                      }
-                    });
-                  },
-                ),
-                Text(
-                  "${global.language("show_time_for_sale")} ${(timeForSales.isNotEmpty) ? "(${timeForSales.length})" : ""}",
-                  style: const TextStyle(color: Colors.black),
-                ),
-              ],
-            ),
             (isShowTimeForSale)
                 ? Container(
                     width: double.infinity,
