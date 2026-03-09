@@ -2539,71 +2539,53 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
     bool isSelected = false,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(left: 10, right: 10, bottom: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: global.theme.inputTextBoxForceColor,
-              fontSize: 12,
-            ),
+      padding: const EdgeInsets.only(left: 10, right: 10, bottom: 4),
+      child: InkWell(
+        onTap: isEditMode ? onTap : null,
+        child: Container(
+          height: 36,
+          decoration: BoxDecoration(
+            border: Border.all(color: isSelected ? global.theme.appBarColor : Colors.grey.shade400),
+            borderRadius: BorderRadius.circular(4),
+            color: isSelected ? global.theme.appBarColor.withValues(alpha: 0.05) : null,
           ),
-          SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 16,
-                    ),
-                    child: Text(
-                      isSelected
-                          ? "$code ~ $displayName"
-                          : global.language("select_") + label,
-                      style: TextStyle(
-                        color: isSelected ? Colors.black : Colors.grey[600],
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
+          child: Row(
+            children: [
+              const SizedBox(width: 8),
+              Text(
+                '$label: ',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12,
                 ),
-                Container(width: 1, height: 40, color: Colors.grey),
-                if (isSelected && isEditMode)
-                  InkWell(
-                    onTap: onClear,
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      child: const Icon(
-                        Icons.clear,
-                        color: Colors.red,
-                        size: 20,
-                      ),
-                    ),
+              ),
+              Expanded(
+                child: Text(
+                  isSelected ? '$code ~ $displayName' : '-',
+                  style: TextStyle(
+                    color: isSelected ? Colors.black : Colors.grey[400],
+                    fontSize: 13,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (isSelected && isEditMode)
                 InkWell(
-                  onTap: isEditMode ? onTap : null,
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    child: Icon(
-                      Icons.search,
-                      color: isEditMode
-                          ? global.theme.appBarColor
-                          : Colors.grey,
-                    ),
+                  onTap: onClear,
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    child: Icon(Icons.clear, color: Colors.red, size: 16),
                   ),
                 ),
-              ],
-            ),
+              Icon(
+                Icons.search,
+                color: isEditMode ? global.theme.appBarColor : Colors.grey,
+                size: 16,
+              ),
+              const SizedBox(width: 6),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -4838,64 +4820,90 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
       }
     }
 
-    ///  ราคาขาย
-    for (int priceIndex = 0; priceIndex < priceList.length; priceIndex++) {
-      formWidgets.add(
-        Padding(
-          padding: const EdgeInsets.only(
-            left: 10,
-            right: 10,
-            bottom: 10,
-            top: 10,
-          ),
-          child: TextField(
-            readOnly: !isEditMode,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [global.NumberInputFormatter()],
-            onChanged: (value) {
-              isDataChange = true;
-              if (value != '') {
-                screenData.prices![priceIndex].price = double.parse(
-                  value.replaceAll(',', ''),
-                );
-              } else {
-                screenData.prices![priceIndex].price = 0;
-              }
-            },
-            onSubmitted: (value) {
-              findFocusNext(focusNodeIndex);
-            },
-            focusNode: fieldFocusNodes[++focusNodeMax].focusNode,
-            textAlign: TextAlign.right,
-            controller: TextEditingController(
-              text: (screenData.prices![priceIndex].price == 0.0)
-                  ? ""
-                  : global.formatNumber(
-                      screenData.prices!
-                          .firstWhere(
-                            (element) =>
-                                element.keynumber ==
-                                priceList[priceIndex].keyNumber,
-                          )
-                          .price,
-                    ),
+    ///  ราคาขาย (2-column compact layout)
+    {
+      List<Widget> priceFields = [];
+      for (int priceIndex = 0;
+          priceIndex < priceList.length;
+          priceIndex++) {
+        priceFields.add(
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: priceIndex.isEven ? 10 : 4,
+                right: priceIndex.isEven ? 4 : 10,
+                bottom: 6,
+              ),
+              child: TextField(
+                readOnly: !isEditMode,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [global.NumberInputFormatter()],
+                style: const TextStyle(fontSize: 13),
+                onChanged: (value) {
+                  isDataChange = true;
+                  if (value != '') {
+                    screenData.prices![priceIndex].price = double.parse(
+                      value.replaceAll(',', ''),
+                    );
+                  } else {
+                    screenData.prices![priceIndex].price = 0;
+                  }
+                },
+                onSubmitted: (value) {
+                  findFocusNext(focusNodeIndex);
+                },
+                focusNode: fieldFocusNodes[++focusNodeMax].focusNode,
+                textAlign: TextAlign.right,
+                controller: TextEditingController(
+                  text: (screenData.prices![priceIndex].price == 0.0)
+                      ? ""
+                      : global.formatNumber(
+                          screenData.prices!
+                              .firstWhere(
+                                (element) =>
+                                    element.keynumber ==
+                                    priceList[priceIndex].keyNumber,
+                              )
+                              .price,
+                        ),
+                ),
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 10),
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                  border: const OutlineInputBorder(),
+                  labelText: priceList[priceIndex].names[0].name,
+                ),
+              ),
             ),
-            decoration: InputDecoration(
-              floatingLabelBehavior: FloatingLabelBehavior.always,
-              border: const OutlineInputBorder(),
-              labelText:
-                  "${global.language("price")} (${priceList[priceIndex].names[0].name})",
-            ),
           ),
-        ),
-      );
+        );
+      }
+      // Group into rows of 2
+      for (int i = 0; i < priceFields.length; i += 2) {
+        formWidgets.add(
+          Row(
+            children: [
+              priceFields[i],
+              if (i + 1 < priceFields.length)
+                priceFields[i + 1]
+              else
+                const Expanded(child: SizedBox()),
+            ],
+          ),
+        );
+      }
     }
+    // ส่วนลด
     focusNodeMax++;
     formWidgets.add(
       Padding(
-        padding: EdgeInsets.only(left: 10, right: 10, bottom: 10),
+        padding: const EdgeInsets.only(left: 10, right: 10, bottom: 6),
         child: TextField(
           readOnly: !isEditMode,
+          style: const TextStyle(fontSize: 13),
           onSubmitted: (value) {
             if (kIsWeb) {
               findFocusNext(++focusNodeIndex);
@@ -4912,8 +4920,11 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                 TextSelection.fromPosition(TextPosition(offset: value.length));
           },
           decoration: InputDecoration(
+            isDense: true,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
             floatingLabelBehavior: FloatingLabelBehavior.always,
-            border: OutlineInputBorder(),
+            border: const OutlineInputBorder(),
             labelText: global.language("discount"),
           ),
         ),
