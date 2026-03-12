@@ -674,7 +674,7 @@ class MasterCategoryScreenState extends State<MasterCategoryScreen>
 
   Widget editScreen({mobileScreen}) {
     return Scaffold(
-      backgroundColor: global.theme.backgroundColor,
+      backgroundColor: (screenEvent == global.ScreenEventEnum.edit || screenEvent == global.ScreenEventEnum.add) ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor:

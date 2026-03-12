@@ -722,6 +722,7 @@ class StaffScreenState extends State<StaffScreen>
     }
 
     return Scaffold(
+      backgroundColor: isEditMode ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)

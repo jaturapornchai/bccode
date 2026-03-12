@@ -1786,6 +1786,7 @@ class ProductScreenEditState extends State<ProductScreenEdit>
     }
 
     return Scaffold(
+      backgroundColor: (widget.screenEventGetValue() == global.ScreenEventEnum.edit || widget.screenEventGetValue() == global.ScreenEventEnum.add) ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor:

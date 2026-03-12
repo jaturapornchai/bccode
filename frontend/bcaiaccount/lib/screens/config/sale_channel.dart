@@ -1145,7 +1145,7 @@ class SaleChannelScreenState extends State<SaleChannelScreen>
     }
 
     return Scaffold(
-      backgroundColor: global.theme.backgroundColor,
+      backgroundColor: isEditMode ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)

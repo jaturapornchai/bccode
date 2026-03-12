@@ -1626,7 +1626,7 @@ class PromotionScreenState extends State<PromotionScreen>
     }
 
     return Scaffold(
-      backgroundColor: global.theme.backgroundColor,
+      backgroundColor: isEditMode ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
