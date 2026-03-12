@@ -15,7 +15,8 @@ class QTApprovalSettingScreen extends StatefulWidget {
       _QTApprovalSettingScreenState();
 }
 
-class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
+class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen>
+    with global.ThemeRefreshMixin {
   bool _isLoading = true;
   bool _isLoadingUsers = false;
   List<PurchaseTypeModel> _purchaseTypes = [];
@@ -207,12 +208,12 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
         backgroundColor: global.theme.appBarColor,
         title: Text(global.language('approve_quotation')),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () => global.gotoMainMenu(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh),
             onPressed: _loadData,
             tooltip: global.language('database_master_info.refresh'),
           ),
@@ -334,7 +335,7 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
             child: Text(global.language('cancel')),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
             onPressed: () => Navigator.pop(context, true),
             child: Text(global.language('delete')),
           ),
@@ -372,14 +373,14 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.teal.shade50,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(0)),
+            color: global.theme.infoHighlightColor,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(0)),
           ),
           child: Row(
             children: [
-              Icon(Icons.request_quote, color: Colors.teal.shade700),
+              Icon(Icons.request_quote, color: global.theme.infoHighlightTextColor),
               SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -387,13 +388,13 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.teal.shade700,
+                    color: global.theme.infoHighlightTextColor,
                   ),
                 ),
               ),
               // ปุ่มเพิ่มประเภทใบเสนอราคา
               IconButton(
-                icon: Icon(Icons.add_circle, color: Colors.teal.shade700),
+                icon: Icon(Icons.add_circle, color: global.theme.infoHighlightTextColor),
                 onPressed: _showAddPurchaseTypeDialog,
                 tooltip: global.language('add_quotation_type'),
               ),
@@ -406,15 +407,15 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.info_outline, size: 48, color: Colors.grey.shade400),
+                      Icon(Icons.info_outline, size: 48, color: global.theme.iconSecondaryColor),
                       const SizedBox(height: 16),
-                      const Text('ยังไม่มีประเภทใบเสนอราคา'),
+                      Text('ยังไม่มีประเภทใบเสนอราคา'),
                       const SizedBox(height: 8),
                       TextButton(
                         onPressed: () {
                           Navigator.pushNamed(context, '/quotation_type_screen');
                         },
-                        child: const Text('ไปเพิ่มประเภทใบเสนอราคา'),
+                        child: Text('ไปเพิ่มประเภทใบเสนอราคา'),
                       ),
                     ],
                   ),
@@ -431,16 +432,16 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
 
                     return ListTile(
                       selected: isSelected,
-                      selectedTileColor: Colors.teal.shade100,
+                      selectedTileColor: global.theme.infoHighlightColor,
                       leading: Stack(
                         children: [
                           CircleAvatar(
                             backgroundColor: isSelected
-                                ? Colors.teal.shade700
-                                : Colors.grey.shade200,
+                                ? global.theme.infoHighlightTextColor
+                                : global.theme.dividerBorderColor,
                             child: Icon(
                               Icons.request_quote,
-                              color: isSelected ? Colors.white : Colors.grey,
+                              color: isSelected ? global.theme.onPrimaryColor : global.theme.iconSecondaryColor,
                               size: 20,
                             ),
                           ),
@@ -452,14 +453,14 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
                                 width: 12,
                                 height: 12,
                                 decoration: BoxDecoration(
-                                  color: Colors.green,
+                                  color: global.theme.positiveHighlightTextColor,
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 1),
+                                  border: Border.all(color: global.theme.cardColor, width: 1),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.check,
                                   size: 8,
-                                  color: Colors.white,
+                                  color: global.theme.onPrimaryColor,
                                 ),
                               ),
                             ),
@@ -475,13 +476,13 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
                       subtitle: Text(
                         type.code,
                         style: TextStyle(
-                          color: Colors.grey.shade600,
+                          color: global.theme.textSecondaryColor,
                           fontSize: 12,
                         ),
                       ),
                       trailing: IconButton(
                         icon: Icon(Icons.delete_outline,
-                          color: Colors.red.shade300, size: 20),
+                          color: global.theme.negativeHighlightTextColor, size: 20),
                         onPressed: () => _deletePurchaseType(type),
                         tooltip: global.language('delete_this_type'),
                       ),
@@ -500,11 +501,11 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.arrow_back, size: 48, color: Colors.grey.shade400),
+            Icon(Icons.arrow_back, size: 48, color: global.theme.iconSecondaryColor),
             const SizedBox(height: 16),
             Text(
               'เลือกประเภทใบเสนอราคาจากด้านซ้าย',
-              style: TextStyle(color: Colors.grey.shade600),
+              style: TextStyle(color: global.theme.textSecondaryColor),
             ),
           ],
         ),
@@ -516,15 +517,15 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
       children: [
         // Header
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.green.shade50,
+            color: global.theme.positiveHighlightColor,
           ),
           child: Row(
             children: [
               Icon(
                 Icons.fact_check,
-                color: Colors.green.shade700,
+                color: global.theme.positiveHighlightTextColor,
               ),
               SizedBox(width: 8),
               Expanded(
@@ -536,7 +537,7 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.green.shade700,
+                        color: global.theme.positiveHighlightTextColor,
                       ),
                     ),
                     SizedBox(height: 4),
@@ -544,7 +545,7 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
                       global.language('set_approval_conditions_by_amount'),
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: global.theme.textSecondaryColor,
                       ),
                     ),
                   ],
@@ -569,10 +570,10 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
 
         // คำอธิบายระดับ
         Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.all(12),
+          margin: EdgeInsets.all(16),
+          padding: EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: global.theme.surfaceColor,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
@@ -583,25 +584,25 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade700,
+                  color: global.theme.textColor,
                 ),
               ),
               SizedBox(height: 4),
               Text(
                 global.language('approval_level_1_desc'),
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
               ),
               Text(
                 global.language('approval_level_2_desc'),
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
               ),
               Text(
                 global.language('approval_level_3_desc'),
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
               ),
               Text(
                 global.language('approval_level_max_desc'),
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
               ),
             ],
           ),
@@ -614,7 +615,7 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.rule, size: 48, color: Colors.grey.shade400),
+                      Icon(Icons.rule, size: 48, color: global.theme.iconSecondaryColor),
                       SizedBox(height: 16),
                       Text(global.language('no_approval_rules_yet')),
                       SizedBox(height: 8),
@@ -653,7 +654,7 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: Colors.teal.shade100,
+                    color: global.theme.infoHighlightColor,
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -661,7 +662,7 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
                       '${index + 1}',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.teal.shade700,
+                        color: global.theme.infoHighlightTextColor,
                       ),
                     ),
                   ),
@@ -669,11 +670,11 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
                 const SizedBox(width: 8),
                 Text(
                   'กฎที่ ${index + 1}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  icon: Icon(Icons.delete_outline, color: global.theme.negativeHighlightTextColor),
                   onPressed: () => _removeRule(index),
                   tooltip: global.language('delete_this_rule'),
                 ),
@@ -765,18 +766,18 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
             if (rule.approvalLevel > 0) ...[
               SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.purple.shade50,
+                  color: global.theme.primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.purple.shade200),
+                  border: Border.all(color: global.theme.primaryColor.withValues(alpha: 0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.people, color: Colors.purple.shade700, size: 20),
+                        Icon(Icons.people, color: global.theme.primaryColor, size: 20),
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -784,7 +785,7 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
-                              color: Colors.purple.shade700,
+                              color: global.theme.primaryColor,
                             ),
                           ),
                         ),
@@ -793,8 +794,8 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
                           icon: Icon(Icons.add, size: 16),
                           label: Text(global.language('select')),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.purple.shade700,
-                            side: BorderSide(color: Colors.purple.shade300),
+                            foregroundColor: global.theme.primaryColor,
+                            side: BorderSide(color: global.theme.primaryColor.withValues(alpha: 0.4)),
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                           ),
                         ),
@@ -804,20 +805,20 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
                     // แสดงรายชื่อผู้อนุมัติที่เลือกไว้
                     if (rule.approvers.isEmpty)
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
+                          color: global.theme.surfaceColor,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.warning_amber, size: 16, color: Colors.orange.shade700),
+                            Icon(Icons.warning_amber, size: 16, color: global.theme.warningHighlightTextColor),
                             SizedBox(width: 8),
                             Text(
                               global.language('no_approver_selected_use_permission'),
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey.shade600,
+                                color: global.theme.textSecondaryColor,
                                 fontStyle: FontStyle.italic,
                               ),
                             ),
@@ -840,22 +841,22 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
             // Summary text
             const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.teal.shade50,
+                color: global.theme.infoHighlightColor,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Row(
                 children: [
                   Icon(Icons.info_outline,
-                      size: 16, color: Colors.teal.shade700),
+                      size: 16, color: global.theme.infoHighlightTextColor),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       _getRuleSummary(rule),
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.teal.shade700,
+                        color: global.theme.infoHighlightTextColor,
                       ),
                     ),
                   ),
@@ -872,10 +873,10 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
   Widget _buildApproverChip(int ruleIndex, ApprovalRuleModel rule, ApproverInfoModel approver) {
     return Chip(
       avatar: CircleAvatar(
-        backgroundColor: Colors.purple.shade100,
+        backgroundColor: global.theme.primaryColor.withValues(alpha: 0.15),
         child: Text(
           approver.userName.isNotEmpty ? approver.userName[0].toUpperCase() : '?',
-          style: TextStyle(fontSize: 12, color: Colors.purple.shade700),
+          style: TextStyle(fontSize: 12, color: global.theme.primaryColor),
         ),
       ),
       label: Column(
@@ -884,34 +885,34 @@ class _QTApprovalSettingScreenState extends State<QTApprovalSettingScreen> {
         children: [
           Text(
             approver.userName.isNotEmpty ? approver.userName : approver.userCode,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
           ),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (approver.hasEmail)
                 Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: Icon(Icons.email, size: 12, color: Colors.blue.shade600),
+                  padding: EdgeInsets.only(right: 4),
+                  child: Icon(Icons.email, size: 12, color: global.theme.infoHighlightTextColor),
                 ),
               if (approver.hasLine)
-                Icon(Icons.chat, size: 12, color: Colors.green.shade600),
+                Icon(Icons.chat, size: 12, color: global.theme.positiveHighlightTextColor),
               if (!approver.hasEmail && !approver.hasLine)
                 Text(
                   global.language('no_email_line'),
-                  style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                  style: TextStyle(fontSize: 10, color: global.theme.textSecondaryColor),
                 ),
             ],
           ),
         ],
       ),
-      deleteIcon: const Icon(Icons.close, size: 16),
+      deleteIcon: Icon(Icons.close, size: 16),
       onDeleted: () {
         // ลบผู้อนุมัติออกจากกฎ
         final newApprovers = rule.approvers.where((a) => a.userCode != approver.userCode).toList();
         _updateRule(ruleIndex, rule.copyWith(approvers: newApprovers));
       },
-      backgroundColor: Colors.purple.shade50,
+      backgroundColor: global.theme.primaryColor.withValues(alpha: 0.1),
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
     );
   }
@@ -987,7 +988,8 @@ class _QTApproverSelectionDialog extends StatefulWidget {
   State<_QTApproverSelectionDialog> createState() => _QTApproverSelectionDialogState();
 }
 
-class _QTApproverSelectionDialogState extends State<_QTApproverSelectionDialog> {
+class _QTApproverSelectionDialogState extends State<_QTApproverSelectionDialog>
+    with global.ThemeRefreshMixin {
   late Set<String> _selectedUserCodes;
   String _searchText = '';
 
@@ -1017,7 +1019,7 @@ class _QTApproverSelectionDialogState extends State<_QTApproverSelectionDialog> 
     return AlertDialog(
       title: Row(
         children: [
-          Icon(Icons.people, color: Colors.purple.shade700),
+          Icon(Icons.people, color: global.theme.primaryColor),
           SizedBox(width: 8),
           Text(global.language('select_approvers')),
         ],
@@ -1031,7 +1033,7 @@ class _QTApproverSelectionDialogState extends State<_QTApproverSelectionDialog> 
             TextField(
               decoration: InputDecoration(
                 hintText: global.language('search_name_email_line'),
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1044,20 +1046,20 @@ class _QTApproverSelectionDialogState extends State<_QTApproverSelectionDialog> 
             const SizedBox(height: 12),
             // จำนวนที่เลือก
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.purple.shade50,
+                color: global.theme.primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.check_circle, size: 16, color: Colors.purple.shade700),
+                  Icon(Icons.check_circle, size: 16, color: global.theme.primaryColor),
                   const SizedBox(width: 8),
                   Text(
                     'เลือกแล้ว ${_selectedUserCodes.length} คน',
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
-                      color: Colors.purple.shade700,
+                      color: global.theme.primaryColor,
                     ),
                   ),
                   const Spacer(),
@@ -1081,11 +1083,11 @@ class _QTApproverSelectionDialogState extends State<_QTApproverSelectionDialog> 
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.person_off, size: 48, color: Colors.grey.shade400),
+                              Icon(Icons.person_off, size: 48, color: global.theme.iconSecondaryColor),
                               SizedBox(height: 8),
                               Text(
                                 _searchText.isEmpty ? global.language('user_not_found') : global.language('user_search_not_found'),
-                                style: TextStyle(color: Colors.grey.shade600),
+                                style: TextStyle(color: global.theme.textSecondaryColor),
                               ),
                             ],
                           ),
@@ -1115,7 +1117,7 @@ class _QTApproverSelectionDialogState extends State<_QTApproverSelectionDialog> 
                 .toList();
             Navigator.pop(context, selectedApprovers);
           },
-          icon: const Icon(Icons.check, size: 18),
+          icon: Icon(Icons.check, size: 18),
           label: Text('ยืนยัน (${_selectedUserCodes.length})'),
         ),
       ],
@@ -1124,16 +1126,16 @@ class _QTApproverSelectionDialogState extends State<_QTApproverSelectionDialog> 
 
   Widget _buildUserTile(ApproverInfoModel user, bool isSelected) {
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      color: isSelected ? Colors.purple.shade50 : null,
+      margin: EdgeInsets.symmetric(vertical: 4),
+      color: isSelected ? global.theme.primaryColor.withValues(alpha: 0.1) : null,
       child: ListTile(
         dense: true,
         leading: CircleAvatar(
-          backgroundColor: isSelected ? Colors.purple.shade200 : Colors.grey.shade200,
+          backgroundColor: isSelected ? global.theme.primaryColor.withValues(alpha: 0.3) : global.theme.dividerBorderColor,
           child: Text(
             user.userName.isNotEmpty ? user.userName[0].toUpperCase() : '?',
             style: TextStyle(
-              color: isSelected ? Colors.purple.shade700 : Colors.grey.shade600,
+              color: isSelected ? global.theme.primaryColor : global.theme.textSecondaryColor,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -1151,40 +1153,40 @@ class _QTApproverSelectionDialogState extends State<_QTApproverSelectionDialog> 
             // แสดง badge email/LINE
             if (user.hasEmail)
               Container(
-                margin: const EdgeInsets.only(left: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                margin: EdgeInsets.only(left: 4),
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade100,
+                  color: global.theme.columnHeaderColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.email, size: 12, color: Colors.blue.shade700),
+                    Icon(Icons.email, size: 12, color: global.theme.infoHighlightTextColor),
                     const SizedBox(width: 2),
                     Text(
                       'Email',
-                      style: TextStyle(fontSize: 10, color: Colors.blue.shade700),
+                      style: TextStyle(fontSize: 10, color: global.theme.infoHighlightTextColor),
                     ),
                   ],
                 ),
               ),
             if (user.hasLine)
               Container(
-                margin: const EdgeInsets.only(left: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                margin: EdgeInsets.only(left: 4),
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.green.shade100,
+                  color: global.theme.positiveHighlightColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.chat, size: 12, color: Colors.green.shade700),
+                    Icon(Icons.chat, size: 12, color: global.theme.positiveHighlightTextColor),
                     const SizedBox(width: 2),
                     Text(
                       'LINE',
-                      style: TextStyle(fontSize: 10, color: Colors.green.shade700),
+                      style: TextStyle(fontSize: 10, color: global.theme.positiveHighlightTextColor),
                     ),
                   ],
                 ),
@@ -1196,22 +1198,22 @@ class _QTApproverSelectionDialogState extends State<_QTApproverSelectionDialog> 
           children: [
             Text(
               user.userCode,
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
             ),
             if (user.position != null || user.department != null)
               Text(
                 [user.position, user.department].where((s) => s != null && s.isNotEmpty).join(' - '),
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
               ),
             if (user.email != null && user.email!.isNotEmpty)
               Row(
                 children: [
-                  Icon(Icons.email_outlined, size: 11, color: Colors.grey.shade500),
+                  Icon(Icons.email_outlined, size: 11, color: global.theme.iconSecondaryColor),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       user.email!,
-                      style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                      style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -1220,11 +1222,11 @@ class _QTApproverSelectionDialogState extends State<_QTApproverSelectionDialog> 
             if (user.lineDisplayName != null && user.lineDisplayName!.isNotEmpty)
               Row(
                 children: [
-                  Icon(Icons.chat_outlined, size: 11, color: Colors.green.shade400),
+                  Icon(Icons.chat_outlined, size: 11, color: global.theme.positiveHighlightTextColor),
                   const SizedBox(width: 4),
                   Text(
                     user.lineDisplayName!,
-                    style: TextStyle(fontSize: 11, color: Colors.green.shade600),
+                    style: TextStyle(fontSize: 11, color: global.theme.positiveHighlightTextColor),
                   ),
                 ],
               ),
@@ -1232,7 +1234,7 @@ class _QTApproverSelectionDialogState extends State<_QTApproverSelectionDialog> 
         ),
         trailing: Checkbox(
           value: isSelected,
-          activeColor: Colors.purple.shade700,
+          activeColor: global.theme.primaryColor,
           onChanged: (value) {
             setState(() {
               if (value == true) {

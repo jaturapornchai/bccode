@@ -13,7 +13,8 @@ class SaleOrderTypeScreen extends StatefulWidget {
   State<SaleOrderTypeScreen> createState() => _SaleOrderTypeScreenState();
 }
 
-class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
+class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen>
+    with global.ThemeRefreshMixin {
   bool _isLoading = true;
   List<PurchaseTypeModel> _items = [];
   PurchaseTypeModel? _selectedItem;
@@ -114,7 +115,7 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700),
+            Icon(Icons.warning_amber_rounded, color: global.theme.warningHighlightTextColor),
             SizedBox(width: 8),
             Text(global.language('alert_confirm_delete')),
           ],
@@ -127,8 +128,8 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: global.theme.negativeHighlightTextColor,
+              foregroundColor: global.theme.onPrimaryColor,
             ),
             onPressed: () => Navigator.pop(context, true),
             child: Text(global.language('delete')),
@@ -158,31 +159,31 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: global.theme.surfaceColor,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
         elevation: 0,
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: global.theme.cardColor.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.shopping_cart_outlined, size: 20),
+              child: Icon(Icons.shopping_cart_outlined, size: 20),
             ),
             SizedBox(width: 12),
             Text(global.language('sale_order_type')),
           ],
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () => global.gotoMainMenu(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh),
             onPressed: _loadData,
             tooltip: global.language('database_master_info.refresh'),
           ),
@@ -215,17 +216,17 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
 
   Widget _buildListPanel() {
     return Container(
-      color: Colors.white,
+      color: global.theme.cardColor,
       child: Column(
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.shade200,
+                  color: global.theme.dividerBorderColor,
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -240,13 +241,13 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade800,
+                    color: global.theme.textColor,
                   ),
                 ),
                 const Spacer(),
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: global.theme.appBarColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -293,7 +294,7 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
                 label: Text(global.language('add_new_sale_order_type')),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: global.theme.appBarColor,
-                  foregroundColor: Colors.white,
+                  foregroundColor: global.theme.onPrimaryColor,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -313,15 +314,15 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: global.theme.surfaceColor,
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.shopping_cart_outlined,
               size: 64,
-              color: Colors.grey.shade400,
+              color: global.theme.iconSecondaryColor,
             ),
           ),
           const SizedBox(height: 24),
@@ -330,7 +331,7 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
+              color: global.theme.textSecondaryColor,
             ),
           ),
           const SizedBox(height: 8),
@@ -338,7 +339,7 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
             global.language('press_below_to_add_sale_order_type'),
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey.shade500,
+              color: global.theme.textSecondaryColor,
             ),
           ),
         ],
@@ -359,21 +360,21 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
           },
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: isSelected
                   ? global.theme.appBarColor.withValues(alpha: 0.1)
-                  : Colors.white,
+                  : global.theme.onPrimaryColor,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected
                     ? global.theme.appBarColor
-                    : Colors.grey.shade200,
+                    : global.theme.dividerBorderColor,
                 width: isSelected ? 2 : 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.shade100,
+                  color: global.theme.surfaceColor,
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -384,11 +385,11 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
                 // Code Badge
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? global.theme.appBarColor
-                        : Colors.grey.shade100,
+                        : global.theme.surfaceColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -396,7 +397,7 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
-                      color: isSelected ? Colors.white : Colors.grey.shade700,
+                      color: isSelected ? global.theme.onPrimaryColor : global.theme.textColor,
                     ),
                   ),
                 ),
@@ -411,7 +412,7 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 15,
-                          color: Colors.grey.shade800,
+                          color: global.theme.textColor,
                         ),
                       ),
                       if (item.getDescription(global.systemLanguage).isNotEmpty) ...[
@@ -420,7 +421,7 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
                           item.getDescription(global.systemLanguage),
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade500,
+                            color: global.theme.textSecondaryColor,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -445,7 +446,7 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
                       splashRadius: 24,
                     ),
                     IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      icon: Icon(Icons.delete_outline, color: global.theme.negativeHighlightTextColor),
                       onPressed: () => _deleteItem(item),
                       tooltip: global.language('delete'),
                       splashRadius: 24,
@@ -462,28 +463,18 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
 
   Widget _buildFormPanel() {
     return Container(
-      color: Colors.grey.shade50,
+      color: global.theme.surfaceColor,
       child: Align(
         alignment: Alignment.topCenter,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
             // Form Card
             Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.shade200,
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
+              padding: EdgeInsets.all(24),
+              color: global.theme.searchBarColor,
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -493,11 +484,11 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: _selectedItem == null
-                                ? Colors.green.shade50
-                                : Colors.orange.shade50,
+                                ? global.theme.positiveHighlightColor
+                                : global.theme.warningHighlightColor,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
@@ -505,8 +496,8 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
                                 ? Icons.add_circle_outline
                                 : Icons.edit_outlined,
                             color: _selectedItem == null
-                                ? Colors.green.shade700
-                                : Colors.orange.shade700,
+                                ? global.theme.positiveHighlightTextColor
+                                : global.theme.warningHighlightTextColor,
                             size: 28,
                           ),
                         ),
@@ -519,7 +510,7 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
                                 _selectedItem == null
                                     ? global.language('add_new_sale_order_type')
                                     : global.language('edit_sale_order_type'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -531,7 +522,7 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
                                     : '${global.language("edit_type_data")}: ${_selectedItem!.code}',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.grey.shade600,
+                                  color: global.theme.textSecondaryColor,
                                 ),
                               ),
                             ],
@@ -616,7 +607,7 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
                               label: Text(global.language('form_design_save')),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: global.theme.appBarColor,
-                                foregroundColor: Colors.white,
+                                foregroundColor: global.theme.onPrimaryColor,
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
@@ -661,7 +652,7 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
+                color: global.theme.textColor,
               ),
             ),
             if (validator != null) ...[
@@ -669,7 +660,7 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
               Text(
                 '*',
                 style: TextStyle(
-                  color: Colors.red.shade400,
+                  color: global.theme.negativeHighlightTextColor,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -684,16 +675,16 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
           textCapitalization: textCapitalization,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey.shade400),
+            hintStyle: TextStyle(color: global.theme.formHintColor),
             filled: true,
-            fillColor: enabled ? Colors.grey.shade50 : Colors.grey.shade100,
+            fillColor: enabled ? global.theme.surfaceColor : global.theme.surfaceColor,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
+              borderSide: BorderSide(color: global.theme.dividerBorderColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
+              borderSide: BorderSide(color: global.theme.dividerBorderColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -702,7 +693,7 @@ class _SaleOrderTypeScreenState extends State<SaleOrderTypeScreen> {
             ),
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade200),
+              borderSide: BorderSide(color: global.theme.dividerBorderColor),
             ),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

@@ -23,7 +23,8 @@ class PointTransactionScreen extends StatefulWidget {
   State<PointTransactionScreen> createState() => _PointTransactionScreenState();
 }
 
-class _PointTransactionScreenState extends State<PointTransactionScreen> {
+class _PointTransactionScreenState extends State<PointTransactionScreen>
+    with global.ThemeRefreshMixin {
   List<PointTransactionModel> transactions = [];
   bool loadingData = false;
 
@@ -55,13 +56,13 @@ class _PointTransactionScreenState extends State<PointTransactionScreen> {
   Color getTransactionTypeColor(int type) {
     switch (type) {
       case 1:
-        return Colors.green;
+        return global.theme.positiveHighlightTextColor;
       case 2:
-        return Colors.red;
+        return global.theme.negativeHighlightTextColor;
       case 3:
-        return Colors.blue;
+        return global.theme.infoHighlightTextColor;
       default:
-        return Colors.grey;
+        return global.theme.iconSecondaryColor;
     }
   }
 
@@ -82,7 +83,7 @@ class _PointTransactionScreenState extends State<PointTransactionScreen> {
                 Expanded(
                   child: Text(
                     transaction.transactiondocno,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -103,8 +104,8 @@ class _PointTransactionScreenState extends State<PointTransactionScreen> {
                       ),
                       child: Text(
                         getTransactionTypeText(transaction.transactiontype),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: global.theme.onPrimaryColor,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
@@ -113,7 +114,7 @@ class _PointTransactionScreenState extends State<PointTransactionScreen> {
                     if (canDelete) ...[
                       const SizedBox(width: 8),
                       IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
+                        icon: Icon(Icons.delete, color: global.theme.negativeHighlightTextColor),
                         iconSize: 20,
                         constraints: const BoxConstraints(),
                         padding: EdgeInsets.zero,
@@ -129,7 +130,7 @@ class _PointTransactionScreenState extends State<PointTransactionScreen> {
               DateFormat(
                 'dd/MM/yyyy HH:mm:ss',
               ).format(transaction.transactiondate),
-              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+              style: TextStyle(color: global.theme.textSecondaryColor, fontSize: 14),
             ),
             SizedBox(height: 8),
             Row(
@@ -164,7 +165,7 @@ class _PointTransactionScreenState extends State<PointTransactionScreen> {
               const SizedBox(height: 8),
               Text(
                 transaction.description,
-                style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                style: TextStyle(color: global.theme.textSecondaryColor, fontSize: 13),
               ),
             ],
           ],
@@ -204,14 +205,14 @@ class _PointTransactionScreenState extends State<PointTransactionScreen> {
                     title: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: Colors.red.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.warning_rounded,
-                            color: Colors.red,
+                            color: global.theme.negativeHighlightTextColor,
                             size: 28,
                           ),
                         ),
@@ -219,7 +220,7 @@ class _PointTransactionScreenState extends State<PointTransactionScreen> {
                         Expanded(
                           child: Text(
                             global.language('confirm'),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
@@ -235,34 +236,34 @@ class _PointTransactionScreenState extends State<PointTransactionScreen> {
                         children: [
                           Text(
                             global.language('confirm_delete_point_transaction'),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                           const SizedBox(height: 16),
                           Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.grey[100],
+                              color: global.theme.surfaceColor,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey[300]!),
+                              border: Border.all(color: global.theme.dividerBorderColor),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.receipt_long,
                                       size: 16,
-                                      color: Colors.grey,
+                                      color: global.theme.iconSecondaryColor,
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
                                       '${global.language("docno")}:',
-                                      style: const TextStyle(
-                                        color: Colors.grey,
+                                      style: TextStyle(
+                                        color: global.theme.iconSecondaryColor,
                                         fontSize: 13,
                                       ),
                                     ),
@@ -270,7 +271,7 @@ class _PointTransactionScreenState extends State<PointTransactionScreen> {
                                     Expanded(
                                       child: Text(
                                         transaction.transactiondocno,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 14,
                                         ),
@@ -281,16 +282,16 @@ class _PointTransactionScreenState extends State<PointTransactionScreen> {
                                 const Divider(height: 16),
                                 Row(
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.stars_rounded,
                                       size: 16,
-                                      color: Colors.grey,
+                                      color: global.theme.iconSecondaryColor,
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
                                       '${global.language("point_amount")}:',
-                                      style: const TextStyle(
-                                        color: Colors.grey,
+                                      style: TextStyle(
+                                        color: global.theme.iconSecondaryColor,
                                         fontSize: 13,
                                       ),
                                     ),
@@ -313,10 +314,10 @@ class _PointTransactionScreenState extends State<PointTransactionScreen> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.description,
                                         size: 16,
-                                        color: Colors.grey,
+                                        color: global.theme.iconSecondaryColor,
                                       ),
                                       const SizedBox(width: 8),
                                       Expanded(
@@ -326,15 +327,15 @@ class _PointTransactionScreenState extends State<PointTransactionScreen> {
                                           children: [
                                             Text(
                                               '${global.language("description")}:',
-                                              style: const TextStyle(
-                                                color: Colors.grey,
+                                              style: TextStyle(
+                                                color: global.theme.iconSecondaryColor,
                                                 fontSize: 13,
                                               ),
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
                                               transaction.description,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 13,
                                               ),
                                             ),
@@ -415,8 +416,8 @@ class _PointTransactionScreenState extends State<PointTransactionScreen> {
                         },
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
+                            backgroundColor: global.theme.negativeHighlightTextColor,
+                            foregroundColor: global.theme.onPrimaryColor,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 20,
                               vertical: 12,
@@ -475,13 +476,13 @@ class _PointTransactionScreenState extends State<PointTransactionScreen> {
             Text(global.language('point_transaction.points_history')),
             Text(
               '${widget.debtorCode} - ${widget.debtorName}',
-              style: const TextStyle(fontSize: 14),
+              style: TextStyle(fontSize: 14),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh),
             onPressed: loadTransactions,
           ),
         ],
@@ -520,9 +521,9 @@ class _PointTransactionScreenState extends State<PointTransactionScreen> {
             if (loadingData)
               Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.all(20),
                   child: LoadingAnimationWidget.staggeredDotsWave(
-                    color: Colors.blue,
+                    color: global.theme.infoHighlightTextColor,
                     size: 50,
                   ),
                 ),
@@ -534,7 +535,7 @@ class _PointTransactionScreenState extends State<PointTransactionScreen> {
                     global.language(
                       'point_transaction.no_points_history_found',
                     ),
-                    style: const TextStyle(fontSize: 16, color: Colors.grey),
+                    style: TextStyle(fontSize: 16, color: global.theme.iconSecondaryColor),
                   ),
                 ),
               ),

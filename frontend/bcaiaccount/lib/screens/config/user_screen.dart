@@ -9,7 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -25,7 +25,7 @@ class UserScreen extends StatefulWidget {
 }
 
 class UserScreenState extends State<UserScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   late TabController tabController;
   ScrollController editScrollController = ScrollController();
@@ -44,6 +44,7 @@ class UserScreenState extends State<UserScreen>
   String headerEdit = "";
   late MediaQueryData queryData;
   int currentListIndex = -1;
+  int _hoverIndex = -1;
   GlobalKey headerKey = GlobalKey();
   bool isKeyUp = false;
   bool isKeyDown = false;
@@ -269,6 +270,7 @@ class UserScreenState extends State<UserScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -369,7 +371,7 @@ class UserScreenState extends State<UserScreen>
             Container(
               padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.searchBarColor,
                 borderRadius: BorderRadius.circular(2),
               ),
               child: Row(
@@ -403,14 +405,12 @@ class UserScreenState extends State<UserScreen>
                       ),
                     ),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const FaIcon(FontAwesomeIcons.font),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataFontSizeChange();
-                      });
-                    },
+                  ListFontSizeControl(onChanged: () => setState(() {})),
+                const SizedBox(width: 4),
+                if (listData.isNotEmpty)
+                  Text(
+                    '(${listData.length})',
+                    style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                   ),
                   IconButton(
                     focusNode: FocusNode(skipTraversal: true),
@@ -427,7 +427,7 @@ class UserScreenState extends State<UserScreen>
             Container(color: global.theme.appBarColor, height: 6),
             Container(
               key: headerKey,
-              padding: const EdgeInsets.only(
+              padding: EdgeInsets.only(
                 left: 10,
                 right: 10,
                 top: 5,
@@ -486,7 +486,7 @@ class UserScreenState extends State<UserScreen>
             if (loadingData)
               Center(
                 child: LoadingAnimationWidget.staggeredDotsWave(
-                  color: Colors.blue,
+                  color: global.theme.primaryColor,
                   size: 50,
                 ),
               ),
@@ -506,7 +506,11 @@ class UserScreenState extends State<UserScreen>
           ? global.deviceConfig.listDataFontSize + 2.0
           : global.deviceConfig.listDataFontSize,
     );
-    return GestureDetector(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         setState(() {
           discardData(
@@ -529,7 +533,7 @@ class UserScreenState extends State<UserScreen>
         key: index < listKeys.length ? listKeys[index] : null,
         decoration: BoxDecoration(
           color: (username == value.username)
-              ? Colors.cyan[100]
+              ? global.theme.rowSelectedColor
               : (index % 2 == 0)
               ? global.theme.columnAlternateEvenColor
               : global.theme.columnAlternateOddColor,
@@ -572,6 +576,7 @@ class UserScreenState extends State<UserScreen>
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -640,7 +645,7 @@ class UserScreenState extends State<UserScreen>
               // ปุ่มทดสอบส่งข้อความ LINE
               _buildIconButton(
                 icon: Icons.send,
-                color: Colors.blue,
+                color: global.theme.primaryColor,
                 tooltip: global.language('send_test_message'),
                 onPressed: () => _testLinePush(user),
               ),
@@ -1456,7 +1461,7 @@ class UserScreenState extends State<UserScreen>
                 positionController.text = selection;
                 isDataChange = true;
               },
-              fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+              fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
                 // ซิงค์ค่าจาก positionController — defer เพื่อไม่ให้ setState ตอน build
                 if (controller.text != positionController.text && positionController.text.isNotEmpty) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1551,6 +1556,7 @@ class UserScreenState extends State<UserScreen>
 
 
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -1599,7 +1605,7 @@ class UserScreenState extends State<UserScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -1682,6 +1688,7 @@ class UserScreenState extends State<UserScreen>
     listKeys.clear();
 
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -1853,7 +1860,7 @@ class UserScreenState extends State<UserScreen>
                     controller: splitViewController,
                     gripSize: 8,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.primaryColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

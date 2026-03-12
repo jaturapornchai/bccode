@@ -60,7 +60,7 @@ class ProductListItem extends StatelessWidget {
 
   Color? _getContainerColor(String selectedGuid, String guidfixed, int index) {
     return (selectedGuid == guidfixed)
-        ? Colors.cyan[100]
+        ? global.theme.rowSelectedColor
         : (index % 2 == 0)
             ? global.theme.columnAlternateEvenColor
             : global.theme.columnAlternateOddColor;
@@ -126,9 +126,9 @@ class ProductListItem extends StatelessWidget {
   Container _buildImageContainer(String imageUri) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: Colors.grey, width: 1),
+        border: Border.all(color: global.theme.dividerBorderColor, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withValues(alpha: 0.5),
@@ -147,7 +147,7 @@ class ProductListItem extends StatelessWidget {
           height: 20,
           errorBuilder:
               (BuildContext context, Object exception, StackTrace? stackTrace) {
-            return const Icon(Icons.image_not_supported);
+            return Icon(Icons.image_not_supported);
           },
         ),
       ),
@@ -168,7 +168,7 @@ class ProductListItem extends StatelessWidget {
       padding: const EdgeInsets.all(0),
       label: Text(
         '${branch.code} - ${global.activeLangName(branch.names)}',
-        style: const TextStyle(fontSize: 12),
+        style: TextStyle(fontSize: 12),
       ),
     );
   }

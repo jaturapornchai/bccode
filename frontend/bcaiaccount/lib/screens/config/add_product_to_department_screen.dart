@@ -24,7 +24,7 @@ class AddProductToDepartmentScreen extends StatefulWidget {
 
 class AddProductToDepartmentScreenState
     extends State<AddProductToDepartmentScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   TextEditingController searchController = TextEditingController();
   List<DraggableGridItem> draggableGridItemList = [];
   bool loadingData = false;
@@ -71,12 +71,12 @@ class AddProductToDepartmentScreenState
           content: Text(global.language('leave_this_screen')),
           actions: <Widget>[
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              style: ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
               onPressed: () => Navigator.pop(context),
               child: Text(global.language('no')),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+              style: ElevatedButton.styleFrom(backgroundColor: global.theme.infoHighlightTextColor),
               onPressed: () {
                 Navigator.pop(context);
                 callBack();
@@ -149,7 +149,7 @@ class AddProductToDepartmentScreenState
                         setState(() {});
                       }
                     },
-              icon: const Icon(Icons.add),
+              icon: Icon(Icons.add),
             ),
           ],
         ),
@@ -196,7 +196,7 @@ class AddProductToDepartmentScreenState
                 productList.removeAt(productList.indexOf(value));
                 setState(() {});
               },
-              icon: const Icon(Icons.delete),
+              icon: Icon(Icons.delete),
             ),
           ],
         ),
@@ -227,11 +227,8 @@ class AddProductToDepartmentScreenState
         children: [
           Container(
             height: 40,
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(2),
-            ),
+            padding: EdgeInsets.all(5),
+            color: global.theme.searchBarColor,
             child: Row(
               children: [
                 Expanded(
@@ -269,7 +266,7 @@ class AddProductToDepartmentScreenState
           Container(color: global.theme.appBarColor, height: 6),
           Container(
             key: const Key('barcode_list'),
-            padding: const EdgeInsets.only(
+            padding: EdgeInsets.only(
               left: 10,
               right: 10,
               top: 5,
@@ -282,8 +279,8 @@ class AddProductToDepartmentScreenState
                   flex: 5,
                   child: Text(
                     global.language("barcode"),
-                    style: const TextStyle(
-                      color: Colors.black,
+                    style: TextStyle(
+                      color: global.theme.textColor,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -292,8 +289,8 @@ class AddProductToDepartmentScreenState
                   flex: 10,
                   child: Text(
                     global.language("product_name"),
-                    style: const TextStyle(
-                      color: Colors.black,
+                    style: TextStyle(
+                      color: global.theme.textColor,
                       fontWeight: FontWeight.bold,
                     ),
                     maxLines: 2,
@@ -314,7 +311,7 @@ class AddProductToDepartmentScreenState
           if (loadingData)
             Center(
               child: LoadingAnimationWidget.staggeredDotsWave(
-                color: Colors.blue,
+                color: global.theme.infoHighlightTextColor,
                 size: 50,
               ),
             ),
@@ -379,11 +376,11 @@ class AddProductToDepartmentScreenState
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.only(left: 5, bottom: 5),
+                    padding: EdgeInsets.only(left: 5, bottom: 5),
                     width: 100,
                     height: 50,
                     child: ElevatedButton(
-                      child: const Icon(Icons.save, color: Colors.white),
+                      child: Icon(Icons.save, color: global.theme.onPrimaryColor),
                       onPressed: () {
                         setState(() {
                           selectBarcode = [];
@@ -460,7 +457,7 @@ class AddProductToDepartmentScreenState
                         children: [
                           Container(
                             key: const Key('product_list_header'),
-                            padding: const EdgeInsets.only(
+                            padding: EdgeInsets.only(
                               left: 10,
                               right: 10,
                               top: 5,
@@ -473,8 +470,8 @@ class AddProductToDepartmentScreenState
                                   flex: 5,
                                   child: Text(
                                     global.language("barcode"),
-                                    style: const TextStyle(
-                                      color: Colors.black,
+                                    style: TextStyle(
+                                      color: global.theme.textColor,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -483,8 +480,8 @@ class AddProductToDepartmentScreenState
                                   flex: 10,
                                   child: Text(
                                     global.language("product_name"),
-                                    style: const TextStyle(
-                                      color: Colors.black,
+                                    style: TextStyle(
+                                      color: global.theme.textColor,
                                       fontWeight: FontWeight.bold,
                                     ),
                                     maxLines: 2,
@@ -503,7 +500,7 @@ class AddProductToDepartmentScreenState
                         children: [
                           Container(
                             key: const Key('product_list_header'),
-                            padding: const EdgeInsets.only(
+                            padding: EdgeInsets.only(
                               left: 10,
                               right: 10,
                               top: 5,
@@ -516,8 +513,8 @@ class AddProductToDepartmentScreenState
                                   flex: 5,
                                   child: Text(
                                     global.language("barcode"),
-                                    style: const TextStyle(
-                                      color: Colors.black,
+                                    style: TextStyle(
+                                      color: global.theme.textColor,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -526,8 +523,8 @@ class AddProductToDepartmentScreenState
                                   flex: 10,
                                   child: Text(
                                     global.language("product_name"),
-                                    style: const TextStyle(
-                                      color: Colors.black,
+                                    style: TextStyle(
+                                      color: global.theme.textColor,
                                       fontWeight: FontWeight.bold,
                                     ),
                                     maxLines: 2,
@@ -597,9 +594,9 @@ class AddProductToDepartmentScreenState
                   setState(() {
                     global.showSnackBar(
                       context,
-                      Icon(Icons.edit, color: Colors.white),
+                      Icon(Icons.edit, color: global.theme.onPrimaryColor),
                       global.language('edit_success'),
-                      Colors.blue,
+                      global.theme.infoHighlightTextColor,
                     );
 
                     setState(() {
@@ -618,9 +615,9 @@ class AddProductToDepartmentScreenState
                   setState(() {
                     global.showSnackBar(
                       context,
-                      Icon(Icons.edit, color: Colors.white),
+                      Icon(Icons.edit, color: global.theme.onPrimaryColor),
                       "${global.language('edit_failed')} : ${state.message}",
-                      Colors.red,
+                      global.theme.negativeHighlightTextColor,
                     );
                   });
                 }
@@ -635,7 +632,7 @@ class AddProductToDepartmentScreenState
               title: Text(global.language('add_product_to_Department')),
               leading: IconButton(
                 focusNode: FocusNode(skipTraversal: true),
-                icon: const Icon(Icons.arrow_back),
+                icon: Icon(Icons.arrow_back),
                 onPressed: () {
                   discardData(
                     callBack: () {
@@ -650,7 +647,7 @@ class AddProductToDepartmentScreenState
                     controller: splitViewController,
                     gripSize: 8,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.infoHighlightTextColor,
                     viewMode: SplitViewMode.Vertical,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Vertical,
@@ -665,7 +662,7 @@ class AddProductToDepartmentScreenState
                     controller: splitViewController,
                     gripSize: 8,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.infoHighlightTextColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -21,7 +21,7 @@ class ProductTypeScreen extends StatefulWidget {
 }
 
 class ProductTypeScreenState extends State<ProductTypeScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   late TabController tabController;
   ScrollController editScrollController = ScrollController();
@@ -44,6 +44,7 @@ class ProductTypeScreenState extends State<ProductTypeScreen>
   bool isKeyUp = false;
   bool isKeyDown = false;
   bool showCheckBox = false;
+  int _hoverIndex = -1;
   bool isEditMode = false;
   late ProductTypeModel screenData;
   late SplitViewController splitViewController;
@@ -177,6 +178,7 @@ class ProductTypeScreenState extends State<ProductTypeScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -246,7 +248,7 @@ class ProductTypeScreenState extends State<ProductTypeScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -337,7 +339,7 @@ class ProductTypeScreenState extends State<ProductTypeScreen>
             Container(
               padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.searchBarColor,
                 borderRadius: BorderRadius.circular(2),
               ),
               child: Row(
@@ -357,25 +359,25 @@ class ProductTypeScreenState extends State<ProductTypeScreen>
                       controller: searchController,
                       decoration: InputDecoration(
                         isDense: true,
-                        contentPadding: const EdgeInsets.only(
+                        contentPadding: EdgeInsets.only(
                           top: 0,
                           bottom: 0,
                           left: 0,
                           right: 0,
                         ),
                         border: InputBorder.none,
+                        prefixIcon: Icon(Icons.search, size: 20, color: global.theme.iconColor),
+                        prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         hintText: global.language('search'),
                       ),
                     ),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const FaIcon(FontAwesomeIcons.font),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataFontSizeChange();
-                      });
-                    },
+                  ListFontSizeControl(onChanged: () => setState(() {})),
+                const SizedBox(width: 4),
+                if (listData.isNotEmpty)
+                  Text(
+                    '(${listData.length})',
+                    style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                   ),
                   IconButton(
                     focusNode: FocusNode(skipTraversal: true),
@@ -392,7 +394,7 @@ class ProductTypeScreenState extends State<ProductTypeScreen>
             Container(color: global.theme.appBarColor, height: 6),
             Container(
               key: headerKey,
-              padding: const EdgeInsets.only(
+              padding: EdgeInsets.only(
                 left: 10,
                 right: 10,
                 top: 5,
@@ -454,7 +456,7 @@ class ProductTypeScreenState extends State<ProductTypeScreen>
             if (loadingData)
               Center(
                 child: LoadingAnimationWidget.staggeredDotsWave(
-                  color: Colors.blue,
+                  color: global.theme.primaryColor,
                   size: 50,
                 ),
               ),
@@ -481,7 +483,11 @@ class ProductTypeScreenState extends State<ProductTypeScreen>
           ? global.deviceConfig.listDataFontSize + 2.0
           : global.deviceConfig.listDataFontSize,
     );
-    return GestureDetector(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         if (showCheckBox == true) {
           setState(() {
@@ -523,7 +529,7 @@ class ProductTypeScreenState extends State<ProductTypeScreen>
         key: index < listKeys.length ? listKeys[index] : null,
         decoration: BoxDecoration(
           color: (selectGuid == value.guidfixed!)
-              ? Colors.cyan[100]
+              ? global.theme.rowSelectedColor
               : (index % 2 == 0)
               ? global.theme.columnAlternateEvenColor
               : global.theme.columnAlternateOddColor,
@@ -568,6 +574,7 @@ class ProductTypeScreenState extends State<ProductTypeScreen>
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -716,6 +723,7 @@ class ProductTypeScreenState extends State<ProductTypeScreen>
 
 
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -762,7 +770,7 @@ class ProductTypeScreenState extends State<ProductTypeScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -881,6 +889,7 @@ class ProductTypeScreenState extends State<ProductTypeScreen>
       guidListChecked.clear();
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -1061,7 +1070,7 @@ class ProductTypeScreenState extends State<ProductTypeScreen>
                     controller: splitViewController,
                     gripSize: 8,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.primaryColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

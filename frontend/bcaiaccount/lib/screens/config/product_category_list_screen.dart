@@ -28,7 +28,7 @@ class ProductCategoryListScreen extends StatefulWidget {
 }
 
 class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   TextEditingController searchController = TextEditingController();
   List<DraggableGridItem> draggableGridItemList = [];
   List<ProductBarcodeModel> listData = [];
@@ -48,16 +48,16 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
 
   // Define a list of colors for the chips
   final List<Color> chipColors = [
-    Colors.red,
-    Colors.green,
-    Colors.blue,
+    global.theme.negativeHighlightTextColor,
+    global.theme.positiveHighlightTextColor,
+    global.theme.infoHighlightTextColor,
     Colors.yellow,
-    Colors.orange,
+    global.theme.warningHighlightTextColor,
     Colors.pink,
     Colors.teal,
     Colors.cyan,
     Colors.brown,
-    Colors.grey,
+    global.theme.iconSecondaryColor,
     Colors.lime,
     Colors.amber,
     Colors.deepOrange,
@@ -104,12 +104,12 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
           content: Text(global.language('leave_this_screen')),
           actions: <Widget>[
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              style: ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
               onPressed: () => Navigator.pop(context),
               child: Text(global.language('no')),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+              style: ElevatedButton.styleFrom(backgroundColor: global.theme.infoHighlightTextColor),
               onPressed: () {
                 Navigator.pop(context);
                 callBack();
@@ -207,7 +207,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                           setState(() {});
                         }
                       : null,
-                  icon: const Icon(Icons.add),
+                  icon: Icon(Icons.add),
                 ),
               ],
             ),
@@ -267,19 +267,8 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
       body: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.5),
-                  spreadRadius: 5,
-                  blurRadius: 7,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
+            padding: EdgeInsets.all(5),
+            color: global.theme.searchBarColor,
             child: Row(
               children: [
                 Expanded(
@@ -324,8 +313,8 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                         ? Icons.filter_alt_off
                         : Icons.filter_alt,
                     color: (!isProductIsNotCategory)
-                        ? Colors.black
-                        : Colors.blue,
+                        ? global.theme.textColor
+                        : global.theme.infoHighlightTextColor,
                   ),
                 ),
               ],
@@ -334,7 +323,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
           Container(color: global.theme.appBarColor, height: 6),
           Container(
             key: const Key('barcode_list'),
-            padding: const EdgeInsets.only(
+            padding: EdgeInsets.only(
               left: 10,
               right: 10,
               top: 5,
@@ -347,8 +336,8 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                   flex: 5,
                   child: Text(
                     global.language("barcode"),
-                    style: const TextStyle(
-                      color: Colors.black,
+                    style: TextStyle(
+                      color: global.theme.textColor,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -357,8 +346,8 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                   flex: 5,
                   child: Text(
                     global.language("product_name"),
-                    style: const TextStyle(
-                      color: Colors.black,
+                    style: TextStyle(
+                      color: global.theme.textColor,
                       fontWeight: FontWeight.bold,
                     ),
                     maxLines: 2,
@@ -369,8 +358,8 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                   flex: 5,
                   child: Text(
                     global.language("unit"),
-                    style: const TextStyle(
-                      color: Colors.black,
+                    style: TextStyle(
+                      color: global.theme.textColor,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -379,8 +368,8 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                   flex: 5,
                   child: Text(
                     global.language("item_code"),
-                    style: const TextStyle(
-                      color: Colors.black,
+                    style: TextStyle(
+                      color: global.theme.textColor,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -389,8 +378,8 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                   flex: 5,
                   child: Text(
                     global.language("product_group"),
-                    style: const TextStyle(
-                      color: Colors.black,
+                    style: TextStyle(
+                      color: global.theme.textColor,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -409,7 +398,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
           if (loadingData)
             Center(
               child: LoadingAnimationWidget.staggeredDotsWave(
-                color: Colors.blue,
+                color: global.theme.infoHighlightTextColor,
                 size: 50,
               ),
             ),
@@ -625,9 +614,9 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                             }
                           : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
+                        backgroundColor: global.theme.warningHighlightTextColor,
                       ),
-                      child: const Icon(Icons.upload_file, color: Colors.white),
+                      child: Icon(Icons.upload_file, color: global.theme.onPrimaryColor),
                     ),
                   ),
                   const SizedBox(width: 5),
@@ -658,7 +647,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                               );
                             }
                           : null,
-                      child: const Icon(Icons.save, color: Colors.white),
+                      child: Icon(Icons.save, color: global.theme.onPrimaryColor),
                     ),
                   ),
                 ],
@@ -698,7 +687,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                         dragPlaceHolder:
                             (List<DraggableGridItem> list, int index) {
                               return PlaceHolderWidget(
-                                child: Container(color: Colors.white),
+                                child: Container(color: global.theme.cardColor),
                               );
                             },
                       ),
@@ -716,17 +705,17 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
       width: 150,
       height: 150,
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey),
+        color: global.theme.cardColor,
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(4),
+            padding: EdgeInsets.all(4),
             width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: global.theme.negativeHighlightTextColor,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(2),
                 ),
@@ -738,7 +727,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                 );
                 rebuildGrid(productList);
               },
-              child: const Icon(Icons.close),
+              child: Icon(Icons.close),
             ),
           ),
           Expanded(
@@ -750,7 +739,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                     item.barcode,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -760,14 +749,14 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                       global.packName(item.name),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12),
+                      style: TextStyle(fontSize: 12),
                     ),
                   ),
                   Text(
                     item.unitcode,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -777,7 +766,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                       global.packName(item.unitname),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12),
+                      style: TextStyle(fontSize: 12),
                     ),
                   ),
                 ],
@@ -852,9 +841,9 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                 } else if (state is ProductCategoryLoadFailed) {
                   global.showSnackBar(
                     context,
-                    const Icon(Icons.error, color: Colors.white),
+                    Icon(Icons.error, color: global.theme.onPrimaryColor),
                     state.message,
-                    Colors.red,
+                    global.theme.negativeHighlightTextColor,
                   );
                 }
                 // Load
@@ -879,9 +868,9 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                   setState(() {
                     global.showSnackBar(
                       context,
-                      Icon(Icons.edit, color: Colors.white),
+                      Icon(Icons.edit, color: global.theme.onPrimaryColor),
                       global.language("update_success"),
-                      Colors.blue,
+                      global.theme.infoHighlightTextColor,
                     );
                     productList = [];
                     isDataChange = false;
@@ -897,9 +886,9 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                   setState(() {
                     global.showSnackBar(
                       context,
-                      Icon(Icons.edit, color: Colors.white),
+                      Icon(Icons.edit, color: global.theme.onPrimaryColor),
                       "${global.language("update_failed")} : ${state.message}",
-                      Colors.red,
+                      global.theme.negativeHighlightTextColor,
                     );
                   });
                 }
@@ -914,7 +903,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
               title: Text(global.language('product_category')),
               leading: IconButton(
                 focusNode: FocusNode(skipTraversal: true),
-                icon: const Icon(Icons.arrow_back),
+                icon: Icon(Icons.arrow_back),
                 onPressed: () {
                   discardData(
                     callBack: () {
@@ -925,7 +914,6 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                 },
               ),
               actions: [
-                const ManualButton(path: 'product-category-assign'),
                 (productList.isNotEmpty)
                     ? IconButton(
                         onPressed: () {
@@ -938,9 +926,10 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                             ProductGetByBarcodes(barcodes: listbarcodes),
                           );
                         },
-                        icon: const Icon(Icons.print),
+                        icon: Icon(Icons.print),
                       )
                     : Container(),
+                const ManualButton(path: 'product-category-assign'),
               ],
             ),
             body: (constraints.maxWidth < 800.0)
@@ -948,7 +937,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                     controller: splitViewController,
                     gripSize: 8,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.infoHighlightTextColor,
                     viewMode: SplitViewMode.Vertical,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Vertical,
@@ -963,7 +952,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                     controller: splitViewController,
                     gripSize: 8,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.infoHighlightTextColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

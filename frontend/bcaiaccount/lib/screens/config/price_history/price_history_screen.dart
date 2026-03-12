@@ -26,7 +26,7 @@ class PriceHistoryScreen extends StatefulWidget {
 }
 
 class PriceHistoryScreenState extends State<PriceHistoryScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   List<GlobalKey<ImageTooltipState>> tooltipKeys = [];
   TextEditingController searchController = TextEditingController();
   FocusNode searchFocusNode = FocusNode(skipTraversal: true);
@@ -158,7 +158,7 @@ class PriceHistoryScreenState extends State<PriceHistoryScreen>
         title: Text(global.language('barcode')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             global.gotoMainMenu(context);
           },
@@ -263,14 +263,7 @@ class PriceHistoryScreenState extends State<PriceHistoryScreen>
               });
             },
             onFontSizeChange: () {
-              setState(() {
-                global.listDataFontSizeChange();
-              });
-            },
-            onLineSpaceChange: () {
-              setState(() {
-                global.listDataLineSpaceChange();
-              });
+              setState(() {});
             },
           ),
           Container(
@@ -288,7 +281,7 @@ class PriceHistoryScreenState extends State<PriceHistoryScreen>
           if (loadingData)
             Center(
                 child: LoadingAnimationWidget.staggeredDotsWave(
-              color: Colors.blue,
+              color: global.theme.infoHighlightTextColor,
               size: 50,
             ))
         ]),
@@ -418,12 +411,12 @@ class PriceHistoryScreenState extends State<PriceHistoryScreen>
                         loadingData = false;
                         global.showSnackBar(
                             context,
-                            const Icon(
+                            Icon(
                               Icons.error_outline,
-                              color: Colors.white,
+                              color: global.theme.onPrimaryColor,
                             ),
                             state.message,
-                            Colors.red);
+                            global.theme.negativeHighlightTextColor);
                       });
                     }
 
@@ -440,7 +433,7 @@ class PriceHistoryScreenState extends State<PriceHistoryScreen>
                   ? SplitView(
                       gripSize: 8,
                       gripColor: global.theme.appBarColor,
-                      gripColorActive: Colors.blue,
+                      gripColorActive: global.theme.infoHighlightTextColor,
                       viewMode: SplitViewMode.Horizontal,
                       indicator: const SplitIndicator(
                           viewMode: SplitViewMode.Horizontal),

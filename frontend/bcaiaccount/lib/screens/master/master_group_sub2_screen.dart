@@ -5,7 +5,7 @@ import 'package:smlaicloud/model/master_group_sub2_model.dart';
 import 'package:smlaicloud/model/master_group_model.dart';
 import 'package:smlaicloud/model/master_group_sub1_model.dart';
 import 'package:smlaicloud/screens/master/group_selection_screens.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,7 +23,7 @@ class MasterGroupSub2Screen extends StatefulWidget {
 }
 
 class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   late TabController tabController;
   ScrollController editScrollController = ScrollController();
@@ -50,6 +50,7 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
   bool isKeyUp = false;
   bool isKeyDown = false;
   bool showCheckBox = false;
+  int _hoverIndex = -1;
   global.ScreenEventEnum screenEvent = global.ScreenEventEnum.list;
   late SplitViewController splitViewController;
   final debouncer = global.Debouncer(1000);
@@ -243,6 +244,7 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -363,7 +365,7 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
           Container(
             padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.searchBarColor,
               borderRadius: BorderRadius.circular(2),
             ),
             child: Row(
@@ -386,26 +388,21 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
                     controller: searchController,
                     decoration: InputDecoration(
                       isDense: true,
-                      contentPadding: const EdgeInsets.only(
-                        top: 0,
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                      ),
+                      contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                       border: InputBorder.none,
+                      prefixIcon: Icon(Icons.search, size: 20, color: global.theme.iconColor),
+                      prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                       hintText: global.language('search'),
                     ),
                   ),
                 ),
-                IconButton(
-                  focusNode: FocusNode(skipTraversal: true),
-                  icon: const FaIcon(FontAwesomeIcons.font),
-                  onPressed: () async {
-                    setState(() {
-                      global.listDataFontSizeChange();
-                    });
-                  },
-                ),
+                ListFontSizeControl(onChanged: () => setState(() {})),
+                const SizedBox(width: 4),
+                if (listData.isNotEmpty)
+                  Text(
+                    '(${listData.length})',
+                    style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
+                  ),
                 IconButton(
                   focusNode: FocusNode(skipTraversal: true),
                   icon: const Icon(Icons.line_weight),
@@ -531,14 +528,15 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
     }
     // ลบการ add key ออก - keys ถูกสร้างใน LoadSuccess แล้ว
     // listKeys.add(GlobalKey());  // ❌ ตรงนี้ทำให้เกิด infinite loop!
-    bool selected = selectGuid == value.guidfixed;
-    TextStyle textStyle = TextStyle(
-      fontWeight: (selected) ? FontWeight.bold : FontWeight.normal,
-      fontSize: (selected)
-          ? global.deviceConfig.listDataFontSize + 2.0
-          : global.deviceConfig.listDataFontSize,
-    );
-    return GestureDetector(
+    final isSelected = selectGuid == value.guidfixed;
+    TextStyle textStyle = isSelected
+        ? TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w700, color: global.theme.textColor)
+        : TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w400, color: global.theme.textSecondaryColor);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         if (showCheckBox == true) {
           setState(() {
@@ -580,7 +578,7 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
         key: index < listKeys.length ? listKeys[index] : null,
         decoration: BoxDecoration(
           color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
+              ? global.theme.rowSelectedColor
               : (index % 2 == 0)
               ? global.theme.columnAlternateEvenColor
               : global.theme.columnAlternateOddColor,
@@ -643,7 +641,23 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
           ],
         ),
       ),
+    ),
     );
+  }
+
+
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return (screenEvent == global.ScreenEventEnum.edit)
+          ? global.theme.rowEditColor
+          : global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
   }
 
   List<LanguageDataModel> packLanguage() {
@@ -902,7 +916,7 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
         child: SingleChildScrollView(
           controller: editScrollController,
           child: Container(
-            color: Colors.white,
+            color: global.theme.cardColor,
             width: double.infinity,
             padding: const EdgeInsets.all(10),
             child: Column(
@@ -932,15 +946,15 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
                           );
                         },
                         decoration: InputDecoration(
-                          border: const OutlineInputBorder(),
-                          contentPadding: const EdgeInsets.only(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.only(
                             left: 10,
                             top: 0,
                             bottom: 0,
                             right: 10,
                           ),
-                          enabledBorder: const OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.grey, width: 0.0),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
                           ),
                           floatingLabelBehavior: FloatingLabelBehavior.always,
                           labelText: global.language("group_sub2_code"),
@@ -964,7 +978,7 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
                           SizedBox(height: 8),
                           Container(
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey),
+                              border: Border.all(color: global.theme.textSecondaryColor),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Row(
@@ -981,14 +995,14 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
                                           : selectedGroupMainName,
                                       style: TextStyle(
                                         color: selectedGroupMainName.isEmpty
-                                            ? Colors.grey[600]
+                                            ? global.theme.textSecondaryColor
                                             : Colors.black,
                                         fontSize: 16,
                                       ),
                                     ),
                                   ),
                                 ),
-                                Container(width: 1, height: 40, color: Colors.grey),
+                                Container(width: 1, height: 40, color: global.theme.textSecondaryColor),
                                 if (selectedGroupMainGuid.isNotEmpty &&
                                     !fieldFocusNodes[1].isReadOnly)
                                   InkWell(
@@ -1014,7 +1028,7 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
                                       ? null
                                       : showGroupSelectionDialog,
                                   child: Container(
-                                    padding: const EdgeInsets.all(12),
+                                    padding: EdgeInsets.all(12),
                                     child: Icon(
                                       Icons.search,
                                       color: fieldFocusNodes[1].isReadOnly
@@ -1043,7 +1057,7 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
                           SizedBox(height: 8),
                           Container(
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey),
+                              border: Border.all(color: global.theme.textSecondaryColor),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Row(
@@ -1060,14 +1074,14 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
                                           : selectedGroupSubName,
                                       style: TextStyle(
                                         color: selectedGroupSubName.isEmpty
-                                            ? Colors.grey[600]
+                                            ? global.theme.textSecondaryColor
                                             : Colors.black,
                                         fontSize: 16,
                                       ),
                                     ),
                                   ),
                                 ),
-                                Container(width: 1, height: 40, color: Colors.grey),
+                                Container(width: 1, height: 40, color: global.theme.textSecondaryColor),
                                 if (selectedGroupSubGuid.isNotEmpty &&
                                     !fieldFocusNodes[2].isReadOnly)
                                   InkWell(
@@ -1093,7 +1107,7 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
                                       ? null
                                       : showGroupSub1SelectionDialog,
                                   child: Container(
-                                    padding: const EdgeInsets.all(12),
+                                    padding: EdgeInsets.all(12),
                                     child: Icon(
                                       Icons.search,
                                       color: fieldFocusNodes[2].isReadOnly
@@ -1124,15 +1138,15 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
                             textAlign: TextAlign.left,
                             controller: fieldTextController[i + 3],
                             decoration: InputDecoration(
-                              contentPadding: const EdgeInsets.only(
+                              contentPadding: EdgeInsets.only(
                                 left: 10,
                                 top: 0,
                                 bottom: 0,
                                 right: 10,
                               ),
-                              enabledBorder: const OutlineInputBorder(
+                              enabledBorder: OutlineInputBorder(
                                 borderSide: BorderSide(
-                                  color: Colors.grey,
+                                  color: global.theme.textSecondaryColor,
                                   width: 0.0,
                                 ),
                               ),
@@ -1197,6 +1211,7 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
       groupSub2GuidListChecked.clear();
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -1216,7 +1231,7 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
                     context,
                     Icon(Icons.save, color: Colors.white),
                     global.language("save_success"),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   clearEditData();
                   listData.clear();
@@ -1239,7 +1254,7 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
                     context,
                     Icon(Icons.edit, color: Colors.white),
                     global.language("edit_success"),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   clearEditData();
                   listData.clear();
@@ -1267,7 +1282,7 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
                     context,
                     Icon(Icons.delete, color: Colors.white),
                     global.language("delete_success"),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   listData.clear();
                   clearEditData();
@@ -1283,7 +1298,7 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
                     context,
                     Icon(Icons.delete, color: Colors.white),
                     global.language("delete_success"),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   listData.clear();
                   clearEditData();
@@ -1310,7 +1325,7 @@ class MasterGroupSub2ScreenState extends State<MasterGroupSub2Screen>
                     controller: splitViewController,
                     gripSize: 14,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.primaryColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

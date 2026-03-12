@@ -9,7 +9,7 @@ import 'package:smlaicloud/model/price_model.dart';
 import 'package:smlaicloud/model/product_group_model.dart';
 import 'package:smlaicloud/screen_search/product_group_search_screen.dart';
 import 'package:smlaicloud/screen_search/supplier_search_screen.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -65,6 +65,7 @@ class ProductScreenState extends State<ProductScreen>
   bool isKeyUp = false;
   bool isKeyDown = false;
   bool showCheckBox = false;
+  int _hoverIndex = -1;
   global.ScreenEventEnum screenEvent = global.ScreenEventEnum.list;
   late SplitViewController splitViewController;
   final debounce = global.Debouncer(1000);
@@ -279,6 +280,7 @@ class ProductScreenState extends State<ProductScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -387,7 +389,7 @@ class ProductScreenState extends State<ProductScreen>
                   },
                 );
               },
-              icon: const Icon(Icons.add),
+              icon: Icon(Icons.add),
             ),
           ),
         ],
@@ -395,16 +397,13 @@ class ProductScreenState extends State<ProductScreen>
       body: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(2),
-            ),
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            color: global.theme.searchBarColor,
             child: Row(
               children: [
                 Expanded(
-                  child: TextFormField(
-                    onFieldSubmitted: (value) {
+                  child: TextField(
+                    onSubmitted: (value) {
                       searchFocusNode.requestFocus();
                     },
                     onChanged: (value) {
@@ -420,35 +419,21 @@ class ProductScreenState extends State<ProductScreen>
                     controller: searchController,
                     decoration: InputDecoration(
                       isDense: true,
-                      contentPadding: const EdgeInsets.only(
-                        top: 0,
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                       border: InputBorder.none,
                       hintText: global.language('search'),
+                      prefixIcon: Icon(Icons.search, size: 20),
+                      prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                     ),
                   ),
                 ),
-                IconButton(
-                  focusNode: FocusNode(skipTraversal: true),
-                  icon: const FaIcon(FontAwesomeIcons.font),
-                  onPressed: () async {
-                    setState(() {
-                      global.listDataFontSizeChange();
-                    });
-                  },
-                ),
-                IconButton(
-                  focusNode: FocusNode(skipTraversal: true),
-                  icon: const Icon(Icons.line_weight),
-                  onPressed: () async {
-                    setState(() {
-                      global.listDataLineSpaceChange();
-                    });
-                  },
-                ),
+                ListFontSizeControl(onChanged: () => setState(() {})),
+                const SizedBox(width: 4),
+                if (listData.isNotEmpty)
+                  Text(
+                    '(${listData.length})',
+                    style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
+                  ),
               ],
             ),
           ),
@@ -588,14 +573,15 @@ class ProductScreenState extends State<ProductScreen>
     }
     // ลบการ add key ออก - keys ถูกสร้างใน LoadSuccess แล้ว
     // listKeys.add(GlobalKey());  // ❌ ตรงนี้ทำให้เกิด infinite loop!
-    bool selected = selectGuid == value.guidfixed;
-    TextStyle textStyle = TextStyle(
-      fontWeight: (selected) ? FontWeight.bold : FontWeight.normal,
-      fontSize: (selected)
-          ? global.deviceConfig.listDataFontSize + 2.0
-          : global.deviceConfig.listDataFontSize,
-    );
-    return GestureDetector(
+    final isSelected = selectGuid == value.guidfixed;
+    TextStyle textStyle = isSelected
+        ? TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w700, color: global.theme.textColor)
+        : TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w400, color: global.theme.textSecondaryColor);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         if (showCheckBox == true) {
           setState(() {
@@ -633,13 +619,7 @@ class ProductScreenState extends State<ProductScreen>
       },
       child: Container(
         key: index < listKeys.length ? listKeys[index] : null,
-        decoration: BoxDecoration(
-          color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
-              : (index % 2 == 0)
-              ? global.theme.columnAlternateEvenColor
-              : global.theme.columnAlternateOddColor,
-        ),
+        color: _getContainerColor(value.guidfixed, index),
         padding: EdgeInsets.only(
           left: 10,
           right: 10,
@@ -680,7 +660,23 @@ class ProductScreenState extends State<ProductScreen>
           ],
         ),
       ),
+    ),
     );
+  }
+
+
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return (screenEvent == global.ScreenEventEnum.edit)
+          ? global.theme.rowEditColor
+          : global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
   }
 
   List<LanguageDataModel> packLanguage() {
@@ -1261,7 +1257,7 @@ class ProductScreenState extends State<ProductScreen>
                     children: [
                       // 🔹 Header Row
                       TableRow(
-                        decoration: BoxDecoration(color: Colors.grey[200]),
+                        decoration: BoxDecoration(color: global.theme.dividerBorderColor),
                         children: [
                           Padding(
                             padding: EdgeInsets.all(8.0),
@@ -1714,6 +1710,7 @@ class ProductScreenState extends State<ProductScreen>
       guidListChecked.clear();
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -1913,7 +1910,7 @@ class ProductScreenState extends State<ProductScreen>
               controller: splitViewController,
               gripSize: 14,
               gripColor: global.theme.appBarColor,
-              gripColorActive: Colors.blue,
+              gripColorActive: global.theme.primaryColor,
               viewMode: SplitViewMode.Horizontal,
               indicator: const SplitIndicator(
                 viewMode: SplitViewMode.Horizontal,

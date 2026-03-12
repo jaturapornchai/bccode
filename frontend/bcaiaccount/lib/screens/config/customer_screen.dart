@@ -14,7 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
@@ -30,7 +30,7 @@ class CustomerScreen extends StatefulWidget {
 }
 
 class CustomerScreenState extends State<CustomerScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   late TabController tabController;
   ScrollController editScrollController = ScrollController();
@@ -60,6 +60,7 @@ class CustomerScreenState extends State<CustomerScreen>
   bool isKeyUp = false;
   bool isKeyDown = false;
   bool showCheckBox = false;
+  int _hoverIndex = -1;
   bool isEditMode = false;
   late CustomerModel screenData;
   late CustomerRequestModel screenDataRequest;
@@ -290,6 +291,7 @@ class CustomerScreenState extends State<CustomerScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -357,7 +359,7 @@ class CustomerScreenState extends State<CustomerScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -449,7 +451,7 @@ class CustomerScreenState extends State<CustomerScreen>
             Container(
               padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.searchBarColor,
                 borderRadius: BorderRadius.circular(2),
               ),
               child: Row(
@@ -472,34 +474,25 @@ class CustomerScreenState extends State<CustomerScreen>
                       controller: searchController,
                       decoration: InputDecoration(
                         isDense: true,
-                        contentPadding: const EdgeInsets.only(
+                        contentPadding: EdgeInsets.only(
                           top: 0,
                           bottom: 0,
                           left: 0,
                           right: 0,
                         ),
                         border: InputBorder.none,
+                        prefixIcon: Icon(Icons.search, size: 20, color: global.theme.iconColor),
+                        prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         hintText: global.language('search'),
                       ),
                     ),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const FaIcon(FontAwesomeIcons.font),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataFontSizeChange();
-                      });
-                    },
-                  ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const Icon(Icons.line_weight),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataLineSpaceChange();
-                      });
-                    },
+                  ListFontSizeControl(onChanged: () => setState(() {})),
+                const SizedBox(width: 4),
+                if (listData.isNotEmpty)
+                  Text(
+                    '(${listData.length})',
+                    style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                   ),
                 ],
               ),
@@ -569,7 +562,7 @@ class CustomerScreenState extends State<CustomerScreen>
             if (loadingData)
               Center(
                 child: LoadingAnimationWidget.staggeredDotsWave(
-                  color: Colors.blue,
+                  color: global.theme.primaryColor,
                   size: 50,
                 ),
               ),
@@ -589,6 +582,20 @@ class CustomerScreenState extends State<CustomerScreen>
     });
   }
 
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return (screenEvent == global.ScreenEventEnum.edit)
+          ? global.theme.rowEditColor
+          : global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
+  }
+
   Widget listObject(int index, CustomerModel value, bool showCheckBox) {
     bool isCheck = false;
     for (int i = 0; i < guidListChecked.length; i++) {
@@ -599,14 +606,15 @@ class CustomerScreenState extends State<CustomerScreen>
     }
     // ลบการ add key ออก - keys ถูกสร้างใน CustomerLoadSuccess แล้ว
     // listKeys.add(GlobalKey());  // ❌ ตรงนี้ทำให้เกิด infinite loop!
-    bool selected = selectGuid == value.guidfixed;
-    TextStyle textStyle = TextStyle(
-      fontWeight: (selected) ? FontWeight.bold : FontWeight.normal,
-      fontSize: (selected)
-          ? global.deviceConfig.listDataFontSize + 2.0
-          : global.deviceConfig.listDataFontSize,
-    );
-    return GestureDetector(
+    final isSelected = selectGuid == value.guidfixed;
+    TextStyle textStyle = isSelected
+        ? TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w700, color: global.theme.textColor)
+        : TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w400, color: global.theme.textSecondaryColor);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         if (showCheckBox == true) {
           setState(() {
@@ -648,11 +656,7 @@ class CustomerScreenState extends State<CustomerScreen>
       child: Container(
         key: index < listKeys.length ? listKeys[index] : null,
         decoration: BoxDecoration(
-          color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
-              : (index % 2 == 0)
-              ? global.theme.columnAlternateEvenColor
-              : global.theme.columnAlternateOddColor,
+          color: _getContainerColor(value.guidfixed, index),
         ),
         padding: EdgeInsets.only(
           left: 10,
@@ -694,6 +698,7 @@ class CustomerScreenState extends State<CustomerScreen>
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -1644,9 +1649,9 @@ class CustomerScreenState extends State<CustomerScreen>
       imageList.add(
         Container(
           width: 300,
-          padding: const EdgeInsets.only(left: 5, right: 5, bottom: 5, top: 5),
+          padding: EdgeInsets.only(left: 5, right: 5, bottom: 5, top: 5),
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey),
+            border: Border.all(color: global.theme.textSecondaryColor),
             borderRadius: const BorderRadius.all(Radius.circular(5.0)),
           ),
           child: Column(
@@ -1762,7 +1767,7 @@ class CustomerScreenState extends State<CustomerScreen>
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          border: Border.all(color: Colors.black),
+                          border: Border.all(color: global.theme.textColor),
                           borderRadius: BorderRadius.circular(5),
                           boxShadow: const [
                             BoxShadow(
@@ -1884,6 +1889,7 @@ class CustomerScreenState extends State<CustomerScreen>
     }
 
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -1930,7 +1936,7 @@ class CustomerScreenState extends State<CustomerScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -2033,6 +2039,7 @@ class CustomerScreenState extends State<CustomerScreen>
     // listKeys จะถูก clear ใน BlocListener เมื่อมีการเปลี่ยนแปลง data
 
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -2241,7 +2248,7 @@ class CustomerScreenState extends State<CustomerScreen>
                     controller: splitViewController,
                     gripSize: 8,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.primaryColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

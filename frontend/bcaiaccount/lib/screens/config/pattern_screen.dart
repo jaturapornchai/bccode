@@ -17,7 +17,7 @@ class PatternScreen extends StatefulWidget {
 }
 
 class PatternScreenState extends State<PatternScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   late TabController tabController;
   ScrollController editScrollController = ScrollController();
   TextEditingController codeController = TextEditingController();
@@ -62,24 +62,18 @@ class PatternScreenState extends State<PatternScreen>
         backgroundColor: global.theme.appBarColor,
         title: Text(global.language("product_type")),
         actions: <Widget>[
-          Padding(
-            padding: const EdgeInsets.only(right: 20.0),
-            child: GestureDetector(
-              onTap: () {
-                setState(() {});
-              },
-              child: const Icon(Icons.delete, size: 26.0),
-            ),
+          IconButton(
+            onPressed: () {
+              setState(() {});
+            },
+            icon: Icon(Icons.delete),
           ),
-          Padding(
-            padding: const EdgeInsets.only(right: 20.0),
-            child: GestureDetector(
-              onTap: () {
-                tabController.index = 1;
-                nameFocusNode[0].requestFocus();
-              },
-              child: const Icon(Icons.add, size: 26.0),
-            ),
+          IconButton(
+            onPressed: () {
+              tabController.index = 1;
+              nameFocusNode[0].requestFocus();
+            },
+            icon: Icon(Icons.add),
           ),
         ],
       ),
@@ -109,7 +103,7 @@ class PatternScreenState extends State<PatternScreen>
       appBar: AppBar(
         leading: showBackButton
             ? IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: Icon(Icons.arrow_back),
                 onPressed: () {
                   tabController.index = 0;
                 },
@@ -118,23 +112,17 @@ class PatternScreenState extends State<PatternScreen>
         backgroundColor: global.theme.appBarColor,
         title: Text(global.language("product_type")),
         actions: <Widget>[
-          Padding(
-            padding: const EdgeInsets.only(right: 20.0),
-            child: GestureDetector(
-              onTap: () {
-                addDetail();
-              },
-              child: const Icon(Icons.add, size: 26.0),
-            ),
+          IconButton(
+            onPressed: () {
+              addDetail();
+            },
+            icon: Icon(Icons.add),
           ),
-          Padding(
-            padding: const EdgeInsets.only(right: 20.0),
-            child: GestureDetector(
-              onTap: () {
-                saveData();
-              },
-              child: const Icon(Icons.save, size: 26.0),
-            ),
+          IconButton(
+            onPressed: () {
+              saveData();
+            },
+            icon: Icon(Icons.save),
           ),
         ],
       ),
@@ -184,10 +172,10 @@ class PatternScreenState extends State<PatternScreen>
                 children: [
                   for (var i = 0; i < details.length; i++)
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: Colors.grey),
+                        color: global.theme.cardColor,
+                        border: Border.all(color: global.theme.dividerBorderColor),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Column(
@@ -259,7 +247,7 @@ class PatternScreenState extends State<PatternScreen>
               ? Row(
                   children: [
                     Expanded(child: listScreen()),
-                    Container(width: 1.5, color: Colors.black),
+                    Container(width: 1.5, color: global.theme.textColor),
                     Expanded(child: editScreen(showBackButton: false)),
                   ],
                 )

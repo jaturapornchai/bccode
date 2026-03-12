@@ -20,7 +20,7 @@ class ColorScreen extends StatefulWidget {
 }
 
 class ColorScreenState extends State<ColorScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   late TabController tabController;
   ScrollController editScrollController = ScrollController();
@@ -48,6 +48,7 @@ class ColorScreenState extends State<ColorScreen>
   bool isKeyUp = false;
   bool isKeyDown = false;
   bool showCheckBox = false;
+  int _hoverIndex = -1;
   bool isEditMode = false;
   Color colorSelected = Colors.white;
   String colorSelectedHex = "";
@@ -186,6 +187,7 @@ class ColorScreenState extends State<ColorScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -251,7 +253,7 @@ class ColorScreenState extends State<ColorScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -335,12 +337,12 @@ class ColorScreenState extends State<ColorScreen>
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(5),
+              padding: EdgeInsets.all(5),
               color: global.theme.appBarColor,
               child: Container(
                 padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: global.theme.searchBarColor,
                   borderRadius: BorderRadius.circular(2),
                   boxShadow: [
                     BoxShadow(
@@ -485,7 +487,11 @@ class ColorScreenState extends State<ColorScreen>
     }
     // ลบการ add key ออก - keys ถูกสร้างใน LoadSuccess แล้ว
     // listKeys.add(GlobalKey());  // ❌ ตรงนี้ทำให้เกิด infinite loop!
-    return GestureDetector(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         if (showCheckBox == true) {
           setState(() {
@@ -530,10 +536,10 @@ class ColorScreenState extends State<ColorScreen>
         key: index < listKeys.length ? listKeys[index] : null,
         decoration: BoxDecoration(
           color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
+              ? global.theme.rowSelectedColor
               : Colors.white,
-          border: const Border(
-            bottom: BorderSide(width: 1.0, color: Colors.grey),
+          border: Border(
+            bottom: BorderSide(width: 1.0, color: global.theme.textSecondaryColor),
           ),
         ),
         padding: const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
@@ -565,7 +571,7 @@ class ColorScreenState extends State<ColorScreen>
                     height: 20,
                     decoration: BoxDecoration(
                       color: global.colorFromHex(value.colorselecthex),
-                      border: Border.all(color: Colors.black),
+                      border: Border.all(color: global.theme.textColor),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -574,7 +580,7 @@ class ColorScreenState extends State<ColorScreen>
                     height: 20,
                     decoration: BoxDecoration(
                       color: global.colorFromHex(value.colorsystemhex),
-                      border: Border.all(color: Colors.black),
+                      border: Border.all(color: global.theme.textColor),
                     ),
                   ),
                 ],
@@ -590,7 +596,21 @@ class ColorScreenState extends State<ColorScreen>
           ],
         ),
       ),
+    ),
     );
+  }
+
+
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
   }
 
   List<LanguageDataModel> packLanguage() {
@@ -676,6 +696,7 @@ class ColorScreenState extends State<ColorScreen>
 
   Widget editScreen({mobileScreen}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -722,7 +743,7 @@ class ColorScreenState extends State<ColorScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -881,7 +902,7 @@ class ColorScreenState extends State<ColorScreen>
                   width: double.infinity,
                   decoration: BoxDecoration(
                     color: colorSelected,
-                    border: Border.all(color: Colors.grey),
+                    border: Border.all(color: global.theme.textSecondaryColor),
                     borderRadius: BorderRadius.circular(5),
                   ),
                   child: Container(
@@ -893,7 +914,7 @@ class ColorScreenState extends State<ColorScreen>
                         width: double.infinity,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          border: Border.all(color: Colors.grey),
+                          border: Border.all(color: global.theme.textSecondaryColor),
                           borderRadius: BorderRadius.circular(5),
                         ),
                         child: Row(
@@ -941,10 +962,10 @@ class ColorScreenState extends State<ColorScreen>
                 SizedBox(height: 10),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(4),
+                  padding: EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     color: publicColorSelected,
-                    border: Border.all(color: Colors.grey),
+                    border: Border.all(color: global.theme.textSecondaryColor),
                     borderRadius: BorderRadius.circular(5),
                   ),
                   child: Column(
@@ -968,9 +989,9 @@ class ColorScreenState extends State<ColorScreen>
                           for (int i = 0; i < global.publicColors.length; i++)
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                side: const BorderSide(
+                                side: BorderSide(
                                   width: 1.0,
-                                  color: Colors.grey,
+                                  color: global.theme.textSecondaryColor,
                                 ),
                                 backgroundColor: global.colorFromHex(
                                   global.publicColors[i].color,
@@ -1089,6 +1110,7 @@ class ColorScreenState extends State<ColorScreen>
       colorGuidListChecked.clear();
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -1110,7 +1132,7 @@ class ColorScreenState extends State<ColorScreen>
                     context,
                     Icon(Icons.save, color: Colors.white),
                     global.language('save_success'),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   clearEditData();
                   colorListDatas.clear();
@@ -1134,7 +1156,7 @@ class ColorScreenState extends State<ColorScreen>
                     context,
                     Icon(Icons.edit, color: Colors.white),
                     global.language('edit_success'),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   clearEditData();
                   colorListDatas.clear();
@@ -1163,7 +1185,7 @@ class ColorScreenState extends State<ColorScreen>
                     context,
                     Icon(Icons.delete, color: Colors.white),
                     global.language('delete_success'),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   colorListDatas.clear();
                   clearEditData();
@@ -1180,7 +1202,7 @@ class ColorScreenState extends State<ColorScreen>
                     context,
                     Icon(Icons.delete, color: Colors.white),
                     global.language('delete_success'),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   colorListDatas.clear();
                   clearEditData();
@@ -1255,7 +1277,7 @@ class ColorScreenState extends State<ColorScreen>
                     controller: splitViewController,
                     gripSize: 8,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.primaryColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

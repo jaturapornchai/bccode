@@ -2,6 +2,7 @@
 import 'dart:io';
 import 'package:smlaicloud/bloc/image/image_upload_bloc.dart';
 import 'package:smlaicloud/widgets/manual_button.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:smlaicloud/bloc/product_category/product_category_bloc.dart';
 import 'package:smlaicloud/model/product_category_model.dart';
 import 'package:flex_color_picker/flex_color_picker.dart';
@@ -28,7 +29,7 @@ class ProductCategoryScreen extends StatefulWidget {
 }
 
 class ProductCategoryScreenState extends State<ProductCategoryScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   late DropzoneViewController dropZoneController;
   final ImagePicker _picker = ImagePicker();
@@ -440,8 +441,8 @@ class ProductCategoryScreenState extends State<ProductCategoryScreen>
                 IconButton(
                   padding: EdgeInsets.zero,
                   color: (selectGuid == category.detail.guidfixed)
-                      ? Colors.black
-                      : Colors.blue,
+                      ? global.theme.iconColor
+                      : global.theme.primaryColor,
                   focusNode: FocusNode(skipTraversal: true),
                   icon: const Icon(Icons.move_up),
                   onPressed: () {
@@ -455,7 +456,7 @@ class ProductCategoryScreenState extends State<ProductCategoryScreen>
                 IconButton(
                   padding: EdgeInsets.zero,
                   color: (selectGuid == category.detail.guidfixed)
-                      ? Colors.black
+                      ? global.theme.iconColor
                       : Colors.red,
                   focusNode: FocusNode(skipTraversal: true),
                   icon: const Icon(Icons.move_down),
@@ -662,6 +663,7 @@ class ProductCategoryScreenState extends State<ProductCategoryScreen>
       needScroll = false;
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
         automaticallyImplyLeading: false,
@@ -706,51 +708,48 @@ class ProductCategoryScreenState extends State<ProductCategoryScreen>
                   },
                 );
               },
-              icon: const Icon(Icons.add, size: 26.0),
+              icon: Icon(Icons.add, size: 26.0),
             ),
           ),
         ],
       ),
       body: Column(
         children: [
-          // Container(
-          //     padding: const EdgeInsets.all(5),
-          //     decoration: BoxDecoration(
-          //       color: Colors.white,
-          //       borderRadius: BorderRadius.circular(2),
-          //     ),
-          //     child: Row(children: [
-          //       Expanded(
-          //           child: TextFormField(
-          //               onFieldSubmitted: (value) {
-          //                 searchFocusNode.requestFocus();
-          //               },
-          //               onChanged: (value) {
-          //                 _debouncer.run(() {
-          //                   loadDataList(value);
-          //                 });
-          //               },
-          //               autofocus: true,
-          //               focusNode: searchFocusNode,
-          //               controller: searchController,
-          //               decoration: InputDecoration(
-          //                 isDense: true,
-          //                 contentPadding: const EdgeInsets.only(
-          //                     top: 0, bottom: 0, left: 0, right: 0),
-          //                 border: InputBorder.none,
-          //                 hintText: (kIsWeb)
-          //                     ? "${global.language('search')} (F2)"
-          //                     : global.language('search'),
-          //               ))),
-          //       IconButton(
-          //           focusNode: FocusNode(skipTraversal: true),
-          //           icon: const FaIcon(FontAwesomeIcons.font),
-          //           onPressed: () async {
-          //             setState(() {
-          //               global.listDataFontSizeChange();
-          //             });
-          //           })
-          //     ])),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            color: global.theme.searchBarColor,
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    onSubmitted: (value) {
+                      searchFocusNode.requestFocus();
+                    },
+                    onChanged: (value) {
+                      debouncer.run(() {
+                        loadDataList(value);
+                      });
+                    },
+                    autofocus: false,
+                    focusNode: searchFocusNode,
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                      border: InputBorder.none,
+                      hintText: global.language('search'),
+                      prefixIcon: Icon(Icons.search, size: 20),
+                      prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    ),
+                  ),
+                ),
+                ListFontSizeControl(onChanged: () => setState(() {})),
+                const SizedBox(width: 4),
+                if (rootCategorys.isNotEmpty)
+                  Text('(${rootCategorys.length})', style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor)),
+              ],
+            ),
+          ),
           Container(color: global.theme.appBarColor, height: 2),
           if (selectDragTargetGuid.isNotEmpty)
             DragTarget(
@@ -975,6 +974,7 @@ class ProductCategoryScreenState extends State<ProductCategoryScreen>
 
   Widget editScreen({mobileScreen = true}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text(headerEdit + global.language('product_category')),
@@ -1105,11 +1105,11 @@ class ProductCategoryScreenState extends State<ProductCategoryScreen>
                   SizedBox(
                     width: double.infinity,
                     child: Container(
-                      margin: const EdgeInsets.only(bottom: 5),
-                      padding: const EdgeInsets.all(10),
+                      margin: EdgeInsets.only(bottom: 5),
+                      padding: EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: Colors.grey),
+                        color: global.theme.cardColor,
+                        border: Border.all(color: global.theme.textSecondaryColor),
                         borderRadius: BorderRadius.circular(5),
                         boxShadow: [
                           BoxShadow(
@@ -1214,9 +1214,9 @@ class ProductCategoryScreenState extends State<ProductCategoryScreen>
                               children: [
                                 Text(
                                   "${global.language("time_for_sale")} ${mediaIndex + 1}",
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 16,
-                                    color: Colors.black,
+                                    color: global.theme.textColor,
                                   ),
                                 ),
                                 IconButton(
@@ -1720,7 +1720,7 @@ class ProductCategoryScreenState extends State<ProductCategoryScreen>
                           child: DecoratedBox(
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              border: Border.all(color: Colors.black),
+                              border: Border.all(color: global.theme.textColor),
                               borderRadius: BorderRadius.circular(5),
                               image: (imageWeb != null)
                                   ? DecorationImage(
@@ -1753,7 +1753,7 @@ class ProductCategoryScreenState extends State<ProductCategoryScreen>
                         width: double.infinity,
                         decoration: BoxDecoration(
                           color: colorSelected,
-                          border: Border.all(color: Colors.grey),
+                          border: Border.all(color: global.theme.textSecondaryColor),
                           borderRadius: BorderRadius.circular(5),
                         ),
                         child: Container(
@@ -1764,8 +1764,8 @@ class ProductCategoryScreenState extends State<ProductCategoryScreen>
                             heading: Container(
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: Colors.white,
-                                border: Border.all(color: Colors.grey),
+                                color: global.theme.cardColor,
+                                border: Border.all(color: global.theme.textSecondaryColor),
                                 borderRadius: BorderRadius.circular(5),
                               ),
                               child: Row(
@@ -1875,7 +1875,7 @@ class ProductCategoryScreenState extends State<ProductCategoryScreen>
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            border: Border.all(color: Colors.black),
+                            border: Border.all(color: global.theme.textColor),
                             borderRadius: BorderRadius.circular(5),
                             image: (selectImageUriCover != '')
                                 ? DecorationImage(
@@ -2029,6 +2029,7 @@ class ProductCategoryScreenState extends State<ProductCategoryScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -2219,7 +2220,7 @@ class ProductCategoryScreenState extends State<ProductCategoryScreen>
                     controller: splitViewController,
                     gripSize: 8,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.primaryColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

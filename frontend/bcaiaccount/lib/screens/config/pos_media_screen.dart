@@ -9,7 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide SegmentedButton, ButtonSegment;
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:image_picker/image_picker.dart';
@@ -26,7 +26,7 @@ class PosMediaScreen extends StatefulWidget {
 }
 
 class PosMediaScreenState extends State<PosMediaScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   late TabController tabController;
   ScrollController editScrollController = ScrollController();
@@ -49,6 +49,7 @@ class PosMediaScreenState extends State<PosMediaScreen>
   bool isKeyUp = false;
   bool isKeyDown = false;
   bool showCheckBox = false;
+  int _hoverIndex = -1;
   bool isEditMode = false;
   late PosMediaModel screenData;
   late SplitViewController splitViewController;
@@ -284,6 +285,7 @@ class PosMediaScreenState extends State<PosMediaScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -352,7 +354,7 @@ class PosMediaScreenState extends State<PosMediaScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -443,7 +445,7 @@ class PosMediaScreenState extends State<PosMediaScreen>
             Container(
               padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.searchBarColor,
                 borderRadius: BorderRadius.circular(2),
               ),
               child: Row(
@@ -463,25 +465,25 @@ class PosMediaScreenState extends State<PosMediaScreen>
                       controller: searchController,
                       decoration: InputDecoration(
                         isDense: true,
-                        contentPadding: const EdgeInsets.only(
+                        contentPadding: EdgeInsets.only(
                           top: 0,
                           bottom: 0,
                           left: 0,
                           right: 0,
                         ),
                         border: InputBorder.none,
+                        prefixIcon: Icon(Icons.search, size: 20, color: global.theme.iconColor),
+                        prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         hintText: global.language('search'),
                       ),
                     ),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const FaIcon(FontAwesomeIcons.font),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataFontSizeChange();
-                      });
-                    },
+                  ListFontSizeControl(onChanged: () => setState(() {})),
+                const SizedBox(width: 4),
+                if (listData.isNotEmpty)
+                  Text(
+                    '(${listData.length})',
+                    style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                   ),
                   IconButton(
                     focusNode: FocusNode(skipTraversal: true),
@@ -498,7 +500,7 @@ class PosMediaScreenState extends State<PosMediaScreen>
             Container(color: global.theme.appBarColor, height: 6),
             Container(
               key: headerKey,
-              padding: const EdgeInsets.only(
+              padding: EdgeInsets.only(
                 left: 10,
                 right: 10,
                 top: 5,
@@ -560,7 +562,7 @@ class PosMediaScreenState extends State<PosMediaScreen>
             if (loadingData)
               Center(
                 child: LoadingAnimationWidget.staggeredDotsWave(
-                  color: Colors.blue,
+                  color: global.theme.primaryColor,
                   size: 50,
                 ),
               ),
@@ -580,14 +582,15 @@ class PosMediaScreenState extends State<PosMediaScreen>
     }
     // ลบการ add key ออก - keys ถูกสร้างใน LoadSuccess แล้ว
     // listKeys.add(GlobalKey());  // ❌ ตรงนี้ทำให้เกิด infinite loop!
-    bool selected = selectGuid == value.guidfixed;
-    TextStyle textStyle = TextStyle(
-      fontWeight: (selected) ? FontWeight.bold : FontWeight.normal,
-      fontSize: (selected)
-          ? global.deviceConfig.listDataFontSize + 2.0
-          : global.deviceConfig.listDataFontSize,
-    );
-    return GestureDetector(
+    final isSelected = selectGuid == value.guidfixed;
+    TextStyle textStyle = isSelected
+        ? TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w700, color: global.theme.textColor)
+        : TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w400, color: global.theme.textSecondaryColor);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         if (showCheckBox == true) {
           setState(() {
@@ -627,13 +630,7 @@ class PosMediaScreenState extends State<PosMediaScreen>
       },
       child: Container(
         key: index < listKeys.length ? listKeys[index] : null,
-        decoration: BoxDecoration(
-          color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
-              : (index % 2 == 0)
-              ? global.theme.columnAlternateEvenColor
-              : global.theme.columnAlternateOddColor,
-        ),
+        color: _getContainerColor(value.guidfixed, index),
         padding: EdgeInsets.only(
           left: 10,
           right: 10,
@@ -674,7 +671,20 @@ class PosMediaScreenState extends State<PosMediaScreen>
           ],
         ),
       ),
+    ),
     );
+  }
+
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
   }
 
   void saveOrUpdateData() {
@@ -1023,14 +1033,14 @@ class PosMediaScreenState extends State<PosMediaScreen>
                       ),
                       const SizedBox(height: 10),
                       Container(
-                        padding: const EdgeInsets.only(
+                        padding: EdgeInsets.only(
                           left: 5,
                           right: 5,
                           bottom: 5,
                           top: 5,
                         ),
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
+                          border: Border.all(color: global.theme.textSecondaryColor),
                           borderRadius: const BorderRadius.all(
                             Radius.circular(5.0),
                           ),
@@ -1041,7 +1051,7 @@ class PosMediaScreenState extends State<PosMediaScreen>
                               width: double.infinity,
                               child: SegmentedButton<int>(
                                 style: SegmentedButton.styleFrom(
-                                  selectedBackgroundColor: Colors.blue,
+                                  selectedBackgroundColor: global.theme.primaryColor,
                                   selectedForegroundColor: Colors.white,
                                   foregroundColor: Colors.white,
                                   backgroundColor: Colors.grey,
@@ -1092,7 +1102,7 @@ class PosMediaScreenState extends State<PosMediaScreen>
                                                 decoration: BoxDecoration(
                                                   color: Colors.white,
                                                   border: Border.all(
-                                                    color: Colors.black,
+                                                    color: global.theme.textColor,
                                                   ),
                                                   borderRadius:
                                                       BorderRadius.circular(5),
@@ -1145,7 +1155,7 @@ class PosMediaScreenState extends State<PosMediaScreen>
                                           /// style button
                                           style: ElevatedButton.styleFrom(
                                             foregroundColor: Colors.white,
-                                            backgroundColor: Colors.blue,
+                                            backgroundColor: global.theme.primaryColor,
                                           ),
                                           onPressed: () async {
                                             pickImages(mediaIndex);
@@ -1248,7 +1258,7 @@ class PosMediaScreenState extends State<PosMediaScreen>
                                           /// style button
                                           style: ElevatedButton.styleFrom(
                                             foregroundColor: Colors.white,
-                                            backgroundColor: Colors.blue,
+                                            backgroundColor: global.theme.primaryColor,
                                           ),
                                           onPressed: () async {
                                             pickVideo(mediaIndex);
@@ -1714,6 +1724,7 @@ class PosMediaScreenState extends State<PosMediaScreen>
     }
 
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -1760,7 +1771,7 @@ class PosMediaScreenState extends State<PosMediaScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -1846,6 +1857,7 @@ class PosMediaScreenState extends State<PosMediaScreen>
       guidListChecked.clear();
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -2068,7 +2080,7 @@ class PosMediaScreenState extends State<PosMediaScreen>
                     controller: splitViewController,
                     gripSize: 8,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.primaryColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,
@@ -2195,10 +2207,10 @@ class OtpInput extends StatelessWidget {
             controller: controller,
             maxLength: 1,
             cursorColor: Theme.of(context).primaryColor,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               border: OutlineInputBorder(),
               counterText: '',
-              hintStyle: TextStyle(color: Colors.black, fontSize: 20.0),
+              hintStyle: TextStyle(color: global.theme.textColor, fontSize: 20.0),
             ),
             onChanged: (value) {
               if (value.length == 1) {

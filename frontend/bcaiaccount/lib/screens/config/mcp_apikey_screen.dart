@@ -16,7 +16,8 @@ class MCPAPIKeyScreen extends StatefulWidget {
   State<MCPAPIKeyScreen> createState() => _MCPAPIKeyScreenState();
 }
 
-class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
+class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen>
+    with global.ThemeRefreshMixin {
   final MCPAPIKeyService _service = MCPAPIKeyService();
   List<MCPAPIKeyModel> _apiKeys = [];
   bool _isLoading = true;
@@ -77,7 +78,7 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.check_circle, color: Colors.green),
+            Icon(Icons.check_circle, color: global.theme.positiveHighlightTextColor),
             SizedBox(width: 8),
             Expanded(child: Text(global.language('api_key_created'))),
           ],
@@ -91,22 +92,22 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
               children: [
                 Text(
                   global.language('api_key_warning'),
-                  style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: global.theme.warningHighlightTextColor, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 // API Key
-                const Text('API Key:', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
+                Text('API Key:', style: TextStyle(fontWeight: FontWeight.bold)),
+                SizedBox(height: 4),
                 _buildCopyableBox(context, apiKey),
                 if (configJson.isNotEmpty) ...[
-                  const SizedBox(height: 20),
-                  Text('Claude Desktop Config:', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  SizedBox(height: 20),
+                  Text('Claude Desktop Config:', style: TextStyle(fontWeight: FontWeight.bold)),
                   SizedBox(height: 4),
                   Text(
                     global.language('mcp_config_copy_hint'),
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   _buildCopyableBox(context, configJson, maxLines: 12),
                 ],
               ],
@@ -125,11 +126,11 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
 
   Widget _buildCopyableBox(BuildContext context, String text, {int maxLines = 2}) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: global.theme.surfaceColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,12 +138,12 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
           Expanded(
             child: SelectableText(
               text,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              style: TextStyle(fontFamily: 'monospace', fontSize: 12),
               maxLines: maxLines,
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.copy),
+            icon: Icon(Icons.copy),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: text));
               global.showInfoSnackBar(context, global.language('copied_to_clipboard'));
@@ -167,9 +168,9 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
       await showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.settings, color: Colors.blue),
+              Icon(Icons.settings, color: global.theme.infoHighlightTextColor),
               SizedBox(width: 8),
               Text('Claude Desktop Config'),
             ],
@@ -183,9 +184,9 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
                 children: [
                   Text(
                     global.language('mcp_config_copy_hint'),
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   _buildCopyableBox(context, configJson, maxLines: 15),
                 ],
               ),
@@ -237,7 +238,7 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
             child: Text(global.language('cancel')),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
             onPressed: () => Navigator.pop(context, true),
             child: Text(global.language('delete')),
           ),
@@ -274,12 +275,12 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
         backgroundColor: global.theme.appBarColor,
         title: Text(global.language('mcp_api_keys')),
         actions: [
-          const ManualButton(path: 'settings-mcp-token'),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh),
             onPressed: _loadAPIKeys,
             tooltip: global.language('refresh'),
           ),
+          const ManualButton(path: 'settings-mcp-token'),
         ],
       ),
       body: _buildBody(),
@@ -302,8 +303,8 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
-            const SizedBox(height: 16),
+            Icon(Icons.error_outline, size: 64, color: global.theme.negativeHighlightTextColor),
+            SizedBox(height: 16),
             Text(_errorMessage!, textAlign: TextAlign.center),
             SizedBox(height: 16),
             ElevatedButton(
@@ -320,16 +321,16 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.vpn_key_off, size: 64, color: Colors.grey),
+            Icon(Icons.vpn_key_off, size: 64, color: global.theme.iconSecondaryColor),
             SizedBox(height: 16),
             Text(
               global.language('no_api_keys'),
-              style: const TextStyle(fontSize: 18, color: Colors.grey),
+              style: TextStyle(fontSize: 18, color: global.theme.iconSecondaryColor),
             ),
             SizedBox(height: 8),
             Text(
               global.language('create_first_api_key'),
-              style: const TextStyle(color: Colors.grey),
+              style: TextStyle(color: global.theme.iconSecondaryColor),
             ),
           ],
         ),
@@ -368,8 +369,8 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
     });
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      color: Colors.blue[50],
+      margin: EdgeInsets.only(bottom: 16),
+      color: global.theme.infoHighlightColor,
       child: Padding(
         padding: EdgeInsets.all(16),
         child: Column(
@@ -377,20 +378,20 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                Icon(Icons.info_outline, color: global.theme.infoHighlightTextColor, size: 20),
                 SizedBox(width: 8),
                 Text(
                   global.language('mcp_usage_guide'),
-                  style: const TextStyle(fontSize: 13, color: Colors.blue),
+                  style: TextStyle(fontSize: 13, color: global.theme.infoHighlightTextColor),
                 ),
               ],
             ),
             SizedBox(height: 12),
             Text(
               global.language('mcp_example_config'),
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             _buildCopyableBox(context, exampleConfig, maxLines: 15),
           ],
         ),
@@ -400,7 +401,7 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
 
   Widget _buildAPIKeyCard(MCPAPIKeyModel key) {
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
-    final statusColor = key.isActive && !key.isExpired ? Colors.green : Colors.red;
+    final statusColor = key.isActive && !key.isExpired ? global.theme.positiveHighlightTextColor : global.theme.negativeHighlightTextColor;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -415,15 +416,15 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
               // Header row
               Row(
                 children: [
-                  const Icon(Icons.vpn_key, size: 24),
-                  const SizedBox(width: 12),
+                  Icon(Icons.vpn_key, size: 24),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           key.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -431,7 +432,7 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
                         if (key.description != null && key.description!.isNotEmpty)
                           Text(
                             key.description!,
-                            style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                            style: TextStyle(color: global.theme.textSecondaryColor, fontSize: 13),
                           ),
                       ],
                     ),
@@ -454,31 +455,31 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               // Info row
               Row(
                 children: [
                   _buildPermissionBadge(key.allowedTools),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   _buildInfoChip(Icons.speed, '${key.rateLimitPerMinute}/min'),
                   const Spacer(),
                   Text(
                     dateFormat.format(key.createdAt.toLocal()),
-                    style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                    style: TextStyle(color: global.theme.textSecondaryColor, fontSize: 11),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               // Actions
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton.icon(
                     onPressed: () => _exportConfig(key),
-                    icon: Icon(Icons.settings, size: 18, color: Colors.blue),
+                    icon: Icon(Icons.settings, size: 18, color: global.theme.infoHighlightTextColor),
                     label: Text(
                       global.language('export_config'),
-                      style: const TextStyle(color: Colors.blue),
+                      style: TextStyle(color: global.theme.infoHighlightTextColor),
                     ),
                   ),
                   TextButton.icon(
@@ -493,10 +494,10 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
                   ),
                   TextButton.icon(
                     onPressed: () => _deleteKey(key),
-                    icon: Icon(Icons.delete, size: 18, color: Colors.red),
+                    icon: Icon(Icons.delete, size: 18, color: global.theme.negativeHighlightTextColor),
                     label: Text(
                       global.language('delete'),
-                      style: const TextStyle(color: Colors.red),
+                      style: TextStyle(color: global.theme.negativeHighlightTextColor),
                     ),
                   ),
                 ],
@@ -515,11 +516,11 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
     IconData icon;
     switch (preset) {
       case 'readonly':
-        color = Colors.blue;
+        color = global.theme.infoHighlightTextColor;
         icon = Icons.visibility;
         break;
       case 'developer':
-        color = Colors.orange;
+        color = global.theme.warningHighlightTextColor;
         icon = Icons.build;
         break;
       default:
@@ -537,7 +538,7 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 13, color: color),
-          const SizedBox(width: 4),
+          SizedBox(width: 4),
           Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)),
         ],
       ),
@@ -546,7 +547,7 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
 
   Widget _buildInfoChip(IconData icon, String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.blue.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
@@ -554,9 +555,9 @@ class _MCPAPIKeyScreenState extends State<MCPAPIKeyScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: Colors.blue),
-          const SizedBox(width: 4),
-          Text(text, style: const TextStyle(fontSize: 12, color: Colors.blue)),
+          Icon(icon, size: 14, color: global.theme.infoHighlightTextColor),
+          SizedBox(width: 4),
+          Text(text, style: TextStyle(fontSize: 12, color: global.theme.infoHighlightTextColor)),
         ],
       ),
     );
@@ -571,7 +572,8 @@ class _CreateAPIKeyDialog extends StatefulWidget {
   State<_CreateAPIKeyDialog> createState() => _CreateAPIKeyDialogState();
 }
 
-class _CreateAPIKeyDialogState extends State<_CreateAPIKeyDialog> {
+class _CreateAPIKeyDialogState extends State<_CreateAPIKeyDialog>
+    with global.ThemeRefreshMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -678,7 +680,7 @@ class _CreateAPIKeyDialogState extends State<_CreateAPIKeyDialog> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
 
                 // Description
                 TextFormField(
@@ -690,7 +692,7 @@ class _CreateAPIKeyDialogState extends State<_CreateAPIKeyDialog> {
                   ),
                   maxLines: 2,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
 
                 // Rate Limit
                 TextFormField(
@@ -703,7 +705,7 @@ class _CreateAPIKeyDialogState extends State<_CreateAPIKeyDialog> {
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
 
                 // Expiration
                 ListTile(
@@ -719,11 +721,11 @@ class _CreateAPIKeyDialogState extends State<_CreateAPIKeyDialog> {
                     children: [
                       if (_expiresAt != null)
                         IconButton(
-                          icon: const Icon(Icons.clear),
+                          icon: Icon(Icons.clear),
                           onPressed: () => setState(() => _expiresAt = null),
                         ),
                       IconButton(
-                        icon: const Icon(Icons.calendar_today),
+                        icon: Icon(Icons.calendar_today),
                         onPressed: () async {
                           final date = await showDatePicker(
                             context: context,
@@ -743,18 +745,18 @@ class _CreateAPIKeyDialogState extends State<_CreateAPIKeyDialog> {
 
                 // ===== Permission Preset =====
                 Text(global.language('permission_level'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _buildPresetOption(
                   value: 'readonly',
                   icon: Icons.visibility,
-                  color: Colors.blue,
+                  color: global.theme.infoHighlightTextColor,
                   title: global.language('role_readonly'),
                   subtitle: '${global.language("mcp_readonly_desc")} (${MCPTools.readonlyTools.length} tools)',
                 ),
                 _buildPresetOption(
                   value: 'developer',
                   icon: Icons.build,
-                  color: Colors.orange,
+                  color: global.theme.warningHighlightTextColor,
                   title: global.language('role_developer'),
                   subtitle: '${global.language("mcp_readwrite_desc")} (${MCPTools.allTools.length} tools)',
                 ),
@@ -774,7 +776,7 @@ class _CreateAPIKeyDialogState extends State<_CreateAPIKeyDialog> {
                       Expanded(
                         child: Text(
                           '${global.language("select_tools")} (${_selectedTools.length}/${MCPTools.allTools.length})',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                         ),
                       ),
                       TextButton(
@@ -790,24 +792,24 @@ class _CreateAPIKeyDialogState extends State<_CreateAPIKeyDialog> {
                       ),
                       TextButton(
                         onPressed: () => setState(() => _selectedTools.clear()),
-                        child: Text(global.language('clear'), style: TextStyle(fontSize: 11, color: Colors.red)),
+                        child: Text(global.language('clear'), style: TextStyle(fontSize: 11, color: global.theme.negativeHighlightTextColor)),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   ...MCPTools.toolCategories.entries.expand((category) => [
                     Padding(
-                      padding: const EdgeInsets.only(top: 8, bottom: 2),
+                      padding: EdgeInsets.only(top: 8, bottom: 2),
                       child: Row(
                         children: [
-                          Icon(_getCategoryIcon(category.key), size: 16, color: Colors.grey[600]),
-                          const SizedBox(width: 6),
+                          Icon(_getCategoryIcon(category.key), size: 16, color: global.theme.iconSecondaryColor),
+                          SizedBox(width: 6),
                           Text(
                             category.key,
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey[700]),
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: global.theme.textSecondaryColor),
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(child: Divider(color: Colors.grey[300])),
+                          SizedBox(width: 8),
+                          Expanded(child: Divider(color: global.theme.dividerBorderColor)),
                         ],
                       ),
                     ),
@@ -816,20 +818,20 @@ class _CreateAPIKeyDialogState extends State<_CreateAPIKeyDialog> {
                       return CheckboxListTile(
                         title: Row(
                           children: [
-                            Expanded(child: Text(MCPTools.getToolName(tool), style: const TextStyle(fontSize: 13))),
+                            Expanded(child: Text(MCPTools.getToolName(tool), style: TextStyle(fontSize: 13))),
                             if (isWrite)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                padding: EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                                 decoration: BoxDecoration(
                                   color: Colors.red.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(4),
                                   border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                                 ),
-                                child: const Text('write', style: TextStyle(fontSize: 9, color: Colors.red, fontWeight: FontWeight.bold)),
+                                child: Text('write', style: TextStyle(fontSize: 9, color: global.theme.negativeHighlightTextColor, fontWeight: FontWeight.bold)),
                               ),
                           ],
                         ),
-                        subtitle: Text(MCPTools.getToolDescription(tool), style: const TextStyle(fontSize: 11)),
+                        subtitle: Text(MCPTools.getToolDescription(tool), style: TextStyle(fontSize: 11)),
                         value: _selectedTools.contains(tool),
                         dense: true,
                         visualDensity: VisualDensity.compact,
@@ -877,26 +879,26 @@ class _CreateAPIKeyDialogState extends State<_CreateAPIKeyDialog> {
     return GestureDetector(
       onTap: () => setState(() => _preset = value),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        margin: EdgeInsets.only(bottom: 8),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected ? color : Colors.grey[300]!,
+            color: selected ? color : global.theme.dividerBorderColor,
             width: selected ? 2 : 1,
           ),
           color: selected ? color.withValues(alpha: 0.05) : null,
         ),
         child: Row(
           children: [
-            Icon(icon, color: selected ? color : Colors.grey, size: 22),
-            const SizedBox(width: 12),
+            Icon(icon, color: selected ? color : global.theme.iconSecondaryColor, size: 22),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: selected ? color : null)),
-                  Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                  Text(subtitle, style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor)),
                 ],
               ),
             ),
@@ -933,8 +935,8 @@ class _APIKeyDetailsDialog extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (apiKey.description != null && apiKey.description!.isNotEmpty) ...[
-                Text(apiKey.description!, style: TextStyle(color: Colors.grey[600])),
-                const SizedBox(height: 16),
+                Text(apiKey.description!, style: TextStyle(color: global.theme.textSecondaryColor)),
+                SizedBox(height: 16),
               ],
 
               _buildDetailRow(global.language('status'), apiKey.statusText),
@@ -951,9 +953,9 @@ class _APIKeyDetailsDialog extends StatelessWidget {
               SizedBox(height: 16),
               Text(
                 global.language('allowed_tools'),
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Wrap(
                 spacing: 6,
                 runSpacing: 6,
@@ -964,15 +966,15 @@ class _APIKeyDetailsDialog extends StatelessWidget {
                       avatar: Icon(
                         tool == 'readonly' ? Icons.visibility : Icons.build,
                         size: 14,
-                        color: tool == 'readonly' ? Colors.blue : Colors.orange,
+                        color: tool == 'readonly' ? global.theme.infoHighlightTextColor : global.theme.warningHighlightTextColor,
                       ),
-                      label: Text(tool, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                      backgroundColor: (tool == 'readonly' ? Colors.blue : Colors.orange).withValues(alpha: 0.1),
+                      label: Text(tool, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      backgroundColor: (tool == 'readonly' ? global.theme.infoHighlightTextColor : global.theme.warningHighlightTextColor).withValues(alpha: 0.1),
                     );
                   }
                   final isWrite = MCPTools.isWriteTool(tool);
                   return Chip(
-                    label: Text(MCPTools.getToolName(tool), style: const TextStyle(fontSize: 11)),
+                    label: Text(MCPTools.getToolName(tool), style: TextStyle(fontSize: 11)),
                     backgroundColor: isWrite ? Colors.red.withValues(alpha: 0.1) : Colors.blue.withValues(alpha: 0.1),
                     side: isWrite ? BorderSide(color: Colors.red.withValues(alpha: 0.3)) : BorderSide.none,
                   );
@@ -993,15 +995,15 @@ class _APIKeyDetailsDialog extends StatelessWidget {
 
   Widget _buildDetailRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 100,
-            child: Text(label, style: TextStyle(color: Colors.grey[600])),
+            child: Text(label, style: TextStyle(color: global.theme.textSecondaryColor)),
           ),
-          Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500))),
+          Expanded(child: Text(value, style: TextStyle(fontWeight: FontWeight.w500))),
         ],
       ),
     );

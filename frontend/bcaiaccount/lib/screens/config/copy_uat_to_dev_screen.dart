@@ -16,7 +16,8 @@ class CopyUatToDevScreen extends StatefulWidget {
   State<CopyUatToDevScreen> createState() => _CopyUatToDevScreenState();
 }
 
-class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
+class _CopyUatToDevScreenState extends State<CopyUatToDevScreen>
+    with global.ThemeRefreshMixin {
   bool _isLoadingShops = false;
   bool _isLoadingPreview = false;
   bool _isCopying = false;
@@ -238,7 +239,7 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
       builder: (ctx) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.warning_amber, color: Colors.orange, size: 28),
+            Icon(Icons.warning_amber, color: global.theme.warningHighlightTextColor, size: 28),
             SizedBox(width: 8),
             Text(global.language('confirm_data_transfer')),
           ],
@@ -250,7 +251,7 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
             children: [
               Text(
                 global.language('transfer_warning_message'),
-                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                style: TextStyle(color: global.theme.negativeHighlightTextColor, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 16),
               _infoRow(global.language('source_production'), _selectedShop!.name),
@@ -264,7 +265,7 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
               SizedBox(height: 8),
               Text(
                 global.language('transfer_mongodb_only_note'),
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor),
               ),
             ],
           ),
@@ -277,8 +278,8 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
+              backgroundColor: global.theme.warningHighlightTextColor,
+              foregroundColor: global.theme.onPrimaryColor,
             ),
             child: Text(global.language('confirm_transfer')),
           ),
@@ -295,10 +296,10 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
         children: [
           SizedBox(
             width: 160,
-            child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            child: Text(label, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
           ),
           Expanded(
-            child: Text(value, style: const TextStyle(fontSize: 13)),
+            child: Text(value, style: TextStyle(fontSize: 13)),
           ),
         ],
       ),
@@ -335,15 +336,15 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(global.language('transfer_mongodb_uat_to_dev')),
-        backgroundColor: const Color(0xFF354A5F),
-        foregroundColor: Colors.white,
+        backgroundColor: global.theme.appBarColor,
+        foregroundColor: global.theme.onPrimaryColor,
         actions: [
-          const ManualButton(path: 'settings-data-transfer'),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh),
             onPressed: _isLoadingShops ? null : _loadSourceShops,
             tooltip: global.language('reload_shop_list'),
           ),
+          const ManualButton(path: 'settings-data-transfer'),
         ],
       ),
       body: _buildBody(),
@@ -362,20 +363,20 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
               // Status message
               if (_statusMessage.isNotEmpty)
                 Container(
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: EdgeInsets.all(12),
+                  margin: EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: _isError ? Colors.red.shade50 : Colors.green.shade50,
+                    color: _isError ? global.theme.negativeHighlightColor : global.theme.positiveHighlightColor,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: _isError ? Colors.red.shade200 : Colors.green.shade200,
+                      color: _isError ? global.theme.negativeHighlightColor : global.theme.positiveHighlightColor,
                     ),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         _isError ? Icons.error_outline : Icons.check_circle_outline,
-                        color: _isError ? Colors.red : Colors.green,
+                        color: _isError ? global.theme.negativeHighlightTextColor : global.theme.positiveHighlightTextColor,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
@@ -383,7 +384,7 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
                         child: Text(
                           _statusMessage,
                           style: TextStyle(
-                            color: _isError ? Colors.red.shade800 : Colors.green.shade800,
+                            color: _isError ? global.theme.negativeHighlightTextColor : global.theme.positiveHighlightTextColor,
                           ),
                         ),
                       ),
@@ -400,11 +401,11 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.info_outline, color: Color(0xFF0A6ED1)),
+                          Icon(Icons.info_outline, color: global.theme.primaryColor),
                           SizedBox(width: 8),
                           Text(
                             global.language('transfer_mongodb_production_to_dev'),
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -413,7 +414,7 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
                         '${global.language("transfer_step_1")}\n'
                         '${global.language("transfer_step_2")}\n'
                         '${global.language("transfer_step_3")}',
-                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 13, color: global.theme.textSecondaryColor),
                       ),
                     ],
                   ),
@@ -430,7 +431,7 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
                     children: [
                       Text(
                         global.language('select_source_shop'),
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF354A5F)),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: global.theme.textColor),
                       ),
                       const SizedBox(height: 12),
 
@@ -453,7 +454,7 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
                             padding: EdgeInsets.all(24),
                             child: Column(
                               children: [
-                                const Icon(Icons.store_mall_directory, size: 48, color: Colors.grey),
+                                Icon(Icons.store_mall_directory, size: 48, color: global.theme.iconSecondaryColor),
                                 SizedBox(height: 8),
                                 Text(global.language('shop_not_found')),
                                 SizedBox(height: 8),
@@ -483,8 +484,8 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
                     icon: Icon(Icons.preview),
                     label: Text('${global.language("view_data_details")} "${_selectedShop!.name}"'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0A6ED1),
-                      foregroundColor: Colors.white,
+                      backgroundColor: global.theme.primaryColor,
+                      foregroundColor: global.theme.onPrimaryColor,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                   ),
@@ -512,20 +513,20 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
                   ElevatedButton.icon(
                     onPressed: _isCopying ? null : _startCopy,
                     icon: _isCopying
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(strokeWidth: 2, color: global.theme.cardColor),
                           )
                         : Icon(Icons.cloud_download),
                     label: Text(_isCopying
                         ? global.language('transferring_data')
                         : '${global.language("start_transfer")} (${_previewCollections.length} collections, ${_formatNumber(_previewTotalDocs)} docs)'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
+                      backgroundColor: global.theme.warningHighlightTextColor,
+                      foregroundColor: global.theme.onPrimaryColor,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      textStyle: const TextStyle(fontSize: 15),
+                      textStyle: TextStyle(fontSize: 15),
                     ),
                   ),
                 ],
@@ -553,7 +554,7 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
         SizedBox(height: 8),
         Text(
           '${global.language("showing")} ${_filteredShops.length} ${global.language("from")} ${_shops.length} ${global.language("shop")}',
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
+          style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor),
         ),
         const SizedBox(height: 8),
         ConstrainedBox(
@@ -565,19 +566,19 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
               final shop = _filteredShops[index];
               final isSelected = _selectedShop?.guidfixed == shop.guidfixed;
               return Card(
-                color: isSelected ? Colors.blue.shade50 : null,
+                color: isSelected ? global.theme.infoHighlightColor : null,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                   side: isSelected
-                      ? const BorderSide(color: Color(0xFF0A6ED1), width: 2)
+                      ? BorderSide(color: global.theme.primaryColor, width: 2)
                       : BorderSide.none,
                 ),
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: isSelected ? const Color(0xFF0A6ED1) : Colors.grey.shade300,
+                    backgroundColor: isSelected ? global.theme.primaryColor : global.theme.dividerBorderColor,
                     child: Icon(
                       Icons.store,
-                      color: isSelected ? Colors.white : Colors.grey.shade600,
+                      color: isSelected ? global.theme.onPrimaryColor : global.theme.textSecondaryColor,
                       size: 20,
                     ),
                   ),
@@ -587,10 +588,10 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
                   ),
                   subtitle: Text(
                     'ID: ${shop.guidfixed}${shop.branchCode.isNotEmpty ? ' | ${global.language("branch")}: ${shop.branchCode}' : ''}',
-                    style: const TextStyle(fontSize: 11),
+                    style: TextStyle(fontSize: 11),
                   ),
                   trailing: isSelected
-                      ? const Icon(Icons.check_circle, color: Color(0xFF0A6ED1))
+                      ? Icon(Icons.check_circle, color: global.theme.primaryColor)
                       : null,
                   onTap: () {
                     setState(() {
@@ -611,7 +612,7 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
 
   Widget _buildPreviewCard() {
     return Card(
-      color: Colors.orange.shade50,
+      color: global.theme.warningHighlightColor,
       child: Padding(
         padding: EdgeInsets.all(16),
         child: Column(
@@ -619,16 +620,16 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.list_alt, color: Colors.orange),
+                Icon(Icons.list_alt, color: global.theme.warningHighlightTextColor),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     '${global.language("transfer_data_details")} — ${_selectedShop!.name}',
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.refresh, size: 20),
+                  icon: Icon(Icons.refresh, size: 20),
                   onPressed: _isLoadingPreview ? null : _loadPreview,
                   tooltip: global.language('refresh'),
                 ),
@@ -638,11 +639,8 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
 
             // สรุป
             Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
+              padding: EdgeInsets.all(12),
+              color: global.theme.searchBarColor,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
@@ -655,10 +653,7 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
 
             // ตาราง collections
             Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
+              color: global.theme.searchBarColor,
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxHeight: 400),
                 child: SingleChildScrollView(
@@ -680,10 +675,10 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
                       final c = entry.value;
                       return DataRow(cells: [
                         DataCell(Text('${idx + 1}')),
-                        DataCell(Text(c.name, style: const TextStyle(fontSize: 13))),
+                        DataCell(Text(c.name, style: TextStyle(fontSize: 13))),
                         DataCell(Text(
                           _formatNumber(c.count),
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                         )),
                       ]);
                     }).toList(),
@@ -700,10 +695,10 @@ class _CopyUatToDevScreenState extends State<CopyUatToDevScreen> {
   Widget _summaryItem(String label, String value, IconData icon) {
     return Column(
       children: [
-        Icon(icon, color: Colors.orange, size: 24),
+        Icon(icon, color: global.theme.warningHighlightTextColor, size: 24),
         const SizedBox(height: 4),
-        Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        Text(label, style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor)),
       ],
     );
   }

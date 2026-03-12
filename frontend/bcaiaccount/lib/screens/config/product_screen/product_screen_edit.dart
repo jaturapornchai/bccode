@@ -52,7 +52,7 @@ class ProductScreenEdit extends StatefulWidget {
 }
 
 class ProductScreenEditState extends State<ProductScreenEdit>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   TextInputFormatter numberFormatter = FilteringTextInputFormatter.allow(
     RegExp(r'^(\d+)?\.?\d{0,2}'),
   );
@@ -376,9 +376,9 @@ class ProductScreenEditState extends State<ProductScreenEdit>
     if (errorList.isNotEmpty) {
       global.showSnackBar(
         context,
-        Icon(Icons.save, color: Colors.white),
+        Icon(Icons.save, color: global.theme.onPrimaryColor),
         "${global.language("not_success_save")} : ${errorList.join(",")}",
-        Colors.red,
+        global.theme.negativeHighlightTextColor,
       );
       return false;
     } else {
@@ -470,7 +470,7 @@ class ProductScreenEditState extends State<ProductScreenEdit>
           labelText: global.language('product_type_label'),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(4.0),
-            borderSide: const BorderSide(color: Colors.grey, width: 0.0),
+            borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
           ),
         ),
         child: Row(
@@ -504,7 +504,7 @@ class ProductScreenEditState extends State<ProductScreenEdit>
                     value: 1,
                     focusNode: fieldFocusNodes[++focusNodeMax].focusNode,
                     groupValue: itemStockType,
-                    activeColor: Colors.red,
+                    activeColor: global.theme.negativeHighlightTextColor,
                     onChanged: (value) {
                       itemStockType = 1;
                       refresh();
@@ -529,7 +529,7 @@ class ProductScreenEditState extends State<ProductScreenEdit>
           labelText: global.language('tax_type_label'),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(4.0),
-            borderSide: const BorderSide(color: Colors.grey, width: 0.0),
+            borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
           ),
         ),
         child: Row(
@@ -562,7 +562,7 @@ class ProductScreenEditState extends State<ProductScreenEdit>
                     value: 2,
                     focusNode: fieldFocusNodes[++focusNodeMax].focusNode,
                     groupValue: vatType,
-                    activeColor: Colors.red,
+                    activeColor: global.theme.negativeHighlightTextColor,
                     onChanged: (value) {
                       vatType = 2;
                       refresh();
@@ -587,7 +587,7 @@ class ProductScreenEditState extends State<ProductScreenEdit>
           labelText: global.language('member_point_label'),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(4.0),
-            borderSide: const BorderSide(color: Colors.grey, width: 0.0),
+            borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
           ),
         ),
         child: Row(
@@ -620,7 +620,7 @@ class ProductScreenEditState extends State<ProductScreenEdit>
                     value: false,
                     focusNode: fieldFocusNodes[++focusNodeMax].focusNode,
                     groupValue: isSumPoint,
-                    activeColor: Colors.red,
+                    activeColor: global.theme.negativeHighlightTextColor,
                     onChanged: (value) {
                       isSumPoint = false;
                       refresh();
@@ -645,7 +645,7 @@ class ProductScreenEditState extends State<ProductScreenEdit>
           labelText: global.language('unit_style_label'),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(4.0),
-            borderSide: const BorderSide(color: Colors.grey, width: 0.0),
+            borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
           ),
         ),
         child: Row(
@@ -679,7 +679,7 @@ class ProductScreenEditState extends State<ProductScreenEdit>
                     value: true,
                     focusNode: fieldFocusNodes[++focusNodeMax].focusNode,
                     groupValue: multiUnit,
-                    activeColor: Colors.red,
+                    activeColor: global.theme.negativeHighlightTextColor,
                     onChanged: (value) {
                       multiUnit = true;
                       for (int i = 0; i < unitCodeTextController.length; i++) {
@@ -897,8 +897,8 @@ class ProductScreenEditState extends State<ProductScreenEdit>
               decoration: InputDecoration(
                 contentPadding: EdgeInsets.all(10.0),
                 hintText: global.language("must") + label,
-                enabledBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey, width: 0.0),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
                 ),
                 floatingLabelBehavior: FloatingLabelBehavior.always,
                 border: const OutlineInputBorder(),
@@ -919,7 +919,7 @@ class ProductScreenEditState extends State<ProductScreenEdit>
                           if (enableIcon)
                             IconButton(
                               focusNode: FocusNode(skipTraversal: true),
-                              icon: const Icon(Icons.search),
+                              icon: Icon(Icons.search),
                               onPressed: () {
                                 searchUnit(
                                   word: unitCodeController.text,
@@ -942,9 +942,9 @@ class ProductScreenEditState extends State<ProductScreenEdit>
             textAlign: TextAlign.left,
             controller: unitNameController,
             decoration: InputDecoration(
-              contentPadding: const EdgeInsets.all(10.0),
-              enabledBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.grey, width: 0.0),
+              contentPadding: EdgeInsets.all(10.0),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
               ),
               floatingLabelBehavior: FloatingLabelBehavior.always,
               border: OutlineInputBorder(),
@@ -1067,9 +1067,9 @@ class ProductScreenEditState extends State<ProductScreenEdit>
       textAlign: TextAlign.right,
       controller: unitCodeStandTextController[unitIndex],
       decoration: InputDecoration(
-        contentPadding: const EdgeInsets.all(10.0),
-        enabledBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.grey, width: 0.0),
+        contentPadding: EdgeInsets.all(10.0),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
         ),
         floatingLabelBehavior: FloatingLabelBehavior.always,
         border: OutlineInputBorder(),
@@ -1102,9 +1102,9 @@ class ProductScreenEditState extends State<ProductScreenEdit>
       textAlign: TextAlign.right,
       controller: unitCodeDividerTextController[unitIndex],
       decoration: InputDecoration(
-        contentPadding: const EdgeInsets.all(10.0),
-        enabledBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.grey, width: 0.0),
+        contentPadding: EdgeInsets.all(10.0),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
         ),
         floatingLabelBehavior: FloatingLabelBehavior.always,
         border: OutlineInputBorder(),
@@ -1198,8 +1198,8 @@ class ProductScreenEditState extends State<ProductScreenEdit>
                   padding: EdgeInsets.only(right: 5),
                   child: Text(
                     "1 ${unitNameCostTextController.text} ${global.language("equals_to")}",
-                    style: const TextStyle(
-                      color: Colors.black,
+                    style: TextStyle(
+                      color: global.theme.textColor,
                       fontWeight: FontWeight.bold,
                     ),
                     overflow: TextOverflow.clip,
@@ -1269,8 +1269,8 @@ class ProductScreenEditState extends State<ProductScreenEdit>
                 Expanded(
                   child: Text(
                     unitNameCostTextController.text,
-                    style: const TextStyle(
-                      color: Colors.black,
+                    style: TextStyle(
+                      color: global.theme.textColor,
                       fontWeight: FontWeight.bold,
                     ),
                     overflow: TextOverflow.clip,
@@ -1301,7 +1301,7 @@ class ProductScreenEditState extends State<ProductScreenEdit>
                       widget.screenEventGetValue() ==
                           global.ScreenEventEnum.edit))
                   ? IconButton(
-                      icon: const Icon(Icons.delete),
+                      icon: Icon(Icons.delete),
                       padding: EdgeInsets.zero,
                       onPressed: () {
                         units.removeAt(unitIndex);
@@ -1314,17 +1314,17 @@ class ProductScreenEditState extends State<ProductScreenEdit>
         );
       }
       if (unitIndex < units.length - 1) {
-        multiUnitWidgets.add(const Divider(height: 1, color: Colors.grey));
+        multiUnitWidgets.add(Divider(height: 1, color: global.theme.iconSecondaryColor));
       }
     }
 
     widgets.add(
       Container(
-        margin: const EdgeInsets.only(left: 10, right: 10),
+        margin: EdgeInsets.only(left: 10, right: 10),
         width: double.infinity,
-        padding: const EdgeInsets.all(5),
+        padding: EdgeInsets.all(5),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey),
+          border: Border.all(color: global.theme.dividerBorderColor),
           borderRadius: BorderRadius.circular(5),
         ),
         child: Column(
@@ -1424,8 +1424,8 @@ class ProductScreenEditState extends State<ProductScreenEdit>
           decoration: InputDecoration(
             contentPadding: EdgeInsets.all(10.0),
             hintText: global.language("must") + global.language("product_code"),
-            enabledBorder: const OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey, width: 0.0),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
             ),
             floatingLabelBehavior: FloatingLabelBehavior.always,
             border: OutlineInputBorder(),
@@ -1472,12 +1472,12 @@ class ProductScreenEditState extends State<ProductScreenEdit>
             textAlign: TextAlign.left,
             controller: productNameController[languageIndex],
             decoration: InputDecoration(
-              contentPadding: const EdgeInsets.all(10.0),
+              contentPadding: EdgeInsets.all(10.0),
               hintText: (languageIndex == 0)
                   ? global.language("must") + global.language("product_name")
                   : "",
-              enabledBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.grey, width: 0.0),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
               ),
               floatingLabelBehavior: FloatingLabelBehavior.always,
               border: const OutlineInputBorder(),
@@ -1532,9 +1532,9 @@ class ProductScreenEditState extends State<ProductScreenEdit>
                     }
                   },
                   decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.all(10.0),
-                    enabledBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey, width: 0.0),
+                    contentPadding: EdgeInsets.all(10.0),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
                     ),
                     floatingLabelBehavior: FloatingLabelBehavior.always,
                     suffixIcon:
@@ -1549,7 +1549,7 @@ class ProductScreenEditState extends State<ProductScreenEdit>
                             children: [
                               IconButton(
                                 focusNode: FocusNode(skipTraversal: true),
-                                icon: const Icon(Icons.search),
+                                icon: Icon(Icons.search),
                                 onPressed: () {
                                   productGroupSearch();
                                 },
@@ -1571,9 +1571,9 @@ class ProductScreenEditState extends State<ProductScreenEdit>
                 textAlign: TextAlign.left,
                 textCapitalization: TextCapitalization.characters,
                 decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.all(10.0),
-                  enabledBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey, width: 0.0),
+                  contentPadding: EdgeInsets.all(10.0),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
                   ),
                   floatingLabelBehavior: FloatingLabelBehavior.always,
                   border: OutlineInputBorder(),
@@ -1699,13 +1699,13 @@ class ProductScreenEditState extends State<ProductScreenEdit>
 
       imageWidget.add(
         Container(
-          padding: const EdgeInsets.only(left: 5, right: 5),
+          padding: EdgeInsets.only(left: 5, right: 5),
           width: double.infinity,
           child: Center(
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: Colors.black),
+                color: global.theme.cardColor,
+                border: Border.all(color: global.theme.dividerBorderColor),
                 image: (imageWeb[imageIndex].isNotEmpty)
                     ? DecorationImage(
                         image: MemoryImage(imageWeb[imageIndex]),
@@ -1727,12 +1727,12 @@ class ProductScreenEditState extends State<ProductScreenEdit>
       );
       imageWidgets.add(
         Container(
-          padding: const EdgeInsets.only(bottom: 5),
-          margin: const EdgeInsets.only(left: 10, right: 10, bottom: 10),
+          padding: EdgeInsets.only(bottom: 5),
+          margin: EdgeInsets.only(left: 10, right: 10, bottom: 10),
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey),
+            border: Border.all(color: global.theme.dividerBorderColor),
             borderRadius: BorderRadius.circular(5),
-            color: Colors.white,
+            color: global.theme.cardColor,
           ),
           child: Column(children: imageWidget),
         ),
@@ -1797,7 +1797,7 @@ class ProductScreenEditState extends State<ProductScreenEdit>
         leading: global.isMobileScreen(context)
             ? IconButton(
                 focusNode: FocusNode(skipTraversal: true),
-                icon: const Icon(Icons.arrow_back),
+                icon: Icon(Icons.arrow_back),
                 onPressed: () async {
                   showCheckBox = false;
                   widget.discardData(
@@ -1811,88 +1811,76 @@ class ProductScreenEditState extends State<ProductScreenEdit>
         title: Text(headerEdit + global.language("product")),
         actions: <Widget>[
           if (widget.selectGuidGet().isNotEmpty)
-            Padding(
-              padding: EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () {
-                  showCheckBox = false;
-                  showDialog<String>(
-                    context: context,
-                    builder: (BuildContext context) => AlertDialog(
-                      title: Text(global.language('delete_confirm')),
-                      actions: <Widget>[
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                          ),
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(global.language('no')),
+            IconButton(
+              focusNode: FocusNode(skipTraversal: true),
+              onPressed: () {
+                showCheckBox = false;
+                showDialog<String>(
+                  context: context,
+                  builder: (BuildContext context) => AlertDialog(
+                    title: Text(global.language('delete_confirm')),
+                    actions: <Widget>[
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: global.theme.negativeHighlightTextColor,
                         ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                          ),
-                          onPressed: () {
-                            Navigator.pop(context);
-                            context.read<ProductBloc>().add(
-                              ProductDelete(guid: widget.selectGuidGet()),
-                            );
-                          },
-                          child: Text(global.language('confirm')),
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(global.language('no')),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: global.theme.infoHighlightTextColor,
                         ),
-                      ],
-                    ),
-                  );
-                  setState(() {});
-                },
-                icon: const Icon(Icons.delete),
-              ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          context.read<ProductBloc>().add(
+                            ProductDelete(guid: widget.selectGuidGet()),
+                          );
+                        },
+                        child: Text(global.language('confirm')),
+                      ),
+                    ],
+                  ),
+                );
+                setState(() {});
+              },
+              icon: Icon(Icons.delete),
             ),
           if ((widget.screenEventGetValue() == global.ScreenEventEnum.add ||
                   widget.screenEventGetValue() ==
                       global.ScreenEventEnum.edit) &&
               global.systemLanguage.length > 1)
-            Padding(
-              padding: const EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () async {
-                  for (int i = 1; i <= languageList.length; i++) {
-                    try {
-                      var translation = await translator.translate(
-                        names[0].name,
-                        to: languageList[i].codeTranslator!,
-                      );
-                      names[i].name = translation.text;
-                    } catch (_) {}
-                  }
-                  setState(() {});
-                },
-                icon: const Icon(Icons.translate),
-              ),
+            IconButton(
+              focusNode: FocusNode(skipTraversal: true),
+              onPressed: () async {
+                for (int i = 1; i <= languageList.length; i++) {
+                  try {
+                    var translation = await translator.translate(
+                      names[0].name,
+                      to: languageList[i].codeTranslator!,
+                    );
+                    names[i].name = translation.text;
+                  } catch (_) {}
+                }
+                setState(() {});
+              },
+              icon: Icon(Icons.translate),
             ),
           if (widget.isSaveAllowGet() == false &&
               widget.selectGuidGet().isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () {
-                  showCheckBox = false;
-                  switchToEdit();
-                },
-                icon: const Icon(Icons.edit),
-              ),
+            IconButton(
+              focusNode: FocusNode(skipTraversal: true),
+              onPressed: () {
+                showCheckBox = false;
+                switchToEdit();
+              },
+              icon: Icon(Icons.edit),
             ),
           if (widget.isSaveAllowGet() == true)
-            Padding(
-              padding: const EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () => saveOrUpdateData(),
-                icon: const Icon(Icons.save),
-              ),
+            IconButton(
+              focusNode: FocusNode(skipTraversal: true),
+              onPressed: () => saveOrUpdateData(),
+              icon: Icon(Icons.save),
             ),
         ],
       ),
@@ -1948,9 +1936,9 @@ class ProductScreenEditState extends State<ProductScreenEdit>
             setState(() {
               global.showSnackBar(
                 context,
-                Icon(Icons.save, color: Colors.white),
+                Icon(Icons.save, color: global.theme.onPrimaryColor),
                 global.language("save_success"),
-                Colors.blue,
+                global.theme.infoHighlightTextColor,
               );
               widget.loadDataList(true, productCodeController.text);
               clearEditData();
@@ -1961,9 +1949,9 @@ class ProductScreenEditState extends State<ProductScreenEdit>
             setState(() {
               global.showSnackBar(
                 context,
-                Icon(Icons.save, color: Colors.white),
+                Icon(Icons.save, color: global.theme.onPrimaryColor),
                 "${global.language("not_success_save")} : ${state.message}",
-                Colors.red,
+                global.theme.negativeHighlightTextColor,
               );
             });
           }
@@ -1972,9 +1960,9 @@ class ProductScreenEditState extends State<ProductScreenEdit>
             setState(() {
               global.showSnackBar(
                 context,
-                Icon(Icons.edit, color: Colors.white),
+                Icon(Icons.edit, color: global.theme.onPrimaryColor),
                 global.language("edit_success"),
-                Colors.blue,
+                global.theme.infoHighlightTextColor,
               );
               clearEditData();
               widget.isSaveAllowSet(false);
@@ -1986,9 +1974,9 @@ class ProductScreenEditState extends State<ProductScreenEdit>
             setState(() {
               global.showSnackBar(
                 context,
-                Icon(Icons.edit, color: Colors.white),
+                Icon(Icons.edit, color: global.theme.onPrimaryColor),
                 "${global.language("not_edit_success")} : ${state.message}",
-                Colors.red,
+                global.theme.negativeHighlightTextColor,
               );
             });
           }
@@ -1997,9 +1985,9 @@ class ProductScreenEditState extends State<ProductScreenEdit>
             setState(() {
               global.showSnackBar(
                 context,
-                Icon(Icons.delete, color: Colors.white),
+                Icon(Icons.delete, color: global.theme.onPrimaryColor),
                 global.language("delete_success"),
-                Colors.blue,
+                global.theme.infoHighlightTextColor,
               );
               clearEditData();
               widget.tabChange(0);

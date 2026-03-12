@@ -17,7 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
@@ -47,7 +47,7 @@ class CompanyBranchScreen extends StatefulWidget {
 }
 
 class CompanyBranchScreenState extends State<CompanyBranchScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   late TabController tabController;
   ScrollController editScrollController = ScrollController();
@@ -76,6 +76,7 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
   bool isKeyUp = false;
   bool isKeyDown = false;
   bool showCheckBox = false;
+  int _hoverIndex = -1;
   bool isEditMode = false;
   late CompanyBranchModel screenData;
 
@@ -381,6 +382,7 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -449,7 +451,7 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -542,7 +544,7 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
             Container(
               padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.searchBarColor,
                 borderRadius: BorderRadius.circular(2),
               ),
               child: Row(
@@ -576,14 +578,12 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
                       ),
                     ),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const FaIcon(FontAwesomeIcons.font),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataFontSizeChange();
-                      });
-                    },
+                  ListFontSizeControl(onChanged: () => setState(() {})),
+                const SizedBox(width: 4),
+                if (listData.isNotEmpty)
+                  Text(
+                    '(${listData.length})',
+                    style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                   ),
                   IconButton(
                     focusNode: FocusNode(skipTraversal: true),
@@ -662,7 +662,7 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
             if (loadingData)
               Center(
                 child: LoadingAnimationWidget.staggeredDotsWave(
-                  color: Colors.blue,
+                  color: global.theme.primaryColor,
                   size: 50,
                 ),
               ),
@@ -692,14 +692,15 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
     }
     // ลบการ add key ออก - keys ถูกสร้างใน LoadSuccess แล้ว
     // listKeys.add(GlobalKey());  // ❌ ตรงนี้ทำให้เกิด infinite loop!
-    bool selected = selectGuid == value.guidfixed;
-    TextStyle textStyle = TextStyle(
-      fontWeight: (selected) ? FontWeight.bold : FontWeight.normal,
-      fontSize: (selected)
-          ? global.deviceConfig.listDataFontSize + 2.0
-          : global.deviceConfig.listDataFontSize,
-    );
-    return GestureDetector(
+    final isSelected = selectGuid == value.guidfixed;
+    TextStyle textStyle = isSelected
+        ? TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w700, color: global.theme.textColor)
+        : TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w400, color: global.theme.textSecondaryColor);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         if (showCheckBox == true) {
           setState(() {
@@ -742,7 +743,7 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
         key: index < listKeys.length ? listKeys[index] : null,
         decoration: BoxDecoration(
           color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
+              ? global.theme.rowSelectedColor
               : (index % 2 == 0)
               ? global.theme.columnAlternateEvenColor
               : global.theme.columnAlternateOddColor,
@@ -787,6 +788,7 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -1137,10 +1139,10 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
       Padding(
         padding: EdgeInsets.all(10.0),
         child: Container(
-          margin: const EdgeInsets.only(top: 10, bottom: 10),
-          padding: const EdgeInsets.all(10),
+          margin: EdgeInsets.only(top: 10, bottom: 10),
+          padding: EdgeInsets.all(10),
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.blue),
+            border: Border.all(color: global.theme.primaryColor),
             borderRadius: BorderRadius.circular(5),
             color: Colors.white,
           ),
@@ -1162,7 +1164,7 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
                   children: [
                     TabBar(
                       isScrollable: true,
-                      labelColor: Colors.blue,
+                      labelColor: global.theme.primaryColor,
                       unselectedLabelColor: Colors.grey,
                       tabs: [
                         Tab(text: global.language("cash")),
@@ -1275,8 +1277,8 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
         // Rules table header
         if (isEnabled)
           Container(
-            padding: const EdgeInsets.all(8),
-            color: Colors.grey[200],
+            padding: EdgeInsets.all(8),
+            color: global.theme.dividerBorderColor,
             child: Row(
               children: [
                 // Add sequence number header
@@ -1850,10 +1852,10 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
               SizedBox(width: 8),
               Text(
                 global.language("base_currency"),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: global.theme.textColor,
                 ),
               ),
               if (_currenciesLoading) ...[
@@ -1934,10 +1936,10 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
               SizedBox(width: 8),
               Text(
                 global.language("branch_language"),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: global.theme.textColor,
                 ),
               ),
             ],
@@ -2055,10 +2057,10 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
               SizedBox(width: 8),
               Text(
                 global.language("timezone"),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: global.theme.textColor,
                 ),
               ),
             ],
@@ -2153,10 +2155,10 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
               SizedBox(width: 8),
               Text(
                 global.language("yeartype"),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: global.theme.textColor,
                 ),
               ),
             ],
@@ -2217,14 +2219,14 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
       required ValueChanged<int?> onChanged,
     }) {
       return Padding(
-        padding: const EdgeInsets.only(bottom: 12),
+        padding: EdgeInsets.only(bottom: 12),
         child: Row(
           children: [
             Expanded(
               flex: 3,
               child: Text(
                 label,
-                style: const TextStyle(fontSize: 13, color: Colors.black87),
+                style: TextStyle(fontSize: 13, color: global.theme.textColor),
               ),
             ),
             Expanded(
@@ -2275,10 +2277,10 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
               SizedBox(width: 8),
               Text(
                 global.language("decimal_settings"),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: global.theme.textColor,
                 ),
               ),
             ],
@@ -2658,6 +2660,7 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
     formWidgets.add(const SizedBox(height: 10));
 
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -2704,7 +2707,7 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -2812,24 +2815,24 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
                           child: Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(6),
+                                padding: EdgeInsets.all(6),
                                 decoration: BoxDecoration(
                                   color: Colors.blue.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.settings,
-                                  color: Colors.blue,
+                                  color: global.theme.primaryColor,
                                   size: 20,
                                 ),
                               ),
                               SizedBox(width: 12),
                               Text(
                                 global.language("advanced_settings"),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
+                                  color: global.theme.textColor,
                                 ),
                               ),
                             ],
@@ -2863,6 +2866,7 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
       guidListChecked.clear();
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -3053,7 +3057,7 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
                     controller: splitViewController,
                     gripSize: 8,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.primaryColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

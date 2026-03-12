@@ -18,7 +18,8 @@ class MapGetLocationScreen extends StatefulWidget {
   State<MapGetLocationScreen> createState() => _MapGetLocationScreenState();
 }
 
-class _MapGetLocationScreenState extends State<MapGetLocationScreen> {
+class _MapGetLocationScreenState extends State<MapGetLocationScreen>
+    with global.ThemeRefreshMixin {
   double latitude = 0.0;
   double longitude = 0.0;
   double zoommap = 0.0;
@@ -50,7 +51,7 @@ class _MapGetLocationScreenState extends State<MapGetLocationScreen> {
 
   Marker buildPin(LatLng point) => Marker(
     point: point,
-    child: const Icon(Icons.location_pin, size: 60, color: Colors.red),
+    child: Icon(Icons.location_pin, size: 60, color: global.theme.negativeHighlightTextColor),
     width: 60,
     height: 60,
   );
@@ -133,7 +134,7 @@ class _MapGetLocationScreenState extends State<MapGetLocationScreen> {
         title: Text(global.language('select_map_location')),
         actions: [
           IconButton(
-            icon: const Icon(Icons.save),
+            icon: Icon(Icons.save),
             onPressed: () {
               if (defaultLocation.latitude == 0 && defaultLocation.longitude == 0) {
                 global.showWarningSnackBar(context, global.language('please_select_location'));
@@ -149,16 +150,16 @@ class _MapGetLocationScreenState extends State<MapGetLocationScreen> {
           // แสดงตำแหน่งที่เลือกไว้
           if (defaultLocation.latitude != 0 || defaultLocation.longitude != 0)
             Container(
-              padding: const EdgeInsets.all(8),
-              color: Colors.white,
+              padding: EdgeInsets.all(8),
+              color: global.theme.cardColor,
               child: Row(
                 children: [
-                  const Icon(Icons.location_on, color: Colors.red, size: 20),
+                  Icon(Icons.location_on, color: global.theme.negativeHighlightTextColor, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Lat: ${defaultLocation.latitude.toStringAsFixed(6)}, Lng: ${defaultLocation.longitude.toStringAsFixed(6)}',
-                      style: const TextStyle(fontSize: 12),
+                      style: TextStyle(fontSize: 12),
                     ),
                   ),
                 ],
@@ -205,14 +206,14 @@ class _MapGetLocationScreenState extends State<MapGetLocationScreen> {
           FloatingActionButton(
             heroTag: 'currentLocation',
             onPressed: _isLocating ? null : getCurrentLatLng,
-            backgroundColor: Colors.white,
+            backgroundColor: global.theme.cardColor,
             child: _isLocating
                 ? const SizedBox(
                     width: 24,
                     height: 24,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(Icons.my_location, color: Colors.blue),
+                : Icon(Icons.my_location, color: global.theme.infoHighlightTextColor),
           ),
           const SizedBox(height: 10),
           // ปุ่มไปตำแหน่งที่บันทึกไว้ (ถ้ามี)
@@ -231,8 +232,8 @@ class _MapGetLocationScreenState extends State<MapGetLocationScreen> {
                   }
                 });
               },
-              backgroundColor: Colors.white,
-              child: const Icon(Icons.location_on, color: Colors.red),
+              backgroundColor: global.theme.cardColor,
+              child: Icon(Icons.location_on, color: global.theme.negativeHighlightTextColor),
             ),
         ],
       ),

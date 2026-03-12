@@ -1,7 +1,7 @@
 ﻿import 'package:smlaicloud/bloc/holiday/holiday_bloc.dart';
 import 'package:smlaicloud/model/holiday_model.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,7 +20,7 @@ class HolidayScreen extends StatefulWidget {
 }
 
 class HolidayScreenState extends State<HolidayScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   late TabController tabController;
   late DropzoneViewController dropZoneController;
@@ -52,6 +52,7 @@ class HolidayScreenState extends State<HolidayScreen>
   bool isKeyUp = false;
   bool isKeyDown = false;
   bool showCheckBox = false;
+  int _hoverIndex = -1;
   bool isEditMode = false;
   late SplitViewController splitViewController;
   late HolidayModel screenData;
@@ -202,6 +203,7 @@ class HolidayScreenState extends State<HolidayScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -358,16 +360,13 @@ class HolidayScreenState extends State<HolidayScreen>
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(2),
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              color: global.theme.searchBarColor,
               child: Row(
                 children: [
                   Expanded(
-                    child: TextFormField(
-                      onFieldSubmitted: (value) {
+                    child: TextField(
+                      onSubmitted: (value) {
                         searchFocusNode.requestFocus();
                       },
                       onChanged: (value) {
@@ -383,28 +382,21 @@ class HolidayScreenState extends State<HolidayScreen>
                       controller: searchController,
                       decoration: InputDecoration(
                         isDense: true,
-                        contentPadding: const EdgeInsets.only(
-                          top: 0,
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                         border: InputBorder.none,
-                        hintText: (kIsWeb)
-                            ? "${global.language('search')} (F2)"
-                            : global.language('search'),
+                        hintText: global.language('search'),
+                        prefixIcon: Icon(Icons.search, size: 20),
+                        prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                       ),
                     ),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const FaIcon(FontAwesomeIcons.font),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataFontSizeChange();
-                      });
-                    },
-                  ),
+                  ListFontSizeControl(onChanged: () => setState(() {})),
+                  const SizedBox(width: 4),
+                  if (closeDayListData.isNotEmpty)
+                    Text(
+                      '(${closeDayListData.length})',
+                      style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
+                    ),
                 ],
               ),
             ),
@@ -496,7 +488,11 @@ class HolidayScreenState extends State<HolidayScreen>
     }
     // ลบการ add key ออก - keys ถูกสร้างใน LoadSuccess แล้ว
     // listKeys.add(GlobalKey());  // ❌ ตรงนี้ทำให้เกิด infinite loop!
-    return GestureDetector(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         if (showCheckBox == true) {
           setState(() {
@@ -537,37 +533,46 @@ class HolidayScreenState extends State<HolidayScreen>
       },
       child: Container(
         key: index < listKeys.length ? listKeys[index] : null,
-        decoration: BoxDecoration(
-          color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
-              : (index % 2 == 0)
-              ? global.theme.columnAlternateEvenColor
-              : global.theme.columnAlternateOddColor,
+        color: _getContainerColor(value.guidfixed, index),
+        padding: EdgeInsets.only(
+          left: 10,
+          right: 10,
+          top: global.deviceConfig.listDataLineSpace,
+          bottom: global.deviceConfig.listDataLineSpace,
         ),
-        padding: const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               flex: 1,
-              child: Text(
-                global.packName(value.desc),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: global.deviceConfig.listDataFontSize,
-                ),
-              ),
+              child: Builder(builder: (context) {
+                final isSelected = selectGuid.isNotEmpty && selectGuid == value.guidfixed;
+                return Text(
+                  global.packName(value.desc),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: global.deviceConfig.listDataFontSize,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                    color: isSelected ? global.theme.textColor : global.theme.textSecondaryColor,
+                  ),
+                );
+              }),
             ),
             Expanded(
               flex: 1,
-              child: Text(
-                value.date,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: global.deviceConfig.listDataFontSize,
-                ),
-              ),
+              child: Builder(builder: (context) {
+                final isSelected = selectGuid.isNotEmpty && selectGuid == value.guidfixed;
+                return Text(
+                  value.date,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: global.deviceConfig.listDataFontSize,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                    color: isSelected ? global.theme.textColor : global.theme.textSecondaryColor,
+                  ),
+                );
+              }),
             ),
             if (showCheckBox)
               Expanded(
@@ -582,7 +587,21 @@ class HolidayScreenState extends State<HolidayScreen>
           ],
         ),
       ),
+    ),
     );
+  }
+
+
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
   }
 
   List<LanguageDataModel> packLanguage() {
@@ -830,7 +849,7 @@ class HolidayScreenState extends State<HolidayScreen>
         child: SingleChildScrollView(
           controller: editScrollController,
           child: Container(
-            color: Colors.white,
+            color: global.theme.cardColor,
             width: double.infinity,
             padding: const EdgeInsets.all(10),
             child: Column(
@@ -851,7 +870,7 @@ class HolidayScreenState extends State<HolidayScreen>
                       textAlign: TextAlign.left,
                       controller: fieldTextController[i],
                       decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.only(
+                        contentPadding: EdgeInsets.only(
                           left: 10,
                           top: 0,
                           bottom: 0,
@@ -874,7 +893,7 @@ class HolidayScreenState extends State<HolidayScreen>
                   controller: fieldTextController[languageList.length],
                   decoration: InputDecoration(
                     border: const OutlineInputBorder(),
-                    contentPadding: const EdgeInsets.only(
+                    contentPadding: EdgeInsets.only(
                       left: 10,
                       top: 0,
                       bottom: 0,
@@ -1099,7 +1118,7 @@ class HolidayScreenState extends State<HolidayScreen>
                       controller: splitViewController,
                       gripSize: 14,
                       gripColor: global.theme.appBarColor,
-                      gripColorActive: Colors.blue,
+                      gripColorActive: global.theme.primaryColor,
                       viewMode: SplitViewMode.Horizontal,
                       indicator: const SplitIndicator(
                         viewMode: SplitViewMode.Horizontal,

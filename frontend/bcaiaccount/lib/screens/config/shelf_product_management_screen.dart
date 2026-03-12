@@ -51,7 +51,8 @@ class ShelfProductManagementScreen extends StatefulWidget {
 }
 
 class ShelfProductManagementScreenState
-    extends State<ShelfProductManagementScreen> {
+    extends State<ShelfProductManagementScreen>
+    with global.ThemeRefreshMixin {
   TextEditingController searchController = TextEditingController();
   List<ProductBarcodeModel> listData = [];
   List<ShelfProductDisplayModel> productsInShelf = [];
@@ -216,7 +217,7 @@ class ShelfProductManagementScreenState
             child: Text(global.language('cancel')),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
             onPressed: () {
               Navigator.pop(context);
               setState(() {
@@ -271,7 +272,7 @@ class ShelfProductManagementScreenState
                 : () => addProductToSelection(product),
             icon: Icon(
               Icons.add_circle,
-              color: productAlreadySelected ? Colors.grey : Colors.green,
+              color: productAlreadySelected ? global.theme.iconSecondaryColor : global.theme.positiveHighlightTextColor,
               size: 28,
             ),
             tooltip: productAlreadySelected
@@ -290,19 +291,8 @@ class ShelfProductManagementScreenState
         children: [
           // ช่องค้นหาและตัวกรอง
           Container(
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.5),
-                  spreadRadius: 5,
-                  blurRadius: 7,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
+            padding: EdgeInsets.all(5),
+            color: global.theme.searchBarColor,
             child: TextField(
               onSubmitted: (value) {
                 searchFocusNode.requestFocus();
@@ -321,7 +311,7 @@ class ShelfProductManagementScreenState
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                    EdgeInsets.symmetric(vertical: 12, horizontal: 10),
                 border: InputBorder.none,
                 hintText: global.language('search'),
               ),
@@ -334,34 +324,34 @@ class ShelfProductManagementScreenState
 
           // ส่วนหัวของตาราง
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
             color: global.theme.columnHeaderColor,
             child: Row(
               children: [
                 Expanded(
                     flex: 4,
                     child: Text(global.language("barcode"),
-                        style: const TextStyle(fontWeight: FontWeight.bold))),
+                        style: TextStyle(fontWeight: FontWeight.bold))),
                 Expanded(
                     flex: 6,
                     child: Text(global.language("product_name"),
-                        style: const TextStyle(fontWeight: FontWeight.bold))),
+                        style: TextStyle(fontWeight: FontWeight.bold))),
                 Expanded(
                     flex: 3,
                     child: Text(global.language("unit"),
-                        style: const TextStyle(fontWeight: FontWeight.bold))),
+                        style: TextStyle(fontWeight: FontWeight.bold))),
                 Expanded(
                     flex: 3,
                     child: Text(global.language("item_code"),
-                        style: const TextStyle(fontWeight: FontWeight.bold))),
+                        style: TextStyle(fontWeight: FontWeight.bold))),
                 Expanded(
                     flex: 4,
                     child: Text(global.language("product_group"),
-                        style: const TextStyle(fontWeight: FontWeight.bold))),
+                        style: TextStyle(fontWeight: FontWeight.bold))),
                 // ปุ่มเพิ่มทั้งหมด
                 if (listData.isNotEmpty)
                   IconButton(
-                    icon: const Icon(Icons.playlist_add, color: Colors.green),
+                    icon: Icon(Icons.playlist_add, color: global.theme.positiveHighlightTextColor),
                     onPressed: addAllProducts,
                     tooltip: global.language('add_all_products'),
                     padding: EdgeInsets.zero,
@@ -386,9 +376,9 @@ class ShelfProductManagementScreenState
           if (loadingData)
             Center(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(16.0),
                 child: LoadingAnimationWidget.staggeredDotsWave(
-                  color: Colors.blue,
+                  color: global.theme.infoHighlightTextColor,
                   size: 40,
                 ),
               ),
@@ -402,7 +392,7 @@ class ShelfProductManagementScreenState
   Widget buildSelectedProductsList() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: global.theme.surfaceColor,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -414,7 +404,7 @@ class ShelfProductManagementScreenState
           Divider(
             height: 1,
             thickness: 1,
-            color: Colors.grey.shade300,
+            color: global.theme.dividerBorderColor,
           ),
 
           // รายการสินค้าที่เลือก
@@ -461,12 +451,12 @@ class ShelfProductManagementScreenState
   /// สร้างส่วนหัวของรายการ
   Widget buildListHeader() {
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.shade200,
+            color: global.theme.dividerBorderColor,
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -495,7 +485,7 @@ class ShelfProductManagementScreenState
               onPressed: clearAllProducts,
               icon: Icon(Icons.delete_sweep),
               tooltip: global.language("clear_all"),
-              color: Colors.red.shade700,
+              color: global.theme.negativeHighlightTextColor,
             ),
         ],
       ),
@@ -511,9 +501,9 @@ class ShelfProductManagementScreenState
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: global.theme.infoHighlightColor,
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -528,7 +518,7 @@ class ShelfProductManagementScreenState
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey.shade800,
+                color: global.theme.textColor,
               ),
             ),
             SizedBox(height: 12),
@@ -537,14 +527,14 @@ class ShelfProductManagementScreenState
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey.shade600,
+                color: global.theme.textSecondaryColor,
               ),
             ),
             const SizedBox(height: 32),
             Icon(
               Icons.arrow_back,
               size: 32,
-              color: Colors.blue.shade300,
+              color: global.theme.infoHighlightTextColor,
             ),
           ],
         ),
@@ -559,7 +549,7 @@ class ShelfProductManagementScreenState
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
         side: BorderSide(
-          color: Colors.grey.shade200,
+          color: global.theme.dividerBorderColor,
           width: 1,
         ),
       ),
@@ -567,19 +557,19 @@ class ShelfProductManagementScreenState
         children: [
           // Main content
           Padding(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Barcode badge
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
+                    color: global.theme.surfaceColor,
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(
-                      color: Colors.grey.shade300,
+                      color: global.theme.dividerBorderColor,
                       width: 0.5,
                     ),
                   ),
@@ -589,7 +579,7 @@ class ShelfProductManagementScreenState
                       Icon(
                         Icons.qr_code,
                         size: 12,
-                        color: Colors.grey.shade600,
+                        color: global.theme.textSecondaryColor,
                       ),
                       const SizedBox(width: 4),
                       Flexible(
@@ -598,7 +588,7 @@ class ShelfProductManagementScreenState
                           style: TextStyle(
                             fontSize: 10,
                             fontFamily: 'Monospace',
-                            color: Colors.grey.shade700,
+                            color: global.theme.textColor,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -612,7 +602,7 @@ class ShelfProductManagementScreenState
                 // Product name
                 Text(
                   global.activeLangName(product.product.name),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                   ),
@@ -624,16 +614,16 @@ class ShelfProductManagementScreenState
 
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
+                    color: global.theme.infoHighlightColor,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     global.activeLangName(product.product.unitname),
                     style: TextStyle(
                       fontSize: 10,
-                      color: Colors.blue.shade700,
+                      color: global.theme.infoHighlightTextColor,
                     ),
                   ),
                 ),
@@ -648,10 +638,10 @@ class ShelfProductManagementScreenState
             child: InkWell(
               onTap: () => removeProductFromSelection(product),
               child: Container(
-                padding: const EdgeInsets.all(4),
+                padding: EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: const BorderRadius.only(
+                  color: global.theme.negativeHighlightColor,
+                  borderRadius: BorderRadius.only(
                     topRight: Radius.circular(8),
                     bottomLeft: Radius.circular(8),
                   ),
@@ -659,7 +649,7 @@ class ShelfProductManagementScreenState
                 child: Icon(
                   Icons.close,
                   size: 16,
-                  color: Colors.red.shade700,
+                  color: global.theme.negativeHighlightTextColor,
                 ),
               ),
             ),
@@ -672,13 +662,13 @@ class ShelfProductManagementScreenState
   /// สร้าง Bottom Action Bar
   Widget buildBottomActionBar() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade300)),
+        color: global.theme.cardColor,
+        border: Border(top: BorderSide(color: global.theme.dividerBorderColor)),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.shade200,
+            color: global.theme.dividerBorderColor,
             blurRadius: 4,
             offset: const Offset(0, -2),
           ),
@@ -689,7 +679,7 @@ class ShelfProductManagementScreenState
           Expanded(
             child: Text(
               '${global.language('total')} ${selectedProducts.length} ${global.language('items')}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -699,14 +689,14 @@ class ShelfProductManagementScreenState
           ElevatedButton(
             onPressed: addProductsToShelf,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
+              backgroundColor: global.theme.positiveHighlightTextColor,
+              foregroundColor: global.theme.onPrimaryColor,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.add_to_photos, size: 20),
+                Icon(Icons.add_to_photos, size: 20),
                 SizedBox(width: 8),
                 Text(global.language('add_to_shelf')),
               ],
@@ -731,7 +721,7 @@ class ShelfProductManagementScreenState
             child: Text(global.language('cancel')),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            style: ElevatedButton.styleFrom(backgroundColor: global.theme.positiveHighlightTextColor),
             onPressed: () {
               Navigator.pop(context);
               _updateShelfWithProducts();
@@ -796,24 +786,24 @@ class ShelfProductManagementScreenState
     return Container(
       color: productAlreadySelected
           ? Colors.green.withValues(alpha: 0.2)
-          : (isEvenRow ? Colors.grey[50] : Colors.white),
+          : (isEvenRow ? global.theme.surfaceColor : global.theme.cardColor),
       child: ListTile(
         dense: true,
         leading: Container(
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: productAlreadySelected ? Colors.green : Colors.grey[300],
+            color: productAlreadySelected ? global.theme.positiveHighlightTextColor : global.theme.dividerBorderColor,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
             productAlreadySelected ? Icons.check : Icons.add,
-            color: productAlreadySelected ? Colors.white : Colors.grey[600],
+            color: productAlreadySelected ? global.theme.cardColor : global.theme.textSecondaryColor,
           ),
         ),
         title: Text(
           product.barcode!,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -823,8 +813,8 @@ class ShelfProductManagementScreenState
           ],
         ),
         trailing: productAlreadySelected
-            ? const Icon(Icons.check_circle, color: Colors.green)
-            : const Icon(Icons.add_circle_outline, color: Colors.grey),
+            ? Icon(Icons.check_circle, color: global.theme.positiveHighlightTextColor)
+            : Icon(Icons.add_circle_outline, color: global.theme.iconSecondaryColor),
         onTap: () => addProductToSelection(product),
       ),
     );
@@ -848,19 +838,19 @@ class ShelfProductManagementScreenState
         },
         title: Text(
           product.barcode,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(global.packName(product.names)),
         secondary: Container(
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: product.isSelected ? Colors.red : Colors.green,
+            color: product.isSelected ? global.theme.negativeHighlightTextColor : global.theme.positiveHighlightTextColor,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
             product.isSelected ? Icons.remove : Icons.inventory,
-            color: Colors.white,
+            color: global.theme.onPrimaryColor,
             size: 20,
           ),
         ),
@@ -879,13 +869,13 @@ class ShelfProductManagementScreenState
         actions: [
           /// save
           IconButton(
-            icon: const Icon(Icons.save),
+            icon: Icon(Icons.save),
             onPressed: () {
               addProductsToShelf();
             },
           ),
           // IconButton(
-          //   icon: const Icon(Icons.refresh),
+          //   icon: Icon(Icons.refresh),
           //   onPressed: () {
           //     loadProducts(searchText);
           //     loadProductsInShelf("");
@@ -910,9 +900,9 @@ class ShelfProductManagementScreenState
                 });
                 global.showSnackBar(
                   context,
-                  const Icon(Icons.error, color: Colors.white),
+                  Icon(Icons.error, color: global.theme.onPrimaryColor),
                   state.message,
-                  Colors.red,
+                  global.theme.negativeHighlightTextColor,
                 );
               }
             },
@@ -922,9 +912,9 @@ class ShelfProductManagementScreenState
               if (state is WarehouseUpdateSuccess) {
                 global.showSnackBar(
                   context,
-                  Icon(Icons.check, color: Colors.white),
+                  Icon(Icons.check, color: global.theme.onPrimaryColor),
                   global.language('shelf_update_success'),
-                  Colors.green,
+                  global.theme.positiveHighlightTextColor,
                 );
                 setState(() {
                   selectedProducts.clear();
@@ -934,9 +924,9 @@ class ShelfProductManagementScreenState
               } else if (state is WarehouseUpdateFailed) {
                 global.showSnackBar(
                   context,
-                  Icon(Icons.error, color: Colors.white),
+                  Icon(Icons.error, color: global.theme.onPrimaryColor),
                   '${global.language('shelf_update_failed')}: ${state.message}',
-                  Colors.red,
+                  global.theme.negativeHighlightTextColor,
                 );
               }
             },
@@ -977,7 +967,7 @@ class ShelfProductManagementScreenState
                     controller: splitViewController,
                     gripSize: 14,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.infoHighlightTextColor,
                     viewMode: SplitViewMode.Horizontal,
                     children: [
                       buildProductListScreen(),
@@ -1020,21 +1010,21 @@ class ShelfProductManagementScreenState
       children: [
         // Header with actions
         Container(
-          color: Colors.grey[100],
+          color: global.theme.surfaceColor,
           padding: EdgeInsets.all(8),
           child: Row(
             children: [
               Expanded(
                 child: Text(
                   '${global.language('products_in_shelf')} (${productsInShelf.length} ${global.language('items')})',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
               if (selectedCount > 0) ...[
                 Text(
                   '${global.language('selected_count')}: $selectedCount ${global.language('items')}',
-                  style: const TextStyle(
-                      color: Colors.red, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      color: global.theme.negativeHighlightTextColor, fontWeight: FontWeight.bold),
                 ),
               ],
             ],
@@ -1046,7 +1036,7 @@ class ShelfProductManagementScreenState
           child: loadingShelfProducts
               ? Center(
                   child: LoadingAnimationWidget.staggeredDotsWave(
-                    color: Colors.blue,
+                    color: global.theme.infoHighlightTextColor,
                     size: 50,
                   ),
                 )
@@ -1055,12 +1045,12 @@ class ShelfProductManagementScreenState
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.inventory_2_outlined,
-                              size: 64, color: Colors.grey),
+                          Icon(Icons.inventory_2_outlined,
+                              size: 64, color: global.theme.iconSecondaryColor),
                           SizedBox(height: 16),
                           Text(
                             global.language('no_products_in_shelf'),
-                            style: const TextStyle(color: Colors.grey, fontSize: 16),
+                            style: TextStyle(color: global.theme.iconSecondaryColor, fontSize: 16),
                           ),
                         ],
                       ),

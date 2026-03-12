@@ -27,10 +27,10 @@ class ProductBomWidget extends StatelessWidget {
         child: (productBom.guidfixed!.isEmpty)
             ? Center(
                 child: Text(global.language('no_bom_this_product'),
-                    style: const TextStyle(color: Colors.red, fontSize: 20)))
+                    style: TextStyle(color: global.theme.negativeHighlightTextColor, fontSize: 20)))
             : InteractiveViewer(
                 constrained: false,
-                boundaryMargin: const EdgeInsets.all(100),
+                boundaryMargin: EdgeInsets.all(100),
                 minScale: 1.0, // Set minScale to 1.0 to disable zooming
                 maxScale: 1.0, // Set maxScale to 1.0 to disable zooming
                 child: GraphView(
@@ -38,7 +38,7 @@ class ProductBomWidget extends StatelessWidget {
                   algorithm: BuchheimWalkerAlgorithm(
                       builder, TreeEdgeRenderer(builder)),
                   paint: Paint()
-                    ..color = Colors.blue
+                    ..color = global.theme.infoHighlightTextColor
                     ..strokeWidth = 2
                     ..style = PaintingStyle.stroke,
                   builder: (Node node) {
@@ -85,9 +85,9 @@ class ProductBomWidget extends StatelessWidget {
 
   Widget rectangleWidget(ProductBomModel productBom) {
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.blue.shade900,
+        color: global.theme.columnHeaderTextColor,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -96,18 +96,18 @@ class ProductBomWidget extends StatelessWidget {
             productBom.imageuri!,
             fit: BoxFit.fitHeight,
             height: 50,
-            errorBuilder: (context, error, stackTrace) => const Icon(
+            errorBuilder: (context, error, stackTrace) => Icon(
                 Icons.image_not_supported,
                 size: 50,
-                color: Colors.white),
+                color: global.theme.onPrimaryColor),
           ),
           Text(' ${productBom.barcode}',
-              style: const TextStyle(color: Colors.white)),
+              style: TextStyle(color: global.theme.onPrimaryColor)),
           Text(global.activeLangName(productBom.names!),
-              style: const TextStyle(color: Colors.white)),
+              style: TextStyle(color: global.theme.onPrimaryColor)),
           Text(
               '${global.language('qty')} ${productBom.qty} ${global.activeLangName(productBom.itemunitnames!)}',
-              style: const TextStyle(color: Colors.white)),
+              style: TextStyle(color: global.theme.onPrimaryColor)),
         ],
       ),
     );

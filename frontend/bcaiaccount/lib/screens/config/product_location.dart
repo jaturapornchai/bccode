@@ -18,7 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -34,7 +34,7 @@ class ProductLocaltionScreen extends StatefulWidget {
 }
 
 class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   late TabController tabController;
   ScrollController editScrollController = ScrollController();
@@ -61,6 +61,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
   bool isKeyUp = false;
   bool isKeyDown = false;
   bool showCheckBox = false;
+  int _hoverIndex = -1;
   bool isEditMode = false;
   bool isAddMode = false;
   late WarehouseModel screenData;
@@ -250,6 +251,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -320,7 +322,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -419,7 +421,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
             Container(
               padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.searchBarColor,
                 borderRadius: BorderRadius.circular(2),
               ),
               child: Row(
@@ -453,14 +455,12 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                       ),
                     ),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const FaIcon(FontAwesomeIcons.font),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataFontSizeChange();
-                      });
-                    },
+                  ListFontSizeControl(onChanged: () => setState(() {})),
+                const SizedBox(width: 4),
+                if (listData.isNotEmpty)
+                  Text(
+                    '(${listData.length})',
+                    style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                   ),
                   IconButton(
                     focusNode: FocusNode(skipTraversal: true),
@@ -477,7 +477,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
             Container(color: global.theme.appBarColor, height: 6),
             Container(
               key: headerKey,
-              padding: const EdgeInsets.only(
+              padding: EdgeInsets.only(
                 left: 10,
                 right: 10,
                 top: 5,
@@ -563,7 +563,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
             if (loadingData)
               Center(
                 child: LoadingAnimationWidget.staggeredDotsWave(
-                  color: Colors.blue,
+                  color: global.theme.primaryColor,
                   size: 50,
                 ),
               ),
@@ -611,7 +611,11 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
           ? global.deviceConfig.listDataFontSize + 2.0
           : global.deviceConfig.listDataFontSize,
     );
-    return GestureDetector(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         selectGuid = value.guidfixed;
         if (showCheckBox == true) {
@@ -662,7 +666,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
         color:
             (selectWarehouseCode == value.warehousecode &&
                 selectLocationCode == value.locationcode)
-            ? Colors.cyan[100]
+            ? global.theme.rowSelectedColor
             : (index % 2 == 0)
             ? global.theme.columnAlternateEvenColor
             : global.theme.columnAlternateOddColor,
@@ -721,6 +725,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -2258,9 +2263,9 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                     screenData.code = code;
                   },
                   decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.all(10.0),
-                    enabledBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey, width: 0.0),
+                    contentPadding: EdgeInsets.all(10.0),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
                     ),
                     floatingLabelBehavior: FloatingLabelBehavior.always,
                     suffixIcon: Row(
@@ -2295,9 +2300,9 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                 textAlign: TextAlign.left,
                 textCapitalization: TextCapitalization.characters,
                 decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.all(10.0),
-                  enabledBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey, width: 0.0),
+                  contentPadding: EdgeInsets.all(10.0),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
                   ),
                   floatingLabelBehavior: FloatingLabelBehavior.always,
                   border: OutlineInputBorder(),
@@ -2475,7 +2480,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             guidListChecked.add(selectLocationCode);
@@ -2603,6 +2608,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
       guidListChecked.clear();
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -2801,7 +2807,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                     controller: splitViewController,
                     gripSize: 14,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.primaryColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

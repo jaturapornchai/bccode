@@ -25,7 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:image_picker/image_picker.dart';
@@ -41,7 +41,7 @@ class PosSettingScreen extends StatefulWidget {
 }
 
 class PosSettingScreenState extends State<PosSettingScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   late TabController tabController;
   ScrollController editScrollController = ScrollController();
@@ -64,6 +64,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
   bool isKeyUp = false;
   bool isKeyDown = false;
   bool showCheckBox = false;
+  int _hoverIndex = -1;
   bool isEditMode = false;
   late PosSettingModel screenData;
   late SplitViewController splitViewController;
@@ -573,6 +574,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -641,7 +643,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -732,7 +734,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
             Container(
               padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.searchBarColor,
                 borderRadius: BorderRadius.circular(2),
               ),
               child: Row(
@@ -752,25 +754,25 @@ class PosSettingScreenState extends State<PosSettingScreen>
                       controller: searchController,
                       decoration: InputDecoration(
                         isDense: true,
-                        contentPadding: const EdgeInsets.only(
+                        contentPadding: EdgeInsets.only(
                           top: 0,
                           bottom: 0,
                           left: 0,
                           right: 0,
                         ),
                         border: InputBorder.none,
+                        prefixIcon: Icon(Icons.search, size: 20, color: global.theme.iconColor),
+                        prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         hintText: global.language('search'),
                       ),
                     ),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const FaIcon(FontAwesomeIcons.font),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataFontSizeChange();
-                      });
-                    },
+                  ListFontSizeControl(onChanged: () => setState(() {})),
+                const SizedBox(width: 4),
+                if (listData.isNotEmpty)
+                  Text(
+                    '(${listData.length})',
+                    style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                   ),
                   IconButton(
                     focusNode: FocusNode(skipTraversal: true),
@@ -787,7 +789,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
             Container(color: global.theme.appBarColor, height: 6),
             Container(
               key: headerKey,
-              padding: const EdgeInsets.only(
+              padding: EdgeInsets.only(
                 left: 10,
                 right: 10,
                 top: 5,
@@ -863,7 +865,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
             if (loadingData)
               Center(
                 child: LoadingAnimationWidget.staggeredDotsWave(
-                  color: Colors.blue,
+                  color: global.theme.primaryColor,
                   size: 50,
                 ),
               ),
@@ -883,14 +885,15 @@ class PosSettingScreenState extends State<PosSettingScreen>
     }
     // ลบการ add key ออก - keys ถูกสร้างใน LoadSuccess แล้ว
     // listKeys.add(GlobalKey());  // ❌ ตรงนี้ทำให้เกิด infinite loop!
-    bool selected = selectGuid == value.guidfixed;
-    TextStyle textStyle = TextStyle(
-      fontWeight: (selected) ? FontWeight.bold : FontWeight.normal,
-      fontSize: (selected)
-          ? global.deviceConfig.listDataFontSize + 2.0
-          : global.deviceConfig.listDataFontSize,
-    );
-    return GestureDetector(
+    final isSelected = selectGuid == value.guidfixed;
+    TextStyle textStyle = isSelected
+        ? TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w700, color: global.theme.textColor)
+        : TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w400, color: global.theme.textSecondaryColor);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         if (showCheckBox == true) {
           setState(() {
@@ -932,7 +935,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
         key: index < listKeys.length ? listKeys[index] : null,
         decoration: BoxDecoration(
           color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
+              ? global.theme.rowSelectedColor
               : (index % 2 == 0)
               ? global.theme.columnAlternateEvenColor
               : global.theme.columnAlternateOddColor,
@@ -998,7 +1001,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
                             ),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
+                                backgroundColor: global.theme.primaryColor,
                               ),
                               onPressed: () async {
                                 // screenData.activepin = "";
@@ -1095,6 +1098,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -2212,12 +2216,12 @@ class PosSettingScreenState extends State<PosSettingScreen>
     for (int i = 0; i < screenData.qrcodes!.length; i++) {
       formWidgets.add(
         Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: EdgeInsets.all(8.0),
           child: Container(
             decoration: BoxDecoration(
-              border: Border.all(width: 1, color: Colors.grey),
+              border: Border.all(width: 1, color: global.theme.textSecondaryColor),
               borderRadius: BorderRadius.circular(8),
-              color: Colors.grey[200],
+              color: global.theme.dividerBorderColor,
             ),
             width: double.infinity,
             child: Padding(
@@ -2476,12 +2480,12 @@ class PosSettingScreenState extends State<PosSettingScreen>
     for (int i = 0; i < screenData.creditcards!.length; i++) {
       formWidgets.add(
         Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: EdgeInsets.all(8.0),
           child: Container(
             decoration: BoxDecoration(
-              border: Border.all(width: 1, color: Colors.grey),
+              border: Border.all(width: 1, color: global.theme.textSecondaryColor),
               borderRadius: BorderRadius.circular(8),
-              color: Colors.grey[200],
+              color: global.theme.dividerBorderColor,
             ),
             width: double.infinity,
             child: Padding(
@@ -2527,7 +2531,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
                         onChanged: (value) {},
                         decoration: InputDecoration(
                           border: const OutlineInputBorder(),
-                          contentPadding: const EdgeInsets.only(
+                          contentPadding: EdgeInsets.only(
                             left: 10,
                             top: 0,
                             bottom: 0,
@@ -2636,12 +2640,12 @@ class PosSettingScreenState extends State<PosSettingScreen>
     for (int i = 0; i < screenData.transfers!.length; i++) {
       formWidgets.add(
         Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: EdgeInsets.all(8.0),
           child: Container(
             decoration: BoxDecoration(
-              border: Border.all(width: 1, color: Colors.grey),
+              border: Border.all(width: 1, color: global.theme.textSecondaryColor),
               borderRadius: BorderRadius.circular(8),
-              color: Colors.grey[200],
+              color: global.theme.dividerBorderColor,
             ),
             width: double.infinity,
             child: Padding(
@@ -2687,7 +2691,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
                         onChanged: (value) {},
                         decoration: InputDecoration(
                           border: const OutlineInputBorder(),
-                          contentPadding: const EdgeInsets.only(
+                          contentPadding: EdgeInsets.only(
                             left: 10,
                             top: 0,
                             bottom: 0,
@@ -3511,7 +3515,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  border: Border.all(color: Colors.black),
+                  border: Border.all(color: global.theme.textColor),
                   borderRadius: BorderRadius.circular(5),
                   image: (imageWeb != null)
                       ? DecorationImage(
@@ -3560,6 +3564,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
     }
 
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -3606,7 +3611,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -3703,8 +3708,8 @@ class PosSettingScreenState extends State<PosSettingScreen>
             screenData.qrcodes![i].qrcode = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -3736,8 +3741,8 @@ class PosSettingScreenState extends State<PosSettingScreen>
             screenData.qrcodes![i].apikey = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -3769,8 +3774,8 @@ class PosSettingScreenState extends State<PosSettingScreen>
             screenData.qrcodes![i].apikey = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -3803,8 +3808,8 @@ class PosSettingScreenState extends State<PosSettingScreen>
             screenData.qrcodes![i].billerID = value.toUpperCase();
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -3836,8 +3841,8 @@ class PosSettingScreenState extends State<PosSettingScreen>
             screenData.qrcodes![i].apikey = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -3863,8 +3868,8 @@ class PosSettingScreenState extends State<PosSettingScreen>
             screenData.qrcodes![i].billerCode = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -3890,8 +3895,8 @@ class PosSettingScreenState extends State<PosSettingScreen>
             screenData.qrcodes![i].billerID = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -3917,8 +3922,8 @@ class PosSettingScreenState extends State<PosSettingScreen>
             screenData.qrcodes![i].storeID = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -3944,8 +3949,8 @@ class PosSettingScreenState extends State<PosSettingScreen>
             screenData.qrcodes![i].terminalID = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -3971,8 +3976,8 @@ class PosSettingScreenState extends State<PosSettingScreen>
             screenData.qrcodes![i].merchantName = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -3998,8 +4003,8 @@ class PosSettingScreenState extends State<PosSettingScreen>
             screenData.qrcodes![i].accessCode = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -4025,8 +4030,8 @@ class PosSettingScreenState extends State<PosSettingScreen>
             screenData.qrcodes![i].bankcharge = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -4052,8 +4057,8 @@ class PosSettingScreenState extends State<PosSettingScreen>
             screenData.qrcodes![i].customercharge = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -4159,8 +4164,8 @@ class PosSettingScreenState extends State<PosSettingScreen>
             screenData.qrcodes![i].apikey = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -4186,8 +4191,8 @@ class PosSettingScreenState extends State<PosSettingScreen>
             screenData.qrcodes![i].accessCode = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -4211,8 +4216,8 @@ class PosSettingScreenState extends State<PosSettingScreen>
             screenData.qrcodes![i].token = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -4316,8 +4321,8 @@ class PosSettingScreenState extends State<PosSettingScreen>
             screenData.qrcodes![i].host = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -4341,8 +4346,8 @@ class PosSettingScreenState extends State<PosSettingScreen>
             screenData.qrcodes![i].appid = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -4368,8 +4373,8 @@ class PosSettingScreenState extends State<PosSettingScreen>
             screenData.qrcodes![i].apikey = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -4392,6 +4397,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
       guidListChecked.clear();
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -4655,7 +4661,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
                     controller: splitViewController,
                     gripSize: 8,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.primaryColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,
@@ -4782,18 +4788,18 @@ class OtpInput extends StatelessWidget {
             controller: controller,
             maxLength: 1,
             cursorColor: Theme.of(context).primaryColor,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(color: Colors.green, width: 1.0),
               ),
               focusedBorder: OutlineInputBorder(
                 borderSide: BorderSide(
-                  color: Colors.blue, // Border color when TextField is focused
+                  color: global.theme.primaryColor, // Border color when TextField is focused
                   width: 2.0,
                 ),
               ),
               counterText: '',
-              hintStyle: TextStyle(color: Colors.black, fontSize: 20.0),
+              hintStyle: TextStyle(color: global.theme.textColor, fontSize: 20.0),
             ),
             onChanged: (value) {
               controller.text = value;

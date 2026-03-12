@@ -17,7 +17,7 @@ class GroupNumberSelectScreen extends StatefulWidget {
 }
 
 class GroupNumberSelectScreenState extends State<GroupNumberSelectScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   @override
   void initState() {
     super.initState();
@@ -35,7 +35,7 @@ class GroupNumberSelectScreenState extends State<GroupNumberSelectScreen>
             title: Text(global.language('please_select_group_number')),
             leading: IconButton(
               focusNode: FocusNode(skipTraversal: true),
-              icon: const Icon(Icons.arrow_back),
+              icon: Icon(Icons.arrow_back),
               onPressed: () {
                 global.gotoMainMenu(context);
               },
@@ -114,8 +114,8 @@ class GroupNumberSelectScreenState extends State<GroupNumberSelectScreen>
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: Colors.grey),
+                          color: global.theme.cardColor,
+                          border: Border.all(color: global.theme.dividerBorderColor),
                         ),
                         child: Column(
                           children: [
@@ -133,7 +133,7 @@ class GroupNumberSelectScreenState extends State<GroupNumberSelectScreen>
                                       global.language('select_group_number'),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -143,7 +143,7 @@ class GroupNumberSelectScreenState extends State<GroupNumberSelectScreen>
                                       "${global.groupNumber[index]}",
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
                                       ),

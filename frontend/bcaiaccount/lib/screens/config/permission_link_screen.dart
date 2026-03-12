@@ -15,7 +15,8 @@ class PermissionLinkScreen extends StatefulWidget {
   State<PermissionLinkScreen> createState() => _PermissionLinkScreenState();
 }
 
-class _PermissionLinkScreenState extends State<PermissionLinkScreen> {
+class _PermissionLinkScreenState extends State<PermissionLinkScreen>
+    with global.ThemeRefreshMixin {
   List<UserModel> _userList = [];
   List<PermissionDefinitionModel> _permissionDefList = [];
   List<EmployeePermissionModel> _userPermissionList = [];
@@ -86,26 +87,26 @@ class _PermissionLinkScreenState extends State<PermissionLinkScreen> {
         appBar: AppBar(
           title: Text(global.language('link_permission')),
           actions: [
-            const ManualButton(path: 'settings-permission-link'),
             IconButton(
-              icon: const Icon(Icons.refresh),
+              icon: Icon(Icons.refresh),
               onPressed: _loadData,
               tooltip: global.language('database_master_info.refresh'),
             ),
+            const ManualButton(path: 'settings-permission-link'),
           ],
         ),
         body: Column(
           children: [
             // Search bar
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: EdgeInsets.all(8.0),
               child: TextField(
                 decoration: InputDecoration(
                   hintText: global.language('search_user_hint'),
-                  prefixIcon: const Icon(Icons.search),
+                  prefixIcon: Icon(Icons.search),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   filled: true,
-                  fillColor: Colors.grey[100],
+                  fillColor: global.theme.formFillColor,
                 ),
                 onChanged: (value) => setState(() => _searchText = value),
               ),
@@ -143,11 +144,11 @@ class _PermissionLinkScreenState extends State<PermissionLinkScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.people_outline, size: 64, color: Colors.grey[400]),
+                            Icon(Icons.people_outline, size: 64, color: global.theme.iconSecondaryColor),
                             const SizedBox(height: 16),
                             Text(
                               global.language('no_users_found'),
-                              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                              style: TextStyle(fontSize: 16, color: global.theme.textSecondaryColor),
                             ),
                           ],
                         ),
@@ -174,25 +175,25 @@ class _PermissionLinkScreenState extends State<PermissionLinkScreen> {
     final roleText = _getRoleText(user.role);
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: _getRoleColor(user.role),
           child: Icon(
             Icons.person,
-            color: Colors.white,
+            color: global.theme.onPrimaryColor,
             size: 20,
           ),
         ),
         title: Text(
           user.username,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (user.email != null && user.email!.isNotEmpty)
-              Text(user.email!, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+              Text(user.email!, style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor)),
             Row(
               children: [
                 Container(
@@ -209,9 +210,9 @@ class _PermissionLinkScreenState extends State<PermissionLinkScreen> {
                 const SizedBox(width: 8),
                 if (permCount > 0)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.blue[50],
+                      color: global.theme.infoHighlightColor,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -229,13 +230,13 @@ class _PermissionLinkScreenState extends State<PermissionLinkScreen> {
             // ปุ่มตรวจสอบสิทธิ์ - แสดงเฉพาะเมื่อมีสิทธิ์เชื่อมอยู่
             if (permCount > 0)
               IconButton(
-                icon: const Icon(Icons.visibility, color: Colors.green),
+                icon: Icon(Icons.visibility, color: global.theme.positiveHighlightTextColor),
                 onPressed: () => _showPermissionPreviewDialog(user, userPerm!),
                 tooltip: global.language('check_permission'),
               ),
             // ปุ่มแก้ไขสิทธิ์
             IconButton(
-              icon: const Icon(Icons.edit, color: Colors.blue),
+              icon: Icon(Icons.edit, color: global.theme.infoHighlightTextColor),
               onPressed: () => _showEditDialog(user, userPerm),
               tooltip: global.language('edit_permission'),
             ),
@@ -262,13 +263,13 @@ class _PermissionLinkScreenState extends State<PermissionLinkScreen> {
   Color _getRoleColor(int role) {
     switch (role) {
       case 0:
-        return Colors.grey;
+        return global.theme.iconSecondaryColor;
       case 1:
-        return Colors.blue;
+        return global.theme.infoHighlightTextColor;
       case 2:
         return Colors.purple;
       default:
-        return Colors.grey;
+        return global.theme.iconSecondaryColor;
     }
   }
 
@@ -394,12 +395,12 @@ class _PermissionPreviewDialog extends StatelessWidget {
     'partner': {'name': global.language('customers_and_sellers'), 'icon': Icons.handshake, 'color': Colors.teal},
     'sale_setting': {'name': global.language('sale_settings'), 'icon': Icons.point_of_sale, 'color': Colors.amber},
     'product': {'name': global.language('product'), 'icon': Icons.inventory_2, 'color': Colors.deepPurple},
-    'purchase': {'name': global.language('purchase_transactions'), 'icon': Icons.shopping_cart, 'color': Colors.orange},
-    'sale': {'name': global.language('sale_transactions'), 'icon': Icons.storefront, 'color': Colors.green},
+    'purchase': {'name': global.language('purchase_transactions'), 'icon': Icons.shopping_cart, 'color': global.theme.warningHighlightTextColor},
+    'sale': {'name': global.language('sale_transactions'), 'icon': Icons.storefront, 'color': global.theme.positiveHighlightTextColor},
     'stock': {'name': global.language('stock'), 'icon': Icons.warehouse, 'color': Colors.brown},
-    'finance': {'name': global.language('finance'), 'icon': Icons.account_balance, 'color': Colors.blue},
+    'finance': {'name': global.language('finance'), 'icon': Icons.account_balance, 'color': global.theme.infoHighlightTextColor},
     'report': {'name': global.language('report'), 'icon': Icons.bar_chart, 'color': Colors.cyan},
-    'restaurant': {'name': global.language('restaurant'), 'icon': Icons.restaurant, 'color': Colors.red},
+    'restaurant': {'name': global.language('restaurant'), 'icon': Icons.restaurant, 'color': global.theme.negativeHighlightTextColor},
     'check': {'name': global.language('audit'), 'icon': Icons.fact_check, 'color': Colors.pink},
     'master': {'name': global.language('menu_master'), 'icon': Icons.dataset, 'color': Colors.lime},
     'import_export': {'name': global.language('import_export'), 'icon': Icons.import_export, 'color': Colors.deepOrange},
@@ -412,14 +413,14 @@ class _PermissionPreviewDialog extends StatelessWidget {
       child: Container(
         width: MediaQuery.of(context).size.width * 0.85,
         height: MediaQuery.of(context).size.height * 0.8,
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header
             Row(
               children: [
-                const Icon(Icons.visibility, color: Colors.green),
+                Icon(Icons.visibility, color: global.theme.positiveHighlightTextColor),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
@@ -431,13 +432,13 @@ class _PermissionPreviewDialog extends StatelessWidget {
                       ),
                       Text(
                         '${global.language("user_label")}: $userName',
-                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 13, color: global.theme.textSecondaryColor),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: Icon(Icons.close),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -446,9 +447,9 @@ class _PermissionPreviewDialog extends StatelessWidget {
 
             // สิทธิ์ที่เชื่อม
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.blue[50],
+                color: global.theme.infoHighlightColor,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -547,11 +548,11 @@ class _PermissionPreviewDialog extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.store, size: 18, color: Colors.indigo),
+                Icon(Icons.store, size: 18, color: Colors.indigo),
                 const SizedBox(width: 8),
                 Text(
                   '${global.language("branch")}: $branchCode',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
                 ),
                 const Spacer(),
                 Container(
@@ -575,9 +576,9 @@ class _PermissionPreviewDialog extends StatelessWidget {
               children: [
                 // Header row
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                  padding: EdgeInsets.symmetric(vertical: 6, horizontal: 4),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: global.theme.surfaceColor,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Row(
@@ -600,7 +601,7 @@ class _PermissionPreviewDialog extends StatelessWidget {
                   final categoryInfo = _categoryInfo[categoryCode] ?? {
                     'name': categoryCode,
                     'icon': Icons.folder,
-                    'color': Colors.grey,
+                    'color': global.theme.iconSecondaryColor,
                   };
                   return _buildCategorySection(
                     categoryCode: categoryCode,
@@ -682,9 +683,9 @@ class _PermissionPreviewDialog extends StatelessWidget {
 
   Widget _buildScreenRow(ScreenPermissionModel screen) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+      padding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+        border: Border(bottom: BorderSide(color: global.theme.dividerBorderColor)),
       ),
       child: Row(
         children: [
@@ -692,7 +693,7 @@ class _PermissionPreviewDialog extends StatelessWidget {
             flex: 3,
             child: Text(
               screen.screenName.isNotEmpty ? screen.screenName : screen.screenCode,
-              style: const TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: 12),
             ),
           ),
           Expanded(child: _buildPermissionIcon(screen.canView)),
@@ -711,7 +712,7 @@ class _PermissionPreviewDialog extends StatelessWidget {
     return Center(
       child: Icon(
         hasPermission ? Icons.check_circle : Icons.cancel,
-        color: hasPermission ? Colors.green : Colors.grey[300],
+        color: hasPermission ? global.theme.positiveHighlightTextColor : global.theme.dividerBorderColor,
         size: 18,
       ),
     );
@@ -734,7 +735,8 @@ class _PermissionLinkEditDialog extends StatefulWidget {
   State<_PermissionLinkEditDialog> createState() => _PermissionLinkEditDialogState();
 }
 
-class _PermissionLinkEditDialogState extends State<_PermissionLinkEditDialog> {
+class _PermissionLinkEditDialogState extends State<_PermissionLinkEditDialog>
+    with global.ThemeRefreshMixin {
   late EmployeePermissionModel _userPermission;
   late Set<String> _selectedCodes;
 
@@ -759,7 +761,7 @@ class _PermissionLinkEditDialogState extends State<_PermissionLinkEditDialog> {
             // Header
             Row(
               children: [
-                const Icon(Icons.link, color: Colors.blue),
+                Icon(Icons.link, color: global.theme.infoHighlightTextColor),
                 SizedBox(width: 8),
                 Expanded(
                   child: Column(
@@ -771,13 +773,13 @@ class _PermissionLinkEditDialogState extends State<_PermissionLinkEditDialog> {
                       ),
                       Text(
                         '${global.language("user_label")}: ${widget.userName}',
-                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 13, color: global.theme.textSecondaryColor),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: Icon(Icons.close),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -786,9 +788,9 @@ class _PermissionLinkEditDialogState extends State<_PermissionLinkEditDialog> {
 
             // Info
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.blue[50],
+                color: global.theme.infoHighlightColor,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -813,12 +815,12 @@ class _PermissionLinkEditDialogState extends State<_PermissionLinkEditDialog> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.warning_amber, size: 48, color: Colors.orange[400]),
+                          Icon(Icons.warning_amber, size: 48, color: global.theme.warningHighlightTextColor),
                           const SizedBox(height: 8),
                           Text(global.language('no_available_permissions')),
                           Text(
                             global.language('go_to_permission_definition'),
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                            style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor),
                           ),
                         ],
                       ),
@@ -873,7 +875,7 @@ class _PermissionLinkEditDialogState extends State<_PermissionLinkEditDialog> {
                     _userPermission.permissionCodes = _selectedCodes.toList();
                     Navigator.pop(context, _userPermission);
                   },
-                  icon: const Icon(Icons.save),
+                  icon: Icon(Icons.save),
                   label: Text('${global.language("save")} (${_selectedCodes.length} ${global.language("permission")})'),
                 ),
               ],
@@ -893,8 +895,8 @@ class _PermissionLinkEditDialogState extends State<_PermissionLinkEditDialog> {
     );
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 4),
-      color: isSelected ? Colors.blue[50] : null,
+      margin: EdgeInsets.only(bottom: 4),
+      color: isSelected ? global.theme.infoHighlightColor : null,
       child: CheckboxListTile(
         value: isSelected,
         onChanged: (value) {
@@ -908,28 +910,28 @@ class _PermissionLinkEditDialogState extends State<_PermissionLinkEditDialog> {
         },
         title: Text(
           perm.permissionCode,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (perm.permissionName.isNotEmpty)
-              Text(perm.permissionName, style: const TextStyle(fontSize: 13)),
+              Text(perm.permissionName, style: TextStyle(fontSize: 13)),
             Text(
               '$branchCount ${global.language("branch")}, $screenCount ${global.language("screen")}',
-              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
             ),
           ],
         ),
         secondary: Container(
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.blue : Colors.grey[200],
+            color: isSelected ? global.theme.infoHighlightTextColor : global.theme.dividerBorderColor,
             shape: BoxShape.circle,
           ),
           child: Icon(
             Icons.security,
-            color: isSelected ? Colors.white : Colors.grey[600],
+            color: isSelected ? global.theme.onPrimaryColor : global.theme.textSecondaryColor,
             size: 20,
           ),
         ),

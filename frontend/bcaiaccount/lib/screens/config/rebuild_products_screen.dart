@@ -13,7 +13,8 @@ class RebuildProductsScreen extends StatefulWidget {
   State<RebuildProductsScreen> createState() => _RebuildProductsScreenState();
 }
 
-class _RebuildProductsScreenState extends State<RebuildProductsScreen> {
+class _RebuildProductsScreenState extends State<RebuildProductsScreen>
+    with global.ThemeRefreshMixin {
   bool _isProcessing = false;
   String _statusMessage = '';
   List<String> _logs = [];
@@ -98,9 +99,9 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen> {
         if (mounted) {
           global.showSnackBar(
             context,
-            Icon(Icons.check_circle, color: Colors.white),
+            Icon(Icons.check_circle, color: global.theme.onPrimaryColor),
             'Rebuild Products ${global.language("success")}',
-            Colors.green,
+            global.theme.positiveHighlightTextColor,
           );
         }
 
@@ -115,9 +116,9 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen> {
         if (mounted) {
           global.showSnackBar(
             context,
-            Icon(Icons.error, color: Colors.white),
+            Icon(Icons.error, color: global.theme.onPrimaryColor),
             'Rebuild Products ${global.language("failed")}: ${jsonResult['message']}',
-            Colors.red,
+            global.theme.negativeHighlightTextColor,
           );
         }
 
@@ -134,9 +135,9 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen> {
       if (mounted) {
         global.showSnackBar(
           context,
-          Icon(Icons.error, color: Colors.white),
+          Icon(Icons.error, color: global.theme.onPrimaryColor),
           '${global.language("error_occurred")}: ${e.toString()}',
-          Colors.red,
+          global.theme.negativeHighlightTextColor,
         );
       }
 
@@ -214,7 +215,7 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            style: ElevatedButton.styleFrom(backgroundColor: global.theme.warningHighlightTextColor),
             child: Text(global.language('confirm')),
           ),
         ],
@@ -245,7 +246,7 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen> {
                     Row(
                       children: [
                         Icon(Icons.info, color: Colors.orange[800]),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         Text(
                           global.language('rebuild_products'),
                           style: TextStyle(
@@ -259,38 +260,38 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen> {
                     SizedBox(height: 12),
                     Text(
                       global.language('rebuild_products_description'),
-                      style: const TextStyle(height: 1.5),
+                      style: TextStyle(height: 1.5),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // ปุ่ม Rebuild
             ElevatedButton.icon(
               onPressed: _isProcessing ? null : _rebuildProducts,
               icon: _isProcessing
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(global.theme.onPrimaryColor),
                       ),
                     )
                   : Icon(Icons.refresh),
               label: Text(
                 _isProcessing ? '${global.language("processing")}...' : global.language('rebuild_products'),
-                style: const TextStyle(fontSize: 16),
+                style: TextStyle(fontSize: 16),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepOrange,
-                foregroundColor: Colors.white,
+                foregroundColor: global.theme.onPrimaryColor,
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // Progress Bar - แสดงเมื่อกำลังประมวลผล
             if (_isProcessing) ...[
@@ -308,7 +309,7 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen> {
                       Row(
                         children: [
                           Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               _currentStep,
@@ -321,7 +322,7 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
 
                       // Progress bar
                       ClipRRect(
@@ -329,15 +330,15 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen> {
                         child: LinearProgressIndicator(
                           value: _progress,
                           minHeight: 12,
-                          backgroundColor: Colors.grey[200],
+                          backgroundColor: global.theme.dividerBorderColor,
                           valueColor: AlwaysStoppedAnimation<Color>(
                             _progress >= 1.0
-                                ? Colors.green
-                                : Colors.blue.shade600,
+                                ? global.theme.positiveHighlightTextColor
+                                : global.theme.infoHighlightTextColor,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
 
                       // Percentage text
                       Row(
@@ -361,7 +362,7 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
             ],
 
             // Status message
@@ -371,7 +372,7 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen> {
                     ? Colors.green[50]
                     : _statusMessage.contains(global.language('failed')) || _statusMessage.contains(global.language('errors'))
                         ? Colors.red[50]
-                        : Colors.blue[50],
+                        : global.theme.infoHighlightColor,
                 child: Padding(
                   padding: EdgeInsets.all(12.0),
                   child: Row(
@@ -406,15 +407,15 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen> {
                   ),
                 ),
               ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
 
             // Logs
             if (_logs.isNotEmpty) ...[
-              const Text(
+              Text(
                 'Logs:',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Expanded(
                 child: Card(
                   child: ListView.builder(
@@ -425,7 +426,7 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 2),
                         child: Text(
                           _logs[index],
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontFamily: 'monospace',
                           ),

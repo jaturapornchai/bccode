@@ -6,7 +6,7 @@ import 'package:smlaicloud/model/qr_model.dart';
 import 'package:smlaicloud/screen_search/bookbank_select_screen.dart';
 import 'package:smlaicloud/utils/dialog_template.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -28,7 +28,7 @@ class QrScreen extends StatefulWidget {
 }
 
 class QrscreenState extends State<QrScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   late TabController tabController;
   late DropzoneViewController dropZoneController;
@@ -57,6 +57,7 @@ class QrscreenState extends State<QrScreen>
   bool isKeyUp = false;
   bool isKeyDown = false;
   bool showCheckBox = false;
+  int _hoverIndex = -1;
   bool isEditMode = false;
   late SplitViewController splitViewController;
 
@@ -298,6 +299,7 @@ class QrscreenState extends State<QrScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -478,16 +480,13 @@ class QrscreenState extends State<QrScreen>
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(2),
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              color: global.theme.searchBarColor,
               child: Row(
                 children: [
                   Expanded(
-                    child: TextFormField(
-                      onFieldSubmitted: (value) {
+                    child: TextField(
+                      onSubmitted: (value) {
                         searchFocusNode.requestFocus();
                       },
                       onChanged: (value) {
@@ -503,28 +502,23 @@ class QrscreenState extends State<QrScreen>
                       controller: searchController,
                       decoration: InputDecoration(
                         isDense: true,
-                        contentPadding: const EdgeInsets.only(
-                          top: 0,
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                         border: InputBorder.none,
                         hintText: (kIsWeb)
                             ? "${global.language('search')} (F2)"
                             : global.language('search'),
+                        prefixIcon: Icon(Icons.search, size: 20),
+                        prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                       ),
                     ),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const FaIcon(FontAwesomeIcons.font),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataFontSizeChange();
-                      });
-                    },
-                  ),
+                  ListFontSizeControl(onChanged: () => setState(() {})),
+                  const SizedBox(width: 4),
+                  if (qrListDatas.isNotEmpty)
+                    Text(
+                      '(${qrListDatas.length})',
+                      style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
+                    ),
                 ],
               ),
             ),
@@ -618,7 +612,15 @@ class QrscreenState extends State<QrScreen>
     }
     // ลบการ add key ออก - keys ถูกสร้างใน LoadSuccess แล้ว
     // listKeys.add(GlobalKey());  // ❌ ตรงนี้ทำให้เกิด infinite loop!
-    return GestureDetector(
+    final isSelected = selectGuid == value.guidfixed!;
+    TextStyle textStyle = isSelected
+        ? TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w700, color: global.theme.textColor)
+        : TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w400, color: global.theme.textSecondaryColor);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         if (showCheckBox == true) {
           setState(() {
@@ -659,14 +661,13 @@ class QrscreenState extends State<QrScreen>
       },
       child: Container(
         key: index < listKeys.length ? listKeys[index] : null,
-        decoration: BoxDecoration(
-          color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
-              : (index % 2 == 0)
-              ? global.theme.columnAlternateEvenColor
-              : global.theme.columnAlternateOddColor,
+        color: _getContainerColor(value.guidfixed!, index),
+        padding: EdgeInsets.only(
+          left: 10,
+          right: 10,
+          top: global.deviceConfig.listDataLineSpace,
+          bottom: global.deviceConfig.listDataLineSpace,
         ),
-        padding: const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -676,9 +677,7 @@ class QrscreenState extends State<QrScreen>
                 value.code!,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: global.deviceConfig.listDataFontSize,
-                ),
+                style: textStyle,
               ),
             ),
             Expanded(
@@ -687,9 +686,7 @@ class QrscreenState extends State<QrScreen>
                 global.packName(value.qrnames!),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: global.deviceConfig.listDataFontSize,
-                ),
+                style: textStyle,
               ),
             ),
             if (showCheckBox)
@@ -705,7 +702,21 @@ class QrscreenState extends State<QrScreen>
           ],
         ),
       ),
+    ),
     );
+  }
+
+
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
   }
 
   List<LanguageDataModel> packLanguage() {
@@ -963,7 +974,7 @@ class QrscreenState extends State<QrScreen>
         child: SingleChildScrollView(
           controller: editScrollController,
           child: Container(
-            color: Colors.white,
+            color: global.theme.cardColor,
             width: double.infinity,
             padding: const EdgeInsets.all(10),
             child: Form(
@@ -996,7 +1007,7 @@ class QrscreenState extends State<QrScreen>
                     },
                     decoration: InputDecoration(
                       border: const OutlineInputBorder(),
-                      contentPadding: const EdgeInsets.only(
+                      contentPadding: EdgeInsets.only(
                         left: 10,
                         top: 0,
                         bottom: 0,
@@ -1032,7 +1043,7 @@ class QrscreenState extends State<QrScreen>
                         textAlign: TextAlign.left,
                         controller: fieldTextController[i + 1],
                         decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.only(
+                          contentPadding: EdgeInsets.only(
                             left: 10,
                             top: 0,
                             bottom: 0,
@@ -1212,7 +1223,7 @@ class QrscreenState extends State<QrScreen>
                     onChanged: (value) {},
                     decoration: InputDecoration(
                       border: const OutlineInputBorder(),
-                      contentPadding: const EdgeInsets.only(
+                      contentPadding: EdgeInsets.only(
                         left: 10,
                         top: 0,
                         bottom: 0,
@@ -1431,7 +1442,7 @@ class QrscreenState extends State<QrScreen>
                           child: DecoratedBox(
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              border: Border.all(color: Colors.black),
+                              border: Border.all(color: global.theme.textColor),
                               borderRadius: BorderRadius.circular(5),
                               image: (imageWeb != null)
                                   ? DecorationImage(
@@ -1493,6 +1504,7 @@ class QrscreenState extends State<QrScreen>
       qrGuidListChecked.clear();
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -1524,7 +1536,7 @@ class QrscreenState extends State<QrScreen>
                     context,
                     Icon(Icons.save, color: Colors.white),
                     global.language("save_success"),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   clearEditData();
                   qrListDatas.clear();
@@ -1548,7 +1560,7 @@ class QrscreenState extends State<QrScreen>
                     context,
                     Icon(Icons.edit, color: Colors.white),
                     global.language("edit_success"),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   clearEditData();
                   qrListDatas.clear();
@@ -1577,7 +1589,7 @@ class QrscreenState extends State<QrScreen>
                     context,
                     Icon(Icons.delete, color: Colors.white),
                     global.language("delete_success"),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   qrListDatas.clear();
                   clearEditData();
@@ -1594,7 +1606,7 @@ class QrscreenState extends State<QrScreen>
                     context,
                     Icon(Icons.delete, color: Colors.white),
                     global.language("delete_success"),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   qrListDatas.clear();
                   clearEditData();
@@ -1670,7 +1682,7 @@ class QrscreenState extends State<QrScreen>
                     controller: splitViewController,
                     gripSize: 14,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.primaryColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

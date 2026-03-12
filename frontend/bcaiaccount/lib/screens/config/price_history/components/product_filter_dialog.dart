@@ -14,7 +14,8 @@ class ProductFilterDialog extends StatefulWidget {
   State<ProductFilterDialog> createState() => _ProductFilterDialogState();
 }
 
-class _ProductFilterDialogState extends State<ProductFilterDialog> {
+class _ProductFilterDialogState extends State<ProductFilterDialog>
+    with global.ThemeRefreshMixin {
   late FiltterBarcodeModel filterBarcode;
 
   @override
@@ -65,7 +66,7 @@ class _ProductFilterDialogState extends State<ProductFilterDialog> {
           child: Text(global.language("confirm")),
         ),
         ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          style: ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
           onPressed: () {
             Navigator.pop(context, null);
           },

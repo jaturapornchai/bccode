@@ -14,7 +14,7 @@ class ConfigScreen extends StatefulWidget {
 }
 
 class ConfigScreenState extends State<ConfigScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   List<LanguageModel> defaultlanguageList = [
     LanguageModel(code: "th", codeTranslator: "th", name: "Thai", isuse: false),
     LanguageModel(
@@ -97,21 +97,21 @@ class ConfigScreenState extends State<ConfigScreen>
               }
               // global.showSnackBar(
               //   context,
-              //   const Icon(
+              //   Icon(
               //     Icons.save,
-              //     color: Colors.white,
+              //     color: global.theme.onPrimaryColor,
               //   ),
               //   global.language("load_success"),
-              //   Colors.green,
+              //   global.theme.positiveHighlightTextColor,
               // );
             });
           }
           if (state is ShopUpdateSuccess) {
             global.showSnackBar(
               context,
-              Icon(Icons.save, color: Colors.white),
+              Icon(Icons.save, color: global.theme.onPrimaryColor),
               global.language("save_success"),
-              Colors.green,
+              global.theme.positiveHighlightTextColor,
             );
 
             global.gotoMainMenu(context);
@@ -121,9 +121,9 @@ class ConfigScreenState extends State<ConfigScreen>
             setState(() {
               global.showSnackBar(
                 context,
-                Icon(Icons.save, color: Colors.white),
+                Icon(Icons.save, color: global.theme.onPrimaryColor),
                 "${global.language("save_failed")} ${state.message}",
-                Colors.red,
+                global.theme.negativeHighlightTextColor,
               );
             });
           }
@@ -137,23 +137,20 @@ class ConfigScreenState extends State<ConfigScreen>
                 title: Text(global.language('system_config')),
                 leading: IconButton(
                   focusNode: FocusNode(skipTraversal: true),
-                  icon: const Icon(Icons.arrow_back),
+                  icon: Icon(Icons.arrow_back),
                   onPressed: () {
                     global.gotoMainMenu(context);
                   },
                 ),
                 actions: <Widget>[
-                  const ManualButton(),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 20.0),
-                    child: IconButton(
-                      focusNode: FocusNode(skipTraversal: true),
-                      onPressed: () {
-                        saveOrUpdateData();
-                      },
-                      icon: const Icon(Icons.save, size: 26.0),
-                    ),
+                  IconButton(
+                    focusNode: FocusNode(skipTraversal: true),
+                    onPressed: () {
+                      saveOrUpdateData();
+                    },
+                    icon: Icon(Icons.save, size: 26.0),
                   ),
+                  const ManualButton(),
                 ],
               ),
               body: SingleChildScrollView(
@@ -161,13 +158,13 @@ class ConfigScreenState extends State<ConfigScreen>
                   child: Column(
                     children: [
                       Container(
-                        margin: const EdgeInsets.only(top: 10, bottom: 10),
-                        padding: const EdgeInsets.all(10),
+                        margin: EdgeInsets.only(top: 10, bottom: 10),
+                        padding: EdgeInsets.all(10),
                         width: 600,
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.blue),
+                          border: Border.all(color: global.theme.infoHighlightTextColor),
                           borderRadius: BorderRadius.circular(5),
-                          color: Colors.white,
+                          color: global.theme.cardColor,
                           boxShadow: [
                             BoxShadow(
                               color: Colors.grey.withValues(alpha: 0.5),
@@ -184,7 +181,7 @@ class ConfigScreenState extends State<ConfigScreen>
                           children: [
                             Text(
                               global.language('select_data_language'),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -365,8 +362,8 @@ class ConfigScreenState extends State<ConfigScreen>
                                                       .removeAt(i);
                                                 });
                                               },
-                                              color: Colors.red,
-                                              icon: const Icon(Icons.delete),
+                                              color: global.theme.negativeHighlightTextColor,
+                                              icon: Icon(Icons.delete),
                                             ),
                                           ),
                                   ],

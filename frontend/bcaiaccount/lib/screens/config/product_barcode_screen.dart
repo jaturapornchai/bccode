@@ -1,5 +1,6 @@
 ﻿import 'dart:async';
 import 'package:smlaicloud/widgets/manual_button.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:smlaicloud/bloc/business_type/business_type_bloc.dart';
@@ -74,7 +75,7 @@ class ProductBarcodeScreen extends StatefulWidget {
 }
 
 class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   List<GlobalKey<ImageTooltipState>> tooltipKeys = [];
   late TabController tabController;
@@ -560,6 +561,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -678,7 +680,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                         // Export button
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             context.read<ExportCsvBloc>().add(
@@ -748,7 +750,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -923,7 +925,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                       color: (_filterGroupCode.isNotEmpty || _filterBrandCode.isNotEmpty ||
                               _filterCategoryCode.isNotEmpty || _filterPriceMin != null || _filterPriceMax != null)
                           ? Colors.blue
-                          : Colors.grey[600],
+                          : global.theme.textSecondaryColor,
                     ),
                     tooltip: global.language('filter'),
                     onPressed: () {
@@ -1000,7 +1002,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
             Container(color: global.theme.appBarColor, height: 6),
             Container(
               key: headerKey,
-              padding: const EdgeInsets.only(
+              padding: EdgeInsets.only(
                 left: 10,
                 right: 10,
                 top: 5,
@@ -1013,8 +1015,8 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                     flex: 6,
                     child: Text(
                       global.language("barcode"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                        color: global.theme.textColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1023,8 +1025,8 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                     flex: 10,
                     child: Text(
                       global.language("product_name"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                        color: global.theme.textColor,
                         fontWeight: FontWeight.bold,
                       ),
                       maxLines: 2,
@@ -1035,8 +1037,8 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                     flex: 3,
                     child: Text(
                       global.language("unit"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                        color: global.theme.textColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1045,8 +1047,8 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                     flex: 4,
                     child: Text(
                       global.language("item_code"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                        color: global.theme.textColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1055,8 +1057,8 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                     flex: 4,
                     child: Text(
                       global.language("balance"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                        color: global.theme.textColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1065,22 +1067,22 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                     flex: 4,
                     child: Text(
                       global.language("price_retail"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                        color: global.theme.textColor,
                         fontWeight: FontWeight.bold,
                       ),
                       textAlign: TextAlign.right,
                     ),
                   ),
                   if (showImage)
-                    const Expanded(
+                    Expanded(
                       flex: 1,
-                      child: Icon(Icons.image, color: Colors.black, size: 12),
+                      child: Icon(Icons.image, color: global.theme.textColor, size: 12),
                     ),
                   if (showCheckBox)
-                    const Expanded(
+                    Expanded(
                       flex: 1,
-                      child: Icon(Icons.check, color: Colors.black, size: 12),
+                      child: Icon(Icons.check, color: global.theme.textColor, size: 12),
                     ),
                 ],
               ),
@@ -1102,7 +1104,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
             if (loadingData)
               Center(
                 child: LoadingAnimationWidget.staggeredDotsWave(
-                  color: Colors.blue,
+                  color: global.theme.primaryColor,
                   size: 50,
                 ),
               ),
@@ -1271,13 +1273,13 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                           filled: true,
                           fillColor: Colors.white,
                         ),
-                        style: const TextStyle(fontSize: 12),
+                        style: TextStyle(fontSize: 12),
                         onSubmitted: (_) => _applyPriceFilter(),
                       ),
                     ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4),
-                      child: Text('→', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Text('→', style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor)),
                     ),
                     Expanded(
                       child: TextField(
@@ -1926,7 +1928,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
 
   Color? _getContainerColor(String selectedBarcode, String itemBarcode, int index) {
     if (selectedBarcode.isNotEmpty && selectedBarcode == itemBarcode) {
-      return isEditMode ? Colors.orange[100] : Colors.cyan[100];
+      return isEditMode ? Colors.orange[100] : global.theme.rowSelectedColor;
     }
     if (_hoverIndex == index) {
       return Colors.blue[50];
@@ -1945,7 +1947,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
       // หน่วยนับเดียว
       return Row(
         children: [
-          Icon(Icons.inventory_2_outlined, size: 12, color: Colors.grey[600]),
+          Icon(Icons.inventory_2_outlined, size: 12, color: global.theme.textSecondaryColor),
           const SizedBox(width: 4),
           Expanded(
             child: Text(
@@ -1994,10 +1996,10 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
           ),
           if (value.allUnitNames.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(left: 16, top: 1),
+              padding: EdgeInsets.only(left: 16, top: 1),
               child: Text(
                 value.allUnitNames,
-                style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 10, color: global.theme.textSecondaryColor),
               ),
             ),
         ],
@@ -2107,9 +2109,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
   Container _buildImageContainer(String imageUri) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.searchBarColor,
         borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: Colors.grey, width: 1),
+        border: Border.all(color: global.theme.textSecondaryColor, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withValues(alpha: 0.5),
@@ -2420,8 +2422,8 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
               decoration: InputDecoration(
                 contentPadding: EdgeInsets.all(10.0),
                 hintText: global.language("must") + label,
-                enabledBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey, width: 0.0),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
                 ),
                 floatingLabelBehavior: FloatingLabelBehavior.always,
                 border: const OutlineInputBorder(),
@@ -2463,9 +2465,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
             textAlign: TextAlign.left,
             controller: unitNameController,
             decoration: InputDecoration(
-              contentPadding: const EdgeInsets.all(10.0),
-              enabledBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.grey, width: 0.0),
+              contentPadding: EdgeInsets.all(10.0),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
               ),
               floatingLabelBehavior: FloatingLabelBehavior.always,
               border: OutlineInputBorder(),
@@ -2539,7 +2541,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
     bool isSelected = false,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(left: 10, right: 10, bottom: 4),
+      padding: EdgeInsets.only(left: 10, right: 10, bottom: 4),
       child: InkWell(
         onTap: isEditMode ? onTap : null,
         child: Container(
@@ -2555,7 +2557,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
               Text(
                 '$label: ',
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: global.theme.textSecondaryColor,
                   fontSize: 12,
                 ),
               ),
@@ -2790,7 +2792,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
         labelText: global.language("food_type"),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(4.0),
-          borderSide: const BorderSide(color: Colors.grey, width: 0.0),
+          borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
         ),
       ),
       child: Row(
@@ -2900,7 +2902,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
         labelText: global.language("vat_type"),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(4.0),
-          borderSide: const BorderSide(color: Colors.grey, width: 0.0),
+          borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
         ),
       ),
       child: Row(
@@ -2962,7 +2964,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
         labelText: global.language("issumpoint"),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(4.0),
-          borderSide: const BorderSide(color: Colors.grey, width: 0.0),
+          borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
         ),
       ),
       child: Row(
@@ -3549,7 +3551,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
             labelText: global.language("product_type"),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(4.0),
-              borderSide: const BorderSide(color: Colors.grey, width: 0.0),
+              borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
             ),
           ),
           child: Column(
@@ -3678,7 +3680,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
               labelText: global.language("material_type"),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(4.0),
-                borderSide: const BorderSide(color: Colors.grey, width: 0.0),
+                borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
               ),
             ),
             child: Row(
@@ -3954,7 +3956,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
               labelText: global.language("product_bom"),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(4.0),
-                borderSide: const BorderSide(color: Colors.grey, width: 0.0),
+                borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
               ),
             ),
             child: Padding(
@@ -4078,10 +4080,10 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
     //                     findProductGroup();
     //                   },
     //                   decoration: InputDecoration(
-    //                     contentPadding: const EdgeInsets.all(10.0),
-    //                     enabledBorder: const OutlineInputBorder(
+    //                     contentPadding: EdgeInsets.all(10.0),
+    //                     enabledBorder: OutlineInputBorder(
     //                       borderSide:
-    //                           BorderSide(color: Colors.grey, width: 0.0),
+    //                           BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
     //                     ),
     //                     floatingLabelBehavior: FloatingLabelBehavior.always,
     //                     suffixIcon: Row(
@@ -4112,9 +4114,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
     //               textAlign: TextAlign.left,
     //               textCapitalization: TextCapitalization.characters,
     //               decoration: InputDecoration(
-    //                 contentPadding: const EdgeInsets.all(10.0),
-    //                 enabledBorder: const OutlineInputBorder(
-    //                   borderSide: BorderSide(color: Colors.grey, width: 0.0),
+    //                 contentPadding: EdgeInsets.all(10.0),
+    //                 enabledBorder: OutlineInputBorder(
+    //                   borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
     //                 ),
     //                 floatingLabelBehavior: FloatingLabelBehavior.always,
     // border: OutlineInputBorder(),
@@ -5297,9 +5299,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                           children: [
                             Text(
                               "${global.language("time_for_sale")} ${mediaIndex + 1}",
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.black,
+                                color: global.theme.textColor,
                               ),
                             ),
                             IconButton(
@@ -5895,9 +5897,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                         );
                       });
                     },
-                    icon: const Icon(Icons.move_up),
+                    icon: Icon(Icons.move_up),
                     focusNode: FocusNode(skipTraversal: true),
-                    color: Colors.blue,
+                    color: global.theme.primaryColor,
                     iconSize: 20,
                   ),
                 if (optionIndex < screenData.options!.length - 1)
@@ -6000,7 +6002,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
         ) {
           List<Widget> choiceRow = [];
           if (choiceList.isNotEmpty) {
-            choiceRow.add(const Divider(color: Colors.black));
+            choiceRow.add(Divider(color: global.theme.textColor));
           }
           choiceRow.add(
             Row(
@@ -6043,9 +6045,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                         );
                       });
                     },
-                    icon: const Icon(Icons.move_up),
+                    icon: Icon(Icons.move_up),
                     focusNode: FocusNode(skipTraversal: true),
-                    color: Colors.blue,
+                    color: global.theme.primaryColor,
                     iconSize: 20,
                   ),
                 if (choiceIndex <
@@ -6139,7 +6141,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                           child: DecoratedBox(
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              border: Border.all(color: Colors.black),
+                              border: Border.all(color: global.theme.textColor),
                               borderRadius: BorderRadius.circular(5),
                               image:
                                   (screenData
@@ -6362,12 +6364,12 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
         if (choiceList.isNotEmpty) {
           optionList.add(
             Container(
-              padding: const EdgeInsets.only(left: 10, right: 10, bottom: 10),
+              padding: EdgeInsets.only(left: 10, right: 10, bottom: 10),
               width: double.infinity,
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.grey.shade200,
-                  border: Border.all(color: Colors.grey),
+                  border: Border.all(color: global.theme.textSecondaryColor),
                   borderRadius: BorderRadius.circular(5),
                 ),
                 width: double.infinity,
@@ -6417,12 +6419,12 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
         }
         formWidgets.add(
           Container(
-            padding: const EdgeInsets.only(left: 10, right: 10, bottom: 10),
+            padding: EdgeInsets.only(left: 10, right: 10, bottom: 10),
             width: double.infinity,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.grey.shade100,
-                border: Border.all(color: Colors.grey),
+                border: Border.all(color: global.theme.textSecondaryColor),
                 borderRadius: BorderRadius.circular(5),
               ),
               width: double.infinity,
@@ -6616,9 +6618,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                       children: [
                         Text(
                           "${global.language("cost_standard")} ${fiexdCostIndex + 1}",
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
-                            color: Colors.black,
+                            color: global.theme.textColor,
                           ),
                         ),
                         IconButton(
@@ -6892,7 +6894,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    border: Border.all(color: Colors.black),
+                    border: Border.all(color: global.theme.textColor),
                     borderRadius: BorderRadius.circular(5),
                     image: (imageWeb != null)
                         ? DecorationImage(
@@ -6917,11 +6919,11 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
     } else {
       formWidgets.add(
         Container(
-          margin: const EdgeInsets.all(8),
+          margin: EdgeInsets.all(8),
           width: double.infinity,
           decoration: BoxDecoration(
             color: colorSelected,
-            border: Border.all(color: Colors.grey),
+            border: Border.all(color: global.theme.textSecondaryColor),
             borderRadius: BorderRadius.circular(5),
           ),
           child: Container(
@@ -6933,7 +6935,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  border: Border.all(color: Colors.grey),
+                  border: Border.all(color: global.theme.textSecondaryColor),
                   borderRadius: BorderRadius.circular(5),
                 ),
                 child: Row(
@@ -7041,6 +7043,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
     }
 
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -7131,7 +7134,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -7192,7 +7195,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -7347,6 +7350,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
       guidListChecked.clear();
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -8147,7 +8151,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                 ? SplitView(
                     gripSize: 8,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.primaryColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

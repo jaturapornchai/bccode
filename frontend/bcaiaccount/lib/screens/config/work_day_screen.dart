@@ -12,9 +12,9 @@ class WorkDayScreen extends StatefulWidget {
 }
 
 class WorkDayScreenState extends State<WorkDayScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   TextEditingController colorController = TextEditingController();
-  Color currentColor = Colors.red;
+  Color currentColor = global.theme.negativeHighlightTextColor;
   String selectGuid = "";
   bool canNotSave = false;
   String time1 = "1";
@@ -314,7 +314,7 @@ class WorkDayScreenState extends State<WorkDayScreen>
                                       FloatingLabelBehavior.always,
                                   border: OutlineInputBorder(),
                                   labelText: global.language("on"),
-                                  labelStyle: const TextStyle(fontSize: 14.0),
+                                  labelStyle: TextStyle(fontSize: 14.0),
                                 ),
                               ),
                             ),
@@ -465,7 +465,7 @@ class WorkDayScreenState extends State<WorkDayScreen>
                                               .theme
                                               .inputTextBoxForceColor,
                                         )
-                                      : const TextStyle(fontSize: 14.0),
+                                      : TextStyle(fontSize: 14.0),
                                 ),
                               ),
                             ),
@@ -478,7 +478,7 @@ class WorkDayScreenState extends State<WorkDayScreen>
                                         onPressed: () {
                                           removeTimeRange(workday.code, index);
                                         },
-                                        icon: const Icon(Icons.delete_outline),
+                                        icon: Icon(Icons.delete_outline),
                                       ),
                                     )
                                   : Container(),
@@ -491,7 +491,7 @@ class WorkDayScreenState extends State<WorkDayScreen>
                               (time.starttime == time.endtime &&
                                   time.endtime != "------")
                               ? Text(
-                                  style: TextStyle(color: Colors.red),
+                                  style: TextStyle(color: global.theme.negativeHighlightTextColor),
                                   " ${global.language("invalid_format")} ",
                                 )
                               : Container(),
@@ -501,8 +501,8 @@ class WorkDayScreenState extends State<WorkDayScreen>
                           child: (time.endtime == "------")
                               ? Text(
                                   global.language("invalid_format"),
-                                  style: const TextStyle(
-                                    color: Color.fromARGB(255, 152, 0, 0),
+                                  style: TextStyle(
+                                    color: global.theme.negativeHighlightTextColor,
                                   ),
                                 )
                               : Container(),
@@ -512,8 +512,8 @@ class WorkDayScreenState extends State<WorkDayScreen>
                           child: (time.endtime.contains("!"))
                               ? Text(
                                   global.language("invalid_format"),
-                                  style: const TextStyle(
-                                    color: Color.fromARGB(255, 152, 0, 0),
+                                  style: TextStyle(
+                                    color: global.theme.negativeHighlightTextColor,
                                   ),
                                 )
                               : Container(),
@@ -523,8 +523,8 @@ class WorkDayScreenState extends State<WorkDayScreen>
                           child: (time.endtime == "-------")
                               ? Text(
                                   global.language("invalid_format"),
-                                  style: const TextStyle(
-                                    color: Color.fromARGB(255, 152, 0, 0),
+                                  style: TextStyle(
+                                    color: global.theme.negativeHighlightTextColor,
                                   ),
                                 )
                               : Container(),
@@ -548,7 +548,7 @@ class WorkDayScreenState extends State<WorkDayScreen>
                   children: [
                     Text(
                       global.language(workday.name),
-                      style: const TextStyle(fontSize: 18),
+                      style: TextStyle(fontSize: 18),
                     ),
                     Switch(
                       value: workday.isactive,
@@ -562,14 +562,14 @@ class WorkDayScreenState extends State<WorkDayScreen>
                 ),
                 Divider(height: 1),
                 Container(
-                  margin: const EdgeInsets.only(top: 5),
+                  margin: EdgeInsets.only(top: 5),
                   alignment: Alignment.centerLeft,
                   child: (!workday.isactive)
                       ? Text(
                           global.language("off"),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 17,
-                            color: Colors.red,
+                            color: global.theme.negativeHighlightTextColor,
                           ),
                         )
                       : null,
@@ -606,7 +606,7 @@ class WorkDayScreenState extends State<WorkDayScreen>
                           },
                           child: Text(
                             global.language("duration"),
-                            style: const TextStyle(color: Colors.blue),
+                            style: TextStyle(color: global.theme.infoHighlightTextColor),
                           ),
                         )
                       : null,
@@ -623,7 +623,7 @@ class WorkDayScreenState extends State<WorkDayScreen>
         gradient: LinearGradient(
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
-          colors: [Colors.blue.shade200, Colors.blue.shade100],
+          colors: [global.theme.infoHighlightColor, global.theme.columnHeaderColor],
         ),
       ),
       child: LayoutBuilder(
@@ -636,7 +636,7 @@ class WorkDayScreenState extends State<WorkDayScreen>
               title: Text(global.language('workday')),
               leading: IconButton(
                 focusNode: FocusNode(skipTraversal: true),
-                icon: const Icon(Icons.arrow_back),
+                icon: Icon(Icons.arrow_back),
                 onPressed: () {
                   Navigator.pop(context);
                 },
@@ -671,7 +671,7 @@ class WorkDayScreenState extends State<WorkDayScreen>
                         );
                       }
                     },
-                    icon: const Icon(Icons.save, size: 26.0),
+                    icon: Icon(Icons.save, size: 26.0),
                   ),
                 ),
               ],
@@ -696,35 +696,35 @@ class WorkDayScreenState extends State<WorkDayScreen>
                   if (state is WorkDaySaveSuccess) {
                     global.showSnackBar(
                       context,
-                      Icon(Icons.save, color: Colors.white),
+                      Icon(Icons.save, color: global.theme.onPrimaryColor),
                       global.language("save_success"),
-                      Colors.blue,
+                      global.theme.infoHighlightTextColor,
                     );
                     loadDataList();
                   }
                   if (state is WorkDaySaveFailed) {
                     global.showSnackBar(
                       context,
-                      Icon(Icons.save, color: Colors.white),
+                      Icon(Icons.save, color: global.theme.onPrimaryColor),
                       global.language("not_success_save ${state.message}"),
-                      Colors.red,
+                      global.theme.negativeHighlightTextColor,
                     );
                   }
                   if (state is WorkDayUpdateSuccess) {
                     global.showSnackBar(
                       context,
-                      Icon(Icons.save, color: Colors.white),
+                      Icon(Icons.save, color: global.theme.onPrimaryColor),
                       global.language("updatesuc"),
-                      Colors.blue,
+                      global.theme.infoHighlightTextColor,
                     );
                     loadDataList();
                   }
                   if (state is WorkDayUpdateFailed) {
                     global.showSnackBar(
                       context,
-                      Icon(Icons.save, color: Colors.white),
+                      Icon(Icons.save, color: global.theme.onPrimaryColor),
                       global.language("not_edit_success ${state.message}"),
-                      Colors.red,
+                      global.theme.negativeHighlightTextColor,
                     );
                   }
                 },

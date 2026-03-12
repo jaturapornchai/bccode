@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -49,6 +49,7 @@ class PromotionScreenState extends State<PromotionScreen>
   bool isKeyUp = false;
   bool isKeyDown = false;
   bool showCheckBox = false;
+  int _hoverIndex = -1;
   bool isEditMode = false;
   PromotionModel screenData = PromotionModel();
   late SplitViewController splitViewController;
@@ -338,6 +339,7 @@ class PromotionScreenState extends State<PromotionScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -407,7 +409,7 @@ class PromotionScreenState extends State<PromotionScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -496,11 +498,8 @@ class PromotionScreenState extends State<PromotionScreen>
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(2),
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              color: global.theme.searchBarColor,
               child: Row(
                 children: [
                   Expanded(
@@ -518,42 +517,28 @@ class PromotionScreenState extends State<PromotionScreen>
                       controller: searchController,
                       decoration: InputDecoration(
                         isDense: true,
-                        contentPadding: const EdgeInsets.only(
-                          top: 0,
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                         border: InputBorder.none,
                         hintText: global.language('search'),
+                        prefixIcon: Icon(Icons.search, size: 20),
+                        prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                       ),
                     ),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const FaIcon(FontAwesomeIcons.font),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataFontSizeChange();
-                      });
-                    },
-                  ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const Icon(Icons.line_weight),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataLineSpaceChange();
-                      });
-                    },
-                  ),
+                  ListFontSizeControl(onChanged: () => setState(() {})),
+                  const SizedBox(width: 4),
+                  if (listData.isNotEmpty)
+                    Text(
+                      '(${listData.length})',
+                      style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
+                    ),
                 ],
               ),
             ),
             Container(color: global.theme.appBarColor, height: 6),
             Container(
               key: headerKey,
-              padding: const EdgeInsets.only(
+              padding: EdgeInsets.only(
                 left: 10,
                 right: 10,
                 top: 5,
@@ -615,7 +600,7 @@ class PromotionScreenState extends State<PromotionScreen>
             if (loadingData)
               Center(
                 child: LoadingAnimationWidget.staggeredDotsWave(
-                  color: Colors.blue,
+                  color: global.theme.primaryColor,
                   size: 50,
                 ),
               ),
@@ -635,14 +620,15 @@ class PromotionScreenState extends State<PromotionScreen>
     }
     // ลบการ add key ออก - keys ถูกสร้างใน LoadSuccess แล้ว
     // listKeys.add(GlobalKey());  // ❌ ตรงนี้ทำให้เกิด infinite loop!
-    bool selected = selectGuid == value.guidfixed;
-    TextStyle textStyle = TextStyle(
-      fontWeight: (selected) ? FontWeight.bold : FontWeight.normal,
-      fontSize: (selected)
-          ? global.deviceConfig.listDataFontSize + 2.0
-          : global.deviceConfig.listDataFontSize,
-    );
-    return GestureDetector(
+    final isSelected = selectGuid == value.guidfixed;
+    TextStyle textStyle = isSelected
+        ? TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w700, color: global.theme.textColor)
+        : TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w400, color: global.theme.textSecondaryColor);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         if (showCheckBox == true) {
           setState(() {
@@ -682,13 +668,7 @@ class PromotionScreenState extends State<PromotionScreen>
       },
       child: Container(
         key: index < listKeys.length ? listKeys[index] : null,
-        decoration: BoxDecoration(
-          color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
-              : (index % 2 == 0)
-              ? global.theme.columnAlternateEvenColor
-              : global.theme.columnAlternateOddColor,
-        ),
+        color: _getContainerColor(value.guidfixed, index),
         padding: EdgeInsets.only(
           left: 10,
           right: 10,
@@ -729,7 +709,20 @@ class PromotionScreenState extends State<PromotionScreen>
           ],
         ),
       ),
+    ),
     );
+  }
+
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
   }
 
   void saveOrUpdateData() {
@@ -1285,7 +1278,7 @@ class PromotionScreenState extends State<PromotionScreen>
               Container(
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: Colors.grey,
+                    color: global.theme.textSecondaryColor,
                     width: 1,
                   ), // Border สีเทา
                   borderRadius: BorderRadius.circular(10), // ขอบมน
@@ -1487,7 +1480,7 @@ class PromotionScreenState extends State<PromotionScreen>
               Container(
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: Colors.grey,
+                    color: global.theme.textSecondaryColor,
                     width: 1,
                   ), // Border สีเทา
                   borderRadius: BorderRadius.circular(10), // ขอบมน
@@ -1633,6 +1626,7 @@ class PromotionScreenState extends State<PromotionScreen>
     }
 
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -1679,7 +1673,7 @@ class PromotionScreenState extends State<PromotionScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -1777,6 +1771,7 @@ class PromotionScreenState extends State<PromotionScreen>
       guidListChecked.clear();
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -1971,7 +1966,7 @@ class PromotionScreenState extends State<PromotionScreen>
                     controller: splitViewController,
                     gripSize: 8,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.primaryColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

@@ -10,7 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:smlaicloud/bloc/product_barcode/product_barcode_bloc.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
@@ -28,7 +28,7 @@ class ProductBarcodeBomScreen extends StatefulWidget {
 }
 
 class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   List<GlobalKey<ImageTooltipState>> tooltipKeys = [];
   late TabController tabController;
   TextEditingController searchController = TextEditingController();
@@ -41,6 +41,7 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
   late ProductBarcodeState blocCurrentState;
   late MediaQueryData queryData;
   int currentListIndex = -1;
+  int _hoverIndex = -1;
   GlobalKey headerKey = GlobalKey();
   bool isKeyUp = false;
   bool isKeyDown = false;
@@ -146,6 +147,7 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -200,7 +202,7 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
             Container(
               padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.searchBarColor,
                 borderRadius: BorderRadius.circular(2),
               ),
               child: Row(
@@ -223,13 +225,15 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
                       controller: searchController,
                       decoration: InputDecoration(
                         isDense: true,
-                        contentPadding: const EdgeInsets.only(
+                        contentPadding: EdgeInsets.only(
                           top: 0,
                           bottom: 0,
                           left: 0,
                           right: 0,
                         ),
                         border: InputBorder.none,
+                        prefixIcon: Icon(Icons.search, size: 20, color: global.theme.iconColor),
+                        prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         hintText: global.language('search'),
                       ),
                     ),
@@ -249,8 +253,8 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
                                 ? Icons.filter_alt_off
                                 : Icons.filter_alt,
                             color: (filterBarcode.branch == false)
-                                ? Colors.black
-                                : Colors.blue,
+                                ? global.theme.iconColor
+                                : global.theme.primaryColor,
                           ),
                         )
                       : Container(),
@@ -265,14 +269,12 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
                       });
                     },
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const FaIcon(FontAwesomeIcons.font),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataFontSizeChange();
-                      });
-                    },
+                  ListFontSizeControl(onChanged: () => setState(() {})),
+                const SizedBox(width: 4),
+                if (listData.isNotEmpty)
+                  Text(
+                    '(${listData.length})',
+                    style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                   ),
                   IconButton(
                     focusNode: FocusNode(skipTraversal: true),
@@ -289,7 +291,7 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
             Container(color: global.theme.appBarColor, height: 6),
             Container(
               key: headerKey,
-              padding: const EdgeInsets.only(
+              padding: EdgeInsets.only(
                 left: 10,
                 right: 10,
                 top: 5,
@@ -302,8 +304,8 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
                     flex: 6,
                     child: Text(
                       global.language("barcode"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                        color: global.theme.textColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -312,8 +314,8 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
                     flex: 10,
                     child: Text(
                       global.language("product_name"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                        color: global.theme.textColor,
                         fontWeight: FontWeight.bold,
                       ),
                       maxLines: 2,
@@ -324,8 +326,8 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
                     flex: 2,
                     child: Text(
                       global.language("unit"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                        color: global.theme.textColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -334,8 +336,8 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
                     flex: 4,
                     child: Text(
                       global.language("item_code"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                        color: global.theme.textColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -344,16 +346,16 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
                     flex: 4,
                     child: Text(
                       global.language("product_group"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                        color: global.theme.textColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                   if (showImage)
-                    const Expanded(
+                    Expanded(
                       flex: 1,
-                      child: Icon(Icons.image, color: Colors.black, size: 12),
+                      child: Icon(Icons.image, color: global.theme.textColor, size: 12),
                     ),
                 ],
               ),
@@ -369,7 +371,7 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
             if (loadingData)
               Center(
                 child: LoadingAnimationWidget.staggeredDotsWave(
-                  color: Colors.blue,
+                  color: global.theme.primaryColor,
                   size: 50,
                 ),
               ),
@@ -454,7 +456,11 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
 
     // ลบการ add key ออก - keys ถูกสร้างใน LoadSuccess แล้ว
     // listKeys.add(GlobalKey());  // ❌ ตรงนี้ทำให้เกิด infinite loop!
-    return GestureDetector(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         setState(() {
           selectGuid = value.guidfixed;
@@ -488,12 +494,13 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
           ],
         ),
       ),
+    ),
     );
   }
 
   Color? _getContainerColor(String selectGuid, String guidfixed, int index) {
     return (selectGuid == guidfixed)
-        ? Colors.cyan[100]
+        ? global.theme.rowSelectedColor
         : (index % 2 == 0)
         ? global.theme.columnAlternateEvenColor
         : global.theme.columnAlternateOddColor;
@@ -580,9 +587,9 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
   Container _buildImageContainer(String imageUri) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.searchBarColor,
         borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: Colors.grey, width: 1),
+        border: Border.all(color: global.theme.textSecondaryColor, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withValues(alpha: 0.5),
@@ -626,13 +633,14 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
       padding: const EdgeInsets.all(0),
       label: Text(
         '${branch.code} - ${global.activeLangName(branch.names)}',
-        style: const TextStyle(fontSize: 12),
+        style: TextStyle(fontSize: 12),
       ),
     );
   }
 
   Widget editScreen({mobileScreen}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -667,6 +675,7 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
     listKeys.clear();
 
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -776,7 +785,7 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
                 ? SplitView(
                     gripSize: 8,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.primaryColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

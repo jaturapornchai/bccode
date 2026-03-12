@@ -281,7 +281,8 @@ class _MasterGroupSelectionScreen extends StatefulWidget {
 }
 
 class _MasterGroupSelectionScreenState
-    extends State<_MasterGroupSelectionScreen> {
+    extends State<_MasterGroupSelectionScreen>
+    with global.ThemeRefreshMixin {
   List<MasterGroupModel> listData = [];
   @override
   Widget build(BuildContext context) {
@@ -293,7 +294,7 @@ class _MasterGroupSelectionScreenState
         title: Text(global.language('select_group_main')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -313,9 +314,9 @@ class _MasterGroupSelectionScreenState
           } else if (state is MasterGroupLoadFailed) {
             global.showSnackBar(
                 context,
-                const Icon(Icons.error, color: Colors.white),
+                Icon(Icons.error, color: global.theme.onPrimaryColor),
                 state.message,
-                Colors.red);
+                global.theme.negativeHighlightTextColor);
           }
         },
         child: GenericSelectionContent<MasterGroupModel>(
@@ -376,7 +377,8 @@ class _MasterGroupSub1SelectionScreen extends StatefulWidget {
 }
 
 class _MasterGroupSub1SelectionScreenState
-    extends State<_MasterGroupSub1SelectionScreen> {
+    extends State<_MasterGroupSub1SelectionScreen>
+    with global.ThemeRefreshMixin {
   List<MasterGroupSub1Model> listData = [];
 
   @override
@@ -389,7 +391,7 @@ class _MasterGroupSub1SelectionScreenState
         title: Text(global.language('select_group_sub1')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -409,9 +411,9 @@ class _MasterGroupSub1SelectionScreenState
           } else if (state is MasterGroupSub1LoadFailed) {
             global.showSnackBar(
                 context,
-                const Icon(Icons.error, color: Colors.white),
+                Icon(Icons.error, color: global.theme.onPrimaryColor),
                 state.message,
-                Colors.red);
+                global.theme.negativeHighlightTextColor);
           }
         },
         child: GenericSelectionContent<MasterGroupSub1Model>(
@@ -474,7 +476,8 @@ class _MasterGroupSub2SelectionScreen extends StatefulWidget {
 }
 
 class _MasterGroupSub2SelectionScreenState
-    extends State<_MasterGroupSub2SelectionScreen> {
+    extends State<_MasterGroupSub2SelectionScreen>
+    with global.ThemeRefreshMixin {
   List<MasterGroupSub2Model> listData = [];
 
   @override
@@ -487,7 +490,7 @@ class _MasterGroupSub2SelectionScreenState
         title: Text(global.language('select_group_sub2')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -507,9 +510,9 @@ class _MasterGroupSub2SelectionScreenState
           } else if (state is MasterGroupSub2LoadFailed) {
             global.showSnackBar(
                 context,
-                const Icon(Icons.error, color: Colors.white),
+                Icon(Icons.error, color: global.theme.onPrimaryColor),
                 state.message,
-                Colors.red);
+                global.theme.negativeHighlightTextColor);
           }
         },
         child: GenericSelectionContent<MasterGroupSub2Model>(
@@ -575,7 +578,8 @@ class _MasterBrandSelectionScreen extends StatefulWidget {
 }
 
 class _MasterBrandSelectionScreenState
-    extends State<_MasterBrandSelectionScreen> {
+    extends State<_MasterBrandSelectionScreen>
+    with global.ThemeRefreshMixin {
   List<MasterBrandModel> listData = [];
 
   @override
@@ -588,7 +592,7 @@ class _MasterBrandSelectionScreenState
         title: Text(global.language('select_brand')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -607,9 +611,9 @@ class _MasterBrandSelectionScreenState
           } else if (state is MasterBrandLoadFailed) {
             global.showSnackBar(
                 context,
-                const Icon(Icons.error, color: Colors.white),
+                Icon(Icons.error, color: global.theme.onPrimaryColor),
                 state.message,
-                Colors.red);
+                global.theme.negativeHighlightTextColor);
           }
         },
         child: GenericSelectionContent<MasterBrandModel>(
@@ -671,7 +675,8 @@ class _MasterCategorySelectionScreen extends StatefulWidget {
 }
 
 class _MasterCategorySelectionScreenState
-    extends State<_MasterCategorySelectionScreen> {
+    extends State<_MasterCategorySelectionScreen>
+    with global.ThemeRefreshMixin {
   List<MasterCategoryModel> listData = [];
 
   @override
@@ -684,7 +689,7 @@ class _MasterCategorySelectionScreenState
         title: Text(global.language('select_category')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -703,9 +708,9 @@ class _MasterCategorySelectionScreenState
           } else if (state is MasterCategoryLoadFailed) {
             global.showSnackBar(
                 context,
-                const Icon(Icons.error, color: Colors.white),
+                Icon(Icons.error, color: global.theme.onPrimaryColor),
                 state.message,
-                Colors.red);
+                global.theme.negativeHighlightTextColor);
           }
         },
         child: GenericSelectionContent<MasterCategoryModel>(
@@ -767,7 +772,8 @@ class _MasterClassSelectionScreen extends StatefulWidget {
 }
 
 class _MasterClassSelectionScreenState
-    extends State<_MasterClassSelectionScreen> {
+    extends State<_MasterClassSelectionScreen>
+    with global.ThemeRefreshMixin {
   List<MasterClassModel> listData = [];
 
   @override
@@ -780,7 +786,7 @@ class _MasterClassSelectionScreenState
         title: Text(global.language('select_class')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -799,9 +805,9 @@ class _MasterClassSelectionScreenState
           } else if (state is MasterClassLoadFailed) {
             global.showSnackBar(
                 context,
-                const Icon(Icons.error, color: Colors.white),
+                Icon(Icons.error, color: global.theme.onPrimaryColor),
                 state.message,
-                Colors.red);
+                global.theme.negativeHighlightTextColor);
           }
         },
         child: GenericSelectionContent<MasterClassModel>(
@@ -863,7 +869,8 @@ class _MasterDesignSelectionScreen extends StatefulWidget {
 }
 
 class _MasterDesignSelectionScreenState
-    extends State<_MasterDesignSelectionScreen> {
+    extends State<_MasterDesignSelectionScreen>
+    with global.ThemeRefreshMixin {
   List<MasterDesignModel> listData = [];
 
   @override
@@ -876,7 +883,7 @@ class _MasterDesignSelectionScreenState
         title: Text(global.language('select_design')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -895,9 +902,9 @@ class _MasterDesignSelectionScreenState
           } else if (state is MasterDesignLoadFailed) {
             global.showSnackBar(
                 context,
-                const Icon(Icons.error, color: Colors.white),
+                Icon(Icons.error, color: global.theme.onPrimaryColor),
                 state.message,
-                Colors.red);
+                global.theme.negativeHighlightTextColor);
           }
         },
         child: GenericSelectionContent<MasterDesignModel>(
@@ -959,7 +966,8 @@ class _MasterGradeSelectionScreen extends StatefulWidget {
 }
 
 class _MasterGradeSelectionScreenState
-    extends State<_MasterGradeSelectionScreen> {
+    extends State<_MasterGradeSelectionScreen>
+    with global.ThemeRefreshMixin {
   List<MasterGradeModel> listData = [];
 
   @override
@@ -972,7 +980,7 @@ class _MasterGradeSelectionScreenState
         title: Text(global.language('select_grade')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -991,9 +999,9 @@ class _MasterGradeSelectionScreenState
           } else if (state is MasterGradeLoadFailed) {
             global.showSnackBar(
                 context,
-                const Icon(Icons.error, color: Colors.white),
+                Icon(Icons.error, color: global.theme.onPrimaryColor),
                 state.message,
-                Colors.red);
+                global.theme.negativeHighlightTextColor);
           }
         },
         child: GenericSelectionContent<MasterGradeModel>(
@@ -1055,7 +1063,8 @@ class _MasterModelSelectionScreen extends StatefulWidget {
 }
 
 class _MasterModelSelectionScreenState
-    extends State<_MasterModelSelectionScreen> {
+    extends State<_MasterModelSelectionScreen>
+    with global.ThemeRefreshMixin {
   List<MasterModelModel> listData = [];
 
   @override
@@ -1068,7 +1077,7 @@ class _MasterModelSelectionScreenState
         title: Text(global.language('select_model')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -1087,9 +1096,9 @@ class _MasterModelSelectionScreenState
           } else if (state is MasterModelLoadFailed) {
             global.showSnackBar(
                 context,
-                const Icon(Icons.error, color: Colors.white),
+                Icon(Icons.error, color: global.theme.onPrimaryColor),
                 state.message,
-                Colors.red);
+                global.theme.negativeHighlightTextColor);
           }
         },
         child: GenericSelectionContent<MasterModelModel>(
@@ -1151,7 +1160,8 @@ class _MasterPatternSelectionScreen extends StatefulWidget {
 }
 
 class _MasterPatternSelectionScreenState
-    extends State<_MasterPatternSelectionScreen> {
+    extends State<_MasterPatternSelectionScreen>
+    with global.ThemeRefreshMixin {
   List<MasterPatternModel> listData = [];
 
   @override
@@ -1164,7 +1174,7 @@ class _MasterPatternSelectionScreenState
         title: Text(global.language('select_pattern')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -1183,9 +1193,9 @@ class _MasterPatternSelectionScreenState
           } else if (state is MasterPatternLoadFailed) {
             global.showSnackBar(
                 context,
-                const Icon(Icons.error, color: Colors.white),
+                Icon(Icons.error, color: global.theme.onPrimaryColor),
                 state.message,
-                Colors.red);
+                global.theme.negativeHighlightTextColor);
           }
         },
         child: GenericSelectionContent<MasterPatternModel>(

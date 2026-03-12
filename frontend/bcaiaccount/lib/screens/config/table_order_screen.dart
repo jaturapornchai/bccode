@@ -17,7 +17,7 @@ class TableOrderScreen extends StatefulWidget {
 }
 
 class TableOrderScreenState extends State<TableOrderScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   TextEditingController searchController = TextEditingController();
   List<DraggableGridItem> draggableGridItemList = [];
   List<ProductBarcodeModel> listData = [];
@@ -66,8 +66,8 @@ class TableOrderScreenState extends State<TableOrderScreen>
       width: 150,
       height: 150,
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey),
+        color: global.theme.cardColor,
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Column(
         children: [
@@ -80,7 +80,7 @@ class TableOrderScreenState extends State<TableOrderScreen>
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     data.number,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -90,7 +90,7 @@ class TableOrderScreenState extends State<TableOrderScreen>
                       global.packName(data.names),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12),
+                      style: TextStyle(fontSize: 12),
                     ),
                   ),
                   Expanded(
@@ -98,7 +98,7 @@ class TableOrderScreenState extends State<TableOrderScreen>
                       "xorder :${data.xorder}",
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12),
+                      style: TextStyle(fontSize: 12),
                     ),
                   ),
                   Expanded(
@@ -106,7 +106,7 @@ class TableOrderScreenState extends State<TableOrderScreen>
                       "zone :${data.zone}",
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12),
+                      style: TextStyle(fontSize: 12),
                     ),
                   ),
                 ],
@@ -127,12 +127,12 @@ class TableOrderScreenState extends State<TableOrderScreen>
           content: Text(global.language('leave_this_screen')),
           actions: <Widget>[
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              style: ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
               onPressed: () => Navigator.pop(context),
               child: Text(global.language('no')),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+              style: ElevatedButton.styleFrom(backgroundColor: global.theme.infoHighlightTextColor),
               onPressed: () {
                 Navigator.pop(context);
                 callBack();
@@ -212,7 +212,7 @@ class TableOrderScreenState extends State<TableOrderScreen>
                         dragPlaceHolder:
                             (List<DraggableGridItem> list, int index) {
                               return PlaceHolderWidget(
-                                child: Container(color: Colors.white),
+                                child: Container(color: global.theme.cardColor),
                               );
                             },
                       ),
@@ -268,7 +268,7 @@ class TableOrderScreenState extends State<TableOrderScreen>
                         dragPlaceHolder:
                             (List<DraggableGridItem> list, int index) {
                               return PlaceHolderWidget(
-                                child: Container(color: Colors.white),
+                                child: Container(color: global.theme.cardColor),
                               );
                             },
                       ),
@@ -313,9 +313,9 @@ class TableOrderScreenState extends State<TableOrderScreen>
                   setState(() {
                     global.showSnackBar(
                       context,
-                      Icon(Icons.edit, color: Colors.white),
+                      Icon(Icons.edit, color: global.theme.onPrimaryColor),
                       global.language('edit_success'),
-                      Colors.blue,
+                      global.theme.infoHighlightTextColor,
                     );
                     tableList = [];
                     isDataChange = false;
@@ -330,9 +330,9 @@ class TableOrderScreenState extends State<TableOrderScreen>
                   setState(() {
                     global.showSnackBar(
                       context,
-                      Icon(Icons.edit, color: Colors.white),
+                      Icon(Icons.edit, color: global.theme.onPrimaryColor),
                       "${global.language('edit_failed')} : ${state.message}",
-                      Colors.red,
+                      global.theme.negativeHighlightTextColor,
                     );
                   });
                 }
@@ -361,7 +361,7 @@ class TableOrderScreenState extends State<TableOrderScreen>
               title: Text(global.language('table_order')),
               leading: IconButton(
                 focusNode: FocusNode(skipTraversal: true),
-                icon: const Icon(Icons.arrow_back),
+                icon: Icon(Icons.arrow_back),
                 onPressed: () {
                   discardData(
                     callBack: () {
@@ -372,27 +372,23 @@ class TableOrderScreenState extends State<TableOrderScreen>
               ),
               actions: [
                 /// save button
-                Padding(
-                  padding: const EdgeInsets.only(right: 20),
-                  child: IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const Icon(Icons.save),
-                    onPressed: () {
-                      List<TableXorderModel> dataSave = [];
-                      for (int i = 0; i < tableList.length; i++) {
-                        dataSave.add(
-                          TableXorderModel(
-                            guidfixed: tableList[i].guidfixed,
-                            xorder: tableList[i].xorder!,
-                          ),
-                        );
-                      }
-
-                      context.read<TableBloc>().add(
-                        TableUpdateXorder(tableModel: dataSave),
+                IconButton(
+                  focusNode: FocusNode(skipTraversal: true),
+                  icon: Icon(Icons.save),
+                  onPressed: () {
+                    List<TableXorderModel> dataSave = [];
+                    for (int i = 0; i < tableList.length; i++) {
+                      dataSave.add(
+                        TableXorderModel(
+                          guidfixed: tableList[i].guidfixed,
+                          xorder: tableList[i].xorder!,
+                        ),
                       );
-                    },
-                  ),
+                    }
+                    context.read<TableBloc>().add(
+                      TableUpdateXorder(tableModel: dataSave),
+                    );
+                  },
                 ),
               ],
             ),

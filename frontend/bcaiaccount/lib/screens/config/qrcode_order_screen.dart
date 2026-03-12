@@ -21,7 +21,7 @@ class QrcodeOrderScreen extends StatefulWidget {
 }
 
 class QrcodeOrderScreenState extends State<QrcodeOrderScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   TextEditingController searchController = TextEditingController();
   List<ProductBarcodeModel> listData = [];
   bool loadingData = false;
@@ -51,7 +51,7 @@ class QrcodeOrderScreenState extends State<QrcodeOrderScreen>
       data: qrData,
       version: QrVersions.auto,
       gapless: false,
-      emptyColor: Colors.white,
+      emptyColor: global.theme.onPrimaryColor,
     ).toImageData(500.0);
 
     // ignore: use_build_context_synchronously
@@ -75,7 +75,7 @@ class QrcodeOrderScreenState extends State<QrcodeOrderScreen>
                   // ignore: use_build_context_synchronously
                   Navigator.of(context).pop();
                 },
-                icon: const Icon(Icons.download),
+                icon: Icon(Icons.download),
                 label: Text(global.language('download')),
               ),
             ],
@@ -216,8 +216,8 @@ class QrcodeOrderScreenState extends State<QrcodeOrderScreen>
             width: 150,
             height: 150,
             decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.grey),
+              color: global.theme.cardColor,
+              border: Border.all(color: global.theme.dividerBorderColor),
             ),
             child: Column(
               children: [
@@ -241,7 +241,7 @@ class QrcodeOrderScreenState extends State<QrcodeOrderScreen>
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               "${global.language('shop_name')} : ${global.getShopName()}",
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -254,8 +254,8 @@ class QrcodeOrderScreenState extends State<QrcodeOrderScreen>
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                                 color: (data.number != "0")
-                                    ? Colors.black
-                                    : Colors.white,
+                                    ? global.theme.textColor
+                                    : global.theme.onPrimaryColor,
                               ),
                             ),
                           ],
@@ -377,7 +377,7 @@ class QrcodeOrderScreenState extends State<QrcodeOrderScreen>
               title: Text(global.language('qr_code_order')),
               leading: IconButton(
                 focusNode: FocusNode(skipTraversal: true),
-                icon: const Icon(Icons.arrow_back),
+                icon: Icon(Icons.arrow_back),
                 onPressed: () {
                   global.gotoMainMenu(context);
                 },
@@ -388,7 +388,7 @@ class QrcodeOrderScreenState extends State<QrcodeOrderScreen>
                   padding: const EdgeInsets.only(right: 10),
                   child: IconButton(
                     focusNode: FocusNode(skipTraversal: true),
-                    icon: const Icon(Icons.print),
+                    icon: Icon(Icons.print),
                     onPressed: () async {
                       await generateAndPrintPdf(tableList);
                     },

@@ -1,7 +1,7 @@
 ﻿import 'package:smlaicloud/bloc/wallet_pay/wallet_pay_bloc.dart';
 import 'package:smlaicloud/model/wallet_model.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -22,7 +22,7 @@ class WalletScreen extends StatefulWidget {
 }
 
 class WalletScreenState extends State<WalletScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   late TabController tabController;
   late DropzoneViewController dropZoneController;
@@ -52,6 +52,7 @@ class WalletScreenState extends State<WalletScreen>
   bool isKeyUp = false;
   bool isKeyDown = false;
   bool showCheckBox = false;
+  int _hoverIndex = -1;
   bool isEditMode = false;
   late SplitViewController splitViewController;
   late WalletModel screenData;
@@ -208,6 +209,7 @@ class WalletScreenState extends State<WalletScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -366,7 +368,7 @@ class WalletScreenState extends State<WalletScreen>
             Container(
               padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.searchBarColor,
                 borderRadius: BorderRadius.circular(2),
               ),
               child: Row(
@@ -389,27 +391,27 @@ class WalletScreenState extends State<WalletScreen>
                       controller: searchController,
                       decoration: InputDecoration(
                         isDense: true,
-                        contentPadding: const EdgeInsets.only(
+                        contentPadding: EdgeInsets.only(
                           top: 0,
                           bottom: 0,
                           left: 0,
                           right: 0,
                         ),
                         border: InputBorder.none,
+                        prefixIcon: Icon(Icons.search, size: 20, color: global.theme.iconColor),
+                        prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         hintText: (kIsWeb)
                             ? "${global.language('search')} (F2)"
                             : global.language('search'),
                       ),
                     ),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const FaIcon(FontAwesomeIcons.font),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataFontSizeChange();
-                      });
-                    },
+                  ListFontSizeControl(onChanged: () => setState(() {})),
+                const SizedBox(width: 4),
+                if (walletListDatas.isNotEmpty)
+                  Text(
+                    '(${walletListDatas.length})',
+                    style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                   ),
                 ],
               ),
@@ -506,7 +508,11 @@ class WalletScreenState extends State<WalletScreen>
     }
     // ลบการ add key ออก - keys ถูกสร้างใน LoadSuccess แล้ว
     // listKeys.add(GlobalKey());  // ❌ ตรงนี้ทำให้เกิด infinite loop!
-    return GestureDetector(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         if (showCheckBox == true) {
           setState(() {
@@ -549,7 +555,7 @@ class WalletScreenState extends State<WalletScreen>
         key: index < listKeys.length ? listKeys[index] : null,
         decoration: BoxDecoration(
           color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
+              ? global.theme.rowSelectedColor
               : (index % 2 == 0)
               ? global.theme.columnAlternateEvenColor
               : global.theme.columnAlternateOddColor,
@@ -593,7 +599,21 @@ class WalletScreenState extends State<WalletScreen>
           ],
         ),
       ),
+    ),
     );
+  }
+
+
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
   }
 
   List<LanguageDataModel> packLanguage() {
@@ -814,7 +834,7 @@ class WalletScreenState extends State<WalletScreen>
         child: SingleChildScrollView(
           controller: editScrollController,
           child: Container(
-            color: Colors.white,
+            color: global.theme.cardColor,
             width: double.infinity,
             padding: const EdgeInsets.all(10),
             child: Column(
@@ -843,7 +863,7 @@ class WalletScreenState extends State<WalletScreen>
                   },
                   decoration: InputDecoration(
                     border: const OutlineInputBorder(),
-                    contentPadding: const EdgeInsets.only(
+                    contentPadding: EdgeInsets.only(
                       left: 10,
                       top: 0,
                       bottom: 0,
@@ -872,7 +892,7 @@ class WalletScreenState extends State<WalletScreen>
                       textAlign: TextAlign.left,
                       controller: fieldTextController[i + 1],
                       decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.only(
+                        contentPadding: EdgeInsets.only(
                           left: 10,
                           top: 0,
                           bottom: 0,
@@ -912,7 +932,7 @@ class WalletScreenState extends State<WalletScreen>
                   },
                   decoration: InputDecoration(
                     border: const OutlineInputBorder(),
-                    contentPadding: const EdgeInsets.only(
+                    contentPadding: EdgeInsets.only(
                       left: 10,
                       top: 0,
                       bottom: 0,
@@ -959,6 +979,7 @@ class WalletScreenState extends State<WalletScreen>
       walletGuidListChecked.clear();
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -978,7 +999,7 @@ class WalletScreenState extends State<WalletScreen>
                     context,
                     Icon(Icons.save, color: Colors.white),
                     global.language("save_success"),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   clearEditData();
                   walletListDatas.clear();
@@ -1002,7 +1023,7 @@ class WalletScreenState extends State<WalletScreen>
                     context,
                     Icon(Icons.edit, color: Colors.white),
                     global.language("edit_success"),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   clearEditData();
                   walletListDatas.clear();
@@ -1030,7 +1051,7 @@ class WalletScreenState extends State<WalletScreen>
                     context,
                     Icon(Icons.delete, color: Colors.white),
                     global.language("delete_success"),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   walletListDatas.clear();
                   clearEditData();
@@ -1047,7 +1068,7 @@ class WalletScreenState extends State<WalletScreen>
                     context,
                     Icon(Icons.delete, color: Colors.white),
                     global.language("not_delete_success"),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   walletListDatas.clear();
                   clearEditData();
@@ -1122,7 +1143,7 @@ class WalletScreenState extends State<WalletScreen>
                     controller: splitViewController,
                     gripSize: 14,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.primaryColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

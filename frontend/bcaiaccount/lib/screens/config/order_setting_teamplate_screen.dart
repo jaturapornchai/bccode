@@ -14,7 +14,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -33,7 +33,7 @@ class OrderTemplateSettingScreen extends StatefulWidget {
 }
 
 class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   late TabController tabController;
   ScrollController editScrollController = ScrollController();
@@ -56,6 +56,7 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
   bool isKeyUp = false;
   bool isKeyDown = false;
   bool showCheckBox = false;
+  int _hoverIndex = -1;
   bool isEditMode = false;
   late OrderTemplateSettingModel screenData;
   late SplitViewController splitViewController;
@@ -452,7 +453,7 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  border: Border.all(color: Colors.black),
+                  border: Border.all(color: global.theme.textColor),
                   borderRadius: BorderRadius.circular(5),
                   image: (imageWeb != null)
                       ? DecorationImage(image: MemoryImage(imageWeb!))
@@ -477,6 +478,7 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -543,7 +545,7 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -634,11 +636,8 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(2),
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              color: global.theme.searchBarColor,
               child: Row(
                 children: [
                   Expanded(
@@ -656,42 +655,28 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
                       controller: searchController,
                       decoration: InputDecoration(
                         isDense: true,
-                        contentPadding: const EdgeInsets.only(
-                          top: 0,
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                         border: InputBorder.none,
                         hintText: global.language('search'),
+                        prefixIcon: Icon(Icons.search, size: 20),
+                        prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                       ),
                     ),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const FaIcon(FontAwesomeIcons.font),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataFontSizeChange();
-                      });
-                    },
-                  ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const Icon(Icons.line_weight),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataLineSpaceChange();
-                      });
-                    },
-                  ),
+                  ListFontSizeControl(onChanged: () => setState(() {})),
+                  const SizedBox(width: 4),
+                  if (listData.isNotEmpty)
+                    Text(
+                      '(${listData.length})',
+                      style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
+                    ),
                 ],
               ),
             ),
             Container(color: global.theme.appBarColor, height: 6),
             Container(
               key: headerKey,
-              padding: const EdgeInsets.only(
+              padding: EdgeInsets.only(
                 left: 10,
                 right: 10,
                 top: 5,
@@ -753,7 +738,7 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
             if (loadingData)
               Center(
                 child: LoadingAnimationWidget.staggeredDotsWave(
-                  color: Colors.blue,
+                  color: global.theme.primaryColor,
                   size: 50,
                 ),
               ),
@@ -777,14 +762,15 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
     }
     // ลบการ add key ออก - keys ถูกสร้างใน LoadSuccess แล้ว
     // listKeys.add(GlobalKey());  // ❌ ตรงนี้ทำให้เกิด infinite loop!
-    bool selected = selectGuid == value.guidfixed;
-    TextStyle textStyle = TextStyle(
-      fontWeight: (selected) ? FontWeight.bold : FontWeight.normal,
-      fontSize: (selected)
-          ? global.deviceConfig.listDataFontSize + 2.0
-          : global.deviceConfig.listDataFontSize,
-    );
-    return GestureDetector(
+    final isSelected = selectGuid == value.guidfixed;
+    TextStyle textStyle = isSelected
+        ? TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w700, color: global.theme.textColor)
+        : TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w400, color: global.theme.textSecondaryColor);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         if (showCheckBox == true) {
           setState(() {
@@ -824,13 +810,7 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
       },
       child: Container(
         key: index < listKeys.length ? listKeys[index] : null,
-        decoration: BoxDecoration(
-          color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
-              : (index % 2 == 0)
-              ? global.theme.columnAlternateEvenColor
-              : global.theme.columnAlternateOddColor,
-        ),
+        color: _getContainerColor(value.guidfixed!, index),
         padding: EdgeInsets.only(
           left: 10,
           right: 10,
@@ -871,7 +851,20 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
           ],
         ),
       ),
+    ),
     );
+  }
+
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
   }
 
   void saveOrUpdateData() {
@@ -1413,12 +1406,12 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
     for (int i = 0; i < screenData.qrcodes!.length; i++) {
       formWidgets.add(
         Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: EdgeInsets.all(8.0),
           child: Container(
             decoration: BoxDecoration(
-              border: Border.all(width: 1, color: Colors.grey),
+              border: Border.all(width: 1, color: global.theme.textSecondaryColor),
               borderRadius: BorderRadius.circular(8),
-              color: Colors.grey[200],
+              color: global.theme.dividerBorderColor,
             ),
             width: double.infinity,
             child: Padding(
@@ -1861,12 +1854,12 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
     for (int i = 0; i < screenData.salechannels!.length; i++) {
       formWidgets.add(
         Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: EdgeInsets.all(8.0),
           child: Container(
             decoration: BoxDecoration(
-              border: Border.all(width: 1, color: Colors.grey),
+              border: Border.all(width: 1, color: global.theme.textSecondaryColor),
               borderRadius: BorderRadius.circular(8),
-              color: Colors.grey[200],
+              color: global.theme.dividerBorderColor,
             ),
             width: double.infinity,
             child: Padding(
@@ -2030,6 +2023,7 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
     }
 
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -2076,7 +2070,7 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: global.theme.primaryColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -2173,8 +2167,8 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
             screenData.qrcodes![i].qrcode = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -2206,8 +2200,8 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
             screenData.qrcodes![i].apikey = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -2233,8 +2227,8 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
             screenData.qrcodes![i].billerCode = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -2260,8 +2254,8 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
             screenData.qrcodes![i].billerID = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -2287,8 +2281,8 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
             screenData.qrcodes![i].storeID = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -2314,8 +2308,8 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
             screenData.qrcodes![i].terminalID = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -2341,8 +2335,8 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
             screenData.qrcodes![i].merchantName = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -2368,8 +2362,8 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
             screenData.qrcodes![i].accessCode = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -2395,8 +2389,8 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
             screenData.qrcodes![i].bankcharge = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -2422,8 +2416,8 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
             screenData.qrcodes![i].customercharge = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -2529,8 +2523,8 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
             screenData.qrcodes![i].apikey = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -2562,8 +2556,8 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
             screenData.qrcodes![i].apikey = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -2593,8 +2587,8 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
             screenData.qrcodes![i].host = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -2618,8 +2612,8 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
             screenData.qrcodes![i].appid = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -2645,8 +2639,8 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
             screenData.qrcodes![i].apikey = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -2678,8 +2672,8 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
             screenData.qrcodes![i].apikey = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -2705,8 +2699,8 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
             screenData.qrcodes![i].accessCode = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -2730,8 +2724,8 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
             screenData.qrcodes![i].token = value;
           },
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.only(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.only(
               left: 10,
               top: 0,
               bottom: 0,
@@ -2827,6 +2821,7 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
       guidListChecked.clear();
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -3030,7 +3025,7 @@ class OrderTemplateSettingScreenState extends State<OrderTemplateSettingScreen>
                     controller: splitViewController,
                     gripSize: 8,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.primaryColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

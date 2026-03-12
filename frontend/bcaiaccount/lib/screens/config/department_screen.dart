@@ -5,7 +5,7 @@ import 'package:smlaicloud/bloc/department/department_bloc.dart';
 import 'package:smlaicloud/model/company_branch_model.dart';
 import 'package:smlaicloud/model/department_model.dart';
 import 'package:smlaicloud/screen_search/company_branch_search_screen.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,7 +23,7 @@ class DepartmentScreen extends StatefulWidget {
 }
 
 class DepartmentScreenState extends State<DepartmentScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   late TabController tabController;
   ScrollController editScrollController = ScrollController();
@@ -53,6 +53,7 @@ class DepartmentScreenState extends State<DepartmentScreen>
   global.ScreenEventEnum screenEvent = global.ScreenEventEnum.list;
   late SplitViewController splitViewController;
   final debouncer = global.Debouncer(1000);
+  int _hoverIndex = -1;
 
   String selectCompanyBranchGuid = "";
   String selectCompanyBranchCode = "";
@@ -218,6 +219,7 @@ class DepartmentScreenState extends State<DepartmentScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -225,7 +227,7 @@ class DepartmentScreenState extends State<DepartmentScreen>
         title: Text(global.language('department')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             discardData(
               callBack: () {
@@ -237,102 +239,93 @@ class DepartmentScreenState extends State<DepartmentScreen>
           },
         ),
         actions: <Widget>[
-          const ManualButton(path: 'settings-department'),
-          Padding(
-            padding: EdgeInsets.only(right: 20.0),
-            child: IconButton(
-              focusNode: FocusNode(skipTraversal: true),
-              onPressed: () {
-                discardData(
-                  callBack: () {
-                    setState(() {
-                      if (showCheckBox) {
-                        showCheckBox = false;
-                        departmentGuidListChecked.clear();
-                      } else {
-                        showCheckBox = true;
-                        global.showSnackBar(
-                          context,
-                          Icon(Icons.delete, color: Colors.white),
-                          global.language("choose_item_delete"),
-                          Colors.blue,
-                        );
-                      }
-                    });
-                  },
-                );
-              },
-              icon: (showCheckBox)
-                  ? const Icon(Icons.close)
-                  : const Icon(Icons.check_box),
-            ),
-          ),
-          if (departmentGuidListChecked.isNotEmpty)
-            Padding(
-              padding: EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () {
-                  showDialog<String>(
-                    context: context,
-                    builder: (BuildContext context) => AlertDialog(
-                      title: Text(global.language('confirm_delete')),
-                      actions: <Widget>[
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: global.theme.buttonNoColor,
-                          ),
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(global.language('no')),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: global.theme.buttonYesColor,
-                          ),
-                          onPressed: () {
-                            Navigator.pop(context);
-                            deleteDataMany();
-                          },
-                          child: Text(global.language('confirm')),
-                        ),
-                      ],
-                    ),
-                  );
-                  setState(() {});
-                },
-                icon: const Icon(Icons.delete),
-              ),
-            ),
-          Padding(
-            padding: EdgeInsets.only(right: 20.0),
-            child: IconButton(
-              focusNode: FocusNode(skipTraversal: true),
-              onPressed: selectCompanyBranchGuid.isNotEmpty
-                  ? () {
-                      discardData(
-                        callBack: () {
-                          setState(() {
-                            changeScreenEvent(global.ScreenEventEnum.add);
-                            selectCode = "";
-                            showCheckBox = false;
-                            isChange = false;
-                            clearEditData();
-                            headerEdit = global.language("append");
-                            isSaveAllow = true;
-                            WidgetsBinding.instance.addPostFrameCallback((
-                              timeStamp,
-                            ) {
-                              tabController.animateTo(1);
-                              fieldFocusNodes[0].focusNode.requestFocus();
-                            });
-                          });
-                        },
+          IconButton(
+            focusNode: FocusNode(skipTraversal: true),
+            onPressed: () {
+              discardData(
+                callBack: () {
+                  setState(() {
+                    if (showCheckBox) {
+                      showCheckBox = false;
+                      departmentGuidListChecked.clear();
+                    } else {
+                      showCheckBox = true;
+                      global.showSnackBar(
+                        context,
+                        Icon(Icons.delete, color: global.theme.onPrimaryColor),
+                        global.language("choose_item_delete"),
+                        global.theme.infoHighlightTextColor,
                       );
                     }
-                  : null,
-              icon: const Icon(Icons.add),
-            ),
+                  });
+                },
+              );
+            },
+            icon: (showCheckBox)
+                ? Icon(Icons.close)
+                : Icon(Icons.check_box),
           ),
+          if (departmentGuidListChecked.isNotEmpty)
+            IconButton(
+              focusNode: FocusNode(skipTraversal: true),
+              onPressed: () {
+                showDialog<String>(
+                  context: context,
+                  builder: (BuildContext context) => AlertDialog(
+                    title: Text(global.language('confirm_delete')),
+                    actions: <Widget>[
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: global.theme.buttonNoColor,
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(global.language('no')),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: global.theme.buttonYesColor,
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          deleteDataMany();
+                        },
+                        child: Text(global.language('confirm')),
+                      ),
+                    ],
+                  ),
+                );
+                setState(() {});
+              },
+              icon: Icon(Icons.delete),
+            ),
+          IconButton(
+            focusNode: FocusNode(skipTraversal: true),
+            onPressed: selectCompanyBranchGuid.isNotEmpty
+                ? () {
+                    discardData(
+                      callBack: () {
+                        setState(() {
+                          changeScreenEvent(global.ScreenEventEnum.add);
+                          selectCode = "";
+                          showCheckBox = false;
+                          isChange = false;
+                          clearEditData();
+                          headerEdit = global.language("append");
+                          isSaveAllow = true;
+                          WidgetsBinding.instance.addPostFrameCallback((
+                            timeStamp,
+                          ) {
+                            tabController.animateTo(1);
+                            fieldFocusNodes[0].focusNode.requestFocus();
+                          });
+                        });
+                      },
+                    );
+                  }
+                : null,
+            icon: Icon(Icons.add),
+          ),
+          const ManualButton(path: 'settings-department'),
         ],
       ),
       body: Column(
@@ -385,28 +378,25 @@ class DepartmentScreenState extends State<DepartmentScreen>
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline, color: Colors.amber, size: 20),
+                  Icon(Icons.info_outline, color: Colors.amber, size: 20),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       global.language("please_select_company_branch").replaceAll("*", "").trim(),
-                      style: const TextStyle(color: Colors.brown, fontSize: 13),
+                      style: TextStyle(color: Colors.brown, fontSize: 13),
                     ),
                   ),
                 ],
               ),
             ),
           Container(
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(2),
-            ),
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            color: global.theme.searchBarColor,
             child: Row(
               children: [
                 Expanded(
-                  child: TextFormField(
-                    onFieldSubmitted: (value) {
+                  child: TextField(
+                    onSubmitted: (value) {
                       searchFocusNode.requestFocus();
                     },
                     onChanged: (value) {
@@ -422,35 +412,18 @@ class DepartmentScreenState extends State<DepartmentScreen>
                     controller: searchController,
                     decoration: InputDecoration(
                       isDense: true,
-                      contentPadding: const EdgeInsets.only(
-                        top: 0,
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                       border: InputBorder.none,
                       hintText: global.language('search'),
+                      prefixIcon: Icon(Icons.search, size: 20),
+                      prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                     ),
                   ),
                 ),
-                IconButton(
-                  focusNode: FocusNode(skipTraversal: true),
-                  icon: const FaIcon(FontAwesomeIcons.font),
-                  onPressed: () async {
-                    setState(() {
-                      global.listDataFontSizeChange();
-                    });
-                  },
-                ),
-                IconButton(
-                  focusNode: FocusNode(skipTraversal: true),
-                  icon: const Icon(Icons.line_weight),
-                  onPressed: () async {
-                    setState(() {
-                      global.listDataLineSpaceChange();
-                    });
-                  },
-                ),
+                ListFontSizeControl(onChanged: () => setState(() {})),
+                const SizedBox(width: 4),
+                if (departmentList.isNotEmpty)
+                  Text('(${departmentList.length})', style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor)),
               ],
             ),
           ),
@@ -587,6 +560,20 @@ class DepartmentScreenState extends State<DepartmentScreen>
     });
   }
 
+  Color _getContainerColor(String itemCode, int index) {
+    if (selectCode.isNotEmpty && selectCode == itemCode) {
+      return (screenEvent == global.ScreenEventEnum.edit)
+          ? global.theme.rowEditColor
+          : global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
+  }
+
   Widget listObject(int index, DepartmentModel value, bool showCheckBox) {
     bool isCheck = false;
     for (int i = 0; i < departmentGuidListChecked.length; i++) {
@@ -595,101 +582,97 @@ class DepartmentScreenState extends State<DepartmentScreen>
         break;
       }
     }
-    // ลบการ add key ออก - keys ถูกสร้างใน LoadSuccess แล้ว
-    // listKeys.add(GlobalKey());  // ❌ ตรงนี้ทำให้เกิด infinite loop!
-    bool selected = selectCode == value.code;
-    TextStyle textStyle = TextStyle(
-      fontWeight: (selected) ? FontWeight.bold : FontWeight.normal,
-      fontSize: (selected)
-          ? global.deviceConfig.listDataFontSize + 2.0
-          : global.deviceConfig.listDataFontSize,
-    );
-    return GestureDetector(
-      onTap: () {
-        if (showCheckBox == true) {
-          setState(() {
-            selectCode = value.code;
-            if (isCheck == true) {
-              departmentGuidListChecked.remove(value.code);
-            } else {
-              departmentGuidListChecked.add(value.code);
-            }
-            global.showSnackBar(
-              context,
-              Icon(Icons.check, color: Colors.white),
-              "${global.language("chosen")} ${departmentGuidListChecked.length} ${global.language("list")}",
-              Colors.blue,
-            );
-          });
-        } else {
-          setState(() {
-            discardData(
-              callBack: () {
-                isSaveAllow = false;
-                changeScreenEvent(global.ScreenEventEnum.list);
-                selectCode = value.code;
-                getData(selectCode);
-                //searchFocusNode.requestFocus();
-                WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-                  tabController.animateTo(1);
-                });
-              },
-            );
-          });
-        }
-      },
-      onDoubleTap: () {
-        if (showCheckBox == false) {
-          switchToEdit(value);
-        }
-      },
-      child: Container(
-        key: index < listKeys.length ? listKeys[index] : null,
-        decoration: BoxDecoration(
-          color: (selectCode == value.code)
-              ? Colors.cyan[100]
-              : (index % 2 == 0)
-              ? global.theme.columnAlternateEvenColor
-              : global.theme.columnAlternateOddColor,
-        ),
-        padding: EdgeInsets.only(
-          left: 10,
-          right: 10,
-          top: global.deviceConfig.listDataLineSpace,
-          bottom: global.deviceConfig.listDataLineSpace,
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 5,
-              child: Text(
-                value.code,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: textStyle,
-              ),
-            ),
-            Expanded(
-              flex: 10,
-              child: Text(
-                global.packName(value.names),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: textStyle,
-              ),
-            ),
-            if (showCheckBox)
+    final isSelected = selectCode == value.code;
+    TextStyle textStyle = isSelected
+        ? TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w700, color: global.theme.textColor)
+        : TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w400, color: global.theme.textSecondaryColor);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
+        onTap: () {
+          if (showCheckBox == true) {
+            setState(() {
+              selectCode = value.code;
+              if (isCheck == true) {
+                departmentGuidListChecked.remove(value.code);
+              } else {
+                departmentGuidListChecked.add(value.code);
+              }
+              global.showSnackBar(
+                context,
+                Icon(Icons.check, color: global.theme.onPrimaryColor),
+                "${global.language("chosen")} ${departmentGuidListChecked.length} ${global.language("list")}",
+                global.theme.infoHighlightTextColor,
+              );
+            });
+          } else {
+            setState(() {
+              discardData(
+                callBack: () {
+                  isSaveAllow = false;
+                  changeScreenEvent(global.ScreenEventEnum.list);
+                  selectCode = value.code;
+                  getData(selectCode);
+                  //searchFocusNode.requestFocus();
+                  WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                    tabController.animateTo(1);
+                  });
+                },
+              );
+            });
+          }
+        },
+        onDoubleTap: () {
+          if (showCheckBox == false) {
+            switchToEdit(value);
+          }
+        },
+        child: Container(
+          key: index < listKeys.length ? listKeys[index] : null,
+          decoration: BoxDecoration(
+            color: _getContainerColor(value.code, index),
+          ),
+          padding: EdgeInsets.only(
+            left: 10,
+            right: 10,
+            top: global.deviceConfig.listDataLineSpace,
+            bottom: global.deviceConfig.listDataLineSpace,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Expanded(
-                flex: 1,
-                child: (isCheck)
-                    ? Icon(
-                        Icons.check,
-                        size: global.deviceConfig.listDataFontSize,
-                      )
-                    : Container(),
+                flex: 5,
+                child: Text(
+                  value.code,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: textStyle,
+                ),
               ),
-          ],
+              Expanded(
+                flex: 10,
+                child: Text(
+                  global.packName(value.names),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: textStyle,
+                ),
+              ),
+              if (showCheckBox)
+                Expanded(
+                  flex: 1,
+                  child: (isCheck)
+                      ? Icon(
+                          Icons.check,
+                          size: global.deviceConfig.listDataFontSize,
+                        )
+                      : Container(),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -722,9 +705,9 @@ class DepartmentScreenState extends State<DepartmentScreen>
     if (errorList.isNotEmpty) {
       global.showSnackBar(
         context,
-        Icon(Icons.error, color: Colors.white),
+        Icon(Icons.error, color: global.theme.onPrimaryColor),
         "${global.language("not_success_save")} ${errorList.join(", ")}",
-        Colors.red,
+        global.theme.negativeHighlightTextColor,
       );
       return false;
     }
@@ -853,7 +836,7 @@ class DepartmentScreenState extends State<DepartmentScreen>
         leading: mobileScreen
             ? IconButton(
                 focusNode: FocusNode(skipTraversal: true),
-                icon: const Icon(Icons.arrow_back),
+                icon: Icon(Icons.arrow_back),
                 onPressed: () async {
                   showCheckBox = false;
                   discardData(
@@ -870,70 +853,61 @@ class DepartmentScreenState extends State<DepartmentScreen>
         title: Text(headerEdit + global.language("department")),
         actions: <Widget>[
           if (selectCode.isNotEmpty)
-            Padding(
-              padding: EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () {
-                  showCheckBox = false;
-                  showDialog<String>(
-                    context: context,
-                    builder: (BuildContext context) => AlertDialog(
-                      title: Text(global.language('delete_confirm')),
-                      actions: <Widget>[
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: global.theme.buttonNoColor,
-                          ),
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(global.language('no')),
+            IconButton(
+              focusNode: FocusNode(skipTraversal: true),
+              onPressed: () {
+                showCheckBox = false;
+                showDialog<String>(
+                  context: context,
+                  builder: (BuildContext context) => AlertDialog(
+                    title: Text(global.language('delete_confirm')),
+                    actions: <Widget>[
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: global.theme.buttonNoColor,
                         ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: global.theme.buttonYesColor,
-                          ),
-                          onPressed: () {
-                            Navigator.pop(context);
-                            deleteData(selectCode);
-                            // context.read<DepartmentBloc>().add(
-                            //     DepartmentDelete(guid: selectCode));
-                          },
-                          child: Text(global.language('confirm')),
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(global.language('no')),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: global.theme.buttonYesColor,
                         ),
-                      ],
-                    ),
-                  );
-                  setState(() {});
-                },
-                icon: const Icon(Icons.delete),
-              ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          deleteData(selectCode);
+                          // context.read<DepartmentBloc>().add(
+                          //     DepartmentDelete(guid: selectCode));
+                        },
+                        child: Text(global.language('confirm')),
+                      ),
+                    ],
+                  ),
+                );
+                setState(() {});
+              },
+              icon: Icon(Icons.delete),
             ),
           if (isSaveAllow == false && selectCode.trim().isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () {
-                  showCheckBox = false;
-                  switchToEdit(
-                    listData[listData.indexOf(
-                      listData.firstWhere(
-                        (element) => element.code == selectCode,
-                      ),
-                    )],
-                  );
-                },
-                icon: const Icon(Icons.edit),
-              ),
+            IconButton(
+              focusNode: FocusNode(skipTraversal: true),
+              onPressed: () {
+                showCheckBox = false;
+                switchToEdit(
+                  listData[listData.indexOf(
+                    listData.firstWhere(
+                      (element) => element.code == selectCode,
+                    ),
+                  )],
+                );
+              },
+              icon: Icon(Icons.edit),
             ),
           if (isSaveAllow == true)
-            Padding(
-              padding: const EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () => saveOrUpdateData(),
-                icon: const Icon(Icons.save),
-              ),
+            IconButton(
+              focusNode: FocusNode(skipTraversal: true),
+              onPressed: () => saveOrUpdateData(),
+              icon: Icon(Icons.save),
             ),
         ],
       ),
@@ -956,7 +930,7 @@ class DepartmentScreenState extends State<DepartmentScreen>
             child: SingleChildScrollView(
               controller: editScrollController,
               child: Container(
-                color: Colors.white,
+                color: global.theme.cardColor,
                 width: double.infinity,
                 padding: const EdgeInsets.all(10),
                 child: Column(
@@ -985,15 +959,15 @@ class DepartmentScreenState extends State<DepartmentScreen>
                           );
                         },
                         decoration: InputDecoration(
-                          border: const OutlineInputBorder(),
-                      contentPadding: const EdgeInsets.only(
+                          border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.only(
                         left: 10,
                         top: 0,
                         bottom: 0,
                         right: 10,
                       ),
-                      enabledBorder: const OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.grey, width: 0.0),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
                       ),
                       floatingLabelBehavior: FloatingLabelBehavior.always,
                       labelText: global.language("department_code"),
@@ -1019,15 +993,15 @@ class DepartmentScreenState extends State<DepartmentScreen>
                         textAlign: TextAlign.left,
                         controller: fieldTextController[i + 1],
                         decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.only(
+                          contentPadding: EdgeInsets.only(
                             left: 10,
                             top: 0,
                             bottom: 0,
                             right: 10,
                           ),
-                          enabledBorder: const OutlineInputBorder(
+                          enabledBorder: OutlineInputBorder(
                             borderSide: BorderSide(
-                              color: Colors.grey,
+                              color: global.theme.dividerBorderColor,
                               width: 0.0,
                             ),
                           ),
@@ -1080,6 +1054,7 @@ class DepartmentScreenState extends State<DepartmentScreen>
       departmentGuidListChecked.clear();
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -1130,9 +1105,9 @@ class DepartmentScreenState extends State<DepartmentScreen>
                     setState(() {
                       global.showSnackBar(
                         context,
-                        Icon(Icons.save, color: Colors.white),
+                        Icon(Icons.save, color: global.theme.onPrimaryColor),
                         global.language("save_success"),
-                        Colors.blue,
+                        global.theme.infoHighlightTextColor,
                       );
                       clearEditData();
                       isSaveAllow = false;
@@ -1152,7 +1127,7 @@ class DepartmentScreenState extends State<DepartmentScreen>
                     controller: splitViewController,
                     gripSize: 14,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.infoHighlightTextColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

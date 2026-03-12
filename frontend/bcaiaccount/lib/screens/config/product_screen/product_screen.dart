@@ -9,7 +9,7 @@ import 'package:smlaicloud/global.dart' as global;
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:split_view/split_view.dart';
 import 'package:translator/translator.dart';
@@ -22,7 +22,7 @@ class ProductScreen extends StatefulWidget {
 }
 
 class ProductScreenState extends State<ProductScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   late ProductScreenEdit dataEdit;
   late TabController tabController;
   GlobalKey<ProductScreenEditState> dataEditState = GlobalKey();
@@ -48,6 +48,7 @@ class ProductScreenState extends State<ProductScreen>
   bool isEditMode = false;
   final debouncer = global.Debouncer(1000);
   bool loadingData = false;
+  int _hoverIndex = -1;
   late SplitViewController splitViewController;
 
   @override
@@ -118,12 +119,12 @@ class ProductScreenState extends State<ProductScreen>
             content: Text(global.language('leave_this_screen')),
             actions: <Widget>[
               ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                style: ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
                 onPressed: () => Navigator.pop(context),
                 child: Text(global.language('no')),
               ),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                style: ElevatedButton.styleFrom(backgroundColor: global.theme.infoHighlightTextColor),
                 onPressed: () {
                   Navigator.pop(context);
                   callBack();
@@ -156,12 +157,12 @@ class ProductScreenState extends State<ProductScreen>
           content: Text(global.language('leave_this_screen')),
           actions: <Widget>[
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              style: ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
               onPressed: () => Navigator.pop(context),
               child: Text(global.language('no')),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+              style: ElevatedButton.styleFrom(backgroundColor: global.theme.infoHighlightTextColor),
               onPressed: () {
                 Navigator.pop(context);
                 callBack();
@@ -254,6 +255,7 @@ class ProductScreenState extends State<ProductScreen>
 
   Widget listScreen() {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -261,7 +263,7 @@ class ProductScreenState extends State<ProductScreen>
         title: Text(global.language('product')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             dataChecker(
               callBack: () {
@@ -271,84 +273,75 @@ class ProductScreenState extends State<ProductScreen>
           },
         ),
         actions: <Widget>[
-          Padding(
-            padding: EdgeInsets.only(right: 20.0),
-            child: IconButton(
-              focusNode: FocusNode(skipTraversal: true),
-              onPressed: () {
-                discardDataEvent(
-                  callBack: () {
-                    setState(() {
-                      if (showCheckBox) {
-                        showCheckBox = false;
-                        guidListChecked.clear();
-                      } else {
-                        showCheckBox = true;
-                        global.showSnackBar(
-                          context,
-                          Icon(Icons.delete, color: Colors.white),
-                          global.language("choose_item_delete"),
-                          Colors.blue,
-                        );
-                      }
-                    });
-                  },
-                );
-              },
-              icon: (showCheckBox)
-                  ? const Icon(Icons.close)
-                  : const Icon(Icons.check_box),
-            ),
+          IconButton(
+            focusNode: FocusNode(skipTraversal: true),
+            onPressed: () {
+              discardDataEvent(
+                callBack: () {
+                  setState(() {
+                    if (showCheckBox) {
+                      showCheckBox = false;
+                      guidListChecked.clear();
+                    } else {
+                      showCheckBox = true;
+                      global.showSnackBar(
+                        context,
+                        Icon(Icons.delete, color: global.theme.onPrimaryColor),
+                        global.language("choose_item_delete"),
+                        global.theme.infoHighlightTextColor,
+                      );
+                    }
+                  });
+                },
+              );
+            },
+            icon: (showCheckBox)
+                ? Icon(Icons.close)
+                : Icon(Icons.check_box),
           ),
           if (guidListChecked.isNotEmpty)
-            Padding(
-              padding: EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () {
-                  showDialog<String>(
-                    context: context,
-                    builder: (BuildContext context) => AlertDialog(
-                      title: Text(global.language('confirm_delete')),
-                      actions: <Widget>[
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                          ),
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(global.language('no')),
+            IconButton(
+              focusNode: FocusNode(skipTraversal: true),
+              onPressed: () {
+                showDialog<String>(
+                  context: context,
+                  builder: (BuildContext context) => AlertDialog(
+                    title: Text(global.language('confirm_delete')),
+                    actions: <Widget>[
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: global.theme.negativeHighlightTextColor,
                         ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                          ),
-                          onPressed: () {
-                            Navigator.pop(context);
-                            context.read<ProductBloc>().add(
-                              ProductDeleteMany(guid: guidListChecked),
-                            );
-                          },
-                          child: Text(global.language('delete')),
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(global.language('no')),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: global.theme.infoHighlightTextColor,
                         ),
-                      ],
-                    ),
-                  );
-                  setState(() {});
-                },
-                icon: const Icon(Icons.delete),
-              ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          context.read<ProductBloc>().add(
+                            ProductDeleteMany(guid: guidListChecked),
+                          );
+                        },
+                        child: Text(global.language('delete')),
+                      ),
+                    ],
+                  ),
+                );
+                setState(() {});
+              },
+              icon: Icon(Icons.delete),
             ),
           if (showCheckBox == false)
             /// เพิ่มข้อมูลใหม่
-            Padding(
-              padding: const EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () {
-                  addNewData(true);
-                },
-                icon: const Icon(Icons.add),
-              ),
+            IconButton(
+              focusNode: FocusNode(skipTraversal: true),
+              onPressed: () {
+                addNewData(true);
+              },
+              icon: Icon(Icons.add),
             ),
         ],
       ),
@@ -393,58 +386,38 @@ class ProductScreenState extends State<ProductScreen>
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(5),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        onFieldSubmitted: (value) {
-                          searchFocusNode.requestFocus();
-                        },
-                        onChanged: (value) {
-                          debouncer.run(() {
-                            loadDataList(true, value);
-                          });
-                        },
-                        autofocus: false,
-                        focusNode: searchFocusNode,
-                        controller: searchController,
-                        decoration: InputDecoration(
-                          isDense: true,
-                          contentPadding: const EdgeInsets.only(
-                            top: 10,
-                            bottom: 10,
-                          ),
-                          border: InputBorder.none,
-                          hintText: global.language('search'),
-                        ),
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              color: global.theme.searchBarColor,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      onSubmitted: (value) {
+                        searchFocusNode.requestFocus();
+                      },
+                      onChanged: (value) {
+                        debouncer.run(() {
+                          loadDataList(true, value);
+                        });
+                      },
+                      autofocus: false,
+                      focusNode: searchFocusNode,
+                      controller: searchController,
+                      decoration: InputDecoration(
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                        border: InputBorder.none,
+                        hintText: global.language('search'),
+                        prefixIcon: Icon(Icons.search, size: 20),
+                        prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                       ),
                     ),
-                    IconButton(
-                      focusNode: FocusNode(skipTraversal: true),
-                      icon: const FaIcon(FontAwesomeIcons.font),
-                      onPressed: () async {
-                        setState(() {
-                          global.listDataFontSizeChange();
-                        });
-                      },
-                    ),
-                    IconButton(
-                      focusNode: FocusNode(skipTraversal: true),
-                      icon: const Icon(Icons.line_weight),
-                      onPressed: () async {
-                        setState(() {
-                          global.listDataLineSpaceChange();
-                        });
-                      },
-                    ),
-                  ],
-                ),
+                  ),
+                  ListFontSizeControl(onChanged: () => setState(() {})),
+                  const SizedBox(width: 4),
+                  if (listData.isNotEmpty)
+                    Text('(${listData.length})', style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor)),
+                ],
               ),
             ),
             Container(color: global.theme.appBarColor, height: 6),
@@ -463,7 +436,7 @@ class ProductScreenState extends State<ProductScreen>
                     child: Text(
                       global.language("product_code"),
                       style: TextStyle(
-                        color: Colors.black,
+                        color: global.theme.textColor,
                         fontWeight: FontWeight.bold,
                         fontSize: global.deviceConfig.listDataFontSize + 2,
                       ),
@@ -474,7 +447,7 @@ class ProductScreenState extends State<ProductScreen>
                     child: Text(
                       global.language("product_name"),
                       style: TextStyle(
-                        color: Colors.black,
+                        color: global.theme.textColor,
                         fontWeight: FontWeight.bold,
                         fontSize: global.deviceConfig.listDataFontSize + 2,
                       ),
@@ -483,9 +456,9 @@ class ProductScreenState extends State<ProductScreen>
                     ),
                   ),
                   if (showCheckBox)
-                    const Expanded(
+                    Expanded(
                       flex: 1,
-                      child: Icon(Icons.check, color: Colors.black, size: 12),
+                      child: Icon(Icons.check, color: global.theme.textColor, size: 12),
                     ),
                 ],
               ),
@@ -506,7 +479,7 @@ class ProductScreenState extends State<ProductScreen>
             if (loadingData)
               Center(
                 child: LoadingAnimationWidget.staggeredDotsWave(
-                  color: Colors.blue,
+                  color: global.theme.infoHighlightTextColor,
                   size: 50,
                 ),
               ),
@@ -524,6 +497,15 @@ class ProductScreenState extends State<ProductScreen>
     });
   }
 
+  Color _getContainerColor(int index, bool isCheck, bool selected) {
+    if (isCheck) return global.theme.negativeHighlightColor;
+    if (selected) return global.theme.rowSelectedColor;
+    if (_hoverIndex == index) return global.theme.rowHoverColor;
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
+  }
+
   Widget listObject(int index, ProductModel value, bool showCheckBox) {
     bool isCheck = false;
     for (int i = 0; i < guidListChecked.length; i++) {
@@ -532,90 +514,87 @@ class ProductScreenState extends State<ProductScreen>
         break;
       }
     }
-    // ลบการ add key ออก - keys ถูกสร้างใน LoadSuccess แล้ว
-    // listKeys.add(GlobalKey());  // ❌ ตรงนี้ทำให้เกิด infinite loop!
     bool selected = selectGuid == value.guidfixed;
     TextStyle textStyle = TextStyle(
-      fontWeight: (selected) ? FontWeight.bold : FontWeight.normal,
+      fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+      color: selected ? global.theme.textColor : global.theme.textSecondaryColor,
       fontSize: (selected)
           ? global.deviceConfig.listDataFontSize + 2.0
           : global.deviceConfig.listDataFontSize,
     );
-    return GestureDetector(
-      onTap: () {
-        if (showCheckBox == true) {
-          setState(() {
-            selectGuid = value.guidfixed;
-            if (isCheck == true) {
-              guidListChecked.remove(value.guidfixed);
-            } else {
-              guidListChecked.add(value.guidfixed);
-            }
-            global.showSnackBar(
-              context,
-              Icon(Icons.check, color: Colors.white),
-              "${global.language("chosen")} ${guidListChecked.length} ${global.language("list")}",
-              Colors.blue,
-            );
-          });
-        } else {
-          setState(() {
-            selectGuid = value.guidfixed;
-            isSaveAllow = false;
-            loadDataFromServer(guid: selectGuid, isEdit: false);
-          });
-        }
-      },
-      onDoubleTap: () {
-        if (showCheckBox == false) {
-          switchToEdit(value);
-        }
-      },
-      child: Container(
-        key: index < listKeys.length ? listKeys[index] : null,
-        decoration: BoxDecoration(
-          color: (isCheck == true)
-              ? Colors.red.shade100
-              : (selected == true)
-              ? Colors.cyan.shade50
-              : (index % 2 != 0)
-              ? Colors.white
-              : Colors.grey.shade200,
-        ),
-        padding: EdgeInsets.only(
-          left: 10,
-          right: 10,
-          top: global.deviceConfig.listDataLineSpace,
-          bottom: global.deviceConfig.listDataLineSpace,
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 5,
-              child: Text(
-                value.itemcode,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: textStyle,
-              ),
-            ),
-            Expanded(
-              flex: 10,
-              child: Text(
-                global.packName(value.names!),
-                maxLines: 1,
-                style: textStyle,
-              ),
-            ),
-            if (showCheckBox)
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
+        onTap: () {
+          if (showCheckBox == true) {
+            setState(() {
+              selectGuid = value.guidfixed;
+              if (isCheck == true) {
+                guidListChecked.remove(value.guidfixed);
+              } else {
+                guidListChecked.add(value.guidfixed);
+              }
+              global.showSnackBar(
+                context,
+                Icon(Icons.check, color: global.theme.onPrimaryColor),
+                "${global.language("chosen")} ${guidListChecked.length} ${global.language("list")}",
+                global.theme.infoHighlightTextColor,
+              );
+            });
+          } else {
+            setState(() {
+              selectGuid = value.guidfixed;
+              isSaveAllow = false;
+              loadDataFromServer(guid: selectGuid, isEdit: false);
+            });
+          }
+        },
+        onDoubleTap: () {
+          if (showCheckBox == false) {
+            switchToEdit(value);
+          }
+        },
+        child: Container(
+          key: index < listKeys.length ? listKeys[index] : null,
+          decoration: BoxDecoration(
+            color: _getContainerColor(index, isCheck, selected),
+          ),
+          padding: EdgeInsets.only(
+            left: 10,
+            right: 10,
+            top: global.deviceConfig.listDataLineSpace,
+            bottom: global.deviceConfig.listDataLineSpace,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Expanded(
-                flex: 1,
-                child: (isCheck)
-                    ? const Icon(Icons.check, size: 12)
-                    : Container(),
+                flex: 5,
+                child: Text(
+                  value.itemcode,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textStyle,
+                ),
               ),
-          ],
+              Expanded(
+                flex: 10,
+                child: Text(
+                  global.packName(value.names!),
+                  maxLines: 1,
+                  style: textStyle,
+                ),
+              ),
+              if (showCheckBox)
+                Expanded(
+                  flex: 1,
+                  child: (isCheck)
+                      ? Icon(Icons.check, size: 12)
+                      : Container(),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -650,9 +629,9 @@ class ProductScreenState extends State<ProductScreen>
             setState(() {
               global.showSnackBar(
                 context,
-                Icon(Icons.delete, color: Colors.white),
+                Icon(Icons.delete, color: global.theme.onPrimaryColor),
                 global.language("delete_success"),
-                Colors.blue,
+                global.theme.infoHighlightTextColor,
               );
               listData.clear();
               WidgetsBinding.instance.addPostFrameCallback((timeStamp) {});
@@ -664,9 +643,9 @@ class ProductScreenState extends State<ProductScreen>
             setState(() {
               global.showSnackBar(
                 context,
-                Icon(Icons.delete, color: Colors.white),
+                Icon(Icons.delete, color: global.theme.onPrimaryColor),
                 global.language("not_delete_success"),
-                Colors.blue,
+                global.theme.infoHighlightTextColor,
               );
               listData.clear();
               loadDataList(false, searchText);
@@ -686,7 +665,7 @@ class ProductScreenState extends State<ProductScreen>
                 controller: splitViewController,
                 gripSize: 14,
                 gripColor: global.theme.appBarColor,
-                gripColorActive: Colors.blue,
+                gripColorActive: global.theme.infoHighlightTextColor,
                 viewMode: SplitViewMode.Horizontal,
                 indicator: const SplitIndicator(
                   viewMode: SplitViewMode.Horizontal,

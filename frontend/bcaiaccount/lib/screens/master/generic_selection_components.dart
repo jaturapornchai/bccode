@@ -218,22 +218,11 @@ class _GenericSelectionContentState<T>
         children: [
           // Search Bar (matching ProductSearchScreen style)
           Container(
-            padding: const EdgeInsets.all(5),
+            padding: EdgeInsets.all(5),
             color: global.theme.appBarColor,
             child: Container(
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withValues(alpha: 0.5),
-                    spreadRadius: 5,
-                    blurRadius: 7,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
+              padding: EdgeInsets.all(5),
+              color: global.theme.searchBarColor,
               child: Padding(
                 padding: const EdgeInsets.only(left: 10, right: 10),
                 child: TextFormField(
@@ -268,7 +257,7 @@ class _GenericSelectionContentState<T>
 
           // Column Headers (matching ProductSearchScreen style)
           Container(
-            padding: const EdgeInsets.only(
+            padding: EdgeInsets.only(
               left: 10,
               right: 10,
               top: 5,
@@ -276,8 +265,8 @@ class _GenericSelectionContentState<T>
             ),
             decoration: BoxDecoration(
               color: global.theme.columnHeaderColor,
-              border: const Border(
-                bottom: BorderSide(width: 1.0, color: Colors.grey),
+              border: Border(
+                bottom: BorderSide(width: 1.0, color: global.theme.dividerBorderColor),
               ),
             ),
             child: Row(
@@ -290,8 +279,8 @@ class _GenericSelectionContentState<T>
                   flex: widget.config.columnFlexes[index],
                   child: Text(
                     header,
-                    style: const TextStyle(
-                      color: Colors.black,
+                    style: TextStyle(
+                      color: global.theme.textColor,
                       fontWeight: FontWeight.bold,
                     ),
                     maxLines: 2,
@@ -314,14 +303,14 @@ class _GenericSelectionContentState<T>
                         Icon(
                           Icons.search_off,
                           size: 64,
-                          color: Colors.grey[400],
+                          color: global.theme.iconSecondaryColor,
                         ),
                         SizedBox(height: 16),
                         Text(
                           global.language("no_data_found"),
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.grey[600],
+                            color: global.theme.textSecondaryColor,
                           ),
                         ),
                       ],
@@ -349,10 +338,10 @@ class _GenericSelectionContentState<T>
       child: Container(
         decoration: BoxDecoration(
           color: (selectGuid == widget.config.getGuidFixed(item))
-              ? Colors.cyan[100]
-              : Colors.white,
-          border: const Border(
-            bottom: BorderSide(width: 1.0, color: Colors.grey),
+              ? global.theme.rowSelectedColor
+              : global.theme.cardColor,
+          border: Border(
+            bottom: BorderSide(width: 1.0, color: global.theme.dividerBorderColor),
           ),
         ),
         padding: const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),

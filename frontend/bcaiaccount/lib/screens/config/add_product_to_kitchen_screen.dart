@@ -20,7 +20,7 @@ class AddProductToKitchenScreen extends StatefulWidget {
 }
 
 class AddProductToKitchenScreenState extends State<AddProductToKitchenScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   TextEditingController searchController = TextEditingController();
   List<DraggableGridItem> draggableGridItemList = [];
   bool loadingData = false;
@@ -41,20 +41,20 @@ class AddProductToKitchenScreenState extends State<AddProductToKitchenScreen>
 
 // Define a list of colors for the chips
   final List<Color> chipColors = [
-    Colors.red,
-    Colors.green,
-    Colors.blue,
-    Colors.yellow,
-    Colors.orange,
-    Colors.pink,
-    Colors.teal,
-    Colors.cyan,
-    Colors.brown,
-    Colors.grey,
-    Colors.lime,
-    Colors.amber,
-    Colors.deepOrange,
-    Colors.lightBlue,
+    global.theme.negativeHighlightTextColor,
+    global.theme.positiveHighlightTextColor,
+    global.theme.infoHighlightTextColor,
+    global.theme.warningHighlightTextColor,
+    global.theme.warningHighlightTextColor,
+    global.theme.negativeHighlightTextColor,
+    global.theme.infoHighlightTextColor,
+    global.theme.infoHighlightTextColor,
+    global.theme.textSecondaryColor,
+    global.theme.iconSecondaryColor,
+    global.theme.positiveHighlightTextColor,
+    global.theme.warningHighlightTextColor,
+    global.theme.warningHighlightTextColor,
+    global.theme.infoHighlightTextColor,
     // Add more colors as needed
   ];
 
@@ -104,12 +104,12 @@ class AddProductToKitchenScreenState extends State<AddProductToKitchenScreen>
                 actions: <Widget>[
                   ElevatedButton(
                       style:
-                          ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                          ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
                       onPressed: () => Navigator.pop(context),
                       child: Text(global.language('no'))),
                   ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue),
+                          backgroundColor: global.theme.infoHighlightTextColor),
                       onPressed: () {
                         Navigator.pop(context);
                         callBack();
@@ -181,7 +181,7 @@ class AddProductToKitchenScreenState extends State<AddProductToKitchenScreen>
                             }
                           }
                         : null,
-                    icon: const Icon(Icons.add)),
+                    icon: Icon(Icons.add)),
               ],
             ),
             (value.kitchens!.isNotEmpty)
@@ -258,7 +258,7 @@ class AddProductToKitchenScreenState extends State<AddProductToKitchenScreen>
 
                     setState(() {});
                   },
-                  icon: const Icon(Icons.delete)),
+                  icon: Icon(Icons.delete)),
             ])));
   }
 
@@ -281,11 +281,8 @@ class AddProductToKitchenScreenState extends State<AddProductToKitchenScreen>
       body: Column(children: [
         Container(
             height: 40,
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(2),
-            ),
+            padding: EdgeInsets.all(5),
+            color: global.theme.searchBarColor,
             child: Row(children: [
               Expanded(
                   child: TextField(
@@ -341,7 +338,7 @@ class AddProductToKitchenScreenState extends State<AddProductToKitchenScreen>
                       controller: searchController,
                       decoration: InputDecoration(
                         isDense: true,
-                        contentPadding: const EdgeInsets.only(
+                        contentPadding: EdgeInsets.only(
                             top: 0, bottom: 0, left: 0, right: 0),
                         border: InputBorder.none,
                         hintText: global.language('search'),
@@ -354,20 +351,20 @@ class AddProductToKitchenScreenState extends State<AddProductToKitchenScreen>
         Container(
             key: const Key('barcode_list'),
             padding:
-                const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
+                EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
             color: global.theme.columnHeaderColor,
             child: Row(children: [
               Expanded(
                   flex: 5,
                   child: Text(global.language("barcode"),
-                      style: const TextStyle(
-                          color: Colors.black, fontWeight: FontWeight.bold))),
+                      style: TextStyle(
+                          color: global.theme.textColor, fontWeight: FontWeight.bold))),
               Expanded(
                   flex: 10,
                   child: Text(
                     global.language("product_name"),
-                    style: const TextStyle(
-                        color: Colors.black, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: global.theme.textColor, fontWeight: FontWeight.bold),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   )),
@@ -382,7 +379,7 @@ class AddProductToKitchenScreenState extends State<AddProductToKitchenScreen>
         if (loadingData)
           Center(
               child: LoadingAnimationWidget.staggeredDotsWave(
-            color: Colors.blue,
+            color: global.theme.infoHighlightTextColor,
             size: 50,
           ))
       ]),
@@ -486,9 +483,9 @@ class AddProductToKitchenScreenState extends State<AddProductToKitchenScreen>
                                 });
                               }
                             : null,
-                        child: const Icon(
+                        child: Icon(
                           Icons.save,
-                          color: Colors.white,
+                          color: global.theme.onPrimaryColor,
                         ))),
               ]),
               Expanded(
@@ -497,22 +494,22 @@ class AddProductToKitchenScreenState extends State<AddProductToKitchenScreen>
                         children: [
                           Container(
                               key: const Key('product_list_header'),
-                              padding: const EdgeInsets.only(
+                              padding: EdgeInsets.only(
                                   left: 10, right: 10, top: 5, bottom: 5),
                               color: global.theme.columnHeaderColor,
                               child: Row(children: [
                                 Expanded(
                                     flex: 5,
                                     child: Text(global.language("barcode"),
-                                        style: const TextStyle(
-                                            color: Colors.black,
+                                        style: TextStyle(
+                                            color: global.theme.textColor,
                                             fontWeight: FontWeight.bold))),
                                 Expanded(
                                     flex: 10,
                                     child: Text(
                                       global.language("product_name"),
-                                      style: const TextStyle(
-                                          color: Colors.black,
+                                      style: TextStyle(
+                                          color: global.theme.textColor,
                                           fontWeight: FontWeight.bold),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
@@ -527,7 +524,7 @@ class AddProductToKitchenScreenState extends State<AddProductToKitchenScreen>
                           if (loadingDataBarcode)
                             Center(
                               child: LoadingAnimationWidget.staggeredDotsWave(
-                                color: Colors.blue,
+                                color: global.theme.infoHighlightTextColor,
                                 size: 50,
                               ),
                             )
@@ -537,22 +534,22 @@ class AddProductToKitchenScreenState extends State<AddProductToKitchenScreen>
                         children: [
                           Container(
                               key: const Key('product_list_header'),
-                              padding: const EdgeInsets.only(
+                              padding: EdgeInsets.only(
                                   left: 10, right: 10, top: 5, bottom: 5),
                               color: global.theme.columnHeaderColor,
                               child: Row(children: [
                                 Expanded(
                                     flex: 5,
                                     child: Text(global.language("barcode"),
-                                        style: const TextStyle(
-                                            color: Colors.black,
+                                        style: TextStyle(
+                                            color: global.theme.textColor,
                                             fontWeight: FontWeight.bold))),
                                 Expanded(
                                     flex: 10,
                                     child: Text(
                                       global.language("product_name"),
-                                      style: const TextStyle(
-                                          color: Colors.black,
+                                      style: TextStyle(
+                                          color: global.theme.textColor,
                                           fontWeight: FontWeight.bold),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
@@ -709,12 +706,12 @@ class AddProductToKitchenScreenState extends State<AddProductToKitchenScreen>
               setState(() {
                 global.showSnackBar(
                     context,
-                    const Icon(
+                    Icon(
                       Icons.edit,
-                      color: Colors.white,
+                      color: global.theme.onPrimaryColor,
                     ),
                     global.language('edit_success'),
-                    Colors.blue);
+                    global.theme.infoHighlightTextColor);
 
                 setState(() {
                   loadDataList();
@@ -726,12 +723,12 @@ class AddProductToKitchenScreenState extends State<AddProductToKitchenScreen>
               setState(() {
                 global.showSnackBar(
                     context,
-                    const Icon(
+                    Icon(
                       Icons.edit,
-                      color: Colors.white,
+                      color: global.theme.onPrimaryColor,
                     ),
                     "${global.language('edit_failed')} : ${state.message}",
-                    Colors.red);
+                    global.theme.negativeHighlightTextColor);
               });
             }
           })
@@ -744,7 +741,7 @@ class AddProductToKitchenScreenState extends State<AddProductToKitchenScreen>
               title: Text(global.language('add_product_to_kitchen')),
               leading: IconButton(
                 focusNode: FocusNode(skipTraversal: true),
-                icon: const Icon(Icons.arrow_back),
+                icon: Icon(Icons.arrow_back),
                 onPressed: () {
                   discardData(callBack: () {
                     Navigator.pop(context);
@@ -757,7 +754,7 @@ class AddProductToKitchenScreenState extends State<AddProductToKitchenScreen>
                     controller: splitViewController,
                     gripSize: 8,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.infoHighlightTextColor,
                     viewMode: SplitViewMode.Vertical,
                     indicator:
                         const SplitIndicator(viewMode: SplitViewMode.Vertical),
@@ -773,7 +770,7 @@ class AddProductToKitchenScreenState extends State<AddProductToKitchenScreen>
                     controller: splitViewController,
                     gripSize: 8,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.infoHighlightTextColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                         viewMode: SplitViewMode.Horizontal),

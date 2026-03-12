@@ -19,7 +19,7 @@ class StaffScreen extends StatefulWidget {
 }
 
 class StaffScreenState extends State<StaffScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   late TabController tabController;
   ScrollController editScrollController = ScrollController();
@@ -156,12 +156,12 @@ class StaffScreenState extends State<StaffScreen>
           content: Text(global.language('leave_this_screen')),
           actions: <Widget>[
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              style: ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
               onPressed: () => Navigator.pop(context),
               child: Text(global.language('no')),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+              style: ElevatedButton.styleFrom(backgroundColor: global.theme.infoHighlightTextColor),
               onPressed: () {
                 Navigator.pop(context);
                 callBack();
@@ -191,7 +191,7 @@ class StaffScreenState extends State<StaffScreen>
         title: Text(global.language('Staff')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             discardData(
               callBack: () {
@@ -202,96 +202,87 @@ class StaffScreenState extends State<StaffScreen>
           },
         ),
         actions: <Widget>[
-          Padding(
-            padding: EdgeInsets.only(right: 20.0),
-            child: IconButton(
-              focusNode: FocusNode(skipTraversal: true),
-              onPressed: () {
-                discardData(
-                  callBack: () {
-                    setState(() {
-                      if (showCheckBox) {
-                        showCheckBox = false;
-                        guidListChecked.clear();
-                      } else {
-                        showCheckBox = true;
-                        global.showSnackBar(
-                          context,
-                          Icon(Icons.delete, color: Colors.white),
-                          global.language("choose_item_delete"),
-                          Colors.blue,
-                        );
-                      }
-                    });
-                  },
-                );
-              },
-              icon: const Icon(Icons.check_box),
-            ),
+          IconButton(
+            focusNode: FocusNode(skipTraversal: true),
+            onPressed: () {
+              discardData(
+                callBack: () {
+                  setState(() {
+                    if (showCheckBox) {
+                      showCheckBox = false;
+                      guidListChecked.clear();
+                    } else {
+                      showCheckBox = true;
+                      global.showSnackBar(
+                        context,
+                        Icon(Icons.delete, color: global.theme.onPrimaryColor),
+                        global.language("choose_item_delete"),
+                        global.theme.infoHighlightTextColor,
+                      );
+                    }
+                  });
+                },
+              );
+            },
+            icon: Icon(Icons.check_box),
           ),
           if (guidListChecked.isNotEmpty)
-            Padding(
-              padding: EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () {
-                  showDialog<String>(
-                    context: context,
-                    builder: (BuildContext context) => AlertDialog(
-                      title: Text(global.language('confirm_delete')),
-                      actions: <Widget>[
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                          ),
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(global.language('no')),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                          ),
-                          onPressed: () {
-                            Navigator.pop(context);
-                            context.read<StaffBloc>().add(
-                              StaffDeleteMany(guid: guidListChecked),
-                            );
-                          },
-                          child: Text(global.language('delete')),
-                        ),
-                      ],
-                    ),
-                  );
-                  setState(() {});
-                },
-                icon: const Icon(Icons.delete),
-              ),
-            ),
-          Padding(
-            padding: EdgeInsets.only(right: 20.0),
-            child: IconButton(
+            IconButton(
               focusNode: FocusNode(skipTraversal: true),
               onPressed: () {
-                discardData(
-                  callBack: () {
-                    setState(() {
-                      isEditMode = true;
-                      selectGuid = "";
-                      showCheckBox = false;
-                      isChange = false;
-                      clearEditData();
-                      headerEdit = global.language("append");
-                      isSaveAllow = true;
-                      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-                        tabController.animateTo(1);
-                        fieldFocusNodes[0].requestFocus();
-                      });
-                    });
-                  },
+                showDialog<String>(
+                  context: context,
+                  builder: (BuildContext context) => AlertDialog(
+                    title: Text(global.language('confirm_delete')),
+                    actions: <Widget>[
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: global.theme.negativeHighlightTextColor,
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(global.language('no')),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: global.theme.infoHighlightTextColor,
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          context.read<StaffBloc>().add(
+                            StaffDeleteMany(guid: guidListChecked),
+                          );
+                        },
+                        child: Text(global.language('delete')),
+                      ),
+                    ],
+                  ),
                 );
+                setState(() {});
               },
-              icon: const Icon(Icons.add),
+              icon: Icon(Icons.delete),
             ),
+          IconButton(
+            focusNode: FocusNode(skipTraversal: true),
+            onPressed: () {
+              discardData(
+                callBack: () {
+                  setState(() {
+                    isEditMode = true;
+                    selectGuid = "";
+                    showCheckBox = false;
+                    isChange = false;
+                    clearEditData();
+                    headerEdit = global.language("append");
+                    isSaveAllow = true;
+                    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                      tabController.animateTo(1);
+                      fieldFocusNodes[0].requestFocus();
+                    });
+                  });
+                },
+              );
+            },
+            icon: Icon(Icons.add),
           ),
         ],
       ),
@@ -333,22 +324,11 @@ class StaffScreenState extends State<StaffScreen>
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(5),
+              padding: EdgeInsets.all(5),
               color: global.theme.appBarColor,
               child: Container(
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withValues(alpha: 0.5),
-                      spreadRadius: 5,
-                      blurRadius: 7,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
+                padding: EdgeInsets.all(5),
+                color: global.theme.searchBarColor,
                 child: Padding(
                   padding: EdgeInsets.only(left: 10, right: 10),
                   child: TextFormField(
@@ -397,8 +377,8 @@ class StaffScreenState extends State<StaffScreen>
                     flex: 5,
                     child: Text(
                       global.language("Staff_code"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                        color: global.theme.textColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -407,8 +387,8 @@ class StaffScreenState extends State<StaffScreen>
                     flex: 10,
                     child: Text(
                       global.language("staff_name"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                        color: global.theme.textColor,
                         fontWeight: FontWeight.bold,
                       ),
                       maxLines: 2,
@@ -416,9 +396,9 @@ class StaffScreenState extends State<StaffScreen>
                     ),
                   ),
                   if (showCheckBox)
-                    const Expanded(
+                    Expanded(
                       flex: 1,
-                      child: Icon(Icons.check, color: Colors.black, size: 12),
+                      child: Icon(Icons.check, color: global.theme.textColor, size: 12),
                     ),
                 ],
               ),
@@ -476,9 +456,9 @@ class StaffScreenState extends State<StaffScreen>
             }
             global.showSnackBar(
               context,
-              Icon(Icons.check, color: Colors.white),
+              Icon(Icons.check, color: global.theme.onPrimaryColor),
               "${global.language("chosen")} ${guidListChecked.length} ${global.language("list")}",
-              Colors.blue,
+              global.theme.infoHighlightTextColor,
             );
           });
         } else {
@@ -507,10 +487,10 @@ class StaffScreenState extends State<StaffScreen>
         key: index < listKeys.length ? listKeys[index] : null,
         decoration: BoxDecoration(
           color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
-              : Colors.white,
-          border: const Border(
-            bottom: BorderSide(width: 1.0, color: Colors.grey),
+              ? global.theme.rowSelectedColor
+              : global.theme.onPrimaryColor,
+          border: Border(
+            bottom: BorderSide(width: 1.0, color: global.theme.dividerBorderColor),
           ),
         ),
         padding: const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
@@ -537,7 +517,7 @@ class StaffScreenState extends State<StaffScreen>
               Expanded(
                 flex: 1,
                 child: (isCheck)
-                    ? const Icon(Icons.check, size: 12)
+                    ? Icon(Icons.check, size: 12)
                     : Container(),
               ),
           ],
@@ -751,7 +731,7 @@ class StaffScreenState extends State<StaffScreen>
         leading: mobileScreen
             ? IconButton(
                 focusNode: FocusNode(skipTraversal: true),
-                icon: const Icon(Icons.arrow_back),
+                icon: Icon(Icons.arrow_back),
                 onPressed: () async {
                   showCheckBox = false;
                   discardData(
@@ -768,81 +748,69 @@ class StaffScreenState extends State<StaffScreen>
         title: Text(headerEdit + global.language("Staff")),
         actions: <Widget>[
           if (selectGuid.isNotEmpty)
-            Padding(
-              padding: EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () {
-                  showCheckBox = false;
-                  showDialog<String>(
-                    context: context,
-                    builder: (BuildContext context) => AlertDialog(
-                      title: Text(global.language('delete_confirm')),
-                      actions: <Widget>[
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                          ),
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(global.language('no')),
+            IconButton(
+              focusNode: FocusNode(skipTraversal: true),
+              onPressed: () {
+                showCheckBox = false;
+                showDialog<String>(
+                  context: context,
+                  builder: (BuildContext context) => AlertDialog(
+                    title: Text(global.language('delete_confirm')),
+                    actions: <Widget>[
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: global.theme.negativeHighlightTextColor,
                         ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                          ),
-                          onPressed: () {
-                            Navigator.pop(context);
-                            context.read<StaffBloc>().add(
-                              StaffDelete(guid: selectGuid),
-                            );
-                          },
-                          child: Text(global.language('confirm')),
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(global.language('no')),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: global.theme.infoHighlightTextColor,
                         ),
-                      ],
-                    ),
-                  );
-                  setState(() {});
-                },
-                icon: const Icon(Icons.delete),
-              ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          context.read<StaffBloc>().add(
+                            StaffDelete(guid: selectGuid),
+                          );
+                        },
+                        child: Text(global.language('confirm')),
+                      ),
+                    ],
+                  ),
+                );
+                setState(() {});
+              },
+              icon: Icon(Icons.delete),
             ),
           if (isEditMode && global.systemLanguage.length > 1)
-            Padding(
-              padding: const EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () async {
-                  setState(() {});
-                },
-                icon: const Icon(Icons.translate),
-              ),
+            IconButton(
+              focusNode: FocusNode(skipTraversal: true),
+              onPressed: () async {
+                setState(() {});
+              },
+              icon: Icon(Icons.translate),
             ),
           if (isSaveAllow == false && selectGuid.trim().isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () {
-                  showCheckBox = false;
-                  switchToEdit(
-                    listDatas[listDatas.indexOf(
-                      listDatas.firstWhere(
-                        (element) => element.guidfixed == selectGuid,
-                      ),
-                    )],
-                  );
-                },
-                icon: const Icon(Icons.edit),
-              ),
+            IconButton(
+              focusNode: FocusNode(skipTraversal: true),
+              onPressed: () {
+                showCheckBox = false;
+                switchToEdit(
+                  listDatas[listDatas.indexOf(
+                    listDatas.firstWhere(
+                      (element) => element.guidfixed == selectGuid,
+                    ),
+                  )],
+                );
+              },
+              icon: Icon(Icons.edit),
             ),
           if (isSaveAllow == true)
-            Padding(
-              padding: const EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () => saveOrUpdateData(),
-                icon: const Icon(Icons.save),
-              ),
+            IconButton(
+              focusNode: FocusNode(skipTraversal: true),
+              onPressed: () => saveOrUpdateData(),
+              icon: Icon(Icons.save),
             ),
         ],
       ),
@@ -905,9 +873,9 @@ class StaffScreenState extends State<StaffScreen>
                 setState(() {
                   global.showSnackBar(
                     context,
-                    Icon(Icons.save, color: Colors.white),
+                    Icon(Icons.save, color: global.theme.onPrimaryColor),
                     global.language("save_success"),
-                    Colors.blue,
+                    global.theme.infoHighlightTextColor,
                   );
                   clearEditData();
                   listDatas.clear();
@@ -918,9 +886,9 @@ class StaffScreenState extends State<StaffScreen>
                 setState(() {
                   global.showSnackBar(
                     context,
-                    Icon(Icons.save, color: Colors.white),
+                    Icon(Icons.save, color: global.theme.onPrimaryColor),
                     "${global.language("not_success_save")} : ${state.message}",
-                    Colors.red,
+                    global.theme.negativeHighlightTextColor,
                   );
                 });
               }
@@ -929,9 +897,9 @@ class StaffScreenState extends State<StaffScreen>
                 setState(() {
                   global.showSnackBar(
                     context,
-                    Icon(Icons.edit, color: Colors.white),
+                    Icon(Icons.edit, color: global.theme.onPrimaryColor),
                     global.language("edit_success"),
-                    Colors.blue,
+                    global.theme.infoHighlightTextColor,
                   );
                   clearEditData();
                   listDatas.clear();
@@ -947,9 +915,9 @@ class StaffScreenState extends State<StaffScreen>
                 setState(() {
                   global.showSnackBar(
                     context,
-                    Icon(Icons.edit, color: Colors.white),
+                    Icon(Icons.edit, color: global.theme.onPrimaryColor),
                     "${global.language("not_edit_success")} : ${state.message}",
-                    Colors.red,
+                    global.theme.negativeHighlightTextColor,
                   );
                 });
               }
@@ -958,9 +926,9 @@ class StaffScreenState extends State<StaffScreen>
                 setState(() {
                   global.showSnackBar(
                     context,
-                    Icon(Icons.delete, color: Colors.white),
+                    Icon(Icons.delete, color: global.theme.onPrimaryColor),
                     global.language("delete_success"),
-                    Colors.blue,
+                    global.theme.infoHighlightTextColor,
                   );
                   listDatas.clear();
                   clearEditData();
@@ -975,9 +943,9 @@ class StaffScreenState extends State<StaffScreen>
                 setState(() {
                   global.showSnackBar(
                     context,
-                    Icon(Icons.delete, color: Colors.white),
+                    Icon(Icons.delete, color: global.theme.onPrimaryColor),
                     global.language("not_delete_success"),
-                    Colors.blue,
+                    global.theme.infoHighlightTextColor,
                   );
                   listDatas.clear();
                   clearEditData();
@@ -1052,7 +1020,7 @@ class StaffScreenState extends State<StaffScreen>
                     controller: splitViewController,
                     gripSize: 8,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.infoHighlightTextColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

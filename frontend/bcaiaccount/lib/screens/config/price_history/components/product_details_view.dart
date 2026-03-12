@@ -22,7 +22,8 @@ class ProductDetailsView extends StatefulWidget {
   State<ProductDetailsView> createState() => _ProductDetailsViewState();
 }
 
-class _ProductDetailsViewState extends State<ProductDetailsView> {
+class _ProductDetailsViewState extends State<ProductDetailsView>
+    with global.ThemeRefreshMixin {
   ProductBarcodeModel? detailProductData;
 
   @override
@@ -58,7 +59,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
         leading: widget.isMobile && widget.tabController != null
             ? IconButton(
                 focusNode: FocusNode(skipTraversal: true),
-                icon: const Icon(Icons.arrow_back),
+                icon: Icon(Icons.arrow_back),
                 onPressed: () {
                   widget.tabController!.animateTo(0);
                 },
@@ -74,9 +75,9 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                   // Product info header
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.blue[50],
+                      color: global.theme.infoHighlightColor,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: Colors.blue[200]!),
                     ),
@@ -85,7 +86,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                       children: [
                         Text(
                           'Barcode: ${widget.productData!.barcode}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -93,7 +94,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                         const SizedBox(height: 4),
                         Text(
                           'Product: ${global.activeLangName(widget.productData!.names!)}',
-                          style: const TextStyle(fontSize: 14),
+                          style: TextStyle(fontSize: 14),
                         ),
                       ],
                     ),
@@ -127,7 +128,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                             return Center(
                               child: Text(
                                 'Error: ${state.message}',
-                                style: const TextStyle(color: Colors.red),
+                                style: TextStyle(color: global.theme.negativeHighlightTextColor),
                               ),
                             );
                           }
@@ -145,7 +146,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                   global.language('product_details_select_product'),
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.grey[600],
+                    color: global.theme.textSecondaryColor,
                   ),
                 ),
               ),
@@ -221,14 +222,14 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
             Icon(
               Icons.inbox_outlined,
               size: 48,
-              color: Colors.grey[400],
+              color: global.theme.iconSecondaryColor,
             ),
             SizedBox(height: 12),
             Text(
               global.language('product_details_no_history'),
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey[600],
+                color: global.theme.textSecondaryColor,
               ),
             ),
           ],
@@ -240,16 +241,16 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
   Widget _buildCompactTable(List<PriceHistoryModel> priceHistory) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: global.theme.dividerBorderColor),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Column(
         children: [
           // Compact Header
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: global.theme.surfaceColor,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(6),
                 topRight: Radius.circular(6),
@@ -265,35 +266,35 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                 Expanded(
                     flex: 1,
                     child: Text(global.language('product_details_date_time'),
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 14, fontWeight: FontWeight.w600))),
                 Expanded(
                     flex: 1,
                     child: Text(global.language('product_details_level'),
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 14, fontWeight: FontWeight.w600))),
                 Expanded(
                     flex: 1,
                     child: Text(global.language('product_details_old'),
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 14, fontWeight: FontWeight.w600),
                         textAlign: TextAlign.right)),
                 Expanded(
                     flex: 1,
                     child: Text(global.language('product_details_new'),
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 14, fontWeight: FontWeight.w600),
                         textAlign: TextAlign.right)),
                 Expanded(
                     flex: 1,
                     child: Text(global.language('product_details_change'),
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 14, fontWeight: FontWeight.w600),
                         textAlign: TextAlign.center)),
                 Expanded(
                     flex: 1,
                     child: Text(global.language('product_details_editor'),
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 14, fontWeight: FontWeight.w600))),
               ],
             ),
@@ -322,13 +323,13 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
     final isIncrease = (history.pricedifference ?? 0) > 0;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: isLatest
             ? Colors.amber[50]
-            : (isEven ? Colors.grey[25] : Colors.white),
+            : (isEven ? global.theme.surfaceColor : global.theme.cardColor),
         border: Border(
-          bottom: BorderSide(color: Colors.grey[200]!, width: 0.5),
+          bottom: BorderSide(color: global.theme.dividerBorderColor, width: 0.5),
           left: isLatest
               ? BorderSide(color: Colors.amber[400]!, width: 3)
               : BorderSide.none,
@@ -347,7 +348,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: isLatest ? Colors.amber[800] : Colors.grey[700],
+                    color: isLatest ? Colors.amber[800] : global.theme.textColor,
                   ),
                 ),
               ],
@@ -363,7 +364,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
               children: [
                 Text(
                   _formatCompactDate(history.createdat),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -372,7 +373,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                   _formatTimeOnly(history.createdat),
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey[600],
+                    color: global.theme.textSecondaryColor,
                   ),
                 ),
               ],
@@ -401,7 +402,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
               _formatCompactPrice(history.oldprice),
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey[600],
+                color: global.theme.textSecondaryColor,
               ),
               textAlign: TextAlign.right,
             ),
@@ -412,10 +413,10 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
             flex: 1,
             child: Text(
               _formatCompactPrice(history.newprice),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: global.theme.textColor,
               ),
               textAlign: TextAlign.right,
             ),
@@ -434,10 +435,10 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                           ? Icons.arrow_downward
                           : Icons.remove,
                   color: isIncrease
-                      ? Colors.green[600]
+                      ? global.theme.positiveHighlightTextColor
                       : isDecrease
-                          ? Colors.red[600]
-                          : Colors.grey[600],
+                          ? global.theme.negativeHighlightTextColor
+                          : global.theme.textSecondaryColor,
                   size: 14,
                 ),
                 const SizedBox(width: 2),
@@ -447,10 +448,10 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     color: isIncrease
-                        ? Colors.green[600]
+                        ? global.theme.positiveHighlightTextColor
                         : isDecrease
-                            ? Colors.red[600]
-                            : Colors.grey[600],
+                            ? global.theme.negativeHighlightTextColor
+                            : global.theme.textSecondaryColor,
                   ),
                 ),
               ],
@@ -466,7 +467,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
               children: [
                 Text(
                   _getShortUserName(history.createdby),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -476,7 +477,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                 if (history.remark?.isNotEmpty == true)
                   Row(
                     children: [
-                      Icon(Icons.note, size: 10, color: Colors.orange[600]),
+                      Icon(Icons.note, size: 10, color: global.theme.warningHighlightTextColor),
                       const SizedBox(width: 2),
                       Expanded(
                         child: Text(
@@ -577,7 +578,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
         SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.green[300]!),
+            border: Border.all(color: global.theme.positiveHighlightTextColor),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Column(
@@ -599,7 +600,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                       flex: 2,
                       child: Text(
                         global.language('product_details_price_level'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
@@ -609,7 +610,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                       flex: 1,
                       child: Text(
                         global.language('product_details_price_baht'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
@@ -654,9 +655,9 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
         final isEven = index % 2 == 0;
         priceRows.add(
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: isEven ? Colors.green[25] : Colors.white,
+              color: isEven ? global.theme.positiveHighlightColor : global.theme.onPrimaryColor,
               border: Border(
                 bottom: BorderSide(color: Colors.green[100]!, width: 0.5),
               ),
@@ -672,8 +673,8 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                         height: 6,
                         decoration: BoxDecoration(
                           color: priceValue > 0
-                              ? Colors.green[500]
-                              : Colors.grey[400],
+                              ? global.theme.positiveHighlightTextColor
+                              : global.theme.iconSecondaryColor,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -681,10 +682,10 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                       Expanded(
                         child: Text(
                           _getShortPriceLevelName(priceConfig.keyNumber),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black87,
+                            color: global.theme.textColor,
                           ),
                         ),
                       ),
@@ -699,7 +700,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color:
-                          priceValue > 0 ? Colors.green[700] : Colors.grey[500],
+                          priceValue > 0 ? Colors.green[700] : global.theme.textSecondaryColor,
                     ),
                     textAlign: TextAlign.right,
                   ),

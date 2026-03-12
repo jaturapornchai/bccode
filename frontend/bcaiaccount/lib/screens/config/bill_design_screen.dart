@@ -22,7 +22,7 @@ class BillDesignScreen extends StatefulWidget {
 }
 
 class _BillDesignScreenState extends State<BillDesignScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, global.ThemeRefreshMixin {
   late Timer findTerminalTimer;
   late SplitViewController splitViewController;
   late TabController tabController;
@@ -406,7 +406,7 @@ class _BillDesignScreenState extends State<BillDesignScreen>
                     main.footerType = value!;
                   });
                 },
-                title: const Text('QR Code'),
+                title: Text('QR Code'),
               ),
             ),
             Expanded(
@@ -419,7 +419,7 @@ class _BillDesignScreenState extends State<BillDesignScreen>
                     main.footerType = value!;
                   });
                 },
-                title: const Text('Barcode'),
+                title: Text('Barcode'),
               ),
             ),
             Expanded(
@@ -429,8 +429,8 @@ class _BillDesignScreenState extends State<BillDesignScreen>
                   footer.removeAt(i);
                   setState(() {});
                 },
-                icon: const Icon(Icons.delete),
-                color: Colors.red,
+                icon: Icon(Icons.delete),
+                color: global.theme.negativeHighlightTextColor,
               ),
             ),
           ],
@@ -503,14 +503,14 @@ class _BillDesignScreenState extends State<BillDesignScreen>
         formFooter.add(
           Container(
             width: 300,
-            padding: const EdgeInsets.only(
+            padding: EdgeInsets.only(
               left: 5,
               right: 5,
               bottom: 5,
               top: 5,
             ),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
+              border: Border.all(color: global.theme.dividerBorderColor),
               borderRadius: const BorderRadius.all(Radius.circular(5.0)),
             ),
             child: Column(
@@ -526,7 +526,7 @@ class _BillDesignScreenState extends State<BillDesignScreen>
 
                           setState(() {});
                         },
-                        icon: const Icon(Icons.delete),
+                        icon: Icon(Icons.delete),
                       ),
                     ),
                     const SizedBox(width: 5),
@@ -546,7 +546,7 @@ class _BillDesignScreenState extends State<BillDesignScreen>
                             setState(() {});
                           }
                         },
-                        icon: const Icon(Icons.folder),
+                        icon: Icon(Icons.folder),
                       ),
                     ),
                     const SizedBox(width: 5),
@@ -567,7 +567,7 @@ class _BillDesignScreenState extends State<BillDesignScreen>
                             setState(() {});
                           }
                         },
-                        icon: const Icon(Icons.camera_alt),
+                        icon: Icon(Icons.camera_alt),
                       ),
                     ),
                   ],
@@ -598,8 +598,8 @@ class _BillDesignScreenState extends State<BillDesignScreen>
                       Center(
                         child: DecoratedBox(
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border.all(color: Colors.black),
+                            color: global.theme.cardColor,
+                            border: Border.all(color: global.theme.dividerBorderColor),
                             borderRadius: BorderRadius.circular(5),
                             boxShadow: const [
                               BoxShadow(
@@ -700,22 +700,11 @@ class _BillDesignScreenState extends State<BillDesignScreen>
     formFooter.add(const SizedBox(height: 20));
 
     return Container(
-      margin: const EdgeInsets.all(5),
-      padding: const EdgeInsets.all(10),
+      margin: EdgeInsets.all(5),
+      padding: EdgeInsets.all(10),
       height: 100,
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.5),
-            spreadRadius: 5,
-            blurRadius: 7,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+      color: global.theme.searchBarColor,
       child: SingleChildScrollView(child: Column(children: formFooter)),
     );
   }
@@ -768,7 +757,7 @@ class _BillDesignScreenState extends State<BillDesignScreen>
             "${global.language("variables")} : &item_qty&=${global.language("quantity")} , &item_name&=${global.language("product_name")} , &item_unit_name&=${global.language("unit_name")} , &item_price_and_symbol&=${global.language("price")} , &item_discount&=${global.language("discount")} , &item_total_amount&=${global.language("total_amount")}",
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 15),
+            style: TextStyle(fontSize: 15),
             textAlign: TextAlign.left,
           ),
         ),
@@ -788,7 +777,7 @@ class _BillDesignScreenState extends State<BillDesignScreen>
               SizedBox(
                 child: Text(
                   "Column ${z + 1}",
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -817,7 +806,7 @@ class _BillDesignScreenState extends State<BillDesignScreen>
               Container(
                 margin: EdgeInsets.only(left: 10),
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  style: ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
                   onPressed: () {
                     detailTotalColumn.removeAt(z);
                     setState(() {});
@@ -839,16 +828,16 @@ class _BillDesignScreenState extends State<BillDesignScreen>
           Row(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                padding: EdgeInsets.symmetric(horizontal: 8.0),
                 child: Text(
                   'Row ${i + 1}',
-                  style: TextStyle(color: Colors.grey.shade600),
+                  style: TextStyle(color: global.theme.textSecondaryColor),
                 ),
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Divider(color: Colors.grey.shade600),
+                  padding: EdgeInsets.only(right: 8),
+                  child: Divider(color: global.theme.textSecondaryColor),
                 ),
               ),
               IconButton(
@@ -856,8 +845,8 @@ class _BillDesignScreenState extends State<BillDesignScreen>
                   main.removeAt(i);
                   setState(() {});
                 },
-                icon: const Icon(Icons.delete),
-                color: Colors.red,
+                icon: Icon(Icons.delete),
+                color: global.theme.negativeHighlightTextColor,
               ),
             ],
           ),
@@ -1075,22 +1064,11 @@ class _BillDesignScreenState extends State<BillDesignScreen>
     }
     totalForm.addAll(columnDetail);
     return Container(
-      margin: const EdgeInsets.all(5),
-      padding: const EdgeInsets.all(10),
+      margin: EdgeInsets.all(5),
+      padding: EdgeInsets.all(10),
       height: 100,
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.5),
-            spreadRadius: 5,
-            blurRadius: 7,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+      color: global.theme.searchBarColor,
       child: SingleChildScrollView(child: Column(children: totalForm)),
     );
   }
@@ -1154,7 +1132,7 @@ class _BillDesignScreenState extends State<BillDesignScreen>
             "${global.language("variables")} : &item_qty&=${global.language("quantity")} , &item_name&=${global.language("product_name")} , &item_unit_name&=${global.language("unit_name")} , &item_price_and_symbol&=${global.language("price")} , &item_discount&=${global.language("discount")} , &item_total_amount&=${global.language("total_amount")}",
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 15),
+            style: TextStyle(fontSize: 15),
             textAlign: TextAlign.left,
           ),
         ),
@@ -1167,16 +1145,16 @@ class _BillDesignScreenState extends State<BillDesignScreen>
         Row(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              padding: EdgeInsets.symmetric(horizontal: 8.0),
               child: Text(
                 'Row ${i + 1}',
-                style: TextStyle(color: Colors.grey.shade600),
+                style: TextStyle(color: global.theme.textSecondaryColor),
               ),
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Divider(color: Colors.grey.shade600),
+                padding: EdgeInsets.only(right: 8),
+                child: Divider(color: global.theme.textSecondaryColor),
               ),
             ),
             IconButton(
@@ -1184,8 +1162,8 @@ class _BillDesignScreenState extends State<BillDesignScreen>
                 detailColumn.removeAt(i);
                 setState(() {});
               },
-              icon: const Icon(Icons.delete),
-              color: Colors.red,
+              icon: Icon(Icons.delete),
+              color: global.theme.negativeHighlightTextColor,
             ),
           ],
         ),
@@ -1450,7 +1428,7 @@ class _BillDesignScreenState extends State<BillDesignScreen>
             "${global.language("variables")} : &item_qty&=${global.language("quantity")} , &item_name&=${global.language("product_name")} , &item_unit_name&=${global.language("unit_name")} , &item_price_and_symbol&=${global.language("price")} , &item_discount&=${global.language("discount")} , &item_total_amount&=${global.language("total_amount")}",
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 15),
+            style: TextStyle(fontSize: 15),
             textAlign: TextAlign.left,
           ),
         ),
@@ -1463,16 +1441,16 @@ class _BillDesignScreenState extends State<BillDesignScreen>
         Row(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              padding: EdgeInsets.symmetric(horizontal: 8.0),
               child: Text(
                 'Row ${i + 1}',
-                style: TextStyle(color: Colors.grey.shade600),
+                style: TextStyle(color: global.theme.textSecondaryColor),
               ),
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Divider(color: Colors.grey.shade600),
+                padding: EdgeInsets.only(right: 8),
+                child: Divider(color: global.theme.textSecondaryColor),
               ),
             ),
             IconButton(
@@ -1480,8 +1458,8 @@ class _BillDesignScreenState extends State<BillDesignScreen>
                 detailExtraColumn.removeAt(i);
                 setState(() {});
               },
-              icon: const Icon(Icons.delete),
-              color: Colors.red,
+              icon: Icon(Icons.delete),
+              color: global.theme.negativeHighlightTextColor,
             ),
           ],
         ),
@@ -1703,22 +1681,11 @@ class _BillDesignScreenState extends State<BillDesignScreen>
     detailContainer.addAll(formDetail);
     detailContainer.addAll(formExtra);
     return Container(
-      margin: const EdgeInsets.all(5),
-      padding: const EdgeInsets.all(10),
+      margin: EdgeInsets.all(5),
+      padding: EdgeInsets.all(10),
       height: 100,
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.5),
-            spreadRadius: 5,
-            blurRadius: 7,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+      color: global.theme.searchBarColor,
       child: SingleChildScrollView(child: Column(children: detailContainer)),
     );
   }
@@ -1841,7 +1808,7 @@ class _BillDesignScreenState extends State<BillDesignScreen>
                     main.headerType = value!;
                   });
                 },
-                title: const Text('QR Code'),
+                title: Text('QR Code'),
               ),
             ),
             Expanded(
@@ -1854,7 +1821,7 @@ class _BillDesignScreenState extends State<BillDesignScreen>
                     main.headerType = value!;
                   });
                 },
-                title: const Text('Barcode'),
+                title: Text('Barcode'),
               ),
             ),
             Expanded(
@@ -1864,8 +1831,8 @@ class _BillDesignScreenState extends State<BillDesignScreen>
                   header.removeAt(i);
                   setState(() {});
                 },
-                icon: const Icon(Icons.delete),
-                color: Colors.red,
+                icon: Icon(Icons.delete),
+                color: global.theme.negativeHighlightTextColor,
               ),
             ),
           ],
@@ -1938,14 +1905,14 @@ class _BillDesignScreenState extends State<BillDesignScreen>
         formHeader.add(
           Container(
             width: 300,
-            padding: const EdgeInsets.only(
+            padding: EdgeInsets.only(
               left: 5,
               right: 5,
               bottom: 5,
               top: 5,
             ),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
+              border: Border.all(color: global.theme.dividerBorderColor),
               borderRadius: const BorderRadius.all(Radius.circular(5.0)),
             ),
             child: Column(
@@ -1961,7 +1928,7 @@ class _BillDesignScreenState extends State<BillDesignScreen>
 
                           setState(() {});
                         },
-                        icon: const Icon(Icons.delete),
+                        icon: Icon(Icons.delete),
                       ),
                     ),
                     const SizedBox(width: 5),
@@ -1981,7 +1948,7 @@ class _BillDesignScreenState extends State<BillDesignScreen>
                             setState(() {});
                           }
                         },
-                        icon: const Icon(Icons.folder),
+                        icon: Icon(Icons.folder),
                       ),
                     ),
                     const SizedBox(width: 5),
@@ -2002,7 +1969,7 @@ class _BillDesignScreenState extends State<BillDesignScreen>
                             setState(() {});
                           }
                         },
-                        icon: const Icon(Icons.camera_alt),
+                        icon: Icon(Icons.camera_alt),
                       ),
                     ),
                   ],
@@ -2033,8 +2000,8 @@ class _BillDesignScreenState extends State<BillDesignScreen>
                       Center(
                         child: DecoratedBox(
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border.all(color: Colors.black),
+                            color: global.theme.cardColor,
+                            border: Border.all(color: global.theme.dividerBorderColor),
                             borderRadius: BorderRadius.circular(5),
                             boxShadow: const [
                               BoxShadow(
@@ -2135,22 +2102,11 @@ class _BillDesignScreenState extends State<BillDesignScreen>
     formHeader.add(const SizedBox(height: 20));
 
     return Container(
-      margin: const EdgeInsets.all(5),
-      padding: const EdgeInsets.all(10),
+      margin: EdgeInsets.all(5),
+      padding: EdgeInsets.all(10),
       height: 100,
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.5),
-            spreadRadius: 5,
-            blurRadius: 7,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+      color: global.theme.searchBarColor,
       child: SingleChildScrollView(child: Column(children: formHeader)),
     );
   }
@@ -2214,7 +2170,7 @@ class _BillDesignScreenState extends State<BillDesignScreen>
             Container(
               margin: const EdgeInsets.only(bottom: 5),
               child: Center(
-                child: Text(data.value, style: const TextStyle(fontSize: 12)),
+                child: Text(data.value, style: TextStyle(fontSize: 12)),
               ),
             ),
           );
@@ -2400,7 +2356,7 @@ class _BillDesignScreenState extends State<BillDesignScreen>
             Container(
               margin: const EdgeInsets.only(bottom: 5),
               child: Center(
-                child: Text(data.value, style: const TextStyle(fontSize: 12)),
+                child: Text(data.value, style: TextStyle(fontSize: 12)),
               ),
             ),
           );
@@ -2422,16 +2378,16 @@ class _BillDesignScreenState extends State<BillDesignScreen>
       }
     }
     detailWidget.add(
-      const Padding(
+      Padding(
         padding: EdgeInsets.only(top: 5, bottom: 1),
-        child: Divider(color: Colors.black, height: 2),
+        child: Divider(color: global.theme.dividerBorderColor, height: 2),
       ),
     );
     detailWidget.add(Row(children: detailHeader));
     detailWidget.add(
-      const Padding(
+      Padding(
         padding: EdgeInsets.only(top: 5, bottom: 3),
-        child: Divider(color: Colors.black, height: 2),
+        child: Divider(color: global.theme.dividerBorderColor, height: 2),
       ),
     );
     detailWidget.add(Row(children: detailBody));
@@ -2441,34 +2397,23 @@ class _BillDesignScreenState extends State<BillDesignScreen>
     preViewDetail.addAll(headerWidget);
     preViewDetail.add(Expanded(child: Column(children: detailWidget)));
     preViewDetail.add(
-      const Padding(
+      Padding(
         padding: EdgeInsets.only(top: 5, bottom: 1),
-        child: Divider(color: Colors.black, height: 2),
+        child: Divider(color: global.theme.dividerBorderColor, height: 2),
       ),
     );
     preViewDetail.addAll(totalWidget);
     preViewDetail.add(
-      const Padding(
+      Padding(
         padding: EdgeInsets.only(top: 5, bottom: 3),
-        child: Divider(color: Colors.black, height: 2),
+        child: Divider(color: global.theme.dividerBorderColor, height: 2),
       ),
     );
     preViewDetail.addAll(footerWidget);
 
     Widget containerPreview = Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.5),
-            spreadRadius: 5,
-            blurRadius: 7,
-            offset: const Offset(0, 3), // changes position of shadow
-          ),
-        ],
-      ),
+      padding: EdgeInsets.all(10),
+      color: global.theme.searchBarColor,
       child: Column(children: preViewDetail),
     );
 
@@ -2506,7 +2451,7 @@ class _BillDesignScreenState extends State<BillDesignScreen>
                       },
                     );
                   },
-                  child: const Text("58mm"),
+                  child: Text("58mm"),
                 ),
               ),
               Container(
@@ -2536,7 +2481,7 @@ class _BillDesignScreenState extends State<BillDesignScreen>
                       },
                     );
                   },
-                  child: const Text("80mm"),
+                  child: Text("80mm"),
                 ),
               ),
             ],

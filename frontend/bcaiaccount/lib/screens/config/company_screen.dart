@@ -17,7 +17,7 @@ class CompanyScreen extends StatefulWidget {
 }
 
 class _CompanyScreenState extends State<CompanyScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   late ShopModel screenData;
   final List<LanguageModel> defaultLanguageList = [
     LanguageModel(code: "th", codeTranslator: "th", name: "Thai", isuse: false),
@@ -218,24 +218,23 @@ class _CompanyScreenState extends State<CompanyScreen>
       appBar: AppBar(
         title: Text(
           global.language('company'),
-          style: const TextStyle(fontWeight: FontWeight.w600),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
           tooltip: global.language('back'),
         ),
         actions: [
-          const ManualButton(path: 'settings-company'),
           isSaving
-              ? const Padding(
+              ? Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                      color: Colors.white,
+                      color: global.theme.cardColor,
                       strokeWidth: 2,
                     ),
                   ),
@@ -243,13 +242,14 @@ class _CompanyScreenState extends State<CompanyScreen>
               : IconButton(
                   tooltip: global.language('save'),
                   onPressed: saveOrUpdateData,
-                  icon: const Icon(Icons.save_outlined),
+                  icon: Icon(Icons.save_outlined),
                 ),
+          const ManualButton(path: 'settings-company'),
         ],
         bottom: TabBar(
           controller: _tabController,
           indicatorWeight: 3,
-          labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+          labelStyle: TextStyle(fontWeight: FontWeight.w600),
           tabs: [
             Tab(
               icon: Icon(Icons.business_outlined),
@@ -304,7 +304,7 @@ class _CompanyScreenState extends State<CompanyScreen>
                 borderRadius: BorderRadius.circular(12),
               ),
               elevation: 2,
-              surfaceTintColor: Colors.white,
+              surfaceTintColor: global.theme.cardColor,
               child: Padding(
                 padding: EdgeInsets.all(20),
                 child: Column(
@@ -329,7 +329,7 @@ class _CompanyScreenState extends State<CompanyScreen>
                         SizedBox(width: 12),
                         Text(
                           global.language("company_names"),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
                           ),
@@ -354,7 +354,7 @@ class _CompanyScreenState extends State<CompanyScreen>
 
   Widget _buildLanguagesTab(bool isSmallScreen) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 800),
@@ -363,7 +363,7 @@ class _CompanyScreenState extends State<CompanyScreen>
               borderRadius: BorderRadius.circular(12),
             ),
             elevation: 2,
-            surfaceTintColor: Colors.white,
+            surfaceTintColor: global.theme.cardColor,
             child: Padding(
               padding: EdgeInsets.all(20),
               child: Column(
@@ -375,21 +375,21 @@ class _CompanyScreenState extends State<CompanyScreen>
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.teal.withValues(alpha: 0.1),
+                              color: global.theme.infoHighlightColor,
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.translate_outlined,
                               size: 22,
-                              color: Colors.teal,
+                              color: global.theme.infoHighlightTextColor,
                             ),
                           ),
                           SizedBox(width: 12),
                           Text(
                             global.language("language_settings"),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
                             ),
@@ -419,22 +419,22 @@ class _CompanyScreenState extends State<CompanyScreen>
                         child: Column(
                           children: [
                             Container(
-                              padding: const EdgeInsets.all(16),
+                              padding: EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: Colors.teal.withValues(alpha: 0.1),
+                                color: global.theme.infoHighlightColor,
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
                                 Icons.language_outlined,
                                 size: 64,
-                                color: Colors.teal.shade400,
+                                color: global.theme.infoHighlightTextColor,
                               ),
                             ),
                             SizedBox(height: 24),
                             Text(
                               global.language('no_languages_configured'),
                               style: TextStyle(
-                                color: Colors.grey.shade700,
+                                color: global.theme.textColor,
                                 fontSize: 16,
                               ),
                             ),
@@ -531,10 +531,10 @@ class _CompanyScreenState extends State<CompanyScreen>
         if (additionalLanguageFields.isNotEmpty)
           Card(
             elevation: 0,
-            color: Colors.grey.shade50,
+            color: global.theme.surfaceColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
-              side: BorderSide(color: Colors.grey.shade200),
+              side: BorderSide(color: global.theme.dividerBorderColor),
             ),
             child: ExpansionTile(
               shape: Border(),
@@ -543,12 +543,12 @@ class _CompanyScreenState extends State<CompanyScreen>
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade700,
+                  color: global.theme.textColor,
                 ),
               ),
               leading: Icon(
                 Icons.translate,
-                color: Colors.grey.shade700,
+                color: global.theme.textColor,
                 size: 20,
               ),
               tilePadding: const EdgeInsets.symmetric(
@@ -593,7 +593,7 @@ class _CompanyScreenState extends State<CompanyScreen>
                 borderRadius: BorderRadius.circular(4),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withValues(alpha: 0.2),
+                    color: global.theme.dividerBorderColor.withValues(alpha: 0.2),
                     blurRadius: 3,
                     offset: const Offset(0, 1),
                   ),
@@ -616,7 +616,7 @@ class _CompanyScreenState extends State<CompanyScreen>
                 fontWeight: FontWeight.w600,
                 color: isRequired
                     ? Theme.of(context).primaryColor
-                    : Colors.grey.shade800,
+                    : global.theme.textColor,
               ),
             ),
           ],
@@ -629,17 +629,17 @@ class _CompanyScreenState extends State<CompanyScreen>
             hintText: isRequired
                 ? global.language('required')
                 : global.language('optional'),
-            contentPadding: const EdgeInsets.symmetric(
+            contentPadding: EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 16,
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey.shade300),
+              borderSide: BorderSide(color: global.theme.dividerBorderColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey.shade300),
+              borderSide: BorderSide(color: global.theme.dividerBorderColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
@@ -650,7 +650,7 @@ class _CompanyScreenState extends State<CompanyScreen>
             ),
             fillColor: isRequired
                 ? Theme.of(context).primaryColor.withValues(alpha: 0.05)
-                : Colors.white,
+                : global.theme.onPrimaryColor,
             filled: true,
           ),
           onChanged: (value) {
@@ -673,7 +673,7 @@ class _CompanyScreenState extends State<CompanyScreen>
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       clipBehavior: Clip.antiAlias,
       child: ListView.separated(
@@ -681,26 +681,26 @@ class _CompanyScreenState extends State<CompanyScreen>
         shrinkWrap: true,
         itemCount: screenData.settings!.languageconfigs!.length,
         separatorBuilder: (_, _) =>
-            Divider(height: 1, color: Colors.grey.shade200),
+            Divider(height: 1, color: global.theme.dividerBorderColor),
         itemBuilder: (context, index) {
           final language = screenData.settings!.languageconfigs![index];
           final isDefault = index == 0;
 
           return Container(
-            color: isDefault ? Colors.teal.withValues(alpha: 0.05) : null,
+            color: isDefault ? global.theme.infoHighlightColor : null,
             child: ListTile(
               leading: Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: isDefault ? Colors.teal : Colors.grey.shade200,
+                  color: isDefault ? global.theme.infoHighlightTextColor : global.theme.dividerBorderColor,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   (index + 1).toString(),
                   style: TextStyle(
-                    color: isDefault ? Colors.white : Colors.black87,
+                    color: isDefault ? global.theme.onPrimaryColor : global.theme.textColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -713,7 +713,7 @@ class _CompanyScreenState extends State<CompanyScreen>
                         borderRadius: BorderRadius.circular(4),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withValues(alpha: 0.2),
+                            color: global.theme.dividerBorderColor.withValues(alpha: 0.2),
                             blurRadius: 3,
                             offset: const Offset(0, 1),
                           ),
@@ -748,20 +748,20 @@ class _CompanyScreenState extends State<CompanyScreen>
                         Padding(
                           padding: EdgeInsets.only(top: 4),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
+                            padding: EdgeInsets.symmetric(
                               horizontal: 8,
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.teal.withValues(alpha: 0.1),
+                              color: global.theme.infoHighlightColor,
                               borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: Colors.teal.shade200),
+                              border: Border.all(color: global.theme.infoHighlightTextColor.withValues(alpha: 0.3)),
                             ),
                             child: Text(
                               global.language('default_language'),
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.teal.shade700,
+                                color: global.theme.infoHighlightTextColor,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -775,12 +775,12 @@ class _CompanyScreenState extends State<CompanyScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 22),
+                    icon: Icon(Icons.edit_outlined, size: 22),
                     onPressed: () => _selectLanguage(index),
                     tooltip: global.language('change'),
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.blue.shade50,
-                      foregroundColor: Colors.blue.shade700,
+                      backgroundColor: global.theme.infoHighlightColor,
+                      foregroundColor: global.theme.infoHighlightTextColor,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -790,8 +790,8 @@ class _CompanyScreenState extends State<CompanyScreen>
                       onPressed: () => _deleteLanguage(index),
                       tooltip: global.language('delete'),
                       style: IconButton.styleFrom(
-                        backgroundColor: Colors.red.shade50,
-                        foregroundColor: Colors.red.shade700,
+                        backgroundColor: global.theme.negativeHighlightColor,
+                        foregroundColor: global.theme.negativeHighlightTextColor,
                       ),
                     ),
                 ],
@@ -880,13 +880,13 @@ class _CompanyScreenState extends State<CompanyScreen>
                   child: TextField(
                     decoration: InputDecoration(
                       hintText: global.language('search'),
-                      prefixIcon: const Icon(Icons.search_outlined),
+                      prefixIcon: Icon(Icons.search_outlined),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(30),
                         borderSide: BorderSide.none,
                       ),
                       filled: true,
-                      fillColor: Colors.grey.shade100,
+                      fillColor: global.theme.surfaceColor,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 12,
@@ -909,7 +909,7 @@ class _CompanyScreenState extends State<CompanyScreen>
                             borderRadius: BorderRadius.circular(4),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.grey.withValues(alpha: 0.2),
+                                color: global.theme.dividerBorderColor.withValues(alpha: 0.2),
                                 blurRadius: 3,
                                 offset: const Offset(0, 1),
                               ),
@@ -926,7 +926,7 @@ class _CompanyScreenState extends State<CompanyScreen>
                         ),
                         title: Text(
                           languages[index].name!,
-                          style: const TextStyle(fontSize: 15),
+                          style: TextStyle(fontSize: 15),
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(4),
@@ -934,7 +934,7 @@ class _CompanyScreenState extends State<CompanyScreen>
                         onTap: () {
                           Navigator.pop(context, languages[index].code);
                         },
-                        hoverColor: Colors.grey.shade100,
+                        hoverColor: global.theme.surfaceColor,
                       );
                     },
                   ),
@@ -984,8 +984,8 @@ class _CompanyScreenState extends State<CompanyScreen>
             ElevatedButton.icon(
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade50,
-                foregroundColor: Colors.red.shade700,
+                backgroundColor: global.theme.negativeHighlightColor,
+                foregroundColor: global.theme.negativeHighlightTextColor,
               ),
               icon: Icon(Icons.delete_outline, size: 18),
               label: Text(global.language('delete')),
@@ -1034,7 +1034,7 @@ class _CompanyScreenState extends State<CompanyScreen>
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 2,
-      surfaceTintColor: Colors.white,
+      surfaceTintColor: global.theme.cardColor,
       child: Padding(
         padding: EdgeInsets.all(20),
         child: Column(
@@ -1043,21 +1043,21 @@ class _CompanyScreenState extends State<CompanyScreen>
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.1),
+                    color: global.theme.positiveHighlightColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.currency_exchange,
                     size: 22,
-                    color: Colors.green,
+                    color: global.theme.positiveHighlightTextColor,
                   ),
                 ),
                 SizedBox(width: 12),
                 Text(
                   global.language("base_currency"),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
@@ -1067,17 +1067,17 @@ class _CompanyScreenState extends State<CompanyScreen>
             const Divider(height: 32),
             // คำอธิบาย
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: global.theme.infoHighlightColor,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.shade200),
+                border: Border.all(color: global.theme.infoHighlightColor),
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.info_outline,
-                    color: Colors.blue.shade700,
+                    color: global.theme.infoHighlightTextColor,
                     size: 20,
                   ),
                   const SizedBox(width: 12),
@@ -1085,7 +1085,7 @@ class _CompanyScreenState extends State<CompanyScreen>
                     child: Text(
                       'สกุลเงินหลักของบริษัท มีอัตราแลกเปลี่ยน 1:1',
                       style: TextStyle(
-                        color: Colors.blue.shade700,
+                        color: global.theme.infoHighlightTextColor,
                         fontSize: 13,
                       ),
                     ),
@@ -1104,20 +1104,20 @@ class _CompanyScreenState extends State<CompanyScreen>
               )
             else if (_currencies.isEmpty)
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
+                  color: global.theme.warningHighlightColor,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange.shade200),
+                  border: Border.all(color: global.theme.warningHighlightColor),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.warning_amber, color: Colors.orange.shade700),
+                    Icon(Icons.warning_amber, color: global.theme.warningHighlightTextColor),
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'ยังไม่มีสกุลเงินในระบบ กรุณาเพิ่มสกุลเงินในเมนู global.language("currency") ก่อน',
-                        style: TextStyle(color: Colors.orange.shade800),
+                        style: TextStyle(color: global.theme.warningHighlightTextColor),
                       ),
                     ),
                   ],
@@ -1137,16 +1137,16 @@ class _CompanyScreenState extends State<CompanyScreen>
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  prefixIcon: const Icon(Icons.monetization_on_outlined),
+                  prefixIcon: Icon(Icons.monetization_on_outlined),
                   filled: true,
-                  fillColor: Colors.grey.shade50,
+                  fillColor: global.theme.formFillColor,
                 ),
                 items: _currencies.map((currency) {
                   return DropdownMenuItem<String>(
                     value: currency.code,
                     child: Text(
                       '${currency.symbol.isNotEmpty ? currency.symbol : currency.code} ${currency.code} - ${currency.name}',
-                      style: const TextStyle(fontSize: 14),
+                      style: TextStyle(fontSize: 14),
                     ),
                   );
                 }).toList(),

@@ -2,7 +2,7 @@
 import 'package:smlaicloud/bloc/master_class/master_class_bloc.dart';
 import 'package:smlaicloud/widgets/manual_button.dart';
 import 'package:smlaicloud/model/master_class_model.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,7 +20,7 @@ class MasterClassScreen extends StatefulWidget {
 }
 
 class MasterClassScreenState extends State<MasterClassScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   late TabController tabController;
   ScrollController editScrollController = ScrollController();
@@ -47,6 +47,7 @@ class MasterClassScreenState extends State<MasterClassScreen>
   bool isKeyUp = false;
   bool isKeyDown = false;
   bool showCheckBox = false;
+  int _hoverIndex = -1;
   global.ScreenEventEnum screenEvent = global.ScreenEventEnum.list;
   late SplitViewController splitViewController;
   final debouncer = global.Debouncer(1000);
@@ -193,6 +194,7 @@ class MasterClassScreenState extends State<MasterClassScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -312,7 +314,7 @@ class MasterClassScreenState extends State<MasterClassScreen>
           Container(
             padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.searchBarColor,
               borderRadius: BorderRadius.circular(2),
             ),
             child: Row(
@@ -341,26 +343,21 @@ class MasterClassScreenState extends State<MasterClassScreen>
                     controller: searchController,
                     decoration: InputDecoration(
                       isDense: true,
-                      contentPadding: const EdgeInsets.only(
-                        top: 0,
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                       border: InputBorder.none,
                       hintText: global.language('search'),
+                      prefixIcon: Icon(Icons.search, size: 20),
+                      prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                     ),
                   ),
                 ),
-                IconButton(
-                  focusNode: FocusNode(skipTraversal: true),
-                  icon: const FaIcon(FontAwesomeIcons.font),
-                  onPressed: () async {
-                    setState(() {
-                      global.listDataFontSizeChange();
-                    });
-                  },
-                ),
+                ListFontSizeControl(onChanged: () => setState(() {})),
+                const SizedBox(width: 4),
+                if (listData.isNotEmpty)
+                  Text(
+                    '(${listData.length})',
+                    style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
+                  ),
                 IconButton(
                   focusNode: FocusNode(skipTraversal: true),
                   icon: const Icon(Icons.line_weight),
@@ -512,14 +509,15 @@ class MasterClassScreenState extends State<MasterClassScreen>
     }
     // ลบการ add key ออก - keys ถูกสร้างใน LoadSuccess แล้ว
     // listKeys.add(GlobalKey());  // ❌ ตรงนี้ทำให้เกิด infinite loop!
-    bool selected = selectGuid == value.guidfixed;
-    TextStyle textStyle = TextStyle(
-      fontWeight: (selected) ? FontWeight.bold : FontWeight.normal,
-      fontSize: (selected)
-          ? global.deviceConfig.listDataFontSize + 2.0
-          : global.deviceConfig.listDataFontSize,
-    );
-    return GestureDetector(
+    final isSelected = selectGuid == value.guidfixed;
+    TextStyle textStyle = isSelected
+        ? TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w700, color: global.theme.textColor)
+        : TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w400, color: global.theme.textSecondaryColor);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         if (showCheckBox == true) {
           setState(() {
@@ -561,7 +559,7 @@ class MasterClassScreenState extends State<MasterClassScreen>
         key: index < listKeys.length ? listKeys[index] : null,
         decoration: BoxDecoration(
           color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
+              ? global.theme.rowSelectedColor
               : (index % 2 == 0)
               ? global.theme.columnAlternateEvenColor
               : global.theme.columnAlternateOddColor,
@@ -606,7 +604,23 @@ class MasterClassScreenState extends State<MasterClassScreen>
           ],
         ),
       ),
+    ),
     );
+  }
+
+
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return (screenEvent == global.ScreenEventEnum.edit)
+          ? global.theme.rowEditColor
+          : global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
   }
 
   List<LanguageDataModel> packLanguage() {
@@ -850,7 +864,7 @@ class MasterClassScreenState extends State<MasterClassScreen>
         child: SingleChildScrollView(
           controller: editScrollController,
           child: Container(
-            color: Colors.white,
+            color: global.theme.cardColor,
             width: double.infinity,
             padding: const EdgeInsets.all(10),
             child: Column(
@@ -874,15 +888,15 @@ class MasterClassScreenState extends State<MasterClassScreen>
                     );
                   },
                   decoration: InputDecoration(
-                    border: const OutlineInputBorder(),
-                    contentPadding: const EdgeInsets.only(
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.only(
                       left: 10,
                       top: 0,
                       bottom: 0,
                       right: 10,
                     ),
-                    enabledBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey, width: 0.0),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
                     ),
                     floatingLabelBehavior: FloatingLabelBehavior.always,
                     labelText: global.language("class_code"),
@@ -908,15 +922,15 @@ class MasterClassScreenState extends State<MasterClassScreen>
                       textAlign: TextAlign.left,
                       controller: fieldTextController[i + 1],
                       decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.only(
+                        contentPadding: EdgeInsets.only(
                           left: 10,
                           top: 0,
                           bottom: 0,
                           right: 10,
                         ),
-                        enabledBorder: const OutlineInputBorder(
+                        enabledBorder: OutlineInputBorder(
                           borderSide: BorderSide(
-                            color: Colors.grey,
+                            color: global.theme.textSecondaryColor,
                             width: 0.0,
                           ),
                         ),
@@ -981,6 +995,7 @@ class MasterClassScreenState extends State<MasterClassScreen>
       classGuidListChecked.clear();
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -1000,7 +1015,7 @@ class MasterClassScreenState extends State<MasterClassScreen>
                     context,
                     Icon(Icons.save, color: Colors.white),
                     global.language("save_success"),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   clearEditData();
                   listData.clear();
@@ -1023,7 +1038,7 @@ class MasterClassScreenState extends State<MasterClassScreen>
                     context,
                     Icon(Icons.edit, color: Colors.white),
                     global.language("edit_success"),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   clearEditData();
                   listData.clear();
@@ -1051,7 +1066,7 @@ class MasterClassScreenState extends State<MasterClassScreen>
                     context,
                     Icon(Icons.delete, color: Colors.white),
                     global.language("delete_success"),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   listData.clear();
                   clearEditData();
@@ -1067,7 +1082,7 @@ class MasterClassScreenState extends State<MasterClassScreen>
                     context,
                     Icon(Icons.delete, color: Colors.white),
                     global.language("delete_success"),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   listData.clear();
                   clearEditData();
@@ -1094,7 +1109,7 @@ class MasterClassScreenState extends State<MasterClassScreen>
                     controller: splitViewController,
                     gripSize: 14,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.primaryColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

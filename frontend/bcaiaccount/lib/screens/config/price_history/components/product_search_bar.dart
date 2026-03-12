@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:smlaicloud/global.dart' as global;
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 
 class ProductSearchBar extends StatelessWidget {
   final TextEditingController searchController;
@@ -13,7 +13,6 @@ class ProductSearchBar extends StatelessWidget {
   final Function() onFilterPressed;
   final Function() onImageToggle;
   final Function() onFontSizeChange;
-  final Function() onLineSpaceChange;
 
   const ProductSearchBar({
     super.key,
@@ -26,17 +25,13 @@ class ProductSearchBar extends StatelessWidget {
     required this.onFilterPressed,
     required this.onImageToggle,
     required this.onFontSizeChange,
-    required this.onLineSpaceChange,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(5),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(2),
-      ),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      color: global.theme.searchBarColor,
       child: Row(
         children: [
           Expanded(
@@ -48,12 +43,19 @@ class ProductSearchBar extends StatelessWidget {
               autofocus: false,
               focusNode: searchFocusNode,
               controller: searchController,
+              style: TextStyle(color: global.theme.formTextColor),
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding:
-                    const EdgeInsets.only(top: 0, bottom: 0, left: 0, right: 0),
+                    EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                 border: InputBorder.none,
+                filled: false,
                 hintText: global.language('search'),
+                hintStyle: TextStyle(color: global.theme.formHintColor),
+                prefixIcon: Icon(Icons.search,
+                    size: 20, color: global.theme.formHintColor),
+                prefixIconConstraints:
+                    const BoxConstraints(minWidth: 32, minHeight: 32),
               ),
             ),
           ),
@@ -63,25 +65,20 @@ class ProductSearchBar extends StatelessWidget {
               (filterBarcode.branch == false)
                   ? Icons.filter_alt_off
                   : Icons.filter_alt,
-              color:
-                  (filterBarcode.branch == false) ? Colors.black : Colors.blue,
+              color: (filterBarcode.branch == false)
+                  ? global.theme.iconSecondaryColor
+                  : global.theme.primaryColor,
             ),
           ),
           IconButton(
             focusNode: FocusNode(skipTraversal: true),
-            icon: Icon((showImage) ? Icons.image_not_supported : Icons.image),
+            icon: Icon(
+              (showImage) ? Icons.image_not_supported : Icons.image,
+              color: global.theme.iconSecondaryColor,
+            ),
             onPressed: onImageToggle,
           ),
-          IconButton(
-            focusNode: FocusNode(skipTraversal: true),
-            icon: const FaIcon(FontAwesomeIcons.font),
-            onPressed: onFontSizeChange,
-          ),
-          IconButton(
-            focusNode: FocusNode(skipTraversal: true),
-            icon: const Icon(Icons.line_weight),
-            onPressed: onLineSpaceChange,
-          ),
+          ListFontSizeControl(onChanged: onFontSizeChange),
         ],
       ),
     );

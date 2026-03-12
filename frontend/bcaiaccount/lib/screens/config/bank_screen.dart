@@ -2,7 +2,7 @@
 
 import 'package:smlaicloud/utils/dialog_template.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,7 +26,7 @@ class BankScreen extends StatefulWidget {
 }
 
 class BankScreenState extends State<BankScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   late TabController tabController;
   final ImagePicker imagePicker = ImagePicker();
@@ -56,6 +56,7 @@ class BankScreenState extends State<BankScreen>
   bool isKeyUp = false;
   bool isKeyDown = false;
   bool showCheckBox = false;
+  int _hoverIndex = -1;
   bool isEditMode = false;
   late SplitViewController splitViewController;
   File imageFile = File('');
@@ -236,6 +237,7 @@ class BankScreenState extends State<BankScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -420,7 +422,7 @@ class BankScreenState extends State<BankScreen>
             Container(
               padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.searchBarColor,
                 borderRadius: BorderRadius.circular(2),
               ),
               child: Row(
@@ -443,27 +445,27 @@ class BankScreenState extends State<BankScreen>
                       controller: searchController,
                       decoration: InputDecoration(
                         isDense: true,
-                        contentPadding: const EdgeInsets.only(
+                        contentPadding: EdgeInsets.only(
                           top: 0,
                           bottom: 0,
                           left: 0,
                           right: 0,
                         ),
                         border: InputBorder.none,
+                        prefixIcon: Icon(Icons.search, size: 20, color: global.theme.iconColor),
+                        prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         hintText: (kIsWeb)
                             ? "${global.language('search')} (F2)"
                             : global.language('search'),
                       ),
                     ),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const FaIcon(FontAwesomeIcons.font),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataFontSizeChange();
-                      });
-                    },
+                  ListFontSizeControl(onChanged: () => setState(() {})),
+                const SizedBox(width: 4),
+                if (bankListDatas.isNotEmpty)
+                  Text(
+                    '(${bankListDatas.length})',
+                    style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                   ),
                 ],
               ),
@@ -558,7 +560,11 @@ class BankScreenState extends State<BankScreen>
     }
     // ลบการ add key ออก - keys ถูกสร้างใน LoadSuccess แล้ว
     // listKeys.add(GlobalKey());  // ❌ ตรงนี้ทำให้เกิด infinite loop!
-    return GestureDetector(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         if (showCheckBox == true) {
           setState(() {
@@ -600,11 +606,7 @@ class BankScreenState extends State<BankScreen>
       child: Container(
         key: index < listKeys.length ? listKeys[index] : null,
         decoration: BoxDecoration(
-          color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
-              : (index % 2 == 0)
-              ? global.theme.columnAlternateEvenColor
-              : global.theme.columnAlternateOddColor,
+          color: _getContainerColor(value.guidfixed, index),
         ),
         padding: const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
         child: Row(
@@ -645,7 +647,21 @@ class BankScreenState extends State<BankScreen>
           ],
         ),
       ),
+    ),
     );
+  }
+
+
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
   }
 
   List<LanguageDataModel> packLanguage() {
@@ -927,7 +943,7 @@ class BankScreenState extends State<BankScreen>
                     },
                     decoration: InputDecoration(
                       border: const OutlineInputBorder(),
-                      contentPadding: const EdgeInsets.only(
+                      contentPadding: EdgeInsets.only(
                         left: 10,
                         top: 0,
                         bottom: 0,
@@ -963,7 +979,7 @@ class BankScreenState extends State<BankScreen>
                         textAlign: TextAlign.left,
                         controller: fieldTextController[i + 1],
                         decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.only(
+                          contentPadding: EdgeInsets.only(
                             left: 10,
                             top: 0,
                             bottom: 0,
@@ -996,8 +1012,8 @@ class BankScreenState extends State<BankScreen>
 
                   // Container(
                   //   width: 300,
-                  //   padding: const EdgeInsets.only(left: 5, right: 5, bottom: 5, top: 5),
-                  //   decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: const BorderRadius.all(Radius.circular(5.0))),
+                  //   padding: EdgeInsets.only(left: 5, right: 5, bottom: 5, top: 5),
+                  //   decoration: BoxDecoration(border: Border.all(color: global.theme.textSecondaryColor), borderRadius: BorderRadius.all(Radius.circular(5.0))),
                   //   child: Column(
                   //     children: [
                   //       Row(
@@ -1088,7 +1104,7 @@ class BankScreenState extends State<BankScreen>
                   //                 child: DecoratedBox(
                   //               decoration: BoxDecoration(
                   //                 color: Colors.white,
-                  //                 border: Border.all(color: Colors.black),
+                  //                 border: Border.all(color: global.theme.textColor),
                   //                 borderRadius: BorderRadius.circular(5),
                   //                 boxShadow: const [
                   //                   BoxShadow(
@@ -1236,7 +1252,7 @@ class BankScreenState extends State<BankScreen>
                           child: DecoratedBox(
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              border: Border.all(color: Colors.black),
+                              border: Border.all(color: global.theme.textColor),
                               borderRadius: BorderRadius.circular(5),
                               image: (imageWeb.isNotEmpty)
                                   ? DecorationImage(
@@ -1297,6 +1313,7 @@ class BankScreenState extends State<BankScreen>
       bankGuidListChecked.clear();
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -1325,7 +1342,7 @@ class BankScreenState extends State<BankScreen>
                     context,
                     Icon(Icons.save, color: Colors.white),
                     global.language("save_success"),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   clearEditData();
                   bankListDatas.clear();
@@ -1349,7 +1366,7 @@ class BankScreenState extends State<BankScreen>
                     context,
                     Icon(Icons.edit, color: Colors.white),
                     global.language("edit_success"),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   clearEditData();
                   bankListDatas.clear();
@@ -1378,7 +1395,7 @@ class BankScreenState extends State<BankScreen>
                     context,
                     Icon(Icons.delete, color: Colors.white),
                     global.language("delete_success"),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   bankListDatas.clear();
                   clearEditData();
@@ -1395,7 +1412,7 @@ class BankScreenState extends State<BankScreen>
                     context,
                     Icon(Icons.delete, color: Colors.white),
                     global.language("delete_success"),
-                    Colors.blue,
+                    global.theme.primaryColor,
                   );
                   bankListDatas.clear();
                   clearEditData();
@@ -1471,7 +1488,7 @@ class BankScreenState extends State<BankScreen>
                     controller: splitViewController,
                     gripSize: 14,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.primaryColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

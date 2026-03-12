@@ -37,7 +37,8 @@ class ProductBarcodeShelf extends StatefulWidget {
   State<ProductBarcodeShelf> createState() => ProductBarcodeShelfState();
 }
 
-class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
+class ProductBarcodeShelfState extends State<ProductBarcodeShelf>
+    with global.ThemeRefreshMixin {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode(skipTraversal: true);
   final ScrollController _listScrollController = ScrollController();
@@ -160,19 +161,8 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
         children: [
           // ช่องค้นหาและตัวกรอง
           Container(
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.5),
-                  spreadRadius: 5,
-                  blurRadius: 7,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
+            padding: EdgeInsets.all(5),
+            color: global.theme.searchBarColor,
             child: TextField(
               onSubmitted: (value) {
                 _searchFocusNode.requestFocus();
@@ -195,7 +185,7 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
               controller: _searchController,
               decoration: InputDecoration(
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
+                contentPadding: EdgeInsets.symmetric(
                   vertical: 12,
                   horizontal: 10,
                 ),
@@ -213,7 +203,7 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                   state is ProductListLoaded && state.products.isNotEmpty;
 
               return Container(
-                padding: const EdgeInsets.symmetric(
+                padding: EdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 12,
                 ),
@@ -224,44 +214,44 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                       flex: 4,
                       child: Text(
                         global.language("barcode"),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                     Expanded(
                       flex: 6,
                       child: Text(
                         global.language("product_name"),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                     Expanded(
                       flex: 3,
                       child: Text(
                         global.language("unit"),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                     Expanded(
                       flex: 3,
                       child: Text(
                         global.language("item_code"),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                     Expanded(
                       flex: 4,
                       child: Text(
                         global.language("product_group"),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
 
                     // ปุ่มเพิ่มทั้งหมด
                     if (hasProducts)
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.playlist_add,
-                          color: Colors.green,
+                          color: global.theme.positiveHighlightTextColor,
                         ),
                         onPressed: () => _addAllProducts(state),
                         tooltip: global.language('add_all_products'),
@@ -293,7 +283,7 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                             Icon(
                               Icons.error,
                               size: 64,
-                              color: Colors.red.shade400,
+                              color: global.theme.negativeHighlightTextColor,
                             ),
                             SizedBox(height: 16),
                             Text(
@@ -375,7 +365,7 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
   Widget buildSelectedProductsList() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: global.theme.surfaceColor,
         borderRadius: BorderRadius.circular(8),
       ),
       child: BlocBuilder<SelectedProductsBloc, SelectedProductsState>(
@@ -491,11 +481,11 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
   Widget buildListHeader(SelectedProductsState state) {
     return Container(
       height: 60, // กำหนดความสูงคงที่
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      margin: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      margin: EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey.shade200, width: 1),
+        color: global.theme.cardColor,
+        border: Border.all(color: global.theme.dividerBorderColor, width: 1),
       ),
       child: Row(
         children: [
@@ -516,7 +506,7 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                     text: TextSpan(
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.grey.shade800,
+                        color: global.theme.textColor,
                       ),
                       children: [
                         TextSpan(
@@ -532,7 +522,7 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                           text:
                               '(${state.selectedProducts.fold(0, (sum, item) => sum + item.copies)} ${global.language('pieces')})',
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: global.theme.textSecondaryColor,
                             fontSize: 14,
                           ),
                         ),
@@ -551,21 +541,21 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
             icon: Icon(
               Icons.add_shopping_cart,
               size: 18,
-              color: Colors.blue.shade700,
+              color: global.theme.infoHighlightTextColor,
             ),
             label: Text(
               global.language('add_from_shelf'),
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: Colors.blue.shade700,
+                color: global.theme.infoHighlightTextColor,
               ),
             ),
             style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(6),
-                side: BorderSide(color: Colors.blue.shade200),
+                side: BorderSide(color: global.theme.infoHighlightColor),
               ),
             ),
           ),
@@ -590,7 +580,7 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                     icon: Icon(
                       Icons.clear_all,
                       size: 18,
-                      color: Colors.red.shade600,
+                      color: global.theme.negativeHighlightTextColor,
                     ),
                     tooltip: global.language("clear_all"),
                     style: IconButton.styleFrom(
@@ -616,9 +606,9 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: global.theme.infoHighlightColor,
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -633,17 +623,17 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey.shade800,
+                color: global.theme.textColor,
               ),
             ),
             SizedBox(height: 12),
             Text(
               global.language('select_products_from_left'),
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 16, color: global.theme.textSecondaryColor),
             ),
             const SizedBox(height: 32),
-            Icon(Icons.arrow_back, size: 32, color: Colors.blue.shade300),
+            Icon(Icons.arrow_back, size: 32, color: global.theme.infoHighlightTextColor),
           ],
         ),
       ),
@@ -670,15 +660,15 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                   // Barcode badge - vertical orientation
                   Container(
                     width: 32,
-                    padding: const EdgeInsets.symmetric(
+                    padding: EdgeInsets.symmetric(
                       vertical: 6,
                       horizontal: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: global.theme.surfaceColor,
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
-                        color: Colors.grey.shade300,
+                        color: global.theme.dividerBorderColor,
                         width: 0.5,
                       ),
                     ),
@@ -688,7 +678,7 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                         Icon(
                           Icons.qr_code,
                           size: 14,
-                          color: Colors.grey.shade700,
+                          color: global.theme.textColor,
                         ),
                         const SizedBox(height: 2),
                         RotatedBox(
@@ -700,7 +690,7 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                             style: TextStyle(
                               fontSize: 10,
                               fontFamily: 'Monospace',
-                              color: Colors.grey.shade800,
+                              color: global.theme.textColor,
                             ),
                           ),
                         ),
@@ -719,7 +709,7 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                         // Product name
                         Text(
                           global.activeLangName(product.product.name),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -735,7 +725,7 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                           style: TextStyle(
                             fontSize: 11,
                             fontFamily: 'Monospace',
-                            color: Colors.grey.shade700,
+                            color: global.theme.textColor,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -754,12 +744,12 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                                 global.activeLangName(product.product.unitname),
                                 style: TextStyle(
                                   fontSize: 9,
-                                  color: Colors.blue.shade700,
+                                  color: global.theme.infoHighlightTextColor,
                                 ),
                               ),
-                              backgroundColor: Colors.blue.shade50,
+                              backgroundColor: global.theme.infoHighlightColor,
                               side: BorderSide(
-                                color: Colors.blue.shade100,
+                                color: global.theme.columnHeaderColor,
                                 width: 0.5,
                               ),
                               padding: EdgeInsets.zero,
@@ -776,13 +766,13 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                                   '${product.product.shelfCode} - ${product.product.shelfName}',
                                   style: TextStyle(
                                     fontSize: 9,
-                                    color: Colors.orange.shade700,
+                                    color: global.theme.warningHighlightTextColor,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                                backgroundColor: Colors.orange.shade50,
+                                backgroundColor: global.theme.warningHighlightColor,
                                 side: BorderSide(
-                                  color: Colors.orange.shade100,
+                                  color: global.theme.rowEditColor,
                                   width: 0.5,
                                 ),
                                 padding: EdgeInsets.zero,
@@ -809,10 +799,10 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                   Container(
                     height: 32,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
+                      color: global.theme.surfaceColor,
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
-                        color: Colors.grey.shade300,
+                        color: global.theme.dividerBorderColor,
                         width: 0.5,
                       ),
                     ),
@@ -829,8 +819,8 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                             height: 32,
                             decoration: BoxDecoration(
                               color: product.copies > 1
-                                  ? Colors.red.shade50
-                                  : Colors.grey.shade100,
+                                  ? global.theme.negativeHighlightColor
+                                  : global.theme.surfaceColor,
                               borderRadius: const BorderRadius.only(
                                 topLeft: Radius.circular(4),
                                 bottomLeft: Radius.circular(4),
@@ -841,8 +831,8 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                               Icons.remove,
                               size: 14,
                               color: product.copies > 1
-                                  ? Colors.red.shade700
-                                  : Colors.grey.shade400,
+                                  ? global.theme.negativeHighlightTextColor
+                                  : global.theme.iconSecondaryColor,
                             ),
                           ),
                         ),
@@ -859,7 +849,7 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.blue.shade800,
+                                color: global.theme.infoHighlightTextColor,
                               ),
                             ),
                           ),
@@ -875,8 +865,8 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                             height: 32,
                             decoration: BoxDecoration(
                               color: product.copies < 99
-                                  ? Colors.green.shade50
-                                  : Colors.grey.shade100,
+                                  ? global.theme.positiveHighlightColor
+                                  : global.theme.surfaceColor,
                               borderRadius: const BorderRadius.only(
                                 topRight: Radius.circular(4),
                                 bottomRight: Radius.circular(4),
@@ -887,8 +877,8 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                               Icons.add,
                               size: 14,
                               color: product.copies < 99
-                                  ? Colors.green.shade700
-                                  : Colors.grey.shade400,
+                                  ? global.theme.positiveHighlightTextColor
+                                  : global.theme.iconSecondaryColor,
                             ),
                           ),
                         ),
@@ -907,19 +897,19 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                     },
                     borderRadius: BorderRadius.circular(4),
                     child: Container(
-                      padding: const EdgeInsets.all(6),
+                      padding: EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: Colors.red.shade50,
+                        color: global.theme.negativeHighlightColor,
                         borderRadius: BorderRadius.circular(4),
                         border: Border.all(
-                          color: Colors.red.shade100,
+                          color: global.theme.negativeHighlightColor,
                           width: 0.5,
                         ),
                       ),
                       child: Icon(
                         Icons.delete_outline,
                         size: 16,
-                        color: Colors.red.shade700,
+                        color: global.theme.negativeHighlightTextColor,
                       ),
                     ),
                   ),
@@ -935,12 +925,12 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
   // Bottom action bar with buttons
   Widget buildBottomActionBar(SelectedProductsState state) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.shade300,
+            color: global.theme.dividerBorderColor,
             blurRadius: 6,
             offset: const Offset(0, -3),
           ),
@@ -955,7 +945,7 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
               label: Text(global.language('edit_all_quantities')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.amber.shade600,
-                foregroundColor: Colors.white,
+                foregroundColor: global.theme.onPrimaryColor,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -970,8 +960,8 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
               icon: Icon(Icons.print),
               label: Text(global.language('print_product_label')),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue.shade700,
-                foregroundColor: Colors.white,
+                backgroundColor: global.theme.infoHighlightTextColor,
+                foregroundColor: global.theme.onPrimaryColor,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -1371,7 +1361,7 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
             child: Text(global.language("cancel")),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
             onPressed: () {
               context.read<SelectedProductsBloc>().add(
                 const ClearAllProducts(),
@@ -1401,7 +1391,7 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
           children: [
             Text(
               global.packName(product.product.name),
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 16),
             TextField(
@@ -1572,7 +1562,7 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                   backgroundColor: global.theme.appBarColor,
                   title: Text(global.language('print_product_label')),
                   leading: IconButton(
-                    icon: const Icon(Icons.arrow_back),
+                    icon: Icon(Icons.arrow_back),
                     onPressed: () => Navigator.pop(context),
                   ),
                   actions: [
@@ -1597,7 +1587,7 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                         controller: _splitViewController,
                         gripSize: 8,
                         gripColor: global.theme.appBarColor,
-                        gripColorActive: Colors.blue,
+                        gripColorActive: global.theme.infoHighlightTextColor,
                         viewMode: SplitViewMode.Vertical,
                         indicator: const SplitIndicator(
                           viewMode: SplitViewMode.Vertical,
@@ -1615,7 +1605,7 @@ class ProductBarcodeShelfState extends State<ProductBarcodeShelf> {
                         controller: _splitViewController,
                         gripSize: 8,
                         gripColor: global.theme.appBarColor,
-                        gripColorActive: Colors.blue,
+                        gripColorActive: global.theme.infoHighlightTextColor,
                         viewMode: SplitViewMode.Horizontal,
                         indicator: const SplitIndicator(
                           viewMode: SplitViewMode.Horizontal,

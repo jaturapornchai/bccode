@@ -15,7 +15,8 @@ class PermissionDefinitionScreen extends StatefulWidget {
   State<PermissionDefinitionScreen> createState() => _PermissionDefinitionScreenState();
 }
 
-class _PermissionDefinitionScreenState extends State<PermissionDefinitionScreen> {
+class _PermissionDefinitionScreenState extends State<PermissionDefinitionScreen>
+    with global.ThemeRefreshMixin {
   List<PermissionDefinitionModel> _permissionList = [];
   List<CompanyBranchModel> _branchList = [];
   bool _isLoading = true;
@@ -71,31 +72,31 @@ class _PermissionDefinitionScreenState extends State<PermissionDefinitionScreen>
         appBar: AppBar(
           title: Text(global.language('permission_definition')),
           actions: [
-            const ManualButton(path: 'settings-permissions'),
             IconButton(
-              icon: const Icon(Icons.refresh),
+              icon: Icon(Icons.refresh),
               onPressed: _loadData,
               tooltip: global.language('database_master_info.refresh'),
             ),
             IconButton(
-              icon: const Icon(Icons.add),
+              icon: Icon(Icons.add),
               onPressed: () => _showEditDialog(null),
               tooltip: global.language('add_new_permission'),
             ),
+            const ManualButton(path: 'settings-permissions'),
           ],
         ),
         body: Column(
           children: [
             // Search bar
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: EdgeInsets.all(8.0),
               child: TextField(
                 decoration: InputDecoration(
                   hintText: global.language('search_permission_hint'),
-                  prefixIcon: const Icon(Icons.search),
+                  prefixIcon: Icon(Icons.search),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   filled: true,
-                  fillColor: Colors.grey[100],
+                  fillColor: global.theme.formFillColor,
                 ),
                 onChanged: (value) => setState(() => _searchText = value),
               ),
@@ -109,11 +110,11 @@ class _PermissionDefinitionScreenState extends State<PermissionDefinitionScreen>
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.security, size: 64, color: Colors.grey[400]),
-                              const SizedBox(height: 16),
+                              Icon(Icons.security, size: 64, color: global.theme.iconSecondaryColor),
+                              SizedBox(height: 16),
                               Text(
                                 global.language('no_permission_list'),
-                                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                                style: TextStyle(fontSize: 16, color: global.theme.textSecondaryColor),
                               ),
                               SizedBox(height: 8),
                               ElevatedButton.icon(
@@ -148,19 +149,19 @@ class _PermissionDefinitionScreenState extends State<PermissionDefinitionScreen>
     );
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: permission.isActive ? Colors.green : Colors.grey,
+          backgroundColor: permission.isActive ? global.theme.positiveHighlightTextColor : global.theme.iconSecondaryColor,
           child: Icon(
             Icons.security,
-            color: Colors.white,
+            color: global.theme.onPrimaryColor,
             size: 20,
           ),
         ),
         title: Text(
           permission.permissionCode,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,7 +170,7 @@ class _PermissionDefinitionScreenState extends State<PermissionDefinitionScreen>
               Text(permission.permissionName),
             Text(
               '$branchCount ${global.language("branch")} $screenCount ${global.language("screen")}',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor),
             ),
           ],
         ),
@@ -178,35 +179,35 @@ class _PermissionDefinitionScreenState extends State<PermissionDefinitionScreen>
           children: [
             // สถานะ
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: permission.isActive ? Colors.green[100] : Colors.grey[200],
+                color: permission.isActive ? Colors.green[100] : global.theme.dividerBorderColor,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 permission.isActive ? global.language('active') : global.language('alert_disabled'),
                 style: TextStyle(
                   fontSize: 11,
-                  color: permission.isActive ? Colors.green[800] : Colors.grey[600],
+                  color: permission.isActive ? Colors.green[800] : global.theme.textSecondaryColor,
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             // คัดลอก
             IconButton(
-              icon: const Icon(Icons.copy, color: Colors.orange),
+              icon: Icon(Icons.copy, color: global.theme.warningHighlightTextColor),
               onPressed: () => _showCopyDialog(permission),
               tooltip: global.language('copy_permission'),
             ),
             // แก้ไข
             IconButton(
-              icon: const Icon(Icons.edit, color: Colors.blue),
+              icon: Icon(Icons.edit, color: global.theme.infoHighlightTextColor),
               onPressed: () => _showEditDialog(permission),
               tooltip: global.language('edit'),
             ),
             // ลบ
             IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
+              icon: Icon(Icons.delete, color: global.theme.negativeHighlightTextColor),
               onPressed: () => _confirmDelete(permission),
               tooltip: global.language('delete'),
             ),
@@ -270,7 +271,7 @@ class _PermissionDefinitionScreenState extends State<PermissionDefinitionScreen>
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
             child: Text(global.language('delete')),
           ),
         ],
@@ -310,8 +311,8 @@ class _PermissionDefinitionScreenState extends State<PermissionDefinitionScreen>
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.copy, color: Colors.orange, size: 24),
-            const SizedBox(width: 8),
+            Icon(Icons.copy, color: global.theme.warningHighlightTextColor, size: 24),
+            SizedBox(width: 8),
             Text('${global.language("copy_permission_from")} "${source.permissionCode}"'),
           ],
         ),
@@ -337,7 +338,7 @@ class _PermissionDefinitionScreenState extends State<PermissionDefinitionScreen>
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               TextFormField(
                 controller: nameController,
                 decoration: InputDecoration(
@@ -368,7 +369,7 @@ class _PermissionDefinitionScreenState extends State<PermissionDefinitionScreen>
             },
             icon: Icon(Icons.copy),
             label: Text(global.language('chatbot_copy')),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            style: ElevatedButton.styleFrom(backgroundColor: global.theme.warningHighlightTextColor),
           ),
         ],
       ),
@@ -439,7 +440,8 @@ class _PermissionEditDialog extends StatefulWidget {
   State<_PermissionEditDialog> createState() => _PermissionEditDialogState();
 }
 
-class _PermissionEditDialogState extends State<_PermissionEditDialog> {
+class _PermissionEditDialogState extends State<_PermissionEditDialog>
+    with global.ThemeRefreshMixin {
   late PermissionDefinitionModel _permission;
   final _codeController = TextEditingController();
   final _nameController = TextEditingController();
@@ -506,7 +508,7 @@ class _PermissionEditDialogState extends State<_PermissionEditDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 14, color: color),
-              const SizedBox(width: 4),
+              SizedBox(width: 4),
               Text(
                 label,
                 style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w500),
@@ -609,15 +611,15 @@ class _PermissionEditDialogState extends State<_PermissionEditDialog> {
             // Header
             Row(
               children: [
-                const Icon(Icons.security, color: Colors.blue),
+                Icon(Icons.security, color: global.theme.infoHighlightTextColor),
                 SizedBox(width: 8),
                 Text(
                   widget.isNew ? global.language('add_new_permission') : global.language('edit_permission'),
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: Icon(Icons.close),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -651,7 +653,7 @@ class _PermissionEditDialogState extends State<_PermissionEditDialog> {
                         ),
                         // ปุ่มสร้างรหัสอัตโนมัติ
                         if (widget.isNew) ...[
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Tooltip(
                             message: global.language('auto_generate_code'),
                             child: ElevatedButton.icon(
@@ -663,7 +665,7 @@ class _PermissionEditDialogState extends State<_PermissionEditDialog> {
                                   _validateCode(autoCode);
                                 });
                               },
-                              icon: const Icon(Icons.auto_awesome, size: 18),
+                              icon: Icon(Icons.auto_awesome, size: 18),
                               label: Text(global.language('auto')),
                               style: ElevatedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
@@ -673,7 +675,7 @@ class _PermissionEditDialogState extends State<_PermissionEditDialog> {
                         ],
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
 
                     // ชื่อสิทธิ์
                     TextField(
@@ -685,7 +687,7 @@ class _PermissionEditDialogState extends State<_PermissionEditDialog> {
                       ),
                       onChanged: (value) => _permission.permissionName = value,
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
 
                     // คำอธิบาย
                     TextField(
@@ -697,7 +699,7 @@ class _PermissionEditDialogState extends State<_PermissionEditDialog> {
                       ),
                       onChanged: (value) => _permission.description = value,
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
 
                     // สถานะใช้งาน
                     SwitchListTile(
@@ -712,7 +714,7 @@ class _PermissionEditDialogState extends State<_PermissionEditDialog> {
                       global.language('set_permissions_by_branch'),
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
 
                     // Branch list
                     ...widget.branchList.map((branch) {
@@ -789,7 +791,7 @@ class _PermissionEditDialogState extends State<_PermissionEditDialog> {
         ),
         title: Text(
           global.activeLangName(branch.names),
-          style: const TextStyle(fontWeight: FontWeight.w500),
+          style: TextStyle(fontWeight: FontWeight.w500),
         ),
         subtitle: Text('${global.language("code_label")}: ${branch.code}'),
         children: isSelected
@@ -811,12 +813,12 @@ class _PermissionEditDialogState extends State<_PermissionEditDialog> {
     'partner': {'name': global.language('customers_and_sellers'), 'icon': Icons.handshake, 'color': Colors.teal},
     'sale_setting': {'name': global.language('sale_settings'), 'icon': Icons.point_of_sale, 'color': Colors.amber},
     'product': {'name': global.language('product'), 'icon': Icons.inventory_2, 'color': Colors.deepPurple},
-    'purchase': {'name': global.language('purchase_transactions'), 'icon': Icons.shopping_cart, 'color': Colors.orange},
-    'sale': {'name': global.language('sale_transactions'), 'icon': Icons.storefront, 'color': Colors.green},
+    'purchase': {'name': global.language('purchase_transactions'), 'icon': Icons.shopping_cart, 'color': global.theme.warningHighlightTextColor},
+    'sale': {'name': global.language('sale_transactions'), 'icon': Icons.storefront, 'color': global.theme.positiveHighlightTextColor},
     'stock': {'name': global.language('stock'), 'icon': Icons.warehouse, 'color': Colors.brown},
-    'finance': {'name': global.language('finance'), 'icon': Icons.account_balance, 'color': Colors.blue},
+    'finance': {'name': global.language('finance'), 'icon': Icons.account_balance, 'color': global.theme.infoHighlightTextColor},
     'report': {'name': global.language('report'), 'icon': Icons.bar_chart, 'color': Colors.cyan},
-    'restaurant': {'name': global.language('restaurant'), 'icon': Icons.restaurant, 'color': Colors.red},
+    'restaurant': {'name': global.language('restaurant'), 'icon': Icons.restaurant, 'color': global.theme.negativeHighlightTextColor},
     'check': {'name': global.language('audit'), 'icon': Icons.fact_check, 'color': Colors.pink},
     'master': {'name': global.language('menu_master'), 'icon': Icons.dataset, 'color': Colors.lime},
     'import_export': {'name': global.language('import_export'), 'icon': Icons.import_export, 'color': Colors.deepOrange},
@@ -843,21 +845,21 @@ class _PermissionEditDialogState extends State<_PermissionEditDialog> {
               _buildQuickButton(
                 icon: Icons.select_all,
                 label: global.language('select_all'),
-                color: Colors.blue,
+                color: global.theme.infoHighlightTextColor,
                 onPressed: () => _selectAllScreens(branchPerm),
               ),
               // ยกเลิกทั้งหมด
               _buildQuickButton(
                 icon: Icons.deselect,
                 label: global.language('cancel_all'),
-                color: Colors.grey,
+                color: global.theme.iconSecondaryColor,
                 onPressed: () => _deselectAllScreens(branchPerm),
               ),
               // เปิดสิทธิ์ดูทั้งหมด
               _buildQuickButton(
                 icon: Icons.visibility,
                 label: global.language('view_all'),
-                color: Colors.green,
+                color: global.theme.positiveHighlightTextColor,
                 onPressed: () => _setAllPermission(branchPerm, 'view', true),
               ),
               // เปิดสิทธิ์เพิ่มทั้งหมด
@@ -871,14 +873,14 @@ class _PermissionEditDialogState extends State<_PermissionEditDialog> {
               _buildQuickButton(
                 icon: Icons.edit,
                 label: global.language('edit_all'),
-                color: Colors.orange,
+                color: global.theme.warningHighlightTextColor,
                 onPressed: () => _setAllPermission(branchPerm, 'editAll', true),
               ),
               // เปิดสิทธิ์ลบทั้งหมด (ลบได้ทั้งหมด)
               _buildQuickButton(
                 icon: Icons.delete,
                 label: global.language('clear_all'),
-                color: Colors.red,
+                color: global.theme.negativeHighlightTextColor,
                 onPressed: () => _setAllPermission(branchPerm, 'deleteAll', true),
               ),
               // เปิดสิทธิ์พิมพ์ทั้งหมด
@@ -901,9 +903,9 @@ class _PermissionEditDialogState extends State<_PermissionEditDialog> {
 
         // Header (คงที่)
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           decoration: BoxDecoration(
-            color: Colors.blue[50],
+            color: global.theme.infoHighlightColor,
             borderRadius: BorderRadius.circular(4),
           ),
           child: Row(
@@ -927,7 +929,7 @@ class _PermissionEditDialogState extends State<_PermissionEditDialog> {
           final categoryInfo = _categoryInfo[categoryCode] ?? {
             'name': categoryCode,
             'icon': Icons.folder,
-            'color': Colors.grey,
+            'color': global.theme.iconSecondaryColor,
           };
 
           return _buildCategorySection(
@@ -977,7 +979,7 @@ class _PermissionEditDialogState extends State<_PermissionEditDialog> {
           child: Row(
             children: [
               Icon(categoryIcon, color: categoryColor, size: 20),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
                 categoryName,
                 style: TextStyle(
@@ -986,7 +988,7 @@ class _PermissionEditDialogState extends State<_PermissionEditDialog> {
                   fontSize: 14,
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
@@ -1007,39 +1009,39 @@ class _PermissionEditDialogState extends State<_PermissionEditDialog> {
               InkWell(
                 onTap: () => _selectCategoryScreens(branchPerm, screens),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.green.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.check_box, size: 14, color: Colors.green),
+                      Icon(Icons.check_box, size: 14, color: global.theme.positiveHighlightTextColor),
                       SizedBox(width: 4),
-                      Text('เลือกหมวด', style: TextStyle(fontSize: 10, color: Colors.green)),
+                      Text('เลือกหมวด', style: TextStyle(fontSize: 10, color: global.theme.positiveHighlightTextColor)),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(width: 4),
+              SizedBox(width: 4),
               // ปุ่มยกเลิกทั้งหมดในหมวดหมู่
               InkWell(
                 onTap: () => _deselectCategoryScreens(branchPerm, screens),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.close, size: 14, color: Colors.red),
+                      Icon(Icons.close, size: 14, color: global.theme.negativeHighlightTextColor),
                       SizedBox(width: 4),
-                      Text('ยกเลิกหมวด', style: TextStyle(fontSize: 10, color: Colors.red)),
+                      Text('ยกเลิกหมวด', style: TextStyle(fontSize: 10, color: global.theme.negativeHighlightTextColor)),
                     ],
                   ),
                 ),
@@ -1094,9 +1096,9 @@ class _PermissionEditDialogState extends State<_PermissionEditDialog> {
     bool isEnabled,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+      padding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+        border: Border(bottom: BorderSide(color: global.theme.dividerBorderColor)),
       ),
       child: Row(
         children: [
@@ -1121,7 +1123,7 @@ class _PermissionEditDialogState extends State<_PermissionEditDialog> {
                     });
                   },
                 ),
-                Expanded(child: Text(screenDef.name, style: const TextStyle(fontSize: 13))),
+                Expanded(child: Text(screenDef.name, style: TextStyle(fontSize: 13))),
               ],
             ),
           ),
