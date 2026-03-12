@@ -1140,7 +1140,7 @@ class UserScreenState extends State<UserScreen>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: global.theme.surfaceColor,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Column(
@@ -1148,24 +1148,24 @@ class UserScreenState extends State<UserScreen>
               children: [
                 Text(
                   global.language('level_description'),
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: global.theme.textSecondaryColor),
                 ),
                 SizedBox(height: 4),
                 Text(
                   global.language('approval_level_1_desc'),
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                 ),
                 Text(
                   global.language('approval_level_2_desc'),
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                 ),
                 Text(
                   global.language('approval_level_3_desc'),
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                 ),
                 Text(
                   global.language('approval_level_max_desc'),
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                 ),
               ],
             ),
@@ -1346,9 +1346,9 @@ class UserScreenState extends State<UserScreen>
           margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.green.shade50,
+            color: global.theme.positiveHighlightColor,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.green.shade200),
+            border: Border.all(color: global.theme.positiveHighlightTextColor.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
@@ -1401,7 +1401,7 @@ class UserScreenState extends State<UserScreen>
                         Text(
                           'เชื่อมต่อ LINE แล้ว',
                           style: TextStyle(
-                            color: Colors.green.shade600,
+                            color: global.theme.positiveHighlightTextColor,
                             fontSize: 12,
                           ),
                         ),
@@ -1423,23 +1423,23 @@ class UserScreenState extends State<UserScreen>
         margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
+          color: global.theme.surfaceColor,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(color: global.theme.dividerBorderColor),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.badge, color: Colors.grey.shade700, size: 20),
+                Icon(Icons.badge, color: global.theme.textSecondaryColor, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   'ข้อมูลพนักงาน',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: Colors.grey.shade700,
+                    color: global.theme.textSecondaryColor,
                   ),
                 ),
               ],
