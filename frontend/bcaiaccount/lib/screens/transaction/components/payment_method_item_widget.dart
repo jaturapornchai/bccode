@@ -109,11 +109,11 @@ class PaymentMethodItemWidget extends StatelessWidget {
       children: [
         Text(
           '${_getPaymentMethodName()} ${itemIndex + 1}',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         IconButton(
           onPressed: onDelete,
-          icon: Icon(Icons.delete, color: Colors.red),
+          icon: Icon(Icons.delete, color: global.theme.negativeHighlightTextColor),
           tooltip: global.language('delete'),
         ),
       ],
@@ -152,7 +152,7 @@ class PaymentMethodItemWidget extends StatelessWidget {
               labelText: global.language('book_bank'),
               border: const OutlineInputBorder(),
               suffixIcon: IconButton(
-                icon: const Icon(Icons.search),
+                icon: Icon(Icons.search),
                 onPressed: onBankSearch,
               ),
             ),

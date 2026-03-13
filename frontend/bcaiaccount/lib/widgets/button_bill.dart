@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:smlaicloud/global.dart' as global;
 
 class ButtonBill extends StatelessWidget {
   final String label;
   final Function()? onPressed;
   final Color color;
 
-  const ButtonBill({
+  ButtonBill({
     super.key,
     required this.label,
     required this.onPressed,
@@ -19,7 +20,7 @@ class ButtonBill extends StatelessWidget {
       child: ElevatedButton(
         style: ButtonStyle(
           backgroundColor: WidgetStateProperty.all(color),
-          foregroundColor: WidgetStateProperty.all<Color>(Colors.white),
+          foregroundColor: WidgetStateProperty.all<Color>(global.theme.onPrimaryColor),
         ),
         onPressed: onPressed,
         child: Text(label),

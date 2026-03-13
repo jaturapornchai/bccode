@@ -25,7 +25,7 @@ class POApprovalStatusBadge extends StatefulWidget {
   State<POApprovalStatusBadge> createState() => _POApprovalStatusBadgeState();
 }
 
-class _POApprovalStatusBadgeState extends State<POApprovalStatusBadge> {
+class _POApprovalStatusBadgeState extends State<POApprovalStatusBadge> with global.ThemeRefreshMixin {
   bool _isWithdrawing = false;
 
   @override
@@ -52,8 +52,8 @@ class _POApprovalStatusBadgeState extends State<POApprovalStatusBadge> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        border: Border(bottom: BorderSide(color: Colors.grey.shade400, width: 1)),
+        color: global.theme.dividerBorderColor,
+        border: Border(bottom: BorderSide(color: global.theme.dividerBorderColor, width: 1)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -61,12 +61,12 @@ class _POApprovalStatusBadgeState extends State<POApprovalStatusBadge> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.block, size: 20, color: Colors.grey.shade700),
+              Icon(Icons.block, size: 20, color: global.theme.textColor),
               const SizedBox(width: 8),
               Text(
                 '${global.language("status")}: ${global.language("cancelled")}',
                 style: TextStyle(
-                  color: Colors.grey.shade700,
+                  color: global.theme.textColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
@@ -79,7 +79,7 @@ class _POApprovalStatusBadgeState extends State<POApprovalStatusBadge> {
             Text(
               '${global.language("reason")}: ${widget.screenData.cancelreason}',
               style: TextStyle(
-                color: Colors.grey.shade600,
+                color: global.theme.iconSecondaryColor,
                 fontSize: 12,
               ),
               textAlign: TextAlign.center,
@@ -91,7 +91,7 @@ class _POApprovalStatusBadgeState extends State<POApprovalStatusBadge> {
             Text(
               '${global.language("by")}: ${(widget.screenData.cancelusername ?? '').isNotEmpty ? widget.screenData.cancelusername : widget.screenData.cancelusercode}',
               style: TextStyle(
-                color: Colors.grey.shade500,
+                color: global.theme.iconSecondaryColor,
                 fontSize: 11,
               ),
             ),
@@ -106,7 +106,7 @@ class _POApprovalStatusBadgeState extends State<POApprovalStatusBadge> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.grey.shade100,
+      color: global.theme.surfaceColor,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -206,9 +206,9 @@ class _POApprovalStatusBadgeState extends State<POApprovalStatusBadge> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.red.shade50,
+          color: global.theme.negativeHighlightColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.red.shade300),
+          border: Border.all(color: global.theme.negativeHighlightColor),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -219,16 +219,16 @@ class _POApprovalStatusBadgeState extends State<POApprovalStatusBadge> {
                 height: 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.red.shade700,
+                  color: global.theme.negativeHighlightTextColor,
                 ),
               )
             else
-              Icon(Icons.undo, size: 16, color: Colors.red.shade700),
+              Icon(Icons.undo, size: 16, color: global.theme.negativeHighlightTextColor),
             SizedBox(width: 4),
             Text(
               _isWithdrawing ? global.language('withdrawing') : global.language('withdraw_approval'),
               style: TextStyle(
-                color: Colors.red.shade700,
+                color: global.theme.negativeHighlightTextColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -247,19 +247,19 @@ class _POApprovalStatusBadgeState extends State<POApprovalStatusBadge> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.blue.shade50,
+          color: global.theme.surfaceColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.blue.shade300),
+          border: Border.all(color: global.theme.dividerBorderColor),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.notifications_active, size: 16, color: Colors.blue.shade700),
+            Icon(Icons.notifications_active, size: 16, color: global.theme.infoHighlightTextColor),
             SizedBox(width: 4),
             Text(
               global.language('send_reminder'),
               style: TextStyle(
-                color: Colors.blue.shade700,
+                color: global.theme.infoHighlightTextColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -281,7 +281,7 @@ class _POApprovalStatusBadgeState extends State<POApprovalStatusBadge> {
       builder: (ctx) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.undo, color: Colors.red),
+            Icon(Icons.undo, color: global.theme.negativeHighlightTextColor),
             const SizedBox(width: 8),
             Text(global.language('withdraw_approval')),
           ],
@@ -295,8 +295,8 @@ class _POApprovalStatusBadgeState extends State<POApprovalStatusBadge> {
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: global.theme.negativeHighlightTextColor,
+              foregroundColor: global.theme.onPrimaryColor,
             ),
             child: Text(global.language('withdraw_approval')),
           ),
@@ -352,7 +352,7 @@ class _POApprovalStatusBadgeState extends State<POApprovalStatusBadge> {
               children: [
                 Icon(
                   isSuccess ? Icons.check_circle : Icons.error,
-                  color: isSuccess ? Colors.green : Colors.red,
+                  color: isSuccess ? global.theme.positiveHighlightTextColor : global.theme.negativeHighlightTextColor,
                 ),
                 SizedBox(width: 8),
                 Text(isSuccess ? global.language('send_success') : global.language('failed')),
@@ -365,8 +365,8 @@ class _POApprovalStatusBadgeState extends State<POApprovalStatusBadge> {
                 Text(result.message ?? result.errorMessage ?? (isSuccess ? global.language('send_notification_success') : global.language('send_notification_failed'))),
                 if (isSuccess) ...[
                   const SizedBox(height: 8),
-                  Text('Email: ${result.emailSent} ${global.language("times")}', style: const TextStyle(fontSize: 14, color: Colors.grey)),
-                  Text('LINE: ${result.lineSent} ${global.language("times")}', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                  Text('Email: ${result.emailSent} ${global.language("times")}', style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor)),
+                  Text('LINE: ${result.lineSent} ${global.language("times")}', style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor)),
                 ],
               ],
             ),
@@ -392,7 +392,7 @@ class _POApprovalStatusBadgeState extends State<POApprovalStatusBadge> {
           builder: (ctx) => AlertDialog(
             title: Row(
               children: [
-                Icon(Icons.error, color: Colors.red),
+                Icon(Icons.error, color: global.theme.negativeHighlightTextColor),
                 SizedBox(width: 8),
                 Text(global.language('error_occurred')),
               ],

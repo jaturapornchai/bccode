@@ -28,6 +28,7 @@ import '../../screen_search/product_grade_search_screen.dart';
 import '../../screen_search/product_category_all_search_screen.dart';
 import '../../screen_search/product_class_search_screen.dart';
 import '../../global.dart' as global;
+import '../../widgets/edit_font_size_control.dart';
 import '../../components/loading_overlay.dart';
 import '../../screens/report/file_download.dart';
 
@@ -55,7 +56,7 @@ class CouponScreen extends StatefulWidget {
 }
 
 class CouponScreenState extends State<CouponScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   late TabController tabController;
   ScrollController editScrollController = ScrollController();
@@ -73,6 +74,7 @@ class CouponScreenState extends State<CouponScreen>
   List<GlobalKey> listKeys = [];
   String searchText = "";
   String selectGuid = "";
+  int _hoverIndex = -1;
   bool isChange = false;
   bool isSaveAllow = false;
   late CouponState blocCouponState;
@@ -312,6 +314,7 @@ class CouponScreenState extends State<CouponScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -319,7 +322,7 @@ class CouponScreenState extends State<CouponScreen>
         title: Text(global.language('coupon')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             discardData(
               callBack: () {
@@ -330,52 +333,43 @@ class CouponScreenState extends State<CouponScreen>
           },
         ),
         actions: <Widget>[
-          Padding(
-            padding: EdgeInsets.only(right: 20.0),
-            child: IconButton(
-              focusNode: FocusNode(skipTraversal: true),
-              onPressed: () {
-                downloadCouponTemplate();
-              },
-              icon: Icon(Icons.download),
-              tooltip: global.language('download_excel_template'),
-            ),
+          IconButton(
+            focusNode: FocusNode(skipTraversal: true),
+            onPressed: () {
+              downloadCouponTemplate();
+            },
+            icon: Icon(Icons.download),
+            tooltip: global.language('download_excel_template'),
           ),
-          Padding(
-            padding: EdgeInsets.only(right: 20.0),
-            child: IconButton(
-              focusNode: FocusNode(skipTraversal: true),
-              onPressed: () {
-                selectAndUploadExcelFile();
-              },
-              icon: Icon(Icons.file_upload),
-              tooltip: global.language('import_excel'),
-            ),
+          IconButton(
+            focusNode: FocusNode(skipTraversal: true),
+            onPressed: () {
+              selectAndUploadExcelFile();
+            },
+            icon: Icon(Icons.file_upload),
+            tooltip: global.language('import_excel'),
           ),
-          Padding(
-            padding: EdgeInsets.only(right: 20.0),
-            child: IconButton(
-              focusNode: FocusNode(skipTraversal: true),
-              onPressed: () {
-                discardData(
-                  callBack: () {
-                    setState(() {
-                      changeScreenEvent(global.ScreenEventEnum.add);
-                      selectGuid = "";
-                      isChange = false;
-                      clearEditData();
-                      headerEdit = global.language("append");
-                      isSaveAllow = true;
-                      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-                        tabController.animateTo(1);
-                        fieldFocusNodes[0].focusNode.requestFocus();
-                      });
+          IconButton(
+            focusNode: FocusNode(skipTraversal: true),
+            onPressed: () {
+              discardData(
+                callBack: () {
+                  setState(() {
+                    changeScreenEvent(global.ScreenEventEnum.add);
+                    selectGuid = "";
+                    isChange = false;
+                    clearEditData();
+                    headerEdit = global.language("append");
+                    isSaveAllow = true;
+                    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                      tabController.animateTo(1);
+                      fieldFocusNodes[0].focusNode.requestFocus();
                     });
-                  },
-                );
-              },
-              icon: const Icon(Icons.add),
-            ),
+                  });
+                },
+              );
+            },
+            icon: Icon(Icons.add),
           ),
         ],
       ),
@@ -384,7 +378,7 @@ class CouponScreenState extends State<CouponScreen>
           Container(
             padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               borderRadius: BorderRadius.circular(2),
             ),
             child: Row(
@@ -424,15 +418,6 @@ class CouponScreenState extends State<CouponScreen>
                   onPressed: () async {
                     setState(() {
                       global.listDataFontSizeChange();
-                    });
-                  },
-                ),
-                IconButton(
-                  focusNode: FocusNode(skipTraversal: true),
-                  icon: const Icon(Icons.line_weight),
-                  onPressed: () async {
-                    setState(() {
-                      global.listDataLineSpaceChange();
                     });
                   },
                 ),
@@ -525,6 +510,21 @@ class CouponScreenState extends State<CouponScreen>
       isSaveAllow = true;
       changeScreenEvent(global.ScreenEventEnum.edit);
     });
+  }
+
+
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return isSaveAllow
+          ? global.theme.rowEditColor
+          : global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
   }
 
   Widget listObject(int index, CouponModel value) {
@@ -679,7 +679,7 @@ class CouponScreenState extends State<CouponScreen>
 
   Widget editScreen({mobileScreen = false}) {
     return Scaffold(
-      backgroundColor: global.theme.backgroundColor,
+      backgroundColor: global.theme.cardColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor:
@@ -691,7 +691,7 @@ class CouponScreenState extends State<CouponScreen>
         leading: mobileScreen
             ? IconButton(
                 focusNode: FocusNode(skipTraversal: true),
-                icon: const Icon(Icons.arrow_back),
+                icon: Icon(Icons.arrow_back),
                 onPressed: () async {
                   discardData(
                     callBack: () {
@@ -706,104 +706,112 @@ class CouponScreenState extends State<CouponScreen>
             : null,
         title: Text(headerEdit + global.language("coupon")),
         actions: <Widget>[
+          EditFontSizeControl(
+            onChanged: () => setState(() {}),
+          ),
           if (selectGuid.isNotEmpty)
-            Padding(
-              padding: EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () {
-                  showDialog<String>(
-                    context: context,
-                    builder: (BuildContext context) => AlertDialog(
-                      title: Text(global.language('delete_confirm')),
-                      actions: <Widget>[
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: global.theme.buttonNoColor,
-                          ),
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(global.language('no')),
+            IconButton(
+              focusNode: FocusNode(skipTraversal: true),
+              onPressed: () {
+                showDialog<String>(
+                  context: context,
+                  builder: (BuildContext context) => AlertDialog(
+                    title: Text(global.language('delete_confirm')),
+                    actions: <Widget>[
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: global.theme.buttonNoColor,
                         ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: global.theme.buttonYesColor,
-                          ),
-                          onPressed: () {
-                            Navigator.pop(context);
-                            context.read<CouponBloc>().add(
-                              DeleteCoupon(id: selectGuid),
-                            );
-                          },
-                          child: Text(global.language('confirm')),
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(global.language('no')),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: global.theme.buttonYesColor,
                         ),
-                      ],
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.delete),
-              ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          context.read<CouponBloc>().add(
+                            DeleteCoupon(id: selectGuid),
+                          );
+                        },
+                        child: Text(global.language('confirm')),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              icon: Icon(Icons.delete),
             ),
           if (isSaveAllow == false && selectGuid.trim().isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () {
-                  switchToEdit(
-                    listData[listData.indexOf(
-                      listData.firstWhere(
-                        (element) => (element.guidfixed ?? "") == selectGuid,
-                      ),
-                    )],
-                  );
-                },
-                icon: const Icon(Icons.edit),
-              ),
+            IconButton(
+              focusNode: FocusNode(skipTraversal: true),
+              onPressed: () {
+                switchToEdit(
+                  listData[listData.indexOf(
+                    listData.firstWhere(
+                      (element) => (element.guidfixed ?? "") == selectGuid,
+                    ),
+                  )],
+                );
+              },
+              icon: Icon(Icons.edit),
             ),
           if ((screenEvent == global.ScreenEventEnum.edit ||
                   screenEvent == global.ScreenEventEnum.add) &&
               global.systemLanguage.length > 1)
-            Padding(
-              padding: const EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () async {
-                  setState(() {
-                    isLoadTranslation = true;
-                  });
-                  for (int i = 1; i <= languageList.length; i++) {
-                    try {
-                      var translation = await translator.translate(
-                        fieldTextController[1].text,
-                        to: languageList[i - 1].codeTranslator!,
-                      );
-                      if (fieldTextController[i].text.isEmpty) {
-                        fieldTextController[i].text = translation.text;
-                      }
-                    } catch (_) {}
-                  }
-                  setState(() {
-                    isLoadTranslation = false;
-                  });
-                },
-                icon: const Icon(Icons.translate),
-              ),
+            IconButton(
+              focusNode: FocusNode(skipTraversal: true),
+              onPressed: () async {
+                setState(() {
+                  isLoadTranslation = true;
+                });
+                for (int i = 1; i <= languageList.length; i++) {
+                  try {
+                    var translation = await translator.translate(
+                      fieldTextController[1].text,
+                      to: languageList[i - 1].codeTranslator!,
+                    );
+                    if (fieldTextController[i].text.isEmpty) {
+                      fieldTextController[i].text = translation.text;
+                    }
+                  } catch (_) {}
+                }
+                setState(() {
+                  isLoadTranslation = false;
+                });
+              },
+              icon: Icon(Icons.translate),
             ),
           if (isSaveAllow == true)
-            Padding(
-              padding: const EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () => saveOrUpdateData(),
-                icon: const Icon(Icons.save),
-              ),
+            IconButton(
+              focusNode: FocusNode(skipTraversal: true),
+              onPressed: () => saveOrUpdateData(),
+              icon: Icon(Icons.save),
             ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: Builder(
+        builder: (context) {
+          final scaleFactor = global.editFontScaleFactor;
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(scaleFactor),
+            ),
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12 * scaleFactor,
+                    vertical: 10 * scaleFactor,
+                  ),
+                ),
+                iconTheme: IconThemeData(size: 24 * scaleFactor),
+              ),
+              child: SingleChildScrollView(
         controller: editScrollController,
         child: Container(
-          color: Colors.white,
+          color: global.theme.cardColor,
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -959,7 +967,7 @@ class CouponScreenState extends State<CouponScreen>
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: global.theme.buttonColor,
-                      foregroundColor: Colors.white,
+                      foregroundColor: global.theme.onPrimaryColor,
                       elevation: 2,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -975,7 +983,7 @@ class CouponScreenState extends State<CouponScreen>
                                   Platform.isMacOS)
                               ? " (F10)"
                               : ""),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -987,6 +995,10 @@ class CouponScreenState extends State<CouponScreen>
             ],
           ),
         ),
+            ),
+          ),
+          );
+        },
       ),
     );
   }
@@ -1039,8 +1051,8 @@ class CouponScreenState extends State<CouponScreen>
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: global.theme.negativeHighlightTextColor,
+              foregroundColor: global.theme.onPrimaryColor,
             ),
             onPressed: () {
               Navigator.pop(context);
@@ -1275,7 +1287,7 @@ class CouponScreenState extends State<CouponScreen>
               global.language('coupon_minimum_amount_description'),
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey[600],
+                color: global.theme.textSecondaryColor,
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -1304,13 +1316,13 @@ class CouponScreenState extends State<CouponScreen>
                   details: global.language('minimum_purchase_amount'),
                 );
               },
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              style: TextButton.styleFrom(foregroundColor: global.theme.negativeHighlightTextColor),
               child: Text(global.language('remove')),
             ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: global.theme.buttonColor,
-              foregroundColor: Colors.white,
+              foregroundColor: global.theme.onPrimaryColor,
             ),
             onPressed: () {
               final double? amount = double.tryParse(amountController.text);
@@ -1356,8 +1368,8 @@ class CouponScreenState extends State<CouponScreen>
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: global.theme.negativeHighlightTextColor,
+              foregroundColor: global.theme.onPrimaryColor,
             ),
             onPressed: () {
               Navigator.pop(context);
@@ -1437,18 +1449,18 @@ class CouponScreenState extends State<CouponScreen>
         if (mounted) {
           global.showSnackBar(
             context,
-            Icon(Icons.download_done, color: Colors.white),
+            Icon(Icons.download_done, color: global.theme.onPrimaryColor),
             global.language("template_download_success"),
-            Colors.green,
+            global.theme.positiveHighlightTextColor,
           );
         }
       } else {
         if (mounted) {
           global.showSnackBar(
             context,
-            Icon(Icons.error, color: Colors.white),
+            Icon(Icons.error, color: global.theme.onPrimaryColor),
             global.language("template_download_failed"),
-            Colors.red,
+            global.theme.negativeHighlightTextColor,
           );
         }
       }
@@ -1456,9 +1468,9 @@ class CouponScreenState extends State<CouponScreen>
       if (mounted) {
         global.showSnackBar(
           context,
-          Icon(Icons.error, color: Colors.white),
+          Icon(Icons.error, color: global.theme.onPrimaryColor),
           "${global.language("error_occurred")}: ${e.toString()}",
-          Colors.red,
+          global.theme.negativeHighlightTextColor,
         );
       }
     }
@@ -1491,11 +1503,11 @@ class CouponScreenState extends State<CouponScreen>
                 children: [
                   Text(
                     global.language("import_mode_description"),
-                    style: const TextStyle(fontSize: 14),
+                    style: TextStyle(fontSize: 14),
                   ),
                   SizedBox(height: 16),
                   ListTile(
-                    leading: Icon(Icons.search, color: Colors.blue),
+                    leading: Icon(Icons.search, color: global.theme.infoHighlightTextColor),
                     title: Text(global.language("validate_only")),
                     subtitle: Text(
                       global.language("validate_only_description"),
@@ -1504,7 +1516,7 @@ class CouponScreenState extends State<CouponScreen>
                   ),
                   SizedBox(height: 8),
                   ListTile(
-                    leading: Icon(Icons.upload, color: Colors.green),
+                    leading: Icon(Icons.upload, color: global.theme.positiveHighlightTextColor),
                     title: Text(global.language("import_directly")),
                     subtitle: Text(
                       global.language("import_directly_description"),
@@ -1520,10 +1532,10 @@ class CouponScreenState extends State<CouponScreen>
                 ),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
+                    backgroundColor: global.theme.infoHighlightTextColor,
+                    foregroundColor: global.theme.onPrimaryColor,
                   ),
-                  icon: const Icon(Icons.search, size: 18),
+                  icon: Icon(Icons.search, size: 18),
                   onPressed: () {
                     Navigator.of(dialogContext).pop();
                     if (mounted) {
@@ -1540,10 +1552,10 @@ class CouponScreenState extends State<CouponScreen>
                 ),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
+                    backgroundColor: global.theme.positiveHighlightTextColor,
+                    foregroundColor: global.theme.onPrimaryColor,
                   ),
-                  icon: const Icon(Icons.upload, size: 18),
+                  icon: Icon(Icons.upload, size: 18),
                   onPressed: () {
                     Navigator.of(dialogContext).pop();
                     if (mounted) {
@@ -1567,9 +1579,9 @@ class CouponScreenState extends State<CouponScreen>
       if (mounted) {
         global.showSnackBar(
           context,
-          Icon(Icons.error, color: Colors.white),
+          Icon(Icons.error, color: global.theme.onPrimaryColor),
           "${global.language("import_failed")}: ${e.toString()}",
-          Colors.red,
+          global.theme.negativeHighlightTextColor,
         );
       }
     }
@@ -1589,8 +1601,8 @@ class CouponScreenState extends State<CouponScreen>
                     ? Icons.warning
                     : Icons.check_circle,
                 color: validationResult.errorCount > 0
-                    ? Colors.orange
-                    : Colors.green,
+                    ? global.theme.warningHighlightTextColor
+                    : global.theme.positiveHighlightTextColor,
               ),
               SizedBox(width: 10),
               Text(global.language("validation_result")),
@@ -1603,7 +1615,7 @@ class CouponScreenState extends State<CouponScreen>
               children: [
                 Text(
                   validationResult.message,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 16),
                 _buildInfoRow(
@@ -1613,13 +1625,13 @@ class CouponScreenState extends State<CouponScreen>
                 _buildInfoRow(
                   global.language("valid_rows"),
                   validationResult.importedCount.toString(),
-                  Colors.green,
+                  global.theme.positiveHighlightTextColor,
                 ),
                 if (validationResult.errorCount > 0)
                   _buildInfoRow(
                     global.language("error_rows"),
                     validationResult.errorCount.toString(),
-                    Colors.red,
+                    global.theme.negativeHighlightTextColor,
                   ),
                 if (validationResult.errors != null &&
                     validationResult.errors!.isNotEmpty) ...[
@@ -1628,7 +1640,7 @@ class CouponScreenState extends State<CouponScreen>
                   SizedBox(height: 8),
                   Text(
                     global.language("error_details"),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -1640,16 +1652,16 @@ class CouponScreenState extends State<CouponScreen>
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.error_outline,
                             size: 16,
-                            color: Colors.red,
+                            color: global.theme.negativeHighlightTextColor,
                           ),
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               '${global.language("row")} ${error.row ?? "-"}${error.couponCode != null ? " (${error.couponCode})" : ""}: ${error.errorMessage}',
-                              style: const TextStyle(fontSize: 13),
+                              style: TextStyle(fontSize: 13),
                             ),
                           ),
                         ],
@@ -1659,10 +1671,10 @@ class CouponScreenState extends State<CouponScreen>
                   if (validationResult.errors!.length > 10)
                     Text(
                       '... ${global.language("and")} ${validationResult.errors!.length - 10} ${global.language("more_errors")}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontStyle: FontStyle.italic,
-                        color: Colors.grey,
+                        color: global.theme.iconSecondaryColor,
                       ),
                     ),
                 ],
@@ -1678,7 +1690,7 @@ class CouponScreenState extends State<CouponScreen>
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: global.theme.buttonColor,
-                  foregroundColor: Colors.white,
+                  foregroundColor: global.theme.onPrimaryColor,
                 ),
                 onPressed: () async {
                   Navigator.of(dialogContext).pop();
@@ -1739,7 +1751,7 @@ class CouponScreenState extends State<CouponScreen>
               children: [
                 LinearProgressIndicator(
                   value: statusData.progress / 100,
-                  backgroundColor: Colors.grey[300],
+                  backgroundColor: global.theme.dividerBorderColor,
                   valueColor: AlwaysStoppedAnimation<Color>(
                     global.theme.appBarColor,
                   ),
@@ -1747,7 +1759,7 @@ class CouponScreenState extends State<CouponScreen>
                 SizedBox(height: 16),
                 Text(
                   '${global.language("progress")}: ${statusData.progress}%',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1760,21 +1772,21 @@ class CouponScreenState extends State<CouponScreen>
                 _buildInfoRow(
                   global.language("success"),
                   statusData.successCount.toString(),
-                  Colors.green,
+                  global.theme.positiveHighlightTextColor,
                 ),
                 if (statusData.errorCount > 0)
                   _buildInfoRow(
                     global.language("errors"),
                     statusData.errorCount.toString(),
-                    Colors.red,
+                    global.theme.negativeHighlightTextColor,
                   ),
                 const SizedBox(height: 8),
                 Text(
                   statusData.message,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontStyle: FontStyle.italic,
-                    color: Colors.grey,
+                    color: global.theme.iconSecondaryColor,
                   ),
                 ),
               ],
@@ -1810,8 +1822,8 @@ class CouponScreenState extends State<CouponScreen>
                     ? Icons.check_circle
                     : Icons.warning,
                 color: finalStatus.errorCount == 0
-                    ? Colors.green
-                    : Colors.orange,
+                    ? global.theme.positiveHighlightTextColor
+                    : global.theme.warningHighlightTextColor,
                 size: 30,
               ),
               SizedBox(width: 10),
@@ -1825,7 +1837,7 @@ class CouponScreenState extends State<CouponScreen>
               children: [
                 Text(
                   finalStatus.message,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 16),
                 _buildInfoRow(
@@ -1835,13 +1847,13 @@ class CouponScreenState extends State<CouponScreen>
                 _buildInfoRow(
                   global.language("success"),
                   finalStatus.successCount.toString(),
-                  Colors.green,
+                  global.theme.positiveHighlightTextColor,
                 ),
                 if (finalStatus.errorCount > 0)
                   _buildInfoRow(
                     global.language("errors"),
                     finalStatus.errorCount.toString(),
-                    Colors.red,
+                    global.theme.negativeHighlightTextColor,
                   ),
                 if (finalStatus.errors != null &&
                     finalStatus.errors!.isNotEmpty) ...[
@@ -1850,7 +1862,7 @@ class CouponScreenState extends State<CouponScreen>
                   SizedBox(height: 8),
                   Text(
                     global.language("error_details"),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -1862,16 +1874,16 @@ class CouponScreenState extends State<CouponScreen>
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.error_outline,
                             size: 16,
-                            color: Colors.red,
+                            color: global.theme.negativeHighlightTextColor,
                           ),
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               '${global.language("row")} ${error.row ?? "-"}${error.couponCode != null ? " (${error.couponCode})" : ""}: ${error.errorMessage}',
-                              style: const TextStyle(fontSize: 13),
+                              style: TextStyle(fontSize: 13),
                             ),
                           ),
                         ],
@@ -1881,10 +1893,10 @@ class CouponScreenState extends State<CouponScreen>
                   if (finalStatus.errors!.length > 10)
                     Text(
                       '... ${global.language("and")} ${finalStatus.errors!.length - 10} ${global.language("more_errors")}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontStyle: FontStyle.italic,
-                        color: Colors.grey,
+                        color: global.theme.iconSecondaryColor,
                       ),
                     ),
                 ],
@@ -1895,7 +1907,7 @@ class CouponScreenState extends State<CouponScreen>
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: global.theme.buttonColor,
-                foregroundColor: Colors.white,
+                foregroundColor: global.theme.onPrimaryColor,
               ),
               onPressed: () {
                 Navigator.of(dialogContext).pop();
@@ -1915,7 +1927,7 @@ class CouponScreenState extends State<CouponScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 14)),
+          Text(label, style: TextStyle(fontSize: 14)),
           Text(
             value,
             style: TextStyle(
@@ -1935,6 +1947,7 @@ class CouponScreenState extends State<CouponScreen>
     listKeys.clear();
     couponGuidListChecked.clear();
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -1962,9 +1975,9 @@ class CouponScreenState extends State<CouponScreen>
                   isLoading = false; // ปิด Loading
                   global.showSnackBar(
                     context,
-                    const Icon(Icons.save, color: Colors.white),
+                    Icon(Icons.save, color: global.theme.onPrimaryColor),
                     state.message,
-                    Colors.blue,
+                    global.theme.infoHighlightTextColor,
                   );
                   clearEditData();
                   listData.clear();
@@ -1976,9 +1989,9 @@ class CouponScreenState extends State<CouponScreen>
                   isLoading = false; // ปิด Loading แม้เกิด error
                   global.showSnackBar(
                     context,
-                    const Icon(Icons.error, color: Colors.white),
+                    Icon(Icons.error, color: global.theme.onPrimaryColor),
                     state.message,
-                    Colors.red,
+                    global.theme.negativeHighlightTextColor,
                   );
                 });
               }
@@ -2064,7 +2077,7 @@ class CouponScreenState extends State<CouponScreen>
                     return AlertDialog(
                       title: Row(
                         children: [
-                          const Icon(Icons.error, color: Colors.red, size: 30),
+                          Icon(Icons.error, color: global.theme.negativeHighlightTextColor, size: 30),
                           SizedBox(width: 10),
                           Text(global.language("import_failed")),
                         ],
@@ -2076,7 +2089,7 @@ class CouponScreenState extends State<CouponScreen>
                           children: [
                             Text(
                               state.message,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -2087,7 +2100,7 @@ class CouponScreenState extends State<CouponScreen>
                               SizedBox(height: 8),
                               Text(
                                 global.language("error_details"),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                 ),
@@ -2100,16 +2113,16 @@ class CouponScreenState extends State<CouponScreen>
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.error_outline,
                                         size: 16,
-                                        color: Colors.red,
+                                        color: global.theme.negativeHighlightTextColor,
                                       ),
                                       SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
                                           '${global.language("row")} ${error.row ?? "-"}${error.couponCode != null ? " (${error.couponCode})" : ""}: ${error.errorMessage}',
-                                          style: const TextStyle(fontSize: 13),
+                                          style: TextStyle(fontSize: 13),
                                         ),
                                       ),
                                     ],
@@ -2119,10 +2132,10 @@ class CouponScreenState extends State<CouponScreen>
                               if (state.errors!.length > 10)
                                 Text(
                                   '... ${global.language("and")} ${state.errors!.length - 10} ${global.language("more_errors")}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontStyle: FontStyle.italic,
-                                    color: Colors.grey,
+                                    color: global.theme.iconSecondaryColor,
                                   ),
                                 ),
                             ],
@@ -2133,7 +2146,7 @@ class CouponScreenState extends State<CouponScreen>
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: global.theme.buttonColor,
-                            foregroundColor: Colors.white,
+                            foregroundColor: global.theme.onPrimaryColor,
                           ),
                           onPressed: () => Navigator.of(dialogContext).pop(),
                           child: Text(global.language("ok")),
@@ -2152,7 +2165,7 @@ class CouponScreenState extends State<CouponScreen>
                         controller: splitViewController,
                         gripSize: 14,
                         gripColor: global.theme.appBarColor,
-                        gripColorActive: Colors.blue,
+                        gripColorActive: global.theme.infoHighlightTextColor,
                         viewMode: SplitViewMode.Horizontal,
                         indicator: const SplitIndicator(
                           viewMode: SplitViewMode.Horizontal,

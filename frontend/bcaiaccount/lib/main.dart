@@ -80,6 +80,7 @@ FutureOr<void> main() async {
   await global.loadDisplaySettings();
 
   global.themeSelect(0);
+  global.applyThemeMode();
 
   // if (global.apiConnected == false) {
   //   if (!global.isLoginProcess) {

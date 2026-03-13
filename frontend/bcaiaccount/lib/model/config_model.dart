@@ -180,11 +180,15 @@ class DeviceConfigModel {
   /// หน้าจอสินค้า แสดง ราคา
   bool itemDisplayPrice;
 
+  /// ขนาด Font หน้าจอ Edit (เป็น % เช่น 100 = ปกติ, 80 = เล็กลง, 120 = ใหญ่ขึ้น)
+  double editFontScale;
+
   DeviceConfigModel({
     required this.listDataFontSize,
     required this.listDataLineSpace,
     required this.itemDisplaySku,
     required this.itemDisplayPrice,
+    this.editFontScale = 100,
   });
 
   factory DeviceConfigModel.fromJson(Map<String, dynamic> json) =>

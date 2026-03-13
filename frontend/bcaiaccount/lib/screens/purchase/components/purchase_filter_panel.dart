@@ -50,10 +50,10 @@ class PurchaseFilterPanel extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: Colors.blue.shade50,
+            color: global.theme.surfaceColor,
             borderRadius: BorderRadius.circular(6),
           ),
-          child: Icon(Icons.filter_list, size: 16, color: Colors.blue.shade600),
+          child: Icon(Icons.filter_list, size: 16, color: global.theme.infoHighlightTextColor),
         ),
         SizedBox(width: 8),
         Expanded(
@@ -72,7 +72,7 @@ class PurchaseFilterPanel extends StatelessWidget {
                   global.language('no_condition_show_all'),
                   style: TextStyle(
                     fontSize: 10,
-                    color: Colors.grey.shade600,
+                    color: global.theme.iconSecondaryColor,
                   ),
                 ),
             ],
@@ -81,7 +81,7 @@ class PurchaseFilterPanel extends StatelessWidget {
         // ปุ่มล้างเงื่อนไข
         if (condition.hasConditions && onClearPressed != null)
           IconButton(
-            icon: Icon(Icons.clear_all, size: 18, color: Colors.red.shade400),
+            icon: Icon(Icons.clear_all, size: 18, color: global.theme.negativeHighlightTextColor),
             tooltip: global.language('clear_conditions'),
             onPressed: onClearPressed,
             padding: const EdgeInsets.all(4),
@@ -90,7 +90,7 @@ class PurchaseFilterPanel extends StatelessWidget {
         const SizedBox(width: 4),
         // ปุ่มรีเฟรช
         IconButton(
-          icon: Icon(Icons.refresh, size: 18, color: Colors.green.shade600),
+          icon: Icon(Icons.refresh, size: 18, color: global.theme.positiveHighlightTextColor),
           tooltip: global.language('database_master_info.refresh'),
           onPressed: onRefreshPressed,
           padding: const EdgeInsets.all(4),
@@ -103,8 +103,8 @@ class PurchaseFilterPanel extends StatelessWidget {
           icon: Icon(Icons.tune, size: 14),
           label: Text(global.language('edit'), style: TextStyle(fontSize: 12)),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue.shade600,
-            foregroundColor: Colors.white,
+            backgroundColor: global.theme.infoHighlightTextColor,
+            foregroundColor: global.theme.onPrimaryColor,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
@@ -126,7 +126,7 @@ class PurchaseFilterPanel extends StatelessWidget {
           _buildConditionChip(
             icon: Icons.date_range,
             label: _formatDateRange(),
-            color: Colors.blue,
+            color: global.theme.infoHighlightTextColor,
           ),
 
         // ช่วงจำนวนเงิน
@@ -134,7 +134,7 @@ class PurchaseFilterPanel extends StatelessWidget {
           _buildConditionChip(
             icon: Icons.attach_money,
             label: _formatAmountRange(),
-            color: Colors.green,
+            color: global.theme.positiveHighlightTextColor,
           ),
 
         // เลขที่เอกสาร
@@ -150,7 +150,7 @@ class PurchaseFilterPanel extends StatelessWidget {
           _buildConditionChip(
             icon: Icons.badge,
             label: '${global.language("code")}: ${condition.creditorCode}',
-            color: Colors.orange,
+            color: global.theme.warningHighlightTextColor,
           ),
 
         // ชื่อผู้ขาย

@@ -60,6 +60,7 @@ import (
 	products "smlcloudplatform/internal/product/product"
 	"smlcloudplatform/internal/product/productbarcode"
 	"smlcloudplatform/internal/product/productcategory"
+	"smlcloudplatform/internal/form/formtemplate"
 	"smlcloudplatform/internal/product/productgroup"
 	"smlcloudplatform/internal/product/producttype"
 	"smlcloudplatform/internal/product/promotion"
@@ -252,6 +253,7 @@ func main() {
 			"/swagger/*",
 
 			"/tokenlogin",
+			"/googlelogin",
 
 			"/login",
 			"/poslogin",
@@ -353,6 +355,7 @@ func main() {
 			productcategory.NewProductCategoryHttp(ms, cfg),
 			productbarcode.NewProductBarcodeHttp(ms, cfg),
 			// product.NewProductHttp(ms, cfg),
+			formtemplate.NewFormTemplateHttp(ms, cfg),
 			productgroup.NewProductGroupHttp(ms, cfg),
 			producttype.NewProductTypeHttp(ms, cfg),
 

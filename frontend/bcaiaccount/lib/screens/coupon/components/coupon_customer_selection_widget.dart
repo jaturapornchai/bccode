@@ -59,9 +59,9 @@ class CouponCustomerSelectionWidget extends StatelessWidget {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.grey[50],
+                  color: global.theme.surfaceColor,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[200]!),
+                  border: Border.all(color: global.theme.dividerBorderColor),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,7 +70,7 @@ class CouponCustomerSelectionWidget extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.blue[600],
+                        color: global.theme.infoHighlightTextColor,
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(8),
                           topRight: Radius.circular(8),
@@ -78,16 +78,16 @@ class CouponCustomerSelectionWidget extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.people,
-                            color: Colors.white,
+                            color: global.theme.onPrimaryColor,
                             size: 18,
                           ),
                           SizedBox(width: 8),
                           Text(
                             "${global.language("coupon_selected_customers")}: ${customerCodes.length}",
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: global.theme.onPrimaryColor,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -100,7 +100,7 @@ class CouponCustomerSelectionWidget extends StatelessWidget {
                           ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: global.theme.buttonColor,
-                              foregroundColor: Colors.white,
+                              foregroundColor: global.theme.onPrimaryColor,
                               padding: const EdgeInsets.symmetric(
                                 vertical: 8,
                                 horizontal: 12,
@@ -114,7 +114,7 @@ class CouponCustomerSelectionWidget extends StatelessWidget {
                             icon: Icon(Icons.person_add, size: 16),
                             label: Text(
                               global.language("coupon_button_add_customer"),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -133,7 +133,7 @@ class CouponCustomerSelectionWidget extends StatelessWidget {
                               decoration: BoxDecoration(
                                 border: Border(
                                   bottom: BorderSide(
-                                    color: Colors.grey[200]!,
+                                    color: global.theme.dividerBorderColor,
                                     width: 1,
                                   ),
                                 ),
@@ -142,16 +142,16 @@ class CouponCustomerSelectionWidget extends StatelessWidget {
                                 dense: true,
                                 leading: CircleAvatar(
                                   radius: 16,
-                                  backgroundColor: Colors.blue[100],
+                                  backgroundColor: global.theme.infoHighlightColor,
                                   child: Icon(
                                     Icons.person,
                                     size: 16,
-                                    color: Colors.blue[700],
+                                    color: global.theme.infoHighlightTextColor,
                                   ),
                                 ),
                                 title: Text(
                                   customerCode,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -159,7 +159,7 @@ class CouponCustomerSelectionWidget extends StatelessWidget {
                                 trailing: IconButton(
                                   icon: Icon(
                                     Icons.close,
-                                    color: Colors.red[400],
+                                    color: global.theme.negativeHighlightTextColor,
                                     size: 18,
                                   ),
                                   onPressed: () =>
@@ -187,7 +187,7 @@ class CouponCustomerSelectionWidget extends StatelessWidget {
         //   child: ElevatedButton.icon(
         //     style: ElevatedButton.styleFrom(
         //       backgroundColor: global.theme.buttonColor,
-        //       foregroundColor: Colors.white,
+        //       foregroundColor: global.theme.onPrimaryColor,
         //       padding: const EdgeInsets.symmetric(vertical: 14),
         //       shape: RoundedRectangleBorder(
         //         borderRadius: BorderRadius.circular(8),
@@ -200,7 +200,7 @@ class CouponCustomerSelectionWidget extends StatelessWidget {
         //       customerCodes.isEmpty
         //           ? global.language("coupon_button_select_customer")
         //           : global.language("coupon_button_add_customer"),
-        //       style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        //       style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         //     ),
         //   ),
         // ),
@@ -211,12 +211,12 @@ class CouponCustomerSelectionWidget extends StatelessWidget {
             padding: EdgeInsets.only(bottom: 10),
             child: Row(
               children: [
-                Icon(Icons.info_outline, size: 16, color: Colors.grey[500]),
+                Icon(Icons.info_outline, size: 16, color: global.theme.iconSecondaryColor),
                 SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     global.language("coupon_customer_empty_hint"),
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor),
                   ),
                 ),
               ],

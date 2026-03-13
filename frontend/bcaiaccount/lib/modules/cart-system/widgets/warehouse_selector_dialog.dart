@@ -23,7 +23,7 @@ class WarehouseSelectorDialog extends StatefulWidget {
       _WarehouseSelectorDialogState();
 }
 
-class _WarehouseSelectorDialogState extends State<WarehouseSelectorDialog> {
+class _WarehouseSelectorDialogState extends State<WarehouseSelectorDialog> with global.ThemeRefreshMixin {
   final ClickHouseWarehouseService _service = ClickHouseWarehouseService();
   final TextEditingController _searchController = TextEditingController();
 
@@ -166,22 +166,22 @@ class _WarehouseSelectorDialogState extends State<WarehouseSelectorDialog> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.orange[50],
+                color: global.theme.warningHighlightColor,
                 border: Border(
-                  bottom: BorderSide(color: Colors.grey[300]!),
+                  bottom: BorderSide(color: global.theme.dividerBorderColor),
                 ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.warehouse, color: Colors.orange),
+                  Icon(Icons.warehouse, color: global.theme.warningHighlightTextColor),
                   SizedBox(width: 8),
                   Text(
                     global.language("select_warehouse_and_location"),
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: Icon(Icons.close),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -195,12 +195,12 @@ class _WarehouseSelectorDialogState extends State<WarehouseSelectorDialog> {
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: global.language("search_warehouse"),
-                  prefixIcon: const Icon(Icons.search),
+                  prefixIcon: Icon(Icons.search),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                   suffixIcon: IconButton(
-                    icon: const Icon(Icons.refresh),
+                    icon: Icon(Icons.refresh),
                     onPressed: _loadWarehouses,
                   ),
                 ),
@@ -215,18 +215,18 @@ class _WarehouseSelectorDialogState extends State<WarehouseSelectorDialog> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red[50],
+                    color: global.theme.negativeHighlightColor,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red[200]!),
+                    border: Border.all(color: global.theme.negativeHighlightTextColor.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.error_outline, color: Colors.red[700]),
+                      Icon(Icons.error_outline, color: global.theme.negativeHighlightTextColor),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _errorMessage!,
-                          style: TextStyle(color: Colors.red[700]),
+                          style: TextStyle(color: global.theme.negativeHighlightTextColor),
                         ),
                       ),
                     ],
@@ -246,14 +246,14 @@ class _WarehouseSelectorDialogState extends State<WarehouseSelectorDialog> {
                               Icon(
                                 Icons.warehouse_outlined,
                                 size: 64,
-                                color: Colors.grey[400],
+                                color: global.theme.iconSecondaryColor,
                               ),
                               SizedBox(height: 16),
                               Text(
                                 global.language("warehouse_not_found"),
                                 style: TextStyle(
                                   fontSize: 16,
-                                  color: Colors.grey[600],
+                                  color: global.theme.iconSecondaryColor,
                                 ),
                               ),
                             ],
@@ -267,7 +267,7 @@ class _WarehouseSelectorDialogState extends State<WarehouseSelectorDialog> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   border: Border(
-                                    right: BorderSide(color: Colors.grey[300]!),
+                                    right: BorderSide(color: global.theme.dividerBorderColor),
                                   ),
                                 ),
                                 child: Column(
@@ -277,7 +277,7 @@ class _WarehouseSelectorDialogState extends State<WarehouseSelectorDialog> {
                                       padding: EdgeInsets.all(16),
                                       child: Text(
                                         '${global.language("warehouse")} (${_warehouses.length})',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16,
                                         ),
@@ -293,19 +293,19 @@ class _WarehouseSelectorDialogState extends State<WarehouseSelectorDialog> {
                                                   warehouse.guidFixed;
                                           return ListTile(
                                             selected: isSelected,
-                                            selectedTileColor: Colors.blue[50],
+                                            selectedTileColor: global.theme.infoHighlightColor,
                                             leading: Icon(
                                               Icons.warehouse,
                                               color: isSelected
-                                                  ? Colors.blue
-                                                  : Colors.grey,
+                                                  ? global.theme.infoHighlightTextColor
+                                                  : global.theme.iconSecondaryColor,
                                             ),
                                             title: Text(warehouse.displayName),
                                             subtitle: Text('${global.language("code")}: ${warehouse.code}'),
                                             trailing: isSelected
-                                                ? const Icon(
+                                                ? Icon(
                                                     Icons.check_circle,
-                                                    color: Colors.blue,
+                                                    color: global.theme.infoHighlightTextColor,
                                                   )
                                                 : null,
                                             onTap: () =>
@@ -329,7 +329,7 @@ class _WarehouseSelectorDialogState extends State<WarehouseSelectorDialog> {
                                     padding: EdgeInsets.all(16),
                                     child: Text(
                                       '${global.language("location")} ${_selectedWarehouse != null ? '(${_locations.length})' : ''}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
                                       ),
@@ -341,7 +341,7 @@ class _WarehouseSelectorDialogState extends State<WarehouseSelectorDialog> {
                                             child: Text(
                                               global.language("please_select_warehouse"),
                                               style: TextStyle(
-                                                color: Colors.grey[600],
+                                                color: global.theme.iconSecondaryColor,
                                               ),
                                             ),
                                           )
@@ -355,7 +355,7 @@ class _WarehouseSelectorDialogState extends State<WarehouseSelectorDialog> {
                                                     child: Text(
                                                       global.language("no_location_in_warehouse"),
                                                       style: TextStyle(
-                                                        color: Colors.grey[600],
+                                                        color: global.theme.iconSecondaryColor,
                                                       ),
                                                     ),
                                                   )
@@ -372,23 +372,23 @@ class _WarehouseSelectorDialogState extends State<WarehouseSelectorDialog> {
                                                       return ListTile(
                                                         selected: isSelected,
                                                         selectedTileColor:
-                                                            Colors.green[50],
+                                                            global.theme.positiveHighlightColor,
                                                         leading: Icon(
                                                           Icons.place,
                                                           color: isSelected
-                                                              ? Colors.green
-                                                              : Colors.grey,
+                                                              ? global.theme.positiveHighlightTextColor
+                                                              : global.theme.iconSecondaryColor,
                                                         ),
                                                         title: Text(
                                                             location.displayName),
                                                         subtitle: Text(
                                                             '${global.language("code")}: ${location.locationCode}'),
                                                         trailing: isSelected
-                                                            ? const Icon(
+                                                            ? Icon(
                                                                 Icons
                                                                     .check_circle,
-                                                                color: Colors
-                                                                    .green,
+                                                                color: global
+                                                                    .theme.positiveHighlightTextColor,
                                                               )
                                                             : null,
                                                         onTap: () {
@@ -413,7 +413,7 @@ class _WarehouseSelectorDialogState extends State<WarehouseSelectorDialog> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: Colors.grey[300]!),
+                  top: BorderSide(color: global.theme.dividerBorderColor),
                 ),
               ),
               child: Row(
@@ -426,17 +426,17 @@ class _WarehouseSelectorDialogState extends State<WarehouseSelectorDialog> {
                         if (_selectedWarehouse != null) ...[
                           Text(
                             '${global.language("warehouse")}: ${_selectedWarehouse!.displayName}',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           if (_selectedLocation != null)
                             Text(
                               '${global.language("location")}: ${_selectedLocation!.displayName}',
-                              style: TextStyle(color: Colors.grey[700]),
+                              style: TextStyle(color: global.theme.textColor),
                             ),
                         ] else
                           Text(
                             global.language("warehouse_not_selected"),
-                            style: TextStyle(color: Colors.grey[600]),
+                            style: TextStyle(color: global.theme.iconSecondaryColor),
                           ),
                       ],
                     ),
@@ -450,8 +450,8 @@ class _WarehouseSelectorDialogState extends State<WarehouseSelectorDialog> {
                   ElevatedButton(
                     onPressed: _confirmSelection,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
+                      backgroundColor: global.theme.infoHighlightTextColor,
+                      foregroundColor: global.theme.onPrimaryColor,
                     ),
                     child: Text(global.language("confirm")),
                   ),

@@ -761,7 +761,7 @@ class TransactionSearchHandlers {
                     TextButton(
                       child: Text(
                         global.language("confirm"),
-                        style: const TextStyle(color: Colors.red),
+                        style: TextStyle(color: global.theme.negativeHighlightTextColor),
                       ),
                       onPressed: () {
                         state.screenData.discountword = '';
@@ -879,7 +879,7 @@ class TransactionSearchHandlers {
                       TextButton(
                         child: Text(
                           global.language("confirm"),
-                          style: const TextStyle(color: Colors.red),
+                          style: TextStyle(color: global.theme.negativeHighlightTextColor),
                         ),
                         onPressed: () {
                           state.screenData.discountword = '';

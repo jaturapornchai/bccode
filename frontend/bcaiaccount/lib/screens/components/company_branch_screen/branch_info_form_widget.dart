@@ -61,7 +61,7 @@ class BranchInfoFormWidget extends StatelessWidget {
         padding: EdgeInsets.only(left: 10, right: 10, bottom: 15),
         child: Text(
           global.language("company_branch_data"),
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -243,7 +243,7 @@ class BranchInfoFormWidget extends StatelessWidget {
                 focusNode: FocusNode(skipTraversal: true),
                 icon: Icon(
                   Icons.location_on,
-                  color: Colors.blue.shade700,
+                  color: global.theme.primaryColor,
                 ),
                 tooltip: global.language("select_map_location"),
                 onPressed: onMapLocationPressed,

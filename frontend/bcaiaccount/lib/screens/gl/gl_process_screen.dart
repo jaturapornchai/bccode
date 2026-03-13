@@ -4,12 +4,12 @@ import 'package:smlaicloud/model/journal_model.dart';
 import 'package:smlaicloud/model/transaction_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:flutter_rounded_date_picker/flutter_rounded_date_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 
 class GlProcessScreen extends StatefulWidget {
   const GlProcessScreen({super.key});
@@ -19,7 +19,7 @@ class GlProcessScreen extends StatefulWidget {
 }
 
 class GlProcessScreenState extends State<GlProcessScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   List<DocFormatModel> listData = [];
   List<String> guidListChecked = [];
   ScrollController listScrollController = ScrollController();
@@ -29,6 +29,7 @@ class GlProcessScreenState extends State<GlProcessScreen>
   bool isDataChange = false;
   late MediaQueryData queryData;
   GlobalKey headerKey = GlobalKey();
+  int _hoverIndex = -1;
   bool isEditMode = false;
   bool loadingData = false;
   bool isCheckBoxAll = false;
@@ -97,12 +98,12 @@ class GlProcessScreenState extends State<GlProcessScreen>
           content: Text(global.language('leave_this_screen')),
           actions: <Widget>[
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              style: ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
               onPressed: () => Navigator.pop(context),
               child: Text(global.language('no')),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+              style: ElevatedButton.styleFrom(backgroundColor: global.theme.infoHighlightTextColor),
               onPressed: () {
                 Navigator.pop(context);
                 callBack();
@@ -256,9 +257,9 @@ class GlProcessScreenState extends State<GlProcessScreen>
     } else {
       global.showSnackBar(
         context,
-        Icon(Icons.info, color: Colors.white),
+        Icon(Icons.info, color: global.theme.onPrimaryColor),
         "${global.language("warning")} : ไม่ได้เลือกประเภทเอกสาร",
-        Colors.red,
+        global.theme.negativeHighlightTextColor,
       );
     }
   }
@@ -360,7 +361,7 @@ class GlProcessScreenState extends State<GlProcessScreen>
         title: Text(global.language('gl_process')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             discardData(
               callBack: () {
@@ -372,24 +373,7 @@ class GlProcessScreenState extends State<GlProcessScreen>
           },
         ),
         actions: <Widget>[
-          IconButton(
-            focusNode: FocusNode(skipTraversal: true),
-            icon: const FaIcon(FontAwesomeIcons.font),
-            onPressed: () async {
-              setState(() {
-                global.listDataFontSizeChange();
-              });
-            },
-          ),
-          IconButton(
-            focusNode: FocusNode(skipTraversal: true),
-            icon: const Icon(Icons.line_weight),
-            onPressed: () async {
-              setState(() {
-                global.listDataLineSpaceChange();
-              });
-            },
-          ),
+          ListFontSizeControl(onChanged: () => setState(() {})),
         ],
       ),
       body: Focus(
@@ -419,7 +403,7 @@ class GlProcessScreenState extends State<GlProcessScreen>
                               children: [
                                 IconButton(
                                   focusNode: FocusNode(skipTraversal: true),
-                                  icon: const Icon(Icons.calendar_today),
+                                  icon: Icon(Icons.calendar_today),
                                   onPressed: () {
                                     selectFromDate(context);
                                   },
@@ -474,7 +458,7 @@ class GlProcessScreenState extends State<GlProcessScreen>
                               children: [
                                 IconButton(
                                   focusNode: FocusNode(skipTraversal: true),
-                                  icon: const Icon(Icons.calendar_today),
+                                  icon: Icon(Icons.calendar_today),
                                   onPressed: () {
                                     selectToDate(context);
                                   },
@@ -522,23 +506,23 @@ class GlProcessScreenState extends State<GlProcessScreen>
                       style: ButtonStyle(
                         backgroundColor: WidgetStateProperty.all<Color>(
                           isProscess
-                              ? Colors.grey
+                              ? global.theme.iconSecondaryColor
                               : Colors
                                     .blue, // Adjust colors according to your design
                         ),
                       ),
                       icon: isProscess
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
+                                  global.theme.onPrimaryColor,
                                 ),
                               ),
                             )
-                          : const Icon(Icons.save),
+                          : Icon(Icons.save),
                       onPressed:
                           (!isProscess) // Disable button during loading
                           ? () {
@@ -646,7 +630,7 @@ class GlProcessScreenState extends State<GlProcessScreen>
             if (loadingData)
               Center(
                 child: LoadingAnimationWidget.staggeredDotsWave(
-                  color: Colors.blue,
+                  color: global.theme.infoHighlightTextColor,
                   size: 50,
                 ),
               ),
@@ -667,17 +651,23 @@ class GlProcessScreenState extends State<GlProcessScreen>
           : global.deviceConfig.listDataFontSize,
     );
 
-    return GestureDetector(
+    return MouseRegion(
+
+
+      cursor: SystemMouseCursors.click,
+
+
+      onEnter: (_) => setState(() => _hoverIndex = index),
+
+
+      onExit: (_) => setState(() => _hoverIndex = -1),
+
+
+      child: GestureDetector(
       child: Container(
         width: double.infinity,
         key: index < listKeys.length ? listKeys[index] : null,
-        decoration: BoxDecoration(
-          color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
-              : (index % 2 == 0)
-              ? global.theme.columnAlternateEvenColor
-              : global.theme.columnAlternateOddColor,
-        ),
+        color: _getContainerColor(value.guidfixed ?? '', index),
         padding: EdgeInsets.only(
           left: 10,
           right: 10,
@@ -765,15 +755,29 @@ class GlProcessScreenState extends State<GlProcessScreen>
                       fontSize: global.deviceConfig.listDataFontSize + 2,
                     ),
                   ),
-                  progressColor: Colors.green,
+                  progressColor: global.theme.positiveHighlightTextColor,
                 ),
               ),
             ],
           ),
         ),
       ),
+    ),
     );
   }
+
+  Color? _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return isEditMode ? global.theme.rowEditColor : global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -944,9 +948,9 @@ class GlProcessScreenState extends State<GlProcessScreen>
                           setState(() {
                             global.showSnackBar(
                               context,
-                              Icon(Icons.save, color: Colors.white),
+                              Icon(Icons.save, color: global.theme.onPrimaryColor),
                               "${global.language("not_success_save")} : ไม่ได้กำหนดผังบัญชี : PU",
-                              Colors.red,
+                              global.theme.negativeHighlightTextColor,
                             );
                           });
 
@@ -2089,18 +2093,18 @@ class GlProcessScreenState extends State<GlProcessScreen>
                         if (docsuccess.isNotEmpty) {
                           global.showSnackBar(
                             context,
-                            Icon(Icons.save, color: Colors.white),
+                            Icon(Icons.save, color: global.theme.onPrimaryColor),
                             "${global.language("save_success")} : ${docsuccess.join(', ')}",
-                            Colors.blue,
+                            global.theme.infoHighlightTextColor,
                           );
                         }
 
                         if (docfail.isNotEmpty) {
                           global.showSnackBar(
                             context,
-                            Icon(Icons.save, color: Colors.white),
+                            Icon(Icons.save, color: global.theme.onPrimaryColor),
                             "${global.language("not_success_save")} : ไม่ได้กำหนดผังบัญชี : ${docfail.join(', ')}",
-                            Colors.red,
+                            global.theme.negativeHighlightTextColor,
                           );
                         }
                       });
@@ -2112,9 +2116,9 @@ class GlProcessScreenState extends State<GlProcessScreen>
 
                       global.showSnackBar(
                         context,
-                        Icon(Icons.save, color: Colors.white),
+                        Icon(Icons.save, color: global.theme.onPrimaryColor),
                         "${global.language("not_success_save")} : ${state.message}",
-                        Colors.red,
+                        global.theme.negativeHighlightTextColor,
                       );
                       return;
                     });

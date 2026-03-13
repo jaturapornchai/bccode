@@ -160,18 +160,18 @@ class PODetailCommandHandler {
                 // Header
                 Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF2A6F97),
-                    borderRadius: BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
+                  decoration: BoxDecoration(
+                    color: global.theme.primaryColor,
+                    borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.edit_note, color: Colors.white, size: 24),
+                      Icon(Icons.edit_note, color: global.theme.onPrimaryColor, size: 24),
                       SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           global.language("edit_product_info"),
-                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: global.theme.onPrimaryColor, fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
@@ -199,7 +199,7 @@ class PODetailCommandHandler {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    border: Border(top: BorderSide(color: Colors.grey[300]!)),
+                    border: Border(top: BorderSide(color: global.theme.dividerBorderColor)),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -207,7 +207,7 @@ class PODetailCommandHandler {
                       TextButton(
                         onPressed: () => Navigator.of(dialogContext).pop(),
                         style: TextButton.styleFrom(padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
-                        child: Text(global.language("cancel"), style: TextStyle(color: Colors.grey[600])),
+                        child: Text(global.language("cancel"), style: TextStyle(color: global.theme.iconSecondaryColor)),
                       ),
                       SizedBox(width: 8),
                       ElevatedButton(
@@ -225,8 +225,8 @@ class PODetailCommandHandler {
                           onStateChanged();
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2A6F97),
-                          foregroundColor: Colors.white,
+                          backgroundColor: global.theme.primaryColor,
+                          foregroundColor: global.theme.onPrimaryColor,
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
@@ -253,13 +253,13 @@ class PODetailCommandHandler {
       children: [
         Container(
           padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(color: const Color(0xFF2A6F97).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-          child: Icon(icon, color: const Color(0xFF2A6F97), size: 18),
+          decoration: BoxDecoration(color: global.theme.primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+          child: Icon(icon, color: global.theme.primaryColor, size: 18),
         ),
         const SizedBox(width: 8),
         Text(
           label,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2A6F97)),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: global.theme.primaryColor),
         ),
       ],
     );
@@ -271,11 +271,11 @@ class PODetailCommandHandler {
       controller: controller,
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: TextStyle(color: Colors.grey[400]),
+        hintStyle: TextStyle(color: global.theme.formHintColor),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF2A6F97), width: 2),
+          borderSide: BorderSide(color: global.theme.primaryColor, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       ),
@@ -519,7 +519,7 @@ class PODetailCommandHandler {
                                 title: Text(global.activeLangName(option.itemnames!)),
                                 subtitle: Text('${global.language("price_colon")}: ${global.formatUnitPrice(option.price!)} | ${global.language("amount")}: ${global.formatQuantity(option.qty!)}'),
                                 trailing: IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  icon: Icon(Icons.delete, color: global.theme.negativeHighlightTextColor),
                                   onPressed: () {
                                     screenData.details![index].extrajsonlist!.removeAt(optionIndex);
                                     onStateChanged();

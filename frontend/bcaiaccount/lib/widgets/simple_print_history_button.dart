@@ -74,8 +74,8 @@ class _SimplePrintHistoryButtonState extends State<SimplePrintHistoryButton> {
   Widget build(BuildContext context) {
     if (!widget.visible) return const SizedBox.shrink();
 
-    final color = widget.color ?? Colors.white.withValues(alpha: 0.9);
-    final hoverColor = widget.color ?? Colors.white;
+    final color = widget.color ?? global.theme.onPrimaryColor.withValues(alpha: 0.9);
+    final hoverColor = widget.color ?? global.theme.onPrimaryColor;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -147,7 +147,7 @@ class _SimplePrintHistoryButtonState extends State<SimplePrintHistoryButton> {
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.red.shade500,
+                color: global.theme.negativeHighlightTextColor,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
@@ -160,8 +160,8 @@ class _SimplePrintHistoryButtonState extends State<SimplePrintHistoryButton> {
               constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
               child: Text(
                 _printCount > 99 ? '99+' : _printCount.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: global.theme.onPrimaryColor,
                   fontSize: 9,
                   fontWeight: FontWeight.bold,
                   height: 1,

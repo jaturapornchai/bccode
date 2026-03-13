@@ -14,7 +14,7 @@ class LoginWithScreen extends StatefulWidget {
   State<LoginWithScreen> createState() => _LoginWithScreenState();
 }
 
-class _LoginWithScreenState extends State<LoginWithScreen> {
+class _LoginWithScreenState extends State<LoginWithScreen> with global.ThemeRefreshMixin {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   global.LoginEnum loginType = global.LoginEnum.none;
 
@@ -38,11 +38,10 @@ class _LoginWithScreenState extends State<LoginWithScreen> {
 
       // Sign in to Firebase with the Google [UserCredential]
       return await _auth.signInWithCredential(credential);
-        } catch (e) {
+    } catch (e) {
       // print(e);
       return null;
     }
-    return null;
   }
 
   Future<String?> getCurrentUserIdToken() async {

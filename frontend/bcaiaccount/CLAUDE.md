@@ -59,6 +59,15 @@ Flutter multi-platform app (Web, Windows, Android, iOS) for BC AI Cloud accounti
 **เหตุผล:** API key ที่ฝังใน frontend สามารถถูกดึงออกได้ง่าย (decompile, network sniff) ทำให้ถูกขโมยใช้งานได้
 
 
+### ห้าม Hardcode สี — ต้องใช้ global.theme.* เท่านั้น
+
+**ทุกสีที่แสดงบน UI ต้องมาจาก `global.theme.*` — ห้าม hardcode `Colors.*` หรือ `Color(0xFF...)` โดยตรง**
+- ระบบรองรับ Dark Mode / Light Mode — hardcode สีจะเปลี่ยนธีมไม่ได้
+- ดูกฏเต็มและ mapping สีใน `D:\bcdev\bcai-claude-skills\rules\coding-style.md` → หัวข้อ "ห้าม Hardcode สี"
+- ทุก `StatefulWidget` ต้องใช้ `global.ThemeRefreshMixin` เพื่อ rebuild เมื่อเปลี่ยนธีม
+- ข้อยกเว้น: text สีขาวบน AppBar/ปุ่มสี, QR code bg, brand colors, semantic status colors, login screens
+
+
 ### MCP-First Standard
 
 **MCP มีไว้สำหรับ AI tools เท่านั้น** (Claude Code, Claude Desktop, Cursor, VSCode + MCP extension)

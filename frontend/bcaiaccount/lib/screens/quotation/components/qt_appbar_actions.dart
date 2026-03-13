@@ -153,7 +153,7 @@ class QTAppBarActions {
                   const SizedBox(height: 2),
                   Text(
                     label,
-                    style: const TextStyle(fontSize: 9, color: Colors.white70),
+                    style: TextStyle(fontSize: 9, color: global.theme.onPrimaryColor.withValues(alpha: 0.7)),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
@@ -166,15 +166,15 @@ class QTAppBarActions {
   }
 
   static Widget _buildLoadingIndicator() {
-    return const Padding(
-      padding: EdgeInsets.only(right: 12.0),
+    return Padding(
+      padding: const EdgeInsets.only(right: 12.0),
       child: Center(
         child: SizedBox(
           width: 20,
           height: 20,
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            valueColor: AlwaysStoppedAnimation<Color>(global.theme.onPrimaryColor),
           ),
         ),
       ),
@@ -183,7 +183,7 @@ class QTAppBarActions {
 
   static Widget _buildSlipImageButton(BuildContext context, TransactionModel screenData) {
     return _buildActionButton(
-      icon: Icon(Icons.image_outlined, size: 22.0, color: Colors.white),
+      icon: Icon(Icons.image_outlined, size: 22.0, color: global.theme.onPrimaryColor),
       label: global.language('view_slip'),
       onPressed: () {
         showDialog(
@@ -204,7 +204,7 @@ class QTAppBarActions {
     String? disabledReason,
   }) {
     return _buildActionButton(
-      icon: Icon(Icons.delete, size: 22.0, color: Colors.white),
+      icon: Icon(Icons.delete, size: 22.0, color: global.theme.onPrimaryColor),
       label: global.language('delete'),
       enabled: enabled,
       disabledReason: disabledReason,
@@ -226,7 +226,7 @@ class QTAppBarActions {
     String? disabledReason,
   }) {
     return _buildActionButton(
-      icon: Icon(Icons.cancel_rounded, size: 22.0, color: Colors.white),
+      icon: Icon(Icons.cancel_rounded, size: 22.0, color: global.theme.onPrimaryColor),
       label: global.language('cancel'),
       enabled: enabled,
       disabledReason: disabledReason,
@@ -268,7 +268,7 @@ class QTAppBarActions {
       key: ValueKey('qt_print_history_${screenData.docno}'),
       icon: Icons.print,
       label: global.language('print_history'),
-      badgeColor: Colors.red,
+      badgeColor: global.theme.negativeHighlightTextColor,
       enabled: enabled,
       disabledReason: disabledReason,
       countLoader: () async {
@@ -299,7 +299,7 @@ class QTAppBarActions {
       key: ValueKey('qt_edit_history_${screenData.docno}'),
       icon: Icons.edit_note,
       label: global.language('edit_history'),
-      badgeColor: Colors.orange,
+      badgeColor: global.theme.warningHighlightTextColor,
       enabled: enabled,
       disabledReason: disabledReason,
       countLoader: () async {
@@ -328,7 +328,7 @@ class QTAppBarActions {
       key: ValueKey('qt_approval_history_$docNo'),
       icon: Icons.approval,
       label: global.language("approval_history"),
-      badgeColor: Colors.green,
+      badgeColor: global.theme.positiveHighlightTextColor,
       enabled: enabled,
       disabledReason: disabledReason,
       countLoader: () async {
@@ -344,7 +344,7 @@ class QTAppBarActions {
 
   static Widget _buildAddNewButton(VoidCallback onClearScreen) {
     return _buildActionButton(
-      icon: Icon(Icons.add, size: 22.0, color: Colors.white),
+      icon: Icon(Icons.add, size: 22.0, color: global.theme.onPrimaryColor),
       label: global.language('add_new'),
       onPressed: onClearScreen,
     );
@@ -355,7 +355,7 @@ class QTAppBarActions {
       icon: Icon(
         showPreview ? Icons.visibility_off : Icons.visibility,
         size: 22.0,
-        color: Colors.white,
+        color: global.theme.onPrimaryColor,
       ),
       label: showPreview ? global.language('hide_preview') : global.language('show_preview'),
       onPressed: onToggle,
@@ -364,7 +364,7 @@ class QTAppBarActions {
 
   static Widget _buildSearchButton(VoidCallback onSearch) {
     return _buildActionButton(
-      icon: Icon(Icons.list_alt, size: 22.0, color: Colors.white),
+      icon: Icon(Icons.list_alt, size: 22.0, color: global.theme.onPrimaryColor),
       label: global.language('search'),
       onPressed: onSearch,
     );
@@ -373,13 +373,13 @@ class QTAppBarActions {
   static Widget _buildSwitchTabButton(TabController tabController) {
     if (tabController.index == 0) {
       return _buildActionButton(
-        icon: Icon(Icons.file_open, size: 22.0, color: Colors.white),
+        icon: Icon(Icons.file_open, size: 22.0, color: global.theme.onPrimaryColor),
         label: global.language('view_document'),
         onPressed: () => tabController.animateTo(1),
       );
     } else {
       return _buildActionButton(
-        icon: Icon(Icons.text_fields, size: 22.0, color: Colors.white),
+        icon: Icon(Icons.text_fields, size: 22.0, color: global.theme.onPrimaryColor),
         label: global.language('edit'),
         onPressed: () => tabController.animateTo(0),
       );
@@ -397,7 +397,7 @@ class QTAppBarActions {
     String? disabledReason,
   }) {
     return _buildActionButton(
-      icon: Icon(Icons.save, size: 22.0, color: Colors.white),
+      icon: Icon(Icons.save, size: 22.0, color: global.theme.onPrimaryColor),
       label: global.language('save'),
       enabled: enabled,
       disabledReason: disabledReason,
@@ -451,7 +451,7 @@ class _HistoryBadgeButton extends StatefulWidget {
   State<_HistoryBadgeButton> createState() => _HistoryBadgeButtonState();
 }
 
-class _HistoryBadgeButtonState extends State<_HistoryBadgeButton> {
+class _HistoryBadgeButtonState extends State<_HistoryBadgeButton> with global.ThemeRefreshMixin {
   int _count = 0;
   bool _isLoading = true;
 
@@ -519,7 +519,7 @@ class _HistoryBadgeButtonState extends State<_HistoryBadgeButton> {
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    Icon(widget.icon, size: 20.0, color: Colors.white),
+                    Icon(widget.icon, size: 20.0, color: global.theme.onPrimaryColor),
                     if (!_isLoading && _count > 0)
                       Positioned(
                         right: -8,
@@ -529,12 +529,12 @@ class _HistoryBadgeButtonState extends State<_HistoryBadgeButton> {
                           decoration: BoxDecoration(
                             color: widget.badgeColor,
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 1.5),
+                            border: Border.all(color: global.theme.onPrimaryColor, width: 1.5),
                           ),
                           constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                           child: Text(
                             _count > 99 ? '99+' : _count.toString(),
-                            style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: global.theme.onPrimaryColor, fontSize: 8, fontWeight: FontWeight.bold),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -544,7 +544,7 @@ class _HistoryBadgeButtonState extends State<_HistoryBadgeButton> {
                 const SizedBox(height: 2),
                 Text(
                   widget.label,
-                  style: const TextStyle(fontSize: 9, color: Colors.white70),
+                  style: TextStyle(fontSize: 9, color: global.theme.onPrimaryColor.withValues(alpha: 0.7)),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],

@@ -33,8 +33,8 @@ class PaymentWidgets {
                     label: Text(global.language("cash")),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: (state.showPayDetail == 0)
-                          ? Colors.blue
-                          : Colors.grey,
+                          ? global.theme.infoHighlightTextColor
+                          : global.theme.iconSecondaryColor,
                     ),
                   ),
                 ),
@@ -51,8 +51,8 @@ class PaymentWidgets {
                     label: Text(global.language("money_transfer")),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: (state.showPayDetail == 1)
-                          ? Colors.blue
-                          : Colors.grey,
+                          ? global.theme.infoHighlightTextColor
+                          : global.theme.iconSecondaryColor,
                     ),
                   ),
                 ),
@@ -74,8 +74,8 @@ class PaymentWidgets {
                           label: Text(global.language('advance_payment')),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: (state.showPayDetail == 8)
-                                ? Colors.blue
-                                : Colors.grey,
+                                ? global.theme.infoHighlightTextColor
+                                : global.theme.iconSecondaryColor,
                           ),
                         ),
                       ),
@@ -98,8 +98,8 @@ class PaymentWidgets {
                           label: Text(global.language("credit_card")),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: (state.showPayDetail == 2)
-                                ? Colors.blue
-                                : Colors.grey,
+                                ? global.theme.infoHighlightTextColor
+                                : global.theme.iconSecondaryColor,
                           ),
                         ),
                       ),
@@ -128,8 +128,8 @@ class PaymentWidgets {
                           label: Text(global.language("cheque")),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: (state.showPayDetail == 3)
-                                ? Colors.blue
-                                : Colors.grey,
+                                ? global.theme.infoHighlightTextColor
+                                : global.theme.iconSecondaryColor,
                           ),
                         ),
                       ),
@@ -149,8 +149,8 @@ class PaymentWidgets {
                           label: Text(global.language("coupon")),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: (state.showPayDetail == 4)
-                                ? Colors.blue
-                                : Colors.grey,
+                                ? global.theme.infoHighlightTextColor
+                                : global.theme.iconSecondaryColor,
                           ),
                         ),
                       ),
@@ -175,8 +175,8 @@ class PaymentWidgets {
                           label: Text(global.language("qr_code")),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: (state.showPayDetail == 5)
-                                ? Colors.blue
-                                : Colors.grey,
+                                ? global.theme.infoHighlightTextColor
+                                : global.theme.iconSecondaryColor,
                           ),
                         ),
                       ),
@@ -200,8 +200,8 @@ class PaymentWidgets {
                           label: Text(global.language("delivery")),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: (state.showPayDetail == 6)
-                                ? Colors.blue
-                                : Colors.grey,
+                                ? global.theme.infoHighlightTextColor
+                                : global.theme.iconSecondaryColor,
                           ),
                         ),
                       ),
@@ -218,8 +218,8 @@ class PaymentWidgets {
                           label: Text(global.language('points')),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: (state.showPayDetail == 7)
-                                ? Colors.blue
-                                : Colors.grey,
+                                ? global.theme.infoHighlightTextColor
+                                : global.theme.iconSecondaryColor,
                           ),
                         ),
                       ),
@@ -239,8 +239,8 @@ class PaymentWidgets {
                                 label: Text(global.language('advance_payment')),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: (state.showPayDetail == 8)
-                                      ? Colors.blue
-                                      : Colors.grey,
+                                      ? global.theme.infoHighlightTextColor
+                                      : global.theme.iconSecondaryColor,
                                 ),
                               ),
                             ),
@@ -277,7 +277,7 @@ class PaymentWidgets {
                   border: OutlineInputBorder(),
                   labelText: global.language("cash"),
                 ),
-                style: const TextStyle(fontSize: 28),
+                style: TextStyle(fontSize: 28),
                 controller: state.payCashAmountController,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -317,7 +317,7 @@ class PaymentWidgets {
                   border: OutlineInputBorder(),
                   labelText: global.language("cash_amount"),
                 ),
-                style: const TextStyle(fontSize: 28),
+                style: TextStyle(fontSize: 28),
                 controller: state.payDeliveryCashAmountController,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -360,7 +360,7 @@ class PaymentWidgets {
                   border: OutlineInputBorder(),
                   labelText: global.language('use_points'),
                 ),
-                style: const TextStyle(fontSize: 20),
+                style: TextStyle(fontSize: 20),
                 controller: TextEditingController(
                   text: state.screenData.usepoint.toString(),
                 ),
@@ -381,7 +381,7 @@ class PaymentWidgets {
                   border: OutlineInputBorder(),
                   labelText: global.language('points_value'),
                 ),
-                style: const TextStyle(fontSize: 20),
+                style: TextStyle(fontSize: 20),
                 controller: TextEditingController(
                   text: state.screenData.paypointamount.toString(),
                 ),
@@ -402,7 +402,7 @@ class PaymentWidgets {
                   border: OutlineInputBorder(),
                   labelText: global.language('points_code'),
                 ),
-                style: const TextStyle(fontSize: 20),
+                style: TextStyle(fontSize: 20),
                 controller: TextEditingController(
                   text: state.screenData.pointscode,
                 ),
@@ -422,7 +422,7 @@ class PaymentWidgets {
                   border: OutlineInputBorder(),
                   labelText: global.language('points_received'),
                 ),
-                style: const TextStyle(fontSize: 20),
+                style: TextStyle(fontSize: 20),
                 controller: TextEditingController(
                   text: state.screenData.getpoint.toString(),
                 ),

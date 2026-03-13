@@ -22,7 +22,7 @@ class BusinessTypeSelectorWidget extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 10, right: 10),
+          padding: EdgeInsets.only(left: 10, right: 10),
           child: Row(
             children: [
               Expanded(
@@ -31,10 +31,10 @@ class BusinessTypeSelectorWidget extends StatelessWidget {
                   child: ElevatedButton(
                     style: ButtonStyle(
                       backgroundColor: WidgetStateProperty.all<Color>(
-                        const Color.fromARGB(255, 168, 171, 136),
+                        global.theme.searchBarColor,
                       ),
                       foregroundColor: WidgetStateProperty.all<Color>(
-                        Colors.black,
+                        global.theme.textColor,
                       ),
                     ),
                     onPressed: () {
@@ -68,11 +68,11 @@ class BusinessTypeSelectorWidget extends StatelessWidget {
                         if (businessType?.guidfixed?.isNotEmpty ?? false)
                           IconButton(
                             onPressed: onBusinessTypeCleared,
-                            icon: const Icon(Icons.delete),
+                            icon: Icon(Icons.delete),
                           )
                         else
                           Container(),
-                        const Icon(Icons.search),
+                        Icon(Icons.search),
                       ],
                     ),
                   ),
@@ -88,7 +88,7 @@ class BusinessTypeSelectorWidget extends StatelessWidget {
               width: double.infinity,
               child: Text(
                 "**${global.language("please_select_business_type")}**",
-                style: const TextStyle(color: Colors.red),
+                style: TextStyle(color: global.theme.negativeHighlightTextColor),
               ),
             ),
           )

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smlaicloud/global.dart' as global;
 
 class SingInButton extends StatelessWidget {
   final String labelText;
@@ -20,7 +21,7 @@ class SingInButton extends StatelessWidget {
         height: 60,
         padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: global.theme.cardColor,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(40),
             topRight: Radius.circular(40),
@@ -50,7 +51,7 @@ class SingInButton extends StatelessWidget {
               padding: const EdgeInsets.only(left: 10),
               child: Text(
                 labelText,
-                style: const TextStyle(fontSize: 25, color: Colors.black),
+                style: TextStyle(fontSize: 25, color: global.theme.textColor),
               ),
             ),
           ],

@@ -27,8 +27,8 @@ class PurchaseScreen extends StatelessWidget {
             ),
           );
         },
-        backgroundColor: Colors.blue,
-        child: const Icon(Icons.add),
+        backgroundColor: global.theme.infoHighlightTextColor,
+        child: Icon(Icons.add),
       ),
     );
   }

@@ -37,7 +37,7 @@ class TransactionDialogs {
                 labelText: '',
                 border: const OutlineInputBorder(),
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.clear),
+                  icon: Icon(Icons.clear),
                   onPressed: () {
                     barcode.text = '';
                   },
@@ -188,7 +188,7 @@ Future<String?> showDiscountDialog(
               labelText: global.language("enter_discount"),
               border: const OutlineInputBorder(),
               suffixIcon: IconButton(
-                icon: const Icon(Icons.clear),
+                icon: Icon(Icons.clear),
                 onPressed: () {
                   discount.text = '';
                 },
@@ -279,7 +279,7 @@ Future<String?> showDescriptionDialog(
               labelText: global.language('note_label'),
               border: const OutlineInputBorder(),
               suffixIcon: IconButton(
-                icon: const Icon(Icons.clear),
+                icon: Icon(Icons.clear),
                 onPressed: () {
                   description.clear();
                 },
@@ -339,16 +339,16 @@ Future<LocationModel?> showWareHouseLocationDialog(
                   // Header
                   Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF2A6F97),
-                      borderRadius: BorderRadius.only(
+                    decoration: BoxDecoration(
+                      color: global.theme.primaryColor,
+                      borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(16),
                         topRight: Radius.circular(16),
                       ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.location_on, color: Colors.white, size: 24),
+                        Icon(Icons.location_on, color: global.theme.onPrimaryColor, size: 24),
                         SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -356,11 +356,11 @@ Future<LocationModel?> showWareHouseLocationDialog(
                             children: [
                               Text(
                                 global.language("select_location_from_warehouse"),
-                                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                style: TextStyle(color: global.theme.onPrimaryColor, fontSize: 16, fontWeight: FontWeight.bold),
                               ),
                               Text(
                                 whcode,
-                                style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                style: TextStyle(color: global.theme.onPrimaryColor.withValues(alpha: 0.7), fontSize: 13),
                               ),
                             ],
                           ),
@@ -390,10 +390,10 @@ Future<LocationModel?> showWareHouseLocationDialog(
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF2A6F97).withValues(alpha: 0.1),
+                                        color: global.theme.primaryColor.withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: const Icon(Icons.inventory_2_outlined, color: Color(0xFF2A6F97), size: 20),
+                                      child: Icon(Icons.inventory_2_outlined, color: global.theme.primaryColor, size: 20),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
@@ -402,17 +402,17 @@ Future<LocationModel?> showWareHouseLocationDialog(
                                         children: [
                                           Text(
                                             loc.code,
-                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF2A6F97)),
+                                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: global.theme.primaryColor),
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
                                             locName,
-                                            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                                            style: TextStyle(fontSize: 13, color: global.theme.textSecondaryColor),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    const Icon(Icons.chevron_right, color: Colors.grey),
+                                    Icon(Icons.chevron_right, color: global.theme.iconSecondaryColor),
                                   ],
                                 ),
                               ),
@@ -430,7 +430,7 @@ Future<LocationModel?> showWareHouseLocationDialog(
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      border: Border(top: BorderSide(color: Colors.grey[300]!)),
+                      border: Border(top: BorderSide(color: global.theme.dividerBorderColor)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -440,7 +440,7 @@ Future<LocationModel?> showWareHouseLocationDialog(
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                           ),
-                          child: Text(global.language("close"), style: TextStyle(color: Color(0xFF2A6F97))),
+                          child: Text(global.language("close"), style: TextStyle(color: global.theme.primaryColor)),
                         ),
                       ],
                     ),
@@ -484,16 +484,16 @@ Future<LocationModel?> showWareHouseLocationDefualtDialog(
                   // Header
                   Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF2A6F97),
-                      borderRadius: BorderRadius.only(
+                    decoration: BoxDecoration(
+                      color: global.theme.primaryColor,
+                      borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(16),
                         topRight: Radius.circular(16),
                       ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.location_on, color: Colors.white, size: 24),
+                        Icon(Icons.location_on, color: global.theme.onPrimaryColor, size: 24),
                         SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -501,11 +501,11 @@ Future<LocationModel?> showWareHouseLocationDefualtDialog(
                             children: [
                               Text(
                                 global.language("select_location_from_warehouse"),
-                                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                style: TextStyle(color: global.theme.onPrimaryColor, fontSize: 16, fontWeight: FontWeight.bold),
                               ),
                               Text(
                                 whcode,
-                                style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                style: TextStyle(color: global.theme.onPrimaryColor.withValues(alpha: 0.7), fontSize: 13),
                               ),
                             ],
                           ),
@@ -535,10 +535,10 @@ Future<LocationModel?> showWareHouseLocationDefualtDialog(
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF2A6F97).withValues(alpha: 0.1),
+                                        color: global.theme.primaryColor.withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: const Icon(Icons.inventory_2_outlined, color: Color(0xFF2A6F97), size: 20),
+                                      child: Icon(Icons.inventory_2_outlined, color: global.theme.primaryColor, size: 20),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
@@ -547,17 +547,17 @@ Future<LocationModel?> showWareHouseLocationDefualtDialog(
                                         children: [
                                           Text(
                                             loc.code,
-                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF2A6F97)),
+                                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: global.theme.primaryColor),
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
                                             locName,
-                                            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                                            style: TextStyle(fontSize: 13, color: global.theme.textSecondaryColor),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    const Icon(Icons.chevron_right, color: Colors.grey),
+                                    Icon(Icons.chevron_right, color: global.theme.iconSecondaryColor),
                                   ],
                                 ),
                               ),
@@ -575,7 +575,7 @@ Future<LocationModel?> showWareHouseLocationDefualtDialog(
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      border: Border(top: BorderSide(color: Colors.grey[300]!)),
+                      border: Border(top: BorderSide(color: global.theme.dividerBorderColor)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -585,7 +585,7 @@ Future<LocationModel?> showWareHouseLocationDefualtDialog(
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                           ),
-                          child: Text(global.language("close"), style: TextStyle(color: Color(0xFF2A6F97))),
+                          child: Text(global.language("close"), style: TextStyle(color: global.theme.primaryColor)),
                         ),
                       ],
                     ),
@@ -621,21 +621,21 @@ Future<WarehouseModel?> showWareHouseDialog(
               // Header
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF2A6F97),
-                  borderRadius: BorderRadius.only(
+                decoration: BoxDecoration(
+                  color: global.theme.primaryColor,
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(16),
                     topRight: Radius.circular(16),
                   ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.warehouse_outlined, color: Colors.white, size: 24),
+                    Icon(Icons.warehouse_outlined, color: global.theme.onPrimaryColor, size: 24),
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         global.language("select_warehouse"),
-                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: global.theme.onPrimaryColor, fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
@@ -662,10 +662,10 @@ Future<WarehouseModel?> showWareHouseDialog(
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF2A6F97).withValues(alpha: 0.1),
+                                  color: global.theme.primaryColor.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Icon(Icons.warehouse, color: Color(0xFF2A6F97), size: 20),
+                                child: Icon(Icons.warehouse, color: global.theme.primaryColor, size: 20),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -674,17 +674,17 @@ Future<WarehouseModel?> showWareHouseDialog(
                                   children: [
                                     Text(
                                       wh.code,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF2A6F97)),
+                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: global.theme.primaryColor),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
                                       whName,
-                                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                                      style: TextStyle(fontSize: 13, color: global.theme.textSecondaryColor),
                                     ),
                                   ],
                                 ),
                               ),
-                              const Icon(Icons.chevron_right, color: Colors.grey),
+                              Icon(Icons.chevron_right, color: global.theme.iconSecondaryColor),
                             ],
                           ),
                         ),
@@ -697,7 +697,7 @@ Future<WarehouseModel?> showWareHouseDialog(
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: Colors.grey[300]!)),
+                  border: Border(top: BorderSide(color: global.theme.dividerBorderColor)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -707,7 +707,7 @@ Future<WarehouseModel?> showWareHouseDialog(
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       ),
-                      child: Text(global.language("close"), style: TextStyle(color: Color(0xFF2A6F97))),
+                      child: Text(global.language("close"), style: TextStyle(color: global.theme.primaryColor)),
                     ),
                   ],
                 ),
@@ -740,21 +740,21 @@ Future<WarehouseModel?> showWareHouseDefualtDialog(
               // Header
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF2A6F97),
-                  borderRadius: BorderRadius.only(
+                decoration: BoxDecoration(
+                  color: global.theme.primaryColor,
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(16),
                     topRight: Radius.circular(16),
                   ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.warehouse_outlined, color: Colors.white, size: 24),
+                    Icon(Icons.warehouse_outlined, color: global.theme.onPrimaryColor, size: 24),
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         global.language("select_warehouse"),
-                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: global.theme.onPrimaryColor, fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
@@ -781,10 +781,10 @@ Future<WarehouseModel?> showWareHouseDefualtDialog(
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF2A6F97).withValues(alpha: 0.1),
+                                  color: global.theme.primaryColor.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Icon(Icons.warehouse, color: Color(0xFF2A6F97), size: 20),
+                                child: Icon(Icons.warehouse, color: global.theme.primaryColor, size: 20),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -793,17 +793,17 @@ Future<WarehouseModel?> showWareHouseDefualtDialog(
                                   children: [
                                     Text(
                                       wh.code,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF2A6F97)),
+                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: global.theme.primaryColor),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
                                       whName,
-                                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                                      style: TextStyle(fontSize: 13, color: global.theme.textSecondaryColor),
                                     ),
                                   ],
                                 ),
                               ),
-                              const Icon(Icons.chevron_right, color: Colors.grey),
+                              Icon(Icons.chevron_right, color: global.theme.iconSecondaryColor),
                             ],
                           ),
                         ),
@@ -816,7 +816,7 @@ Future<WarehouseModel?> showWareHouseDefualtDialog(
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: Colors.grey[300]!)),
+                  border: Border(top: BorderSide(color: global.theme.dividerBorderColor)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -826,7 +826,7 @@ Future<WarehouseModel?> showWareHouseDefualtDialog(
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       ),
-                      child: Text(global.language("close"), style: TextStyle(color: Color(0xFF2A6F97))),
+                      child: Text(global.language("close"), style: TextStyle(color: global.theme.primaryColor)),
                     ),
                   ],
                 ),
@@ -1062,7 +1062,7 @@ Future<SaveConfirmResult?> showEnhancedSaveConfirmDialog(
               ? global.language("confirm_save")
               : global.language("confirm_update");
           final IconData icon = isNewDocument ? Icons.save_outlined : Icons.edit_outlined;
-          final Color primaryColor = const Color(0xFF2A6F97);
+          final Color primaryColor = global.theme.primaryColor;
 
           return Dialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -1091,10 +1091,10 @@ Future<SaveConfirmResult?> showEnhancedSaveConfirmDialog(
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
+                            color: global.theme.cardColor.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(icon, color: Colors.white, size: 28),
+                          child: Icon(icon, color: global.theme.onPrimaryColor, size: 28),
                         ),
                         SizedBox(width: 16),
                         Expanded(
@@ -1103,8 +1103,8 @@ Future<SaveConfirmResult?> showEnhancedSaveConfirmDialog(
                             children: [
                               Text(
                                 title,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: global.theme.onPrimaryColor,
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -1115,7 +1115,7 @@ Future<SaveConfirmResult?> showEnhancedSaveConfirmDialog(
                                     ? global.language("new_document")
                                     : global.language("edit_document"),
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.85),
+                                  color: global.theme.onPrimaryColor.withValues(alpha: 0.85),
                                   fontSize: 13,
                                 ),
                               ),
@@ -1135,9 +1135,9 @@ Future<SaveConfirmResult?> showEnhancedSaveConfirmDialog(
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.grey[50],
+                            color: global.theme.surfaceColor,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey[200]!),
+                            border: Border.all(color: global.theme.dividerBorderColor),
                           ),
                           child: Row(
                             children: [
@@ -1154,7 +1154,7 @@ Future<SaveConfirmResult?> showEnhancedSaveConfirmDialog(
                                       : global.language("are_you_sure_update"),
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.grey[700],
+                                    color: global.theme.textColor,
                                   ),
                                 ),
                               ),
@@ -1175,10 +1175,10 @@ Future<SaveConfirmResult?> showEnhancedSaveConfirmDialog(
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                               decoration: BoxDecoration(
-                                color: printAfterSave ? primaryColor.withValues(alpha: 0.1) : Colors.grey[100],
+                                color: printAfterSave ? primaryColor.withValues(alpha: 0.1) : global.theme.surfaceColor,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: printAfterSave ? primaryColor : Colors.grey[300]!,
+                                  color: printAfterSave ? primaryColor : global.theme.dividerBorderColor,
                                   width: 1.5,
                                 ),
                               ),
@@ -1199,7 +1199,7 @@ Future<SaveConfirmResult?> showEnhancedSaveConfirmDialog(
                                   const SizedBox(width: 8),
                                   Icon(
                                     Icons.print_outlined,
-                                    color: printAfterSave ? primaryColor : Colors.grey[600],
+                                    color: printAfterSave ? primaryColor : global.theme.textSecondaryColor,
                                     size: 22,
                                   ),
                                   SizedBox(width: 10),
@@ -1212,7 +1212,7 @@ Future<SaveConfirmResult?> showEnhancedSaveConfirmDialog(
                                           style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600,
-                                            color: printAfterSave ? primaryColor : Colors.grey[700],
+                                            color: printAfterSave ? primaryColor : global.theme.textColor,
                                           ),
                                         ),
                                         SizedBox(height: 2),
@@ -1220,7 +1220,7 @@ Future<SaveConfirmResult?> showEnhancedSaveConfirmDialog(
                                           global.language("print_form_description"),
                                           style: TextStyle(
                                             fontSize: 11,
-                                            color: Colors.grey[600],
+                                            color: global.theme.textSecondaryColor,
                                           ),
                                         ),
                                       ],
@@ -1239,8 +1239,8 @@ Future<SaveConfirmResult?> showEnhancedSaveConfirmDialog(
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      border: Border(top: BorderSide(color: Colors.grey[200]!)),
+                      color: global.theme.surfaceColor,
+                      border: Border(top: BorderSide(color: global.theme.dividerBorderColor)),
                       borderRadius: const BorderRadius.only(
                         bottomLeft: Radius.circular(16),
                         bottomRight: Radius.circular(16),
@@ -1253,7 +1253,7 @@ Future<SaveConfirmResult?> showEnhancedSaveConfirmDialog(
                             onPressed: () => Navigator.pop(context, null),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 12),
-                              side: BorderSide(color: Colors.grey[400]!),
+                              side: BorderSide(color: global.theme.dividerBorderColor),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
@@ -1261,7 +1261,7 @@ Future<SaveConfirmResult?> showEnhancedSaveConfirmDialog(
                             child: Text(
                               global.language("cancel"),
                               style: TextStyle(
-                                color: Colors.grey[700],
+                                color: global.theme.textColor,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -1296,14 +1296,14 @@ Future<SaveConfirmResult?> showEnhancedSaveConfirmDialog(
                               children: [
                                 Icon(
                                   isNewDocument ? Icons.save : Icons.check,
-                                  color: Colors.white,
+                                  color: global.theme.onPrimaryColor,
                                   size: 18,
                                 ),
                                 SizedBox(width: 8),
                                 Text(
                                   global.language("save"),
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: global.theme.onPrimaryColor,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -1418,7 +1418,7 @@ Future<String?> showAlertConfirmCancelDialog(BuildContext context) async {
                 },
               ),
               TextButton(
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                style: TextButton.styleFrom(foregroundColor: global.theme.negativeHighlightTextColor),
                 child: Text(global.language("save")),
                 onPressed: () {
                   if (formKey.currentState!.validate()) {

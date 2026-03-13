@@ -43,7 +43,7 @@ class CompanyInfoFormWidget extends StatelessWidget {
         padding: EdgeInsets.only(left: 10, right: 10, bottom: 15),
         child: Text(
           global.language("company_name"),
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
     );

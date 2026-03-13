@@ -226,9 +226,10 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       appBar: AppBar(
         title: Text(global.language('rebuild_products')),
-        backgroundColor: Colors.deepOrange,
+        backgroundColor: global.theme.appBarColor,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -237,7 +238,7 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen>
           children: [
             // คำอธิบาย
             Card(
-              color: Colors.orange[50],
+              color: global.theme.warningHighlightColor,
               child: Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Column(
@@ -245,14 +246,14 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen>
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.info, color: Colors.orange[800]),
+                        Icon(Icons.info, color: global.theme.warningHighlightTextColor),
                         SizedBox(width: 8),
                         Text(
                           global.language('rebuild_products'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.orange[800],
+                            color: global.theme.warningHighlightTextColor,
                           ),
                         ),
                       ],
@@ -260,7 +261,7 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen>
                     SizedBox(height: 12),
                     Text(
                       global.language('rebuild_products_description'),
-                      style: TextStyle(height: 1.5),
+                      style: TextStyle(height: 1.5, color: global.theme.textColor),
                     ),
                   ],
                 ),
@@ -286,7 +287,7 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen>
                 style: TextStyle(fontSize: 16),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepOrange,
+                backgroundColor: global.theme.primaryColor,
                 foregroundColor: global.theme.onPrimaryColor,
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
@@ -296,6 +297,7 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen>
             // Progress Bar - แสดงเมื่อกำลังประมวลผล
             if (_isProcessing) ...[
               Card(
+                color: global.theme.cardColor,
                 elevation: 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -308,7 +310,7 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen>
                       // Current step text
                       Row(
                         children: [
-                          Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                          Icon(Icons.info_outline, color: global.theme.primaryColor, size: 20),
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -316,7 +318,7 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen>
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                color: Colors.blue[900],
+                                color: global.theme.primaryColor,
                               ),
                             ),
                           ),
@@ -350,12 +352,12 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen>
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: _progress >= 1.0
-                                  ? Colors.green[800]
-                                  : Colors.blue[800],
+                                  ? global.theme.positiveHighlightTextColor
+                                  : global.theme.primaryColor,
                             ),
                           ),
                           if (_progress >= 1.0)
-                            Icon(Icons.check_circle, color: Colors.green[700], size: 24),
+                            Icon(Icons.check_circle, color: global.theme.positiveHighlightTextColor, size: 24),
                         ],
                       ),
                     ],
@@ -369,9 +371,9 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen>
             if (_statusMessage.isNotEmpty)
               Card(
                 color: _statusMessage.contains(global.language('success'))
-                    ? Colors.green[50]
+                    ? global.theme.positiveHighlightColor
                     : _statusMessage.contains(global.language('failed')) || _statusMessage.contains(global.language('errors'))
-                        ? Colors.red[50]
+                        ? global.theme.negativeHighlightColor
                         : global.theme.infoHighlightColor,
                 child: Padding(
                   padding: EdgeInsets.all(12.0),
@@ -384,10 +386,10 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen>
                                 ? Icons.error
                                 : Icons.info,
                         color: _statusMessage.contains(global.language('success'))
-                            ? Colors.green[800]
+                            ? global.theme.positiveHighlightTextColor
                             : _statusMessage.contains(global.language('failed')) || _statusMessage.contains(global.language('errors'))
-                                ? Colors.red[800]
-                                : Colors.blue[800],
+                                ? global.theme.negativeHighlightTextColor
+                                : global.theme.primaryColor,
                       ),
                       SizedBox(width: 8),
                       Expanded(
@@ -395,10 +397,10 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen>
                           _statusMessage,
                           style: TextStyle(
                             color: _statusMessage.contains(global.language('success'))
-                                ? Colors.green[800]
+                                ? global.theme.positiveHighlightTextColor
                                 : _statusMessage.contains(global.language('failed')) || _statusMessage.contains(global.language('errors'))
-                                    ? Colors.red[800]
-                                    : Colors.blue[800],
+                                    ? global.theme.negativeHighlightTextColor
+                                    : global.theme.primaryColor,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -413,11 +415,12 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen>
             if (_logs.isNotEmpty) ...[
               Text(
                 'Logs:',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: global.theme.textColor),
               ),
               SizedBox(height: 8),
               Expanded(
                 child: Card(
+                  color: global.theme.cardColor,
                   child: ListView.builder(
                     padding: const EdgeInsets.all(8),
                     itemCount: _logs.length,
@@ -429,6 +432,7 @@ class _RebuildProductsScreenState extends State<RebuildProductsScreen>
                           style: TextStyle(
                             fontSize: 12,
                             fontFamily: 'monospace',
+                            color: global.theme.textColor,
                           ),
                         ),
                       );

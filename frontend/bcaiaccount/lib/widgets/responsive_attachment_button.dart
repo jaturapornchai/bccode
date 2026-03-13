@@ -95,9 +95,9 @@ class _ResponsiveAttachmentButtonState
       iconWidget = Badge(
         label: Text(
           _attachmentCount > 99 ? '99+' : _attachmentCount.toString(),
-          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: _attachmentCount > 0 ? Colors.blue : Colors.grey,
+        backgroundColor: _attachmentCount > 0 ? global.theme.infoHighlightTextColor : global.theme.iconSecondaryColor,
         child: iconWidget,
       );
     }
@@ -144,7 +144,7 @@ class _ResponsiveAttachmentButtonState
           icon: iconWidget,
           label: Text(
             global.language("attach_file"),
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
           ),
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -172,7 +172,7 @@ class _ResponsiveAttachmentButtonState
         icon: iconWidget,
         label: Text(
           '${global.language("attach_document_file")} ($_attachmentCount)',
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         ),
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

@@ -48,7 +48,7 @@ class DualCurrencyPriceDialog extends StatefulWidget {
 
 enum _ActiveField { doc, base }
 
-class _DualCurrencyPriceDialogState extends State<DualCurrencyPriceDialog> {
+class _DualCurrencyPriceDialogState extends State<DualCurrencyPriceDialog> with global.ThemeRefreshMixin {
   String _docValue = '';
   String _baseValue = '';
   _ActiveField _activeField = _ActiveField.doc;
@@ -268,7 +268,7 @@ class _DualCurrencyPriceDialogState extends State<DualCurrencyPriceDialog> {
           builder: (ctx) => AlertDialog(
             title: Row(
               children: [
-                Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700),
+                Icon(Icons.warning_amber_rounded, color: global.theme.warningHighlightTextColor),
                 SizedBox(width: 8),
                 Text(global.language('warning')),
               ],
@@ -331,7 +331,7 @@ class _DualCurrencyPriceDialogState extends State<DualCurrencyPriceDialog> {
       child: Container(
         width: 340,
         decoration: BoxDecoration(
-          color: Colors.black,
+          color: global.theme.textColor,
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
@@ -350,10 +350,10 @@ class _DualCurrencyPriceDialogState extends State<DualCurrencyPriceDialog> {
               // Title
               Text(
                 widget.title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white70,
+                  color: global.theme.onPrimaryColor.withValues(alpha: 0.7),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -383,23 +383,23 @@ class _DualCurrencyPriceDialogState extends State<DualCurrencyPriceDialog> {
                     onPressed: _convertCurrency,
                     icon: Icon(
                       Icons.swap_vert,
-                      color: Colors.orange.shade300,
+                      color: global.theme.warningHighlightTextColor,
                       size: 18,
                     ),
                     label: Text(
                       '$convertLabel  ×${_formatDisplayValue(widget.exchangeRate.toString())}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.orange.shade300,
+                        color: global.theme.warningHighlightTextColor,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF333333),
+                      backgroundColor: global.theme.appBarColor,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(color: Colors.orange.shade700, width: 1),
+                        side: BorderSide(color: global.theme.warningHighlightTextColor, width: 1),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                     ),
@@ -460,8 +460,8 @@ class _DualCurrencyPriceDialogState extends State<DualCurrencyPriceDialog> {
                       padding: const EdgeInsets.symmetric(horizontal: 2),
                       child: _buildActionButton(
                         'C',
-                        const Color(0xFFA6A6A6),
-                        Colors.black,
+                        global.theme.dividerBorderColor,
+                        global.theme.textColor,
                         _onClear,
                       ),
                     ),
@@ -471,8 +471,8 @@ class _DualCurrencyPriceDialogState extends State<DualCurrencyPriceDialog> {
                       padding: EdgeInsets.symmetric(horizontal: 2),
                       child: _buildActionButton(
                         global.language('cancel'),
-                        const Color(0xFF333333),
-                        Colors.white70,
+                        global.theme.appBarColor,
+                        global.theme.onPrimaryColor.withValues(alpha: 0.7),
                         () => Navigator.of(context).pop(),
                       ),
                     ),
@@ -482,8 +482,8 @@ class _DualCurrencyPriceDialogState extends State<DualCurrencyPriceDialog> {
                       padding: EdgeInsets.symmetric(horizontal: 2),
                       child: _buildActionButton(
                         global.language('ok'),
-                        const Color(0xFFFF9500),
-                        Colors.white,
+                        global.theme.primaryColor,
+                        global.theme.onPrimaryColor,
                         _confirmInput,
                       ),
                     ),
@@ -511,11 +511,11 @@ class _DualCurrencyPriceDialogState extends State<DualCurrencyPriceDialog> {
     required ValueChanged<String> onTextChanged,
   }) {
     final isActive = _activeField == field;
-    final borderColor = isActive ? Colors.orange : Colors.transparent;
-    final bgColor = isActive ? Colors.white : Colors.grey.shade200;
+    final borderColor = isActive ? global.theme.warningHighlightTextColor : Colors.transparent;
+    final bgColor = isActive ? global.theme.cardColor : global.theme.dividerBorderColor;
     final labelColor = isActive
-        ? Colors.orange.shade700
-        : Colors.grey.shade600;
+        ? global.theme.warningHighlightTextColor
+        : global.theme.textSecondaryColor;
 
     return GestureDetector(
       onTap: onTap,
@@ -550,14 +550,14 @@ class _DualCurrencyPriceDialogState extends State<DualCurrencyPriceDialog> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 1),
                       decoration: BoxDecoration(
-                        color: Colors.orange.shade100,
+                        color: global.theme.infoHighlightColor,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         '✎',
                         style: TextStyle(
                           fontSize: 9,
-                          color: Colors.orange.shade800,
+                          color: global.theme.warningHighlightTextColor,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -585,7 +585,7 @@ class _DualCurrencyPriceDialogState extends State<DualCurrencyPriceDialog> {
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w300,
-                          color: isActive ? Colors.black : Colors.grey.shade600,
+                          color: isActive ? global.theme.textColor : global.theme.textSecondaryColor,
                         ),
                         decoration: const InputDecoration(
                           border: InputBorder.none,
@@ -600,7 +600,7 @@ class _DualCurrencyPriceDialogState extends State<DualCurrencyPriceDialog> {
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w300,
-                          color: isActive ? Colors.black : Colors.grey.shade600,
+                          color: isActive ? global.theme.textColor : global.theme.textSecondaryColor,
                         ),
                         textAlign: TextAlign.right,
                         maxLines: 1,
@@ -617,8 +617,8 @@ class _DualCurrencyPriceDialogState extends State<DualCurrencyPriceDialog> {
   Widget _buildCalcButton(String text, VoidCallback onTap,
       {bool isFunction = false}) {
     final buttonColor =
-        isFunction ? const Color(0xFFA6A6A6) : const Color(0xFF333333);
-    final textColor = isFunction ? Colors.black : Colors.white;
+        isFunction ? global.theme.dividerBorderColor : global.theme.appBarColor;
+    final textColor = isFunction ? global.theme.textColor : global.theme.onPrimaryColor;
 
     return SizedBox(
       height: 80,

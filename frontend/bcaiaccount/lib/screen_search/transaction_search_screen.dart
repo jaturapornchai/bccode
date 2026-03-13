@@ -39,7 +39,7 @@ class TransSearchScreen extends StatefulWidget {
   State<TransSearchScreen> createState() => TransSearchScreenState();
 }
 
-class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerProviderStateMixin {
+class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   TextEditingController searchController = TextEditingController();
   FocusNode searchFocusNode = FocusNode(skipTraversal: true);
   ScrollController listScrollController = ScrollController();
@@ -71,6 +71,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
   bool isKeyUp = false;
   bool isKeyDown = false;
   String selectGuid = "";
+  int _hoverIndex = -1;
   int currentListIndex = 0;
   final _debouncer = global.Debouncer(1000);
   int filterTransaction = 1;
@@ -311,7 +312,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
           padding: EdgeInsets.symmetric(horizontal: headerPadding / 2),
           child: Text(
             global.language("doc_date"),
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: headerFontSize),
+            style: TextStyle(color: global.theme.textColor, fontWeight: FontWeight.bold, fontSize: headerFontSize),
           ),
         ),
       ),
@@ -324,7 +325,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
           padding: EdgeInsets.symmetric(horizontal: headerPadding / 2),
           child: Text(
             global.language("docno"),
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: headerFontSize),
+            style: TextStyle(color: global.theme.textColor, fontWeight: FontWeight.bold, fontSize: headerFontSize),
           ),
         ),
       ),
@@ -350,7 +351,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                       widget.type == TransactionTypeEnum.advancePayment)
                   ? global.language("supplier")
                   : global.language("customer"),
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: headerFontSize),
+              style: TextStyle(color: global.theme.textColor, fontWeight: FontWeight.bold, fontSize: headerFontSize),
               textAlign: TextAlign.left,
             ),
           ),
@@ -368,7 +369,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
             child: Text(
               textAlign: TextAlign.left,
               global.language("status"),
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: headerFontSize),
+              style: TextStyle(color: global.theme.textColor, fontWeight: FontWeight.bold, fontSize: headerFontSize),
             ),
           ),
         ),
@@ -383,7 +384,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
               child: Text(
                 textAlign: TextAlign.left,
                 global.language("sale_name"),
-                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: headerFontSize),
+                style: TextStyle(color: global.theme.textColor, fontWeight: FontWeight.bold, fontSize: headerFontSize),
               ),
             ),
           ),
@@ -406,7 +407,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
             child: Text(
               textAlign: TextAlign.left,
               global.language("inquiry_type"),
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: headerFontSize),
+              style: TextStyle(color: global.theme.textColor, fontWeight: FontWeight.bold, fontSize: headerFontSize),
             ),
           ),
         ),
@@ -422,7 +423,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
             child: Text(
               textAlign: TextAlign.left,
               global.language("adjust_type"),
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: headerFontSize),
+              style: TextStyle(color: global.theme.textColor, fontWeight: FontWeight.bold, fontSize: headerFontSize),
             ),
           ),
         ),
@@ -437,7 +438,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
           child: Text(
             textAlign: TextAlign.right,
             global.language("product_list"),
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: headerFontSize),
+            style: TextStyle(color: global.theme.textColor, fontWeight: FontWeight.bold, fontSize: headerFontSize),
           ),
         ),
       ),
@@ -455,7 +456,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
             child: Text(
               textAlign: TextAlign.right,
               global.language("total_value"),
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: headerFontSize),
+              style: TextStyle(color: global.theme.textColor, fontWeight: FontWeight.bold, fontSize: headerFontSize),
             ),
           ),
         ),
@@ -469,11 +470,11 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
     // กำหนดสีพื้นหลัง Card
     Color getCardColor() {
       if (selectGuid == value.guidfixed) {
-        return Colors.cyan[50] ?? Colors.cyan.shade50; // สีเมื่อ selected
+        return global.theme.rowSelectedColor; // สีเมื่อ selected
       } else if (index % 2 == 0) {
-        return Colors.white; // บรรทัดคู่
+        return global.theme.columnAlternateEvenColor; // บรรทัดคู่
       } else {
-        return Colors.grey[50] ?? Colors.grey.shade50; // บรรทัดคี่
+        return global.theme.columnAlternateOddColor; // บรรทัดคี่
       }
     }
 
@@ -493,10 +494,10 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                 children: [
                   Card(
                     elevation: hovered ? 2 : 1,
-                    shadowColor: const Color.fromRGBO(158, 158, 158, 0.2),
+                    shadowColor: global.theme.dividerBorderColor.withValues(alpha: 0.2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(6),
-                      side: BorderSide(color: selectGuid == value.guidfixed ? (Colors.cyan[300] ?? Colors.cyan.shade300) : Colors.transparent, width: 1.5),
+                      side: BorderSide(color: selectGuid == value.guidfixed ? global.theme.infoHighlightTextColor : Colors.transparent, width: 1.5),
                     ),
                     color: getCardColor(),
                     child: Padding(
@@ -528,14 +529,14 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                                       child: Container(
                                         padding: const EdgeInsets.all(4),
                                         decoration: BoxDecoration(
-                                          color: Colors.green.shade50,
+                                          color: global.theme.positiveHighlightColor,
                                           borderRadius: BorderRadius.circular(4),
-                                          border: Border.all(color: Colors.green.shade300),
+                                          border: Border.all(color: global.theme.positiveHighlightTextColor),
                                         ),
                                         child: Icon(
                                           Icons.print,
                                           size: 16,
-                                          color: Colors.green.shade700,
+                                          color: global.theme.positiveHighlightTextColor,
                                         ),
                                       ),
                                     ),
@@ -547,12 +548,12 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                           Expanded(
                             child: Text(
                               global.formatThaiDateTime(dateTime: docDateTime.toLocal(), showTime: true),
-                              style: TextStyle(fontSize: fontSize - 1, fontWeight: FontWeight.w600, color: (value.iscancel == true) ? Colors.red : (Colors.blue[700] ?? Colors.blue.shade700)),
+                              style: TextStyle(fontSize: fontSize - 1, fontWeight: FontWeight.w600, color: (value.iscancel == true) ? global.theme.negativeHighlightTextColor : global.theme.infoHighlightTextColor),
                             ),
                           ),
                           Text(
                             value.docno,
-                            style: TextStyle(fontSize: fontSize - 1, fontWeight: FontWeight.bold, color: (value.iscancel == true) ? Colors.red : Colors.black87),
+                            style: TextStyle(fontSize: fontSize - 1, fontWeight: FontWeight.bold, color: (value.iscancel == true) ? global.theme.negativeHighlightTextColor : global.theme.textColor),
                           ),
                         ],
                       ),
@@ -568,7 +569,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                           padding: const EdgeInsets.only(top: 2),
                           child: Text(
                             "${global.activeLangName(value.custnames ?? [])} (${value.custcode})",
-                            style: TextStyle(fontSize: fontSize - 1, color: (value.iscancel == true) ? Colors.red : Colors.grey[700]),
+                            style: TextStyle(fontSize: fontSize - 1, color: (value.iscancel == true) ? global.theme.negativeHighlightTextColor : global.theme.textColor),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -589,15 +590,15 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                               Container(
                                 padding: EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                 margin: EdgeInsets.only(right: 6),
-                                decoration: BoxDecoration(color: value.inquirytype == 0 ? Colors.orange[50] : Colors.blue[50], borderRadius: BorderRadius.circular(3)),
+                                decoration: BoxDecoration(color: value.inquirytype == 0 ? global.theme.warningHighlightColor : global.theme.infoHighlightColor, borderRadius: BorderRadius.circular(3)),
                                 child: Text(
                                   value.inquirytype == 0 ? global.language('credit') : global.language('cash'),
-                                  style: TextStyle(fontSize: fontSize - 2, color: value.inquirytype == 0 ? Colors.orange[700] : Colors.blue[700]),
+                                  style: TextStyle(fontSize: fontSize - 2, color: value.inquirytype == 0 ? global.theme.warningHighlightTextColor : global.theme.infoHighlightTextColor),
                                 ),
                               ),
 
                             // จำนวนรายการ
-                            Icon(Icons.list_alt, size: 12, color: Colors.grey[500]),
+                            Icon(Icons.list_alt, size: 12, color: global.theme.iconSecondaryColor),
                             SizedBox(width: 2),
                             Text(
                               widget.type == global.TransactionTypeEnum.purchaseorder
@@ -605,7 +606,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                                   : widget.type == global.TransactionTypeEnum.stockbalance
                                   ? global.formatNumber(value.totalqty!)
                                   : (value.details?.length ?? value.detailcount).toString(),
-                              style: TextStyle(fontSize: fontSize - 2, color: Colors.grey[600]),
+                              style: TextStyle(fontSize: fontSize - 2, color: global.theme.iconSecondaryColor),
                             ),
 
                             Spacer(),
@@ -617,7 +618,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                                 widget.type != global.TransactionTypeEnum.stockreturnproduct)
                               Text(
                                 global.formatNumber(value.totalamount != 0 ? value.totalamount + (value.roundamount ?? 0) : value.totalvalue.toDouble()),
-                                style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold, color: (value.iscancel == true) ? Colors.red : (Colors.green[700] ?? Colors.green.shade700)),
+                                style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold, color: (value.iscancel == true) ? global.theme.negativeHighlightTextColor : global.theme.positiveHighlightTextColor),
                               ),
                           ],
                         ),
@@ -631,12 +632,12 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                           child: Row(
                             children: [
                               Icon(Icons.person_outline,
-                                  size: fontSize - 2, color: Colors.grey.shade500),
+                                  size: fontSize - 2, color: global.theme.iconSecondaryColor),
                               const SizedBox(width: 4),
                               Text(
                                 'สร้างโดย: ${value.creatorname}',
                                 style: TextStyle(
-                                  color: Colors.grey.shade500,
+                                  color: global.theme.iconSecondaryColor,
                                   fontSize: fontSize - 2,
                                   fontStyle: FontStyle.italic,
                                 ),
@@ -646,7 +647,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                               Text(
                                 global.formatThaiDateTime(dateTime: docDateTime.toLocal(), showTime: true),
                                 style: TextStyle(
-                                  color: Colors.grey.shade400,
+                                  color: global.theme.iconSecondaryColor,
                                   fontSize: fontSize - 2,
                                 ),
                               ),
@@ -705,13 +706,13 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                                           Icon(
                                             _getLatestActionIcon(approvalStatus.latestActionText!),
                                             size: 12,
-                                            color: Colors.grey.shade600,
+                                            color: global.theme.textSecondaryColor,
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
                                             _formatLatestAction(approvalStatus),
                                             style: TextStyle(
-                                              color: Colors.grey.shade600,
+                                              color: global.theme.textSecondaryColor,
                                               fontSize: fontSize - 2,
                                             ),
                                           ),
@@ -727,19 +728,19 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                                 margin: const EdgeInsets.only(top: 6),
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
+                                  color: global.theme.dividerBorderColor,
                                   borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: Colors.grey.shade400, width: 0.5),
+                                  border: Border.all(color: global.theme.iconSecondaryColor, width: 0.5),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.schedule, size: 14, color: Colors.grey.shade600),
+                                    Icon(Icons.schedule, size: 14, color: global.theme.textSecondaryColor),
                                     SizedBox(width: 4),
                                     Text(
                                       global.language('not_yet_submitted'),
                                       style: TextStyle(
-                                        color: Colors.grey.shade600,
+                                        color: global.theme.textSecondaryColor,
                                         fontWeight: FontWeight.bold,
                                         fontSize: fontSize - 1,
                                       ),
@@ -758,9 +759,9 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                           margin: EdgeInsets.only(top: 8),
                           padding: EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.blue[50] ?? Colors.blue.shade50,
+                            color: global.theme.rowHoverColor,
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.blue[200] ?? Colors.blue.shade200, width: 1),
+                            border: Border.all(color: global.theme.primaryColor, width: 1),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -768,11 +769,11 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                               if (value.isref!) ...[
                                 Row(
                                   children: [
-                                    Icon(Icons.link, size: 16, color: Colors.blue[700] ?? Colors.blue.shade700),
+                                    Icon(Icons.link, size: 16, color: global.theme.primaryColor),
                                     SizedBox(width: 4),
                                     Text(
                                       global.language("referenced"),
-                                      style: TextStyle(color: Colors.blue[700] ?? Colors.blue.shade700, fontWeight: FontWeight.bold, fontSize: fontSize - 1),
+                                      style: TextStyle(color: global.theme.primaryColor, fontWeight: FontWeight.bold, fontSize: fontSize - 1),
                                     ),
                                   ],
                                 ),
@@ -781,13 +782,13 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                                     Icon(
                                       value.isclosed! ? Icons.check_circle : Icons.pending,
                                       size: 16,
-                                      color: value.isclosed! ? (Colors.green[700] ?? Colors.green.shade700) : (Colors.orange[700] ?? Colors.orange.shade700),
+                                      color: value.isclosed! ? global.theme.positiveHighlightTextColor : global.theme.warningHighlightTextColor,
                                     ),
                                     SizedBox(width: 4),
                                     Text(
                                       value.isclosed! ? global.language("fully_received") : global.language("partially_received"),
                                       style: TextStyle(
-                                        color: value.isclosed! ? (Colors.green[700] ?? Colors.green.shade700) : (Colors.orange[700] ?? Colors.orange.shade700),
+                                        color: value.isclosed! ? global.theme.positiveHighlightTextColor : global.theme.warningHighlightTextColor,
                                         fontWeight: FontWeight.bold,
                                         fontSize: fontSize - 1,
                                       ),
@@ -798,11 +799,11 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                               if (value.iscancel)
                                 Row(
                                   children: [
-                                    Icon(Icons.cancel, size: 16, color: Colors.red[700] ?? Colors.red.shade700),
+                                    Icon(Icons.cancel, size: 16, color: global.theme.negativeHighlightTextColor ?? global.theme.negativeHighlightTextColor),
                                     SizedBox(width: 4),
                                     Text(
                                       global.language("cancelled"),
-                                      style: TextStyle(color: Colors.red[700] ?? Colors.red.shade700, fontWeight: FontWeight.bold, fontSize: fontSize - 1),
+                                      style: TextStyle(color: global.theme.negativeHighlightTextColor ?? global.theme.negativeHighlightTextColor, fontWeight: FontWeight.bold, fontSize: fontSize - 1),
                                     ),
                                   ],
                                 ),
@@ -816,9 +817,9 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                           margin: EdgeInsets.only(top: 8),
                           padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                           decoration: BoxDecoration(
-                            color: Colors.orange[50] ?? Colors.orange.shade50,
+                            color: global.theme.warningHighlightColor ?? global.theme.warningHighlightColor,
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.orange[200] ?? Colors.orange.shade200, width: 1),
+                            border: Border.all(color: global.theme.warningHighlightColor ?? global.theme.warningHighlightColor, width: 1),
                           ),
                           child: Text(
                             value.transflag == 66
@@ -826,7 +827,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                                 : value.transflag == 68
                                 ? global.language('decrease')
                                 : global.language('adjust_cost'),
-                            style: TextStyle(color: Colors.orange[700] ?? Colors.orange.shade700, fontWeight: FontWeight.bold, fontSize: fontSize),
+                            style: TextStyle(color: global.theme.warningHighlightTextColor ?? global.theme.warningHighlightTextColor, fontWeight: FontWeight.bold, fontSize: fontSize),
                           ),
                         ),
                     ],
@@ -846,7 +847,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                         child: Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(6),
-                            color: Colors.cyan.withValues(alpha: 0.1),
+                            color: global.theme.infoHighlightColor,
                           ),
                           child: Center(
                             child: SizedBox(
@@ -854,7 +855,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.cyan[700] ?? Colors.cyan.shade700),
+                                valueColor: AlwaysStoppedAnimation<Color>(global.theme.infoHighlightTextColor),
                               ),
                             ),
                           ),
@@ -900,7 +901,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
         flex: 1,
         child: Text(
           global.language("doc_date"),
-          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: TextStyle(color: global.theme.columnHeaderTextColor, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -909,7 +910,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
         flex: 1,
         child: Text(
           global.language("docno"),
-          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: TextStyle(color: global.theme.columnHeaderTextColor, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -931,7 +932,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                     widget.type == TransactionTypeEnum.advancePayment)
                 ? global.language("supplier")
                 : global.language("customer"),
-            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            style: TextStyle(color: global.theme.columnHeaderTextColor, fontWeight: FontWeight.bold),
             textAlign: TextAlign.left,
           ),
         ),
@@ -944,7 +945,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
           child: Text(
             textAlign: TextAlign.left,
             global.language("status"),
-            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            style: TextStyle(color: global.theme.columnHeaderTextColor, fontWeight: FontWeight.bold),
           ),
         ),
       );
@@ -956,7 +957,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
             child: Text(
               textAlign: TextAlign.left,
               global.language("sale_name"),
-              style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              style: TextStyle(color: global.theme.columnHeaderTextColor, fontWeight: FontWeight.bold),
             ),
           ),
         );
@@ -974,7 +975,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
           child: Text(
             textAlign: TextAlign.left,
             global.language("inquiry_type"),
-            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            style: TextStyle(color: global.theme.columnHeaderTextColor, fontWeight: FontWeight.bold),
           ),
         ),
       );
@@ -986,7 +987,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
           child: Text(
             textAlign: TextAlign.left,
             global.language("adjust_type"),
-            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            style: TextStyle(color: global.theme.columnHeaderTextColor, fontWeight: FontWeight.bold),
           ),
         ),
       );
@@ -997,7 +998,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
         child: Text(
           textAlign: TextAlign.right,
           global.language("product_list"),
-          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: TextStyle(color: global.theme.columnHeaderTextColor, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -1011,7 +1012,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
           child: Text(
             textAlign: TextAlign.right,
             global.language("total_value"),
-            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            style: TextStyle(color: global.theme.columnHeaderTextColor, fontWeight: FontWeight.bold),
           ),
         ),
       );
@@ -1587,15 +1588,15 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
       margin: EdgeInsets.symmetric(horizontal: isSmallScreen ? 4 : 8, vertical: 4),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.blue.shade50, Colors.green.shade50],
+          colors: [global.theme.infoHighlightColor, global.theme.positiveHighlightColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.shade200),
+        border: Border.all(color: global.theme.infoHighlightColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withValues(alpha: 0.1),
+            color: global.theme.infoHighlightTextColor.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1612,10 +1613,10 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade100,
+                    color: global.theme.columnHeaderColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(Icons.date_range, size: 16, color: Colors.blue.shade700),
+                  child: Icon(Icons.date_range, size: 16, color: global.theme.infoHighlightTextColor),
                 ),
                 const SizedBox(width: 8),
                 // ปุ่มเลือกวันที่จาก
@@ -1624,13 +1625,13 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                     label: global.language('from'),
                     date: _filterFromDate,
                     isFromDate: true,
-                    color: Colors.blue,
+                    color: global.theme.primaryColor,
                     fontSize: fontSize,
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: Icon(Icons.arrow_forward, size: 14, color: Colors.grey.shade500),
+                  child: Icon(Icons.arrow_forward, size: 14, color: global.theme.iconSecondaryColor),
                 ),
                 // ปุ่มเลือกวันที่ถึง
                 Expanded(
@@ -1638,7 +1639,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                     label: global.language('kb_to'),
                     date: _filterToDate,
                     isFromDate: false,
-                    color: Colors.blue,
+                    color: global.theme.primaryColor,
                     fontSize: fontSize,
                   ),
                 ),
@@ -1652,10 +1653,10 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade100,
+                    color: global.theme.positiveHighlightColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(Icons.attach_money, size: 16, color: Colors.green.shade700),
+                  child: Icon(Icons.attach_money, size: 16, color: global.theme.positiveHighlightTextColor),
                 ),
                 const SizedBox(width: 8),
                 // TextField ยอดเงินต่ำสุด
@@ -1671,7 +1672,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: Icon(Icons.arrow_forward, size: 14, color: Colors.grey.shade500),
+                  child: Icon(Icons.arrow_forward, size: 14, color: global.theme.iconSecondaryColor),
                 ),
                 // TextField ยอดเงินสูงสุด
                 Expanded(
@@ -1688,14 +1689,14 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                 const SizedBox(width: 8),
                 if (_hasActiveFilters)
                   Material(
-                    color: Colors.red.shade50,
+                    color: global.theme.negativeHighlightColor,
                     borderRadius: BorderRadius.circular(8),
                     child: InkWell(
                       onTap: _clearAllFilters,
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
                         padding: const EdgeInsets.all(6),
-                        child: Icon(Icons.clear_all, size: 18, color: Colors.red.shade600),
+                        child: Icon(Icons.clear_all, size: 18, color: global.theme.negativeHighlightTextColor),
                       ),
                     ),
                   ),
@@ -1737,10 +1738,10 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade100,
+                    color: global.theme.infoHighlightColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(Icons.business, size: 16, color: Colors.orange.shade700),
+                  child: Icon(Icons.business, size: 16, color: global.theme.warningHighlightTextColor),
                 ),
                 const SizedBox(width: 8),
                 // TextField ค้นหาเจ้าหนี้ (ค้นหาจาก API โดยตรง)
@@ -1782,20 +1783,20 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
             style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w500),
             decoration: InputDecoration(
               hintText: state.isLoading ? global.language('searching') : language('type_creditor_code_name_to_search'),
-              hintStyle: TextStyle(fontSize: fontSize, color: Colors.grey.shade400),
+              hintStyle: TextStyle(fontSize: fontSize, color: global.theme.formHintColor),
               prefixIcon: state.isLoading
                   ? SizedBox(
                       width: 16,
                       height: 16,
                       child: Padding(
                         padding: const EdgeInsets.all(10),
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.orange.shade400),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: global.theme.warningHighlightTextColor),
                       ),
                     )
-                  : Icon(Icons.search, size: 16, color: Colors.orange.shade400),
+                  : Icon(Icons.search, size: 16, color: global.theme.warningHighlightTextColor),
               suffixIcon: hasSearchText
                   ? IconButton(
-                      icon: Icon(Icons.clear, size: 14, color: Colors.grey.shade500),
+                      icon: Icon(Icons.clear, size: 14, color: global.theme.iconSecondaryColor),
                       onPressed: () {
                         _creditorSearchController.clear();
                         // ล้าง search และ load ข้อมูลเริ่มต้น
@@ -1808,18 +1809,18 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: global.theme.formFillColor,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey.shade300),
+                borderSide: BorderSide(color: global.theme.formBorderColor),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey.shade300),
+                borderSide: BorderSide(color: global.theme.formBorderColor),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.orange.shade400, width: 1.5),
+                borderSide: BorderSide(color: global.theme.warningHighlightTextColor, width: 1.5),
               ),
             ),
             onChanged: (value) {
@@ -1837,12 +1838,12 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
             margin: const EdgeInsets.only(top: 4),
             constraints: const BoxConstraints(maxHeight: 150),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.orange.shade200),
+              border: Border.all(color: global.theme.warningHighlightColor),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
+                  color: global.theme.textColor.withValues(alpha: 0.1),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -1866,12 +1867,12 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
                       border: index < (availableCreditors.length > 10 ? 9 : availableCreditors.length - 1)
-                          ? Border(bottom: BorderSide(color: Colors.grey.shade200))
+                          ? Border(bottom: BorderSide(color: global.theme.dividerBorderColor))
                           : null,
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.business, size: 14, color: Colors.orange.shade400),
+                        Icon(Icons.business, size: 14, color: global.theme.warningHighlightTextColor),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Column(
@@ -1889,13 +1890,13 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                                 'รหัส: ${creditor.code}',
                                 style: TextStyle(
                                   fontSize: fontSize - 1,
-                                  color: Colors.grey.shade600,
+                                  color: global.theme.textSecondaryColor,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        Icon(Icons.add_circle_outline, size: 16, color: Colors.green.shade400),
+                        Icon(Icons.add_circle_outline, size: 16, color: global.theme.positiveHighlightTextColor),
                       ],
                     ),
                   ),
@@ -1909,16 +1910,16 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
             margin: const EdgeInsets.only(top: 4),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: global.theme.dividerBorderColor,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline, size: 14, color: Colors.grey.shade500),
+                Icon(Icons.info_outline, size: 14, color: global.theme.iconSecondaryColor),
                 const SizedBox(width: 6),
                 Text(
                   'ไม่พบเจ้าหนี้ที่ตรงกับ "$searchText"',
-                  style: TextStyle(fontSize: fontSize - 1, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: fontSize - 1, color: global.theme.textSecondaryColor),
                 ),
               ],
             ),
@@ -1933,9 +1934,9 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
       width: double.infinity,
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: Colors.orange.shade50,
+        color: global.theme.warningHighlightColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.orange.shade200),
+        border: Border.all(color: global.theme.warningHighlightColor),
       ),
       child: Wrap(
         spacing: 6,
@@ -1955,12 +1956,12 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.orange.shade300),
+              border: Border.all(color: global.theme.warningHighlightTextColor),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.orange.withValues(alpha: 0.1),
+                  color: global.theme.warningHighlightColor,
                   blurRadius: 2,
                   offset: const Offset(0, 1),
                 ),
@@ -1969,13 +1970,13 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.business, size: 12, color: Colors.orange.shade600),
+                Icon(Icons.business, size: 12, color: global.theme.warningHighlightTextColor),
                 const SizedBox(width: 4),
                 Text(
                   name.length > 15 ? '${name.substring(0, 15)}...' : name,
                   style: TextStyle(
                     fontSize: fontSize - 1,
-                    color: Colors.orange.shade800,
+                    color: global.theme.warningHighlightTextColor,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1986,10 +1987,10 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                   child: Container(
                     padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade100,
+                      color: global.theme.negativeHighlightColor,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.close, size: 12, color: Colors.red.shade600),
+                    child: Icon(Icons.close, size: 12, color: global.theme.negativeHighlightTextColor),
                   ),
                 ),
               ],
@@ -2012,7 +2013,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
     return Builder(
       builder: (buttonContext) {
         return Material(
-          color: hasDate ? color.withValues(alpha: 0.1) : Colors.white,
+          color: hasDate ? color.withValues(alpha: 0.1) : global.theme.cardColor,
           borderRadius: BorderRadius.circular(8),
           child: InkWell(
             onTap: () => _selectDate(isFromDate, buttonContext),
@@ -2022,7 +2023,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: hasDate ? color : Colors.grey.shade300,
+                  color: hasDate ? color : global.theme.dividerBorderColor,
                   width: hasDate ? 1.5 : 1,
                 ),
               ),
@@ -2032,7 +2033,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                   Icon(
                     Icons.calendar_today,
                     size: 12,
-                    color: hasDate ? color : Colors.grey.shade500,
+                    color: hasDate ? color : global.theme.iconSecondaryColor,
                   ),
                   const SizedBox(width: 6),
                   Flexible(
@@ -2042,7 +2043,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                           : label,
                       style: TextStyle(
                         fontSize: fontSize,
-                        color: hasDate ? Colors.blue.shade700 : Colors.grey.shade500,
+                        color: hasDate ? global.theme.infoHighlightTextColor : global.theme.iconSecondaryColor,
                         fontWeight: hasDate ? FontWeight.w600 : FontWeight.normal,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -2096,7 +2097,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
             // แสดง NumPad Dialog ใกล้ปุ่ม
             final result = await showDialog<String>(
               context: context,
-              barrierColor: Colors.black.withValues(alpha: 0.3),
+              barrierColor: global.theme.textColor.withValues(alpha: 0.3),
               builder: (BuildContext dialogContext) {
                 return Stack(
                   children: [
@@ -2125,10 +2126,10 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
             height: 36,
             padding: const EdgeInsets.symmetric(horizontal: 8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: hasValue ? Colors.green.shade400 : Colors.grey.shade300,
+                color: hasValue ? global.theme.positiveHighlightTextColor : global.theme.dividerBorderColor,
                 width: hasValue ? 1.5 : 1,
               ),
             ),
@@ -2138,7 +2139,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                 style: TextStyle(
                   fontSize: fontSize,
                   fontWeight: hasValue ? FontWeight.w500 : FontWeight.normal,
-                  color: hasValue ? Colors.black : Colors.grey.shade400,
+                  color: hasValue ? global.theme.textColor : global.theme.iconSecondaryColor,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -2189,7 +2190,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
 
     DateTime? pickedDate = await showDialog<DateTime>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.3),
+      barrierColor: global.theme.textColor.withValues(alpha: 0.3),
       builder: (BuildContext dialogContext) {
         return Stack(
           children: [
@@ -2229,6 +2230,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
     final spacing = getResponsivePadding(screenWidth, mobile: 4, tablet: 8, desktop: 8);
 
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -2264,8 +2266,8 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                 loadDataList(searchText, filterTransaction);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromRGBO(255, 255, 255, 0.2),
-                foregroundColor: Colors.white,
+                backgroundColor: Colors.white.withValues(alpha: 0.2),
+                foregroundColor: global.theme.onPrimaryColor,
                 elevation: isSmallScreen ? 2 : 3,
                 padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 8 : 12, vertical: isSmallScreen ? 4 : 6),
                 minimumSize: Size(isSmallScreen ? 36 : 48, isSmallScreen ? 28 : 32),
@@ -2274,12 +2276,12 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(dateOrderByType == 1 ? Icons.arrow_downward : Icons.arrow_upward, size: isSmallScreen ? 12 : 16, color: Colors.white),
+                  Icon(dateOrderByType == 1 ? Icons.arrow_downward : Icons.arrow_upward, size: isSmallScreen ? 12 : 16, color: global.theme.onPrimaryColor),
                   SizedBox(width: isSmallScreen ? 2 : 4),
                   if (!isSmallScreen) // แสดงข้อความเต็มสำหรับจอใหญ่
                     Text(
                       dateOrderByType == 1 ? global.language("latest_date") : "วันที่เก่าสุด",
-                      style: TextStyle(fontSize: buttonTextSize, color: Colors.white),
+                      style: TextStyle(fontSize: buttonTextSize, color: global.theme.onPrimaryColor),
                     ),
                 ],
               ),
@@ -2360,10 +2362,10 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 0.5 : 1, vertical: isSmallScreen ? 0.5 : 1),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: global.theme.cardColor,
                   borderRadius: BorderRadius.circular(isSmallScreen ? 6 : 8),
-                  boxShadow: [BoxShadow(color: const Color.fromRGBO(158, 158, 158, 0.3), spreadRadius: 1, blurRadius: 4, offset: const Offset(0, 2))],
-                  border: Border.all(color: const Color.fromRGBO(158, 158, 158, 0.3), width: 1),
+                  boxShadow: [BoxShadow(color: global.theme.dividerBorderColor.withValues(alpha: 0.3), spreadRadius: 1, blurRadius: 4, offset: const Offset(0, 2))],
+                  border: Border.all(color: global.theme.dividerBorderColor.withValues(alpha: 0.3), width: 1),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -2467,10 +2469,10 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                           ),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(isSmallScreen ? 4 : 6), borderSide: BorderSide.none),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: global.theme.formFillColor,
                           hintText: loadingData ? global.language('searching') : global.language('search'),
-                          hintStyle: TextStyle(color: loadingData ? Colors.grey.shade600 : Colors.grey.shade500, fontSize: getResponsiveFontSize(screenWidth, mobile: 12, tablet: 14, desktop: 14)),
-                          prefixIcon: Icon(Icons.search, color: loadingData ? Colors.grey.shade400 : Colors.grey.shade600, size: isSmallScreen ? 18 : 20),
+                          hintStyle: TextStyle(color: global.theme.formHintColor, fontSize: getResponsiveFontSize(screenWidth, mobile: 12, tablet: 14, desktop: 14)),
+                          prefixIcon: Icon(Icons.search, color: loadingData ? global.theme.iconSecondaryColor : global.theme.textSecondaryColor, size: isSmallScreen ? 18 : 20),
                           suffixIcon: (isSearching || loadingData)
                               ? const Padding(
                                   padding: EdgeInsets.all(8.0),
@@ -2478,7 +2480,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                                 )
                               : searchController.text.isNotEmpty
                               ? IconButton(
-                                  icon: const Icon(Icons.clear, size: 18),
+                                  icon: Icon(Icons.clear, size: 18),
                                   onPressed: loadingData
                                       ? null
                                       : () {
@@ -2499,9 +2501,9 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                     (widget.type == global.TransactionTypeEnum.sale)
                         ? Container(
                             decoration: BoxDecoration(
-                              color: loadingData ? Colors.grey.shade200 : Colors.white,
+                              color: loadingData ? global.theme.dividerBorderColor : global.theme.cardColor,
                               borderRadius: BorderRadius.circular(2),
-                              border: Border.all(color: Colors.grey.shade300, width: 1),
+                              border: Border.all(color: global.theme.dividerBorderColor, width: 1),
                             ),
                             child: IconButton(
                               constraints: BoxConstraints(minWidth: isSmallScreen ? 36 : 40, minHeight: isSmallScreen ? 36 : 40),
@@ -2516,10 +2518,10 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                               icon: Icon(
                                 (filterTransaction == 1) ? Icons.filter_alt_off : Icons.filter_alt,
                                 color: loadingData
-                                    ? Colors.grey.shade400
+                                    ? global.theme.iconSecondaryColor
                                     : (filterTransaction == 1)
-                                    ? Colors.orange
-                                    : Colors.blue,
+                                    ? global.theme.warningHighlightTextColor
+                                    : global.theme.infoHighlightTextColor,
                                 size: isSmallScreen ? 18 : 20,
                               ),
                               tooltip: filterTransaction == 1 ? global.language('remove_filter') : global.language('add_filter'),
@@ -2530,9 +2532,9 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                     SizedBox(width: 4),
                     Container(
                       decoration: BoxDecoration(
-                        color: _showAdvancedFilter ? Colors.blue.shade50 : Colors.white,
+                        color: _showAdvancedFilter ? global.theme.rowHoverColor : global.theme.cardColor,
                         borderRadius: BorderRadius.circular(2),
-                        border: Border.all(color: _hasActiveFilters ? Colors.blue : Colors.grey.shade300, width: 1),
+                        border: Border.all(color: _hasActiveFilters ? global.theme.infoHighlightTextColor : global.theme.dividerBorderColor, width: 1),
                       ),
                       child: IconButton(
                         constraints: BoxConstraints(minWidth: isSmallScreen ? 36 : 40, minHeight: isSmallScreen ? 36 : 40),
@@ -2543,7 +2545,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                         },
                         icon: Icon(
                           _hasActiveFilters ? Icons.filter_alt : Icons.tune,
-                          color: _hasActiveFilters ? Colors.blue : Colors.grey.shade600,
+                          color: _hasActiveFilters ? global.theme.infoHighlightTextColor : global.theme.textSecondaryColor,
                           size: isSmallScreen ? 18 : 20,
                         ),
                         tooltip: global.language('advanced_filter'),
@@ -2553,9 +2555,9 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                     SizedBox(width: 4),
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: global.theme.cardColor,
                         borderRadius: BorderRadius.circular(2),
-                        border: Border.all(color: Colors.grey.shade300, width: 1),
+                        border: Border.all(color: global.theme.dividerBorderColor, width: 1),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -2564,15 +2566,15 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                             constraints: BoxConstraints(minWidth: isSmallScreen ? 28 : 32, minHeight: isSmallScreen ? 36 : 40),
                             padding: EdgeInsets.zero,
                             onPressed: _customFontSize > _minFontSize ? _decreaseFontSize : null,
-                            icon: Icon(Icons.text_decrease, size: isSmallScreen ? 14 : 16, color: _customFontSize > _minFontSize ? Colors.grey.shade700 : Colors.grey.shade400),
+                            icon: Icon(Icons.text_decrease, size: isSmallScreen ? 14 : 16, color: _customFontSize > _minFontSize ? global.theme.textColor : global.theme.iconSecondaryColor),
                             tooltip: global.language('decrease_font_size'),
                           ),
-                          Text('${_customFontSize.toInt()}', style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+                          Text('${_customFontSize.toInt()}', style: TextStyle(fontSize: 10, color: global.theme.textSecondaryColor)),
                           IconButton(
                             constraints: BoxConstraints(minWidth: isSmallScreen ? 28 : 32, minHeight: isSmallScreen ? 36 : 40),
                             padding: EdgeInsets.zero,
                             onPressed: _customFontSize < _maxFontSize ? _increaseFontSize : null,
-                            icon: Icon(Icons.text_increase, size: isSmallScreen ? 14 : 16, color: _customFontSize < _maxFontSize ? Colors.grey.shade700 : Colors.grey.shade400),
+                            icon: Icon(Icons.text_increase, size: isSmallScreen ? 14 : 16, color: _customFontSize < _maxFontSize ? global.theme.textColor : global.theme.iconSecondaryColor),
                             tooltip: global.language('increase_font_size'),
                           ),
                         ],
@@ -2595,7 +2597,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                 ),
                 decoration: BoxDecoration(
                   color: global.theme.columnHeaderColor,
-                  border: const Border(bottom: BorderSide(width: 0.1, color: Colors.grey)),
+                  border: Border(bottom: BorderSide(width: 0.1, color: global.theme.dividerBorderColor)),
                 ),
                 child: Row(children: buildTableHeader(screenWidth)),
               ),
@@ -2615,7 +2617,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                   if (_isRefreshing)
                     Positioned.fill(
                       child: Container(
-                        color: Colors.white.withValues(alpha: 0.3),
+                        color: global.theme.cardColor.withValues(alpha: 0.3),
                         child: const Center(
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
@@ -2707,7 +2709,24 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
     return selectedOption;
   }
 
+
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
+  }
+
   Widget listObject(TransactionModel value, int index, double screenWidth) {
+    final isSelected = selectGuid == value.guidfixed;
+    TextStyle textStyle = isSelected
+        ? TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w700, color: global.theme.textColor)
+        : TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w400, color: global.theme.textSecondaryColor);
     DateTime docDateTime = DateTime.parse(value.docdatetime);
     ValueNotifier<bool> isHovered = ValueNotifier<bool>(false);
 
@@ -2731,7 +2750,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
           padding: EdgeInsets.symmetric(horizontal: rowPadding / 2),
           child: Text(
             global.formatThaiDateTime(dateTime: docDateTime.toLocal(), showTime: true),
-            style: TextStyle(color: (value.iscancel == true) ? Colors.red : Colors.black, fontSize: rowFontSize),
+            style: TextStyle(color: (value.iscancel == true) ? global.theme.negativeHighlightTextColor : global.theme.textColor, fontSize: rowFontSize),
           ),
         ),
       ),
@@ -2743,7 +2762,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
           padding: EdgeInsets.symmetric(horizontal: rowPadding / 2),
           child: Text(
             value.docno,
-            style: TextStyle(color: (value.iscancel == true) ? Colors.red : Colors.black, fontSize: rowFontSize),
+            style: TextStyle(color: (value.iscancel == true) ? global.theme.negativeHighlightTextColor : global.theme.textColor, fontSize: rowFontSize),
           ),
         ),
       ),
@@ -2762,7 +2781,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
             child: Text(
               isSmallScreen ? global.activeLangName(value.custnames ?? []) : "${global.activeLangName(value.custnames ?? [])} (${value.custcode})",
               textAlign: TextAlign.left,
-              style: TextStyle(color: (value.iscancel == true) ? Colors.red : Colors.black, fontSize: rowFontSize),
+              style: TextStyle(color: (value.iscancel == true) ? global.theme.negativeHighlightTextColor : global.theme.textColor, fontSize: rowFontSize),
             ),
           ),
         ),
@@ -2801,14 +2820,14 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             margin: const EdgeInsets.only(bottom: 2),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: global.theme.dividerBorderColor,
               borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: Colors.grey.shade400, width: 0.5),
+              border: Border.all(color: global.theme.iconSecondaryColor, width: 0.5),
             ),
             child: Text(
               global.language('not_yet_submitted'),
               style: TextStyle(
-                color: Colors.grey.shade600,
+                color: global.theme.textSecondaryColor,
                 fontWeight: FontWeight.bold,
                 fontSize: rowFontSize - 1,
               ),
@@ -2821,13 +2840,13 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
         statusColumn.children.add(
           Text(
             global.language("referenced"),
-            style: TextStyle(color: Colors.blue[700], fontWeight: FontWeight.bold, fontSize: rowFontSize),
+            style: TextStyle(color: global.theme.primaryColor, fontWeight: FontWeight.bold, fontSize: rowFontSize),
           ),
         );
         statusColumn.children.add(
           Text(
             (value.isclosed!) ? global.language("fully_received") : global.language("partially_received"),
-            style: TextStyle(color: Colors.green[700], fontWeight: FontWeight.bold, fontSize: rowFontSize),
+            style: TextStyle(color: global.theme.positiveHighlightTextColor, fontWeight: FontWeight.bold, fontSize: rowFontSize),
           ),
         );
       }
@@ -2835,7 +2854,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
         statusColumn.children.add(
           Text(
             global.language("cancelled"),
-            style: TextStyle(color: Colors.red[700], fontWeight: FontWeight.bold, fontSize: rowFontSize),
+            style: TextStyle(color: global.theme.negativeHighlightTextColor, fontWeight: FontWeight.bold, fontSize: rowFontSize),
           ),
         );
       }
@@ -2858,7 +2877,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
               child: Text(
                 value.salename,
                 textAlign: TextAlign.left,
-                style: TextStyle(color: (value.iscancel == true) ? Colors.red : Colors.black, fontSize: rowFontSize),
+                style: TextStyle(color: (value.iscancel == true) ? global.theme.negativeHighlightTextColor : global.theme.textColor, fontSize: rowFontSize),
               ),
             ),
           ),
@@ -2880,7 +2899,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
             child: Text(
               value.inquirytype == 0 ? global.language('credit') : global.language('cash'),
               textAlign: TextAlign.left,
-              style: TextStyle(color: (value.iscancel == true) ? Colors.red : Colors.black, fontSize: rowFontSize),
+              style: TextStyle(color: (value.iscancel == true) ? global.theme.negativeHighlightTextColor : global.theme.textColor, fontSize: rowFontSize),
             ),
           ),
         ),
@@ -2899,7 +2918,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
                   ? global.language('decrease')
                   : global.language('adjust_cost'),
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: rowFontSize),
+              style: TextStyle(fontSize: rowFontSize, color: global.theme.textColor),
             ),
           ),
         ),
@@ -2915,7 +2934,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
             child: Text(
               value.detailcount.toString(),
               textAlign: TextAlign.right,
-              style: TextStyle(fontSize: rowFontSize),
+              style: TextStyle(fontSize: rowFontSize, color: global.theme.textColor),
             ),
           ),
         ),
@@ -2930,7 +2949,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
               child: Text(
                 value.details!.length.toString(),
                 textAlign: TextAlign.center,
-                style: TextStyle(color: (value.iscancel == true) ? Colors.red : Colors.black, fontSize: rowFontSize),
+                style: TextStyle(color: (value.iscancel == true) ? global.theme.negativeHighlightTextColor : global.theme.textColor, fontSize: rowFontSize),
               ),
             ),
           ),
@@ -2944,7 +2963,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
               child: Text(
                 global.formatNumber(value.totalqty!),
                 textAlign: TextAlign.right,
-                style: TextStyle(fontSize: rowFontSize),
+                style: TextStyle(fontSize: rowFontSize, color: global.theme.textColor),
               ),
             ),
           ),
@@ -2964,7 +2983,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
             child: Text(
               global.formatNumber(value.totalamount),
               textAlign: TextAlign.right,
-              style: TextStyle(color: (value.iscancel == true) ? Colors.red : Colors.black, fontSize: rowFontSize),
+              style: TextStyle(color: (value.iscancel == true) ? global.theme.negativeHighlightTextColor : global.theme.textColor, fontSize: rowFontSize),
             ),
           ),
         ),
@@ -2977,13 +2996,13 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
         // กำหนดสีพื้นหลังตาม odd/even rows
         Color getBackgroundColor() {
           if (selectGuid == value.guidfixed) {
-            return Colors.cyan[100] ?? Colors.cyan.shade100; // สีเมื่อ selected (ความสำคัญสูงสุด)
+            return global.theme.rowSelectedColor; // สีเมื่อ selected (ความสำคัญสูงสุด)
           } else if (hovered) {
-            return Colors.grey[200] ?? Colors.grey.shade200; // สีเมื่อ hover
+            return global.theme.rowHoverColor; // สีเมื่อ hover
           } else if (index % 2 == 0) {
-            return Colors.white; // บรรทัดคู่ (0, 2, 4, ...) - พื้นขาว
+            return global.theme.columnAlternateEvenColor; // บรรทัดคู่ (0, 2, 4, ...) - พื้นขาว
           } else {
-            return Colors.grey[50] ?? Colors.grey.shade50; // บรรทัดคี่ (1, 3, 5, ...) - พื้นเทาอ่อน
+            return global.theme.columnAlternateOddColor; // บรรทัดคี่ (1, 3, 5, ...) - พื้นเทาอ่อน
           }
         }
 
@@ -2997,7 +3016,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
             child: Container(
               decoration: BoxDecoration(
                 color: getBackgroundColor(),
-                border: Border(bottom: BorderSide(width: 1.0, color: Colors.grey[300] ?? Colors.grey.shade300)),
+                border: Border(bottom: BorderSide(width: 1.0, color: global.theme.dividerBorderColor)),
               ),
               padding: EdgeInsets.only(
                 left: getResponsivePadding(screenWidth, mobile: 8, tablet: 10, desktop: 10),
@@ -3137,9 +3156,9 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
     if (widget.isEmbedded) {
       return Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(left: BorderSide(color: Colors.grey[300]!, width: 1)),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(-2, 0))],
+          color: global.theme.cardColor,
+          border: Border(left: BorderSide(color: global.theme.dividerBorderColor, width: 1)),
+          boxShadow: [BoxShadow(color: global.theme.textColor.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(-2, 0))],
         ),
         child: contentWidget,
       );
@@ -3147,6 +3166,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
 
     // โหมดปกติ ใช้ Scaffold
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: PopScope(
         canPop: true,

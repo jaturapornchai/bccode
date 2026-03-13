@@ -77,14 +77,14 @@ class CouponBasicInfoWidget extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: hasError ? Colors.red[700] : Colors.grey[700],
+                color: hasError ? global.theme.negativeHighlightTextColor : global.theme.textColor,
               ),
             ),
             if (isRequired)
               Text(
                 ' *',
                 style: TextStyle(
-                  color: Colors.red[600],
+                  color: global.theme.negativeHighlightTextColor,
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                 ),
@@ -96,7 +96,7 @@ class CouponBasicInfoWidget extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(6),
             border: Border.all(
-              color: hasError ? Colors.red[400]! : Colors.grey[300]!,
+              color: hasError ? global.theme.negativeHighlightTextColor : global.theme.dividerBorderColor,
               width: hasError ? 1.5 : 1,
             ),
           ),
@@ -108,10 +108,10 @@ class CouponBasicInfoWidget extends StatelessWidget {
             inputFormatters: inputFormatters,
             textCapitalization: textCapitalization,
             onChanged: onChanged,
-            style: const TextStyle(fontSize: 16),
+            style: TextStyle(fontSize: 16),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
+              hintStyle: TextStyle(color: global.theme.formHintColor, fontSize: 15),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 14,
@@ -127,7 +127,7 @@ class CouponBasicInfoWidget extends StatelessWidget {
           Text(
             fieldErrors[errorKey]!,
             style: TextStyle(
-              color: Colors.red[600],
+              color: global.theme.negativeHighlightTextColor,
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),

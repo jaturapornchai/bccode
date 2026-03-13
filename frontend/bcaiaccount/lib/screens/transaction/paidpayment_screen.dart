@@ -5,6 +5,7 @@ import 'package:smlaicloud/model/transaction_model.dart';
 import 'package:smlaicloud/screen_search/bookbank_select_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:smlaicloud/global.dart' as global;
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:flutter_rounded_date_picker/flutter_rounded_date_picker.dart';
 import 'package:smlaicloud/components/numpad.dart';
 
@@ -25,7 +26,8 @@ class PaidPaymentScreen extends StatefulWidget {
   State<PaidPaymentScreen> createState() => _PaidPaymentScreenState();
 }
 
-class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
+class _PaidPaymentScreenState extends State<PaidPaymentScreen>
+    with global.ThemeRefreshMixin {
   late TransactionPaidPayModel screenData;
 
   int showPayDetail = 0;
@@ -357,8 +359,8 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                     label: Text(global.language("cash")),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: (showPayDetail == 0)
-                          ? Colors.blue
-                          : Colors.grey,
+                          ? global.theme.infoHighlightTextColor
+                          : global.theme.iconSecondaryColor,
                     ),
                   ),
                 ),
@@ -375,8 +377,8 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                     label: Text(global.language("money_transfer")),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: (showPayDetail == 1)
-                          ? Colors.blue
-                          : Colors.grey,
+                          ? global.theme.infoHighlightTextColor
+                          : global.theme.iconSecondaryColor,
                     ),
                   ),
                 ),
@@ -394,8 +396,8 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                           label: Text(global.language("credit_card")),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: (showPayDetail == 2)
-                                ? Colors.blue
-                                : Colors.grey,
+                                ? global.theme.infoHighlightTextColor
+                                : global.theme.iconSecondaryColor,
                           ),
                         ),
                       ),
@@ -418,8 +420,8 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                           label: Text(global.language("cheque")),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: (showPayDetail == 3)
-                                ? Colors.blue
-                                : Colors.grey,
+                                ? global.theme.infoHighlightTextColor
+                                : global.theme.iconSecondaryColor,
                           ),
                         ),
                       ),
@@ -436,8 +438,8 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                           label: Text(global.language("coupon")),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: (showPayDetail == 4)
-                                ? Colors.blue
-                                : Colors.grey,
+                                ? global.theme.infoHighlightTextColor
+                                : global.theme.iconSecondaryColor,
                           ),
                         ),
                       ),
@@ -454,8 +456,8 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                           label: Text(global.language("qr_code")),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: (showPayDetail == 5)
-                                ? Colors.blue
-                                : Colors.grey,
+                                ? global.theme.infoHighlightTextColor
+                                : global.theme.iconSecondaryColor,
                           ),
                         ),
                       ),
@@ -483,7 +485,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                   border: OutlineInputBorder(),
                   labelText: global.language("cash"),
                 ),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 28,
                 ), // Adjust the font size as needed
                 controller: payCashAmountController,
@@ -762,7 +764,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                     children: [
                       Text(
                         "${global.language("list_transfer")} ${i + 1}",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -776,7 +778,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                             payTransferAmountController.removeAt(i);
                             _calPayTotal();
                           },
-                          icon: const Icon(Icons.delete),
+                          icon: Icon(Icons.delete),
                         ),
                       ),
                     ],
@@ -796,7 +798,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                             children: [
                               IconButton(
                                 focusNode: FocusNode(skipTraversal: true),
-                                icon: const Icon(Icons.calendar_month),
+                                icon: Icon(Icons.calendar_month),
                                 onPressed: () {
                                   selectPayDate(context, i).then((value) {
                                     if (value != null) {
@@ -887,9 +889,9 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                           textAlign: TextAlign.left,
                           textCapitalization: TextCapitalization.characters,
                           decoration: InputDecoration(
-                            enabledBorder: const OutlineInputBorder(
+                            enabledBorder: OutlineInputBorder(
                               borderSide: BorderSide(
-                                color: Colors.grey,
+                                color: global.theme.dividerBorderColor,
                                 width: 0.0,
                               ),
                             ),
@@ -901,7 +903,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                               children: [
                                 IconButton(
                                   focusNode: FocusNode(skipTraversal: true),
-                                  icon: const Icon(Icons.search),
+                                  icon: Icon(Icons.search),
                                   onPressed: () {
                                     bookBankSearch().then((value) {
                                       if (value != null) {
@@ -1002,7 +1004,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                     children: [
                       Text(
                         "${global.language("list_creditcard")} ${i + 1}",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1016,7 +1018,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                             payCreditCardAmountController.removeAt(i);
                             _calPayTotal();
                           },
-                          icon: const Icon(Icons.delete),
+                          icon: Icon(Icons.delete),
                         ),
                       ),
                     ],
@@ -1036,7 +1038,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                             children: [
                               IconButton(
                                 focusNode: FocusNode(skipTraversal: true),
-                                icon: const Icon(Icons.calendar_month),
+                                icon: Icon(Icons.calendar_month),
                                 onPressed: () {
                                   selectPayDate(context, i).then((value) {
                                     if (value != null) {
@@ -1148,9 +1150,9 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                             textAlign: TextAlign.left,
                             textCapitalization: TextCapitalization.characters,
                             decoration: InputDecoration(
-                              enabledBorder: const OutlineInputBorder(
+                              enabledBorder: OutlineInputBorder(
                                 borderSide: BorderSide(
-                                  color: Colors.grey,
+                                  color: global.theme.dividerBorderColor,
                                   width: 0.0,
                                 ),
                               ),
@@ -1163,7 +1165,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                                 children: [
                                   IconButton(
                                     focusNode: FocusNode(skipTraversal: true),
-                                    icon: const Icon(Icons.search),
+                                    icon: Icon(Icons.search),
                                     onPressed: () {
                                       bookBankSearch().then((value) {
                                         if (value != null) {
@@ -1265,7 +1267,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                     children: [
                       Text(
                         "${global.language("list_cheque")} ${i + 1}",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1280,7 +1282,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                             payChequeAmountController.removeAt(i);
                             _calPayTotal();
                           },
-                          icon: const Icon(Icons.delete),
+                          icon: Icon(Icons.delete),
                         ),
                       ),
                     ],
@@ -1300,7 +1302,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                             children: [
                               IconButton(
                                 focusNode: FocusNode(skipTraversal: true),
-                                icon: const Icon(Icons.calendar_month),
+                                icon: Icon(Icons.calendar_month),
                                 onPressed: () {
                                   selectPayDate(context, i).then((value) {
                                     if (value != null) {
@@ -1391,9 +1393,9 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                           textAlign: TextAlign.left,
                           textCapitalization: TextCapitalization.characters,
                           decoration: InputDecoration(
-                            enabledBorder: const OutlineInputBorder(
+                            enabledBorder: OutlineInputBorder(
                               borderSide: BorderSide(
-                                color: Colors.grey,
+                                color: global.theme.dividerBorderColor,
                                 width: 0.0,
                               ),
                             ),
@@ -1405,7 +1407,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                               children: [
                                 IconButton(
                                   focusNode: FocusNode(skipTraversal: true),
-                                  icon: const Icon(Icons.search),
+                                  icon: Icon(Icons.search),
                                   onPressed: () {
                                     bookBankSearch().then((value) {
                                       if (value != null) {
@@ -1461,7 +1463,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                               children: [
                                 IconButton(
                                   focusNode: FocusNode(skipTraversal: true),
-                                  icon: const Icon(Icons.calendar_month),
+                                  icon: Icon(Icons.calendar_month),
                                   onPressed: () {
                                     selectPayDate(context, i).then((value) {
                                       if (value != null) {
@@ -1618,7 +1620,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                     children: [
                       Text(
                         "${global.language("list_coupon")} ${i + 1}",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1632,7 +1634,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                             payCouponAmountController.removeAt(i);
                             _calPayTotal();
                           },
-                          icon: const Icon(Icons.delete),
+                          icon: Icon(Icons.delete),
                         ),
                       ),
                     ],
@@ -1652,7 +1654,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                             children: [
                               IconButton(
                                 focusNode: FocusNode(skipTraversal: true),
-                                icon: const Icon(Icons.calendar_month),
+                                icon: Icon(Icons.calendar_month),
                                 onPressed: () {
                                   selectPayDate(context, i).then((value) {
                                     if (value != null) {
@@ -1824,7 +1826,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                     children: [
                       Text(
                         "${global.language("list_qr")} ${i + 1}",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1838,7 +1840,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                             payQrAmountController.removeAt(i);
                             _calPayTotal();
                           },
-                          icon: const Icon(Icons.delete),
+                          icon: Icon(Icons.delete),
                         ),
                       ),
                     ],
@@ -1858,7 +1860,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
                             children: [
                               IconButton(
                                 focusNode: FocusNode(skipTraversal: true),
-                                icon: const Icon(Icons.calendar_month),
+                                icon: Icon(Icons.calendar_month),
                                 onPressed: () {
                                   selectPayDate(context, i).then((value) {
                                     if (value != null) {
@@ -2346,8 +2348,8 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
 
                         /// set color button
                         style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          backgroundColor: Colors.grey,
+                          foregroundColor: global.theme.onPrimaryColor,
+                          backgroundColor: global.theme.iconSecondaryColor,
                         ),
                       ),
                     ),
@@ -2464,7 +2466,7 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
         title: Text(global.language("payment_details")),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             screenData.paymentStructs = [];
             if (payTransfer.isNotEmpty) {
@@ -2502,51 +2504,66 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen> {
 
         /// button save
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 20.0),
-            child: IconButton(
-              focusNode: FocusNode(skipTraversal: true),
-              icon: const Icon(Icons.save, size: 26.0),
-              onPressed: () {
-                if (verifyPayment()) {
-                  screenData.paymentStructs = [];
-                  if (payTransfer.isNotEmpty) {
-                    for (var i = 0; i < payTransfer.length; i++) {
-                      screenData.paymentStructs!.addAll(payTransfer);
-                    }
+          EditFontSizeControl(onChanged: () => setState(() {})),
+          IconButton(
+            focusNode: FocusNode(skipTraversal: true),
+            icon: Icon(Icons.save, size: 26.0),
+            onPressed: () {
+              if (verifyPayment()) {
+                screenData.paymentStructs = [];
+                if (payTransfer.isNotEmpty) {
+                  for (var i = 0; i < payTransfer.length; i++) {
+                    screenData.paymentStructs!.addAll(payTransfer);
                   }
-                  if (payCreditCard.isNotEmpty) {
-                    for (var i = 0; i < payCreditCard.length; i++) {
-                      screenData.paymentStructs!.addAll(payCreditCard);
-                    }
-                  }
-
-                  if (payCheque.isNotEmpty) {
-                    for (var i = 0; i < payCheque.length; i++) {
-                      screenData.paymentStructs!.addAll(payCheque);
-                    }
-                  }
-
-                  if (payCoupon.isNotEmpty) {
-                    for (var i = 0; i < payCoupon.length; i++) {
-                      screenData.paymentStructs!.addAll(payCoupon);
-                    }
-                  }
-
-                  if (payQr.isNotEmpty) {
-                    for (var i = 0; i < payQr.length; i++) {
-                      screenData.paymentStructs!.addAll(payQr);
-                    }
-                  }
-
-                  Navigator.pop(context, ['save', screenData]);
                 }
-              },
-            ),
+                if (payCreditCard.isNotEmpty) {
+                  for (var i = 0; i < payCreditCard.length; i++) {
+                    screenData.paymentStructs!.addAll(payCreditCard);
+                  }
+                }
+                if (payCheque.isNotEmpty) {
+                  for (var i = 0; i < payCheque.length; i++) {
+                    screenData.paymentStructs!.addAll(payCheque);
+                  }
+                }
+                if (payCoupon.isNotEmpty) {
+                  for (var i = 0; i < payCoupon.length; i++) {
+                    screenData.paymentStructs!.addAll(payCoupon);
+                  }
+                }
+                if (payQr.isNotEmpty) {
+                  for (var i = 0; i < payQr.length; i++) {
+                    screenData.paymentStructs!.addAll(payQr);
+                  }
+                }
+                Navigator.pop(context, ['save', screenData]);
+              }
+            },
           ),
         ],
       ),
-      body: editSummeryWidget(),
+      body: Builder(
+        builder: (context) {
+          final scaleFactor = global.editFontScaleFactor;
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(scaleFactor),
+            ),
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12 * scaleFactor,
+                    vertical: 10 * scaleFactor,
+                  ),
+                ),
+                iconTheme: IconThemeData(size: 24 * scaleFactor),
+              ),
+              child: editSummeryWidget(),
+            ),
+          );
+        },
+      ),
     );
   }
 }

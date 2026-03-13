@@ -23,7 +23,8 @@ class ShelfProductSelector extends StatefulWidget {
   State<ShelfProductSelector> createState() => _ShelfProductSelectorState();
 }
 
-class _ShelfProductSelectorState extends State<ShelfProductSelector> {
+class _ShelfProductSelectorState extends State<ShelfProductSelector>
+    with global.ThemeRefreshMixin {
   // Track deleted products
   Set<String> deletedProducts = {};
 
@@ -59,7 +60,7 @@ class _ShelfProductSelectorState extends State<ShelfProductSelector> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close),
+                icon: Icon(Icons.close),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ],
@@ -120,7 +121,7 @@ class _ShelfProductSelectorState extends State<ShelfProductSelector> {
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade100),
+            border: Border.all(color: global.theme.dividerBorderColor),
             borderRadius: BorderRadius.circular(4),
           ),
           child: state.warehouseLoadStatus == LoadingStatus.loading
@@ -191,7 +192,7 @@ class _ShelfProductSelectorState extends State<ShelfProductSelector> {
           global.language('select_storage_location'),
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w600,
-            color: isEnabled ? null : Colors.grey,
+            color: isEnabled ? null : global.theme.textSecondaryColor,
           ),
         ),
         const SizedBox(height: 8),
@@ -199,10 +200,10 @@ class _ShelfProductSelectorState extends State<ShelfProductSelector> {
           width: double.infinity,
           decoration: BoxDecoration(
             border: Border.all(
-              color: isEnabled ? Colors.grey.shade300 : Colors.grey.shade200,
+              color: isEnabled ? global.theme.dividerBorderColor : global.theme.dividerBorderColor,
             ),
             borderRadius: BorderRadius.circular(4),
-            color: isEnabled ? null : Colors.grey.shade50,
+            color: isEnabled ? null : global.theme.surfaceColor,
           ),
           child: !isEnabled
               ? Container(
@@ -212,7 +213,7 @@ class _ShelfProductSelectorState extends State<ShelfProductSelector> {
                     alignment: Alignment.centerLeft,
                     child: Text(
                       global.language('please_select_warehouse'),
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(color: global.theme.textSecondaryColor),
                     ),
                   ),
                 )
@@ -288,7 +289,7 @@ class _ShelfProductSelectorState extends State<ShelfProductSelector> {
           global.language('select_shelf'),
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w600,
-            color: isEnabled ? null : Colors.grey,
+            color: isEnabled ? null : global.theme.textSecondaryColor,
           ),
         ),
         const SizedBox(height: 8),
@@ -296,10 +297,10 @@ class _ShelfProductSelectorState extends State<ShelfProductSelector> {
           width: double.infinity,
           decoration: BoxDecoration(
             border: Border.all(
-              color: isEnabled ? Colors.grey.shade300 : Colors.grey.shade200,
+              color: isEnabled ? global.theme.dividerBorderColor : global.theme.dividerBorderColor,
             ),
             borderRadius: BorderRadius.circular(4),
-            color: isEnabled ? null : Colors.grey.shade50,
+            color: isEnabled ? null : global.theme.surfaceColor,
           ),
           child: !isEnabled
               ? Container(
@@ -309,7 +310,7 @@ class _ShelfProductSelectorState extends State<ShelfProductSelector> {
                     alignment: Alignment.centerLeft,
                     child: Text(
                       global.language('please_select_location'),
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(color: global.theme.textSecondaryColor),
                     ),
                   ),
                 )
@@ -343,8 +344,8 @@ class _ShelfProductSelectorState extends State<ShelfProductSelector> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: productCount > 0
-                                      ? Colors.green.shade100
-                                      : Colors.grey.shade100,
+                                      ? global.theme.positiveHighlightColor
+                                      : global.theme.dividerBorderColor,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
@@ -352,8 +353,8 @@ class _ShelfProductSelectorState extends State<ShelfProductSelector> {
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: productCount > 0
-                                        ? Colors.green.shade700
-                                        : Colors.grey.shade600,
+                                        ? global.theme.positiveHighlightTextColor
+                                        : global.theme.textSecondaryColor,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -382,9 +383,9 @@ class _ShelfProductSelectorState extends State<ShelfProductSelector> {
       return Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: global.theme.dividerBorderColor),
           borderRadius: BorderRadius.circular(8),
-          color: Colors.grey.shade50,
+          color: global.theme.surfaceColor,
         ),
         child: Center(
           child: Padding(
@@ -392,11 +393,11 @@ class _ShelfProductSelectorState extends State<ShelfProductSelector> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey),
+                Icon(Icons.inventory_2_outlined, size: 48, color: global.theme.iconSecondaryColor),
                 const SizedBox(height: 16),
                 Text(
                   global.language('please_select_shelf'),
-                  style: TextStyle(color: Colors.grey, fontSize: 16),
+                  style: TextStyle(color: global.theme.textSecondaryColor, fontSize: 16),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -410,7 +411,7 @@ class _ShelfProductSelectorState extends State<ShelfProductSelector> {
       return Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: global.theme.dividerBorderColor),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Center(
@@ -433,7 +434,7 @@ class _ShelfProductSelectorState extends State<ShelfProductSelector> {
       return Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: global.theme.dividerBorderColor),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Center(
@@ -442,11 +443,11 @@ class _ShelfProductSelectorState extends State<ShelfProductSelector> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.inbox_outlined, size: 48, color: Colors.grey),
+                Icon(Icons.inbox_outlined, size: 48, color: global.theme.iconSecondaryColor),
                 SizedBox(height: 16),
                 Text(
                   global.language('no_products_in_shelf'),
-                  style: TextStyle(color: Colors.grey, fontSize: 16),
+                  style: TextStyle(color: global.theme.textSecondaryColor, fontSize: 16),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -458,7 +459,7 @@ class _ShelfProductSelectorState extends State<ShelfProductSelector> {
 
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -468,7 +469,7 @@ class _ShelfProductSelectorState extends State<ShelfProductSelector> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: global.theme.surfaceColor,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(8),
                 topRight: Radius.circular(8),
@@ -476,11 +477,11 @@ class _ShelfProductSelectorState extends State<ShelfProductSelector> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.inventory_2, size: 20),
+                Icon(Icons.inventory_2, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   '${global.language("products_in_shelf")} (${state.shelfProducts.where((p) => !deletedProducts.contains(p.barcode)).length} ${global.language("items")})',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  style: TextStyle(fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -504,27 +505,27 @@ class _ShelfProductSelectorState extends State<ShelfProductSelector> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
+                      color: global.theme.rowHoverColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.inventory,
-                      color: Colors.blue,
+                      color: global.theme.primaryColor,
                       size: 20,
                     ),
                   ),
                   title: Text(
                     productName.isNotEmpty ? productName : global.language('product_name_not_specified'),
-                    style: const TextStyle(fontWeight: FontWeight.w500),
+                    style: TextStyle(fontWeight: FontWeight.w500),
                   ),
                   subtitle: Text(
                     '${global.language("barcode_label")}: ${product.barcode}',
-                    style: TextStyle(color: Colors.grey.shade600),
+                    style: TextStyle(color: global.theme.textSecondaryColor),
                   ),
                   trailing: IconButton(
                     icon: Icon(
                       Icons.delete_outline,
-                      color: Colors.red.shade600,
+                      color: global.theme.negativeHighlightTextColor,
                       size: 20,
                     ),
                     onPressed: () => _deleteSingleProduct(product),

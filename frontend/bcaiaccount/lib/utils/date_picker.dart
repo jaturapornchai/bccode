@@ -31,7 +31,7 @@ class CustomDatePicker extends StatefulWidget {
   _CustomDatePickerState createState() => _CustomDatePickerState();
 }
 
-class _CustomDatePickerState extends State<CustomDatePicker> {
+class _CustomDatePickerState extends State<CustomDatePicker> with global.ThemeRefreshMixin {
   final TextEditingController _controller = TextEditingController();
   DateTime? _selectedDate;
   final GlobalKey _calendarIconKey = GlobalKey();
@@ -39,9 +39,7 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
   final FocusNode _focusNode = FocusNode();
 
   // 🎨 Modern Color Palette
-  static const Color _primaryColor = Color(0xFF667eea);
-  static const Color _primaryDarkColor = Color(0xFF5a67d8);
-  static const Color _accentColor = Color(0xFF764ba2);
+  static Color get _primaryColor => global.theme.primaryColor;
 
   // ดึงภาษาที่ใช้ในการแสดงผล (default จาก global.getBranchLanguage())
   String get _languageCode => widget.languageCode ?? global.getBranchLanguage();
@@ -324,13 +322,13 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
       ],
       onChanged: _handleInput,
       onSubmitted: (_) => _completeDate(_controller.text),
-      style: const TextStyle(fontSize: 14, color: Colors.black87),
+      style: TextStyle(fontSize: 14, color: global.theme.formTextColor),
       decoration: InputDecoration(
         labelText: widget.labelText,
         floatingLabelBehavior: FloatingLabelBehavior.always,
-        floatingLabelStyle: const TextStyle(
-          backgroundColor: Colors.white,
-          color: Colors.black87,
+        floatingLabelStyle: TextStyle(
+          backgroundColor: global.theme.cardColor,
+          color: global.theme.formLabelColor,
           fontWeight: FontWeight.bold,
           fontSize: 14,
         ),
@@ -340,7 +338,7 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: global.theme.formBorderColor),
         ),
         suffixIcon: (widget.useIconSelectDate == false)
             ? null
@@ -349,20 +347,20 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
                 focusNode: FocusNode(skipTraversal: true),
                 icon: Icon(
                   Icons.calendar_today,
-                  color: Colors.grey.shade600,
+                  color: global.theme.iconSecondaryColor,
                   size: 20,
                 ),
                 onPressed: _showCustomDatePicker,
               ),
         filled: true,
-        fillColor: isDateValid ? Colors.white : Colors.red.shade50,
+        fillColor: isDateValid ? global.theme.formFillColor : Colors.red.shade50,
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: _primaryColor, width: 2.0),
+          borderSide: BorderSide(color: _primaryColor, width: 2.0),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: global.theme.formBorderColor),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -399,7 +397,7 @@ class CustomDatePickerDialog extends StatefulWidget {
 }
 
 class _CustomDatePickerDialogState extends State<CustomDatePickerDialog>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   late DateTime _currentDate;
   late DateTime _displayedMonth;
   int _displayedYear = 0;
@@ -407,10 +405,10 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog>
   bool _isMonthMode = false;
 
   // 🎨 Modern Color Palette
-  static const Color _primaryColor = Color(0xFF667eea);
-  static const Color _primaryDarkColor = Color(0xFF5a67d8);
-  static const Color _accentColor = Color(0xFF764ba2);
-  static const Color _surfaceColor = Color(0xFFF8FAFC);
+  static Color get _primaryColor => global.theme.primaryColor;
+  static Color get _primaryDarkColor => global.theme.primaryColor;
+  static Color get _accentColor => global.theme.primaryLightColor;
+  Color get _surfaceColor => global.theme.surfaceColor;
 
   // ดึงประเภทปี (default จาก global.getYearType())
   bool get _useBuddhistCalendar => widget.useBuddhistCalendar ?? (global.getYearType() == 'buddhist');
@@ -458,7 +456,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog>
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [_primaryColor, _accentColor],
           begin: Alignment.topLeft,
@@ -475,16 +473,16 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog>
                 : global.getEnglishDayNameFull(_currentDate.weekday),
             style: TextStyle(
               fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.8),
+              color: global.theme.onPrimaryColor.withValues(alpha: 0.8),
               fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             '${_currentDate.day} ${_languageCode == 'th' ? global.getThaiMonthNameFull(_currentDate.month) : global.getEnglishMonthNameFull(_currentDate.month)} ${_useBuddhistCalendar ? _currentDate.year + 543 : _currentDate.year}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 22,
-              color: Colors.white,
+              color: global.theme.onPrimaryColor,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -558,14 +556,14 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog>
     required VoidCallback onPressed,
   }) {
     return Material(
-      color: Colors.white.withValues(alpha: 0.2),
+      color: global.theme.onPrimaryColor.withValues(alpha: 0.2),
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onPressed,
         borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.all(8),
-          child: Icon(icon, color: Colors.white, size: 24),
+          child: Icon(icon, color: global.theme.onPrimaryColor, size: 24),
         ),
       ),
     );
@@ -578,7 +576,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog>
   }) {
     return Material(
       color: isActive
-          ? Colors.white.withValues(alpha: 0.3)
+          ? global.theme.onPrimaryColor.withValues(alpha: 0.3)
           : Colors.transparent,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
@@ -588,10 +586,10 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog>
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: global.theme.onPrimaryColor,
             ),
           ),
         ),
@@ -618,7 +616,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog>
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
-                color: isWeekend ? _accentColor : Colors.grey.shade600,
+                color: isWeekend ? _accentColor : global.theme.textSecondaryColor,
               ),
             ),
           );
@@ -684,7 +682,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog>
             margin: const EdgeInsets.all(2),
             decoration: BoxDecoration(
               gradient: isSelected
-                  ? const LinearGradient(
+                  ? LinearGradient(
                       colors: [_primaryColor, _accentColor],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -712,10 +710,10 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog>
               '$day',
               style: TextStyle(
                 color: isSelected
-                    ? Colors.white
+                    ? global.theme.onPrimaryColor
                     : (isToday
                           ? _primaryDarkColor
-                          : (isWeekend ? _accentColor : Colors.grey.shade700)),
+                          : (isWeekend ? _accentColor : global.theme.textColor)),
                 fontWeight: isToday || isSelected
                     ? FontWeight.bold
                     : FontWeight.w500,
@@ -768,7 +766,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog>
             margin: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               gradient: isSelected
-                  ? const LinearGradient(
+                  ? LinearGradient(
                       colors: [_primaryColor, _accentColor],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -797,7 +795,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog>
             child: Text(
               monthName,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey.shade700,
+                color: isSelected ? global.theme.onPrimaryColor : global.theme.textColor,
                 fontWeight: isSelected || isCurrent
                     ? FontWeight.bold
                     : FontWeight.w500,
@@ -854,7 +852,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog>
             margin: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               gradient: isSelected
-                  ? const LinearGradient(
+                  ? LinearGradient(
                       colors: [_primaryColor, _accentColor],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -883,7 +881,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog>
             child: Text(
               '$year',
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey.shade700,
+                color: isSelected ? global.theme.onPrimaryColor : global.theme.textColor,
                 fontWeight: isSelected || isCurrent
                     ? FontWeight.bold
                     : FontWeight.w500,
@@ -927,7 +925,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog>
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade600,
+                color: global.theme.textSecondaryColor,
               ),
             ),
             _buildYearNavButton(
@@ -981,7 +979,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog>
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.shade300),
+                  side: BorderSide(color: global.theme.dividerBorderColor),
                 ),
               ),
               child: Text(
@@ -989,7 +987,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog>
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade600,
+                  color: global.theme.textSecondaryColor,
                 ),
               ),
             ),
@@ -998,7 +996,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog>
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   colors: [_primaryColor, _accentColor],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -1040,10 +1038,10 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog>
                 ),
                 child: Text(
                   _languageCode == 'th' ? global.language('alert_today') : 'Today',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: global.theme.onPrimaryColor,
                   ),
                 ),
               ),
@@ -1071,7 +1069,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog>
       child: Container(
         width: 360,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: global.theme.cardColor,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(

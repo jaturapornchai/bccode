@@ -18,6 +18,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:smlaicloud/global.dart' as global;
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 // ignore: depend_on_referenced_packages
 import 'package:intl/intl.dart';
 import 'package:smlaicloud/utils/date_picker.dart';
@@ -32,7 +33,7 @@ class TransactionPaidScreen extends StatefulWidget {
 }
 
 class TransactionPaidScreenState extends State<TransactionPaidScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, global.ThemeRefreshMixin {
   final _debouncer = global.Debouncer(1000);
   TextEditingController docDateController = TextEditingController();
   TextEditingController docNumberController = TextEditingController();
@@ -295,17 +296,17 @@ class TransactionPaidScreenState extends State<TransactionPaidScreen>
               clearScreenData();
               global.showSnackBar(
                 context,
-                Icon(Icons.save, color: Colors.white),
+                Icon(Icons.save, color: global.theme.onPrimaryColor),
                 global.language(state.message),
-                Colors.red,
+                global.theme.negativeHighlightTextColor,
               );
             } else if (state is TransactionPaidPayDeleteSuccess) {
               clearScreenData();
               global.showSnackBar(
                 context,
-                Icon(Icons.save, color: Colors.white),
+                Icon(Icons.save, color: global.theme.onPrimaryColor),
                 global.language("delete_success"),
-                Colors.blue,
+                global.theme.infoHighlightTextColor,
               );
             }
 
@@ -334,9 +335,9 @@ class TransactionPaidScreenState extends State<TransactionPaidScreen>
               clearScreenData();
               global.showSnackBar(
                 context,
-                Icon(Icons.save, color: Colors.white),
+                Icon(Icons.save, color: global.theme.onPrimaryColor),
                 global.language(state.message),
-                Colors.red,
+                global.theme.negativeHighlightTextColor,
               );
             }
 
@@ -366,9 +367,9 @@ class TransactionPaidScreenState extends State<TransactionPaidScreen>
             } else if (state is GetCustcodeTransactionFailed) {
               global.showSnackBar(
                 context,
-                Icon(Icons.save, color: Colors.white),
+                Icon(Icons.save, color: global.theme.onPrimaryColor),
                 global.language(state.message),
-                Colors.red,
+                global.theme.negativeHighlightTextColor,
               );
             }
           },
@@ -380,117 +381,123 @@ class TransactionPaidScreenState extends State<TransactionPaidScreen>
           title: Text(global.transactionName(widget.type)),
           leading: IconButton(
             focusNode: FocusNode(skipTraversal: true),
-            icon: const Icon(Icons.arrow_back),
+            icon: Icon(Icons.arrow_back),
             onPressed: () {
               Navigator.pop(context);
             },
           ),
           actions: <Widget>[
+            EditFontSizeControl(onChanged: () => setState(() {})),
             (screenData.guidfixed != '')
-                ? Padding(
-                    padding: EdgeInsets.only(right: 20.0),
-                    child: IconButton(
-                      focusNode: FocusNode(skipTraversal: true),
-                      onPressed: () async {
-                        setState(() {});
-                        if (screenData.details!.isEmpty) {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                title: Text(global.language("add_payment_entry")),
-                                actions: [
-                                  TextButton(
-                                    child: Text(global.language("confirm")),
-                                    onPressed: () {
-                                      clearScreenData();
-                                      Navigator.of(context).pop();
-                                    },
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        } else {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => PdfPreviewPage(
-                                screenDataPayPaid: screenData,
-                                type: widget.type,
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.print, size: 26.0),
-                    ),
-                  )
-                : Container(),
-            Padding(
-              padding: const EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () async {
-                  searchTrans();
-                },
-                icon: const Icon(Icons.list_alt, size: 26.0),
-              ),
-            ),
-            (screenData.guidfixed != '')
-                ? Padding(
-                    padding: const EdgeInsets.only(right: 20.0),
-                    child: IconButton(
-                      focusNode: FocusNode(skipTraversal: true),
-                      onPressed: () async {
-                        final result = await _showAlertConfirmDeleteDialog(
-                          context,
-                          screenData.docno,
-                        );
-                        if (result != null && result) {
-                          deleteDoc();
-                        }
-                      },
-                      icon: const Icon(Icons.delete, size: 26.0),
-                    ),
-                  )
-                : Container(),
-            Padding(
-              padding: EdgeInsets.only(right: 20.0),
-              child: IconButton(
-                focusNode: FocusNode(skipTraversal: true),
-                onPressed: () async {
-                  if (screenData.details!.isNotEmpty) {
-                    saveOrUpdateData();
-                  } else {
-                    /// show dialog please payment
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return Center(
-                          child: AlertDialog(
-                            title: Text(global.language("alert")),
-                            content: Text(global.language("please_payment")),
+                ? IconButton(
+                  focusNode: FocusNode(skipTraversal: true),
+                  onPressed: () async {
+                    setState(() {});
+                    if (screenData.details!.isEmpty) {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text(global.language("add_payment_entry")),
                             actions: [
                               TextButton(
                                 child: Text(global.language("confirm")),
                                 onPressed: () {
+                                  clearScreenData();
                                   Navigator.of(context).pop();
                                 },
                               ),
                             ],
+                          );
+                        },
+                      );
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PdfPreviewPage(
+                            screenDataPayPaid: screenData,
+                            type: widget.type,
                           ),
-                        );
-                      },
+                        ),
+                      );
+                    }
+                  },
+                  icon: Icon(Icons.print, size: 26.0),
+                )
+                : Container(),
+            IconButton(
+              focusNode: FocusNode(skipTraversal: true),
+              onPressed: () async {
+                searchTrans();
+              },
+              icon: Icon(Icons.list_alt, size: 26.0),
+            ),
+            (screenData.guidfixed != '')
+                ? IconButton(
+                  focusNode: FocusNode(skipTraversal: true),
+                  onPressed: () async {
+                    final result = await _showAlertConfirmDeleteDialog(
+                      context,
+                      screenData.docno,
                     );
-                  }
-                },
-                icon: const Icon(Icons.save, size: 26.0),
-              ),
+                    if (result != null && result) {
+                      deleteDoc();
+                    }
+                  },
+                  icon: Icon(Icons.delete, size: 26.0),
+                )
+                : Container(),
+            IconButton(
+              focusNode: FocusNode(skipTraversal: true),
+              onPressed: () async {
+                if (screenData.details!.isNotEmpty) {
+                  saveOrUpdateData();
+                } else {
+                  /// show dialog please payment
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return Center(
+                        child: AlertDialog(
+                          title: Text(global.language("alert")),
+                          content: Text(global.language("please_payment")),
+                          actions: [
+                            TextButton(
+                              child: Text(global.language("confirm")),
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                }
+              },
+              icon: Icon(Icons.save, size: 26.0),
             ),
           ],
         ),
-        body: Card(
+        body: Builder(
+          builder: (context) {
+            final scaleFactor = global.editFontScaleFactor;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(scaleFactor),
+              ),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12 * scaleFactor,
+                      vertical: 10 * scaleFactor,
+                    ),
+                  ),
+                  iconTheme: IconThemeData(size: 24 * scaleFactor),
+                ),
+                child: Card(
           child: Container(
             margin: EdgeInsets.all(10),
             child: Column(
@@ -544,7 +551,7 @@ class TransactionPaidScreenState extends State<TransactionPaidScreen>
                                   labelText: global.language("doc_date"),
                                   suffixIcon: IconButton(
                                     focusNode: FocusNode(skipTraversal: true),
-                                    icon: const Icon(Icons.calendar_today),
+                                    icon: Icon(Icons.calendar_today),
                                     onPressed: () {},
                                   ),
                                 ),
@@ -567,7 +574,7 @@ class TransactionPaidScreenState extends State<TransactionPaidScreen>
                               children: [
                                 IconButton(
                                   focusNode: FocusNode(skipTraversal: true),
-                                  icon: const Icon(Icons.search),
+                                  icon: Icon(Icons.search),
                                   onPressed: () {
                                     Navigator.push(
                                       context,
@@ -646,7 +653,7 @@ class TransactionPaidScreenState extends State<TransactionPaidScreen>
                               children: [
                                 IconButton(
                                   focusNode: FocusNode(skipTraversal: true),
-                                  icon: const Icon(Icons.search),
+                                  icon: Icon(Icons.search),
                                   onPressed: () {
                                     if ((widget.type ==
                                         global.TransactionTypeEnum.paid)) {
@@ -686,7 +693,7 @@ class TransactionPaidScreenState extends State<TransactionPaidScreen>
                               children: [
                                 IconButton(
                                   focusNode: FocusNode(skipTraversal: true),
-                                  icon: const Icon(Icons.search),
+                                  icon: Icon(Icons.search),
                                   onPressed: () {
                                     searchSale(word: "");
                                   },
@@ -711,8 +718,8 @@ class TransactionPaidScreenState extends State<TransactionPaidScreen>
                               labelText: global.language('paid_type'),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(4.0),
-                                borderSide: const BorderSide(
-                                  color: Colors.grey,
+                                borderSide: BorderSide(
+                                  color: global.theme.dividerBorderColor,
                                   width: 0.0,
                                 ),
                               ),
@@ -880,7 +887,7 @@ class TransactionPaidScreenState extends State<TransactionPaidScreen>
                 //       onPressed: () {
                 //         processDoc();
                 //       },
-                //       child: const Text("process")),
+                //       child: Text("process")),
                 // ),
                 Container(
                   margin: EdgeInsets.only(bottom: 10),
@@ -891,7 +898,7 @@ class TransactionPaidScreenState extends State<TransactionPaidScreen>
                         children: [
                           Text(
                             global.language("detail"),
-                            style: const TextStyle(fontSize: 17),
+                            style: TextStyle(fontSize: 17),
                           ),
                         ],
                       ),
@@ -909,7 +916,7 @@ class TransactionPaidScreenState extends State<TransactionPaidScreen>
                         children: [
                           Text(
                             global.language("total_amount"),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.bold,
                             ),
@@ -917,7 +924,7 @@ class TransactionPaidScreenState extends State<TransactionPaidScreen>
                           const SizedBox(width: 15),
                           Text(
                             global.formatNumber(screenData.totalvalue),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.bold,
                             ),
@@ -925,7 +932,7 @@ class TransactionPaidScreenState extends State<TransactionPaidScreen>
                           SizedBox(width: 50),
                           Text(
                             global.language("balance"),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.bold,
                             ),
@@ -933,7 +940,7 @@ class TransactionPaidScreenState extends State<TransactionPaidScreen>
                           const SizedBox(width: 15),
                           Text(
                             global.formatNumber(screenData.totalbalance),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.bold,
                             ),
@@ -941,7 +948,7 @@ class TransactionPaidScreenState extends State<TransactionPaidScreen>
                           SizedBox(width: 50),
                           Text(
                             global.language("payment_amount"),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.bold,
                             ),
@@ -949,7 +956,7 @@ class TransactionPaidScreenState extends State<TransactionPaidScreen>
                           const SizedBox(width: 15),
                           Text(
                             global.formatNumber(screenData.totalpaymentamount),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.bold,
                             ),
@@ -962,6 +969,10 @@ class TransactionPaidScreenState extends State<TransactionPaidScreen>
               ],
             ),
           ),
+        ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -976,35 +987,35 @@ class TransactionPaidScreenState extends State<TransactionPaidScreen>
           Text(''),
           Text(
             global.language('doc_number'),
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           Text(
             global.language('doc_date'),
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           Text(
             global.language('doc_type'),
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           Text(
             global.language('cash_amount'),
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           Text(
             global.language('balance'),
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           Text(
             global.language('payment_amount'),
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
-          const Text(''),
+          Text(''),
         ],
       ),
     );
@@ -1113,7 +1124,7 @@ class TransactionPaidScreenState extends State<TransactionPaidScreen>
                 setState(() {});
                 calTotalValue();
               },
-              icon: const Icon(Icons.delete, color: Colors.red),
+              icon: Icon(Icons.delete, color: global.theme.negativeHighlightTextColor),
             ),
           ],
         ),

@@ -26,7 +26,7 @@ class CustomTimePicker extends StatefulWidget {
   State<CustomTimePicker> createState() => _CustomTimePickerState();
 }
 
-class _CustomTimePickerState extends State<CustomTimePicker> {
+class _CustomTimePickerState extends State<CustomTimePicker> with global.ThemeRefreshMixin {
   late TextEditingController _controller;
   TimeOfDay? _selectedTime;
   bool isTimeValid = true;
@@ -35,9 +35,7 @@ class _CustomTimePickerState extends State<CustomTimePicker> {
   final GlobalKey _timeIconKey = GlobalKey();
 
   // 🎨 Modern Color Palette (same as date_picker)
-  static const Color _primaryColor = Color(0xFF667eea);
-  static const Color _primaryDarkColor = Color(0xFF5a67d8);
-  static const Color _accentColor = Color(0xFF764ba2);
+  static Color get _primaryColor => global.theme.primaryColor;
 
   // ดึงภาษาที่ใช้ในการแสดงผล (default จาก global.getBranchLanguage())
   String get _languageCode => widget.languageCode ?? global.getBranchLanguage();
@@ -209,13 +207,13 @@ class _CustomTimePickerState extends State<CustomTimePicker> {
       ],
       onChanged: _handleInput,
       onSubmitted: (_) => _completeTime(_controller.text),
-      style: const TextStyle(fontSize: 14, color: Colors.black87),
+      style: TextStyle(fontSize: 14, color: global.theme.formTextColor),
       decoration: InputDecoration(
         labelText: widget.labelText,
         floatingLabelBehavior: FloatingLabelBehavior.always,
-        floatingLabelStyle: const TextStyle(
-          backgroundColor: Colors.white,
-          color: Colors.black87,
+        floatingLabelStyle: TextStyle(
+          backgroundColor: global.theme.cardColor,
+          color: global.theme.formLabelColor,
           fontWeight: FontWeight.bold,
           fontSize: 14,
         ),
@@ -225,7 +223,7 @@ class _CustomTimePickerState extends State<CustomTimePicker> {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: global.theme.formBorderColor),
         ),
         suffixIcon: widget.useIconSelectTime
             ? IconButton(
@@ -233,25 +231,25 @@ class _CustomTimePickerState extends State<CustomTimePicker> {
                 focusNode: FocusNode(skipTraversal: true),
                 icon: Icon(
                   Icons.access_time,
-                  color: Colors.grey.shade600,
+                  color: global.theme.iconSecondaryColor,
                   size: 20,
                 ),
                 onPressed: _showTimePicker,
               )
             : null,
         filled: true,
-        fillColor: isTimeValid ? Colors.white : Colors.red.shade50,
+        fillColor: isTimeValid ? global.theme.formFillColor : global.theme.negativeHighlightColor,
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: _primaryColor, width: 2.0),
+          borderSide: BorderSide(color: _primaryColor, width: 2.0),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: global.theme.formBorderColor),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
+          borderSide: BorderSide(color: global.theme.negativeHighlightTextColor, width: 1.5),
         ),
       ),
     );
@@ -274,16 +272,16 @@ class CustomTimePickerDialog extends StatefulWidget {
 }
 
 class _CustomTimePickerDialogState extends State<CustomTimePickerDialog>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   late int _selectedHour;
   late int _selectedMinute;
   late FixedExtentScrollController _hourController;
   late FixedExtentScrollController _minuteController;
 
   // 🎨 Modern Color Palette
-  static const Color _primaryColor = Color(0xFF667eea);
-  static const Color _accentColor = Color(0xFF764ba2);
-  static const Color _surfaceColor = Color(0xFFF8FAFC);
+  static Color get _primaryColor => global.theme.primaryColor;
+  static Color get _accentColor => global.theme.primaryLightColor;
+  Color get _surfaceColor => global.theme.surfaceColor;
 
   // ดึงภาษาที่ใช้ในการแสดงผล
   String get _languageCode => widget.languageCode;
@@ -323,7 +321,7 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog>
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [_primaryColor, _accentColor],
           begin: Alignment.topLeft,
@@ -338,7 +336,7 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog>
             children: [
               Icon(
                 Icons.access_time_rounded,
-                color: Colors.white.withValues(alpha: 0.9),
+                color: global.theme.onPrimaryColor.withValues(alpha: 0.9),
                 size: 24,
               ),
               const SizedBox(width: 8),
@@ -346,7 +344,7 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog>
                 _languageCode == 'th' ? 'เลือกเวลา' : 'Select Time',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.white.withValues(alpha: 0.9),
+                  color: global.theme.onPrimaryColor.withValues(alpha: 0.9),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -356,10 +354,10 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: global.theme.onPrimaryColor.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.3),
+                color: global.theme.onPrimaryColor.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -368,29 +366,29 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog>
               children: [
                 Text(
                   _selectedHour.toString().padLeft(2, '0'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: global.theme.onPrimaryColor,
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Text(
                     ':',
                     style: TextStyle(
                       fontSize: 48,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: global.theme.onPrimaryColor,
                     ),
                   ),
                 ),
                 Text(
                   _selectedMinute.toString().padLeft(2, '0'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: global.theme.onPrimaryColor,
                   ),
                 ),
               ],
@@ -401,7 +399,7 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog>
             _languageCode == 'th' ? 'นาฬิกา (24 ชั่วโมง)' : 'Clock (24 hours)',
             style: TextStyle(
               fontSize: 12,
-              color: Colors.white.withValues(alpha: 0.7),
+              color: global.theme.onPrimaryColor.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -429,7 +427,7 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog>
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade600,
+                color: global.theme.textSecondaryColor,
               ),
             ),
           ),
@@ -457,7 +455,7 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog>
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         decoration: BoxDecoration(
                           gradient: isSelected
-                              ? const LinearGradient(
+                              ? LinearGradient(
                                   colors: [_primaryColor, _accentColor],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
@@ -468,7 +466,7 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog>
                           border: Border.all(
                             color: isSelected
                                 ? Colors.transparent
-                                : Colors.grey.shade300,
+                                : global.theme.dividerBorderColor,
                           ),
                         ),
                         child: Column(
@@ -479,8 +477,8 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog>
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: isSelected
-                                    ? Colors.white
-                                    : Colors.grey.shade700,
+                                    ? global.theme.onPrimaryColor
+                                    : global.theme.textColor,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -489,8 +487,8 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog>
                               style: TextStyle(
                                 fontSize: 10,
                                 color: isSelected
-                                    ? Colors.white.withValues(alpha: 0.8)
-                                    : Colors.grey.shade500,
+                                    ? global.theme.onPrimaryColor.withValues(alpha: 0.8)
+                                    : global.theme.formHintColor,
                               ),
                             ),
                           ],
@@ -597,7 +595,7 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog>
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: Colors.grey.shade600,
+            color: global.theme.textSecondaryColor,
           ),
         ),
         const SizedBox(height: 10),
@@ -650,7 +648,7 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog>
             width: 100,
             height: 70,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 colors: [_primaryColor, _accentColor],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -667,10 +665,10 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog>
             alignment: Alignment.center,
             child: Text(
               value.toString().padLeft(2, '0'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 36,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: global.theme.onPrimaryColor,
               ),
             ),
           ),
@@ -759,7 +757,7 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog>
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.shade300),
+                  side: BorderSide(color: global.theme.dividerBorderColor),
                 ),
               ),
               child: Text(
@@ -767,7 +765,7 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog>
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade600,
+                  color: global.theme.textSecondaryColor,
                 ),
               ),
             ),
@@ -778,7 +776,7 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog>
             flex: 2,
             child: Container(
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   colors: [_primaryColor, _accentColor],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -798,17 +796,17 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog>
                     TimeOfDay(hour: _selectedHour, minute: _selectedMinute),
                   );
                 },
-                icon: const Icon(
+                icon: Icon(
                   Icons.check_rounded,
                   size: 20,
-                  color: Colors.white,
+                  color: global.theme.onPrimaryColor,
                 ),
                 label: Text(
                   _languageCode == 'th' ? global.language('ok') : 'OK',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: global.theme.onPrimaryColor,
                   ),
                 ),
                 style: TextButton.styleFrom(
@@ -832,7 +830,7 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog>
       child: Container(
         width: 340,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: global.theme.cardColor,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(

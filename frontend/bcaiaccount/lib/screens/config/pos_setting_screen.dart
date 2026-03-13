@@ -25,6 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
@@ -774,15 +775,6 @@ class PosSettingScreenState extends State<PosSettingScreen>
                     '(${listData.length})',
                     style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const Icon(Icons.line_weight),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataLineSpaceChange();
-                      });
-                    },
-                  ),
                 ],
               ),
             ),
@@ -875,6 +867,20 @@ class PosSettingScreenState extends State<PosSettingScreen>
     );
   }
 
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return isEditMode
+          ? global.theme.rowEditColor
+          : global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
+  }
+
   Widget listObject(int index, PosSettingModel value, bool showCheckBox) {
     bool isCheck = false;
     for (int i = 0; i < guidListChecked.length; i++) {
@@ -934,11 +940,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
       child: Container(
         key: index < listKeys.length ? listKeys[index] : null,
         decoration: BoxDecoration(
-          color: (selectGuid == value.guidfixed)
-              ? global.theme.rowSelectedColor
-              : (index % 2 == 0)
-              ? global.theme.columnAlternateEvenColor
-              : global.theme.columnAlternateOddColor,
+          color: _getContainerColor(value.guidfixed, index),
         ),
         padding: EdgeInsets.only(
           left: 10,
@@ -2021,7 +2023,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
                 style: (validationBranch)
                     ? ButtonStyle(
                         backgroundColor: WidgetStateProperty.all<Color>(
-                          const Color.fromARGB(255, 246, 137, 129),
+                          global.theme.buttonDangerColor,
                         ),
                         shape: WidgetStateProperty.all<OutlinedBorder>(
                           RoundedRectangleBorder(
@@ -2035,7 +2037,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
                       )
                     : ButtonStyle(
                         backgroundColor: WidgetStateProperty.all<Color>(
-                          const Color.fromARGB(255, 246, 137, 129),
+                          global.theme.buttonDangerColor,
                         ),
                       ),
                 onPressed: (isEditMode)
@@ -2094,7 +2096,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
                 style: (validationWarehouse)
                     ? ButtonStyle(
                         backgroundColor: WidgetStateProperty.all<Color>(
-                          const Color.fromARGB(255, 78, 141, 66),
+                          global.theme.positiveHighlightTextColor,
                         ),
                         shape: WidgetStateProperty.all<OutlinedBorder>(
                           RoundedRectangleBorder(
@@ -2108,7 +2110,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
                       )
                     : ButtonStyle(
                         backgroundColor: WidgetStateProperty.all<Color>(
-                          const Color.fromARGB(255, 78, 141, 66),
+                          global.theme.positiveHighlightTextColor,
                         ),
                       ),
                 onPressed: (isEditMode)
@@ -2164,7 +2166,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
           child: ElevatedButton(
             style: ButtonStyle(
               backgroundColor: WidgetStateProperty.all<Color>(
-                const Color.fromARGB(255, 75, 75, 75),
+                global.theme.primaryColor,
               ),
             ),
             onPressed: (screenData.warehouse.guidfixed.isNotEmpty && isEditMode)
@@ -2236,7 +2238,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
                           child: ElevatedButton(
                             style: ButtonStyle(
                               backgroundColor: WidgetStateProperty.all<Color>(
-                                const Color.fromARGB(255, 238, 86, 144),
+                                global.theme.negativeHighlightTextColor,
                               ),
                             ),
                             onPressed: (isEditMode)
@@ -2413,10 +2415,10 @@ class PosSettingScreenState extends State<PosSettingScreen>
             child: ElevatedButton.icon(
               style: ButtonStyle(
                 backgroundColor: WidgetStateProperty.all<Color>(
-                  const Color.fromARGB(255, 148, 160, 194),
+                  global.theme.surfaceColor,
                 ),
                 foregroundColor: WidgetStateProperty.all<Color>(
-                  const Color.fromARGB(255, 0, 0, 0),
+                  global.theme.textColor,
                 ),
               ),
               focusNode: FocusNode(skipTraversal: true),
@@ -2590,10 +2592,10 @@ class PosSettingScreenState extends State<PosSettingScreen>
             child: ElevatedButton.icon(
               style: ButtonStyle(
                 backgroundColor: WidgetStateProperty.all<Color>(
-                  const Color.fromARGB(255, 164, 232, 162),
+                  global.theme.positiveHighlightColor,
                 ),
                 foregroundColor: WidgetStateProperty.all<Color>(
-                  const Color.fromARGB(255, 0, 0, 0),
+                  global.theme.textColor,
                 ),
               ),
               focusNode: FocusNode(skipTraversal: true),
@@ -2750,10 +2752,10 @@ class PosSettingScreenState extends State<PosSettingScreen>
             child: ElevatedButton.icon(
               style: ButtonStyle(
                 backgroundColor: WidgetStateProperty.all<Color>(
-                  const Color.fromARGB(255, 224, 159, 67),
+                  global.theme.warningHighlightColor,
                 ),
                 foregroundColor: WidgetStateProperty.all<Color>(
-                  const Color.fromARGB(255, 0, 0, 0),
+                  global.theme.textColor,
                 ),
               ),
               focusNode: FocusNode(skipTraversal: true),
@@ -2809,7 +2811,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
                       child: ElevatedButton(
                         style: ButtonStyle(
                           backgroundColor: WidgetStateProperty.all<Color>(
-                            const Color.fromARGB(255, 152, 152, 152),
+                            global.theme.textSecondaryColor,
                           ),
                         ),
                         onPressed: (isEditMode)
@@ -2903,10 +2905,10 @@ class PosSettingScreenState extends State<PosSettingScreen>
             child: ElevatedButton.icon(
               style: ButtonStyle(
                 backgroundColor: WidgetStateProperty.all<Color>(
-                  const Color.fromARGB(255, 197, 212, 255),
+                  global.theme.infoHighlightColor,
                 ),
                 foregroundColor: WidgetStateProperty.all<Color>(
-                  const Color.fromARGB(255, 0, 0, 0),
+                  global.theme.textColor,
                 ),
               ),
               focusNode: FocusNode(skipTraversal: true),
@@ -2968,10 +2970,10 @@ class PosSettingScreenState extends State<PosSettingScreen>
                       child: ElevatedButton(
                         style: ButtonStyle(
                           backgroundColor: WidgetStateProperty.all<Color>(
-                            const Color.fromARGB(255, 99, 120, 183),
+                            global.theme.primaryColor,
                           ),
                           foregroundColor: WidgetStateProperty.all<Color>(
-                            const Color.fromARGB(255, 255, 255, 255),
+                            global.theme.onPrimaryColor,
                           ),
                         ),
                         onPressed: (isEditMode)
@@ -3033,10 +3035,10 @@ class PosSettingScreenState extends State<PosSettingScreen>
             child: ElevatedButton.icon(
               style: ButtonStyle(
                 backgroundColor: WidgetStateProperty.all<Color>(
-                  const Color.fromARGB(255, 29, 43, 84),
+                  global.theme.primaryColor,
                 ),
                 foregroundColor: WidgetStateProperty.all<Color>(
-                  const Color.fromARGB(255, 255, 255, 255),
+                  global.theme.onPrimaryColor,
                 ),
               ),
               focusNode: FocusNode(skipTraversal: true),
@@ -3146,7 +3148,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
           child: ElevatedButton(
             style: ButtonStyle(
               backgroundColor: WidgetStateProperty.all<Color>(
-                const Color.fromARGB(255, 208, 42, 158),
+                global.theme.secondaryColor,
               ),
             ),
             onPressed: (isEditMode)
@@ -3342,10 +3344,10 @@ class PosSettingScreenState extends State<PosSettingScreen>
             child: ElevatedButton.icon(
               style: ButtonStyle(
                 backgroundColor: WidgetStateProperty.all<Color>(
-                  const Color.fromARGB(255, 148, 194, 168),
+                  global.theme.positiveHighlightColor,
                 ),
                 foregroundColor: WidgetStateProperty.all<Color>(
-                  const Color.fromARGB(255, 0, 0, 0),
+                  global.theme.textColor,
                 ),
               ),
               focusNode: FocusNode(skipTraversal: true),
@@ -3514,7 +3516,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
             Center(
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: global.theme.cardColor,
                   border: Border.all(color: global.theme.textColor),
                   borderRadius: BorderRadius.circular(5),
                   image: (imageWeb != null)
@@ -3564,7 +3566,7 @@ class PosSettingScreenState extends State<PosSettingScreen>
     }
 
     return Scaffold(
-      backgroundColor: isEditMode ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
+      backgroundColor: global.theme.cardColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -3590,6 +3592,8 @@ class PosSettingScreenState extends State<PosSettingScreen>
             : null,
         title: Text(headerEdit + global.language("pos_setting")),
         actions: <Widget>[
+          EditFontSizeControl(onChanged: () => setState(() {})),
+          const SizedBox(width: 8),
           if (selectGuid.isNotEmpty)
             Padding(
               padding: EdgeInsets.only(right: 20.0),
@@ -3674,16 +3678,40 @@ class PosSettingScreenState extends State<PosSettingScreen>
             }
           }
         },
-        child: SingleChildScrollView(
-          controller: editScrollController,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.only(top: 10, bottom: 15),
-            child: Form(
-              key: _formKey,
-              child: Column(children: formWidgets),
-            ),
-          ),
+        child: Builder(
+          builder: (context) {
+            final scale = global.editFontScaleFactor;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(scale),
+              ),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                    contentPadding: EdgeInsets.fromLTRB(
+                      12 * scale, 20 * scale, 12 * scale, 12 * scale,
+                    ),
+                  ),
+                ),
+                child: IconTheme(
+                  data: IconTheme.of(context).copyWith(
+                    size: 24.0 * scale,
+                  ),
+                  child: SingleChildScrollView(
+                    controller: editScrollController,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.only(top: 10, bottom: 15),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(children: formWidgets),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

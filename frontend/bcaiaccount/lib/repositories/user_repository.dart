@@ -123,7 +123,7 @@ class UserRepository {
       }
     } on DioException catch (ex) {
       // ดึง error message จาก response body ถ้ามี
-      String errorMessage = 'Login failed';
+      String errorMessage = 'เข้าสู่ระบบไม่สำเร็จ';
 
       if (kDebugMode) {
         AppLogger.error('=== Login DioException ===');
@@ -141,11 +141,17 @@ class UserRepository {
           errorMessage = data;
         }
       } else if (ex.type == DioExceptionType.connectionTimeout) {
-        errorMessage = 'Connection Timeout';
+        errorMessage = 'เชื่อมต่อ Server ไม่ทันเวลา (Connection Timeout)';
       } else if (ex.type == DioExceptionType.receiveTimeout) {
-        errorMessage = 'Unable to connect to the server';
+        errorMessage = 'Server ไม่ตอบกลับทันเวลา (Receive Timeout)';
       } else if (ex.type == DioExceptionType.connectionError) {
-        errorMessage = 'Cannot connect to server - ${ex.message}';
+        errorMessage = 'ไม่สามารถเชื่อมต่อ Server ได้ (Server อาจไม่ได้เปิด)';
+      } else if (ex.type == DioExceptionType.unknown) {
+        errorMessage = 'ไม่สามารถเชื่อมต่อ Server ได้ (ตรวจสอบว่า Server เปิดอยู่)';
+      } else if (ex.type == DioExceptionType.sendTimeout) {
+        errorMessage = 'ส่งข้อมูลไม่ทันเวลา (Send Timeout)';
+      } else if (ex.type == DioExceptionType.badResponse) {
+        errorMessage = 'Server ตอบกลับผิดปกติ (${ex.response?.statusCode ?? 'unknown'})';
       }
 
       if (kDebugMode) {

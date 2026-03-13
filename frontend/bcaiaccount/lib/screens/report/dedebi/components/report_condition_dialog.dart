@@ -88,7 +88,7 @@ class ReportConditionDialog extends StatefulWidget {
   State<ReportConditionDialog> createState() => _ReportConditionDialogState();
 }
 
-class _ReportConditionDialogState extends State<ReportConditionDialog> {
+class _ReportConditionDialogState extends State<ReportConditionDialog> with global.ThemeRefreshMixin {
   late DateTime? _fromDate;
   late DateTime? _toDate;
   late bool _showDetails;
@@ -231,8 +231,8 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
             Container(
               padding: const EdgeInsets.all(16), // ลดจาก 24 เป็น 16
               decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                color: global.theme.cardColor,
+                border: Border(top: BorderSide(color: global.theme.dividerBorderColor)),
               ),
               child: _buildActionButtons(),
             ),
@@ -264,7 +264,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
             children: [
               Text(
                 widget.reportType.displayName,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Colors.indigo,
@@ -272,7 +272,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
               ),
               Text(
                 global.language('report_condition_specify_date'),
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
+                style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
               ),
             ],
           ),
@@ -290,9 +290,9 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
     return Container(
       padding: const EdgeInsets.all(16), // ลดจาก 20 เป็น 16
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: global.theme.backgroundColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -323,9 +323,9 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      suffixIcon: const Icon(Icons.calendar_today),
+                      suffixIcon: Icon(Icons.calendar_today),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: global.theme.formFillColor,
                     ),
                     initialDate: _fromDate,
                     // useBuddhistCalendar และ languageCode จะอ่านจากสาขาอัตโนมัติ
@@ -348,9 +348,9 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    suffixIcon: const Icon(Icons.calendar_today),
+                    suffixIcon: Icon(Icons.calendar_today),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: global.theme.formFillColor,
                   ),
                   initialDate: _toDate,
                   // useBuddhistCalendar และ languageCode จะอ่านจากสาขาอัตโนมัติ
@@ -389,7 +389,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
               SizedBox(width: 6),
               Text(
                 global.language('report_condition_select_barcode'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: Colors.purple,
@@ -421,7 +421,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
               width: double.infinity,
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.cardColor,
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: Colors.purple.shade300),
               ),
@@ -436,8 +436,8 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                           : '${_selectedBarcodes.selectedEntities.first.code} : ${_selectedBarcodes.selectedEntities.first.getDisplayName()}',
                       style: TextStyle(
                         color: _selectedBarcodes.selectedEntities.isEmpty
-                            ? Colors.grey.shade600
-                            : Colors.black,
+                            ? global.theme.textSecondaryColor
+                            : global.theme.textColor,
                         fontSize: 14,
                       ),
                     ),
@@ -517,23 +517,23 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
     return Container(
       padding: const EdgeInsets.all(12), // ลดจาก 16 เป็น 12
       decoration: BoxDecoration(
-        color: Colors.orange.shade50,
+        color: global.theme.warningHighlightColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.orange.shade200),
+        border: Border.all(color: global.theme.warningHighlightColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.business, color: Colors.orange.shade700, size: 18),
+              Icon(Icons.business, color: global.theme.warningHighlightTextColor, size: 18),
               SizedBox(width: 6),
               Text(
                 global.language('report_condition_select_branch'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Colors.orange,
+                  color: global.theme.warningHighlightTextColor,
                 ),
               ),
             ],
@@ -561,9 +561,9 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
               width: double.infinity,
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.cardColor,
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.orange.shade300),
+                border: Border.all(color: global.theme.warningHighlightColor),
               ),
               child: Row(
                 children: [
@@ -576,8 +576,8 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                           : _selectedBranches.getBranchDisplayString(),
                       style: TextStyle(
                         color: _selectedBranches.selectedBranches.isEmpty
-                            ? Colors.grey.shade600
-                            : Colors.black,
+                            ? global.theme.textSecondaryColor
+                            : global.theme.textColor,
                         fontSize: 14,
                       ),
                     ),
@@ -585,7 +585,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                   Icon(
                     Icons.arrow_forward_ios,
                     size: 16,
-                    color: Colors.orange.shade600,
+                    color: global.theme.warningHighlightTextColor,
                   ),
                 ],
               ),
@@ -598,12 +598,12 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                 Icon(
                   Icons.info_outline,
                   size: 14, // ลดจาก 16 เป็น 14
-                  color: Colors.orange.shade600,
+                  color: global.theme.warningHighlightTextColor,
                 ),
                 SizedBox(width: 3), // ลดจาก 4 เป็น 3
                 Text(
                   '${global.language('report_condition_selected')} ${_selectedBranches.selectedBranches.length} ${global.language('report_condition_branch')}',
-                  style: TextStyle(fontSize: 14, color: Colors.orange.shade700),
+                  style: TextStyle(fontSize: 14, color: global.theme.warningHighlightTextColor),
                 ),
                 Spacer(),
                 InkWell(
@@ -621,14 +621,14 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                       vertical: 3,
                     ), // ลดจาก 8,4 เป็น 6,3
                     decoration: BoxDecoration(
-                      color: Colors.orange.shade100,
+                      color: global.theme.infoHighlightColor,
                       borderRadius: BorderRadius.circular(3), // ลดจาก 4 เป็น 3
                     ),
                     child: Text(
                       global.language('report_condition_delete_all'),
                       style: TextStyle(
                         fontSize: 10, // ลดจาก 11 เป็น 10
-                        color: Colors.orange.shade700,
+                        color: global.theme.warningHighlightTextColor,
                       ),
                     ),
                   ),
@@ -660,9 +660,12 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
     final EntityType entityType = isCreditorReport
         ? EntityType.creditor
         : EntityType.debtor;
-    final MaterialColor sectionColor = isCreditorReport
-        ? Colors.purple
-        : Colors.blue;
+    final Color sectionBgColor = isCreditorReport
+        ? Colors.purple.shade50
+        : global.theme.infoHighlightColor;
+    final Color sectionColor = isCreditorReport
+        ? Colors.purple.shade700
+        : global.theme.infoHighlightTextColor;
     final IconData sectionIcon = isCreditorReport
         ? Icons.business
         : Icons.people;
@@ -670,16 +673,16 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
     return Container(
       padding: const EdgeInsets.all(12), // ลดจาก 16 เป็น 12
       decoration: BoxDecoration(
-        color: sectionColor.shade50,
+        color: sectionBgColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: sectionColor.shade200),
+        border: Border.all(color: sectionColor.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(sectionIcon, color: sectionColor.shade700, size: 18),
+              Icon(sectionIcon, color: sectionColor, size: 18),
               const SizedBox(width: 6),
               Text(
                 'เลือก$entityLabel',
@@ -732,9 +735,9 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
               width: double.infinity,
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.cardColor,
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: sectionColor.shade300),
+                border: Border.all(color: sectionColor.withValues(alpha: 0.5)),
               ),
               child: Row(
                 children: [
@@ -745,8 +748,8 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                           : _selectedCreditors.getEntityDisplayString(),
                       style: TextStyle(
                         color: _selectedCreditors.selectedEntities.isEmpty
-                            ? Colors.grey.shade600
-                            : Colors.black,
+                            ? global.theme.textSecondaryColor
+                            : global.theme.textColor,
                         fontSize: 14,
                       ),
                     ),
@@ -754,7 +757,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                   Icon(
                     Icons.arrow_forward_ios,
                     size: 16,
-                    color: sectionColor.shade600,
+                    color: sectionColor,
                   ),
                 ],
               ),
@@ -767,12 +770,12 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                 Icon(
                   Icons.info_outline,
                   size: 14, // ลดจาก 16 เป็น 14
-                  color: sectionColor.shade600,
+                  color: sectionColor,
                 ),
                 const SizedBox(width: 3), // ลดจาก 4 เป็น 3
                 Text(
                   'เลือกแล้ว ${_selectedCreditors.selectedEntities.length} $entityLabel',
-                  style: TextStyle(fontSize: 14, color: sectionColor.shade700),
+                  style: TextStyle(fontSize: 14, color: sectionColor),
                 ),
                 Spacer(),
                 InkWell(
@@ -790,14 +793,14 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                       vertical: 3,
                     ), // ลดจาก 8,4 เป็น 6,3
                     decoration: BoxDecoration(
-                      color: sectionColor.shade100,
+                      color: sectionBgColor,
                       borderRadius: BorderRadius.circular(3), // ลดจาก 4 เป็น 3
                     ),
                     child: Text(
                       global.language('report_condition_delete_all'),
                       style: TextStyle(
                         fontSize: 10, // ลดจาก 11 เป็น 10
-                        color: sectionColor.shade700,
+                        color: sectionColor,
                       ),
                     ),
                   ),
@@ -814,23 +817,23 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
     return Container(
       padding: const EdgeInsets.all(12), // ลดจาก 16 เป็น 12
       decoration: BoxDecoration(
-        color: Colors.green.shade50,
+        color: global.theme.positiveHighlightColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.green.shade200),
+        border: Border.all(color: global.theme.positiveHighlightColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.person_pin, color: Colors.green.shade700, size: 18),
+              Icon(Icons.person_pin, color: global.theme.positiveHighlightTextColor, size: 18),
               SizedBox(width: 6),
               Text(
                 global.language('select_salesperson'),
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Colors.green,
+                  color: global.theme.positiveHighlightTextColor,
                 ),
               ),
             ],
@@ -869,9 +872,9 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
               width: double.infinity,
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.cardColor,
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.green.shade300),
+                border: Border.all(color: global.theme.positiveHighlightColor),
               ),
               child: Row(
                 children: [
@@ -882,8 +885,8 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                           : _selectedSalespersons.getEntityDisplayString(),
                       style: TextStyle(
                         color: _selectedSalespersons.selectedEntities.isEmpty
-                            ? Colors.grey.shade600
-                            : Colors.black,
+                            ? global.theme.textSecondaryColor
+                            : global.theme.textColor,
                         fontSize: 14,
                       ),
                     ),
@@ -891,7 +894,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                   Icon(
                     Icons.arrow_forward_ios,
                     size: 16,
-                    color: Colors.green.shade600,
+                    color: global.theme.positiveHighlightTextColor,
                   ),
                 ],
               ),
@@ -904,12 +907,12 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                 Icon(
                   Icons.info_outline,
                   size: 14, // ลดจาก 16 เป็น 14
-                  color: Colors.green.shade600,
+                  color: global.theme.positiveHighlightTextColor,
                 ),
                 const SizedBox(width: 3), // ลดจาก 4 เป็น 3
                 Text(
                   'เลือกแล้ว ${_selectedSalespersons.selectedEntities.length} พนักงาน',
-                  style: TextStyle(fontSize: 14, color: Colors.green.shade700),
+                  style: TextStyle(fontSize: 14, color: global.theme.positiveHighlightTextColor),
                 ),
                 Spacer(),
                 InkWell(
@@ -927,14 +930,14 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                       vertical: 3,
                     ), // ลดจาก 8,4 เป็น 6,3
                     decoration: BoxDecoration(
-                      color: Colors.green.shade100,
+                      color: global.theme.positiveHighlightColor,
                       borderRadius: BorderRadius.circular(3), // ลดจาก 4 เป็น 3
                     ),
                     child: Text(
                       global.language('report_condition_delete_all'),
                       style: TextStyle(
                         fontSize: 10, // ลดจาก 11 เป็น 10
-                        color: Colors.green.shade700,
+                        color: global.theme.positiveHighlightTextColor,
                       ),
                     ),
                   ),
@@ -951,23 +954,23 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
     return Container(
       padding: const EdgeInsets.all(16), // ลดจาก 20 เป็น 16
       decoration: BoxDecoration(
-        color: Colors.green.shade50,
+        color: global.theme.positiveHighlightColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.green.shade200),
+        border: Border.all(color: global.theme.positiveHighlightColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.filter_list, color: Colors.green.shade700, size: 18),
+              Icon(Icons.filter_list, color: global.theme.positiveHighlightTextColor, size: 18),
               SizedBox(width: 6),
               Text(
                 global.language('data_filter'),
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Colors.green,
+                  color: global.theme.positiveHighlightTextColor,
                 ),
               ),
             ],
@@ -991,7 +994,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
   //   return Container(
   //     padding: const EdgeInsets.all(16),
   //     decoration: BoxDecoration(
-  //       color: Colors.white,
+  //       color: global.theme.cardColor,
   //       borderRadius: BorderRadius.circular(8),
   //     ),
   //     child: Row(
@@ -1000,7 +1003,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
   //           child: Column(
   //             crossAxisAlignment: CrossAxisAlignment.start,
   //             children: [
-  //               const Text(
+  //               Text(
   //                 'แสดงรายละเอียดสินค้า',
   //                 style: TextStyle(
   //                   fontSize: 14,
@@ -1012,7 +1015,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
   //                 _showDetails ? 'แสดงข้อมูลรายการสินค้าในแต่ละใบเสร็จ' : 'แสดงเฉพาะยอดรวมของแต่ละใบเสร็จ',
   //                 style: TextStyle(
   //                   fontSize: 12,
-  //                   color: Colors.grey.shade600,
+  //                   color: global.theme.textSecondaryColor,
   //                 ),
   //               ),
   //             ],
@@ -1036,7 +1039,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
     return Container(
       padding: const EdgeInsets.all(12), // ลดจาก 16 เป็น 12
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Column(
@@ -1064,7 +1067,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                   },
                   dense: true,
                   contentPadding: EdgeInsets.zero,
-                  activeColor: Colors.green.shade600,
+                  activeColor: global.theme.positiveHighlightTextColor,
                 ),
               ),
               Expanded(
@@ -1082,7 +1085,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                   },
                   dense: true,
                   contentPadding: EdgeInsets.zero,
-                  activeColor: Colors.green.shade600,
+                  activeColor: global.theme.positiveHighlightTextColor,
                 ),
               ),
             ],
@@ -1096,7 +1099,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
     return Container(
       padding: const EdgeInsets.all(12), // ลดจาก 16 เป็น 12
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Column(
@@ -1121,7 +1124,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                   },
                   dense: true,
                   contentPadding: EdgeInsets.zero,
-                  activeColor: Colors.green.shade600,
+                  activeColor: global.theme.positiveHighlightTextColor,
                 ),
               ),
               Expanded(
@@ -1139,7 +1142,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                   },
                   dense: true,
                   contentPadding: EdgeInsets.zero,
-                  activeColor: Colors.green.shade600,
+                  activeColor: global.theme.positiveHighlightTextColor,
                 ),
               ),
               Expanded(
@@ -1154,7 +1157,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                   },
                   dense: true,
                   contentPadding: EdgeInsets.zero,
-                  activeColor: Colors.green.shade600,
+                  activeColor: global.theme.positiveHighlightTextColor,
                 ),
               ),
             ],
@@ -1168,7 +1171,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
     return Container(
       padding: const EdgeInsets.all(12), // ลดจาก 16 เป็น 12
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Column(
@@ -1193,7 +1196,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                   },
                   dense: true,
                   contentPadding: EdgeInsets.zero,
-                  activeColor: Colors.green.shade600,
+                  activeColor: global.theme.positiveHighlightTextColor,
                 ),
               ),
               Expanded(
@@ -1211,7 +1214,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                   },
                   dense: true,
                   contentPadding: EdgeInsets.zero,
-                  activeColor: Colors.green.shade600,
+                  activeColor: global.theme.positiveHighlightTextColor,
                 ),
               ),
               Expanded(
@@ -1226,7 +1229,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                   },
                   dense: true,
                   contentPadding: EdgeInsets.zero,
-                  activeColor: Colors.green.shade600,
+                  activeColor: global.theme.positiveHighlightTextColor,
                 ),
               ),
             ],
@@ -1279,19 +1282,19 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
             padding: const EdgeInsets.all(10),
             margin: const EdgeInsets.only(bottom: 12), // ลดจาก 16 เป็น 12
             decoration: BoxDecoration(
-              color: Colors.red.shade50,
+              color: global.theme.negativeHighlightColor,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: Colors.red.shade200),
+              border: Border.all(color: global.theme.negativeHighlightColor),
             ),
             child: Row(
               children: [
-                Icon(Icons.warning_amber, color: Colors.red.shade600, size: 18),
+                Icon(Icons.warning_amber, color: global.theme.negativeHighlightTextColor, size: 18),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     errorMessage,
                     style: TextStyle(
-                      color: Colors.red.shade700,
+                      color: global.theme.negativeHighlightTextColor,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1314,7 +1317,7 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                   padding: const EdgeInsets.symmetric(
                     vertical: 12,
                   ), // ลดจาก 16 เป็น 12
-                  side: BorderSide(color: Colors.grey.shade400),
+                  side: BorderSide(color: global.theme.iconSecondaryColor),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(6),
                   ),
@@ -1432,8 +1435,8 @@ class _ReportConditionDialogState extends State<ReportConditionDialog> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: canSearch
                       ? Colors.indigo.shade600
-                      : Colors.grey.shade400,
-                  foregroundColor: Colors.white,
+                      : global.theme.iconSecondaryColor,
+                  foregroundColor: global.theme.onPrimaryColor,
                   padding: const EdgeInsets.symmetric(
                     vertical: 12,
                   ), // ลดจาก 16 เป็น 12

@@ -16,7 +16,7 @@ class ReportProductBalanceScreen extends StatefulWidget {
   State<ReportProductBalanceScreen> createState() => _ReportMovementState();
 }
 
-class _ReportMovementState extends State<ReportProductBalanceScreen> {
+class _ReportMovementState extends State<ReportProductBalanceScreen> with global.ThemeRefreshMixin {
   final TextEditingController search = TextEditingController();
 
   List<ReportProductBalanceModel> reportProductBalance = [];
@@ -96,7 +96,7 @@ class _ReportMovementState extends State<ReportProductBalanceScreen> {
                       children: [
                         IconButton(
                           focusNode: FocusNode(skipTraversal: true),
-                          icon: const Icon(Icons.search),
+                          icon: Icon(Icons.search),
                           onPressed: () {
                             barcodeSearch().then((result) {
                               if (result.guidfixed.isNotEmpty) {
@@ -135,7 +135,7 @@ class _ReportMovementState extends State<ReportProductBalanceScreen> {
       appBar: AppBar(
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -171,7 +171,7 @@ class _ReportMovementState extends State<ReportProductBalanceScreen> {
                           child: ElevatedButton.icon(
                             /// set color for button
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
+                              backgroundColor: global.theme.positiveHighlightTextColor,
                             ),
                             onPressed: () async {
                               final token = appConfig.getString("token");
@@ -179,8 +179,8 @@ class _ReportMovementState extends State<ReportProductBalanceScreen> {
                                 '${Environment().config.reportApi}/productbalance/pdfdownload?token=$token&barcode=${search.text}',
                               );
                             },
-                            icon: const Icon(Icons.download),
-                            label: const Text("Download"),
+                            icon: Icon(Icons.download),
+                            label: Text("Download"),
                           ),
                         ),
                       ],
@@ -284,21 +284,21 @@ class _ReportMovementState extends State<ReportProductBalanceScreen> {
                         child: Text(
                           reportProductBalanceFooter.balanceqty!,
                           textAlign: TextAlign.right,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                       Expanded(
                         child: Text(
                           reportProductBalanceFooter.averagecost!,
                           textAlign: TextAlign.right,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                       Expanded(
                         child: Text(
                           reportProductBalanceFooter.balanceamount!,
                           textAlign: TextAlign.right,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],

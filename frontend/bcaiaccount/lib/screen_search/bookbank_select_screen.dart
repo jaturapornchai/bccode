@@ -14,7 +14,7 @@ class BookBankSelectScreen extends StatefulWidget {
 }
 
 class BookBankSelectScreenState extends State<BookBankSelectScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   TextEditingController searchController = TextEditingController();
   FocusNode searchFocusNode = FocusNode(skipTraversal: true);
   ScrollController listScrollController = ScrollController();
@@ -23,6 +23,7 @@ class BookBankSelectScreenState extends State<BookBankSelectScreen>
   bool isKeyUp = false;
   bool isKeyDown = false;
   String selectGuid = "";
+  int _hoverIndex = -1;
   int currentListIndex = 0;
 
   void setSystemLanguageList() async {
@@ -65,13 +66,15 @@ class BookBankSelectScreenState extends State<BookBankSelectScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
+        backgroundColor: global.theme.appBarColor,
         automaticallyImplyLeading: false,
         title: Text(global.language('bookbank')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -112,13 +115,30 @@ class BookBankSelectScreenState extends State<BookBankSelectScreen>
         },
         child: GridView.count(
           crossAxisCount: (mobileScreen) ? 2 : 4,
-          children: bookbankListData.map((value) => listObject(value)).toList(),
+          children: bookbankListData.asMap().entries.map((e) => listObject(e.value, e.key)).toList(),
         ),
       ),
     );
   }
 
-  Widget listObject(BookBankModel value) {
+
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
+  }
+
+  Widget listObject(BookBankModel value, int index) {
+    final isSelected = selectGuid == value.guidfixed;
+    TextStyle textStyle = isSelected
+        ? TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w700, color: global.theme.textColor)
+        : TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w400, color: global.theme.textSecondaryColor);
     return InkWell(
       onTap: () {
         Navigator.pop(context, value);
@@ -144,10 +164,10 @@ class BookBankSelectScreenState extends State<BookBankSelectScreen>
                     width: 150,
                   ),
             const SizedBox(height: 8),
-            Text(value.bookcode!),
-            Text(value.passbook!),
-            Text(global.packName(value.banknames!)),
-            Text(global.packName(value.names!)),
+            Text(value.bookcode!, style: textStyle),
+            Text(value.passbook!, style: textStyle),
+            Text(global.packName(value.banknames!), style: textStyle),
+            Text(global.packName(value.names!), style: textStyle),
           ],
         ),
       ),
@@ -157,6 +177,7 @@ class BookBankSelectScreenState extends State<BookBankSelectScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {

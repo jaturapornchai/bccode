@@ -28,9 +28,9 @@ class CouponStatusWidget extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.grey[50],
+            color: global.theme.surfaceColor,
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: Colors.grey[200]!),
+            border: Border.all(color: global.theme.dividerBorderColor),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,7 +40,7 @@ class CouponStatusWidget extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
-                  color: Colors.grey[700],
+                  color: global.theme.textColor,
                 ),
               ),
               SizedBox(height: 12),
@@ -52,7 +52,7 @@ class CouponStatusWidget extends StatelessWidget {
                         Switch(
                           value: status == 0,
                           onChanged: (value) => onStatusChanged(value ? 0 : 1),
-                          activeThumbColor: Colors.green,
+                          activeThumbColor: global.theme.positiveHighlightTextColor,
                         ),
                         SizedBox(width: 6),
                         Text(
@@ -62,7 +62,7 @@ class CouponStatusWidget extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
-                            color: status == 0 ? Colors.green : Colors.grey,
+                            color: status == 0 ? global.theme.positiveHighlightTextColor : global.theme.iconSecondaryColor,
                           ),
                         ),
                       ],
@@ -74,7 +74,7 @@ class CouponStatusWidget extends StatelessWidget {
                         Switch(
                           value: isOneTimeUse,
                           onChanged: onOneTimeUseChanged,
-                          activeThumbColor: Colors.orange,
+                          activeThumbColor: global.theme.warningHighlightTextColor,
                         ),
                         SizedBox(width: 6),
                         Expanded(
@@ -85,7 +85,7 @@ class CouponStatusWidget extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
-                              color: isOneTimeUse ? Colors.orange : Colors.grey,
+                              color: isOneTimeUse ? global.theme.warningHighlightTextColor : global.theme.iconSecondaryColor,
                             ),
                           ),
                         ),

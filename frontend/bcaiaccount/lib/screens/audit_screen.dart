@@ -10,7 +10,7 @@ class AuditScreen extends StatefulWidget {
   State<AuditScreen> createState() => _AuditScreenState();
 }
 
-class _AuditScreenState extends State<AuditScreen> {
+class _AuditScreenState extends State<AuditScreen> with global.ThemeRefreshMixin {
   Container bottomPanel = Container();
 
   @override
@@ -24,10 +24,10 @@ class _AuditScreenState extends State<AuditScreen> {
       appBar: AppBar(
         title: Text(
           global.language('audit_system'),
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: const Color(0xFF0A3880),
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: global.theme.appBarColor,
+        iconTheme: IconThemeData(color: global.theme.onPrimaryColor),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -46,16 +46,16 @@ class _AuditScreenState extends State<AuditScreen> {
 
   Widget _buildTopPanel() {
     return Container(
-      color: Colors.grey[50],
+      color: global.theme.surfaceColor,
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(4.0),
             margin: const EdgeInsets.all(4.0),
             decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.grey),
-              boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.1), spreadRadius: 1, blurRadius: 2, offset: const Offset(0, 1))],
+              color: global.theme.cardColor,
+              border: Border.all(color: global.theme.dividerBorderColor),
+              boxShadow: [BoxShadow(color: global.theme.dividerBorderColor.withValues(alpha: 0.1), spreadRadius: 1, blurRadius: 2, offset: const Offset(0, 1))],
             ),
             child: Wrap(
               spacing: 8,
@@ -68,7 +68,7 @@ class _AuditScreenState extends State<AuditScreen> {
                     onPressed: () async {
                       await _auditBarcodeItemCodeNotFound();
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF0A3880), foregroundColor: Colors.white, padding: EdgeInsets.all(4.0)),
+                    style: ElevatedButton.styleFrom(backgroundColor: global.theme.primaryColor, foregroundColor: global.theme.onPrimaryColor, padding: EdgeInsets.all(4.0)),
                     child: Text(global.language('audit_barcode_without_item_code'), style: TextStyle(fontSize: 13)),
                   ),
                 ),
@@ -79,7 +79,7 @@ class _AuditScreenState extends State<AuditScreen> {
                     onPressed: () async {
                       await auditBarcodeUnitFormula();
                     },
-                    style: ElevatedButton.styleFrom(padding: EdgeInsets.all(4.0), backgroundColor: Color(0xFF0A3880), foregroundColor: Colors.white),
+                    style: ElevatedButton.styleFrom(padding: EdgeInsets.all(4.0), backgroundColor: global.theme.primaryColor, foregroundColor: global.theme.onPrimaryColor),
                     child: Text(global.language('audit_barcode_unit_ratio_error'), style: TextStyle(fontSize: 13)),
                   ),
                 ),
@@ -90,7 +90,7 @@ class _AuditScreenState extends State<AuditScreen> {
                     onPressed: () async {
                       await auditBarcodeUnitFormulaNoBarcodeRef();
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF0A3880), foregroundColor: Colors.white, padding: EdgeInsets.all(4.0)),
+                    style: ElevatedButton.styleFrom(backgroundColor: global.theme.primaryColor, foregroundColor: global.theme.onPrimaryColor, padding: EdgeInsets.all(4.0)),
                     child: Text(global.language('audit_barcode_non_1_1_ratio_no_ref'), style: TextStyle(fontSize: 13)),
                   ),
                 ),
@@ -101,7 +101,7 @@ class _AuditScreenState extends State<AuditScreen> {
                     onPressed: () async {
                       await _showAuditMultiUnitDialog();
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF0A3880), foregroundColor: Colors.white, padding: EdgeInsets.all(4.0)),
+                    style: ElevatedButton.styleFrom(backgroundColor: global.theme.primaryColor, foregroundColor: global.theme.onPrimaryColor, padding: EdgeInsets.all(4.0)),
                     child: Text(global.language('audit_products_with_multiple_units'), style: TextStyle(fontSize: 13)),
                   ),
                 ),
@@ -112,7 +112,7 @@ class _AuditScreenState extends State<AuditScreen> {
                     onPressed: () async {
                       await _auditTableProcessStock();
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0A3880), foregroundColor: Colors.white, padding: const EdgeInsets.all(4.0)),
+                    style: ElevatedButton.styleFrom(backgroundColor: global.theme.primaryColor, foregroundColor: global.theme.onPrimaryColor, padding: EdgeInsets.all(4.0)),
                     child: Text(global.language("audit_check_cost_table"), style: const TextStyle(fontSize: 13)),
                   ),
                 ),
@@ -129,7 +129,7 @@ class _AuditScreenState extends State<AuditScreen> {
     final comparisonRows = <_ProcessStockComparisonRow>[];
 
     bottomPanel = Container(
-      color: Colors.grey[100],
+      color: global.theme.surfaceColor,
       child: const Center(child: CircularProgressIndicator()),
     );
     setState(() {});
@@ -161,9 +161,9 @@ class _AuditScreenState extends State<AuditScreen> {
     } catch (e) {
       AppLogger.error('Error: $e');
       bottomPanel = Container(
-        color: Colors.grey[100],
+        color: global.theme.surfaceColor,
         child: Center(
-          child: Text('Error: $e', style: const TextStyle(color: Colors.red)),
+          child: Text('Error: $e', style: TextStyle(color: global.theme.negativeHighlightTextColor)),
         ),
       );
       setState(() {});
@@ -317,7 +317,7 @@ class _AuditScreenState extends State<AuditScreen> {
     );
     bottomPanel = Container(
       padding: const EdgeInsets.all(16.0),
-      color: Colors.grey[100],
+      color: global.theme.surfaceColor,
       width: double.infinity,
       child: SingleChildScrollView(
         child: Column(
@@ -335,7 +335,7 @@ class _AuditScreenState extends State<AuditScreen> {
 
   Widget _buildComparisonTable(List<_ProcessStockComparisonRow> rows) {
     if (rows.isEmpty) {
-      return Text(global.language('no_data'), style: TextStyle(color: Colors.grey));
+      return Text(global.language('no_data'), style: TextStyle(color: global.theme.textSecondaryColor));
     }
 
     return SingleChildScrollView(
@@ -343,7 +343,7 @@ class _AuditScreenState extends State<AuditScreen> {
       child: DataTable(
         dataRowMinHeight: 20,
         dataRowMaxHeight: 30,
-        headingRowColor: WidgetStateProperty.all(const Color(0xFFE6EEF8)),
+        headingRowColor: WidgetStateProperty.all(global.theme.columnHeaderColor),
         columns: [
           DataColumn(label: Text(global.language('date'))),
           DataColumn(label: Text(global.language('docno'))),
@@ -358,7 +358,7 @@ class _AuditScreenState extends State<AuditScreen> {
         rows: rows
             .map(
               (row) => DataRow(
-                color: WidgetStateProperty.all(row.isSummary ? Colors.blue[50]! : (row.isMatch ? Colors.green[50]! : Colors.red[50]!)),
+                color: WidgetStateProperty.all(row.isSummary ? global.theme.infoHighlightColor : (row.isMatch ? global.theme.positiveHighlightColor : global.theme.negativeHighlightColor)),
                 cells: [
                   DataCell(Text(row.date, style: row.isSummary ? const TextStyle(fontWeight: FontWeight.bold) : null)),
                   DataCell(Text(row.docNo, style: row.isSummary ? const TextStyle(fontWeight: FontWeight.bold) : null)),
@@ -371,7 +371,7 @@ class _AuditScreenState extends State<AuditScreen> {
                   DataCell(
                     Text(
                       row.isMatch ? global.language('audit_match') : global.language('audit_not_match'),
-                      style: TextStyle(color: row.isMatch ? Colors.green[900] : Colors.red[900], fontWeight: FontWeight.w600),
+                      style: TextStyle(color: row.isMatch ? global.theme.positiveHighlightTextColor : global.theme.negativeHighlightTextColor, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -386,7 +386,7 @@ class _AuditScreenState extends State<AuditScreen> {
     List<String> messages = [];
 
     bottomPanel = Container(
-      color: Colors.grey[100],
+      color: global.theme.surfaceColor,
       child: const Center(child: CircularProgressIndicator()),
     );
     setState(() {});
@@ -412,16 +412,16 @@ class _AuditScreenState extends State<AuditScreen> {
     } catch (e) {
       AppLogger.error('Error: $e');
       bottomPanel = Container(
-        color: Colors.grey[100],
+        color: global.theme.surfaceColor,
         child: Center(
-          child: Text('Error: $e', style: const TextStyle(color: Colors.red)),
+          child: Text('Error: $e', style: TextStyle(color: global.theme.negativeHighlightTextColor)),
         ),
       );
       setState(() {});
     }
     bottomPanel = Container(
       padding: const EdgeInsets.all(16.0),
-      color: Colors.grey[100],
+      color: global.theme.surfaceColor,
       width: double.infinity,
       child: SingleChildScrollView(
         child: Column(children: [...messages.map((error) => Text(error, style: const TextStyle(fontSize: 13)))]),
@@ -434,7 +434,7 @@ class _AuditScreenState extends State<AuditScreen> {
     List<String> messages = [];
 
     bottomPanel = Container(
-      color: Colors.grey[100],
+      color: global.theme.surfaceColor,
       child: const Center(child: CircularProgressIndicator()),
     );
     setState(() {});
@@ -460,16 +460,16 @@ class _AuditScreenState extends State<AuditScreen> {
     } catch (e) {
       AppLogger.error('Error: $e');
       bottomPanel = Container(
-        color: Colors.grey[100],
+        color: global.theme.surfaceColor,
         child: Center(
-          child: Text('Error: $e', style: const TextStyle(color: Colors.red)),
+          child: Text('Error: $e', style: TextStyle(color: global.theme.negativeHighlightTextColor)),
         ),
       );
       setState(() {});
     }
     bottomPanel = Container(
       padding: const EdgeInsets.all(16.0),
-      color: Colors.grey[100],
+      color: global.theme.surfaceColor,
       width: double.infinity,
       child: SingleChildScrollView(
         child: Column(children: [...messages.map((error) => Text(error, style: const TextStyle(fontSize: 13)))]),
@@ -482,7 +482,7 @@ class _AuditScreenState extends State<AuditScreen> {
     List<String> messages = [];
 
     bottomPanel = Container(
-      color: Colors.grey[100],
+      color: global.theme.surfaceColor,
       child: const Center(child: CircularProgressIndicator()),
     );
     setState(() {});
@@ -508,16 +508,16 @@ class _AuditScreenState extends State<AuditScreen> {
     } catch (e) {
       AppLogger.error('Error: $e');
       bottomPanel = Container(
-        color: Colors.grey[100],
+        color: global.theme.surfaceColor,
         child: Center(
-          child: Text('Error: $e', style: const TextStyle(color: Colors.red)),
+          child: Text('Error: $e', style: TextStyle(color: global.theme.negativeHighlightTextColor)),
         ),
       );
       setState(() {});
     }
     bottomPanel = Container(
       padding: const EdgeInsets.all(16.0),
-      color: Colors.grey[100],
+      color: global.theme.surfaceColor,
       width: double.infinity,
       child: SingleChildScrollView(
         child: Column(children: [...messages.map((error) => Text(error, style: const TextStyle(fontSize: 13)))]),
@@ -600,7 +600,7 @@ class _AuditScreenState extends State<AuditScreen> {
     List<Widget> widgetList = [];
 
     bottomPanel = Container(
-      color: Colors.grey[100],
+      color: global.theme.surfaceColor,
       child: const Center(child: CircularProgressIndicator()),
     );
     setState(() {});
@@ -658,8 +658,8 @@ class _AuditScreenState extends State<AuditScreen> {
             padding: const EdgeInsets.all(8.0),
             width: 500,
             decoration: BoxDecoration(
-              color: Colors.blue[50],
-              border: Border.all(color: Colors.blue),
+              color: global.theme.infoHighlightColor,
+              border: Border.all(color: global.theme.infoHighlightTextColor),
               borderRadius: BorderRadius.circular(4.0),
             ),
             child: Column(
@@ -667,15 +667,15 @@ class _AuditScreenState extends State<AuditScreen> {
               children: [
                 Text(
                   '${global.language('item_code_colon')} $itemCode',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blue),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: global.theme.infoHighlightTextColor),
                 ),
                 SizedBox(height: 8),
                 Table(
-                  border: TableBorder.all(color: Colors.grey),
+                  border: TableBorder.all(color: global.theme.dividerBorderColor),
                   columnWidths: const {0: FlexColumnWidth(2), 1: FlexColumnWidth(3), 2: FlexColumnWidth(2), 3: FlexColumnWidth(1.5)},
                   children: [
                     TableRow(
-                      decoration: BoxDecoration(color: Colors.blue[100]),
+                      decoration: BoxDecoration(color: global.theme.infoHighlightColor),
                       children: [
                         const Padding(
                           padding: EdgeInsets.all(2.0),
@@ -735,9 +735,9 @@ class _AuditScreenState extends State<AuditScreen> {
     } catch (e) {
       AppLogger.error('Error: $e');
       bottomPanel = Container(
-        color: Colors.grey[100],
+        color: global.theme.surfaceColor,
         child: Center(
-          child: Text('Error: $e', style: const TextStyle(color: Colors.red)),
+          child: Text('Error: $e', style: TextStyle(color: global.theme.negativeHighlightTextColor)),
         ),
       );
       setState(() {});
@@ -745,7 +745,7 @@ class _AuditScreenState extends State<AuditScreen> {
     }
     bottomPanel = Container(
       padding: const EdgeInsets.all(16.0),
-      color: Colors.grey[100],
+      color: global.theme.surfaceColor,
       width: double.infinity,
       child: ListView.builder(
         itemCount: widgetList.length,

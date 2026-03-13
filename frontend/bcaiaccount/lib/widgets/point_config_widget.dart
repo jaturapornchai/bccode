@@ -20,7 +20,7 @@ class PointConfigWidget extends StatefulWidget {
 }
 
 class _PointConfigWidgetState extends State<PointConfigWidget>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   late PointConfigModel _pointConfig;
   late TabController _tabController;
   @override
@@ -60,7 +60,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
       padding: const EdgeInsets.all(12.0),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: global.theme.cardColor,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -78,7 +78,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.blue.shade700, Colors.blue.shade500],
+                  colors: [global.theme.infoHighlightTextColor, global.theme.infoHighlightTextColor],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -88,16 +88,16 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
               padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
               child: Row(
                 children: [
-                  const Icon(Icons.card_giftcard,
-                      color: Colors.white, size: 24),
+                  Icon(Icons.card_giftcard,
+                      color: global.theme.onPrimaryColor, size: 24),
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       global.language("point_system"),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: global.theme.onPrimaryColor,
                       ),
                     ),
                   ),
@@ -106,20 +106,20 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: global.theme.cardColor.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.edit, size: 14, color: Colors.white),
+                          Icon(Icons.edit, size: 14, color: global.theme.onPrimaryColor),
                           SizedBox(width: 4),
                           Text(
                             global.language("edit_mode"),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: Colors.white,
+                              color: global.theme.onPrimaryColor,
                             ),
                           ),
                         ],
@@ -138,24 +138,24 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
             // Tabs
             Container(
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: global.theme.cardColor,
                 border: Border(
-                  top: BorderSide(color: Colors.grey.shade300),
-                  bottom: BorderSide(color: Colors.grey.shade300),
+                  top: BorderSide(color: global.theme.dividerBorderColor),
+                  bottom: BorderSide(color: global.theme.dividerBorderColor),
                 ),
               ),
               child: TabBar(
                 controller: _tabController,
-                labelColor: Colors.blue.shade700,
-                unselectedLabelColor: Colors.grey.shade600,
-                indicatorColor: Colors.blue.shade700,
+                labelColor: global.theme.infoHighlightTextColor,
+                unselectedLabelColor: global.theme.textSecondaryColor,
+                indicatorColor: global.theme.infoHighlightTextColor,
                 indicatorWeight: 3,
                 tabs: [
                   Tab(
                     icon: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.rule),
+                        Icon(Icons.rule),
                         SizedBox(width: 8),
                         Text(global.language("general_rules")),
                       ],
@@ -165,7 +165,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
                     icon: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.star),
+                        Icon(Icons.star),
                         SizedBox(width: 8),
                         Text(global.language("special_rules")),
                       ],
@@ -196,23 +196,23 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
+        color: global.theme.columnHeaderColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.shade100),
+        border: Border.all(color: global.theme.columnHeaderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.settings, color: Colors.blue.shade700, size: 18),
+              Icon(Icons.settings, color: global.theme.infoHighlightTextColor, size: 18),
               SizedBox(width: 8),
               Text(
                 global.language("point_usage_type"),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade900,
+                  color: global.theme.columnHeaderTextColor,
                 ),
               ),
             ],
@@ -266,16 +266,16 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blue.shade500 : Colors.white,
+          color: isSelected ? global.theme.infoHighlightTextColor : global.theme.cardColor,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSelected ? Colors.blue.shade700 : Colors.grey.shade300,
+            color: isSelected ? global.theme.infoHighlightTextColor : global.theme.dividerBorderColor,
             width: 2,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.blue.withValues(alpha: 0.2),
+                    color: global.theme.infoHighlightColor,
                     blurRadius: 8,
                     spreadRadius: 1,
                   )
@@ -289,7 +289,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
               children: [
                 Icon(
                   icon,
-                  color: isSelected ? Colors.white : Colors.grey.shade600,
+                  color: isSelected ? global.theme.onPrimaryColor : global.theme.textSecondaryColor,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
@@ -299,7 +299,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : Colors.grey.shade800,
+                      color: isSelected ? global.theme.onPrimaryColor : global.theme.textColor,
                     ),
                   ),
                 ),
@@ -307,7 +307,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
                   isSelected
                       ? Icons.radio_button_checked
                       : Icons.radio_button_unchecked,
-                  color: isSelected ? Colors.white : Colors.grey.shade500,
+                  color: isSelected ? global.theme.onPrimaryColor : global.theme.iconSecondaryColor,
                 ),
               ],
             ),
@@ -318,7 +318,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
                 fontSize: 12,
                 color: isSelected
                     ? Colors.white.withValues(alpha: 0.9)
-                    : Colors.grey.shade600,
+                    : global.theme.textSecondaryColor,
               ),
             ),
           ],
@@ -336,14 +336,14 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
           // Tab title
           Row(
             children: [
-              Icon(Icons.rule_folder, size: 20, color: Colors.blue.shade700),
+              Icon(Icons.rule_folder, size: 20, color: global.theme.infoHighlightTextColor),
               SizedBox(width: 8),
               Text(
                 global.language("general_rules_for_points"),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade900,
+                  color: global.theme.columnHeaderTextColor,
                 ),
               ),
             ],
@@ -353,7 +353,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
             global.language("set_point_rate_and_value"),
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey.shade600,
+              color: global.theme.textSecondaryColor,
             ),
           ),
           const SizedBox(height: 16),
@@ -383,8 +383,8 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
                   icon: Icon(Icons.add),
                   label: Text(global.language("add_rule")),
                   style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    backgroundColor: Colors.blue.shade700,
+                    foregroundColor: global.theme.onPrimaryColor,
+                    backgroundColor: global.theme.infoHighlightTextColor,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20, vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -407,7 +407,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.blue.shade100),
+        side: BorderSide(color: global.theme.columnHeaderColor),
       ),
       child: Padding(
         padding: EdgeInsets.all(16),
@@ -421,21 +421,21 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade100,
+                    color: global.theme.columnHeaderColor,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
                     "${global.language("rule")} #${index + 1}",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade800,
+                      color: global.theme.infoHighlightTextColor,
                     ),
                   ),
                 ),
                 const Spacer(),
                 if (widget.isEditMode && _pointConfig.generalrules.length > 1)
                   IconButton(
-                    icon: Icon(Icons.delete, color: Colors.red.shade400),
+                    icon: Icon(Icons.delete, color: global.theme.negativeHighlightTextColor),
                     tooltip: global.language("delete_rule"),
                     onPressed: () {
                       setState(() {
@@ -554,16 +554,16 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
+                      color: global.theme.surfaceColor,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade200),
+                      border: Border.all(color: global.theme.dividerBorderColor),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           global.language("calculation_amount_per_point"),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
@@ -573,7 +573,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
                           "หากคุณจ่าย 100 บาท คุณจะได้รับ ${rule.payperpoint > 0 ? (100 / rule.payperpoint).toStringAsFixed(2) : '∞'} แต้ม",
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade600,
+                            color: global.theme.textSecondaryColor,
                           ),
                         ),
                       ],
@@ -585,16 +585,16 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
+                      color: global.theme.surfaceColor,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade200),
+                      border: Border.all(color: global.theme.dividerBorderColor),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           global.language("point_redemption_example"),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
@@ -604,7 +604,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
                           "หากคุณมี 100 แต้ม สามารถแลกได้ ${(100 / rule.pointvalue).toStringAsFixed(0)} บาท",
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade600,
+                            color: global.theme.textSecondaryColor,
                           ),
                         ),
                       ],
@@ -628,14 +628,14 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
           // Tab title
           Row(
             children: [
-              Icon(Icons.star, size: 20, color: Colors.amber.shade600),
+              Icon(Icons.star, size: 20, color: global.theme.warningHighlightTextColor),
               SizedBox(width: 8),
               Text(
                 global.language("special_rules_for_promotion"),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.amber.shade900,
+                  color: global.theme.warningHighlightTextColor,
                 ),
               ),
             ],
@@ -645,7 +645,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
             global.language("create_special_promo_multiply_points"),
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey.shade600,
+              color: global.theme.textSecondaryColor,
             ),
           ),
           const SizedBox(height: 16),
@@ -673,8 +673,8 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
                   icon: Icon(Icons.add),
                   label: Text(global.language("add_special_rule")),
                   style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    backgroundColor: Colors.amber.shade700,
+                    foregroundColor: global.theme.onPrimaryColor,
+                    backgroundColor: global.theme.warningHighlightTextColor,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20, vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -695,9 +695,9 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
         margin: const EdgeInsets.symmetric(vertical: 32),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
+          color: global.theme.surfaceColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: global.theme.dividerBorderColor),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -705,15 +705,15 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
             Icon(
               Icons.star_border,
               size: 64,
-              color: Colors.amber.shade300,
+              color: global.theme.warningHighlightTextColor,
             ),
             SizedBox(height: 16),
             Text(
               global.language("no_special_rules"),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.black54,
+                color: global.theme.textSecondaryColor,
               ),
             ),
             SizedBox(height: 8),
@@ -722,7 +722,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade600,
+                color: global.theme.textSecondaryColor,
               ),
             ),
             if (widget.isEditMode) ...[
@@ -737,8 +737,8 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
                 icon: Icon(Icons.add),
                 label: Text(global.language("add_first_special_rule")),
                 style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  backgroundColor: Colors.amber.shade600,
+                  foregroundColor: global.theme.onPrimaryColor,
+                  backgroundColor: global.theme.warningHighlightTextColor,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   shape: RoundedRectangleBorder(
@@ -761,7 +761,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.amber.shade200),
+        side: BorderSide(color: global.theme.warningHighlightColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -892,7 +892,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.amber.shade700, Colors.amber.shade500],
+          colors: [global.theme.warningHighlightTextColor, global.theme.warningHighlightTextColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -900,34 +900,34 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
       ),
       child: Row(
         children: [
-          const Icon(Icons.emoji_events, color: Colors.white, size: 20),
+          Icon(Icons.emoji_events, color: global.theme.onPrimaryColor, size: 20),
           SizedBox(width: 8),
           Text(
             "${global.language("special_promotion")} #${index + 1}",
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: global.theme.onPrimaryColor,
             ),
           ),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.3),
+              color: global.theme.cardColor.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.star, size: 14, color: Colors.white),
+                Icon(Icons.star, size: 14, color: global.theme.onPrimaryColor),
                 const SizedBox(width: 4),
                 Text(
                   "x${rule.multiplier}",
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: global.theme.onPrimaryColor,
                   ),
                 ),
               ],
@@ -935,7 +935,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
           ),
           if (widget.isEditMode)
             IconButton(
-              icon: Icon(Icons.delete, color: Colors.white),
+              icon: Icon(Icons.delete, color: global.theme.onPrimaryColor),
               tooltip: global.language("delete_rule"),
               onPressed: () {
                 setState(() {
@@ -959,7 +959,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
           global.language("select_promotion_days"),
           style: TextStyle(
             fontSize: 12,
-            color: Colors.grey.shade600,
+            color: global.theme.textSecondaryColor,
             fontStyle: FontStyle.italic,
           ),
         ),
@@ -967,9 +967,9 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.grey.shade50,
+            color: global.theme.surfaceColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: global.theme.dividerBorderColor),
           ),
           child: Column(
             children: [
@@ -1052,9 +1052,9 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
         child: Ink(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.amber.shade100 : Colors.white,
+            color: isSelected ? global.theme.warningHighlightColor : global.theme.cardColor,
             border: Border.all(
-              color: isSelected ? Colors.amber.shade600 : Colors.grey.shade300,
+              color: isSelected ? global.theme.warningHighlightTextColor : global.theme.dividerBorderColor,
               width: 1.5,
             ),
             borderRadius: BorderRadius.circular(8),
@@ -1065,7 +1065,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
               Icon(
                 isSelected ? Icons.check_circle : Icons.circle_outlined,
                 color:
-                    isSelected ? Colors.amber.shade700 : Colors.grey.shade500,
+                    isSelected ? global.theme.warningHighlightTextColor : global.theme.iconSecondaryColor,
                 size: 16,
               ),
               const SizedBox(width: 6),
@@ -1075,7 +1075,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
                   fontSize: 14,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   color:
-                      isSelected ? Colors.amber.shade900 : Colors.grey.shade800,
+                      isSelected ? global.theme.warningHighlightTextColor : global.theme.textColor,
                 ),
               ),
             ],
@@ -1118,7 +1118,7 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
             helperText,
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey.shade600,
+              color: global.theme.textSecondaryColor,
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -1130,10 +1130,10 @@ class _PointConfigWidgetState extends State<PointConfigWidget>
   Widget _buildFormLabel(String text) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,
-        color: Colors.black87,
+        color: global.theme.textColor,
       ),
     );
   }

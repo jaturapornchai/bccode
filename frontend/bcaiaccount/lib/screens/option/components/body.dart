@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:smlaicloud/components/background_main.dart';
 import 'package:smlaicloud/components/textfield_search.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:smlaicloud/global.dart' as global;
 
 class Body extends StatefulWidget {
   const Body({super.key});
@@ -14,7 +15,7 @@ class Body extends StatefulWidget {
   State<Body> createState() => _BodyState();
 }
 
-class _BodyState extends State<Body> {
+class _BodyState extends State<Body> with global.ThemeRefreshMixin {
   final List<OptionModel> _option = [];
 
   final ScrollController _scrollController = ScrollController();
@@ -67,8 +68,6 @@ class _BodyState extends State<Body> {
 
   @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery.of(context).size;
-
     return MultiBlocListener(
       listeners: [
         BlocListener<OptionBloc, OptionState>(
@@ -126,11 +125,11 @@ class _BodyState extends State<Body> {
                                           ),
                                           subtitle: Text(
                                             'ตัวเลือกย่อย: ${_option[index].choices.length}',
-                                            style: const TextStyle(
-                                              color: Colors.black,
+                                            style: TextStyle(
+                                              color: global.theme.textColor,
                                             ),
                                           ),
-                                          trailing: const Icon(
+                                          trailing: Icon(
                                             Icons.keyboard_arrow_right_sharp,
                                           ),
                                         ),
@@ -138,7 +137,7 @@ class _BodyState extends State<Body> {
                                     },
                                   )
                                 : (state is OptionLoadFailed)
-                                ? const Text(
+                                ? Text(
                                     'ไม่เจอข้อมูล',
                                     style: TextStyle(fontSize: 24),
                                   )

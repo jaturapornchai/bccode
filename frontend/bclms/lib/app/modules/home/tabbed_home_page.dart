@@ -592,6 +592,7 @@ class _HomeTab {
   _HomeTab({
     required this.id,
     required this.title,
+    this.icon = Icons.grid_view_rounded,
     required this.isClosable,
     this.customContent,
   });

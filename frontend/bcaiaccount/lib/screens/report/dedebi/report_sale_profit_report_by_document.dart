@@ -39,7 +39,7 @@ class ReportSaleProfitReportByDocumentScreen extends StatefulWidget {
 
 class _ReportSaleProfitReportByDocumentScreenState
     extends State<ReportSaleProfitReportByDocumentScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   late DateTime _fromDate;
   late DateTime _toDate;
   BranchSelectionModel _selectedBranches = const BranchSelectionModel(
@@ -81,10 +81,10 @@ class _ReportSaleProfitReportByDocumentScreenState
   String _selectedPageSize = 'A4';
 
   final Color _primaryColor = Colors.indigo.shade700;
-  final Color _secondaryColor = Colors.indigo.shade50;
-  final Color _level0RowColor = const Color(0xFFEAF0FF);
-  final Color _level1RowColor = const Color(0xFFF1FFF7);
-  final Color _summaryRowColor = const Color(0xFFFFF4E3);
+  Color get _secondaryColor => global.theme.surfaceColor;
+  Color get _level0RowColor => global.theme.surfaceColor;
+  Color get _level1RowColor => global.theme.surfaceColor;
+  Color get _summaryRowColor => global.theme.surfaceColor;
 
   late TextStyle _titleStyle;
   late TextStyle _subtitleStyle;
@@ -315,7 +315,7 @@ class _ReportSaleProfitReportByDocumentScreenState
       fontWeight: FontWeight.w500,
       color: _primaryColor.withValues(alpha: 0.85),
     );
-    _bodyStyle = TextStyle(fontSize: 13, color: Colors.grey.shade800);
+    _bodyStyle = TextStyle(fontSize: 13, color: global.theme.textColor);
   }
 
   @override
@@ -328,17 +328,17 @@ class _ReportSaleProfitReportByDocumentScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: global.theme.surfaceColor,
       appBar: AppBar(
         backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: global.theme.onPrimaryColor,
         title: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.white,
+          indicatorColor: global.theme.onPrimaryColor,
           indicatorWeight: 3,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+          labelColor: global.theme.onPrimaryColor,
+          unselectedLabelColor: global.theme.onPrimaryColor.withValues(alpha: 0.7),
+          labelStyle: TextStyle(fontWeight: FontWeight.bold),
           tabs: [
             Tab(
               child: Wrap(
@@ -396,16 +396,16 @@ class _ReportSaleProfitReportByDocumentScreenState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.insert_chart, size: 64, color: Colors.grey.shade400),
+            Icon(Icons.insert_chart, size: 64, color: global.theme.iconSecondaryColor),
             const SizedBox(height: 16),
             Text(
               global.language('analysis_result_here'),
-              style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 18, color: global.theme.textSecondaryColor),
             ),
             SizedBox(height: 8),
             Text(
               'กรุณากดปุ่ม global.language("process") ในแท็บเงื่อนไข',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
             ),
           ],
         ),
@@ -477,18 +477,18 @@ class _ReportSaleProfitReportByDocumentScreenState
   Widget _buildResultHeaderRow() {
     final headerStyle = _bodyStyle.copyWith(
       fontWeight: FontWeight.bold,
-      color: Colors.black,
+      color: global.theme.textColor,
       fontSize: 14,
     );
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.green),
+        color: global.theme.cardColor,
+        border: Border.all(color: global.theme.positiveHighlightTextColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black,
+            color: global.theme.textColor,
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -558,7 +558,7 @@ class _ReportSaleProfitReportByDocumentScreenState
 
     final backgroundColor = isSummary ? _summaryRowColor : _level0RowColor;
     final baseTextColor = isSummary
-        ? Colors.deepOrange.shade800
+        ? global.theme.warningHighlightTextColor
         : Colors.indigo.shade900;
     final textStyle = (_includeItemDetails)
         ? _bodyStyle.copyWith(color: baseTextColor, fontWeight: FontWeight.bold)
@@ -577,7 +577,7 @@ class _ReportSaleProfitReportByDocumentScreenState
         color: backgroundColor,
         border: Border.all(
           color: isSummary
-              ? Colors.deepOrange.shade100
+              ? global.theme.warningHighlightColor
               : Colors.indigo.shade100,
         ),
       ),
@@ -935,11 +935,11 @@ class _ReportSaleProfitReportByDocumentScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.green.shade50,
-        border: Border(top: BorderSide(color: Colors.green.shade300, width: 2)),
+        color: global.theme.positiveHighlightColor,
+        border: Border(top: BorderSide(color: global.theme.positiveHighlightTextColor, width: 2)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: global.theme.textColor.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, -2),
           ),
@@ -947,12 +947,12 @@ class _ReportSaleProfitReportByDocumentScreenState
       ),
       child: Row(
         children: [
-          Icon(Icons.calculate, color: Colors.green.shade700, size: 20),
+          Icon(Icons.calculate, color: global.theme.positiveHighlightTextColor, size: 20),
           const SizedBox(width: 12),
           Text(
             global.language('grand_total'),
             style: _titleStyle.copyWith(
-              color: Colors.green.shade800,
+              color: global.theme.positiveHighlightTextColor,
               fontSize: 16,
             ),
           ),
@@ -982,9 +982,9 @@ class _ReportSaleProfitReportByDocumentScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.green.shade200),
+        border: Border.all(color: global.theme.positiveHighlightColor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -992,7 +992,7 @@ class _ReportSaleProfitReportByDocumentScreenState
           Text(
             label,
             style: _bodyStyle.copyWith(
-              color: Colors.green.shade700,
+              color: global.theme.positiveHighlightTextColor,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -1000,7 +1000,7 @@ class _ReportSaleProfitReportByDocumentScreenState
           Text(
             displayValue,
             style: _titleStyle.copyWith(
-              color: Colors.green.shade800,
+              color: global.theme.positiveHighlightTextColor,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -1090,7 +1090,7 @@ class _ReportSaleProfitReportByDocumentScreenState
   Widget _buildPdfTab() {
     final hasPdf = _pdfBytes != null;
     final toolbarChildren = [
-      Icon(Icons.picture_as_pdf, color: Colors.red.shade700),
+      Icon(Icons.picture_as_pdf, color: global.theme.negativeHighlightTextColor),
       SizedBox(width: 8),
       Text(global.language('report_process_stock_cost'), style: _titleStyle),
       const Spacer(),
@@ -1148,7 +1148,7 @@ class _ReportSaleProfitReportByDocumentScreenState
         label: Text(global.language('download')),
         style: ElevatedButton.styleFrom(
           backgroundColor: _primaryColor,
-          foregroundColor: Colors.white,
+          foregroundColor: global.theme.onPrimaryColor,
         ),
       ),
       SizedBox(width: 8),
@@ -1158,7 +1158,7 @@ class _ReportSaleProfitReportByDocumentScreenState
         label: Text(global.language('print')),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.teal.shade600,
-          foregroundColor: Colors.white,
+          foregroundColor: global.theme.onPrimaryColor,
         ),
       ),
     ];
@@ -1179,17 +1179,17 @@ class _ReportSaleProfitReportByDocumentScreenState
                   Icon(
                     Icons.picture_as_pdf,
                     size: 64,
-                    color: Colors.grey.shade400,
+                    color: global.theme.iconSecondaryColor,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'รายงาน PDF จะแสดงที่นี่',
-                    style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 18, color: global.theme.textSecondaryColor),
                   ),
                   SizedBox(height: 8),
                   Text(
                     'กรุณาประมวลผลรายงานและกดปุ่ม global.language("create_pdf")',
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                    style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
                   ),
                   SizedBox(height: 24),
                   ElevatedButton.icon(
@@ -1329,7 +1329,7 @@ class _ReportSaleProfitReportByDocumentScreenState
       prefixIcon: Icon(Icons.event, color: _primaryColor),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
       filled: true,
-      fillColor: Colors.white,
+      fillColor: global.theme.formFillColor,
     );
   }
 
@@ -1396,9 +1396,9 @@ class _ReportSaleProfitReportByDocumentScreenState
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: global.theme.backgroundColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Row(
         children: [
@@ -1476,7 +1476,7 @@ class _ReportSaleProfitReportByDocumentScreenState
               child: Text(
                 '(${product.barcode})',
                 style: _bodyStyle.copyWith(
-                  color: Colors.grey.shade600,
+                  color: global.theme.textSecondaryColor,
                   fontSize: 10,
                 ),
                 maxLines: 1,
@@ -1500,7 +1500,7 @@ class _ReportSaleProfitReportByDocumentScreenState
           const SizedBox(width: 4),
           GestureDetector(
             onTap: () => _removeProduct(product),
-            child: Icon(Icons.close, size: 14, color: Colors.grey.shade600),
+            child: Icon(Icons.close, size: 14, color: global.theme.textSecondaryColor),
           ),
         ],
       ),
@@ -1536,9 +1536,9 @@ class _ReportSaleProfitReportByDocumentScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
+        color: global.theme.surfaceColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.shade300),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1547,7 +1547,7 @@ class _ReportSaleProfitReportByDocumentScreenState
             child: Text(
               '${branch.code}',
               style: _bodyStyle.copyWith(
-                color: Colors.blue.shade700,
+                color: global.theme.infoHighlightTextColor,
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
               ),
@@ -1560,7 +1560,7 @@ class _ReportSaleProfitReportByDocumentScreenState
             child: Text(
               branch.names.first.name,
               style: _bodyStyle.copyWith(
-                color: Colors.blue.shade700,
+                color: global.theme.infoHighlightTextColor,
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
               ),
@@ -1571,7 +1571,7 @@ class _ReportSaleProfitReportByDocumentScreenState
           const SizedBox(width: 4),
           GestureDetector(
             onTap: () => _removeBranch(branch),
-            child: Icon(Icons.close, size: 14, color: Colors.grey.shade600),
+            child: Icon(Icons.close, size: 14, color: global.theme.textSecondaryColor),
           ),
         ],
       ),
@@ -1644,7 +1644,7 @@ class _ReportSaleProfitReportByDocumentScreenState
           const SizedBox(width: 4),
           GestureDetector(
             onTap: () => _removeCreditor(entity),
-            child: Icon(Icons.close, size: 14, color: Colors.grey.shade600),
+            child: Icon(Icons.close, size: 14, color: global.theme.textSecondaryColor),
           ),
         ],
       ),
@@ -1789,7 +1789,7 @@ class _ReportSaleProfitReportByDocumentScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: _primaryColor.withValues(alpha: 0.3)),
       ),
@@ -1797,7 +1797,7 @@ class _ReportSaleProfitReportByDocumentScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label, style: _bodyStyle.copyWith(color: Colors.grey.shade600)),
+          Text(label, style: _bodyStyle.copyWith(color: global.theme.textSecondaryColor)),
           const SizedBox(height: 4),
           Text(value, style: _subtitleStyle.copyWith(fontSize: 13)),
         ],
@@ -1823,7 +1823,7 @@ class _ReportSaleProfitReportByDocumentScreenState
               label: Text(global.language('เริ่มประมวลผล')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
-                foregroundColor: Colors.white,
+                foregroundColor: global.theme.onPrimaryColor,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
@@ -2106,18 +2106,18 @@ class _ReportSaleProfitReportByDocumentScreenState
       if (!mounted) return;
       global.showSnackBar(
         context,
-        const Icon(Icons.check_circle, color: Colors.white),
+        Icon(Icons.check_circle, color: global.theme.cardColor),
         'ประมวลผลสำเร็จ: ${headerResult.count} รายการ',
-        Colors.green.shade700,
+        global.theme.positiveHighlightTextColor,
       );
     } catch (e) {
       AppLogger.error('_handleProcess error: $e');
       if (!mounted) return;
       global.showSnackBar(
         context,
-        const Icon(Icons.error, color: Colors.white),
+        Icon(Icons.error, color: global.theme.cardColor),
         _resolveFriendlyError(e),
-        Colors.red.shade700,
+        global.theme.negativeHighlightTextColor,
       );
     } finally {
       if (mounted) {
@@ -2172,9 +2172,9 @@ class _ReportSaleProfitReportByDocumentScreenState
       if (!mounted) return;
       global.showSnackBar(
         context,
-        const Icon(Icons.error, color: Colors.white),
+        Icon(Icons.error, color: global.theme.cardColor),
         _resolveFriendlyError(e),
-        Colors.red.shade700,
+        global.theme.negativeHighlightTextColor,
       );
     } finally {
       if (mounted && !append) {
@@ -2188,9 +2188,9 @@ class _ReportSaleProfitReportByDocumentScreenState
     if (_resultData.isEmpty) {
       global.showSnackBar(
         context,
-        const Icon(Icons.warning, color: Colors.white),
+        Icon(Icons.warning, color: global.theme.cardColor),
         'กรุณาประมวลผลข้อมูลก่อน',
-        Colors.orange.shade700,
+        global.theme.warningHighlightTextColor,
       );
       return;
     }
@@ -2199,9 +2199,9 @@ class _ReportSaleProfitReportByDocumentScreenState
     if (_currentGuid == null) {
       global.showSnackBar(
         context,
-        const Icon(Icons.info, color: Colors.white),
+        Icon(Icons.info, color: global.theme.cardColor),
         'PDF ยังไม่รองรับในโหมด API โดยตรง — กำลังพัฒนา',
-        Colors.orange.shade700,
+        global.theme.warningHighlightTextColor,
       );
       return;
     }
@@ -2294,18 +2294,18 @@ class _ReportSaleProfitReportByDocumentScreenState
 
       global.showSnackBar(
         context,
-        const Icon(Icons.check_circle, color: Colors.white),
+        Icon(Icons.check_circle, color: global.theme.cardColor),
         'สร้าง PDF สำเร็จ',
-        Colors.green.shade700,
+        global.theme.positiveHighlightTextColor,
       );
     } catch (e) {
       AppLogger.error('_generatePdf error: $e');
       if (!mounted) return;
       global.showSnackBar(
         context,
-        const Icon(Icons.error, color: Colors.white),
+        Icon(Icons.error, color: global.theme.cardColor),
         _resolveFriendlyError(e),
-        Colors.red.shade700,
+        global.theme.negativeHighlightTextColor,
       );
     } finally {
       if (mounted) {
@@ -2321,9 +2321,9 @@ class _ReportSaleProfitReportByDocumentScreenState
       if (mounted) {
         global.showSnackBar(
           context,
-          const Icon(Icons.warning, color: Colors.white),
+          Icon(Icons.warning, color: global.theme.cardColor),
           'ไม่พบรหัสร้านค้า กรุณาเลือกร้านค้าก่อนใช้งานรายงาน',
-          Colors.orange.shade700,
+          global.theme.warningHighlightTextColor,
         );
       }
       return null;

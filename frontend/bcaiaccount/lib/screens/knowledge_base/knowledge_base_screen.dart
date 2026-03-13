@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smlaicloud/widgets/chatbot_panel.dart';
 import 'package:smlaicloud/utils/date_picker.dart';
 import 'package:smlaicloud/utils/logger/app_logger.dart';
+import 'package:smlaicloud/utils/time_picker.dart';
 
 class KnowledgeBaseScreen extends StatelessWidget {
   const KnowledgeBaseScreen({super.key});
@@ -33,7 +34,8 @@ class _KnowledgeBaseScreenContent extends StatefulWidget {
 }
 
 class _KnowledgeBaseScreenContentState
-    extends State<_KnowledgeBaseScreenContent> {
+    extends State<_KnowledgeBaseScreenContent>
+    with global.ThemeRefreshMixin {
   // Document Controllers
   final ScrollController _documentScrollController = ScrollController();
 
@@ -47,7 +49,7 @@ class _KnowledgeBaseScreenContentState
   bool _isDragging = false;
 
   // Colors
-  final Color primaryColor = const Color(0xFF1A73E8);
+  Color get primaryColor => global.theme.primaryColor;
 
   // API Base URLs
   final String apiBaseUrl = kDebugMode
@@ -454,7 +456,7 @@ class _KnowledgeBaseScreenContentState
             width: 320,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              color: Colors.white,
+              color: global.theme.cardColor,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -595,7 +597,7 @@ class _KnowledgeBaseScreenContentState
             width: 320,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              color: Colors.white,
+              color: global.theme.cardColor,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -734,13 +736,18 @@ class _KnowledgeBaseScreenContentState
       }
     }
 
-    final TimeOfDay? picked = await showTimePicker(
+    final TimeOfDay? picked = await showDialog<TimeOfDay>(
       context: context,
-      initialTime: initialTime,
-      builder: (BuildContext context, Widget? child) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-          child: child!,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      builder: (BuildContext context) {
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: CustomTimePickerDialog(
+              initialTime: initialTime,
+              languageCode: global.getBranchLanguage(),
+            ),
+          ),
         );
       },
     );
@@ -822,13 +829,18 @@ class _KnowledgeBaseScreenContentState
       }
     }
 
-    final TimeOfDay? picked = await showTimePicker(
+    final TimeOfDay? picked = await showDialog<TimeOfDay>(
       context: context,
-      initialTime: initialTime,
-      builder: (BuildContext context, Widget? child) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-          child: child!,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      builder: (BuildContext context) {
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: CustomTimePickerDialog(
+              initialTime: initialTime,
+              languageCode: global.getBranchLanguage(),
+            ),
+          ),
         );
       },
     );
@@ -1008,7 +1020,7 @@ class _KnowledgeBaseScreenContentState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: global.theme.surfaceColor,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
         title: Row(
@@ -1039,7 +1051,7 @@ class _KnowledgeBaseScreenContentState
                 SizedBox(
                   width: leftWidth,
                   child: Container(
-                    color: Colors.white,
+                    color: global.theme.cardColor,
                     child: Column(
                       children: [
                         _buildDocumentHeader(),
@@ -1073,11 +1085,11 @@ class _KnowledgeBaseScreenContentState
                       width: 8,
                       color: _isDragging
                           ? primaryColor.withValues(alpha: 0.3)
-                          : Colors.grey[300],
+                          : global.theme.dividerBorderColor,
                       child: Center(
                         child: Container(
                           width: 2,
-                          color: _isDragging ? primaryColor : Colors.grey[400],
+                          color: _isDragging ? primaryColor : global.theme.iconSecondaryColor,
                         ),
                       ),
                     ),
@@ -1104,7 +1116,7 @@ class _KnowledgeBaseScreenContentState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D47A1),
+        color: global.theme.primaryColor,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
@@ -1139,8 +1151,8 @@ class _KnowledgeBaseScreenContentState
           return Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
-              border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+              color: global.theme.surfaceColor,
+              border: Border(bottom: BorderSide(color: global.theme.dividerBorderColor)),
             ),
             child: const Center(child: CircularProgressIndicator()),
           );
@@ -1149,8 +1161,8 @@ class _KnowledgeBaseScreenContentState
         return Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.grey[50],
-            border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+            color: global.theme.surfaceColor,
+            border: Border(bottom: BorderSide(color: global.theme.dividerBorderColor)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1166,7 +1178,7 @@ class _KnowledgeBaseScreenContentState
               _branches.isEmpty
                   ? Text(
                       global.language('kb_loading_branch_data'),
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor),
                     )
                   : Wrap(
                       spacing: 8,
@@ -1189,7 +1201,7 @@ class _KnowledgeBaseScreenContentState
                           labelStyle: TextStyle(
                             color: _showAllBranches
                                 ? Colors.white
-                                : Colors.black87,
+                                : global.theme.textColor,
                           ),
                         ),
                         // Individual Branch Buttons
@@ -1211,7 +1223,7 @@ class _KnowledgeBaseScreenContentState
                             },
                             selectedColor: primaryColor,
                             labelStyle: TextStyle(
-                              color: isSelected ? Colors.white : Colors.black87,
+                              color: isSelected ? Colors.white : global.theme.textColor,
                             ),
                           );
                         }),
@@ -1229,8 +1241,8 @@ class _KnowledgeBaseScreenContentState
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+        color: global.theme.cardColor,
+        border: Border(bottom: BorderSide(color: global.theme.dividerBorderColor)),
       ),
       child: Row(
         children: [
@@ -1272,16 +1284,16 @@ class _KnowledgeBaseScreenContentState
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.folder_open, size: 64, color: Colors.grey[400]),
+                Icon(Icons.folder_open, size: 64, color: global.theme.iconSecondaryColor),
                 SizedBox(height: 16),
                 Text(
                   global.language('kb_no_documents'),
-                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: 16, color: global.theme.iconSecondaryColor),
                 ),
                 SizedBox(height: 8),
                 Text(
                   global.language('kb_click_upload_to_add'),
-                  style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                  style: TextStyle(fontSize: 14, color: global.theme.iconSecondaryColor),
                 ),
               ],
             ),
@@ -1313,19 +1325,19 @@ class _KnowledgeBaseScreenContentState
           decoration: BoxDecoration(
             color: isActive
                 ? Colors.green.withValues(alpha: 0.1)
-                : Colors.grey.withValues(alpha: 0.1),
+                : global.theme.surfaceColor,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
             _getFileIcon(doc.filename),
-            color: isActive ? Colors.green : Colors.grey,
+            color: isActive ? Colors.green : global.theme.iconSecondaryColor,
           ),
         ),
         title: Text(
           doc.filename,
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: isActive ? Colors.black87 : Colors.grey,
+            color: isActive ? global.theme.textColor : global.theme.textSecondaryColor,
           ),
         ),
         subtitle: Column(
@@ -1350,7 +1362,7 @@ class _KnowledgeBaseScreenContentState
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: isActive ? Colors.green : Colors.grey,
+                    color: isActive ? Colors.green : global.theme.iconSecondaryColor,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -1371,7 +1383,7 @@ class _KnowledgeBaseScreenContentState
                 const SizedBox(width: 4),
                 Text(
                   'v${doc.version}',
-                  style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: 10, color: global.theme.iconSecondaryColor),
                 ),
               ],
             ),

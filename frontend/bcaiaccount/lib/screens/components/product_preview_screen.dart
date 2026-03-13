@@ -140,7 +140,7 @@ class ProductPreviewScreen extends StatelessWidget {
   }
 
   Widget _divider() {
-    return Divider(height: 1, color: Colors.grey[300]);
+    return Divider(height: 1, color: global.theme.dividerBorderColor);
   }
 
   // === HEADER: Image + Basic Info ===
@@ -157,9 +157,9 @@ class ProductPreviewScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: (screenData.useimageorcolor ?? true) == false
                   ? _parseColor()
-                  : Colors.grey[100],
+                  : global.theme.surfaceColor,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: Colors.grey[300]!),
+              border: Border.all(color: global.theme.dividerBorderColor),
               image: (screenData.useimageorcolor ?? true) != false
                   ? DecorationImage(
                       image: (imageWeb != null)
@@ -182,7 +182,7 @@ class ProductPreviewScreen extends StatelessWidget {
               children: [
                 Text(
                   global.activeLangName(screenData.names!),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -225,14 +225,14 @@ class ProductPreviewScreen extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.blue[50],
+                      color: global.theme.primaryColor,
                       borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: Colors.blue[200]!),
+                      border: Border.all(color: global.theme.primaryColor),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.link, size: 13, color: Colors.blue[700]),
+                        Icon(Icons.link, size: 13, color: global.theme.primaryColor),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text.rich(
@@ -244,14 +244,14 @@ class ProductPreviewScreen extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.blue[700],
+                                    color: global.theme.primaryColor,
                                   ),
                                 ),
                                 TextSpan(
                                   text: screenData.allUnitNames,
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: Colors.blue[800],
+                                    color: global.theme.primaryColor,
                                   ),
                                 ),
                               ],
@@ -279,7 +279,7 @@ class ProductPreviewScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionHeader(Icons.translate, global.language("product_name"),
-              Colors.brown[700]!),
+              global.theme.textColor),
           const SizedBox(height: 2),
           for (int i = 0; i < names.length; i += 2)
             Padding(
@@ -354,7 +354,7 @@ class ProductPreviewScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionHeader(Icons.inventory_2,
-              global.language("product_type"), Colors.teal[700]!),
+              global.language("product_type"), global.theme.infoHighlightTextColor),
           const SizedBox(height: 2),
           _row2col(
             global.language("product_type"),
@@ -401,7 +401,7 @@ class ProductPreviewScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionHeader(Icons.attach_money, global.language("price"),
-              Colors.green[700]!),
+              global.theme.positiveHighlightTextColor),
           const SizedBox(height: 2),
           // Compact price grid: 2 columns
           for (int i = 0; i < priceList.length; i += 2)
@@ -437,7 +437,9 @@ class ProductPreviewScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       margin: const EdgeInsets.only(right: 4),
       decoration: BoxDecoration(
-        color: price > 0 ? Colors.green[50] : Colors.grey[50],
+        color: price > 0
+            ? global.theme.positiveHighlightColor
+            : global.theme.surfaceColor,
         borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
@@ -445,7 +447,7 @@ class ProductPreviewScreen extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: TextStyle(fontSize: 11, color: Colors.grey[700]),
+              style: TextStyle(fontSize: 11, color: global.theme.textColor),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -454,7 +456,7 @@ class ProductPreviewScreen extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: price > 0 ? Colors.green[700] : Colors.grey[500],
+              color: price > 0 ? global.theme.positiveHighlightTextColor : global.theme.iconSecondaryColor,
             ),
           ),
         ],
@@ -470,7 +472,7 @@ class ProductPreviewScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionHeader(Icons.category_outlined,
-              global.language("master_data"), Colors.blue[700]!),
+              global.language("master_data"), global.theme.infoHighlightTextColor),
           const SizedBox(height: 2),
           _row2col(
             global.language("brand"),
@@ -553,7 +555,7 @@ class ProductPreviewScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionHeader(
-              Icons.toggle_on, global.language("settings"), Colors.grey[700]!),
+              Icons.toggle_on, global.language("settings"), global.theme.textColor),
           const SizedBox(height: 2),
           Wrap(
             spacing: 4,
@@ -563,13 +565,13 @@ class ProductPreviewScreen extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: Colors.blue[50],
+                  color: global.theme.primaryColor,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue[200]!),
+                  border: Border.all(color: global.theme.primaryColor),
                 ),
                 child: Text(
                   f.label,
-                  style: TextStyle(fontSize: 11, color: Colors.blue[700]),
+                  style: TextStyle(fontSize: 11, color: global.theme.primaryColor),
                 ),
               );
             }).toList(),
@@ -580,7 +582,7 @@ class ProductPreviewScreen extends StatelessWidget {
               padding: const EdgeInsets.only(top: 2),
               child: Text(
                 "${global.language("is_use_alert")}: ${screenData.alertdescription}",
-                style: TextStyle(fontSize: 11, color: Colors.orange[700]),
+                style: TextStyle(fontSize: 11, color: global.theme.warningHighlightTextColor),
               ),
             ),
         ],
@@ -596,7 +598,7 @@ class ProductPreviewScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionHeader(Icons.qr_code, global.language("reference_barcode"),
-              Colors.indigo[700]!),
+              global.theme.primaryColor),
           const SizedBox(height: 2),
           ...screenData.refbarcodes!.map((data) {
             final ratioText = (!data.condition)
@@ -606,7 +608,7 @@ class ProductPreviewScreen extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 2),
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
               decoration: BoxDecoration(
-                color: Colors.indigo[50],
+                color: global.theme.infoHighlightColor,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Column(
@@ -617,7 +619,7 @@ class ProductPreviewScreen extends StatelessWidget {
                       Expanded(
                         child: Text(
                           "${data.barcode} | ${global.activeLangName(data.names)} | ${global.activeLangName(data.itemunitnames)}",
-                          style: const TextStyle(fontSize: 12),
+                          style: TextStyle(fontSize: 12, color: global.theme.textColor),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -627,7 +629,7 @@ class ProductPreviewScreen extends StatelessWidget {
                     children: [
                       Text(
                         "stand: ${data.standvalue}  divide: ${data.dividevalue}",
-                        style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 10, color: global.theme.iconSecondaryColor),
                       ),
                       const Spacer(),
                       Text(
@@ -635,7 +637,7 @@ class ProductPreviewScreen extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: Colors.indigo[700],
+                          color: global.theme.infoHighlightTextColor,
                         ),
                       ),
                     ],
@@ -657,14 +659,14 @@ class ProductPreviewScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionHeader(Icons.account_tree, global.language("product_bom"),
-              Colors.orange[700]!),
+              global.theme.warningHighlightTextColor),
           const SizedBox(height: 2),
           ...screenData.bom!.map((data) {
             return Container(
               margin: const EdgeInsets.only(bottom: 2),
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
               decoration: BoxDecoration(
-                color: Colors.orange[50],
+                color: global.theme.warningHighlightColor,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Row(
@@ -672,7 +674,7 @@ class ProductPreviewScreen extends StatelessWidget {
                   Expanded(
                     child: Text(
                       "${data.barcode} | ${global.activeLangName(data.names)} | ${global.activeLangName(data.itemunitnames)}",
-                      style: const TextStyle(fontSize: 12),
+                      style: TextStyle(fontSize: 12),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -681,7 +683,7 @@ class ProductPreviewScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: Colors.orange[700],
+                      color: global.theme.warningHighlightTextColor,
                     ),
                   ),
                 ],
@@ -701,7 +703,7 @@ class ProductPreviewScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionHeader(Icons.straighten, global.language("dimensions"),
-              Colors.teal[700]!),
+              global.theme.infoHighlightTextColor),
           const SizedBox(height: 2),
           ...screenData.dimensions!.asMap().entries.map((entry) {
             final i = entry.key;
@@ -724,7 +726,7 @@ class ProductPreviewScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionHeader(Icons.business, global.language("business_type"),
-              Colors.purple[700]!),
+              global.theme.primaryColor),
           const SizedBox(height: 2),
           if (screenData.businesstypes?.isNotEmpty == true)
             Wrap(
@@ -735,13 +737,13 @@ class ProductPreviewScreen extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.purple[50],
+                    color: global.theme.primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.purple[200]!),
+                    border: Border.all(color: global.theme.primaryColor.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     "${bt.code} | ${global.activeLangName(bt.names!)}",
-                    style: TextStyle(fontSize: 11, color: Colors.purple[700]),
+                    style: TextStyle(fontSize: 11, color: global.theme.primaryColor),
                   ),
                 );
               }).toList(),
@@ -753,7 +755,7 @@ class ProductPreviewScreen extends StatelessWidget {
               style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey[600]),
+                  color: global.theme.iconSecondaryColor),
             ),
             Wrap(
               spacing: 4,
@@ -763,13 +765,13 @@ class ProductPreviewScreen extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.red[50],
+                    color: global.theme.negativeHighlightColor,
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.red[200]!),
+                    border: Border.all(color: global.theme.negativeHighlightColor),
                   ),
                   child: Text(
                     "${br.code} | ${global.activeLangName(br.names!)}",
-                    style: TextStyle(fontSize: 11, color: Colors.red[700]),
+                    style: TextStyle(fontSize: 11, color: global.theme.negativeHighlightTextColor),
                   ),
                 );
               }).toList(),
@@ -788,7 +790,7 @@ class ProductPreviewScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionHeader(Icons.monetization_on,
-              global.language("cost_standard"), Colors.green[700]!),
+              global.language("cost_standard"), global.theme.positiveHighlightTextColor),
           const SizedBox(height: 2),
           ...screenData.fixedcost!.map((cost) {
             return _row2col(
@@ -811,7 +813,7 @@ class ProductPreviewScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionHeader(Icons.access_time,
-              global.language("show_time_for_sale"), Colors.cyan[700]!),
+              global.language("show_time_for_sale"), global.theme.infoHighlightTextColor!),
           const SizedBox(height: 2),
           ...screenData.timeforsales!.asMap().entries.map((entry) {
             final i = entry.key;
@@ -841,7 +843,7 @@ class ProductPreviewScreen extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 2),
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
               decoration: BoxDecoration(
-                color: Colors.cyan[50],
+                color: global.theme.infoHighlightColor,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Column(
@@ -849,12 +851,12 @@ class ProductPreviewScreen extends StatelessWidget {
                 children: [
                   Text(
                     "${global.language("time_for_sale")} ${i + 1}: ${tfs.fromdate ?? ''} ~ ${tfs.todate ?? ''} | ${tfs.fromtime ?? ''} ~ ${tfs.totime ?? ''}",
-                    style: const TextStyle(fontSize: 11),
+                    style: TextStyle(fontSize: 11),
                   ),
                   if (daysText.isNotEmpty)
                     Text(
                       daysText,
-                      style: TextStyle(fontSize: 10, color: Colors.cyan[700]),
+                      style: TextStyle(fontSize: 10, color: global.theme.infoHighlightTextColor),
                     ),
                 ],
               ),
@@ -873,14 +875,14 @@ class ProductPreviewScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionHeader(Icons.shopping_cart, global.language("order_type"),
-              Colors.orange[700]!),
+              global.theme.warningHighlightTextColor),
           const SizedBox(height: 2),
           ...screenData.ordertypes!.map((data) {
             return Container(
               margin: const EdgeInsets.only(bottom: 2),
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
               decoration: BoxDecoration(
-                color: Colors.orange[50],
+                color: global.theme.warningHighlightColor,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Row(
@@ -890,7 +892,7 @@ class ProductPreviewScreen extends StatelessWidget {
                       (data.code.isEmpty)
                           ? "-"
                           : "${data.code} | ${global.activeLangName(data.names)}",
-                      style: const TextStyle(fontSize: 12),
+                      style: TextStyle(fontSize: 12),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -899,7 +901,7 @@ class ProductPreviewScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: Colors.orange[700],
+                      color: global.theme.warningHighlightTextColor,
                     ),
                   ),
                 ],
@@ -919,7 +921,7 @@ class ProductPreviewScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionHeader(Icons.tune, global.language("options"),
-              Colors.deepPurple[700]!),
+              global.theme.primaryColor),
           const SizedBox(height: 2),
           ...screenData.options!.asMap().entries.map((entry) {
             final optIdx = entry.key;
@@ -931,9 +933,9 @@ class ProductPreviewScreen extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 4),
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: Colors.deepPurple[50],
+                color: global.theme.primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: Colors.deepPurple[100]!),
+                border: Border.all(color: global.theme.primaryColor.withValues(alpha: 0.15)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -942,7 +944,7 @@ class ProductPreviewScreen extends StatelessWidget {
                     children: [
                       Text(
                         "${global.language("option")} ${optIdx + 1}: ${global.activeLangName(opt.names)}",
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(width: 6),
@@ -951,8 +953,8 @@ class ProductPreviewScreen extends StatelessWidget {
                             horizontal: 6, vertical: 1),
                         decoration: BoxDecoration(
                           color: (opt.choicetype == 0)
-                              ? Colors.blue[100]
-                              : Colors.green[100],
+                              ? global.theme.infoHighlightColor
+                              : global.theme.positiveHighlightColor,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -960,8 +962,8 @@ class ProductPreviewScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 10,
                             color: (opt.choicetype == 0)
-                                ? Colors.blue[700]
-                                : Colors.green[700],
+                                ? global.theme.infoHighlightTextColor
+                                : global.theme.positiveHighlightTextColor,
                           ),
                         ),
                       ),
@@ -970,7 +972,7 @@ class ProductPreviewScreen extends StatelessWidget {
                         Text(
                           "min:${opt.minselect} max:${opt.maxselect}",
                           style:
-                              TextStyle(fontSize: 10, color: Colors.grey[600]),
+                              TextStyle(fontSize: 10, color: global.theme.iconSecondaryColor),
                         ),
                       ],
                     ],
@@ -985,7 +987,7 @@ class ProductPreviewScreen extends StatelessWidget {
                           children: [
                             Text(
                               "${cIdx + 1}. ${global.activeLangName(choice.names)}",
-                              style: const TextStyle(fontSize: 11),
+                              style: TextStyle(fontSize: 11),
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -993,7 +995,7 @@ class ProductPreviewScreen extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.green[700],
+                                color: global.theme.positiveHighlightTextColor,
                               ),
                             ),
                             if (choice.isstock) ...[
@@ -1001,7 +1003,7 @@ class ProductPreviewScreen extends StatelessWidget {
                               Text(
                                 "[${choice.refbarcode} x${choice.qty}]",
                                 style: TextStyle(
-                                    fontSize: 10, color: Colors.grey[600]),
+                                    fontSize: 10, color: global.theme.iconSecondaryColor),
                               ),
                             ],
                           ],
@@ -1025,18 +1027,18 @@ class ProductPreviewScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionHeader(Icons.description, global.language("disciption"),
-              Colors.grey[700]!),
+              global.theme.textColor),
           const SizedBox(height: 2),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
+              color: global.theme.surfaceColor,
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
               screenData.description!,
-              style: const TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: 12),
             ),
           ),
         ],
@@ -1101,19 +1103,19 @@ class ProductPreviewScreen extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       maxLines: 2,
       text: TextSpan(
-        style: const TextStyle(fontSize: 11, color: Colors.black),
+        style: TextStyle(fontSize: 11, color: global.theme.textColor),
         children: [
           TextSpan(
             text: "$label: ",
             style: TextStyle(
               fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
+              color: global.theme.iconSecondaryColor,
               fontSize: 11,
             ),
           ),
           TextSpan(
             text: value,
-            style: const TextStyle(fontSize: 12),
+            style: TextStyle(fontSize: 12),
           ),
         ],
       ),
@@ -1128,7 +1130,7 @@ class ProductPreviewScreen extends StatelessWidget {
         return Color(int.parse(screenData.colorselect!));
       } catch (_) {}
     }
-    return Colors.white;
+    return global.theme.cardColor;
   }
 }
 

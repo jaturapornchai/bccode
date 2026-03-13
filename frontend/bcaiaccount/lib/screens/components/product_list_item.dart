@@ -71,7 +71,7 @@ class ProductListItem extends StatelessWidget {
               onPressed: isSelected ? null : onAddProduct,
               icon: Icon(
                 Icons.add_circle,
-                color: isSelected ? Colors.grey : Colors.green,
+                color: isSelected ? global.theme.iconSecondaryColor : global.theme.positiveHighlightTextColor,
                 size: 28,
               ),
               tooltip: isSelected ? global.language('product_list_item_selected') : global.language('product_list_item_select'),

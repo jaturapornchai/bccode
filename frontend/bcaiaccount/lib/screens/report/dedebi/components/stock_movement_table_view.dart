@@ -19,7 +19,7 @@ class StockMovementTableView extends StatelessWidget {
       return Center(
         child: Text(
           global.language('stock_movement_no_data'),
-          style: TextStyle(fontSize: 16, color: Colors.grey),
+          style: TextStyle(fontSize: 16, color: global.theme.textSecondaryColor),
         ),
       );
     }
@@ -30,9 +30,9 @@ class StockMovementTableView extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: global.theme.surfaceColor,
             border: Border(
-              bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+              bottom: BorderSide(color: global.theme.dividerBorderColor, width: 1),
             ),
           ),
           child: _buildHeaderRow(),
@@ -136,11 +136,11 @@ class StockMovementTableView extends StatelessWidget {
 
   Widget _buildDataRow(StockMovementModel stockMovement, int index) {
     final isEven = index % 2 == 0;
-    final backgroundColor = isEven ? Colors.white : Colors.grey.shade50;
+    final backgroundColor = isEven ? global.theme.columnAlternateEvenColor : global.theme.columnAlternateOddColor;
 
     return InkWell(
       onTap: null,
-      hoverColor: Colors.indigo.shade50,
+      hoverColor: global.theme.rowHoverColor,
       highlightColor: Colors.indigo.shade100,
       splashColor: Colors.indigo.shade200,
       child: Container(
@@ -148,7 +148,7 @@ class StockMovementTableView extends StatelessWidget {
         decoration: BoxDecoration(
           color: backgroundColor,
           border: Border(
-            bottom: BorderSide(color: Colors.grey.shade200, width: 0.5),
+            bottom: BorderSide(color: global.theme.dividerBorderColor, width: 0.5),
           ),
         ),
         child: Row(
@@ -167,7 +167,7 @@ class StockMovementTableView extends StatelessWidget {
               child: _buildDataCell(
                 stockMovement.doctime.isNotEmpty ? stockMovement.doctime : '-',
                 fontSize: 11,
-                color: Colors.grey.shade600,
+                color: global.theme.textSecondaryColor,
               ),
             ),
             // ประเภทรายการ
@@ -211,7 +211,7 @@ class StockMovementTableView extends StatelessWidget {
               child: _buildDataCell(
                 stockMovement.whCode.isNotEmpty ? stockMovement.whCode : '-',
                 fontSize: 11,
-                color: Colors.blue.shade700,
+                color: global.theme.infoHighlightTextColor,
               ),
             ),
             // ที่เก็บ
@@ -244,8 +244,8 @@ class StockMovementTableView extends StatelessWidget {
                     : '-',
                 textAlign: TextAlign.right,
                 color: stockMovement.qtyIn > 0
-                    ? Colors.green.shade700
-                    : Colors.grey.shade500,
+                    ? global.theme.positiveHighlightTextColor
+                    : global.theme.textSecondaryColor,
                 fontWeight: stockMovement.qtyIn > 0
                     ? FontWeight.w600
                     : FontWeight.normal,
@@ -261,8 +261,8 @@ class StockMovementTableView extends StatelessWidget {
                     : '-',
                 textAlign: TextAlign.right,
                 color: stockMovement.averageCostIn > 0
-                    ? Colors.green.shade600
-                    : Colors.grey.shade500,
+                    ? global.theme.positiveHighlightTextColor
+                    : global.theme.textSecondaryColor,
               ),
             ),
             // มูลค่าเพิ่ม
@@ -274,8 +274,8 @@ class StockMovementTableView extends StatelessWidget {
                     : '-',
                 textAlign: TextAlign.right,
                 color: stockMovement.balanceIn > 0
-                    ? Colors.green.shade700
-                    : Colors.grey.shade500,
+                    ? global.theme.positiveHighlightTextColor
+                    : global.theme.textSecondaryColor,
                 fontWeight: stockMovement.balanceIn > 0
                     ? FontWeight.w600
                     : FontWeight.normal,
@@ -290,8 +290,8 @@ class StockMovementTableView extends StatelessWidget {
                     : '-',
                 textAlign: TextAlign.right,
                 color: stockMovement.qtyOut > 0
-                    ? Colors.red.shade700
-                    : Colors.grey.shade500,
+                    ? global.theme.negativeHighlightTextColor
+                    : global.theme.textSecondaryColor,
                 fontWeight: stockMovement.qtyOut > 0
                     ? FontWeight.w600
                     : FontWeight.normal,
@@ -307,8 +307,8 @@ class StockMovementTableView extends StatelessWidget {
                     : '-',
                 textAlign: TextAlign.right,
                 color: stockMovement.averageCostOut > 0
-                    ? Colors.red.shade600
-                    : Colors.grey.shade500,
+                    ? global.theme.negativeHighlightTextColor
+                    : global.theme.textSecondaryColor,
               ),
             ),
             // มูลค่าลด
@@ -320,8 +320,8 @@ class StockMovementTableView extends StatelessWidget {
                     : '-',
                 textAlign: TextAlign.right,
                 color: stockMovement.balanceOut > 0
-                    ? Colors.red.shade700
-                    : Colors.grey.shade500,
+                    ? global.theme.negativeHighlightTextColor
+                    : global.theme.textSecondaryColor,
                 fontWeight: stockMovement.balanceOut > 0
                     ? FontWeight.w600
                     : FontWeight.normal,
@@ -343,7 +343,7 @@ class StockMovementTableView extends StatelessWidget {
               child: _buildDataCell(
                 ReportUtils.formatCurrencySafe(stockMovement.averageCost),
                 textAlign: TextAlign.right,
-                color: Colors.orange.shade700,
+                color: global.theme.warningHighlightTextColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -403,9 +403,9 @@ class StockMovementTableView extends StatelessWidget {
       global.language('transaction_stock_pick_up_product'),
       global.language('stock_movement_adjust_decrease'),
     };
-    if (greenFlags.contains(transFlag)) return Colors.green.shade100;
-    if (redFlags.contains(transFlag)) return Colors.red.shade100;
-    return Colors.grey.shade100;
+    if (greenFlags.contains(transFlag)) return global.theme.positiveHighlightColor;
+    if (redFlags.contains(transFlag)) return global.theme.negativeHighlightColor;
+    return global.theme.surfaceColor;
   }
 
   Color _getTransactionFlagTextColor(String transFlag) {
@@ -426,9 +426,9 @@ class StockMovementTableView extends StatelessWidget {
       global.language('transaction_stock_pick_up_product'),
       global.language('stock_movement_adjust_decrease'),
     };
-    if (greenFlags.contains(transFlag)) return Colors.green.shade700;
-    if (redFlags.contains(transFlag)) return Colors.red.shade700;
-    return Colors.grey.shade700;
+    if (greenFlags.contains(transFlag)) return global.theme.positiveHighlightTextColor;
+    if (redFlags.contains(transFlag)) return global.theme.negativeHighlightTextColor;
+    return global.theme.iconColor;
   }
 
   String _getTransactionFlagText(String transFlag) {

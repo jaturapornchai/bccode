@@ -19,7 +19,7 @@ class ProductCategorySearchScreen extends StatefulWidget {
 
 class ProductCategorySearchScreenState
     extends State<ProductCategorySearchScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   TextEditingController searchController = TextEditingController();
   FocusNode searchFocusNode = FocusNode(skipTraversal: true);
   ScrollController listScrollController = ScrollController();
@@ -32,6 +32,7 @@ class ProductCategorySearchScreenState
   bool isKeyUp = false;
   bool isKeyDown = false;
   String selectGuid = "";
+  int _hoverIndex = -1;
   int currentListIndex = 0;
   List<String> xorderUpdateList = [];
   void setSystemLanguageList() async {
@@ -83,6 +84,7 @@ class ProductCategorySearchScreenState
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -90,7 +92,7 @@ class ProductCategorySearchScreenState
         title: Text(global.language('product_group')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -166,8 +168,29 @@ class ProductCategorySearchScreenState
     return result;
   }
 
-  Widget listObject(ProductCategoryModel value) {
-    return GestureDetector(
+
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
+  }
+
+  Widget listObject(ProductCategoryModel value, int index) {
+    final isSelected = selectGuid == value.guidfixed;
+    TextStyle textStyle = isSelected
+        ? TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w700, color: global.theme.textColor)
+        : TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w400, color: global.theme.textSecondaryColor);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         setState(() {
           Navigator.pop(context, [value.guidfixed, value.names!]);
@@ -175,11 +198,9 @@ class ProductCategorySearchScreenState
       },
       child: Container(
         decoration: BoxDecoration(
-          color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
-              : Colors.white,
-          border: const Border(
-            bottom: BorderSide(width: 1.0, color: Colors.grey),
+          color: _getContainerColor(value.guidfixed ?? "", index),
+          border: Border(
+                bottom: BorderSide(width: 1.0, color: global.theme.dividerBorderColor),
           ),
         ),
         padding: const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
@@ -190,6 +211,7 @@ class ProductCategorySearchScreenState
               flex: 5,
               child: Text(
                 value.guidfixed,
+                style: textStyle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -198,6 +220,7 @@ class ProductCategorySearchScreenState
               flex: 10,
               child: Text(
                 global.packName(value.names!),
+                style: textStyle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -205,6 +228,7 @@ class ProductCategorySearchScreenState
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -254,13 +278,13 @@ class ProductCategorySearchScreenState
           Expanded(
             child: Text(
               "${category.detail.xsorts![0].xorder} ${global.packName(category.detail.names!)} ($codeListCount)",
-              style: const TextStyle(fontSize: 18),
+              style: TextStyle(fontSize: 18, color: global.theme.textColor),
             ),
           ),
           if (category.childCategories.isNotEmpty)
             IconButton(
               padding: EdgeInsets.zero,
-              color: Colors.green,
+              color: global.theme.positiveHighlightTextColor,
               focusNode: FocusNode(skipTraversal: true),
               icon: Icon(
                 (category.isExpand) ? Icons.expand_less : Icons.expand_more,
@@ -324,6 +348,7 @@ class ProductCategorySearchScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {

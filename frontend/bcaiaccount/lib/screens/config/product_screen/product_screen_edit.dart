@@ -16,6 +16,7 @@ import 'package:smlaicloud/model/product_model.dart';
 import 'package:smlaicloud/screen_search/unit_search_screen.dart';
 import 'package:translator/translator.dart';
 import 'package:smlaicloud/repositories/unit_repository.dart';
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 
 class ProductScreenEdit extends StatefulWidget {
   const ProductScreenEdit({
@@ -1786,7 +1787,7 @@ class ProductScreenEditState extends State<ProductScreenEdit>
     }
 
     return Scaffold(
-      backgroundColor: (widget.screenEventGetValue() == global.ScreenEventEnum.edit || widget.screenEventGetValue() == global.ScreenEventEnum.add) ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
+      backgroundColor: global.theme.cardColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor:
@@ -1811,6 +1812,8 @@ class ProductScreenEditState extends State<ProductScreenEdit>
             : null,
         title: Text(headerEdit + global.language("product")),
         actions: <Widget>[
+          EditFontSizeControl(onChanged: () => setState(() {})),
+          const SizedBox(width: 8),
           if (widget.selectGuidGet().isNotEmpty)
             IconButton(
               focusNode: FocusNode(skipTraversal: true),
@@ -1885,9 +1888,28 @@ class ProductScreenEditState extends State<ProductScreenEdit>
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        controller: editScrollController,
-        child: RawKeyboardListener(
+      body: Builder(
+        builder: (context) {
+          final scale = global.editFontScaleFactor;
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(scale),
+            ),
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                  contentPadding: EdgeInsets.fromLTRB(
+                    12 * scale, 20 * scale, 12 * scale, 12 * scale,
+                  ),
+                ),
+              ),
+              child: IconTheme(
+                data: IconTheme.of(context).copyWith(
+                  size: 24.0 * scale,
+                ),
+                child: SingleChildScrollView(
+                  controller: editScrollController,
+                  child: RawKeyboardListener(
           focusNode: FocusNode(),
           onKey: (RawKeyEvent event) {
             if (event is RawKeyDownEvent) {
@@ -1911,6 +1933,11 @@ class ProductScreenEditState extends State<ProductScreenEdit>
             child: Column(children: formWidgets),
           ),
         ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

@@ -26,7 +26,7 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => LoginScreenState();
 }
 
-class LoginScreenState extends State<LoginScreen> {
+class LoginScreenState extends State<LoginScreen> with global.ThemeRefreshMixin {
   late FirebaseAuth _auth;
 
   Future<UserCredential?> googleSignInForWeb() async {
@@ -202,8 +202,8 @@ class LoginScreenState extends State<LoginScreen> {
             children: [
               Container(
                 margin: const EdgeInsets.all(10),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
+                decoration: BoxDecoration(
+                  color: global.theme.cardColor,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.grey,
@@ -357,7 +357,7 @@ class LoginScreenState extends State<LoginScreen> {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: global.theme.cardColor,
             borderRadius: const BorderRadius.all(Radius.circular(10)),
             boxShadow: [
               // เงาด้านบนซ้าย
@@ -562,7 +562,7 @@ class LoginScreenState extends State<LoginScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: global.theme.cardColor,
                       border: Border.all(color: Colors.white),
                       borderRadius: BorderRadius.circular(10),
                       boxShadow: const [
@@ -696,25 +696,54 @@ class LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 8),
 
-                        // ปุ่ม Setup Config
+                        // ปุ่ม ธีม + Setup Config
                         Center(
-                          child: TextButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const SetupScreen(),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // ปุ่มเปลี่ยนธีม
+                              TextButton.icon(
+                                onPressed: () async {
+                                  // สลับ light ↔ dark
+                                  global.displayThemeMode =
+                                      global.isDarkMode() ? 'light' : 'dark';
+                                  await global.saveThemeSettings();
+                                  setState(() {});
+                                },
+                                icon: Icon(
+                                  _getThemeModeIcon(),
+                                  size: 16,
+                                  color: _getThemeModeIconColor(),
                                 ),
-                              );
-                            },
-                            icon: Icon(Icons.settings, size: 16, color: Colors.grey[600]),
-                            label: Text(
-                              'Setup',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 12,
+                                label: Text(
+                                  _getThemeModeLabel(),
+                                  style: TextStyle(
+                                    color: global.theme.iconSecondaryColor,
+                                    fontSize: 12,
+                                  ),
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 8),
+                              // ปุ่ม Setup Config
+                              TextButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const SetupScreen(),
+                                    ),
+                                  );
+                                },
+                                icon: Icon(Icons.settings, size: 16, color: global.theme.iconSecondaryColor),
+                                label: Text(
+                                  'Setup',
+                                  style: TextStyle(
+                                    color: global.theme.iconSecondaryColor,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -827,6 +856,20 @@ class LoginScreenState extends State<LoginScreen> {
           ),
       ],
     );
+  }
+
+  // ================== Theme Mode Helpers ==================
+
+  IconData _getThemeModeIcon() {
+    return global.isDarkMode() ? Icons.dark_mode : Icons.light_mode;
+  }
+
+  Color _getThemeModeIconColor() {
+    return global.isDarkMode() ? Colors.indigo.shade300 : Colors.orange;
+  }
+
+  String _getThemeModeLabel() {
+    return global.isDarkMode() ? 'Dark' : 'Light';
   }
 
   /// ดึงสี Environment badge ตาม flavor

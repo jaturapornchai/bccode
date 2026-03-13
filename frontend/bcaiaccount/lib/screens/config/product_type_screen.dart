@@ -379,15 +379,6 @@ class ProductTypeScreenState extends State<ProductTypeScreen>
                     '(${listData.length})',
                     style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const Icon(Icons.line_weight),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataLineSpaceChange();
-                      });
-                    },
-                  ),
                 ],
               ),
             ),
@@ -466,6 +457,20 @@ class ProductTypeScreenState extends State<ProductTypeScreen>
     );
   }
 
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return isEditMode
+          ? global.theme.rowEditColor
+          : global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
+  }
+
   Widget listObject(int index, ProductTypeModel value, bool showCheckBox) {
     bool isCheck = false;
     for (int i = 0; i < guidListChecked.length; i++) {
@@ -482,6 +487,7 @@ class ProductTypeScreenState extends State<ProductTypeScreen>
       fontSize: (selected)
           ? global.deviceConfig.listDataFontSize + 2.0
           : global.deviceConfig.listDataFontSize,
+      color: (selected) ? global.theme.textColor : global.theme.textSecondaryColor,
     );
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -528,11 +534,7 @@ class ProductTypeScreenState extends State<ProductTypeScreen>
       child: Container(
         key: index < listKeys.length ? listKeys[index] : null,
         decoration: BoxDecoration(
-          color: (selectGuid == value.guidfixed!)
-              ? global.theme.rowSelectedColor
-              : (index % 2 == 0)
-              ? global.theme.columnAlternateEvenColor
-              : global.theme.columnAlternateOddColor,
+          color: _getContainerColor(value.guidfixed!, index),
         ),
         padding: EdgeInsets.only(
           left: 10,
@@ -723,7 +725,7 @@ class ProductTypeScreenState extends State<ProductTypeScreen>
 
 
     return Scaffold(
-      backgroundColor: isEditMode ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
+      backgroundColor: global.theme.cardColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)

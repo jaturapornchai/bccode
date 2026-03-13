@@ -32,7 +32,7 @@ class BusinessPropertyWidget extends StatelessWidget {
         children: [
           Text(
             global.language("business_property"),
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
           const SizedBox(height: 4),
           _buildCheckbox(
@@ -75,7 +75,7 @@ class BusinessPropertyWidget extends StatelessWidget {
             onChanged: (v) => onChanged(v ?? false),
             activeColor: global.theme.primaryColor,
           ),
-          Text(label, style: const TextStyle(fontSize: 14)),
+          Text(label, style: TextStyle(fontSize: 14)),
         ],
       ),
     );

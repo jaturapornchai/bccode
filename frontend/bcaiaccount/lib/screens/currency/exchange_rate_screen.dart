@@ -15,7 +15,7 @@ class ExchangeRateScreen extends StatefulWidget {
   State<ExchangeRateScreen> createState() => _ExchangeRateScreenState();
 }
 
-class _ExchangeRateScreenState extends State<ExchangeRateScreen> {
+class _ExchangeRateScreenState extends State<ExchangeRateScreen> with global.ThemeRefreshMixin {
   final CurrencyApiService _apiService = CurrencyApiService();
   List<CurrencyWithLatestRate> _currencies = [];
   List<ExchangeRateHistoryModel> _allExchangeRates = [];
@@ -144,7 +144,7 @@ class _ExchangeRateScreenState extends State<ExchangeRateScreen> {
               ? Center(
                   child: Text(
                     global.language("no_exchange_rate_history_short"),
-                    style: const TextStyle(color: Colors.grey),
+                    style: TextStyle(color: global.theme.textSecondaryColor),
                   ),
                 )
               : ListView.builder(
@@ -161,13 +161,13 @@ class _ExchangeRateScreenState extends State<ExchangeRateScreen> {
                       leading: CircleAvatar(
                         radius: 16,
                         backgroundColor: index == 0
-                            ? Colors.green.shade100
-                            : Colors.grey.shade200,
+                            ? global.theme.positiveHighlightColor
+                            : global.theme.dividerBorderColor,
                         child: Text(
                           '${index + 1}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: index == 0 ? Colors.green : Colors.grey,
+                            color: index == 0 ? global.theme.positiveHighlightTextColor : global.theme.textSecondaryColor,
                           ),
                         ),
                       ),
@@ -175,17 +175,17 @@ class _ExchangeRateScreenState extends State<ExchangeRateScreen> {
                         '1 ${data.currency.code} = ${rate.rate.toStringAsFixed(4)} THB',
                         style: TextStyle(
                           fontWeight: index == 0 ? FontWeight.bold : FontWeight.normal,
-                          color: index == 0 ? Colors.green.shade700 : null,
+                          color: index == 0 ? global.theme.positiveHighlightTextColor : null,
                         ),
                       ),
                       subtitle: Text(displayDate),
                       trailing: index == 0
                           ? Chip(
                               label: Text(global.language("latest")),
-                              backgroundColor: Colors.green.shade100,
+                              backgroundColor: global.theme.positiveHighlightColor,
                               labelStyle: TextStyle(
                                 fontSize: 10,
-                                color: Colors.green.shade700,
+                                color: global.theme.positiveHighlightTextColor,
                               ),
                               padding: EdgeInsets.zero,
                               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -221,7 +221,7 @@ class _ExchangeRateScreenState extends State<ExchangeRateScreen> {
         backgroundColor: global.theme.appBarColor,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh),
             onPressed: _loadData,
             tooltip: global.language("refresh"),
           ),
@@ -236,10 +236,10 @@ class _ExchangeRateScreenState extends State<ExchangeRateScreen> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: global.language("search_currency"),
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: Icon(Icons.search),
                 suffixIcon: _searchText.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear),
+                        icon: Icon(Icons.clear),
                         onPressed: () {
                           _searchController.clear();
                           setState(() {
@@ -266,7 +266,7 @@ class _ExchangeRateScreenState extends State<ExchangeRateScreen> {
             decoration: BoxDecoration(
               color: global.theme.appBarColor.withValues(alpha: 0.1),
               border: Border(
-                bottom: BorderSide(color: Colors.grey.shade300),
+                bottom: BorderSide(color: global.theme.dividerBorderColor),
               ),
             ),
             child: Row(
@@ -275,14 +275,14 @@ class _ExchangeRateScreenState extends State<ExchangeRateScreen> {
                   flex: 2,
                   child: Text(
                     global.language("currency"),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
                 Expanded(
                   flex: 2,
                   child: Text(
                     '${global.language("exchange_rate")} (THB)',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -290,7 +290,7 @@ class _ExchangeRateScreenState extends State<ExchangeRateScreen> {
                   flex: 2,
                   child: Text(
                     global.language("updated_date"),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -298,7 +298,7 @@ class _ExchangeRateScreenState extends State<ExchangeRateScreen> {
                   flex: 1,
                   child: Text(
                     global.language("manage"),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -315,10 +315,10 @@ class _ExchangeRateScreenState extends State<ExchangeRateScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.currency_exchange,
                               size: 64,
-                              color: Colors.grey,
+                              color: global.theme.iconSecondaryColor,
                             ),
                             SizedBox(height: 16),
                             Text(
@@ -326,9 +326,9 @@ class _ExchangeRateScreenState extends State<ExchangeRateScreen> {
                                   ? global.language("no_currency_data")
                                   : global.language("no_search_results"),
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.grey,
+                                color: global.theme.textSecondaryColor,
                               ),
                             ),
                           ],
@@ -357,9 +357,9 @@ class _ExchangeRateScreenState extends State<ExchangeRateScreen> {
                             return Container(
                               decoration: BoxDecoration(
                                 border: Border(
-                                  bottom: BorderSide(color: Colors.grey.shade200),
+                                  bottom: BorderSide(color: global.theme.dividerBorderColor),
                                 ),
-                                color: index % 2 == 0 ? Colors.white : Colors.grey.shade50,
+                                color: index % 2 == 0 ? global.theme.columnAlternateEvenColor : global.theme.columnAlternateOddColor,
                               ),
                               child: InkWell(
                                 onTap: () => _navigateToHistory(data.currency),
@@ -397,15 +397,15 @@ class _ExchangeRateScreenState extends State<ExchangeRateScreen> {
                                                 children: [
                                                   Text(
                                                     data.currency.code,
-                                                    style: const TextStyle(
+                                                    style: TextStyle(
                                                       fontWeight: FontWeight.bold,
                                                     ),
                                                   ),
                                                   Text(
                                                     data.currency.name,
-                                                    style: const TextStyle(
+                                                    style: TextStyle(
                                                       fontSize: 12,
-                                                      color: Colors.grey,
+                                                      color: global.theme.textSecondaryColor,
                                                     ),
                                                     overflow: TextOverflow.ellipsis,
                                                   ),
@@ -425,7 +425,7 @@ class _ExchangeRateScreenState extends State<ExchangeRateScreen> {
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
                                             fontWeight: hasRate ? FontWeight.bold : FontWeight.normal,
-                                            color: hasRate ? Colors.green.shade700 : Colors.red.shade400,
+                                            color: hasRate ? global.theme.positiveHighlightTextColor : global.theme.negativeHighlightTextColor,
                                           ),
                                         ),
                                       ),
@@ -435,7 +435,7 @@ class _ExchangeRateScreenState extends State<ExchangeRateScreen> {
                                         child: Text(
                                           dateText,
                                           textAlign: TextAlign.center,
-                                          style: const TextStyle(fontSize: 13),
+                                          style: TextStyle(fontSize: 13),
                                         ),
                                       ),
                                       // Actions
@@ -446,8 +446,8 @@ class _ExchangeRateScreenState extends State<ExchangeRateScreen> {
                                           children: [
                                             // History button
                                             IconButton(
-                                              icon: const Icon(Icons.history),
-                                              color: Colors.blue,
+                                              icon: Icon(Icons.history),
+                                              color: global.theme.infoHighlightTextColor,
                                               onPressed: () => _showHistoryDialog(data),
                                               tooltip: global.language("history"),
                                               padding: EdgeInsets.zero,
@@ -457,8 +457,8 @@ class _ExchangeRateScreenState extends State<ExchangeRateScreen> {
                                             const SizedBox(width: 8),
                                             // Edit button
                                             IconButton(
-                                              icon: const Icon(Icons.edit),
-                                              color: Colors.orange,
+                                              icon: Icon(Icons.edit),
+                                              color: global.theme.warningHighlightTextColor,
                                               onPressed: () => _navigateToHistory(data.currency),
                                               tooltip: global.language("edit"),
                                               padding: EdgeInsets.zero,
@@ -483,9 +483,9 @@ class _ExchangeRateScreenState extends State<ExchangeRateScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: global.theme.cardColor,
                 border: Border(
-                  top: BorderSide(color: Colors.grey.shade300),
+                  top: BorderSide(color: global.theme.dividerBorderColor),
                 ),
               ),
               child: Row(
@@ -493,11 +493,11 @@ class _ExchangeRateScreenState extends State<ExchangeRateScreen> {
                 children: [
                   Text(
                     '${global.language("currency_count")}: ${_currencies.length}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   Text(
                     '${global.language("exchange_rate_set_count")}: ${_currencies.where((c) => c.latestRate != null).length}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ],
               ),

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:smlaicloud/global.dart' as global;
 
 // วิดเจ็ตพื้นหลังเมฆเคลื่อนไหว
 class CloudBackground extends StatefulWidget {
@@ -207,6 +208,7 @@ class _AnimatedCloudsState extends State<AnimatedClouds>
             size: cloud.size,
             opacity: cloud.opacity,
             style: cloud.style,
+            cloudColor: global.theme.cardColor,
           ),
         );
       }).toList(),
@@ -219,12 +221,14 @@ class CloudWidget extends StatelessWidget {
   final double size;
   final double opacity;
   final int style;
+  final Color cloudColor; // สีของเมฆ — รองรับ theme
 
   const CloudWidget({
     super.key,
     required this.size,
     this.opacity = 1.0,
     required this.style,
+    required this.cloudColor,
   });
 
   @override
@@ -236,8 +240,8 @@ class CloudWidget extends StatelessWidget {
         // ปรับสัดส่วนให้กว้างขึ้น
         height: size * 0.55,
         child: CustomPaint(
-          painter: CloudPainter(style: style),
-          foregroundPainter: CloudHighlightPainter(),
+          painter: CloudPainter(style: style, cloudColor: cloudColor),
+          foregroundPainter: CloudHighlightPainter(cloudColor: cloudColor),
         ),
       ),
     );
@@ -246,10 +250,14 @@ class CloudWidget extends StatelessWidget {
 
 // Painter สำหรับวาดไฮไลต์บนเมฆ
 class CloudHighlightPainter extends CustomPainter {
+  final Color cloudColor; // สีเมฆจาก theme
+
+  CloudHighlightPainter({required this.cloudColor});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.4)
+      ..color = cloudColor.withValues(alpha: 0.4)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5)
       ..blendMode = BlendMode.screen;
 
@@ -274,8 +282,9 @@ class CloudHighlightPainter extends CustomPainter {
 // Painter สำหรับวาดรูปเมฆที่สวยงามขึ้น
 class CloudPainter extends CustomPainter {
   final int style;
+  final Color cloudColor; // สีเมฆจาก theme
 
-  CloudPainter({required this.style});
+  CloudPainter({required this.style, required this.cloudColor});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -301,15 +310,15 @@ class CloudPainter extends CustomPainter {
         Offset(size.width / 2, 0),
         Offset(size.width / 2, size.height),
         [
-          Colors.white,
-          Colors.white.withValues(alpha: 0.85),
+          cloudColor,
+          cloudColor.withValues(alpha: 0.85),
         ],
       )
       ..style = PaintingStyle.fill;
 
     // เพิ่ม blur effect เพื่อให้ขอบเมฆนุ่มขึ้น
     final shadowPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.6)
+      ..color = cloudColor.withValues(alpha: 0.6)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
 
     // ใช้ Path แทนการวาดวงกลมเพื่อให้มีรูปร่างที่ซับซ้อนและสวยงามขึ้น
@@ -366,14 +375,14 @@ class CloudPainter extends CustomPainter {
         Offset(size.width / 2, 0),
         Offset(size.width / 2, size.height),
         [
-          Colors.white,
-          Colors.white.withValues(alpha: 0.8),
+          cloudColor,
+          cloudColor.withValues(alpha: 0.8),
         ],
       )
       ..style = PaintingStyle.fill;
 
     final shadowPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.5)
+      ..color = cloudColor.withValues(alpha: 0.5)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
 
     final width = size.width;
@@ -414,15 +423,15 @@ class CloudPainter extends CustomPainter {
   // สไตล์เมฆแบบที่ 3 - มีขอบที่ชัดเจนกว่าและรูปร่างเป็นเมฆที่สมบูรณ์
   void _drawCloudStyle3(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white
+      ..color = cloudColor
       ..style = PaintingStyle.fill;
 
     final highlightPaint = Paint()
-      ..color = Colors.white
+      ..color = cloudColor
       ..style = PaintingStyle.fill;
 
     final shadowPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.7)
+      ..color = cloudColor.withValues(alpha: 0.7)
       ..style = PaintingStyle.fill
       ..maskFilter = const MaskFilter.blur(BlurStyle.outer, 4);
 

@@ -17,7 +17,7 @@ class SelectProductBarcodeWidget extends StatefulWidget {
 }
 
 class SelectProductBarcodeWidgetState
-    extends State<SelectProductBarcodeWidget> {
+    extends State<SelectProductBarcodeWidget> with global.ThemeRefreshMixin {
   List<SelectedProductItemStruct> _products = [];
   String? _error;
   late TextEditingController _searchController;
@@ -153,7 +153,7 @@ class SelectProductBarcodeWidgetState
     return Scaffold(
       appBar: AppBar(
         title: Text(global.language("select_product_barcode")),
-        backgroundColor: Colors.blue.shade700,
+        backgroundColor: global.theme.infoHighlightTextColor,
         elevation: 2,
         actions: [
           // เพิ่มปุ่มปรับขนาดตัวอักษร
@@ -171,7 +171,7 @@ class SelectProductBarcodeWidgetState
       ),
       body: Container(
         padding: EdgeInsets.all(padding),
-        color: Colors.grey.shade100,
+        color: global.theme.cardColor,
         child: Column(
           children: [
             Card(
@@ -201,28 +201,28 @@ class SelectProductBarcodeWidgetState
                     hintStyle: TextStyle(
                       fontSize: _fontSize(14),
                     ), // ปรับขนาดคำแนะนำ
-                    prefixIcon: const Icon(Icons.search, color: Colors.blue),
+                    prefixIcon: Icon(Icons.search, color: global.theme.infoHighlightTextColor),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 8.0,
                       vertical: 8.0,
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.blue.shade200),
+                      borderSide: BorderSide(color: global.theme.infoHighlightTextColor.withValues(alpha: 0.3)),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.blue.shade200),
+                      borderSide: BorderSide(color: global.theme.infoHighlightTextColor.withValues(alpha: 0.3)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(
-                        color: Colors.blue.shade500,
+                        color: global.theme.infoHighlightTextColor,
                         width: 2,
                       ),
                     ),
                     suffixIcon: IconButton(
-                      icon: const Icon(Icons.clear, color: Colors.red),
+                      icon: Icon(Icons.clear, color: global.theme.negativeHighlightTextColor),
                       onPressed: () {
                         _searchController.clear();
                         setState(() {
@@ -256,9 +256,9 @@ class SelectProductBarcodeWidgetState
                     children: [
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.shopping_cart,
-                            color: Colors.blue,
+                            color: global.theme.infoHighlightTextColor,
                             size: 20,
                           ),
                           const SizedBox(width: 4),
@@ -267,20 +267,20 @@ class SelectProductBarcodeWidgetState
                             style: TextStyle(
                               fontSize: _fontSize(16), // ปรับขนาดตัวอักษร
                               fontWeight: FontWeight.bold,
-                              color: Colors.blue,
+                              color: global.theme.infoHighlightTextColor,
                             ),
                           ),
                           Spacer(),
                           TextButton.icon(
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.delete_sweep,
-                              color: Colors.red,
+                              color: global.theme.negativeHighlightTextColor,
                               size: 18,
                             ),
                             label: Text(
                               global.language("clear_all"),
                               style: TextStyle(
-                                color: Colors.red,
+                                color: global.theme.negativeHighlightTextColor,
                                 fontSize: _fontSize(14),
                               ),
                             ),
@@ -310,10 +310,10 @@ class SelectProductBarcodeWidgetState
                             labelPadding: const EdgeInsets.symmetric(
                               horizontal: 6,
                             ),
-                            backgroundColor: Colors.blue.shade100,
+                            backgroundColor: global.theme.infoHighlightColor,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(color: Colors.blue.shade300),
+                              side: BorderSide(color: global.theme.infoHighlightTextColor.withValues(alpha: 0.5)),
                             ),
                             label: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -325,7 +325,7 @@ class SelectProductBarcodeWidgetState
                                     item.itemCode,
                                     style: TextStyle(
                                       fontSize: _fontSize(13),
-                                      color: Colors.red.shade700,
+                                      color: global.theme.negativeHighlightTextColor,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -337,7 +337,7 @@ class SelectProductBarcodeWidgetState
                                   item.barcode,
                                   style: TextStyle(
                                     fontSize: _fontSize(12),
-                                    color: Colors.orange.shade700,
+                                    color: global.theme.warningHighlightTextColor,
                                     fontWeight: FontWeight.w600,
                                   ),
                                   softWrap: true,
@@ -350,17 +350,17 @@ class SelectProductBarcodeWidgetState
                                     item.itemName,
                                     style: TextStyle(
                                       fontSize: _fontSize(10),
-                                      color: Colors.grey.shade600,
+                                      color: global.theme.textSecondaryColor,
                                     ),
                                     softWrap: true,
                                   ),
                                 ],
                               ],
                             ),
-                            deleteIcon: const Icon(
+                            deleteIcon: Icon(
                               Icons.cancel,
                               size: 18,
-                              color: Colors.red,
+                              color: global.theme.negativeHighlightTextColor,
                             ),
                             onDeleted: () {
                               setState(() {
@@ -400,7 +400,7 @@ class SelectProductBarcodeWidgetState
                                 ? Icons.search
                                 : Icons.inventory_2_outlined,
                             size: 48,
-                            color: Colors.grey.shade400,
+                            color: global.theme.iconSecondaryColor,
                           ),
                           const SizedBox(height: 8),
                           Text(
@@ -409,7 +409,7 @@ class SelectProductBarcodeWidgetState
                                 : "ไม่พบข้อมูลสินค้าที่ค้นหา",
                             style: TextStyle(
                               fontSize: _fontSize(16), // ปรับขนาดตัวอักษร
-                              color: Colors.grey.shade600,
+                              color: global.theme.textSecondaryColor,
                             ),
                           ),
                         ],
@@ -432,13 +432,13 @@ class SelectProductBarcodeWidgetState
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? Colors.blue.shade50
-                                  : Colors.white,
+                                  ? global.theme.infoHighlightColor
+                                  : global.theme.cardColor,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                 color: isSelected
-                                    ? Colors.blue
-                                    : Colors.grey.shade300,
+                                    ? global.theme.infoHighlightTextColor
+                                    : global.theme.dividerBorderColor,
                               ),
                             ),
                             margin: EdgeInsets.zero,
@@ -463,8 +463,8 @@ class SelectProductBarcodeWidgetState
                                             ? Icons.check_circle
                                             : Icons.circle_outlined,
                                         color: isSelected
-                                            ? Colors.blue
-                                            : Colors.grey,
+                                            ? global.theme.infoHighlightTextColor
+                                            : global.theme.iconSecondaryColor,
                                         size: 18,
                                       ),
                                       const Spacer(),
@@ -475,7 +475,7 @@ class SelectProductBarcodeWidgetState
                                             vertical: 2,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: Colors.blue,
+                                            color: global.theme.infoHighlightTextColor,
                                             borderRadius: BorderRadius.circular(
                                               8,
                                             ),
@@ -483,7 +483,7 @@ class SelectProductBarcodeWidgetState
                                           child: Text(
                                             global.language("chosen"),
                                             style: TextStyle(
-                                              color: Colors.white,
+                                              color: global.theme.onPrimaryColor,
                                               fontSize: _fontSize(
                                                 10,
                                               ), // ปรับขนาดตัวอักษร
@@ -497,7 +497,7 @@ class SelectProductBarcodeWidgetState
                                     product.itemCode,
                                     style: TextStyle(
                                       fontSize: _fontSize(14),
-                                      color: Colors.red.shade700,
+                                      color: global.theme.negativeHighlightTextColor,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -506,7 +506,7 @@ class SelectProductBarcodeWidgetState
                                     product.barcode,
                                     style: TextStyle(
                                       fontSize: _fontSize(12),
-                                      color: Colors.blue.shade800,
+                                      color: global.theme.infoHighlightTextColor,
                                       fontWeight: FontWeight.w500,
                                     ),
                                     softWrap: true,
@@ -516,7 +516,7 @@ class SelectProductBarcodeWidgetState
                                     product.itemName,
                                     style: TextStyle(
                                       fontSize: _fontSize(12),
-                                      color: Colors.black,
+                                      color: global.theme.textColor,
                                       fontWeight: FontWeight.w500,
                                     ),
                                     softWrap: true,
@@ -537,7 +537,7 @@ class SelectProductBarcodeWidgetState
               onPressed: () {
                 Navigator.pop(context, _itemCodeSelected);
               },
-              backgroundColor: Colors.green,
+              backgroundColor: global.theme.positiveHighlightTextColor,
               icon: const Icon(Icons.check, size: 20),
               label: Text(
                 "ยืนยัน (${_itemCodeSelected.length})",

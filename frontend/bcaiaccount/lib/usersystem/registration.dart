@@ -13,7 +13,7 @@ class RegistrationScreen extends StatefulWidget {
   State<RegistrationScreen> createState() => _RegistrationScreenState();
 }
 
-class _RegistrationScreenState extends State<RegistrationScreen> {
+class _RegistrationScreenState extends State<RegistrationScreen> with global.ThemeRefreshMixin {
   // final GoogleSignIn _googleSignIn = GoogleSignIn();
   // final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _userControl = TextEditingController();
@@ -210,7 +210,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       height: 60,
       alignment: Alignment.centerLeft,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(10),
       ),
       child: TextFormField(
@@ -233,7 +233,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       height: 60,
       alignment: Alignment.centerLeft,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(10),
       ),
       child: TextFormField(
@@ -256,7 +256,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       height: 60,
       alignment: Alignment.centerLeft,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(10),
       ),
       child: TextFormField(

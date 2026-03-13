@@ -26,7 +26,7 @@ class SectionEditor extends StatefulWidget {
   State<SectionEditor> createState() => _SectionEditorState();
 }
 
-class _SectionEditorState extends State<SectionEditor> {
+class _SectionEditorState extends State<SectionEditor> with global.ThemeRefreshMixin {
   FormElement? selectedElement;
   final ImagePicker _picker = ImagePicker();
 
@@ -39,7 +39,7 @@ class _SectionEditorState extends State<SectionEditor> {
       width: 200,
       height: 40,
       text: global.language('full_form_editor_new_text'),
-      textStyle: const TextStyle(fontSize: 16, color: Colors.black),
+      textStyle: TextStyle(fontSize: 16, color: global.theme.textColor),
       textAlign: TextAlign.left,
     );
 
@@ -57,7 +57,7 @@ class _SectionEditorState extends State<SectionEditor> {
       y: 50,
       width: 200,
       height: 100,
-      borderColor: Colors.black,
+      borderColor: global.theme.textColor,
       borderWidth: 2,
     );
 
@@ -81,7 +81,7 @@ class _SectionEditorState extends State<SectionEditor> {
         3,
         (i) => List.generate(3, (j) => 'Cell ${i + 1},${j + 1}'),
       ),
-      borderColor: Colors.black,
+      borderColor: global.theme.textColor,
       borderWidth: 1,
     );
 
@@ -160,7 +160,7 @@ class _SectionEditorState extends State<SectionEditor> {
         // Toolbar
         Container(
           padding: const EdgeInsets.all(8),
-          color: Colors.grey[200],
+          color: global.theme.dividerBorderColor,
           child: Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -191,7 +191,7 @@ class _SectionEditorState extends State<SectionEditor> {
                 icon: Icon(Icons.wallpaper, size: 18),
                 label: Text(global.language('set_background')),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[100],
+                  backgroundColor: global.theme.infoHighlightColor,
                 ),
               ),
               if (widget.section.backgroundImagePath != null)
@@ -200,7 +200,7 @@ class _SectionEditorState extends State<SectionEditor> {
                   icon: Icon(Icons.close, size: 18),
                   label: Text(global.language('remove_background')),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red[100],
+                    backgroundColor: global.theme.negativeHighlightColor,
                   ),
                 ),
             ],
@@ -209,7 +209,7 @@ class _SectionEditorState extends State<SectionEditor> {
         // Canvas with rulers
         Expanded(
           child: Container(
-            color: Colors.grey[400], // Gray background for work area
+            color: global.theme.dividerBorderColor, // พื้นหลัง work area
             child: widget.zoomLevel == -1
                 ? _buildFullScreenCanvas()
                 : SingleChildScrollView(
@@ -226,7 +226,7 @@ class _SectionEditorState extends State<SectionEditor> {
         if (selectedElement != null)
           Container(
             padding: const EdgeInsets.all(8),
-            color: Colors.grey[100],
+            color: global.theme.surfaceColor,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -234,11 +234,11 @@ class _SectionEditorState extends State<SectionEditor> {
                   children: [
                     Text(
                       '${global.language("properties_label")} ${_getElementTypeName(selectedElement!.type)}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const Spacer(),
                     IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
+                      icon: Icon(Icons.delete, color: global.theme.negativeHighlightTextColor),
                       onPressed: () => _deleteElement(selectedElement!),
                     ),
                   ],
@@ -300,8 +300,8 @@ class _SectionEditorState extends State<SectionEditor> {
               width: canvasWidth,
               height: canvasHeight,
               decoration: BoxDecoration(
-                color: Colors.white, // White canvas background
-                border: Border.all(color: Colors.blue, width: 2),
+                color: global.theme.cardColor, // White canvas background
+                border: Border.all(color: global.theme.infoHighlightTextColor, width: 2),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.2),
@@ -343,11 +343,11 @@ class _SectionEditorState extends State<SectionEditor> {
                         height: element.height * zoom,
                         decoration: BoxDecoration(
                           color: selectedElement?.id == element.id
-                              ? Colors.blue.withValues(alpha: 0.1)
+                              ? global.theme.infoHighlightColor
                               : element.backgroundColor,
                           border: Border.all(
                             color: selectedElement?.id == element.id
-                                ? Colors.blue
+                                ? global.theme.infoHighlightTextColor
                                 : element.borderColor ?? Colors.transparent,
                             width: selectedElement?.id == element.id
                                 ? 2
@@ -390,31 +390,51 @@ class _SectionEditorState extends State<SectionEditor> {
             fit: BoxFit.contain,
           );
         }
-        return const Icon(Icons.image);
+        return Icon(Icons.image);
       case ElementType.table:
         return _buildTable(element);
       case ElementType.rectangle:
       case ElementType.line:
+      case ElementType.separator:
         return Container();
+      case ElementType.dataField:
+      case ElementType.barcode:
+      case ElementType.qrCode:
+      case ElementType.pageNumber:
+      case ElementType.dateTime:
+      case ElementType.signature:
+        return Text(element.displayName,
+            style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor));
     }
   }
 
   Widget _buildTable(FormElement element) {
     if (element.tableData == null) return Container();
+    final aligns = element.columnAligns;
 
     return Table(
       border: TableBorder.all(
-        color: element.borderColor ?? Colors.black,
+        color: element.borderColor ?? global.theme.textColor,
         width: element.borderWidth ?? 1,
       ),
-      children: element.tableData!.map((row) {
+      children: element.tableData!.asMap().entries.map((entry) {
+        final isHeader = element.tableHasHeader && entry.key == 0;
         return TableRow(
-          children: row.map((cell) {
+          children: entry.value.asMap().entries.map((cellEntry) {
+            final colIdx = cellEntry.key;
+            final cell = cellEntry.value;
+            final align = aligns != null && colIdx < aligns.length
+                ? TextAlign.values[aligns[colIdx].clamp(0, 5)]
+                : (isHeader ? TextAlign.center : TextAlign.left);
             return Padding(
               padding: const EdgeInsets.all(4),
               child: Text(
                 cell,
-                style: const TextStyle(fontSize: 12),
+                textAlign: align,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isHeader ? FontWeight.bold : FontWeight.normal,
+                ),
               ),
             );
           }).toList(),
@@ -435,6 +455,14 @@ class _SectionEditorState extends State<SectionEditor> {
         return global.language('full_form_editor_table');
       case ElementType.line:
         return global.language('full_form_editor_line');
+      case ElementType.dataField:
+      case ElementType.barcode:
+      case ElementType.qrCode:
+      case ElementType.separator:
+      case ElementType.pageNumber:
+      case ElementType.dateTime:
+      case ElementType.signature:
+        return type.label;
     }
   }
 
@@ -467,14 +495,12 @@ class _SectionEditorState extends State<SectionEditor> {
                 ),
                 keyboardType: TextInputType.number,
                 controller: TextEditingController(
-                  text: element.textStyle?.fontSize?.toString() ?? '16',
+                  text: element.fontSize?.toString() ?? '16',
                 ),
                 onChanged: (value) {
                   final fontSize = double.tryParse(value) ?? 16;
                   _updateElement(element.copyWith(
-                    textStyle:
-                        element.textStyle?.copyWith(fontSize: fontSize) ??
-                            TextStyle(fontSize: fontSize),
+                    fontSize: fontSize,
                   ));
                 },
               ),

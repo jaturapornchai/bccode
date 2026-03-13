@@ -17,7 +17,7 @@ class DebtorSelectorDialog extends StatefulWidget {
   State<DebtorSelectorDialog> createState() => _DebtorSelectorDialogState();
 }
 
-class _DebtorSelectorDialogState extends State<DebtorSelectorDialog> {
+class _DebtorSelectorDialogState extends State<DebtorSelectorDialog> with global.ThemeRefreshMixin {
   final TextEditingController _searchController = TextEditingController();
   final ClickHouseDebtorCreditorService _service =
       ClickHouseDebtorCreditorService();
@@ -83,22 +83,22 @@ class _DebtorSelectorDialogState extends State<DebtorSelectorDialog> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.blue[50],
+                color: global.theme.infoHighlightColor,
                 border: Border(
-                  bottom: BorderSide(color: Colors.grey[300]!),
+                  bottom: BorderSide(color: global.theme.dividerBorderColor),
                 ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.person, color: Colors.blue),
+                  Icon(Icons.person, color: global.theme.infoHighlightTextColor),
                   SizedBox(width: 8),
                   Text(
                     global.language("select_debtor"),
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: Icon(Icons.close),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -112,12 +112,12 @@ class _DebtorSelectorDialogState extends State<DebtorSelectorDialog> {
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: global.language("search_debtor_hint"),
-                  prefixIcon: const Icon(Icons.search),
+                  prefixIcon: Icon(Icons.search),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                   suffixIcon: IconButton(
-                    icon: const Icon(Icons.search),
+                    icon: Icon(Icons.search),
                     onPressed: _searchDebtors,
                   ),
                 ),
@@ -132,18 +132,18 @@ class _DebtorSelectorDialogState extends State<DebtorSelectorDialog> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red[50],
+                    color: global.theme.negativeHighlightColor,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red[200]!),
+                    border: Border.all(color: global.theme.negativeHighlightTextColor.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.error_outline, color: Colors.red[700]),
+                      Icon(Icons.error_outline, color: global.theme.negativeHighlightTextColor),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _errorMessage!,
-                          style: TextStyle(color: Colors.red[700]),
+                          style: TextStyle(color: global.theme.negativeHighlightTextColor),
                         ),
                       ),
                     ],
@@ -170,14 +170,14 @@ class _DebtorSelectorDialogState extends State<DebtorSelectorDialog> {
                             Icon(
                               Icons.search_off,
                               size: 64,
-                              color: Colors.grey[400],
+                              color: global.theme.iconSecondaryColor,
                             ),
                             SizedBox(height: 16),
                             Text(
                               global.language("debtor_not_found"),
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.grey[600],
+                                color: global.theme.iconSecondaryColor,
                               ),
                             ),
                           ],
@@ -189,20 +189,20 @@ class _DebtorSelectorDialogState extends State<DebtorSelectorDialog> {
                           final debtor = _debtors[index];
                           return ListTile(
                             leading: CircleAvatar(
-                              backgroundColor: Colors.blue[100],
+                              backgroundColor: global.theme.infoHighlightColor,
                               child: Text(
                                 debtor.code.isNotEmpty
                                     ? debtor.code[0].toUpperCase()
                                     : '?',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.blue,
+                                  color: global.theme.infoHighlightTextColor,
                                 ),
                               ),
                             ),
                             title: Text(debtor.displayName),
                             subtitle: Text('${global.language("code")}: ${debtor.code}'),
-                            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                            trailing: Icon(Icons.arrow_forward_ios, size: 16),
                             onTap: () {
                               Navigator.pop(context, debtor);
                             },
@@ -221,14 +221,14 @@ class _DebtorSelectorDialogState extends State<DebtorSelectorDialog> {
                       Icon(
                         Icons.person_search,
                         size: 64,
-                        color: Colors.grey[400],
+                        color: global.theme.iconSecondaryColor,
                       ),
                       SizedBox(height: 16),
                       Text(
                         global.language("enter_keyword_to_search_debtor"),
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.grey[600],
+                          color: global.theme.iconSecondaryColor,
                         ),
                       ),
                     ],

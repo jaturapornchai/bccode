@@ -68,10 +68,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       }
     } on Exception catch (exception) {
       AppLogger.error('❌ Login Exception: $exception');
-      emit(LoginFailed(message: 'ติดต่อ Server ไม่ได้ : $exception'));
+      final msg = exception.toString().replaceFirst('Exception: ', '');
+      emit(LoginFailed(message: msg));
     } catch (e) {
       AppLogger.error('❌ Login Error: $e');
-      emit(LoginFailed(message: 'ติดต่อ Server ไม่ได้ : $e'));
+      emit(LoginFailed(message: 'เกิดข้อผิดพลาดที่ไม่คาดคิด: $e'));
     }
   }
 
@@ -118,9 +119,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         emit(const RegisterFailed(message: 'Not Found'));
       }
     } on Exception catch (exception) {
-      emit(RegisterFailed(message: 'ติดต่อ Server ไม่ได้ : $exception'));
+      final msg = exception.toString().replaceFirst('Exception: ', '');
+      emit(RegisterFailed(message: msg));
     } catch (e) {
-      emit(RegisterFailed(message: 'ติดต่อ Server ไม่ได้ : $e'));
+      emit(RegisterFailed(message: 'เกิดข้อผิดพลาดที่ไม่คาดคิด: $e'));
     }
   }
 
@@ -158,9 +160,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         emit(const TokenLoginFailed(message: 'User Not Found'));
       }
     } on Exception catch (exception) {
-      emit(TokenLoginFailed(message: 'ติดต่อ Server ไม่ได้ : $exception'));
+      final msg = exception.toString().replaceFirst('Exception: ', '');
+      emit(TokenLoginFailed(message: msg));
     } catch (e) {
-      emit(TokenLoginFailed(message: 'ติดต่อ Server ไม่ได้ : $e'));
+      emit(TokenLoginFailed(message: 'เกิดข้อผิดพลาดที่ไม่คาดคิด: $e'));
     }
   }
 

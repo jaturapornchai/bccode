@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
@@ -514,15 +515,6 @@ class OrderSettingScreenState extends State<OrderSettingScreen>
                     '(${listData.length})',
                     style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const Icon(Icons.line_weight),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataLineSpaceChange();
-                      });
-                    },
-                  ),
                 ],
               ),
             ),
@@ -992,7 +984,9 @@ class OrderSettingScreenState extends State<OrderSettingScreen>
 
   Color _getContainerColor(String itemGuid, int index) {
     if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
-      return global.theme.rowSelectedColor;
+      return isEditMode
+          ? global.theme.rowEditColor
+          : global.theme.rowSelectedColor;
     }
     if (_hoverIndex == index) {
       return global.theme.rowHoverColor;
@@ -1167,7 +1161,7 @@ class OrderSettingScreenState extends State<OrderSettingScreen>
           child: ElevatedButton(
             style: ButtonStyle(
               backgroundColor: WidgetStateProperty.all<Color>(
-                const Color.fromARGB(255, 65, 132, 111),
+                global.theme.primaryColor,
               ),
             ),
             onPressed: (isEditMode)
@@ -1224,7 +1218,7 @@ class OrderSettingScreenState extends State<OrderSettingScreen>
     }
 
     return Scaffold(
-      backgroundColor: isEditMode ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
+      backgroundColor: global.theme.cardColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -1250,6 +1244,8 @@ class OrderSettingScreenState extends State<OrderSettingScreen>
             : null,
         title: Text(headerEdit + global.language("order_setting")),
         actions: <Widget>[
+          EditFontSizeControl(onChanged: () => setState(() {})),
+          const SizedBox(width: 8),
           if (selectGuid.isNotEmpty)
             Padding(
               padding: EdgeInsets.only(right: 20.0),
@@ -1334,16 +1330,40 @@ class OrderSettingScreenState extends State<OrderSettingScreen>
             }
           }
         },
-        child: SingleChildScrollView(
-          controller: editScrollController,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.only(top: 10, bottom: 15),
-            child: Form(
-              key: _formKey,
-              child: Column(children: formWidgets),
-            ),
-          ),
+        child: Builder(
+          builder: (context) {
+            final scale = global.editFontScaleFactor;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(scale),
+              ),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                    contentPadding: EdgeInsets.fromLTRB(
+                      12 * scale, 20 * scale, 12 * scale, 12 * scale,
+                    ),
+                  ),
+                ),
+                child: IconTheme(
+                  data: IconTheme.of(context).copyWith(
+                    size: 24.0 * scale,
+                  ),
+                  child: SingleChildScrollView(
+                    controller: editScrollController,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.only(top: 10, bottom: 15),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(children: formWidgets),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

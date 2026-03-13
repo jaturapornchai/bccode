@@ -17,7 +17,7 @@ class WHTSectionWidget extends StatelessWidget {
     required this.context,
   });
 
-  static const Color _primaryColor = Color(0xFF667eea);
+  static Color get _primaryColor => global.theme.primaryColor;
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +26,9 @@ class WHTSectionWidget extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       padding: EdgeInsets.all(16),
       child: Column(
@@ -44,8 +44,8 @@ class WHTSectionWidget extends StatelessWidget {
                   SizedBox(width: 8),
                   Text(
                     global.language("wht_withholding_tax"),
-                    style: const TextStyle(
-                      color: Colors.black87,
+                    style: TextStyle(
+                      color: global.theme.textColor,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -59,7 +59,7 @@ class WHTSectionWidget extends StatelessWidget {
                 label: Text(global.language("add")),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _primaryColor,
-                  foregroundColor: Colors.white,
+                  foregroundColor: global.theme.onPrimaryColor,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -78,7 +78,7 @@ class WHTSectionWidget extends StatelessWidget {
                 child: Text(
                   global.language("no_wht_entries"),
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: global.theme.textSecondaryColor,
                     fontSize: 14,
                   ),
                 ),
@@ -99,7 +99,7 @@ class WHTSectionWidget extends StatelessWidget {
               children: [
                 Text(
                   global.language("total_wht"),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -119,7 +119,7 @@ class WHTSectionWidget extends StatelessWidget {
                           currency: screenData.currency,
                           currencySymbol: screenData.currencysymbol,
                         ),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                           color: _primaryColor,
@@ -130,7 +130,7 @@ class WHTSectionWidget extends StatelessWidget {
                         global.formatNumber(_calculateTotalWHT()),
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey[600],
+                          color: global.theme.textSecondaryColor,
                           fontWeight: FontWeight.w400,
                         ),
                       ),
@@ -138,7 +138,7 @@ class WHTSectionWidget extends StatelessWidget {
                       // แสดงแค่สกุลเงินเดียว
                       Text(
                         global.formatNumber(_calculateTotalWHT()),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                           color: _primaryColor,
@@ -162,7 +162,7 @@ class WHTSectionWidget extends StatelessWidget {
       elevation: 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: Colors.grey.shade300),
+        side: BorderSide(color: global.theme.dividerBorderColor),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -191,7 +191,7 @@ class WHTSectionWidget extends StatelessWidget {
                 children: [
                   Text(
                     whtEntry.description,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
@@ -203,7 +203,7 @@ class WHTSectionWidget extends StatelessWidget {
                         "${global.language("rate")}: ${whtEntry.rate.toStringAsFixed(1)}%",
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade700,
+                          color: global.theme.textColor,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -222,7 +222,7 @@ class WHTSectionWidget extends StatelessWidget {
                             "${global.language("tax_base_short")}: $taxBaseText",
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey.shade700,
+                              color: global.theme.textColor,
                             ),
                           );
                         },
@@ -243,7 +243,7 @@ class WHTSectionWidget extends StatelessWidget {
                             "${global.language("amount")}: $amountText",
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey.shade700,
+                              color: global.theme.textColor,
                               fontWeight: FontWeight.w600,
                             ),
                           );
@@ -258,7 +258,7 @@ class WHTSectionWidget extends StatelessWidget {
                       whtEntry.note!,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: global.theme.textSecondaryColor,
                         fontStyle: FontStyle.italic,
                       ),
                       maxLines: 2,
@@ -275,14 +275,14 @@ class WHTSectionWidget extends StatelessWidget {
               children: [
                 IconButton(
                   onPressed: () => _showEditWHTDialog(context, index, whtEntry),
-                  icon: const Icon(Icons.edit_outlined, size: 20),
-                  color: Colors.blue.shade700,
+                  icon: Icon(Icons.edit_outlined, size: 20),
+                  color: global.theme.infoHighlightTextColor,
                   tooltip: global.language("edit"),
                 ),
                 IconButton(
                   onPressed: () => _confirmDeleteWHT(context, index),
-                  icon: const Icon(Icons.delete_outline, size: 20),
-                  color: Colors.red.shade700,
+                  icon: Icon(Icons.delete_outline, size: 20),
+                  color: global.theme.negativeHighlightTextColor,
                   tooltip: global.language("delete"),
                 ),
               ],
@@ -384,7 +384,7 @@ class WHTSectionWidget extends StatelessWidget {
           return AlertDialog(
             title: Text(
               editIndex == null ? global.language("add_wht") : global.language("edit_wht"),
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             content: SingleChildScrollView(
               child: SizedBox(
@@ -396,7 +396,7 @@ class WHTSectionWidget extends StatelessWidget {
                     // Header: ประเภทเงินได้
                     Text(
                       global.language("income_type"),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
@@ -425,10 +425,10 @@ class WHTSectionWidget extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? _primaryColor.withValues(alpha: 0.1)
-                                : Colors.grey.shade50,
+                                : global.theme.surfaceColor,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: isSelected ? _primaryColor : Colors.grey.shade300,
+                              color: isSelected ? _primaryColor : global.theme.dividerBorderColor,
                               width: isSelected ? 2 : 1,
                             ),
                           ),
@@ -438,7 +438,7 @@ class WHTSectionWidget extends StatelessWidget {
                                 isSelected
                                     ? Icons.radio_button_checked
                                     : Icons.radio_button_unchecked,
-                                color: isSelected ? _primaryColor : Colors.grey.shade400,
+                                color: isSelected ? _primaryColor : global.theme.iconSecondaryColor,
                                 size: 20,
                               ),
                               const SizedBox(width: 12),
@@ -451,14 +451,14 @@ class WHTSectionWidget extends StatelessWidget {
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                        color: isSelected ? _primaryColor : Colors.black87,
+                                        color: isSelected ? _primaryColor : global.theme.textColor,
                                       ),
                                     ),
                                     Text(
                                       "${type.nameEN} (${type.defaultRate}%)",
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.grey.shade600,
+                                        color: global.theme.textSecondaryColor,
                                       ),
                                     ),
                                   ],
@@ -477,7 +477,7 @@ class WHTSectionWidget extends StatelessWidget {
                       controller: rateController,
                       decoration: InputDecoration(
                         labelText: "${global.language("wht_rate")} (%)",
-                        prefixIcon: const Icon(Icons.percent_outlined),
+                        prefixIcon: Icon(Icons.percent_outlined),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -547,8 +547,8 @@ class WHTSectionWidget extends StatelessWidget {
                         labelText: hasMultiCurrency
                             ? '${global.language("wht_amount")} (${screenData.currency})'
                             : global.language("wht_amount"),
-                        prefixIcon: const Icon(Icons.money_off_outlined),
-                        suffixIcon: Icon(Icons.info_outline, size: 18, color: Colors.grey.shade600),
+                        prefixIcon: Icon(Icons.money_off_outlined),
+                        suffixIcon: Icon(Icons.info_outline, size: 18, color: global.theme.iconSecondaryColor),
                         // แสดง helper text สำหรับ dual currency
                         // เมื่อเป็น multi-currency: user พิมพ์ document currency, helper แสดง base currency
                         helperText: () {
@@ -661,7 +661,7 @@ class WHTSectionWidget extends StatelessWidget {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _primaryColor,
-                  foregroundColor: Colors.white,
+                  foregroundColor: global.theme.onPrimaryColor,
                 ),
                 child: Text(global.language("save")),
               ),
@@ -692,8 +692,8 @@ class WHTSectionWidget extends StatelessWidget {
               Navigator.of(dialogContext).pop();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: global.theme.negativeHighlightTextColor,
+              foregroundColor: global.theme.onPrimaryColor,
             ),
             child: Text(global.language("delete")),
           ),

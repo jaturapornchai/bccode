@@ -1,11 +1,5 @@
 import 'package:smlaicloud/model/transaction_model.dart';
 
-double _calTotalByDefualt(
-    double totalvalue, double totalExceptvat, double discount) {
-  double totalvalue = 0;
-  return totalvalue;
-}
-
 double calSumAmount(double qty, double price, String discount) {
   double sumamount = 0.0;
   double discountAmount = 0.0;

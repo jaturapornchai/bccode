@@ -106,7 +106,8 @@ class DocumentPreviewWidget extends StatefulWidget {
   State<DocumentPreviewWidget> createState() => _DocumentPreviewWidgetState();
 }
 
-class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
+class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget>
+    with global.ThemeRefreshMixin {
   // สถานะการแสดงผล เริ่มต้นเป็น table ตามที่ผู้ใช้ต้องการ
   ViewMode _viewMode = ViewMode.table;
 
@@ -158,9 +159,9 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
       margin: const EdgeInsets.all(4.0),
       padding: const EdgeInsets.all(8.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -177,7 +178,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(top: 2.0),
-                      child: Icon(field['icon'] as IconData, size: 14, color: field['color'] as Color? ?? Colors.grey[600]),
+                      child: Icon(field['icon'] as IconData, size: 14, color: field['color'] as Color? ?? global.theme.iconSecondaryColor),
                     ),
                     const SizedBox(width: 4),
                     Flexible(
@@ -186,11 +187,11 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                           children: [
                             TextSpan(
                               text: "${field['label']}: ",
-                              style: TextStyle(fontSize: 12, color: Colors.grey[700], fontWeight: FontWeight.w500),
+                              style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor, fontWeight: FontWeight.w500),
                             ),
                             TextSpan(
                               text: "${field['value']}",
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: field['color'] as Color? ?? Colors.black87),
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: field['color'] as Color? ?? global.theme.textColor),
                             ),
                           ],
                         ),
@@ -217,14 +218,14 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
     }
 
     // 1. Basic Doc Info
-    addField(global.language("doc_number"), data.docno, Icons.numbers, color: Colors.blue[700]);
+    addField(global.language("doc_number"), data.docno, Icons.numbers, color: global.theme.infoHighlightTextColor);
     addField(
       global.language("doc_date"),
       (widget.docDateTimeValidated)
           ? "${global.dateTimeBuddhist(DateTime.parse(data.docdatetime), format: global.DateTimeFormatEnum.dateDay)} ${global.dateTimeBuddhist(DateTime.parse(data.docdatetime), format: global.DateTimeFormatEnum.time)}"
           : global.language("invalid_date"),
       Icons.calendar_today,
-      color: Colors.blue[700],
+      color: global.theme.infoHighlightTextColor,
     );
 
     // Branch / Shop (Moved to top)
@@ -244,9 +245,9 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
     addField(global.language("document_type"), data.doctype.toString(), Icons.category);
 
     // 2. Customer / People
-    addField(global.language(widget.fieldNameCustCode), data.custcode, Icons.business, color: Colors.green[700]);
+    addField(global.language(widget.fieldNameCustCode), data.custcode, Icons.business, color: global.theme.positiveHighlightTextColor);
     if (data.custnames != null && data.custnames!.isNotEmpty) {
-      addField(global.language(widget.fieldNameCustName), global.activeLangName(data.custnames!), Icons.store, color: Colors.green[700]);
+      addField(global.language(widget.fieldNameCustName), global.activeLangName(data.custnames!), Icons.store, color: global.theme.positiveHighlightTextColor);
     }
     addField(global.language('sale_code'), data.salecode, Icons.person);
     addField(global.language('sale_name'), data.salename, Icons.badge);
@@ -275,10 +276,10 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
 
     // 5. Cancel Info
     if (data.iscancel) {
-      addField(global.language("cancel_status"), global.language("cancelled"), Icons.cancel, color: Colors.red);
-      addField("เวลายกเลิก", data.canceldatetime, Icons.access_time, color: Colors.red);
-      addField("ผู้ยกเลิก", "${data.cancelusercode} ${data.cancelusername}", Icons.person_off, color: Colors.red);
-      addField(global.language("cancel_reason"), data.cancelreason, Icons.report, color: Colors.red);
+      addField(global.language("cancel_status"), global.language("cancelled"), Icons.cancel, color: global.theme.negativeHighlightTextColor);
+      addField("เวลายกเลิก", data.canceldatetime, Icons.access_time, color: global.theme.negativeHighlightTextColor);
+      addField("ผู้ยกเลิก", "${data.cancelusercode} ${data.cancelusername}", Icons.person_off, color: global.theme.negativeHighlightTextColor);
+      addField(global.language("cancel_reason"), data.cancelreason, Icons.report, color: global.theme.negativeHighlightTextColor);
     }
 
     // 6. Table / Restaurant Info
@@ -348,24 +349,24 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Colors.blue[600]!, Colors.blue[800]!]),
+              gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [global.theme.infoHighlightTextColor, global.theme.infoHighlightTextColor]),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Padding(
               padding: const EdgeInsets.all(12.0),
               child: Row(
                 children: [
-                  Icon(Icons.shopping_cart, color: Colors.white, size: 20),
+                  Icon(Icons.shopping_cart, color: global.theme.onPrimaryColor, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       '${global.language("product_list")} ${widget.screenData.details!.length} ${global.language("items")}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: global.theme.onPrimaryColor, fontSize: 14),
                     ),
                   ),
                   // Export PDF button
                   IconButton(
-                    icon: const Icon(Icons.picture_as_pdf, color: Colors.white, size: 20),
+                    icon: Icon(Icons.picture_as_pdf, color: global.theme.onPrimaryColor, size: 20),
                     tooltip: global.language('export_pdf'),
                     onPressed: _exportPdf,
                   ),
@@ -378,9 +379,9 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
           decoration: BoxDecoration(
-            color: Colors.blue[50],
+            color: global.theme.infoHighlightColor,
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: Colors.blue[200]!),
+            border: Border.all(color: global.theme.infoHighlightColor),
           ),
           child: Padding(
             padding: EdgeInsets.all(6.0),
@@ -390,33 +391,33 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                   width: 50,
                   child: Text(
                     global.language('pdf_sequence'),
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: global.theme.textColor),
                     textAlign: TextAlign.center,
                   ),
                 ),
                 Expanded(
                   flex: 3,
-                  child: Text(global.language('product'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                  child: Text(global.language('product'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: global.theme.textColor)),
                 ),
                 Expanded(
                   child: Text(
                     global.language('enter_qty'),
                     textAlign: TextAlign.right,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: global.theme.textColor),
                   ),
                 ),
                 Expanded(
                   child: Text(
                     global.language('price'),
                     textAlign: TextAlign.right,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: global.theme.textColor),
                   ),
                 ),
                 Expanded(
                   child: Text(
                     global.language('receivelist_value'),
                     textAlign: TextAlign.right,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: global.theme.textColor),
                   ),
                 ),
               ],
@@ -430,9 +431,9 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
           return Container(
             margin: const EdgeInsets.symmetric(vertical: 1, horizontal: 4),
             decoration: BoxDecoration(
-              color: isEvenRow ? Colors.grey[50] : Colors.white,
+              color: isEvenRow ? global.theme.surfaceColor : global.theme.cardColor,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: Colors.grey[200]!),
+              border: Border.all(color: global.theme.dividerBorderColor),
             ),
             child: Padding(
               padding: const EdgeInsets.all(6.0),
@@ -444,7 +445,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                     child: Text(
                       (index + 1).toString(),
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: global.theme.textColor),
                     ),
                   ),
                   Expanded(
@@ -452,11 +453,11 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(global.activeLangName(item.itemnames!), style: const TextStyle(fontWeight: FontWeight.w500)),
+                        Text(global.activeLangName(item.itemnames!), style: TextStyle(fontWeight: FontWeight.w500, color: global.theme.textColor)),
                         if (item.description!.isNotEmpty)
                           Text(
                             'หมายเหตุ: ${item.description!}',
-                            style: TextStyle(fontSize: 12, color: Colors.grey[600], fontStyle: FontStyle.italic),
+                            style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor, fontStyle: FontStyle.italic),
                           ),
                       ],
                     ),
@@ -465,7 +466,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                     child: Text(
                       global.formatQuantity(item.qty).toString(),
                       textAlign: TextAlign.right,
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 11, color: Colors.orange[700]),
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 11, color: global.theme.warningHighlightTextColor),
                     ),
                   ),
                   Expanded(
@@ -479,7 +480,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                     child: Text(
                       global.formatNumber(item.sumamount).toString(),
                       textAlign: TextAlign.right,
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.green[700]),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: global.theme.positiveHighlightTextColor),
                     ),
                   ),
                 ],
@@ -501,24 +502,24 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Colors.blue[600]!, Colors.blue[800]!]),
+              gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [global.theme.infoHighlightTextColor, global.theme.infoHighlightTextColor]),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Padding(
               padding: EdgeInsets.all(12.0),
               child: Row(
                 children: [
-                  Icon(Icons.shopping_cart, color: Colors.white, size: 20),
+                  Icon(Icons.shopping_cart, color: global.theme.onPrimaryColor, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       '${global.language("product_list")} ${widget.screenData.details!.length} ${global.language("items")}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: global.theme.onPrimaryColor, fontSize: 14),
                     ),
                   ),
                   // Toggle view mode button
                   IconButton(
-                    icon: Icon(_viewMode == ViewMode.list ? Icons.table_chart : Icons.view_list, color: Colors.white, size: 20),
+                    icon: Icon(_viewMode == ViewMode.list ? Icons.table_chart : Icons.view_list, color: global.theme.onPrimaryColor, size: 20),
                     tooltip: _viewMode == ViewMode.list ? global.language('show_as_table') : global.language('show_as_list'),
                     onPressed: () {
                       setState(() {
@@ -529,7 +530,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                   const SizedBox(width: 4),
                   // Export PDF button
                   IconButton(
-                    icon: const Icon(Icons.picture_as_pdf, color: Colors.white, size: 20),
+                    icon: Icon(Icons.picture_as_pdf, color: global.theme.onPrimaryColor, size: 20),
                     tooltip: global.language('export_pdf'),
                     onPressed: _exportPdf,
                   ),
@@ -550,7 +551,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Colors.indigo[50]!, Colors.white]),
+                  gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [global.theme.surfaceColor, global.theme.cardColor]),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
@@ -564,13 +565,13 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                             width: 24,
                             height: 24,
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(colors: [Colors.blue[400]!, Colors.blue[600]!]),
+                              gradient: LinearGradient(colors: [global.theme.infoHighlightTextColor, global.theme.infoHighlightTextColor]),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Center(
                               child: Text(
                                 (index + 1).toString(),
-                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 10),
+                                style: TextStyle(fontWeight: FontWeight.bold, color: global.theme.onPrimaryColor, fontSize: 10),
                               ),
                             ),
                           ),
@@ -617,20 +618,20 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.orange[50],
+                            color: global.theme.warningHighlightColor,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.orange[200]!),
+                            border: Border.all(color: global.theme.warningHighlightColor),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.add_circle, color: Colors.orange[700], size: 16),
+                                  Icon(Icons.add_circle, color: global.theme.warningHighlightTextColor, size: 16),
                                   const SizedBox(width: 4),
                                   Text(
                                     global.language('additional_items'),
-                                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange[700], fontSize: 12),
+                                    style: TextStyle(fontWeight: FontWeight.bold, color: global.theme.warningHighlightTextColor, fontSize: 12),
                                   ),
                                 ],
                               ),
@@ -642,14 +643,14 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                                     children: [
                                       Expanded(
                                         flex: 3,
-                                        child: Text("• ${global.activeLangName(extra.itemnames!)}", style: TextStyle(fontSize: 11, color: Colors.grey[700])),
+                                        child: Text("• ${global.activeLangName(extra.itemnames!)}", style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor)),
                                       ),
                                       SizedBox(
                                         width: 40,
                                         child: Text(
                                           global.formatQuantity((extra.qty! != 0.0) ? extra.qty! : 1.0).toString(),
                                           textAlign: TextAlign.right,
-                                          style: TextStyle(fontSize: 11, color: Colors.grey[700]),
+                                          style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                                         ),
                                       ),
                                       const SizedBox(width: 8),
@@ -658,7 +659,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                                         child: Text(
                                           global.formatUnitPrice(extra.price!).toString(),
                                           textAlign: TextAlign.right,
-                                          style: TextStyle(fontSize: 11, color: Colors.grey[700]),
+                                          style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                                         ),
                                       ),
                                     ],
@@ -705,7 +706,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       child: Table(
-        border: TableBorder.all(color: Colors.grey[300]!, width: 1),
+        border: TableBorder.all(color: global.theme.dividerBorderColor, width: 1),
         columnWidths: const {
           0: FixedColumnWidth(40), // #
           1: FlexColumnWidth(1), // รหัสสินค้า
@@ -720,7 +721,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
         children: [
           // Header Row
           TableRow(
-            decoration: BoxDecoration(color: Colors.blue[100]),
+            decoration: BoxDecoration(color: global.theme.infoHighlightColor),
             children: [
               _buildTableHeaderCell('#'),
               _buildTableHeaderCell(global.language('product_code')),
@@ -740,7 +741,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
             bool isEven = index % 2 == 0;
 
             return TableRow(
-              decoration: BoxDecoration(color: isEven ? Colors.grey[50] : Colors.white),
+              decoration: BoxDecoration(color: isEven ? global.theme.surfaceColor : global.theme.cardColor),
               children: [
                 _buildTableDataCell('${index + 1}', align: TextAlign.center, maxLines: null, overflow: TextOverflow.visible),
                 _buildTableDataCell(item.itemcode, maxLines: null, overflow: TextOverflow.visible),
@@ -767,7 +768,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
           }),
           // Footer Row - ยอดรวมด้านล่าง
           TableRow(
-            decoration: BoxDecoration(color: Colors.blue[50]),
+            decoration: BoxDecoration(color: global.theme.infoHighlightColor),
             children: [
               _buildTableFooterCell('', align: TextAlign.center),
               _buildTableFooterCell(''),
@@ -780,7 +781,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
               // ยอดรวม — แสดง 2 สกุลเงินถ้า multi-currency
               isMulti
                   ? _buildDualCurrencyTableCell(totalAmountDoc, totalAmount, isBold: true)
-                  : _buildTableFooterCell(global.formatNumber(totalAmount), align: TextAlign.right, bold: true, color: Colors.blue[800]),
+                  : _buildTableFooterCell(global.formatNumber(totalAmount), align: TextAlign.right, bold: true, color: global.theme.infoHighlightTextColor),
             ],
           ),
         ],
@@ -804,7 +805,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
           // ชื่อสินค้า
           Text(
             itemName,
-            style: const TextStyle(fontSize: 11, color: Colors.black87),
+            style: TextStyle(fontSize: 11, color: global.theme.textColor),
           ),
           // รายละเอียดเพิ่มเติม (ถ้ามี)
           if (additionalInfo != null && additionalInfo.isNotEmpty)
@@ -813,7 +814,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
               child: Text(
                 additionalInfo,
                 style: TextStyle(
-                  color: Colors.blue[700],
+                  color: global.theme.infoHighlightTextColor,
                   fontSize: 10,
                   fontStyle: FontStyle.italic,
                 ),
@@ -833,7 +834,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
         style: TextStyle(
           fontSize: 11,
           fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-          color: color ?? Colors.black87,
+          color: color ?? global.theme.textColor,
         ),
         textAlign: align,
       ),
@@ -846,7 +847,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
       padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
       child: Text(
         text,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.black87),
+        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: global.theme.textColor),
         textAlign: align,
       ),
     );
@@ -864,7 +865,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
       padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
       child: Text(
         text,
-        style: TextStyle(fontSize: 10, fontWeight: bold ? FontWeight.bold : FontWeight.normal),
+        style: TextStyle(fontSize: 10, fontWeight: bold ? FontWeight.bold : FontWeight.normal, color: global.theme.textColor),
         textAlign: align,
         overflow: overflow, // ใช้ overflow ที่ส่งมา
         maxLines: maxLines, // ถ้าเป็น null จะแสดงได้ไม่จำกัดบรรทัด
@@ -882,12 +883,12 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
         children: [
           Text(
             '${_getDocSymbol()} ${global.formatNumber(docValue)}',
-            style: TextStyle(fontSize: 10, fontWeight: isBold ? FontWeight.bold : FontWeight.normal, color: Colors.blue[700]),
+            style: TextStyle(fontSize: 10, fontWeight: isBold ? FontWeight.bold : FontWeight.normal, color: global.theme.infoHighlightTextColor),
             textAlign: TextAlign.right,
           ),
           Text(
             '${_getBaseSymbol()} ${global.formatNumber(baseValue)}',
-            style: TextStyle(fontSize: 8, color: Colors.grey[500], fontStyle: FontStyle.italic),
+            style: TextStyle(fontSize: 8, color: global.theme.textSecondaryColor, fontStyle: FontStyle.italic),
             textAlign: TextAlign.right,
           ),
         ],
@@ -962,13 +963,13 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(global.language('pdf_preview'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          Text(global.language('pdf_preview'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: global.theme.textColor)),
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               // ปุ่ม Print
                               IconButton(
-                                icon: const Icon(Icons.print),
+                                icon: Icon(Icons.print),
                                 tooltip: global.language('print'),
                                 onPressed: () async {
                                   await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdfBytes);
@@ -976,7 +977,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                               ),
                               // ปุ่ม Download
                               IconButton(
-                                icon: const Icon(Icons.download),
+                                icon: Icon(Icons.download),
                                 tooltip: global.language('download'),
                                 onPressed: () async {
                                   await Printing.sharePdf(bytes: pdfBytes, filename: 'document_${widget.screenData.docno}.pdf');
@@ -1398,17 +1399,17 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 14, color: Colors.grey[600]),
+          Icon(icon, size: 14, color: global.theme.iconSecondaryColor),
           const SizedBox(width: 4),
           Expanded(
             flex: 2,
-            child: Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            child: Text(label, style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor)),
           ),
           Expanded(
             flex: 3,
             child: Text(
               value,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black87),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: global.theme.textColor),
             ),
           ),
         ],
@@ -1450,11 +1451,11 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 14, color: Colors.grey[600]),
+          Icon(icon, size: 14, color: global.theme.iconSecondaryColor),
           const SizedBox(width: 4),
           Expanded(
             flex: 2,
-            child: Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            child: Text(label, style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor)),
           ),
           Expanded(
             flex: 3,
@@ -1463,11 +1464,11 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
               children: [
                 Text(
                   '${_getDocSymbol()} ${global.formatNumber(docValue)}',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.blue[700]),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: global.theme.infoHighlightTextColor),
                 ),
                 Text(
                   '${_getBaseSymbol()} ${global.formatNumber(baseValue)}',
-                  style: TextStyle(fontSize: 10, color: Colors.grey[500], fontStyle: FontStyle.italic),
+                  style: TextStyle(fontSize: 10, color: global.theme.textSecondaryColor, fontStyle: FontStyle.italic),
                 ),
               ],
             ),
@@ -1481,7 +1482,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
@@ -1501,7 +1502,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
           const SizedBox(height: 2),
           Text(
             value,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black87),
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: global.theme.textColor),
           ),
         ],
       ),
@@ -1523,7 +1524,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Colors.white, Colors.green[50]!]),
+                    gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [global.theme.cardColor, global.theme.positiveHighlightColor]),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(12.0),
@@ -1534,14 +1535,14 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                           width: 35,
                           height: 35,
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(colors: [Colors.green[400]!, Colors.green[600]!]),
+                            gradient: LinearGradient(colors: [global.theme.positiveHighlightTextColor, global.theme.positiveHighlightTextColor]),
                             borderRadius: BorderRadius.circular(17.5),
-                            boxShadow: [BoxShadow(color: Colors.green.withValues(alpha: 0.3), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2))],
+                            boxShadow: [BoxShadow(color: global.theme.positiveHighlightTextColor.withValues(alpha: 0.3), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2))],
                           ),
                           child: Center(
                             child: Text(
                               (index + 1).toString(),
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14),
+                              style: TextStyle(fontWeight: FontWeight.bold, color: global.theme.onPrimaryColor, fontSize: 14),
                             ),
                           ),
                         ),
@@ -1554,14 +1555,14 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                             children: [
                               Text(
                                 global.activeLangName(item.itemnames!),
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: global.theme.textColor),
                               ),
                               if (item.description!.isNotEmpty)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 4.0),
                                   child: Text(
                                     'หมายเหตุ: ${item.description!}',
-                                    style: TextStyle(fontSize: 11, color: Colors.grey[600], fontStyle: FontStyle.italic),
+                                    style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor, fontStyle: FontStyle.italic),
                                   ),
                                 ),
                             ],
@@ -1571,18 +1572,18 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.green[100],
+                            color: global.theme.positiveHighlightColor,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.green[300]!),
+                            border: Border.all(color: global.theme.positiveHighlightColor),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.numbers, size: 14, color: Colors.green[700]),
+                              Icon(Icons.numbers, size: 14, color: global.theme.positiveHighlightTextColor),
                               const SizedBox(width: 4),
                               Text(
                                 global.formatQuantity(item.qty).toString(),
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green[700]),
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: global.theme.positiveHighlightTextColor),
                               ),
                             ],
                           ),
@@ -1612,7 +1613,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Colors.white, Colors.green[50]!]),
+                gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [global.theme.cardColor, global.theme.positiveHighlightColor]),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
@@ -1623,14 +1624,14 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                       width: 35,
                       height: 35,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [Colors.green[400]!, Colors.green[600]!]),
+                        gradient: LinearGradient(colors: [global.theme.positiveHighlightTextColor, global.theme.positiveHighlightTextColor]),
                         borderRadius: BorderRadius.circular(17.5),
-                        boxShadow: [BoxShadow(color: Colors.green.withValues(alpha: 0.3), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2))],
+                        boxShadow: [BoxShadow(color: global.theme.positiveHighlightTextColor.withValues(alpha: 0.3), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2))],
                       ),
                       child: Center(
                         child: Text(
                           (index + 1).toString(),
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14),
+                          style: TextStyle(fontWeight: FontWeight.bold, color: global.theme.onPrimaryColor, fontSize: 14),
                         ),
                       ),
                     ),
@@ -1643,14 +1644,14 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                         children: [
                           Text(
                             global.activeLangName(item.itemnames!),
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: global.theme.textColor),
                           ),
                           if (item.description!.isNotEmpty)
                             Padding(
                               padding: const EdgeInsets.only(top: 4.0),
                               child: Text(
                                 'หมายเหตุ: ${item.description!}',
-                                style: TextStyle(fontSize: 11, color: Colors.grey[600], fontStyle: FontStyle.italic),
+                                style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor, fontStyle: FontStyle.italic),
                               ),
                             ),
                         ],
@@ -1660,18 +1661,18 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.green[100],
+                        color: global.theme.positiveHighlightColor,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.green[300]!),
+                        border: Border.all(color: global.theme.positiveHighlightColor),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.numbers, size: 14, color: Colors.green[700]),
+                          Icon(Icons.numbers, size: 14, color: global.theme.positiveHighlightTextColor),
                           const SizedBox(width: 4),
                           Text(
                             global.formatQuantity(item.qty).toString(),
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green[700]),
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: global.theme.positiveHighlightTextColor),
                           ),
                         ],
                       ),

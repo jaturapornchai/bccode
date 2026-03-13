@@ -14,14 +14,15 @@ class DocFlowWidget extends StatefulWidget {
   State<DocFlowWidget> createState() => _DocFlowWidgetState();
 }
 
-class _DocFlowWidgetState extends State<DocFlowWidget> {
+class _DocFlowWidgetState extends State<DocFlowWidget>
+    with global.ThemeRefreshMixin {
   bool _isLoading = true;
   String? _errorMessage;
   DocFlowResponse? _docFlowData;
 
   // Colors
-  static const Color _primaryColor = Color(0xFF667eea);
-  static const Color _accentColor = Color(0xFF764ba2);
+  static Color get _primaryColor => global.theme.primaryColor;
+  static Color get _accentColor => global.theme.primaryLightColor;
 
   @override
   void initState() {
@@ -99,11 +100,11 @@ class _DocFlowWidgetState extends State<DocFlowWidget> {
 
     return Card(
       elevation: 0,
-      color: Colors.grey.shade50,
+      color: global.theme.surfaceColor,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: global.theme.dividerBorderColor),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -126,13 +127,13 @@ class _DocFlowWidgetState extends State<DocFlowWidget> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(color: _primaryColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)),
-          child: const Icon(Icons.alt_route, color: _primaryColor, size: 20),
+          child: Icon(Icons.alt_route, color: _primaryColor, size: 20),
         ),
         SizedBox(width: 12),
         Text(global.language('document_flow'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
         Spacer(),
-        if (hasReferencedBy) _buildCountPill(label: global.language('incoming'), count: _docFlowData!.referencedBy.length, color: Colors.orange),
-        if (hasReferenceTo) ...[ SizedBox(width: 8), _buildCountPill(label: global.language('outgoing'), count: _docFlowData!.referenceTo.length, color: Colors.green)],
+        if (hasReferencedBy) _buildCountPill(label: global.language('incoming'), count: _docFlowData!.referencedBy.length, color: global.theme.warningHighlightTextColor),
+        if (hasReferenceTo) ...[ SizedBox(width: 8), _buildCountPill(label: global.language('outgoing'), count: _docFlowData!.referenceTo.length, color: global.theme.positiveHighlightTextColor)],
       ],
     );
   }
@@ -152,7 +153,7 @@ class _DocFlowWidgetState extends State<DocFlowWidget> {
           CircleAvatar(
             radius: 10,
             backgroundColor: color,
-            child: Text('$count', style: const TextStyle(fontSize: 10, color: Colors.white)),
+            child: Text('$count', style: TextStyle(fontSize: 10, color: global.theme.onPrimaryColor)),
           ),
         ],
       ),
@@ -163,16 +164,16 @@ class _DocFlowWidgetState extends State<DocFlowWidget> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: global.theme.surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline, color: Colors.grey.shade600),
+          Icon(Icons.info_outline, color: global.theme.iconSecondaryColor),
           SizedBox(width: 8),
           Expanded(
-            child: Text(global.language('no_reference_for_document'), style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+            child: Text(global.language('no_reference_for_document'), style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor)),
           ),
         ],
       ),
@@ -183,16 +184,16 @@ class _DocFlowWidgetState extends State<DocFlowWidget> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
+        color: global.theme.negativeHighlightColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.red.shade200),
+        border: Border.all(color: global.theme.negativeHighlightColor),
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline, color: Colors.red.shade400),
+          Icon(Icons.error_outline, color: global.theme.negativeHighlightTextColor),
           SizedBox(width: 8),
           Expanded(
-            child: Text(_errorMessage ?? global.language('error_loading_data'), style: TextStyle(fontSize: 12, color: Colors.red.shade600)),
+            child: Text(_errorMessage ?? global.language('error_loading_data'), style: TextStyle(fontSize: 12, color: global.theme.negativeHighlightTextColor)),
           ),
           TextButton(onPressed: _loadDocFlow, child: Text(global.language('retry'))),
         ],
@@ -209,7 +210,7 @@ class _DocFlowWidgetState extends State<DocFlowWidget> {
         padding: EdgeInsets.all(16),
         child: Text(
           global.language('no_reference_document'),
-          style: TextStyle(fontSize: 13, color: Colors.grey.shade500, fontStyle: FontStyle.italic),
+          style: TextStyle(fontSize: 13, color: global.theme.textSecondaryColor, fontStyle: FontStyle.italic),
         ),
       );
     }
@@ -223,10 +224,10 @@ class _DocFlowWidgetState extends State<DocFlowWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // อ้างอิงไปหา (เอกสารต้นทาง) อยู่ทางซ้าย
-          if (outgoingDocs.isNotEmpty) _buildNodeLane(title: global.language('reference_to'), color: Colors.green, docs: outgoingDocs, isOnLeftSide: true, isReferencedByDocs: false),
+          if (outgoingDocs.isNotEmpty) _buildNodeLane(title: global.language('reference_to'), color: global.theme.positiveHighlightTextColor, docs: outgoingDocs, isOnLeftSide: true, isReferencedByDocs: false),
           _buildCurrentNodeColumn(),
           // ถูกอ้างอิงจาก (เอกสารที่สร้างจากเอกสารปัจจุบัน) อยู่ทางขวา
-          if (incomingDocs.isNotEmpty) _buildNodeLane(title: global.language('referenced_by'), color: Colors.orange, docs: incomingDocs, isOnLeftSide: false, isReferencedByDocs: true),
+          if (incomingDocs.isNotEmpty) _buildNodeLane(title: global.language('referenced_by'), color: global.theme.warningHighlightTextColor, docs: incomingDocs, isOnLeftSide: false, isReferencedByDocs: true),
         ],
       ),
     );
@@ -270,7 +271,7 @@ class _DocFlowWidgetState extends State<DocFlowWidget> {
       children: [
         Text(
           global.language('current_document'),
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: global.theme.textSecondaryColor),
         ),
         const SizedBox(height: 12),
         _buildCurrentDocument(),
@@ -282,7 +283,7 @@ class _DocFlowWidgetState extends State<DocFlowWidget> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: _primaryColor.withValues(alpha: 0.3), width: 2),
         boxShadow: [BoxShadow(color: _primaryColor.withValues(alpha: 0.15), blurRadius: 12, offset: const Offset(0, 6))],
@@ -296,12 +297,12 @@ class _DocFlowWidgetState extends State<DocFlowWidget> {
               gradient: LinearGradient(colors: [_primaryColor, _accentColor], begin: Alignment.topLeft, end: Alignment.bottomRight),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(Icons.description_rounded, color: Colors.white, size: 36),
+            child: Icon(Icons.description_rounded, color: global.theme.onPrimaryColor, size: 36),
           ),
           const SizedBox(height: 12),
           Text(
             widget.docno,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: global.theme.textColor),
           ),
         ],
       ),
@@ -339,7 +340,7 @@ class _LaneHeader extends StatelessWidget {
           CircleAvatar(
             radius: 10,
             backgroundColor: color,
-            child: Text('$count', style: const TextStyle(fontSize: 10, color: Colors.white)),
+            child: Text('$count', style: TextStyle(fontSize: 10, color: global.theme.onPrimaryColor)),
           ),
         ],
       ),
@@ -360,7 +361,8 @@ class _FlowNodeCard extends StatefulWidget {
   State<_FlowNodeCard> createState() => _FlowNodeCardState();
 }
 
-class _FlowNodeCardState extends State<_FlowNodeCard> {
+class _FlowNodeCardState extends State<_FlowNodeCard>
+    with global.ThemeRefreshMixin {
   bool _isHovered = false;
 
   @override
@@ -380,7 +382,7 @@ class _FlowNodeCardState extends State<_FlowNodeCard> {
           padding: const EdgeInsets.all(12),
           transform: _isHovered ? Matrix4.diagonal3Values(1.03, 1.03, 1.0) : Matrix4.identity(),
           decoration: BoxDecoration(
-            color: _isHovered ? widget.color.withValues(alpha: 0.05) : Colors.white,
+            color: _isHovered ? widget.color.withValues(alpha: 0.05) : global.theme.onPrimaryColor,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: _isHovered ? widget.color : widget.color.withValues(alpha: 0.5), width: _isHovered ? 2 : 1.5),
             boxShadow: [
@@ -411,14 +413,14 @@ class _FlowNodeCardState extends State<_FlowNodeCard> {
                   children: [
                     Text(
                       widget.docno,
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _isHovered ? widget.color : Colors.black87),
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _isHovered ? widget.color : global.theme.textColor),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: 2),
                     Text(
                       typeName.isEmpty ? global.language('unknown_type') : typeName,
-                      style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                      style: TextStyle(fontSize: 10, color: global.theme.textSecondaryColor),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),

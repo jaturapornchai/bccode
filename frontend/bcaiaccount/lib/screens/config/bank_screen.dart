@@ -3,6 +3,7 @@
 import 'package:smlaicloud/utils/dialog_template.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -654,7 +655,9 @@ class BankScreenState extends State<BankScreen>
 
   Color _getContainerColor(String itemGuid, int index) {
     if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
-      return global.theme.rowSelectedColor;
+      return isEditMode
+          ? global.theme.rowEditColor
+          : global.theme.rowSelectedColor;
     }
     if (_hoverIndex == index) {
       return global.theme.rowHoverColor;
@@ -772,7 +775,7 @@ class BankScreenState extends State<BankScreen>
 
   Widget editScreen({mobileScreen}) {
     return Scaffold(
-      backgroundColor: isEditMode ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
+      backgroundColor: global.theme.cardColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -798,6 +801,8 @@ class BankScreenState extends State<BankScreen>
             : null,
         title: Text(headerEdit + global.language("bank")),
         actions: <Widget>[
+          EditFontSizeControl(onChanged: () => setState(() {})),
+          const SizedBox(width: 8),
           if (selectGuid.isNotEmpty)
             Padding(
               padding: EdgeInsets.only(right: 20.0),
@@ -907,10 +912,29 @@ class BankScreenState extends State<BankScreen>
           }
           return KeyEventResult.ignored;
         },
-        child: SingleChildScrollView(
-          controller: editScrollController,
-          child: Container(
-            color: Colors.white,
+        child: Builder(
+          builder: (context) {
+            final scale = global.editFontScaleFactor;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(scale),
+              ),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                    contentPadding: EdgeInsets.fromLTRB(
+                      12 * scale, 20 * scale, 12 * scale, 12 * scale,
+                    ),
+                  ),
+                ),
+                child: IconTheme(
+                  data: IconTheme.of(context).copyWith(
+                    size: 24.0 * scale,
+                  ),
+                  child: SingleChildScrollView(
+                    controller: editScrollController,
+                    child: Container(
+                      color: global.theme.cardColor,
             width: double.infinity,
             padding: const EdgeInsets.all(10),
             child: Form(
@@ -1251,7 +1275,7 @@ class BankScreenState extends State<BankScreen>
                         Center(
                           child: DecoratedBox(
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: global.theme.cardColor,
                               border: Border.all(color: global.theme.textColor),
                               borderRadius: BorderRadius.circular(5),
                               image: (imageWeb.isNotEmpty)
@@ -1300,6 +1324,11 @@ class BankScreenState extends State<BankScreen>
               ),
             ),
           ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

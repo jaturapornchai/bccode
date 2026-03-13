@@ -18,7 +18,7 @@ class PosMediaSearchScreen extends StatefulWidget {
 }
 
 class PosMediaSearchScreenState extends State<PosMediaSearchScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   TextEditingController searchController = TextEditingController();
   FocusNode searchFocusNode = FocusNode(skipTraversal: true);
   ScrollController listScrollController = ScrollController();
@@ -27,6 +27,7 @@ class PosMediaSearchScreenState extends State<PosMediaSearchScreen>
   bool isKeyUp = false;
   bool isKeyDown = false;
   String selectGuid = "";
+  int _hoverIndex = -1;
   int currentListIndex = 0;
   final _debouncer = global.Debouncer(1000);
 
@@ -73,6 +74,7 @@ class PosMediaSearchScreenState extends State<PosMediaSearchScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -80,7 +82,7 @@ class PosMediaSearchScreenState extends State<PosMediaSearchScreen>
         title: Text(global.language('pos_media_search')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.pop(
               context,
@@ -165,11 +167,11 @@ class PosMediaSearchScreenState extends State<PosMediaSearchScreen>
               child: Container(
                 padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: global.theme.surfaceColor,
                   borderRadius: BorderRadius.circular(2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withValues(alpha: 0.5),
+                      color: global.theme.dividerBorderColor.withValues(alpha: 0.5),
                       spreadRadius: 5,
                       blurRadius: 7,
                       offset: const Offset(0, 2),
@@ -195,14 +197,19 @@ class PosMediaSearchScreenState extends State<PosMediaSearchScreen>
                     autofocus: true,
                     focusNode: searchFocusNode,
                     controller: searchController,
+                    style: TextStyle(color: global.theme.textColor),
                     decoration: InputDecoration(
                       isDense: true,
+                      filled: false,
                       contentPadding: const EdgeInsets.only(
                         top: 10,
                         bottom: 10,
                       ),
                       border: InputBorder.none,
+                      prefixIcon: Icon(Icons.search, size: 20, color: global.theme.iconColor),
+                      prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                       hintText: global.language('search'),
+                      hintStyle: TextStyle(color: global.theme.formHintColor),
                     ),
                   ),
                 ),
@@ -217,8 +224,8 @@ class PosMediaSearchScreenState extends State<PosMediaSearchScreen>
               ),
               decoration: BoxDecoration(
                 color: global.theme.columnHeaderColor,
-                border: const Border(
-                  bottom: BorderSide(width: 1.0, color: Colors.grey),
+                border: Border(
+                bottom: BorderSide(width: 1.0, color: global.theme.dividerBorderColor),
                 ),
               ),
               child: Row(
@@ -227,8 +234,8 @@ class PosMediaSearchScreenState extends State<PosMediaSearchScreen>
                     flex: 5,
                     child: Text(
                       global.language("pos_media_code"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                      color: global.theme.columnHeaderTextColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -237,8 +244,8 @@ class PosMediaSearchScreenState extends State<PosMediaSearchScreen>
                     flex: 10,
                     child: Text(
                       global.language("pos_media_name"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                      color: global.theme.columnHeaderTextColor,
                         fontWeight: FontWeight.bold,
                       ),
                       maxLines: 2,
@@ -253,7 +260,7 @@ class PosMediaSearchScreenState extends State<PosMediaSearchScreen>
                 controller: listScrollController,
                 child: Column(
                   children: posMediaListData
-                      .map((value) => listObject(value))
+                      .asMap().entries.map((e) => listObject(e.value, e.key))
                       .toList(),
                 ),
               ),
@@ -264,8 +271,29 @@ class PosMediaSearchScreenState extends State<PosMediaSearchScreen>
     );
   }
 
-  Widget listObject(PosMediaModel value) {
-    return GestureDetector(
+
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
+  }
+
+  Widget listObject(PosMediaModel value, int index) {
+    final isSelected = selectGuid == value.guidfixed;
+    TextStyle textStyle = isSelected
+        ? TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w700, color: global.theme.textColor)
+        : TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w400, color: global.theme.textSecondaryColor);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         Navigator.pop(
           context,
@@ -279,11 +307,9 @@ class PosMediaSearchScreenState extends State<PosMediaSearchScreen>
       },
       child: Container(
         decoration: BoxDecoration(
-          color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
-              : Colors.white,
-          border: const Border(
-            bottom: BorderSide(width: 1.0, color: Colors.grey),
+          color: _getContainerColor(value.guidfixed ?? "", index),
+          border: Border(
+                bottom: BorderSide(width: 1.0, color: global.theme.dividerBorderColor),
           ),
         ),
         padding: const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
@@ -296,6 +322,7 @@ class PosMediaSearchScreenState extends State<PosMediaSearchScreen>
                 value.code,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
+                style: textStyle,
               ),
             ),
             Expanded(
@@ -304,11 +331,13 @@ class PosMediaSearchScreenState extends State<PosMediaSearchScreen>
                 global.packName(value.description),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
+                style: textStyle,
               ),
             ),
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -321,6 +350,7 @@ class PosMediaSearchScreenState extends State<PosMediaSearchScreen>
       }
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {

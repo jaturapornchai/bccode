@@ -66,13 +66,13 @@ class CouponTypeValueWidget extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: hasError ? Colors.red[700] : Colors.grey[700],
+                color: hasError ? global.theme.negativeHighlightTextColor : global.theme.textColor,
               ),
             ),
             Text(
               ' *',
               style: TextStyle(
-                color: Colors.red[600],
+                color: global.theme.negativeHighlightTextColor,
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
               ),
@@ -84,7 +84,7 @@ class CouponTypeValueWidget extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(6),
             border: Border.all(
-              color: hasError ? Colors.red[400]! : Colors.grey[300]!,
+              color: hasError ? global.theme.negativeHighlightTextColor : global.theme.dividerBorderColor,
               width: hasError ? 1.5 : 1,
             ),
           ),
@@ -93,10 +93,10 @@ class CouponTypeValueWidget extends StatelessWidget {
             focusNode: focusNode,
             keyboardType: keyboardType,
             onChanged: onChanged,
-            style: const TextStyle(fontSize: 16),
+            style: TextStyle(fontSize: 16),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
+              hintStyle: TextStyle(color: global.theme.formHintColor, fontSize: 15),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 14,
@@ -111,7 +111,7 @@ class CouponTypeValueWidget extends StatelessWidget {
           Text(
             fieldErrors[errorKey]!,
             style: TextStyle(
-              color: Colors.red[600],
+              color: global.theme.negativeHighlightTextColor,
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
@@ -131,7 +131,7 @@ class CouponTypeValueWidget extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: Colors.grey[700],
+            color: global.theme.textColor,
           ),
         ),
         SizedBox(height: 6),
@@ -184,9 +184,9 @@ class CouponTypeValueWidget extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? global.theme.buttonColor.withValues(alpha: 0.1)
-              : Colors.white,
+              : global.theme.onPrimaryColor,
           border: Border.all(
-            color: isSelected ? global.theme.buttonColor : Colors.grey[300]!,
+            color: isSelected ? global.theme.buttonColor : global.theme.dividerBorderColor,
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(6),
@@ -196,7 +196,7 @@ class CouponTypeValueWidget extends StatelessWidget {
             Icon(
               icon,
               size: 28,
-              color: isSelected ? global.theme.buttonColor : Colors.grey[600],
+              color: isSelected ? global.theme.buttonColor : global.theme.textSecondaryColor,
             ),
             const SizedBox(height: 6),
             Text(
@@ -204,14 +204,14 @@ class CouponTypeValueWidget extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: isSelected ? global.theme.buttonColor : Colors.grey[600],
+                color: isSelected ? global.theme.buttonColor : global.theme.textSecondaryColor,
               ),
             ),
             Text(
               description,
               style: TextStyle(
                 fontSize: 11,
-                color: isSelected ? global.theme.buttonColor : Colors.grey[500],
+                color: isSelected ? global.theme.buttonColor : global.theme.textSecondaryColor,
               ),
             ),
           ],

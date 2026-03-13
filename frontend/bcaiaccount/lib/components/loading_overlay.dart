@@ -36,13 +36,13 @@ class LoadingOverlay extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Loading indicator
-              const SizedBox(
+              SizedBox(
                 width: 48,
                 height: 48,
                 child: CircularProgressIndicator(
                   strokeWidth: 3,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-                  backgroundColor: Color(0x1A2196F3),
+                  valueColor: AlwaysStoppedAnimation<Color>(global.theme.primaryColor),
+                  backgroundColor: global.theme.primaryColor.withValues(alpha: 0.1),
                 ),
               ),
 
@@ -51,9 +51,10 @@ class LoadingOverlay extends StatelessWidget {
               // Loading text
               Text(
                 message,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
+                  color: global.theme.textColor,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -64,7 +65,7 @@ class LoadingOverlay extends StatelessWidget {
               Text(
                 subtitle ?? global.language('please_wait'),
                 style: TextStyle(
-                  color: Colors.black87.withValues(alpha: 0.6),
+                  color: global.theme.textColor.withValues(alpha: 0.6),
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
                 ),

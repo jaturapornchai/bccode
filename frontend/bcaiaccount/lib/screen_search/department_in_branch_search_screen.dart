@@ -20,7 +20,7 @@ class DepartmentInBranchSearchScreen extends StatefulWidget {
 
 class DepartmentInBranchSearchScreenState
     extends State<DepartmentInBranchSearchScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   FocusNode searchFocusNode = FocusNode(skipTraversal: true);
   ScrollController listScrollController = ScrollController();
   String guid = "";
@@ -28,6 +28,7 @@ class DepartmentInBranchSearchScreenState
   bool isKeyUp = false;
   bool isKeyDown = false;
   String selectGuid = "";
+  int _hoverIndex = -1;
   int currentListIndex = 0;
 
   void setSystemLanguageList() async {
@@ -65,6 +66,7 @@ class DepartmentInBranchSearchScreenState
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -72,7 +74,7 @@ class DepartmentInBranchSearchScreenState
         title: Text(global.language('company_branch')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.pop(
               context,
@@ -161,8 +163,8 @@ class DepartmentInBranchSearchScreenState
               ),
               decoration: BoxDecoration(
                 color: global.theme.columnHeaderColor,
-                border: const Border(
-                  bottom: BorderSide(width: 1.0, color: Colors.grey),
+                border: Border(
+                bottom: BorderSide(width: 1.0, color: global.theme.dividerBorderColor),
                 ),
               ),
               child: Row(
@@ -171,8 +173,8 @@ class DepartmentInBranchSearchScreenState
                     flex: 5,
                     child: Text(
                       global.language("company_branch_code"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                      color: global.theme.columnHeaderTextColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -181,8 +183,8 @@ class DepartmentInBranchSearchScreenState
                     flex: 10,
                     child: Text(
                       global.language("company_branch_name"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                      color: global.theme.columnHeaderTextColor,
                         fontWeight: FontWeight.bold,
                       ),
                       maxLines: 2,
@@ -197,7 +199,7 @@ class DepartmentInBranchSearchScreenState
                 controller: listScrollController,
                 child: Column(
                   children: companyDepartmentListData
-                      .map((value) => listObject(value))
+                      .asMap().entries.map((e) => listObject(e.value, e.key))
                       .toList(),
                 ),
               ),
@@ -208,8 +210,29 @@ class DepartmentInBranchSearchScreenState
     );
   }
 
-  Widget listObject(DepartmentModel value) {
-    return GestureDetector(
+
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
+  }
+
+  Widget listObject(DepartmentModel value, int index) {
+    final isSelected = selectGuid == value.guidfixed;
+    TextStyle textStyle = isSelected
+        ? TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w700, color: global.theme.textColor)
+        : TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w400, color: global.theme.textSecondaryColor);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         Navigator.pop(
           context,
@@ -223,11 +246,9 @@ class DepartmentInBranchSearchScreenState
       },
       child: Container(
         decoration: BoxDecoration(
-          color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
-              : Colors.white,
-          border: const Border(
-            bottom: BorderSide(width: 1.0, color: Colors.grey),
+          color: _getContainerColor(value.guidfixed ?? "", index),
+          border: Border(
+                bottom: BorderSide(width: 1.0, color: global.theme.dividerBorderColor),
           ),
         ),
         padding: const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
@@ -238,6 +259,7 @@ class DepartmentInBranchSearchScreenState
               flex: 5,
               child: Text(
                 value.code,
+                style: textStyle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -246,6 +268,7 @@ class DepartmentInBranchSearchScreenState
               flex: 10,
               child: Text(
                 global.packName(value.names),
+                style: textStyle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -253,6 +276,7 @@ class DepartmentInBranchSearchScreenState
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -265,6 +289,7 @@ class DepartmentInBranchSearchScreenState
       }
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {

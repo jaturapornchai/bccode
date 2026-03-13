@@ -18,7 +18,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: global.theme.backgroundColor,
       appBar: _buildAppBar(context),
       body: _buildBody(context),
     );
@@ -49,7 +49,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -61,8 +61,8 @@ class AccountDeletionHelpScreen extends StatelessWidget {
           SizedBox(width: 12),
           Text(
             global.language('account_deletion_app_name'),
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: global.theme.onPrimaryColor,
               fontSize: 22,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
@@ -113,8 +113,8 @@ class AccountDeletionHelpScreen extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.white,
-            Colors.blue[50]!,
+            global.theme.cardColor,
+            global.theme.infoHighlightColor,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -153,9 +153,9 @@ class AccountDeletionHelpScreen extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Icon(
+            child: Icon(
               Icons.delete_forever_rounded,
-              color: Colors.white,
+              color: global.theme.onPrimaryColor,
               size: 40,
             ),
           ),
@@ -194,7 +194,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
             style: TextStyle(
               fontSize: _getBodyFontSize(context) + 2,
               height: 1.8,
-              color: Colors.black87,
+              color: global.theme.textColor,
               letterSpacing: 0.3,
             ),
             textAlign: TextAlign.center,
@@ -249,7 +249,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
           1,
           global.language('account_deletion_step_1'),
           Icons.login_rounded,
-          Colors.blue,
+          global.theme.infoHighlightTextColor,
         ),
         SizedBox(height: 20),
         _buildModernStepCard(
@@ -257,7 +257,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
           2,
           global.language('account_deletion_step_2'),
           Icons.store_rounded,
-          Colors.orange,
+          global.theme.warningHighlightTextColor,
         ),
         SizedBox(height: 20),
         _buildModernStepCard(
@@ -265,7 +265,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
           3,
           global.language('account_deletion_step_3'),
           Icons.delete_rounded,
-          Colors.red,
+          global.theme.negativeHighlightTextColor,
         ),
       ],
     );
@@ -282,7 +282,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
   ) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -330,7 +330,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
                 ),
                 child: Icon(
                   icon,
-                  color: Colors.white,
+                  color: global.theme.onPrimaryColor,
                   size: 32,
                 ),
               ),
@@ -355,7 +355,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: _getBodyFontSize(context),
                         height: 1.6,
-                        color: Colors.black87,
+                        color: global.theme.textColor,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -460,7 +460,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
     return Container(
       width: width,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -496,8 +496,8 @@ class AccountDeletionHelpScreen extends StatelessWidget {
               ),
               child: Text(
                 '${global.language("account_deletion_step")} $number',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: global.theme.onPrimaryColor,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
@@ -513,7 +513,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: Colors.grey[200]!,
+                    color: global.theme.dividerBorderColor,
                     width: 1,
                   ),
                   borderRadius: BorderRadius.circular(12),
@@ -532,10 +532,10 @@ class AccountDeletionHelpScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
             child: Text(
               caption,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: global.theme.textColor,
                 height: 1.4,
               ),
               textAlign: TextAlign.center,
@@ -555,15 +555,15 @@ class AccountDeletionHelpScreen extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.blue[50]!,
-            Colors.blue[100]!.withValues(alpha: 0.5),
+            global.theme.infoHighlightColor,
+            global.theme.infoHighlightColor,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.blue[200]!,
+          color: global.theme.infoHighlightTextColor.withValues(alpha: 0.3),
           width: 2,
         ),
       ),
@@ -574,19 +574,19 @@ class AccountDeletionHelpScreen extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: Colors.blue[600],
+              color: global.theme.infoHighlightTextColor,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.blue.withValues(alpha: 0.3),
+                  color: global.theme.infoHighlightTextColor.withValues(alpha: 0.3),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: const Icon(
+            child: Icon(
               Icons.shield_rounded,
-              color: Colors.white,
+              color: global.theme.onPrimaryColor,
               size: 28,
             ),
           ),
@@ -600,7 +600,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue[900],
+                    color: global.theme.infoHighlightTextColor,
                   ),
                 ),
                 SizedBox(height: 8),
@@ -609,7 +609,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: _getBodyFontSize(context),
                     height: 1.6,
-                    color: Colors.blue[900],
+                    color: global.theme.infoHighlightTextColor,
                   ),
                 ),
               ],
@@ -627,8 +627,8 @@ class AccountDeletionHelpScreen extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.white,
-            Colors.green[50]!,
+            global.theme.cardColor,
+            global.theme.positiveHighlightColor,
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -667,9 +667,9 @@ class AccountDeletionHelpScreen extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Icon(
+            child: Icon(
               Icons.chat_bubble_rounded,
-              color: Colors.white,
+              color: global.theme.onPrimaryColor,
               size: 36,
             ),
           ),
@@ -692,7 +692,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
             style: TextStyle(
               fontSize: _getBodyFontSize(context) + 1,
               height: 1.7,
-              color: Colors.black87,
+              color: global.theme.textColor,
             ),
             textAlign: TextAlign.center,
           ),
@@ -734,7 +734,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
             global.language('account_deletion_line_topic'),
             style: TextStyle(
               fontSize: _getBodyFontSize(context),
-              color: Colors.black54,
+              color: global.theme.textSecondaryColor,
               fontStyle: FontStyle.italic,
             ),
             textAlign: TextAlign.center,
@@ -775,7 +775,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
-                    foregroundColor: Colors.white,
+                    foregroundColor: global.theme.onPrimaryColor,
                     shadowColor: Colors.transparent,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 40,
@@ -794,7 +794,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
               // Secondary button: Copy LINE ID
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: global.theme.cardColor,
                   borderRadius: BorderRadius.circular(30),
                   border: Border.all(
                     color: const Color(0xFF00B900),
@@ -816,7 +816,7 @@ class AccountDeletionHelpScreen extends StatelessWidget {
                     style: const TextStyle(fontSize: 16, letterSpacing: 0.5),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
+                    backgroundColor: global.theme.cardColor,
                     foregroundColor: const Color(0xFF00B900),
                     shadowColor: Colors.transparent,
                     padding: const EdgeInsets.symmetric(

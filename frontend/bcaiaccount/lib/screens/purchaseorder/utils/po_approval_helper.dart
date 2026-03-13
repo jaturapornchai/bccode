@@ -140,41 +140,41 @@ class POApprovalHelper {
     switch (status) {
       case POApprovalStatus.pending:
         return ApprovalStatusStyle(
-          bgColor: Colors.orange.shade50,
-          textColor: Colors.orange.shade800,
-          borderColor: Colors.orange.shade300,
+          bgColor: global.theme.warningHighlightColor,
+          textColor: global.theme.warningHighlightTextColor,
+          borderColor: global.theme.warningHighlightTextColor,
           statusText: global.language("approval_pending"),
           icon: Icons.hourglass_empty,
         );
       case POApprovalStatus.approved:
         return ApprovalStatusStyle(
-          bgColor: Colors.green.shade50,
-          textColor: Colors.green.shade800,
-          borderColor: Colors.green.shade300,
+          bgColor: global.theme.positiveHighlightColor,
+          textColor: global.theme.positiveHighlightTextColor,
+          borderColor: global.theme.positiveHighlightTextColor,
           statusText: global.language("approval_approved"),
           icon: Icons.check_circle,
         );
       case POApprovalStatus.rejected:
         return ApprovalStatusStyle(
-          bgColor: Colors.red.shade50,
-          textColor: Colors.red.shade800,
-          borderColor: Colors.red.shade300,
+          bgColor: global.theme.negativeHighlightColor,
+          textColor: global.theme.negativeHighlightTextColor,
+          borderColor: global.theme.negativeHighlightTextColor,
           statusText: global.language("approval_rejected"),
           icon: Icons.cancel,
         );
       case POApprovalStatus.autoApproved:
         return ApprovalStatusStyle(
-          bgColor: Colors.blue.shade50,
-          textColor: Colors.blue.shade800,
-          borderColor: Colors.blue.shade300,
+          bgColor: global.theme.surfaceColor,
+          textColor: global.theme.infoHighlightTextColor,
+          borderColor: global.theme.dividerBorderColor,
           statusText: global.language("approval_auto_approved"),
           icon: Icons.verified,
         );
       default:
         return ApprovalStatusStyle(
-          bgColor: Colors.grey.shade50,
-          textColor: Colors.grey.shade800,
-          borderColor: Colors.grey.shade300,
+          bgColor: global.theme.surfaceColor,
+          textColor: global.theme.textColor,
+          borderColor: global.theme.dividerBorderColor,
           statusText: global.language("unknown_status"),
           icon: Icons.help_outline,
         );

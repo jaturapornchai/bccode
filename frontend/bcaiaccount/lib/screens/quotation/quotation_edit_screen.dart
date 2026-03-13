@@ -46,6 +46,7 @@ import 'package:smlaicloud/screens/quotation/utils/qt_cart_integration_handler.d
 import 'package:smlaicloud/screens/quotation/utils/qt_save_helper.dart';
 import 'package:smlaicloud/screens/quotation/components/qt_responsive_layout.dart';
 import 'package:smlaicloud/screens/quotation/components/qt_appbar_actions.dart';
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/screens/quotation/models/qt_model_factory.dart';
 // Reuse PO approval handler + warehouse state
 import 'package:smlaicloud/screens/purchaseorder/utils/po_approval_handler.dart';
@@ -690,11 +691,11 @@ class QuotationEditScreenState extends State<QuotationEditScreen> with TickerPro
       height: 100,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.5),
+            color: global.theme.dividerBorderColor.withValues(alpha: 0.5),
             spreadRadius: 5,
             blurRadius: 7,
             offset: const Offset(0, 3),
@@ -871,7 +872,28 @@ class QuotationEditScreenState extends State<QuotationEditScreen> with TickerPro
         },
         child: Focus(
           skipTraversal: true,
-          child: TabBarView(controller: editTabController, physics: const NeverScrollableScrollPhysics(), children: childrenList),
+          child: Builder(
+            builder: (context) {
+              final scaleFactor = global.editFontScaleFactor;
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(scaleFactor),
+                ),
+                child: Theme(
+                  data: Theme.of(context).copyWith(
+                    inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12 * scaleFactor,
+                        vertical: 10 * scaleFactor,
+                      ),
+                    ),
+                    iconTheme: IconThemeData(size: 24 * scaleFactor),
+                  ),
+                  child: TabBarView(controller: editTabController, physics: const NeverScrollableScrollPhysics(), children: childrenList),
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -1050,32 +1072,35 @@ class QuotationEditScreenState extends State<QuotationEditScreen> with TickerPro
       appBar: AppBar(
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             global.gotoMainMenu(context);
           },
         ),
         backgroundColor: global.theme.appBarColor,
         title: Text(global.transactionName(transactionType)),
-        actions: QTAppBarActions.build(
-          context: context,
-          screenData: screenData,
-          screenDataTemp: screenDataTemp,
-          transactionType: transactionType,
-          isLoading: _isLoading,
-          showPreview: _showPreview,
-          canEditQT: _canEditQT(),
-          canPrintQT: _canPrintQT(),
-          editDisabledReason: _getQTEditDisabledReason(),
-          getCollectionName: _getCollectionNameForType,
-          getDocumentTitle: _getDocumentTitle,
-          tabController: tabController,
-          onClearScreen: clearScreenData,
-          onTogglePreview: togglePreview,
-          onSearchTrans: _searchHandlers.searchTrans,
-          onDeleteDoc: deleteDoc,
-          onSaveOrUpdate: saveOrUpdateData,
-        ),
+        actions: [
+          EditFontSizeControl(onChanged: () => setState(() {})),
+          ...QTAppBarActions.build(
+            context: context,
+            screenData: screenData,
+            screenDataTemp: screenDataTemp,
+            transactionType: transactionType,
+            isLoading: _isLoading,
+            showPreview: _showPreview,
+            canEditQT: _canEditQT(),
+            canPrintQT: _canPrintQT(),
+            editDisabledReason: _getQTEditDisabledReason(),
+            getCollectionName: _getCollectionNameForType,
+            getDocumentTitle: _getDocumentTitle,
+            tabController: tabController,
+            onClearScreen: clearScreenData,
+            onTogglePreview: togglePreview,
+            onSearchTrans: _searchHandlers.searchTrans,
+            onDeleteDoc: deleteDoc,
+            onSaveOrUpdate: saveOrUpdateData,
+          ),
+        ],
       ),
       body: Stack(
         children: [

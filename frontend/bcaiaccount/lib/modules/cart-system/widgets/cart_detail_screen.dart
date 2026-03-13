@@ -25,7 +25,7 @@ class CartDetailScreen extends StatefulWidget {
   State<CartDetailScreen> createState() => _CartDetailScreenState();
 }
 
-class _CartDetailScreenState extends State<CartDetailScreen> {
+class _CartDetailScreenState extends State<CartDetailScreen> with global.ThemeRefreshMixin {
   final _cartService = MongoDBCartService();
   late CartModel _currentCart;
   bool _isLoading = false;
@@ -50,7 +50,7 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: global.theme.negativeHighlightTextColor),
             child: Text(global.language("delete")),
           ),
         ],
@@ -196,7 +196,7 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: global.theme.negativeHighlightTextColor),
             child: Text(global.language("delete")),
           ),
         ],
@@ -231,20 +231,20 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFFEE4D2D),
+        backgroundColor: global.theme.primaryColor,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(_currentCart.cartName, style: const TextStyle(fontSize: 16)),
+            Text(_currentCart.cartName, style: TextStyle(fontSize: 16)),
             Text(
               '${_currentCart.items.length} รายการ | ${global.formatPrice(_currentCart.totalAmount)}',
-              style: const TextStyle(fontSize: 12, color: Colors.white70),
+              style: TextStyle(fontSize: 12, color: global.theme.onPrimaryColor.withValues(alpha: 0.7)),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_forever),
+            icon: Icon(Icons.delete_forever),
             onPressed: _deleteCart,
             tooltip: global.language("delete_cart"),
           ),
@@ -260,12 +260,12 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
                   Icon(
                     Icons.shopping_cart_outlined,
                     size: 80,
-                    color: Colors.grey[400],
+                    color: global.theme.iconSecondaryColor,
                   ),
                   SizedBox(height: 16),
                   Text(
                     global.language("no_items_in_cart"),
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: 18, color: global.theme.iconSecondaryColor),
                   ),
                 ],
               ),
@@ -282,7 +282,7 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
           ? Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.cardColor,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
@@ -300,14 +300,14 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
                     children: [
                       Text(
                         global.language("grand_total"),
-                        style: const TextStyle(fontSize: 14, color: Colors.grey),
+                        style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
                       ),
                       Text(
                         global.formatPrice(_currentCart.recalculatedTotal),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFFEE4D2D),
+                          color: global.theme.primaryColor,
                         ),
                       ),
                     ],
@@ -316,14 +316,14 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
                     icon: Icon(Icons.send, size: 20),
                     label: Text(
                       '${global.language("send_to_system")} ${_currentCart.cartType.displayNameThai}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     onPressed: _sendToSystem,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFEE4D2D),
+                      backgroundColor: global.theme.primaryColor,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 32,
                         vertical: 16,
@@ -350,7 +350,7 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
       margin: const EdgeInsets.only(right: 12, bottom: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
@@ -371,10 +371,10 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
           },
           errorBuilder: (context, error, stackTrace) {
             return Container(
-              color: Colors.grey[200],
+              color: global.theme.dividerBorderColor,
               child: Icon(
                 Icons.image_not_supported,
-                color: Colors.grey[400],
+                color: global.theme.iconSecondaryColor,
                 size: 32,
               ),
             );
@@ -405,7 +405,7 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
                     children: [
                       Text(
                         item.productName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -413,11 +413,11 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
                       SizedBox(height: 4),
                       Text(
                         '${global.language("code")}: ${item.itemCode}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor),
                       ),
                       Text(
                         '${global.language("barcode")}: ${item.barcode}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor),
                       ),
                     ],
                   ),
@@ -426,16 +426,16 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
                 Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.edit, size: 20),
+                      icon: Icon(Icons.edit, size: 20),
                       onPressed: () => _updateQuantity(item),
                       tooltip: global.language("edit_quantity"),
-                      color: Colors.blue,
+                      color: global.theme.infoHighlightTextColor,
                     ),
                     IconButton(
-                      icon: const Icon(Icons.delete, size: 20),
+                      icon: Icon(Icons.delete, size: 20),
                       onPressed: () => _removeItem(item.itemId),
                       tooltip: global.language("delete_item"),
-                      color: Colors.red,
+                      color: global.theme.negativeHighlightTextColor,
                     ),
                   ],
                 ),
@@ -453,14 +453,14 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.blue[50],
+                    color: global.theme.infoHighlightColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     '${global.formatNumberRemoveRightZero(item.quantity)} ${item.unitName}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+                      color: global.theme.infoHighlightTextColor,
                     ),
                   ),
                 ),
@@ -470,20 +470,20 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
                   children: [
                     Text(
                       '${global.formatPrice(item.price)} / ${item.unitName}',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor),
                     ),
                     if (item.discount > 0)
                       Text(
                         '${global.language("discount")}: ${global.formatPrice(item.discount)}',
-                        style: const TextStyle(fontSize: 12, color: Colors.red),
+                        style: TextStyle(fontSize: 12, color: global.theme.negativeHighlightTextColor),
                       ),
                     const SizedBox(height: 4),
                     Text(
                       global.formatPrice(item.totalPrice),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFEE4D2D),
+                        color: global.theme.primaryColor,
                       ),
                     ),
                   ],
@@ -496,20 +496,20 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.amber[50],
+                  color: global.theme.warningHighlightColor,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.amber[200]!),
+                  border: Border.all(color: global.theme.warningHighlightTextColor.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.note, size: 16, color: Colors.amber[700]),
+                    Icon(Icons.note, size: 16, color: global.theme.warningHighlightTextColor),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         item.remark!,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.amber[900],
+                          color: global.theme.warningHighlightTextColor,
                         ),
                       ),
                     ),

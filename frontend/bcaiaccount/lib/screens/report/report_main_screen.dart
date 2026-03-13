@@ -14,6 +14,7 @@ import 'package:data_table_2/data_table_2.dart';
 import 'file_download.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smlaicloud/utils/logger/app_logger.dart';
+import 'package:smlaicloud/utils/date_picker.dart';
 
 class ReportMainScreen extends StatefulWidget {
   final global.ReportEnum type;
@@ -23,7 +24,7 @@ class ReportMainScreen extends StatefulWidget {
   State<ReportMainScreen> createState() => _ReportMainScreenState();
 }
 
-class _ReportMainScreenState extends State<ReportMainScreen> {
+class _ReportMainScreenState extends State<ReportMainScreen> with global.ThemeRefreshMixin {
   final ReportRepository _reportRepository = ReportRepository();
 
   final TextEditingController fromDate = TextEditingController();
@@ -213,20 +214,6 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
     );
   }
 
-  void _selectFromDate(BuildContext context) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-    );
-
-    if (pickedDate != null) {
-      setState(() {
-        fromDate.text = DateFormat('dd/MM/yyyy').format(pickedDate);
-      });
-    }
-  }
 
   @override
   void dispose() {
@@ -234,20 +221,6 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
     super.dispose();
   }
 
-  void _selectToDate(BuildContext context) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-    );
-
-    if (pickedDate != null) {
-      setState(() {
-        toDate.text = DateFormat('dd/MM/yyyy').format(pickedDate);
-      });
-    }
-  }
 
   Future<void> _showDateFilterDialog() async {
     return showDialog<void>(
@@ -271,60 +244,34 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
                           child: Row(
                             children: [
                               Expanded(
-                                child: TextField(
-                                  decoration: InputDecoration(
-                                    border: OutlineInputBorder(),
-                                    labelText: global.language("from_date"),
-                                    suffixIcon: Row(
-                                      mainAxisAlignment: MainAxisAlignment
-                                          .spaceBetween, // added line
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        IconButton(
-                                          focusNode: FocusNode(
-                                            skipTraversal: true,
-                                          ),
-                                          icon: const Icon(
-                                            Icons.calendar_month,
-                                          ),
-                                          onPressed: () {
-                                            _selectFromDate(context);
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  controller: fromDate,
-                                  onChanged: (value) {},
+                                child: CustomDatePicker(
+                                  labelText: global.language("from_date"),
+                                  initialDate: DateTime.now(),
+                                  lastDate: DateTime.now(),
+                                  onDateSelected: (date) {
+                                    if (date != null) {
+                                      setState(() {
+                                        fromDate.text = DateFormat('dd/MM/yyyy').format(date);
+                                      });
+                                    }
+                                  },
+                                  decoration: InputDecoration(),
                                 ),
                               ),
                               SizedBox(width: 5),
                               Expanded(
-                                child: TextField(
-                                  decoration: InputDecoration(
-                                    border: OutlineInputBorder(),
-                                    labelText: global.language("to_date"),
-                                    suffixIcon: Row(
-                                      mainAxisAlignment: MainAxisAlignment
-                                          .spaceBetween, // added line
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        IconButton(
-                                          focusNode: FocusNode(
-                                            skipTraversal: true,
-                                          ),
-                                          icon: const Icon(
-                                            Icons.calendar_month,
-                                          ),
-                                          onPressed: () {
-                                            _selectToDate(context);
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  controller: toDate,
-                                  onChanged: (value) {},
+                                child: CustomDatePicker(
+                                  labelText: global.language("to_date"),
+                                  initialDate: DateTime.now(),
+                                  lastDate: DateTime.now(),
+                                  onDateSelected: (date) {
+                                    if (date != null) {
+                                      setState(() {
+                                        toDate.text = DateFormat('dd/MM/yyyy').format(date);
+                                      });
+                                    }
+                                  },
+                                  decoration: InputDecoration(),
                                 ),
                               ),
                             ],
@@ -524,7 +471,7 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
             ? SizedBox(
                 child: Text(
                   column["label"]!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -538,7 +485,7 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
                     child: Text(
                       column["label"]!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -558,7 +505,7 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
                           child: Text(
                             column["label2"]!,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 16),
+                            style: TextStyle(fontSize: 16),
                           ),
                         )
                       : Container(),
@@ -643,7 +590,7 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
       appBar: AppBar(
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             _timer.cancel();
             global.gotoMainMenu(context);
@@ -655,7 +602,7 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
           /// download pdf
           // IconButton(
           //   focusNode: FocusNode(skipTraversal: true),
-          //   icon: const Icon(Icons.picture_as_pdf),
+          //   icon: Icon(Icons.picture_as_pdf),
           //   onPressed: () {
           //     String queryFromdate = "";
           //     String queryTodate = "";
@@ -684,7 +631,7 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
           // ),
           IconButton(
             focusNode: FocusNode(skipTraversal: true),
-            icon: const Icon(Icons.file_download),
+            icon: Icon(Icons.file_download),
             onPressed: () {
               pdfDownload();
             },
@@ -692,7 +639,7 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
           const SizedBox(width: 5),
           IconButton(
             focusNode: FocusNode(skipTraversal: true),
-            icon: const Icon(Icons.search),
+            icon: Icon(Icons.search),
             onPressed: () {
               _showDateFilterDialog();
             },
@@ -729,7 +676,7 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
             _loadMore();
           });
         },
-        child: const Icon(Icons.navigate_next),
+        child: Icon(Icons.navigate_next),
       ),
     );
   }
@@ -782,7 +729,7 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
     double totalTotalvatvalue = 0;
     double totalTotalamount = 0;
 
-    TextStyle styleTextFooter = const TextStyle(
+    TextStyle styleTextFooter = TextStyle(
       fontSize: 18,
       fontWeight: FontWeight.bold,
     );
@@ -917,7 +864,7 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
     double totalchequeamount = 0;
     double totaltotalamount = 0;
 
-    TextStyle styleTextFooter = const TextStyle(
+    TextStyle styleTextFooter = TextStyle(
       fontSize: 18,
       fontWeight: FontWeight.bold,
     );
@@ -1045,15 +992,15 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
 
   List<DataRow> _buildSaleInvoiceRows(List<TransactionModel> models) {
     List<DataRow> rows = [];
-    TextStyle styleTextRowHerder = const TextStyle(
+    TextStyle styleTextRowHerder = TextStyle(
       fontSize: 16,
       fontWeight: FontWeight.bold,
     );
-    TextStyle styleTextFooter = const TextStyle(
+    TextStyle styleTextFooter = TextStyle(
       fontSize: 18,
       fontWeight: FontWeight.bold,
     );
-    TextStyle styleTextSubFooter = const TextStyle(
+    TextStyle styleTextSubFooter = TextStyle(
       fontSize: 16,
       fontWeight: FontWeight.bold,
     );
@@ -1084,7 +1031,7 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
           rows.add(
             DataRow(
               color: (!showDetail)
-                  ? WidgetStateColor.resolveWith((states) => Colors.white)
+                  ? WidgetStateColor.resolveWith((states) => global.theme.cardColor)
                   : WidgetStateColor.resolveWith(
                       (states) => Colors.yellow[100]!,
                     ),
@@ -1171,7 +1118,7 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
               rows.add(
                 DataRow(
                   color: WidgetStateColor.resolveWith(
-                    (states) => Colors.grey[100]!,
+                    (states) => global.theme.surfaceColor,
                   ),
                   cells: [
                     const DataCell(SizedBox(child: Text(""))),
@@ -1375,7 +1322,7 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
             rows.add(
               DataRow(
                 color: (!showDetail)
-                    ? WidgetStateColor.resolveWith((states) => Colors.white)
+                    ? WidgetStateColor.resolveWith((states) => global.theme.cardColor)
                     : WidgetStateColor.resolveWith(
                         (states) => Colors.yellow[100]!,
                       ),
@@ -1462,7 +1409,7 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
                   rows.add(
                     DataRow(
                       color: WidgetStateColor.resolveWith(
-                        (states) => Colors.grey[100]!,
+                        (states) => global.theme.surfaceColor,
                       ),
                       cells: [
                         const DataCell(SizedBox(child: Text(""))),
@@ -1673,7 +1620,7 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
                   Expanded(
                     child: Text(
                       "PDF Download : $downloadPath",
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1719,7 +1666,7 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
               margin: EdgeInsets.only(left: 10, bottom: 10),
               child: Text(
                 "${global.language("from_date")} ${fromDate.text} - ${global.language("to_date")} ${toDate.text}",
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -1732,7 +1679,7 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
               margin: const EdgeInsets.only(left: 10, bottom: 10),
               child: Text(
                 "Page $pageActive of $totalPage",
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -1742,7 +1689,7 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
           Expanded(
             child: DataTable2(
               minWidth: 500,
-              headingTextStyle: const TextStyle(color: Colors.black),
+              headingTextStyle: TextStyle(color: global.theme.columnHeaderTextColor),
               horizontalMargin: 20,
               columnSpacing: 0,
               headingRowHeight: (widget.type != global.ReportEnum.saleinvoice)
@@ -1751,17 +1698,17 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
                   ? 70
                   : 40,
               headingRowColor: WidgetStateColor.resolveWith(
-                (states) => Colors.grey[200]!,
+                (states) => global.theme.columnHeaderColor,
               ),
               border: (widget.type != global.ReportEnum.saleinvoice)
                   ? TableBorder(
-                      top: const BorderSide(color: Colors.black),
-                      bottom: BorderSide(color: Colors.grey[300]!),
-                      left: BorderSide(color: Colors.grey[300]!),
-                      right: BorderSide(color: Colors.grey[300]!),
-                      verticalInside: BorderSide(color: Colors.grey[300]!),
-                      horizontalInside: const BorderSide(
-                        color: Colors.grey,
+                      top: BorderSide(color: global.theme.textColor),
+                      bottom: BorderSide(color: global.theme.dividerBorderColor),
+                      left: BorderSide(color: global.theme.dividerBorderColor),
+                      right: BorderSide(color: global.theme.dividerBorderColor),
+                      verticalInside: BorderSide(color: global.theme.dividerBorderColor),
+                      horizontalInside: BorderSide(
+                        color: global.theme.textSecondaryColor,
                         width: 1,
                       ),
                     )
@@ -1771,8 +1718,8 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
               empty: Center(
                 child: Container(
                   padding: const EdgeInsets.all(20),
-                  color: Colors.grey[200],
-                  child: const Text('No data'),
+                  color: global.theme.columnHeaderColor,
+                  child: Text('No data'),
                 ),
               ),
             ),
@@ -1783,7 +1730,7 @@ class _ReportMainScreenState extends State<ReportMainScreen> {
               margin: const EdgeInsets.only(left: 10, bottom: 10),
               child: Text(
                 "Page $pageActive of $totalPage",
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),

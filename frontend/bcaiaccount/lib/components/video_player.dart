@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smlaicloud/global.dart' as global;
 import 'package:video_player/video_player.dart';
 
 class ButterFlyAssetVideo extends StatefulWidget {
@@ -62,12 +63,12 @@ class _ControlsOverlay extends StatelessWidget {
           reverseDuration: const Duration(milliseconds: 200),
           child: controller.value.isPlaying
               ? const SizedBox.shrink()
-              : const ColoredBox(
+              : ColoredBox(
                   color: Colors.black26,
                   child: Center(
                     child: Icon(
                       Icons.play_arrow,
-                      color: Colors.white,
+                      color: global.theme.onPrimaryColor,
                       size: 100.0,
                       semanticLabel: 'Play',
                     ),

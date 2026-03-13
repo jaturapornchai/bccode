@@ -12,17 +12,18 @@ class ChatbotScreen extends StatefulWidget {
   State<ChatbotScreen> createState() => _ChatbotScreenState();
 }
 
-class _ChatbotScreenState extends State<ChatbotScreen> {
+class _ChatbotScreenState extends State<ChatbotScreen>
+    with global.ThemeRefreshMixin {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
 
   // สีธีม
-  final Color primaryColor = const Color(0xFF1A73E8);
-  final Color primaryDarkColor = const Color(0xFF0D47A1);
-  final Color aiMessageColor = const Color(0xFFE3F2FD);
-  final Color userMessageColor = const Color(0xFF1A73E8);
+  Color get primaryColor => global.theme.primaryColor;
+  Color get primaryDarkColor => global.theme.primaryColor;
+  Color get aiMessageColor => global.theme.surfaceColor;
+  Color get userMessageColor => global.theme.primaryColor;
 
   @override
   void initState() {
@@ -144,7 +145,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: global.theme.surfaceColor,
       appBar: AppBar(
         elevation: 2,
         backgroundColor: primaryDarkColor,
@@ -238,7 +239,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           // พื้นที่พิมพ์ข้อความ
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.1),
@@ -258,11 +259,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                       hintText: global.language('chatbot_type_message'),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                        borderSide: BorderSide(color: global.theme.formBorderColor),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                        borderSide: BorderSide(color: global.theme.formBorderColor),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
@@ -273,7 +274,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                         vertical: 12,
                       ),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      fillColor: global.theme.formFillColor,
                     ),
                     maxLines: null,
                     textInputAction: TextInputAction.send,
@@ -361,7 +362,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                           ? Colors.white
                           : (message.isError
                                 ? Colors.red[900]
-                                : Colors.black87),
+                                : global.theme.textColor),
                       height: 1.4,
                     ),
                   ),
@@ -372,7 +373,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                       fontSize: 11,
                       color: message.isUser
                           ? Colors.white70
-                          : Colors.grey.shade600,
+                          : global.theme.textSecondaryColor,
                     ),
                   ),
                 ],

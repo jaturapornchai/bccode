@@ -19,7 +19,7 @@ class ProductMasterGroupScreen extends StatefulWidget {
 }
 
 class ProductMasterGroupScreenState extends State<ProductMasterGroupScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   TextEditingController searchController = TextEditingController();
   FocusNode searchFocusNode = FocusNode(skipTraversal: true);
   ScrollController listScrollController = ScrollController();
@@ -28,6 +28,7 @@ class ProductMasterGroupScreenState extends State<ProductMasterGroupScreen>
   bool isKeyUp = false;
   bool isKeyDown = false;
   String selectGuid = "";
+  int _hoverIndex = -1;
   int currentListIndex = 0;
   final _debouncer = global.Debouncer(1000);
   bool loadingData = false;
@@ -81,6 +82,7 @@ class ProductMasterGroupScreenState extends State<ProductMasterGroupScreen>
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -88,7 +90,7 @@ class ProductMasterGroupScreenState extends State<ProductMasterGroupScreen>
         title: Text(global.language('product_group')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.pop(
               context,
@@ -172,11 +174,11 @@ class ProductMasterGroupScreenState extends State<ProductMasterGroupScreen>
               child: Container(
                 padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: global.theme.surfaceColor,
                   borderRadius: BorderRadius.circular(2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withValues(alpha: 0.5),
+                      color: global.theme.dividerBorderColor.withValues(alpha: 0.5),
                       spreadRadius: 5,
                       blurRadius: 7,
                       offset: const Offset(0, 2),
@@ -202,14 +204,19 @@ class ProductMasterGroupScreenState extends State<ProductMasterGroupScreen>
                     autofocus: true,
                     focusNode: searchFocusNode,
                     controller: searchController,
+                    style: TextStyle(color: global.theme.textColor),
                     decoration: InputDecoration(
                       isDense: true,
+                      filled: false,
                       contentPadding: const EdgeInsets.only(
                         top: 10,
                         bottom: 10,
                       ),
                       border: InputBorder.none,
+                      prefixIcon: Icon(Icons.search, size: 20, color: global.theme.iconColor),
+                      prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                       hintText: global.language('search'),
+                      hintStyle: TextStyle(color: global.theme.formHintColor),
                     ),
                   ),
                 ),
@@ -224,8 +231,8 @@ class ProductMasterGroupScreenState extends State<ProductMasterGroupScreen>
               ),
               decoration: BoxDecoration(
                 color: global.theme.columnHeaderColor,
-                border: const Border(
-                  bottom: BorderSide(width: 1.0, color: Colors.grey),
+                border: Border(
+                bottom: BorderSide(width: 1.0, color: global.theme.dividerBorderColor),
                 ),
               ),
               child: Row(
@@ -234,8 +241,8 @@ class ProductMasterGroupScreenState extends State<ProductMasterGroupScreen>
                     flex: 5,
                     child: Text(
                       global.language("product_group_code"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                      color: global.theme.columnHeaderTextColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -244,8 +251,8 @@ class ProductMasterGroupScreenState extends State<ProductMasterGroupScreen>
                     flex: 10,
                     child: Text(
                       global.language("product_group_name"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                      color: global.theme.columnHeaderTextColor,
                         fontWeight: FontWeight.bold,
                       ),
                       maxLines: 2,
@@ -260,7 +267,7 @@ class ProductMasterGroupScreenState extends State<ProductMasterGroupScreen>
                 controller: listScrollController,
                 child: Column(
                   children: masterGroupListData
-                      .map((value) => listObject(value))
+                      .asMap().entries.map((e) => listObject(e.value, e.key))
                       .toList(),
                 ),
               ),
@@ -271,8 +278,29 @@ class ProductMasterGroupScreenState extends State<ProductMasterGroupScreen>
     );
   }
 
-  Widget listObject(MasterGroupModel value) {
-    return GestureDetector(
+
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
+  }
+
+  Widget listObject(MasterGroupModel value, int index) {
+    final isSelected = selectGuid == value.guidfixed;
+    TextStyle textStyle = isSelected
+        ? TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w700, color: global.theme.textColor)
+        : TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w400, color: global.theme.textSecondaryColor);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         Navigator.pop(
           context,
@@ -286,11 +314,9 @@ class ProductMasterGroupScreenState extends State<ProductMasterGroupScreen>
       },
       child: Container(
         decoration: BoxDecoration(
-          color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
-              : Colors.white,
-          border: const Border(
-            bottom: BorderSide(width: 1.0, color: Colors.grey),
+          color: _getContainerColor(value.guidfixed ?? "", index),
+          border: Border(
+                bottom: BorderSide(width: 1.0, color: global.theme.dividerBorderColor),
           ),
         ),
         padding: const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
@@ -301,6 +327,7 @@ class ProductMasterGroupScreenState extends State<ProductMasterGroupScreen>
               flex: 5,
               child: Text(
                 value.code,
+                style: textStyle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -309,6 +336,7 @@ class ProductMasterGroupScreenState extends State<ProductMasterGroupScreen>
               flex: 10,
               child: Text(
                 global.packName(value.names),
+                style: textStyle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -316,6 +344,7 @@ class ProductMasterGroupScreenState extends State<ProductMasterGroupScreen>
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -328,6 +357,7 @@ class ProductMasterGroupScreenState extends State<ProductMasterGroupScreen>
       }
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {

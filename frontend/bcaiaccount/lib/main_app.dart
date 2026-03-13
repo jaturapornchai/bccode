@@ -533,20 +533,91 @@ class MyApp extends StatelessWidget {
                 child: child!,
               );
             },
-            theme: ThemeData(
-              useMaterial3: false,
-              primarySwatch: Colors.blue,
-              // ใช้ Google Fonts TextTheme เพื่อให้ font family มีผลทั้งระบบ
-              textTheme: global.getDisplayTextTheme(),
-              primaryTextTheme: global.getDisplayTextTheme(),
-              appBarTheme: AppBarTheme(
-                iconTheme: const IconThemeData(color: Colors.white),
-                titleTextStyle: global.getDisplayTextTheme().titleLarge?.copyWith(
-                  color: Colors.white,
-                  fontSize: 20,
-                ),
-              ),
-            ),
+            theme: global.isDarkMode()
+                ? ThemeData(
+                    useMaterial3: false,
+                    brightness: Brightness.dark,
+                    scaffoldBackgroundColor: global.theme.backgroundColor,
+                    cardColor: global.theme.cardColor,
+                    dialogTheme: DialogThemeData(
+                      backgroundColor: global.theme.dialogColor,
+                    ),
+                    dividerColor: global.theme.dividerBorderColor,
+                    textTheme: global.getDisplayTextTheme(),
+                    primaryTextTheme: global.getDisplayTextTheme(),
+                    appBarTheme: AppBarTheme(
+                      backgroundColor: global.theme.appBarColor,
+                      iconTheme: IconThemeData(color: global.theme.onPrimaryColor),
+                      titleTextStyle: global.getDisplayTextTheme().titleLarge?.copyWith(
+                        color: global.theme.onPrimaryColor,
+                        fontSize: 20,
+                      ),
+                    ),
+                    inputDecorationTheme: InputDecorationTheme(
+                      filled: true,
+                      fillColor: global.theme.formFillColor,
+                      labelStyle: TextStyle(color: global.theme.formLabelColor),
+                      hintStyle: TextStyle(color: global.theme.formHintColor),
+                      prefixIconColor: global.theme.formHintColor,
+                      suffixIconColor: global.theme.formHintColor,
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: global.theme.formBorderColor),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: global.theme.formFocusBorderColor, width: 2),
+                      ),
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide(color: global.theme.formBorderColor),
+                      ),
+                    ),
+                    textSelectionTheme: TextSelectionThemeData(
+                      cursorColor: global.theme.formFocusBorderColor,
+                      selectionColor: global.theme.formFocusBorderColor.withValues(alpha: 0.3),
+                    ),
+                    iconTheme: IconThemeData(color: global.theme.iconColor),
+                  )
+                : ThemeData(
+                    useMaterial3: false,
+                    primarySwatch: Colors.blue,
+                    scaffoldBackgroundColor: global.theme.backgroundColor,
+                    cardColor: global.theme.cardColor,
+                    dialogTheme: DialogThemeData(
+                      backgroundColor: global.theme.dialogColor,
+                    ),
+                    dividerColor: global.theme.dividerBorderColor,
+                    textTheme: global.getDisplayTextTheme(),
+                    primaryTextTheme: global.getDisplayTextTheme(),
+                    appBarTheme: AppBarTheme(
+                      backgroundColor: global.theme.appBarColor,
+                      iconTheme: IconThemeData(color: global.theme.onPrimaryColor),
+                      titleTextStyle: global.getDisplayTextTheme().titleLarge?.copyWith(
+                        color: global.theme.onPrimaryColor,
+                        fontSize: 20,
+                      ),
+                    ),
+                    inputDecorationTheme: InputDecorationTheme(
+                      filled: true,
+                      fillColor: global.theme.formFillColor,
+                      labelStyle: TextStyle(color: global.theme.formLabelColor),
+                      hintStyle: TextStyle(color: global.theme.formHintColor),
+                      prefixIconColor: global.theme.formHintColor,
+                      suffixIconColor: global.theme.formHintColor,
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: global.theme.formBorderColor),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: global.theme.formFocusBorderColor, width: 2),
+                      ),
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide(color: global.theme.formBorderColor),
+                      ),
+                    ),
+                    textSelectionTheme: TextSelectionThemeData(
+                      cursorColor: global.theme.formFocusBorderColor,
+                      selectionColor: global.theme.formFocusBorderColor.withValues(alpha: 0.3),
+                    ),
+                    iconTheme: IconThemeData(color: global.theme.iconColor),
+                  ),
         home: const FlavorLoginSelector(),
         routes: <String, WidgetBuilder>{
           '/login_screen': (BuildContext context) =>

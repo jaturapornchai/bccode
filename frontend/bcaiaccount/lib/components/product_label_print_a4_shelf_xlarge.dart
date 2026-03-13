@@ -50,7 +50,7 @@ class ProductLabelPrintA4ShelfXLarge {
             child: Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.cardColor,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: ValueListenableBuilder<String>(
@@ -160,7 +160,7 @@ class ProductLabelPrintA4ShelfXLarge {
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Column(

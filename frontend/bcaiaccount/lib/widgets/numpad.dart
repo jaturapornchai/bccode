@@ -8,7 +8,7 @@ class NumberPad extends StatefulWidget {
   final Widget? title;
   final String? unitName;
   final TextAlign textAlign;
-  final Color backgroundColor;
+  final Color? backgroundColor;
 
   const NumberPad({
     super.key,
@@ -16,7 +16,7 @@ class NumberPad extends StatefulWidget {
     this.title,
     this.unitName,
     this.textAlign = TextAlign.right,
-    this.backgroundColor = Colors.white,
+    this.backgroundColor,
     this.header = "",
   });
 
@@ -107,7 +107,7 @@ class _NumberPadState extends State<NumberPad> {
 
     return Scaffold(
       body: Container(
-        color: widget.backgroundColor,
+        color: widget.backgroundColor ?? global.theme.cardColor,
         width: MediaQuery.of(context).size.width,
         child: Column(
           children: <Widget>[
@@ -117,12 +117,12 @@ class _NumberPadState extends State<NumberPad> {
                 margin: const EdgeInsets.only(bottom: 10),
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade100,
-                  border: Border.all(color: Colors.grey, width: 1),
+                  color: global.theme.columnHeaderColor,
+                  border: Border.all(color: global.theme.dividerBorderColor, width: 1),
                   borderRadius: BorderRadius.circular(4),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withValues(alpha: 0.5),
+                      color: global.theme.dividerBorderColor.withValues(alpha: 0.5),
                       spreadRadius: 2,
                       blurRadius: 2,
                     ),
@@ -131,7 +131,7 @@ class _NumberPadState extends State<NumberPad> {
                 child: Center(
                   child: Text(
                     widget.header,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -145,10 +145,10 @@ class _NumberPadState extends State<NumberPad> {
               width: MediaQuery.of(context).size.width,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(4),
-                color: Colors.white,
+                color: global.theme.cardColor,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withValues(alpha: 0.5),
+                    color: global.theme.dividerBorderColor.withValues(alpha: 0.5),
                     spreadRadius: 2,
                     blurRadius: 2,
                     offset: const Offset(0, 1),
@@ -159,7 +159,7 @@ class _NumberPadState extends State<NumberPad> {
               child: Text(
                 global.moneyFormat.format(double.tryParse(numberStr) ?? 0.0),
                 textAlign: widget.textAlign,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                 ),

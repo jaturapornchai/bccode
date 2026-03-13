@@ -43,7 +43,7 @@ class QTResponsiveLayout extends StatefulWidget {
   State<QTResponsiveLayout> createState() => _QTResponsiveLayoutState();
 }
 
-class _QTResponsiveLayoutState extends State<QTResponsiveLayout> {
+class _QTResponsiveLayoutState extends State<QTResponsiveLayout> with global.ThemeRefreshMixin {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -63,7 +63,7 @@ class _QTResponsiveLayoutState extends State<QTResponsiveLayout> {
               controller: widget.splitViewController,
               gripSize: 8,
               gripColor: global.theme.appBarColor,
-              gripColorActive: Colors.blue,
+              gripColorActive: global.theme.infoHighlightTextColor,
               viewMode: SplitViewMode.Horizontal,
               indicator: const SplitIndicator(viewMode: SplitViewMode.Horizontal),
               activeIndicator: const SplitIndicator(viewMode: SplitViewMode.Horizontal, isActive: true),
@@ -124,7 +124,7 @@ class _QTResponsiveLayoutState extends State<QTResponsiveLayout> {
               width: 4,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.grey[400],
+                color: global.theme.dividerBorderColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),

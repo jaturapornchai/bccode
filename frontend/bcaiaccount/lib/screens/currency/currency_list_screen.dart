@@ -13,7 +13,7 @@ class CurrencyListScreen extends StatefulWidget {
   State<CurrencyListScreen> createState() => _CurrencyListScreenState();
 }
 
-class _CurrencyListScreenState extends State<CurrencyListScreen> {
+class _CurrencyListScreenState extends State<CurrencyListScreen> with global.ThemeRefreshMixin {
   final CurrencyApiService _apiService = CurrencyApiService();
   List<CurrencyModel> _currencies = [];
   bool _isLoading = false;
@@ -69,7 +69,7 @@ class _CurrencyListScreenState extends State<CurrencyListScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
             child: Text(global.language("delete")),
           ),
         ],
@@ -143,23 +143,27 @@ class _CurrencyListScreenState extends State<CurrencyListScreen> {
 
   Widget _buildCurrencyCard(CurrencyModel currency, bool isBase) {
     final isDisabled = currency.isdisabled;
+    final isDark = global.isDarkMode();
+    final accentColor = isDark ? global.theme.primaryLightColor : global.theme.appBarColor;
     final color = isDisabled
-        ? Colors.grey
+        ? global.theme.iconSecondaryColor
         : isBase
-            ? global.theme.appBarColor
-            : Colors.blueGrey;
+            ? accentColor
+            : isDark ? Colors.blueGrey.shade300 : Colors.blueGrey;
 
     return SizedBox(
       width: 160,
       child: Card(
         elevation: isBase ? 4 : 2,
+        color: isDisabled
+            ? global.theme.surfaceColor
+            : null, // ใช้ ThemeData.cardColor อัตโนมัติ
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: isBase
-              ? BorderSide(color: global.theme.appBarColor, width: 2)
-              : BorderSide.none,
+              ? BorderSide(color: accentColor, width: 2)
+              : BorderSide(color: global.theme.dividerBorderColor, width: 0.5),
         ),
-        color: isDisabled ? Colors.grey.shade100 : null,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
           child: Column(
@@ -184,7 +188,7 @@ class _CurrencyListScreenState extends State<CurrencyListScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: isDisabled ? Colors.grey : Colors.black87,
+                  color: isDisabled ? global.theme.textSecondaryColor : global.theme.textColor,
                 ),
               ),
               const SizedBox(height: 2),
@@ -197,7 +201,7 @@ class _CurrencyListScreenState extends State<CurrencyListScreen> {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 12,
-                  color: isDisabled ? Colors.grey : Colors.grey.shade600,
+                  color: global.theme.textSecondaryColor,
                 ),
               ),
               const SizedBox(height: 6),
@@ -207,7 +211,7 @@ class _CurrencyListScreenState extends State<CurrencyListScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: global.theme.appBarColor.withValues(alpha: 0.15),
+                    color: accentColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -215,7 +219,7 @@ class _CurrencyListScreenState extends State<CurrencyListScreen> {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
-                      color: global.theme.appBarColor,
+                      color: accentColor,
                     ),
                   ),
                 )
@@ -223,19 +227,19 @@ class _CurrencyListScreenState extends State<CurrencyListScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: global.theme.dividerBorderColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     global.language("disabled"),
-                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                    style: TextStyle(fontSize: 10, color: global.theme.textSecondaryColor),
                   ),
                 )
               else
                 const SizedBox(height: 16),
 
               // Actions
-              const Divider(height: 16),
+              Divider(height: 16, color: global.theme.dividerBorderColor),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -244,7 +248,7 @@ class _CurrencyListScreenState extends State<CurrencyListScreen> {
                     borderRadius: BorderRadius.circular(8),
                     child: Padding(
                       padding: const EdgeInsets.all(6),
-                      child: Icon(Icons.edit_outlined, size: 20, color: Colors.orange.shade700),
+                      child: Icon(Icons.edit_outlined, size: 20, color: global.theme.warningHighlightTextColor),
                     ),
                   ),
                   InkWell(
@@ -252,7 +256,7 @@ class _CurrencyListScreenState extends State<CurrencyListScreen> {
                     borderRadius: BorderRadius.circular(8),
                     child: Padding(
                       padding: const EdgeInsets.all(6),
-                      child: Icon(Icons.delete_outline, size: 20, color: Colors.red.shade400),
+                      child: Icon(Icons.delete_outline, size: 20, color: global.theme.negativeHighlightTextColor),
                     ),
                   ),
                 ],
@@ -273,9 +277,10 @@ class _CurrencyListScreenState extends State<CurrencyListScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 40),
           decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Colors.grey.shade400,
+              color: global.theme.dividerBorderColor,
               width: 1.5,
               strokeAlign: BorderSide.strokeAlignInside,
             ),
@@ -283,13 +288,13 @@ class _CurrencyListScreenState extends State<CurrencyListScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.add_circle_outline, size: 40, color: Colors.grey.shade500),
+              Icon(Icons.add_circle_outline, size: 40, color: global.theme.iconSecondaryColor),
               SizedBox(height: 8),
               Text(
                 global.language("add_currency"),
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey.shade600,
+                  color: global.theme.textSecondaryColor,
                   fontWeight: FontWeight.w500,
                 ),
               ),

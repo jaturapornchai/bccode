@@ -102,7 +102,7 @@ class PurchaseSearchDialog extends StatefulWidget {
   State<PurchaseSearchDialog> createState() => _PurchaseSearchDialogState();
 }
 
-class _PurchaseSearchDialogState extends State<PurchaseSearchDialog> {
+class _PurchaseSearchDialogState extends State<PurchaseSearchDialog> with global.ThemeRefreshMixin {
   late PurchaseSearchCondition _condition;
 
   // Controllers สำหรับ text fields
@@ -217,7 +217,7 @@ class _PurchaseSearchDialogState extends State<PurchaseSearchDialog> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.shade600,
+        color: global.theme.infoHighlightTextColor,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(16),
           topRight: Radius.circular(16),
@@ -225,19 +225,19 @@ class _PurchaseSearchDialogState extends State<PurchaseSearchDialog> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.filter_list, color: Colors.white),
+          Icon(Icons.filter_list, color: global.theme.onPrimaryColor),
           SizedBox(width: 12),
           Text(
             global.language('search_condition'),
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: global.theme.onPrimaryColor,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
           const Spacer(),
           IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
+            icon: Icon(Icons.close, color: global.theme.onPrimaryColor),
             onPressed: () => Navigator.pop(context),
           ),
         ],
@@ -252,10 +252,10 @@ class _PurchaseSearchDialogState extends State<PurchaseSearchDialog> {
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: Colors.blue.shade50,
+            color: global.theme.surfaceColor,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, size: 18, color: Colors.blue.shade600),
+          child: Icon(icon, size: 18, color: global.theme.infoHighlightTextColor),
         ),
         const SizedBox(width: 8),
         Text(
@@ -263,7 +263,7 @@ class _PurchaseSearchDialogState extends State<PurchaseSearchDialog> {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.grey.shade800,
+            color: global.theme.textColor,
           ),
         ),
       ],
@@ -284,7 +284,7 @@ class _PurchaseSearchDialogState extends State<PurchaseSearchDialog> {
           ),
         ),
         const SizedBox(width: 12),
-        const Text('-', style: TextStyle(fontSize: 20)),
+        Text('-', style: TextStyle(fontSize: 20)),
         SizedBox(width: 12),
         Expanded(
           child: DatePickerWidget(
@@ -310,7 +310,7 @@ class _PurchaseSearchDialogState extends State<PurchaseSearchDialog> {
             decoration: InputDecoration(
               labelText: global.language('min_amount'),
               hintText: '0.00',
-              prefixIcon: const Icon(Icons.money),
+              prefixIcon: Icon(Icons.money),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -325,7 +325,7 @@ class _PurchaseSearchDialogState extends State<PurchaseSearchDialog> {
           ),
         ),
         const SizedBox(width: 12),
-        const Text('-', style: TextStyle(fontSize: 20)),
+        Text('-', style: TextStyle(fontSize: 20)),
         const SizedBox(width: 12),
         Expanded(
           child: TextField(
@@ -334,7 +334,7 @@ class _PurchaseSearchDialogState extends State<PurchaseSearchDialog> {
             decoration: InputDecoration(
               labelText: global.language('max_amount'),
               hintText: '999,999.00',
-              prefixIcon: const Icon(Icons.money),
+              prefixIcon: Icon(Icons.money),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -359,7 +359,7 @@ class _PurchaseSearchDialogState extends State<PurchaseSearchDialog> {
       decoration: InputDecoration(
         labelText: global.language('docno'),
         hintText: 'PO-2024-001',
-        prefixIcon: const Icon(Icons.receipt_long),
+        prefixIcon: Icon(Icons.receipt_long),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
         ),
@@ -383,7 +383,7 @@ class _PurchaseSearchDialogState extends State<PurchaseSearchDialog> {
           decoration: InputDecoration(
             labelText: global.language('seller_code'),
             hintText: 'C001',
-            prefixIcon: const Icon(Icons.badge),
+            prefixIcon: Icon(Icons.badge),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -402,7 +402,7 @@ class _PurchaseSearchDialogState extends State<PurchaseSearchDialog> {
           decoration: InputDecoration(
             labelText: global.language('seller_name'),
             hintText: 'บริษัท ABC จำกัด',
-            prefixIcon: const Icon(Icons.business),
+            prefixIcon: Icon(Icons.business),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -426,7 +426,7 @@ class _PurchaseSearchDialogState extends State<PurchaseSearchDialog> {
       decoration: InputDecoration(
         labelText: global.language('search_all_fields'),
         hintText: 'พิมพ์คำค้นหาภาษาไทยหรืออังกฤษ...',
-        prefixIcon: const Icon(Icons.search),
+        prefixIcon: Icon(Icons.search),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
         ),
@@ -435,7 +435,7 @@ class _PurchaseSearchDialogState extends State<PurchaseSearchDialog> {
           vertical: 12,
         ),
         helperText: 'รองรับการค้นหาภาษาไทย เช่น ชื่อสินค้า, หมายเหตุ',
-        helperStyle: TextStyle(color: Colors.grey.shade600),
+        helperStyle: TextStyle(color: global.theme.iconSecondaryColor),
       ),
       onChanged: (value) {
         _condition.searchText = value;
@@ -448,7 +448,7 @@ class _PurchaseSearchDialogState extends State<PurchaseSearchDialog> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: global.theme.surfaceColor,
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(16),
           bottomRight: Radius.circular(16),
@@ -462,8 +462,8 @@ class _PurchaseSearchDialogState extends State<PurchaseSearchDialog> {
             icon: Icon(Icons.clear_all),
             label: Text(global.language('clear_conditions')),
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.red.shade600,
-              side: BorderSide(color: Colors.red.shade600),
+              foregroundColor: global.theme.negativeHighlightTextColor,
+              side: BorderSide(color: global.theme.negativeHighlightTextColor),
             ),
           ),
           const Spacer(),
@@ -479,8 +479,8 @@ class _PurchaseSearchDialogState extends State<PurchaseSearchDialog> {
             icon: Icon(Icons.search),
             label: Text(global.language('search')),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue.shade600,
-              foregroundColor: Colors.white,
+              backgroundColor: global.theme.infoHighlightTextColor,
+              foregroundColor: global.theme.onPrimaryColor,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
           ),

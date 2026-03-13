@@ -181,7 +181,7 @@ class _AttachmentDialogState extends State<AttachmentDialog> {
             child: Text(global.language('cancel')),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
             onPressed: () => Navigator.pop(context, true),
             child: Text(global.language('delete')),
           ),
@@ -253,16 +253,16 @@ class _AttachmentDialogState extends State<AttachmentDialog> {
   Color _getFileIconColor(String fileType) {
     switch (fileType.toLowerCase()) {
       case 'pdf':
-        return Colors.red;
+        return global.theme.negativeHighlightTextColor;
       case 'xlsx':
       case 'xls':
-        return Colors.green;
+        return global.theme.positiveHighlightTextColor;
       case 'jpg':
       case 'jpeg':
       case 'png':
-        return Colors.blue;
+        return global.theme.infoHighlightTextColor;
       default:
-        return Colors.grey;
+        return global.theme.iconSecondaryColor;
     }
   }
 
@@ -300,7 +300,7 @@ class _AttachmentDialogState extends State<AttachmentDialog> {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: Icon(Icons.close),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -333,7 +333,7 @@ class _AttachmentDialogState extends State<AttachmentDialog> {
                       ? Center(
                           child: Text(
                             global.language("no_attachments"),
-                            style: const TextStyle(color: Colors.grey),
+                            style: TextStyle(color: global.theme.textSecondaryColor),
                           ),
                         )
                       : ListView.builder(
@@ -354,11 +354,11 @@ class _AttachmentDialogState extends State<AttachmentDialog> {
                                     if (attachment.description != null && attachment.description!.isNotEmpty) Text(attachment.description!),
                                     Text(
                                       '${_formatFileSize(attachment.size)} • ${_formatDate(attachment.createdAt)}',
-                                      style: const TextStyle(fontSize: 12),
+                                      style: TextStyle(fontSize: 12),
                                     ),
                                     Text(
                                       '${global.language("uploaded_by")} ${attachment.uploadedName ?? attachment.uploadedBy}',
-                                      style: const TextStyle(fontSize: 12),
+                                      style: TextStyle(fontSize: 12),
                                     ),
                                   ],
                                 ),
@@ -366,12 +366,12 @@ class _AttachmentDialogState extends State<AttachmentDialog> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     IconButton(
-                                      icon: const Icon(Icons.open_in_new),
+                                      icon: Icon(Icons.open_in_new),
                                       onPressed: () => _openAttachment(attachment),
                                       tooltip: global.language("view_file"),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                      icon: Icon(Icons.delete, color: global.theme.negativeHighlightTextColor),
                                       onPressed: () => _deleteAttachment(attachment),
                                       tooltip: global.language("delete_file"),
                                     ),

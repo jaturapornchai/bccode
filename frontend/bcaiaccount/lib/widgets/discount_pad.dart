@@ -45,14 +45,14 @@ class _DiscountPadState extends State<DiscountPad> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        color: Colors.white,
+        color: global.theme.cardColor,
         width: MediaQuery.of(context).size.width,
         child: Column(
           children: <Widget>[
             if (widget.header != "")
               Text(
                 widget.header,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                 ),
@@ -74,7 +74,7 @@ class _DiscountPadState extends State<DiscountPad> {
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.blueAccent),
               ),
-              child: Text(number, style: const TextStyle(fontSize: 32)),
+              child: Text(number, style: TextStyle(fontSize: 32)),
             ),
             Expanded(
               child: Row(

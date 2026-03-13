@@ -17,7 +17,7 @@ class MobileProductListWidgets {
     for (var index = 0; index < state.screenData.details!.length; index++) {
       dataWidgets.add(
         Card(
-          color: Colors.blue.shade100,
+          color: global.theme.columnHeaderColor,
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Stack(
@@ -50,7 +50,7 @@ class MobileProductListWidgets {
     for (var index = 0; index < state.screenData.details!.length; index++) {
       dataWidgets.add(
         Card(
-          color: Colors.blue.shade100,
+          color: global.theme.columnHeaderColor,
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Stack(
@@ -81,7 +81,7 @@ class MobileProductListWidgets {
     for (var index = 0; index < state.screenData.details!.length; index++) {
       dataWidgets.add(
         Card(
-          color: Colors.blue.shade100,
+          color: global.theme.columnHeaderColor,
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Stack(
@@ -112,7 +112,7 @@ class MobileProductListWidgets {
     for (var index = 0; index < state.screenData.details!.length; index++) {
       dataWidgets.add(
         Card(
-          color: Colors.blue.shade100,
+          color: global.theme.columnHeaderColor,
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Stack(
@@ -157,14 +157,14 @@ class MobileProductListWidgets {
             },
             child: Text(
               '${state.screenData.details![index].barcode}~${global.activeLangName(state.screenData.details![index].itemnames!)}',
-              style: const TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: 12),
             ),
           ),
           IconButton(
             onPressed: () {
               state.deleteItemDetail(index);
             },
-            icon: const Icon(Icons.delete, color: Colors.red),
+            icon: Icon(Icons.delete, color: global.theme.negativeHighlightTextColor),
           ),
         ],
       ),
@@ -192,7 +192,7 @@ class MobileProductListWidgets {
               global.activeLangName(
                 state.screenData.details![index].unitnames!,
               ),
-              style: const TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: 12),
             ),
           ),
           SizedBox(width: 5),
@@ -210,7 +210,7 @@ class MobileProductListWidgets {
               global.activeLangName(
                 state.screenData.details![index].whnames!,
               ),
-              style: const TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: 12),
             ),
           ),
           SizedBox(width: 5),
@@ -228,7 +228,7 @@ class MobileProductListWidgets {
               global.activeLangName(
                 state.screenData.details![index].locationnames!,
               ),
-              style: const TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: 12),
             ),
           ),
         ],
@@ -257,7 +257,7 @@ class MobileProductListWidgets {
               global.formatNumber(
                 state.screenData.details![index].qty,
               ),
-              style: const TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: 12),
             ),
           ),
           SizedBox(width: 5),
@@ -283,7 +283,7 @@ class MobileProductListWidgets {
               global.formatNumber(
                 state.screenData.details![index].price,
               ),
-              style: const TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: 12),
             ),
           ),
         ],
@@ -312,7 +312,7 @@ class MobileProductListWidgets {
               global.formatNumber(
                 state.screenData.details![index].qty,
               ),
-              style: const TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: 12),
             ),
           ),
         ],
@@ -327,7 +327,7 @@ class MobileProductListWidgets {
       children: [
         Text(
           '${global.language("total_value")}: ${global.formatNumber(state.screenData.details![index].sumamount)}',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ],
     );
@@ -354,7 +354,7 @@ class MobileProductListWidgets {
               global.activeLangName(
                 state.screenData.details![index].towhnames!,
               ),
-              style: const TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: 12),
             ),
           ),
           SizedBox(width: 5),
@@ -372,7 +372,7 @@ class MobileProductListWidgets {
               global.activeLangName(
                 state.screenData.details![index].tolocationnames!,
               ),
-              style: const TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: 12),
             ),
           ),
           SizedBox(width: 5),
@@ -390,7 +390,7 @@ class MobileProductListWidgets {
               global.formatNumber(
                 state.screenData.details![index].qty,
               ),
-              style: const TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: 12),
             ),
           ),
         ],
@@ -402,8 +402,8 @@ class MobileProductListWidgets {
   ButtonStyle _buttonStyle() {
     return ElevatedButton.styleFrom(
       padding: const EdgeInsets.all(4),
-      foregroundColor: Colors.black,
-      backgroundColor: Colors.white,
+      foregroundColor: global.theme.textColor,
+      backgroundColor: global.theme.cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(
           Radius.circular(0),

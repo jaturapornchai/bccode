@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:smlaicloud/global.dart' as global;
@@ -469,15 +470,6 @@ class EmployeeScreenState extends State<EmployeeScreen>
                     '(${listData.length})',
                     style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const Icon(Icons.line_weight),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataLineSpaceChange();
-                      });
-                    },
-                  ),
                 ],
               ),
             ),
@@ -800,7 +792,9 @@ class EmployeeScreenState extends State<EmployeeScreen>
 
   Color _getContainerColor(String itemGuid, int index) {
     if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
-      return global.theme.rowSelectedColor;
+      return isEditMode
+          ? global.theme.rowEditColor
+          : global.theme.rowSelectedColor;
     }
     if (_hoverIndex == index) {
       return global.theme.rowHoverColor;
@@ -1026,7 +1020,7 @@ class EmployeeScreenState extends State<EmployeeScreen>
                       child: ElevatedButton(
                         style: ButtonStyle(
                           backgroundColor: WidgetStateProperty.all<Color>(
-                            const Color.fromARGB(255, 238, 86, 144),
+                            global.theme.warningHighlightTextColor,
                           ),
                         ),
                         onPressed: (isEditMode)
@@ -1100,10 +1094,10 @@ class EmployeeScreenState extends State<EmployeeScreen>
           child: ElevatedButton.icon(
             style: ButtonStyle(
               backgroundColor: WidgetStateProperty.all<Color>(
-                const Color.fromARGB(255, 148, 160, 194),
+                global.theme.primaryLightColor,
               ),
               foregroundColor: WidgetStateProperty.all<Color>(
-                const Color.fromARGB(255, 0, 0, 0),
+                global.theme.textColor,
               ),
             ),
             focusNode: FocusNode(skipTraversal: true),
@@ -1274,7 +1268,7 @@ class EmployeeScreenState extends State<EmployeeScreen>
             Center(
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: global.theme.cardColor,
                   border: Border.all(color: global.theme.textColor),
                   borderRadius: BorderRadius.circular(5),
                   image: (imageWeb != null)
@@ -1337,7 +1331,7 @@ class EmployeeScreenState extends State<EmployeeScreen>
 
 
     return Scaffold(
-      backgroundColor: isEditMode ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
+      backgroundColor: global.theme.cardColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -1363,6 +1357,8 @@ class EmployeeScreenState extends State<EmployeeScreen>
             : null,
         title: Text(headerEdit + global.language("employee")),
         actions: <Widget>[
+          EditFontSizeControl(onChanged: () => setState(() {})),
+          const SizedBox(width: 8),
           if (selectGuid.isNotEmpty)
             Padding(
               padding: EdgeInsets.only(right: 20.0),
@@ -1469,17 +1465,41 @@ class EmployeeScreenState extends State<EmployeeScreen>
                   }
                 }
               },
-              child: SingleChildScrollView(
-                    controller: editScrollController,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.only(top: 10, bottom: 15),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(children: formWidgets),
+              child: Builder(
+                builder: (context) {
+                  final scale = global.editFontScaleFactor;
+                  return MediaQuery(
+                    data: MediaQuery.of(context).copyWith(
+                      textScaler: TextScaler.linear(scale),
+                    ),
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                          contentPadding: EdgeInsets.fromLTRB(
+                            12 * scale, 20 * scale, 12 * scale, 12 * scale,
+                          ),
+                        ),
+                      ),
+                      child: IconTheme(
+                        data: IconTheme.of(context).copyWith(
+                          size: 24.0 * scale,
+                        ),
+                        child: SingleChildScrollView(
+                          controller: editScrollController,
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.only(top: 10, bottom: 15),
+                            child: Form(
+                              key: _formKey,
+                              child: Column(children: formWidgets),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  );
+                },
+              ),
             ),
     );
   }

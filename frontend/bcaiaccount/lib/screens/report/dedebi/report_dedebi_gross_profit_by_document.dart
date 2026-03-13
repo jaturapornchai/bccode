@@ -28,7 +28,8 @@ class ReportGrossProfitByDocumentScreen extends StatefulWidget {
 }
 
 class _ReportGrossProfitByDocumentScreenState
-    extends State<ReportGrossProfitByDocumentScreen> {
+    extends State<ReportGrossProfitByDocumentScreen>
+    with global.ThemeRefreshMixin {
   // Report polling configuration
   static const Duration _pollInterval = Duration(seconds: 2);
   static const Duration _reportTimeout = Duration(minutes: 10);
@@ -113,7 +114,7 @@ class _ReportGrossProfitByDocumentScreenState
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.grey.shade50,
+        backgroundColor: global.theme.backgroundColor,
         appBar: _buildAppBar(),
         body: BlocConsumer<BiReportBloc, BiReportState>(
           buildWhen: (previous, current) {
@@ -136,10 +137,10 @@ class _ReportGrossProfitByDocumentScreenState
       ),
       centerTitle: true,
       backgroundColor: Colors.indigo.shade600,
-      foregroundColor: Colors.white,
+      foregroundColor: global.theme.onPrimaryColor,
       elevation: 2,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
+        icon: Icon(Icons.arrow_back),
         onPressed: () {
           if (_biReportBloc != null && _currentJobId.isNotEmpty) {
             _biReportBloc!.add(CancelBiReportRequested(jobId: _currentJobId));
@@ -162,12 +163,12 @@ class _ReportGrossProfitByDocumentScreenState
               : global.language('report_dedebi_show_filter_panel'),
         ),
         IconButton(
-          icon: const Icon(Icons.filter_alt_outlined),
+          icon: Icon(Icons.filter_alt_outlined),
           onPressed: _showConditionDialog,
           tooltip: global.language('report_dedebi_set_search_conditions'),
         ),
         IconButton(
-          icon: const Icon(Icons.refresh),
+          icon: Icon(Icons.refresh),
           onPressed: () {
             if (_biReportBloc != null) {
               _biReportBloc!.add(const ResetBiReportState());
@@ -177,7 +178,7 @@ class _ReportGrossProfitByDocumentScreenState
           tooltip: global.language('report_dedebi_refresh_data'),
         ),
         IconButton(
-          icon: const Icon(Icons.download),
+          icon: Icon(Icons.download),
           onPressed: _showExportDialog,
           tooltip: global.language('report_dedebi_export_report'),
         ),
@@ -383,12 +384,12 @@ class _ReportGrossProfitByDocumentScreenState
   Widget _buildDataGrid(List<GrossProfitByDocumentModel> data) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: global.theme.textColor.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -401,7 +402,7 @@ class _ReportGrossProfitByDocumentScreenState
   Widget _buildLoadingOverlay() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.8),
+        color: global.theme.cardColor.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Center(
@@ -423,7 +424,7 @@ class _ReportGrossProfitByDocumentScreenState
               global.language('report_dedebi_loading_new_page'),
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade700,
+                color: global.theme.iconColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -459,7 +460,7 @@ class _ReportGrossProfitByDocumentScreenState
             global.language('gross_profit_by_document_report'),
             style: TextStyle(
               fontSize: 24,
-              color: Colors.grey.shade800,
+              color: global.theme.textColor,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -470,7 +471,7 @@ class _ReportGrossProfitByDocumentScreenState
               global.language('report_dedebi_set_conditions_to_view'),
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey.shade600,
+                color: global.theme.textSecondaryColor,
                 fontWeight: FontWeight.w400,
               ),
               textAlign: TextAlign.center,
@@ -483,13 +484,13 @@ class _ReportGrossProfitByDocumentScreenState
             label: Text(global.language('report_dedebi_set_search_conditions')),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.indigo.shade600,
-              foregroundColor: Colors.white,
+              foregroundColor: global.theme.onPrimaryColor,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               elevation: 3,
-              textStyle: const TextStyle(
+              textStyle: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
@@ -517,7 +518,7 @@ class _ReportGrossProfitByDocumentScreenState
                   child: CircularProgressIndicator(
                     value: null,
                     strokeWidth: 6,
-                    backgroundColor: Colors.grey.shade300,
+                    backgroundColor: global.theme.dividerBorderColor,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       Colors.indigo.shade600,
                     ),
@@ -540,14 +541,14 @@ class _ReportGrossProfitByDocumentScreenState
             message,
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey.shade700,
+              color: global.theme.iconColor,
               fontWeight: FontWeight.w500,
             ),
           ),
           SizedBox(height: 8),
           Text(
             global.language('report_dedebi_please_wait'),
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
           ),
         ],
       ),
@@ -566,14 +567,14 @@ class _ReportGrossProfitByDocumentScreenState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(16),
           bottomRight: Radius.circular(16),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: global.theme.textColor.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -585,14 +586,14 @@ class _ReportGrossProfitByDocumentScreenState
           Expanded(
             child: Text(
               '${global.language('report_dedebi_showing_items')} $startItem-$endItem ${global.language('report_dedebi_all').toLowerCase()} $totalItems ${global.language('report_dedebi_items')}',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
             ),
           ),
           Row(
             children: [
               Text(
                 global.language('report_dedebi_showing_items'),
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
               ),
               const SizedBox(width: 8),
               DropdownButton<int>(
@@ -610,12 +611,12 @@ class _ReportGrossProfitByDocumentScreenState
                   }
                 },
                 underline: Container(),
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade800),
+                style: TextStyle(fontSize: 14, color: global.theme.textColor),
               ),
               SizedBox(width: 8),
               Text(
                 global.language('report_dedebi_items'),
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
               ),
             ],
           ),
@@ -642,12 +643,12 @@ class _ReportGrossProfitByDocumentScreenState
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: global.theme.surfaceColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   '$currentPage / $totalPages',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -693,13 +694,13 @@ class _ReportGrossProfitByDocumentScreenState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
+          Icon(Icons.error_outline, size: 64, color: global.theme.negativeHighlightTextColor),
           SizedBox(height: 16),
           Text(
             global.language('report_dedebi_error_occurred'),
             style: TextStyle(
               fontSize: 18,
-              color: Colors.red.shade600,
+              color: global.theme.negativeHighlightTextColor,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -709,7 +710,7 @@ class _ReportGrossProfitByDocumentScreenState
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
               errorMessage,
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
               textAlign: TextAlign.center,
             ),
           ),
@@ -728,7 +729,7 @@ class _ReportGrossProfitByDocumentScreenState
                 label: Text(global.language('report_dedebi_try_again')),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.indigo.shade600,
-                  foregroundColor: Colors.white,
+                  foregroundColor: global.theme.onPrimaryColor,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 16,
@@ -767,7 +768,7 @@ class _ReportGrossProfitByDocumentScreenState
             },
             icon: Icon(Icons.clear_all),
             label: Text(global.language('report_dedebi_clear_data')),
-            style: TextButton.styleFrom(foregroundColor: Colors.grey.shade600),
+            style: TextButton.styleFrom(foregroundColor: global.theme.textSecondaryColor),
           ),
         ],
       ),

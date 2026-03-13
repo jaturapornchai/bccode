@@ -16,7 +16,7 @@ class ExchangeRateHistoryScreen extends StatefulWidget {
       _ExchangeRateHistoryScreenState();
 }
 
-class _ExchangeRateHistoryScreenState extends State<ExchangeRateHistoryScreen> {
+class _ExchangeRateHistoryScreenState extends State<ExchangeRateHistoryScreen> with global.ThemeRefreshMixin {
   final CurrencyApiService _apiService = CurrencyApiService();
   List<ExchangeRateHistoryModel> _exchangeRates = [];
   bool _isLoading = false;
@@ -123,7 +123,7 @@ class _ExchangeRateHistoryScreenState extends State<ExchangeRateHistoryScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
             child: Text(global.language("delete")),
           ),
         ],
@@ -187,7 +187,7 @@ class _ExchangeRateHistoryScreenState extends State<ExchangeRateHistoryScreen> {
                     children: [
                       Text(
                         global.language("add_new_exchange_rate"),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -221,7 +221,7 @@ class _ExchangeRateHistoryScreenState extends State<ExchangeRateHistoryScreen> {
                           labelText: '${global.language("exchange_rate")} (1 ${widget.currency.code} = ? THB)',
                           hintText: global.language("exchange_rate_hint"),
                           border: const OutlineInputBorder(),
-                          prefixIcon: const Icon(Icons.monetization_on),
+                          prefixIcon: Icon(Icons.monetization_on),
                           suffixText: 'THB',
                         ),
                         keyboardType: const TextInputType.numberWithOptions(
@@ -246,7 +246,7 @@ class _ExchangeRateHistoryScreenState extends State<ExchangeRateHistoryScreen> {
                         label: Text(global.language("save")),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: global.theme.appBarColor,
-                          foregroundColor: Colors.white,
+                          foregroundColor: global.theme.onPrimaryColor,
                           padding: const EdgeInsets.all(16),
                         ),
                       ),
@@ -265,18 +265,18 @@ class _ExchangeRateHistoryScreenState extends State<ExchangeRateHistoryScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.history,
                               size: 64,
-                              color: Colors.grey,
+                              color: global.theme.textSecondaryColor,
                             ),
                             SizedBox(height: 16),
                             Text(
                               global.language("no_exchange_rate_history"),
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.grey,
+                                color: global.theme.textSecondaryColor,
                               ),
                             ),
                           ],
@@ -312,14 +312,14 @@ class _ExchangeRateHistoryScreenState extends State<ExchangeRateHistoryScreen> {
                                 ),
                                 title: Text(
                                   '1 ${widget.currency.code} = ${rate.rate.toStringAsFixed(4)} THB',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 subtitle: Text('${global.language("date")}: $displayDate'),
                                 trailing: IconButton(
-                                  icon: const Icon(Icons.delete),
-                                  color: Colors.red,
+                                  icon: Icon(Icons.delete),
+                                  color: global.theme.negativeHighlightTextColor,
                                   onPressed: () => _deleteExchangeRate(rate),
                                   tooltip: global.language("delete"),
                                 ),

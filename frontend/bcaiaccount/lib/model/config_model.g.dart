@@ -139,6 +139,7 @@ DeviceConfigModel _$DeviceConfigModelFromJson(Map<String, dynamic> json) =>
       listDataLineSpace: (json['listDataLineSpace'] as num).toDouble(),
       itemDisplaySku: json['itemDisplaySku'] as bool,
       itemDisplayPrice: json['itemDisplayPrice'] as bool,
+      editFontScale: (json['editFontScale'] as num?)?.toDouble() ?? 100,
     );
 
 Map<String, dynamic> _$DeviceConfigModelToJson(DeviceConfigModel instance) =>
@@ -147,4 +148,5 @@ Map<String, dynamic> _$DeviceConfigModelToJson(DeviceConfigModel instance) =>
       'listDataLineSpace': instance.listDataLineSpace,
       'itemDisplaySku': instance.itemDisplaySku,
       'itemDisplayPrice': instance.itemDisplayPrice,
+      'editFontScale': instance.editFontScale,
     };

@@ -40,13 +40,10 @@ class LoginShopScreen extends StatefulWidget {
 }
 
 class LoginShopScreenState extends State<LoginShopScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _formKeyCreateShop = GlobalKey<FormState>();
 
   /// 0 = login , 1 = list shop , 2 = create shop , 3 = select branch
   int stateScreen = 0;
-  final bool _isListShopNotFound = false;
-
   late FirebaseAuth _auth;
 
   global.LoginEnum loginType = global.LoginEnum.none;
@@ -76,9 +73,6 @@ class LoginShopScreenState extends State<LoginShopScreen> {
   ];
 
   List<BusinessTypeModel> businessTypeList = [];
-
-  Timer? _timer;
-  bool stateLoginScreen = false;
 
   // UI/UX enhancements for shop list
   final TextEditingController _searchController = TextEditingController();
@@ -261,7 +255,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
           constraints: BoxConstraints(maxWidth: 600),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               borderRadius: BorderRadius.circular(24),
               boxShadow: [BoxShadow(color: F.primaryGradientColor.withValues(alpha: 0.1), blurRadius: 30, offset: const Offset(0, 10))],
             ),
@@ -815,7 +809,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
       padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: global.theme.cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [BoxShadow(color: F.primaryGradientColor.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 4))],
         ),
@@ -840,7 +834,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
                     },
                   )
                 : null,
-            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
+            hintStyle: TextStyle(color: global.theme.formHintColor, fontSize: 15),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
             enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
             focusedBorder: OutlineInputBorder(
@@ -849,7 +843,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           ),
-          style: const TextStyle(color: Color(0xFF1a1a2e), fontSize: 15),
+          style: TextStyle(color: global.theme.textColor, fontSize: 15),
           onChanged: (value) {
             setState(() {
               _searchQuery = value;
@@ -918,19 +912,19 @@ class LoginShopScreenState extends State<LoginShopScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               gradient: isSelected ? LinearGradient(colors: [F.primaryGradientColor, F.secondaryGradientColor]) : null,
-              color: isSelected ? null : Colors.white,
+              color: isSelected ? null : global.theme.cardColor,
               borderRadius: BorderRadius.circular(25),
-              border: Border.all(color: isSelected ? Colors.transparent : const Color(0xFFE0E0E0)),
+              border: Border.all(color: isSelected ? Colors.transparent : global.theme.dividerBorderColor),
               boxShadow: isSelected ? [BoxShadow(color: F.primaryGradientColor.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))] : null,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 18, color: isSelected ? Colors.white : Colors.grey[600]),
+                Icon(icon, size: 18, color: isSelected ? Colors.white : global.theme.iconSecondaryColor),
                 const SizedBox(width: 6),
                 Text(
                   label,
-                  style: TextStyle(color: isSelected ? Colors.white : Colors.grey[700], fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500, fontSize: 13),
+                  style: TextStyle(color: isSelected ? Colors.white : global.theme.textSecondaryColor, fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500, fontSize: 13),
                 ),
               ],
             ),
@@ -1133,7 +1127,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
                             margin: const EdgeInsets.only(top: 6),
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: global.theme.cardColor,
                               borderRadius: BorderRadius.circular(20),
                               boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 2))],
                             ),
@@ -1199,7 +1193,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
       padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: global.theme.cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [BoxShadow(color: F.primaryGradientColor.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 4))],
         ),
@@ -1224,7 +1218,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
                     },
                   )
                 : null,
-            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
+            hintStyle: TextStyle(color: global.theme.formHintColor, fontSize: 15),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
             enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
             focusedBorder: OutlineInputBorder(
@@ -1233,7 +1227,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           ),
-          style: const TextStyle(color: Color(0xFF1a1a2e), fontSize: 15),
+          style: TextStyle(color: global.theme.textColor, fontSize: 15),
           onChanged: (value) {
             setState(() {
               _searchBranchQuery = value;
@@ -1351,7 +1345,7 @@ class LoginShopScreenState extends State<LoginShopScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: global.theme.cardColor,
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 2))],
                         ),
@@ -1763,10 +1757,9 @@ class LoginShopScreenState extends State<LoginShopScreen> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                F.primaryGradientColor,
-                F.secondaryGradientColor,
-              ],
+              colors: global.isDarkMode()
+                  ? [const Color(0xFF0D1B2A), const Color(0xFF16213E)]
+                  : [F.primaryGradientColor, F.secondaryGradientColor],
             ),
           ),
           child: SafeArea(
@@ -1778,9 +1771,9 @@ class LoginShopScreenState extends State<LoginShopScreen> {
                 Expanded(
                   child: Container(
                     margin: const EdgeInsets.only(top: 16),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
+                    decoration: BoxDecoration(
+                      color: global.isDarkMode() ? global.theme.backgroundColor : const Color(0xFFF8FAFC),
+                      borderRadius: const BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
                     ),
                     child: ClipRRect(
                       borderRadius: const BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),

@@ -39,11 +39,11 @@ class CartListWidget extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                Icon(Icons.error_outline, size: 64, color: global.theme.negativeHighlightTextColor),
                 const SizedBox(height: 16),
                 Text(
                   'Error: ${state.error}',
-                  style: const TextStyle(color: Colors.red),
+                  style: TextStyle(color: global.theme.negativeHighlightTextColor),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
@@ -51,7 +51,7 @@ class CartListWidget extends StatelessWidget {
                   onPressed: () {
                     context.read<CartCubit>().loadCarts(shopId, email);
                   },
-                  child: const Text('Retry'),
+                  child: Text('Retry'),
                 ),
               ],
             ),
@@ -66,20 +66,20 @@ class CartListWidget extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.shopping_cart_outlined,
                     size: 64,
-                    color: Colors.grey,
+                    color: global.theme.textSecondaryColor,
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'No carts yet',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                    style: TextStyle(fontSize: 18, color: global.theme.textSecondaryColor),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Create a new cart to get started',
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(color: global.theme.textSecondaryColor),
                   ),
                 ],
               ),
@@ -149,15 +149,15 @@ class _CartCard extends StatelessWidget {
   Color _getStatusColor() {
     switch (cart.status) {
       case 'active':
-        return Colors.green;
+        return global.theme.positiveHighlightTextColor;
       case 'ordered':
-        return Colors.blue;
+        return global.theme.infoHighlightTextColor;
       case 'completed':
-        return Colors.grey;
+        return global.theme.textSecondaryColor;
       case 'cancelled':
-        return Colors.red;
+        return global.theme.negativeHighlightTextColor;
       default:
-        return Colors.grey;
+        return global.theme.textSecondaryColor;
     }
   }
 
@@ -180,7 +180,7 @@ class _CartCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: isActive
-            ? const BorderSide(color: Color(0xFFEE4D2D), width: 2)
+            ? BorderSide(color: global.theme.primaryColor, width: 2)
             : BorderSide.none,
       ),
       child: InkWell(
@@ -204,9 +204,9 @@ class _CartCard extends StatelessWidget {
                           children: [
                             // แสดงไอคอน active
                             if (isActive) ...[
-                              const Icon(
+                              Icon(
                                 Icons.check_circle,
-                                color: Color(0xFFEE4D2D),
+                                color: global.theme.primaryColor,
                                 size: 16,
                               ),
                               const SizedBox(width: 4),
@@ -214,7 +214,7 @@ class _CartCard extends StatelessWidget {
                             Flexible(
                               child: Text(
                                 cart.cartName,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -228,7 +228,7 @@ class _CartCard extends StatelessWidget {
                           cart.systemType.displayNameThai,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: global.theme.iconSecondaryColor,
                           ),
                         ),
                       ],
@@ -257,7 +257,7 @@ class _CartCard extends StatelessWidget {
                   // Delete button
                   if (onDelete != null)
                     IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      icon: Icon(Icons.delete_outline, color: global.theme.negativeHighlightTextColor),
                       onPressed: onDelete,
                     ),
                 ],
@@ -269,7 +269,7 @@ class _CartCard extends StatelessWidget {
               if (cart.items.isNotEmpty) ...[
                 Text(
                   '${global.language("product_list")}:',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 ...cart.items.map(
@@ -278,9 +278,9 @@ class _CartCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.grey[50],
+                        color: global.theme.surfaceColor,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey[200]!),
+                        border: Border.all(color: global.theme.dividerBorderColor),
                       ),
                       child: Row(
                         children: [
@@ -292,7 +292,7 @@ class _CartCard extends StatelessWidget {
                               margin: const EdgeInsets.only(right: 8),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: Colors.grey[300]!),
+                                border: Border.all(color: global.theme.dividerBorderColor),
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(6),
@@ -318,10 +318,10 @@ class _CartCard extends StatelessWidget {
                                   },
                                   errorBuilder: (context, error, stackTrace) {
                                     return Container(
-                                      color: Colors.grey[200],
+                                      color: global.theme.dividerBorderColor,
                                       child: Icon(
                                         Icons.image_not_supported,
-                                        color: Colors.grey[400],
+                                        color: global.theme.iconSecondaryColor,
                                         size: 20,
                                       ),
                                     );
@@ -337,7 +337,7 @@ class _CartCard extends StatelessWidget {
                               children: [
                                 Text(
                                   item.productName,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -349,7 +349,7 @@ class _CartCard extends StatelessWidget {
                                   '${item.itemCode} | ${item.barcode}',
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: Colors.grey[600],
+                                    color: global.theme.iconSecondaryColor,
                                   ),
                                 ),
                                 if (item.remark != null &&
@@ -361,7 +361,7 @@ class _CartCard extends StatelessWidget {
                                         Icon(
                                           Icons.note,
                                           size: 11,
-                                          color: Colors.amber[700],
+                                          color: global.theme.warningHighlightTextColor,
                                         ),
                                         const SizedBox(width: 4),
                                         Flexible(
@@ -369,7 +369,7 @@ class _CartCard extends StatelessWidget {
                                             item.remark!,
                                             style: TextStyle(
                                               fontSize: 11,
-                                              color: Colors.amber[900],
+                                              color: global.theme.warningHighlightTextColor,
                                             ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -392,25 +392,25 @@ class _CartCard extends StatelessWidget {
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue[50],
+                                  color: global.theme.infoHighlightColor,
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
                                   '${global.formatNumberRemoveRightZero(item.quantity)} ${item.unitName}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.blue,
+                                    color: global.theme.infoHighlightTextColor,
                                   ),
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 global.formatPrice(item.totalPrice),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFFEE4D2D),
+                                  color: global.theme.primaryColor,
                                 ),
                               ),
                             ],
@@ -427,7 +427,7 @@ class _CartCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEE4D2D).withValues(alpha: 0.1),
+                  color: global.theme.primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -438,7 +438,7 @@ class _CartCard extends StatelessWidget {
                       children: [
                         Text(
                           '${cart.items.length} รายการ | ${cart.totalQuantity.toStringAsFixed(0)} ชิ้น',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -447,17 +447,17 @@ class _CartCard extends StatelessWidget {
                           'Updated: ${_formatDate(cart.updatedAt)}',
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.grey[600],
+                            color: global.theme.iconSecondaryColor,
                           ),
                         ),
                       ],
                     ),
                     Text(
                       global.formatPrice(cart.totalAmount),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFEE4D2D),
+                        color: global.theme.primaryColor,
                       ),
                     ),
                   ],
@@ -474,8 +474,8 @@ class _CartCard extends StatelessWidget {
                   label: Text(global.language("edit_items")),
                   onPressed: onTap,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFEE4D2D),
-                    side: const BorderSide(color: Color(0xFFEE4D2D)),
+                    foregroundColor: global.theme.primaryColor,
+                    side: BorderSide(color: global.theme.primaryColor),
                   ),
                 ),
               ),

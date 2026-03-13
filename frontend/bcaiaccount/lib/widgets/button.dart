@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smlaicloud/global.dart' as global;
 
 class NumPadButton extends StatelessWidget {
   final String? text;
@@ -25,15 +26,15 @@ class NumPadButton extends StatelessWidget {
             fit: BoxFit.fill,
             child: Icon(
               icon,
-              shadows: const <Shadow>[
+              shadows: <Shadow>[
                 Shadow(
                   blurRadius: 1.0,
-                  color: Colors.black,
+                  color: global.theme.textColor,
                   offset: Offset(2.0, 2.0),
                 ),
               ],
               color: (textAndIconColor == null)
-                  ? Colors.white
+                  ? global.theme.onPrimaryColor
                   : textAndIconColor,
             ),
           )
@@ -42,21 +43,21 @@ class NumPadButton extends StatelessWidget {
             style: TextStyle(
               fontSize: 80,
               fontWeight: FontWeight.bold,
-              shadows: const [
+              shadows: [
                 Shadow(
                   blurRadius: 1.0,
-                  color: Colors.black,
+                  color: global.theme.textColor,
                   offset: Offset(2.0, 2.0),
                 ),
               ],
               color: ((textAndIconColor == null)
-                  ? Colors.white
+                  ? global.theme.onPrimaryColor
                   : textAndIconColor),
             ),
           );
     ElevatedButton button = ElevatedButton(
       style: ElevatedButton.styleFrom(
-        backgroundColor: (color == null) ? Colors.blue : color,
+        backgroundColor: (color == null) ? global.theme.infoHighlightTextColor : color,
         minimumSize: Size.zero,
       ),
       onPressed: () {
@@ -89,13 +90,13 @@ class CommandButton extends StatelessWidget {
     this.icon,
     this.haveBorder = true,
     required this.onPressed,
-    this.labelColor = Colors.black,
+    this.labelColor,
     this.primaryColor,
     this.height = 50,
     this.width = 100,
     this.imgAssetPath = "",
     this.imgNetworkPath = "",
-    this.iconColor = Colors.black,
+    this.iconColor,
   });
 
   @override
@@ -121,7 +122,7 @@ class CommandButton extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: primaryColor,
-        border: Border.all(color: Colors.grey, width: 1),
+        border: Border.all(color: global.theme.dividerBorderColor, width: 1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Material(

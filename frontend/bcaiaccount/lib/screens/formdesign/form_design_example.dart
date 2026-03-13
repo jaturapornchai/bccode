@@ -12,7 +12,7 @@ class FormDesignExample extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Form Design Example'),
+        title: Text('Form Design Example'),
       ),
       body: Center(
         child: Column(
@@ -20,7 +20,7 @@ class FormDesignExample extends StatelessWidget {
           children: [
             Text(
               global.language('form_design_title'),
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 20),
             Padding(
@@ -28,7 +28,7 @@ class FormDesignExample extends StatelessWidget {
               child: Text(
                 global.language('form_design_create_forms'),
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16),
+                style: TextStyle(fontSize: 16),
               ),
             ),
             SizedBox(height: 30),
@@ -48,7 +48,7 @@ class FormDesignExample extends StatelessWidget {
                   horizontal: 32,
                   vertical: 16,
                 ),
-                textStyle: const TextStyle(fontSize: 18),
+                textStyle: TextStyle(fontSize: 18),
               ),
             ),
             SizedBox(height: 20),
@@ -57,7 +57,7 @@ class FormDesignExample extends StatelessWidget {
               child: Text(
                 global.language('form_design_features'),
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
+                style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
               ),
             ),
           ],

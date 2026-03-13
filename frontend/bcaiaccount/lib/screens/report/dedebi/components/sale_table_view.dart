@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/bi_report/payment_daily_model.dart';
 import 'package:smlaicloud/model/bi_report/purchase_partial_model.dart';
 import 'package:smlaicloud/model/bi_report/sale_return_model.dart';
@@ -97,7 +98,7 @@ class SaleTableView extends StatelessWidget {
       return Center(
         child: Text(
           'ไม่ได้กำหนด ตาราง สำหรับ ประเภทรายงาน $reportType',
-          style: const TextStyle(fontSize: 16, color: Colors.grey),
+          style: TextStyle(fontSize: 16, color: global.theme.textSecondaryColor),
         ),
       );
     }

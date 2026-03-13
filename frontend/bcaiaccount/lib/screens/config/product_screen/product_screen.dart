@@ -499,7 +499,11 @@ class ProductScreenState extends State<ProductScreen>
 
   Color _getContainerColor(int index, bool isCheck, bool selected) {
     if (isCheck) return global.theme.negativeHighlightColor;
-    if (selected) return global.theme.rowSelectedColor;
+    if (selected) {
+      return isEditMode
+          ? global.theme.rowEditColor
+          : global.theme.rowSelectedColor;
+    }
     if (_hoverIndex == index) return global.theme.rowHoverColor;
     return (index % 2 == 0)
         ? global.theme.columnAlternateEvenColor

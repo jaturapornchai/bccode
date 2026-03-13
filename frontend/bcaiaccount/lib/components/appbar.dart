@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smlaicloud/global.dart' as global;
 
 class BaseAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Text title;
@@ -29,8 +30,8 @@ class BaseAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             ],
             centerTitle: true,
-            foregroundColor: Colors.black,
-            backgroundColor: Colors.white,
+            foregroundColor: global.theme.textColor,
+            backgroundColor: global.theme.backgroundColor,
           )
         : AppBar(
             title: title,
@@ -45,8 +46,8 @@ class BaseAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             ],
             centerTitle: true,
-            foregroundColor: Colors.black,
-            backgroundColor: Colors.white,
+            foregroundColor: global.theme.textColor,
+            backgroundColor: global.theme.backgroundColor,
           );
   }
 

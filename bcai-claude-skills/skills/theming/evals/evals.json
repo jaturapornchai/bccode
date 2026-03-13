@@ -1,0 +1,23 @@
+{
+  "skill_name": "theming",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "สร้างหน้าจอ config ใหม่ชื่อ tax_screen.dart แบบ list+edit พร้อม search bar, column header, form fields — ให้รองรับ dark/light mode",
+      "expected_output": "ไฟล์ใช้ global.theme.* ทั้งหมด, มี ThemeRefreshMixin, search bar ใช้ searchBarColor, ไม่มี hardcoded Colors.*, ไม่มี const ครอบ theme widgets",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "ตรวจหา hardcoded colors ใน lib/screens/config/zone_screen.dart แล้วแก้ให้รองรับ dark mode",
+      "expected_output": "แทน Colors.white ด้วย cardColor/formFillColor, Colors.black ด้วย textColor, Colors.grey ด้วย theme properties ที่ถูกประเภท, ลบ const ที่ขัดกัน",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "เพิ่มสีใหม่ชื่อ chipBackgroundColor เข้าระบบ theme สำหรับใช้เป็นพื้น chip/tag",
+      "expected_output": "เพิ่ม property ใน theme_model.dart, ตั้งค่า light ใน themeSelect(), ตั้งค่า dark ใน applyThemeMode(), ใช้ผ่าน global.theme.chipBackgroundColor",
+      "files": []
+    }
+  ]
+}

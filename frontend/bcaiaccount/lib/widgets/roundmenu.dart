@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smlaicloud/global.dart' as global;
 
 class RoundMenu extends StatelessWidget {
   final String label;
@@ -23,7 +24,7 @@ class RoundMenu extends StatelessWidget {
     return Container(
       width: 100,
       height: 100,
-      color: Colors.blue,
+      color: global.theme.infoHighlightTextColor,
       child: Material(
         type: MaterialType.transparency,
         child: InkWell(

@@ -12,6 +12,7 @@ import 'package:smlaicloud/components/background_main.dart';
 import 'package:smlaicloud/components/textfield_input.dart';
 import 'package:smlaicloud/utils/util.dart';
 import 'package:smlaicloud/global.dart' as global;
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 
 class OptionAdd extends StatefulWidget {
   final String? guidfixed;
@@ -21,7 +22,7 @@ class OptionAdd extends StatefulWidget {
   State<OptionAdd> createState() => _OptionAddState();
 }
 
-class _OptionAddState extends State<OptionAdd> {
+class _OptionAddState extends State<OptionAdd> with global.ThemeRefreshMixin {
   bool createMode = true;
 
   // from
@@ -151,8 +152,8 @@ class _OptionAddState extends State<OptionAdd> {
               ? Text(global.language('add_supplement_option'))
               : Text(global.language('edit_supplement_option')),
           leading: IconButton(
-            color: Colors.black,
-            icon: const Icon(Icons.arrow_back),
+            color: global.theme.textColor,
+            icon: Icon(Icons.arrow_back),
             onPressed: () {
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(builder: (_) => const OptionScreen()),
@@ -160,10 +161,29 @@ class _OptionAddState extends State<OptionAdd> {
             },
           ),
           appBar: AppBar(),
-          widgets: const <Widget>[],
+          widgets: <Widget>[
+            EditFontSizeControl(onChanged: () => setState(() {})),
+          ],
         ),
-        body: LoaderOverlay(
-          overlayColor: Colors.black,
+        body: Builder(
+          builder: (context) {
+            final scaleFactor = global.editFontScaleFactor;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(scaleFactor),
+              ),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12 * scaleFactor,
+                      vertical: 10 * scaleFactor,
+                    ),
+                  ),
+                  iconTheme: IconThemeData(size: 24 * scaleFactor),
+                ),
+                child: LoaderOverlay(
+          overlayColor: global.theme.textColor,
           child: BackgroundMain(
             child: Container(
               margin: EdgeInsets.all(10.0),
@@ -211,10 +231,10 @@ class _OptionAddState extends State<OptionAdd> {
                                 child: IconButton(
                                   padding: EdgeInsets.zero,
                                   iconSize: 30.0,
-                                  icon: const Icon(Icons.add_circle_outline),
+                                  icon: Icon(Icons.add_circle_outline),
                                   color: _displayNewTextFieldName2 == true
-                                      ? Colors.grey
-                                      : Colors.blue,
+                                      ? global.theme.iconSecondaryColor
+                                      : global.theme.infoHighlightTextColor,
                                   onPressed: () {
                                     _displayNewTextFieldName2 != true
                                         ? setState(() {
@@ -256,13 +276,13 @@ class _OptionAddState extends State<OptionAdd> {
                                         child: IconButton(
                                           padding: EdgeInsets.zero,
                                           iconSize: 30.0,
-                                          icon: const Icon(
+                                          icon: Icon(
                                             Icons.add_circle_outline,
                                           ),
                                           color:
                                               _displayNewTextFieldName3 == true
-                                              ? Colors.grey
-                                              : Colors.blue,
+                                              ? global.theme.iconSecondaryColor
+                                              : global.theme.infoHighlightTextColor,
                                           onPressed: () {
                                             _displayNewTextFieldName3 != true
                                                 ? setState(() {
@@ -279,10 +299,10 @@ class _OptionAddState extends State<OptionAdd> {
                                         child: IconButton(
                                           padding: EdgeInsets.zero,
                                           iconSize: 30.0,
-                                          icon: const Icon(
+                                          icon: Icon(
                                             Icons.remove_circle_outline,
                                           ),
-                                          color: Colors.red,
+                                          color: global.theme.negativeHighlightTextColor,
                                           onPressed: () {
                                             setState(() {
                                               _name2.clear();
@@ -327,13 +347,13 @@ class _OptionAddState extends State<OptionAdd> {
                                         child: IconButton(
                                           padding: EdgeInsets.zero,
                                           iconSize: 30.0,
-                                          icon: const Icon(
+                                          icon: Icon(
                                             Icons.add_circle_outline,
                                           ),
                                           color:
                                               _displayNewTextFieldName4 == true
-                                              ? Colors.grey
-                                              : Colors.blue,
+                                              ? global.theme.iconSecondaryColor
+                                              : global.theme.infoHighlightTextColor,
                                           onPressed: () {
                                             _displayNewTextFieldName4 != true
                                                 ? setState(() {
@@ -350,10 +370,10 @@ class _OptionAddState extends State<OptionAdd> {
                                         child: IconButton(
                                           padding: EdgeInsets.zero,
                                           iconSize: 30.0,
-                                          icon: const Icon(
+                                          icon: Icon(
                                             Icons.remove_circle_outline,
                                           ),
-                                          color: Colors.red,
+                                          color: global.theme.negativeHighlightTextColor,
                                           onPressed: () {
                                             setState(() {
                                               _name3.clear();
@@ -398,13 +418,13 @@ class _OptionAddState extends State<OptionAdd> {
                                         child: IconButton(
                                           padding: EdgeInsets.zero,
                                           iconSize: 30.0,
-                                          icon: const Icon(
+                                          icon: Icon(
                                             Icons.add_circle_outline,
                                           ),
                                           color:
                                               _displayNewTextFieldName5 == true
-                                              ? Colors.grey
-                                              : Colors.blue,
+                                              ? global.theme.iconSecondaryColor
+                                              : global.theme.infoHighlightTextColor,
                                           onPressed: () {
                                             _displayNewTextFieldName5 != true
                                                 ? setState(() {
@@ -421,10 +441,10 @@ class _OptionAddState extends State<OptionAdd> {
                                         child: IconButton(
                                           padding: EdgeInsets.zero,
                                           iconSize: 30.0,
-                                          icon: const Icon(
+                                          icon: Icon(
                                             Icons.remove_circle_outline,
                                           ),
-                                          color: Colors.red,
+                                          color: global.theme.negativeHighlightTextColor,
                                           onPressed: () {
                                             setState(() {
                                               _name4.clear();
@@ -464,10 +484,10 @@ class _OptionAddState extends State<OptionAdd> {
                                     child: IconButton(
                                       padding: EdgeInsets.zero,
                                       iconSize: 30.0,
-                                      icon: const Icon(
+                                      icon: Icon(
                                         Icons.remove_circle_outline,
                                       ),
-                                      color: Colors.red,
+                                      color: global.theme.negativeHighlightTextColor,
                                       onPressed: () {
                                         setState(() {
                                           _name5.clear();
@@ -493,7 +513,7 @@ class _OptionAddState extends State<OptionAdd> {
                           alignment: Alignment.centerLeft,
                           child: TextButton(
                             style: TextButton.styleFrom(
-                              textStyle: const TextStyle(fontSize: 20),
+                              textStyle: TextStyle(fontSize: 20),
                             ),
                             onPressed: () async {
                               var result = await Navigator.push(
@@ -553,16 +573,16 @@ class _OptionAddState extends State<OptionAdd> {
                                     Padding(
                                       padding: EdgeInsets.all(8.0),
                                       child: ElevatedButton.icon(
-                                        icon: const Icon(
+                                        icon: Icon(
                                           Icons.delete,
-                                          color: Colors.white,
+                                          color: global.theme.onPrimaryColor,
                                           size: 24.0,
                                         ),
                                         label: Text(
                                           global.language('delete_sub_option'),
                                         ),
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.red,
+                                          backgroundColor: global.theme.negativeHighlightTextColor,
                                           padding: const EdgeInsets.symmetric(
                                             vertical: 5,
                                             horizontal: 15,
@@ -578,7 +598,7 @@ class _OptionAddState extends State<OptionAdd> {
                                     ),
                                   ],
                                 ),
-                                trailing: const Icon(
+                                trailing: Icon(
                                   Icons.keyboard_arrow_right_sharp,
                                 ),
                                 onTap: () async {
@@ -615,7 +635,7 @@ class _OptionAddState extends State<OptionAdd> {
                               global.language(
                                 'customer_must_select_option_question',
                               ),
-                              style: const TextStyle(fontSize: 16),
+                              style: TextStyle(fontSize: 16),
                             ),
                           ),
                         ),
@@ -637,7 +657,7 @@ class _OptionAddState extends State<OptionAdd> {
                               description: global.language('not_required'),
                               value: false,
                               groupValue: _isRequired,
-                              activeColor: Colors.red,
+                              activeColor: global.theme.negativeHighlightTextColor,
                               onChanged: (value) {
                                 setState(() {
                                   _isRequired = false;
@@ -655,7 +675,7 @@ class _OptionAddState extends State<OptionAdd> {
                               global.language(
                                 'customer_can_select_how_many_sub_options_question',
                               ),
-                              style: const TextStyle(fontSize: 16),
+                              style: TextStyle(fontSize: 16),
                             ),
                           ),
                         ),
@@ -712,9 +732,9 @@ class _OptionAddState extends State<OptionAdd> {
                                 width: double.infinity,
                                 margin: EdgeInsets.all(8.0),
                                 child: ElevatedButton.icon(
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.delete,
-                                    color: Colors.white,
+                                    color: global.theme.onPrimaryColor,
                                     size: 24.0,
                                   ),
                                   label: Text(
@@ -723,7 +743,7 @@ class _OptionAddState extends State<OptionAdd> {
                                     ),
                                   ),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red,
+                                    backgroundColor: global.theme.negativeHighlightTextColor,
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 50,
                                       vertical: 20,
@@ -744,6 +764,10 @@ class _OptionAddState extends State<OptionAdd> {
               ),
             ),
           ),
+              ),
+            ),
+          );
+          },
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
@@ -771,8 +795,8 @@ class _OptionAddState extends State<OptionAdd> {
               context.read<OptionBloc>().add(OptionUpdate(option: option));
             }
           },
-          backgroundColor: Colors.green,
-          child: const Icon(Icons.save),
+          backgroundColor: global.theme.positiveHighlightTextColor,
+          child: Icon(Icons.save),
         ),
       ),
     );
@@ -780,12 +804,6 @@ class _OptionAddState extends State<OptionAdd> {
 
   void showDeleteDialog(String id) {
     // set up the buttons
-    Widget cancelButton = TextButton(
-      child: Text(global.language("cancel")),
-      onPressed: () {
-        Navigator.of(context).pop();
-      },
-    );
     Widget continueButton = TextButton(
       child: Text(global.language("confirm")),
       onPressed: () {
@@ -831,7 +849,7 @@ class TitleLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.grey[100],
+      color: global.theme.surfaceColor,
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(

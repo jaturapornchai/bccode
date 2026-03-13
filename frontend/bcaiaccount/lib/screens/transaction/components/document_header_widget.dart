@@ -109,15 +109,15 @@ class DocumentHeaderWidget extends StatelessWidget {
   });
 
   // 🎨 Modern Color Palette
-  static const Color _primaryColor = Color(0xFF667eea);
-  static const Color _accentColor = Color(0xFF764ba2);
+  static Color get _primaryColor => global.theme.primaryColor;
+  static Color get _accentColor => global.theme.primaryLightColor;
 
   /// 🎨 Helper method สำหรับสร้าง Section Card ที่มี icon, title และ child widget
   Widget _buildSectionCard({required IconData icon, required String title, required Widget child}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2))],
       ),
@@ -153,22 +153,22 @@ class DocumentHeaderWidget extends StatelessWidget {
   InputDecoration _buildInputDecoration({required String labelText, Widget? suffixIcon, Widget? prefixIcon, bool readOnly = false, bool hasError = false}) {
     return InputDecoration(
       filled: true,
-      fillColor: readOnly ? Colors.grey.shade50 : Colors.white,
+      fillColor: readOnly ? global.theme.surfaceColor : global.theme.formFillColor,
       floatingLabelBehavior: FloatingLabelBehavior.always,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       labelText: labelText,
-      labelStyle: TextStyle(color: hasError ? Colors.red : Colors.black87, fontWeight: FontWeight.bold, fontSize: 14),
+      labelStyle: TextStyle(color: hasError ? global.theme.negativeHighlightTextColor : global.theme.textColor, fontWeight: FontWeight.bold, fontSize: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: hasError ? Colors.red : Colors.grey.shade300),
+        borderSide: BorderSide(color: hasError ? global.theme.negativeHighlightTextColor : global.theme.dividerBorderColor),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: hasError ? Colors.red : Colors.grey.shade300),
+        borderSide: BorderSide(color: hasError ? global.theme.negativeHighlightTextColor : global.theme.dividerBorderColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: hasError ? Colors.red : _primaryColor, width: 1.5),
+        borderSide: BorderSide(color: hasError ? global.theme.negativeHighlightTextColor : _primaryColor, width: 1.5),
       ),
       suffixIcon: suffixIcon,
       prefixIcon: prefixIcon,
@@ -179,18 +179,18 @@ class DocumentHeaderWidget extends StatelessWidget {
   InputDecoration _buildGroupDecoration({required String labelText}) {
     return InputDecoration(
       filled: true,
-      fillColor: Colors.white,
+      fillColor: global.theme.formFillColor,
       floatingLabelBehavior: FloatingLabelBehavior.always,
       contentPadding: const EdgeInsets.only(left: 12.0, top: 0, bottom: 0, right: 12.0),
       labelText: labelText,
-      labelStyle: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 14),
+      labelStyle: TextStyle(color: global.theme.textColor, fontWeight: FontWeight.bold, fontSize: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderSide: BorderSide(color: global.theme.dividerBorderColor),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderSide: BorderSide(color: global.theme.dividerBorderColor),
       ),
     );
   }
@@ -213,20 +213,20 @@ class DocumentHeaderWidget extends StatelessWidget {
       // ใช้ key เพื่อบังคับ rebuild เมื่อค่าเปลี่ยน
       key: ValueKey('purchase_type_dropdown_$selectedPurchaseTypeCode'),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: DropdownButtonFormField<String>(
         // ใช้ initialValue ร่วมกับ ValueKey เพื่อให้ dropdown อัปเดตตามค่าที่เปลี่ยน
         initialValue: isValidSelection ? selectedPurchaseTypeCode : null,
         decoration: InputDecoration(
           filled: true,
-          fillColor: Colors.white,
+          fillColor: global.theme.formFillColor,
           floatingLabelBehavior: FloatingLabelBehavior.always,
           contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           labelText: global.language("purchase_type"),
-          labelStyle: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 14),
+          labelStyle: TextStyle(color: global.theme.textColor, fontWeight: FontWeight.bold, fontSize: 14),
           border: InputBorder.none,
           prefixIcon: Icon(Icons.category_outlined, color: _primaryColor),
         ),
@@ -250,7 +250,7 @@ class DocumentHeaderWidget extends StatelessWidget {
           }
         },
         icon: Icon(Icons.arrow_drop_down, color: _primaryColor),
-        dropdownColor: Colors.white,
+        dropdownColor: global.theme.cardColor,
         isExpanded: true,
       ),
     );
@@ -270,25 +270,25 @@ class DocumentHeaderWidget extends StatelessWidget {
         // 🔷 Base Currency (สกุลเงินหลักสำหรับลงบัญชี) - Readonly
         Container(
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: global.theme.surfaceColor,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: global.theme.dividerBorderColor),
           ),
           child: InputDecorator(
             decoration: InputDecoration(
               filled: true,
-              fillColor: Colors.grey.shade100,
+              fillColor: global.theme.surfaceColor,
               floatingLabelBehavior: FloatingLabelBehavior.always,
               contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               labelText: global.language('base_currency_accounting'),
-              labelStyle: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 14),
+              labelStyle: TextStyle(color: global.theme.textColor, fontWeight: FontWeight.bold, fontSize: 14),
               border: InputBorder.none,
-              prefixIcon: Icon(Icons.account_balance, color: Colors.grey.shade600),
+              prefixIcon: Icon(Icons.account_balance, color: global.theme.iconSecondaryColor),
               suffixIcon: Container(
                 margin: const EdgeInsets.all(8),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: global.theme.dividerBorderColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -296,7 +296,7 @@ class DocumentHeaderWidget extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade700,
+                    color: global.theme.textColor,
                   ),
                 ),
               ),
@@ -308,7 +308,7 @@ class DocumentHeaderWidget extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: baseCurrency != null ? Colors.black87 : Colors.grey,
+                color: baseCurrency != null ? global.theme.textColor : global.theme.iconSecondaryColor,
               ),
             ),
           ),
@@ -319,19 +319,19 @@ class DocumentHeaderWidget extends StatelessWidget {
         Container(
           key: ValueKey('currency_dropdown_$selectedDocCurrencyCode'),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: global.theme.cardColor,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: global.theme.dividerBorderColor),
           ),
           child: DropdownButtonFormField<String>(
             initialValue: isValidSelection ? selectedDocCurrencyCode : null,
             decoration: InputDecoration(
               filled: true,
-              fillColor: Colors.white,
+              fillColor: global.theme.formFillColor,
               floatingLabelBehavior: FloatingLabelBehavior.always,
               contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               labelText: global.language('doc_currency'),
-              labelStyle: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 14),
+              labelStyle: TextStyle(color: global.theme.textColor, fontWeight: FontWeight.bold, fontSize: 14),
               border: InputBorder.none,
               prefixIcon: Icon(Icons.currency_exchange, color: _primaryColor),
               suffixIcon: Container(
@@ -376,7 +376,7 @@ class DocumentHeaderWidget extends StatelessWidget {
               }
             },
             icon: Icon(Icons.arrow_drop_down, color: _primaryColor),
-            dropdownColor: Colors.white,
+            dropdownColor: global.theme.cardColor,
             isExpanded: true,
           ),
         ),
@@ -387,22 +387,22 @@ class DocumentHeaderWidget extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.green.shade50,
+              color: global.theme.positiveHighlightColor,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.green.shade200),
+              border: Border.all(color: global.theme.positiveHighlightColor),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Icon(Icons.sync_alt, size: 16, color: Colors.green.shade700),
+                    Icon(Icons.sync_alt, size: 16, color: global.theme.positiveHighlightTextColor),
                     SizedBox(width: 8),
                     Text(
                       global.language('exchange_rate'),
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.green.shade700,
+                        color: global.theme.positiveHighlightTextColor,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -415,7 +415,7 @@ class DocumentHeaderWidget extends StatelessWidget {
                       '1 $selectedDocCurrencyCode = ',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.green.shade800,
+                        color: global.theme.positiveHighlightTextColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -439,9 +439,9 @@ class DocumentHeaderWidget extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: global.theme.cardColor,
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.green.shade300),
+                            border: Border.all(color: global.theme.positiveHighlightTextColor),
                           ),
                           child: Text(
                             selectedExchangeRate?.toStringAsFixed(4) ?? '1.0000',
@@ -449,7 +449,7 @@ class DocumentHeaderWidget extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: Colors.green.shade800,
+                              color: global.theme.positiveHighlightTextColor,
                             ),
                           ),
                         ),
@@ -460,7 +460,7 @@ class DocumentHeaderWidget extends StatelessWidget {
                       baseCurrency ?? '',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.green.shade800,
+                        color: global.theme.positiveHighlightTextColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -475,19 +475,19 @@ class DocumentHeaderWidget extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: global.theme.surfaceColor,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade300),
+              border: Border.all(color: global.theme.dividerBorderColor),
             ),
             child: Row(
               children: [
-                Icon(Icons.sync_alt, size: 16, color: Colors.grey.shade600),
+                Icon(Icons.sync_alt, size: 16, color: global.theme.iconSecondaryColor),
                 const SizedBox(width: 8),
                 Text(
                   '1 $selectedDocCurrencyCode = 1.0000 ${baseCurrency ?? ''}',
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey.shade600,
+                    color: global.theme.textSecondaryColor,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -503,12 +503,7 @@ class DocumentHeaderWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [const Color(0xFFF8F9FD), const Color(0xFFEEF1F8), const Color(0xFFE8EBF5)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          stops: const [0.0, 0.5, 1.0],
-        ),
+        color: global.theme.backgroundColor,
       ),
       width: double.infinity,
       padding: EdgeInsets.all(16),
@@ -774,7 +769,7 @@ class DocumentHeaderWidget extends StatelessWidget {
                                   children: [
                                     IconButton(
                                       focusNode: FocusNode(skipTraversal: true),
-                                      icon: const Icon(Icons.search),
+                                      icon: Icon(Icons.search),
                                       onPressed: () {
                                         if (transactionType == global.TransactionTypeEnum.purchase ||
                                             transactionType == global.TransactionTypeEnum.purchaseorder ||
@@ -990,7 +985,7 @@ class DocumentHeaderWidget extends StatelessWidget {
                                 Radio(
                                   value: 2,
                                   groupValue: screenData.vattype,
-                                  activeColor: Colors.blue,
+                                  activeColor: global.theme.infoHighlightTextColor,
                                   onChanged: (value) {
                                     setState(() {
                                       screenData.vattype = 2;
@@ -1010,7 +1005,7 @@ class DocumentHeaderWidget extends StatelessWidget {
                                 Radio(
                                   value: 3,
                                   groupValue: screenData.vattype,
-                                  activeColor: Colors.blue,
+                                  activeColor: global.theme.infoHighlightTextColor,
                                   onChanged: (value) {
                                     setState(() {
                                       screenData.vattype = 3;
@@ -1562,7 +1557,7 @@ class DocumentHeaderWidget extends StatelessWidget {
                                       children: [
                                         IconButton(
                                           focusNode: FocusNode(skipTraversal: true),
-                                          icon: const Icon(Icons.search),
+                                          icon: Icon(Icons.search),
                                           onPressed: () {
                                             searchDocRef(word: docRefNumberController.text);
                                           },
@@ -1732,7 +1727,7 @@ class DocumentHeaderWidget extends StatelessWidget {
                                 });
                               },
                               activeTrackColor: Colors.lightGreenAccent,
-                              activeThumbColor: Colors.green,
+                              activeThumbColor: global.theme.positiveHighlightTextColor,
                             ),
                             Text(global.language("is_use_delivery")),
                           ],
@@ -1804,7 +1799,7 @@ class DocumentHeaderWidget extends StatelessWidget {
                       //         });
                       //       },
                       //       activeTrackColor: Colors.lightGreenAccent,
-                      //       activeColor: Colors.green,
+                      //       activeColor: global.theme.positiveHighlightTextColor,
                       //     ),
                       //     Text(global.language("is_use_transport")),
                       //   ],
@@ -1833,7 +1828,7 @@ class DocumentHeaderWidget extends StatelessWidget {
                       //                     children: [
                       //                       IconButton(
                       //                         focusNode: FocusNode(skipTraversal: true),
-                      //                         icon: const Icon(Icons.search),
+                      //                         icon: Icon(Icons.search),
                       //                         onPressed: () {
                       //                           searchTransport(word: "");
                       //                         },
@@ -1881,7 +1876,7 @@ class DocumentHeaderWidget extends StatelessWidget {
                       margin: EdgeInsets.only(bottom: 10),
                       child: Text(
                         "***${global.language('cancel_reason')} : ${screenData.cancelreason!}***",
-                        style: const TextStyle(color: Colors.red, fontSize: 14, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: global.theme.negativeHighlightTextColor, fontSize: 14, fontWeight: FontWeight.bold),
                       ),
                     ),
                   )

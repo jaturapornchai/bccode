@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
+import 'package:smlaicloud/global.dart' as global;
 
 class TextFieldCustom extends StatefulWidget {
   // คุณสมบัติทั้งหมดของ TextField
@@ -118,7 +119,7 @@ class TextFieldCustom extends StatefulWidget {
   State<TextFieldCustom> createState() => _TextFieldCustomState();
 }
 
-class _TextFieldCustomState extends State<TextFieldCustom> {
+class _TextFieldCustomState extends State<TextFieldCustom> with global.ThemeRefreshMixin {
   @override
   Widget build(BuildContext context) {
     // ปรับปรุง decoration โดยเพิ่ม floating label properties
@@ -127,8 +128,8 @@ class _TextFieldCustomState extends State<TextFieldCustom> {
       enhancedDecoration = enhancedDecoration.copyWith(
         floatingLabelBehavior: FloatingLabelBehavior.always,
         floatingLabelStyle: TextStyle(
-          backgroundColor: Colors.white,
-          color: Colors.black87,
+          backgroundColor: global.theme.cardColor,
+          color: global.theme.formLabelColor,
           fontWeight: FontWeight.bold,
         ),
         contentPadding: EdgeInsets.only(

@@ -440,7 +440,7 @@ class SetupScreen extends StatefulWidget {
   State<SetupScreen> createState() => _SetupScreenState();
 }
 
-class _SetupScreenState extends State<SetupScreen> {
+class _SetupScreenState extends State<SetupScreen> with global.ThemeRefreshMixin {
   // Backend URL — ค่าเดียวที่เก็บใน local
   final _backendUrlController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -1079,7 +1079,7 @@ class _SetupScreenState extends State<SetupScreen> {
           builder: (ctx, setDialogState) => AlertDialog(
             title: Row(
               children: [
-                const Icon(Icons.file_upload_outlined, color: Color(0xFF0A6ED1)),
+                Icon(Icons.file_upload_outlined, color: global.theme.primaryColor),
                 const SizedBox(width: 8),
                 Text(_t('export_config')),
               ],
@@ -1112,8 +1112,8 @@ class _SetupScreenState extends State<SetupScreen> {
                 icon: Icon(copied ? Icons.check : Icons.copy, size: 18),
                 label: Text(copied ? _t('config_copied') : _t('copy_to_clipboard')),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: copied ? Colors.green : const Color(0xFF0A6ED1),
-                  foregroundColor: Colors.white,
+                  backgroundColor: copied ? Colors.green : global.theme.primaryColor,
+                  foregroundColor: global.theme.onPrimaryColor,
                 ),
               ),
             ],
@@ -1354,13 +1354,13 @@ class _SetupScreenState extends State<SetupScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 24, color: enabled ? Colors.white : Colors.white38),
+              Icon(icon, size: 24, color: enabled ? global.theme.onPrimaryColor : global.theme.onPrimaryColor.withValues(alpha: 0.38)),
               const SizedBox(height: 2),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 9,
-                  color: enabled ? Colors.white70 : Colors.white24,
+                  color: enabled ? global.theme.onPrimaryColor.withValues(alpha: 0.7) : global.theme.onPrimaryColor.withValues(alpha: 0.24),
                 ),
               ),
             ],
@@ -1373,11 +1373,11 @@ class _SetupScreenState extends State<SetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: global.theme.surfaceColor,
       appBar: AppBar(
         title: Text(_t('setup_config')),
-        backgroundColor: const Color(0xFF354A5F),
-        foregroundColor: Colors.white,
+        backgroundColor: global.theme.appBarColor,
+        foregroundColor: global.theme.onPrimaryColor,
         actions: [
           if (_isAuthenticated) ...[
             _appBarButton(Icons.wifi_tethering, _t('test_all'), _isLoading ? null : _testAllConnections),
@@ -1457,12 +1457,12 @@ class _SetupScreenState extends State<SetupScreen> {
           children: [
             Text(
               _t('backend_connection'),
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF354A5F)),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: global.theme.appBarColor),
             ),
             const SizedBox(height: 4),
             Text(
               _t('backend_desc'),
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 13, color: global.theme.iconSecondaryColor),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -1501,8 +1501,8 @@ class _SetupScreenState extends State<SetupScreen> {
                 icon: const Icon(Icons.login),
                 label: Text(_t('login_setup')),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0A6ED1),
-                  foregroundColor: Colors.white,
+                  backgroundColor: global.theme.primaryColor,
+                  foregroundColor: global.theme.onPrimaryColor,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
               )
@@ -1575,7 +1575,7 @@ class _SetupScreenState extends State<SetupScreen> {
               children: [
                 Row(
                   children: [
-                    Icon(categoryIcons[category] ?? Icons.settings, color: const Color(0xFF0A6ED1)),
+                    Icon(categoryIcons[category] ?? Icons.settings, color: global.theme.primaryColor),
                     const SizedBox(width: 12),
                     Text(
                       categoryNames[category] ?? category,
@@ -1596,7 +1596,7 @@ class _SetupScreenState extends State<SetupScreen> {
                     icon: const Icon(Icons.wifi_tethering, size: 18),
                     label: Text('${_t('test_connection')} ${categoryNames[category]}'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF0A6ED1),
+                      foregroundColor: global.theme.primaryColor,
                     ),
                   ),
                   if (testResult != null && testResult.message.isNotEmpty) ...[
@@ -1619,7 +1619,7 @@ class _SetupScreenState extends State<SetupScreen> {
                         label: Text('สร้าง database "${testResult.database}"'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
+                          foregroundColor: global.theme.onPrimaryColor,
                         ),
                       ),
                     ],
@@ -1755,7 +1755,7 @@ class _SetupScreenState extends State<SetupScreen> {
             // Section header
             Row(
               children: [
-                const Icon(Icons.smart_toy, color: Color(0xFF6366F1)),
+                Icon(Icons.smart_toy, color: global.theme.primaryColor),
                 const SizedBox(width: 12),
                 const Text(
                   'AI Providers',
@@ -1779,7 +1779,7 @@ class _SetupScreenState extends State<SetupScreen> {
             const SizedBox(height: 6),
             Text(
               'ใส่ API Key ที่มี — ระบบจะ auto-fallback ลองทีละตัวอัตโนมัติ',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor),
             ),
             const SizedBox(height: 16),
 
@@ -1797,9 +1797,9 @@ class _SetupScreenState extends State<SetupScreen> {
               Divider(height: 32),
               Row(
                 children: [
-                  const Icon(Icons.cloud, color: Colors.grey, size: 20),
+                  Icon(Icons.cloud, color: global.theme.iconSecondaryColor, size: 20),
                   SizedBox(width: 8),
-                  Text(global.language('others'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey[700])),
+                  Text(global.language('others'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: global.theme.textColor)),
                 ],
               ),
               const SizedBox(height: 12),
@@ -1880,7 +1880,7 @@ class _SetupScreenState extends State<SetupScreen> {
                   '• เอาเฉพาะ provider ที่มี API Key ใส่ไว้\n'
                   '• ลองทีละตัวตามลำดับ — ถ้าตัวไหน fail ข้ามไปตัวถัดไป\n'
                   '• ตัวที่ fail จะ cooldown 1 ชั่วโมง ก่อนลองใหม่',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[700], height: 1.5),
+                  style: TextStyle(fontSize: 11, color: global.theme.textColor, height: 1.5),
                 ),
               ],
             ),
@@ -1888,7 +1888,7 @@ class _SetupScreenState extends State<SetupScreen> {
           const SizedBox(height: 12),
           Text(
             'เลือก provider ที่จะลองก่อน (ตัวอื่นจะ fallback อัตโนมัติ)',
-            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+            style: TextStyle(fontSize: 11, color: global.theme.iconSecondaryColor),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -1912,10 +1912,10 @@ class _SetupScreenState extends State<SetupScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isSelected ? color.withValues(alpha: 0.15) : Colors.grey.withValues(alpha: 0.05),
+                    color: isSelected ? color.withValues(alpha: 0.15) : global.theme.surfaceColor,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: isSelected ? color : Colors.grey.withValues(alpha: 0.3),
+                      color: isSelected ? color : global.theme.dividerBorderColor,
                       width: isSelected ? 2 : 1,
                     ),
                   ),
@@ -1925,14 +1925,14 @@ class _SetupScreenState extends State<SetupScreen> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(icon, size: 16, color: isSelected ? color : Colors.grey),
+                          Icon(icon, size: 16, color: isSelected ? color : global.theme.iconSecondaryColor),
                           const SizedBox(width: 6),
                           Text(
                             label,
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              color: isSelected ? color : Colors.grey[700],
+                              color: isSelected ? color : global.theme.textColor,
                             ),
                           ),
                           if (isSelected) ...[
@@ -1941,7 +1941,7 @@ class _SetupScreenState extends State<SetupScreen> {
                           ],
                         ],
                       ),
-                      Text(desc, style: TextStyle(fontSize: 9, color: Colors.grey[500])),
+                      Text(desc, style: TextStyle(fontSize: 9, color: global.theme.iconSecondaryColor)),
                     ],
                   ),
                 ),
@@ -2043,7 +2043,7 @@ class _SetupScreenState extends State<SetupScreen> {
             color: isFreeMode ? Colors.green.withValues(alpha: 0.05) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: isFreeMode ? Colors.green.withValues(alpha: 0.3) : Colors.grey.withValues(alpha: 0.2),
+              color: isFreeMode ? Colors.green.withValues(alpha: 0.3) : global.theme.dividerBorderColor,
             ),
           ),
           child: CheckboxListTile(
@@ -2069,7 +2069,7 @@ class _SetupScreenState extends State<SetupScreen> {
             ),
             subtitle: Text(
               isFreeMode ? 'Backend เลือกโมเดลฟรีให้อัตโนมัติ' : 'กดเปิดเพื่อใช้โมเดลฟรี (ไม่ต้องเลือก)',
-              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 11, color: global.theme.iconSecondaryColor),
             ),
             onChanged: (val) {
               setState(() {
@@ -2093,7 +2093,7 @@ class _SetupScreenState extends State<SetupScreen> {
             children: [
               Text(
                 scanned != null ? 'โมเดลฟรี (${scanned.length} ตัว)' : 'โมเดลฟรีตัวอย่าง',
-                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 11, color: global.theme.iconSecondaryColor),
               ),
               const Spacer(),
               SizedBox(
@@ -2154,10 +2154,10 @@ class _SetupScreenState extends State<SetupScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.grey.withValues(alpha: 0.1),
+              color: global.theme.surfaceColor,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Text('+$remaining อีก', style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+            child: Text('+$remaining อีก', style: TextStyle(fontSize: 10, color: global.theme.iconSecondaryColor)),
           ),
       ],
     );
@@ -2323,7 +2323,7 @@ class _SetupScreenState extends State<SetupScreen> {
         icon = Icons.hourglass_empty;
         break;
       default:
-        color = Colors.grey;
+        color = global.theme.iconSecondaryColor;
         icon = Icons.help;
     }
 

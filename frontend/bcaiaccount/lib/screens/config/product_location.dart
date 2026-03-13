@@ -462,15 +462,6 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                     '(${listData.length})',
                     style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const Icon(Icons.line_weight),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataLineSpaceChange();
-                      });
-                    },
-                  ),
                 ],
               ),
             ),
@@ -610,6 +601,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
       fontSize: (selected)
           ? global.deviceConfig.listDataFontSize + 2.0
           : global.deviceConfig.listDataFontSize,
+      color: (selected) ? global.theme.textColor : global.theme.textSecondaryColor,
     );
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -850,7 +842,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                           global.language('product_location_fix_duplicate_before_save'),
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.grey.shade700,
+                            color: global.theme.textSecondaryColor,
                           ),
                         ),
                       ],
@@ -1026,7 +1018,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                           global.language('product_location_fix_duplicate_before_save'),
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.grey.shade700,
+                            color: global.theme.textSecondaryColor,
                           ),
                         ),
                       ],
@@ -1194,7 +1186,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                                       height: 100,
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: Colors.white,
+                                        color: global.theme.cardColor,
                                         borderRadius: BorderRadius.circular(4),
                                         border: Border.all(
                                           color: Colors.red.shade200,
@@ -1338,14 +1330,14 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
-                                color: Colors.grey.shade800,
+                                color: global.theme.textColor,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Container(
                               height: 200,
                               decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey.shade300),
+                                border: Border.all(color: global.theme.dividerBorderColor),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: ListView.builder(
@@ -1357,9 +1349,9 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                                     margin: const EdgeInsets.only(bottom: 12),
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: Colors.grey.shade50,
+                                      color: global.theme.inputFillColor,
                                       border: Border.all(
-                                        color: Colors.grey.shade200,
+                                        color: global.theme.dividerBorderColor,
                                       ),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
@@ -1450,7 +1442,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                                             style: TextStyle(
                                               fontSize: 11,
                                               fontWeight: FontWeight.w500,
-                                              color: Colors.grey.shade600,
+                                              color: global.theme.textSecondaryColor,
                                             ),
                                           ),
                                           const SizedBox(height: 4),
@@ -1467,9 +1459,9 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                                                       vertical: 2,
                                                     ),
                                                 decoration: BoxDecoration(
-                                                  color: Colors.white,
+                                                  color: global.theme.cardColor,
                                                   border: Border.all(
-                                                    color: Colors.grey.shade300,
+                                                    color: global.theme.dividerBorderColor,
                                                   ),
                                                   borderRadius:
                                                       BorderRadius.circular(4),
@@ -1529,7 +1521,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                                     Container(
                                       height: 80,
                                       decoration: BoxDecoration(
-                                        color: Colors.white,
+                                        color: global.theme.cardColor,
                                         border: Border.all(
                                           color: Colors.red.shade200,
                                         ),
@@ -1598,7 +1590,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                                       global.language('product_location_supported_files'),
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.grey.shade600,
+                                        color: global.theme.textSecondaryColor,
                                       ),
                                     ),
                                   ],
@@ -1610,8 +1602,8 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.grey[50],
-                                border: Border.all(color: Colors.grey.shade300),
+                                color: global.theme.inputFillColor,
+                                border: Border.all(color: global.theme.dividerBorderColor),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Column(
@@ -1849,11 +1841,11 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                         : null,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
+                      borderSide: BorderSide(color: global.theme.dividerBorderColor),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
+                      borderSide: BorderSide(color: global.theme.dividerBorderColor),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -1866,7 +1858,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                       vertical: 8,
                     ),
                     filled: true,
-                    fillColor: Colors.grey.shade50,
+                    fillColor: global.theme.inputFillColor,
                   ),
                   onChanged: (value) {
                     setState(() {
@@ -1907,7 +1899,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: global.theme.inputFillColor,
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(8),
                 bottomRight: Radius.circular(8),
@@ -1932,7 +1924,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isEditMode
                       ? Theme.of(context).primaryColor
-                      : Colors.grey.shade400,
+                      : global.theme.textSecondaryColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
@@ -1955,14 +1947,14 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
           Icon(
             Icons.inventory_2_outlined,
             size: 64,
-            color: Colors.grey.shade400,
+            color: global.theme.textSecondaryColor,
           ),
           SizedBox(height: 16),
           Text(
             shelfFilter.isEmpty ? global.language("no_shelves_yet") : global.language("shelf_not_found"),
             style: TextStyle(
               fontSize: 18,
-              color: Colors.grey.shade600,
+              color: global.theme.textSecondaryColor,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1971,7 +1963,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
             shelfFilter.isEmpty
                 ? global.language("start_by_adding_first_shelf")
                 : global.language("try_different_search"),
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
           ),
           if (shelfFilter.isNotEmpty) ...[
             SizedBox(height: 16),
@@ -1998,7 +1990,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isComplete ? Colors.green.shade300 : Colors.orange.shade300,
@@ -2070,15 +2062,15 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                         hintText: global.language("code"),
                         hintStyle: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade500,
+                          color: global.theme.textSecondaryColor,
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(6),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                          borderSide: BorderSide(color: global.theme.dividerBorderColor),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(6),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                          borderSide: BorderSide(color: global.theme.dividerBorderColor),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(6),
@@ -2092,8 +2084,8 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                         ),
                         filled: true,
                         fillColor: isEditMode
-                            ? Colors.white
-                            : Colors.grey.shade50,
+                            ? global.theme.cardColor
+                            : global.theme.inputFillColor,
                       ),
                     ),
                   ),
@@ -2119,15 +2111,15 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                         hintText: global.language("shelf_name"),
                         hintStyle: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade500,
+                          color: global.theme.textSecondaryColor,
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(6),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                          borderSide: BorderSide(color: global.theme.dividerBorderColor),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(6),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                          borderSide: BorderSide(color: global.theme.dividerBorderColor),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(6),
@@ -2141,8 +2133,8 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                         ),
                         filled: true,
                         fillColor: isEditMode
-                            ? Colors.white
-                            : Colors.grey.shade50,
+                            ? global.theme.cardColor
+                            : global.theme.inputFillColor,
                       ),
                     ),
                   ),
@@ -2170,10 +2162,10 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                   style: IconButton.styleFrom(
                     foregroundColor: (hasCode || hasName)
                         ? Theme.of(context).primaryColor
-                        : Colors.grey.shade400,
+                        : global.theme.textSecondaryColor,
                     backgroundColor: (hasCode || hasName)
                         ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
-                        : Colors.grey.shade100,
+                        : global.theme.inputFillColor,
                     padding: const EdgeInsets.all(8),
                   ),
                   tooltip: global.language("manage_products"),
@@ -2418,7 +2410,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
       );
     }
     return Scaffold(
-      backgroundColor: (screenEvent == global.ScreenEventEnum.edit || screenEvent == global.ScreenEventEnum.add) ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
+      backgroundColor: global.theme.cardColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor:
@@ -2591,7 +2583,7 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                 controller: editScrollController,
                 child: Container(
                   width: double.infinity,
-                  color: Colors.white,
+                  color: global.theme.cardColor,
                   padding: const EdgeInsets.only(top: 10, bottom: 10),
                   child: Form(child: Column(children: formWidgets)),
                 ),

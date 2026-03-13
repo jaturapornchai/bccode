@@ -52,7 +52,7 @@ class CouponListItemWidget extends StatelessWidget {
       onDoubleTap: onDoubleTap,
       child: Container(
         decoration: BoxDecoration(
-          color: isSelected ? Colors.cyan[100] : Colors.white,
+          color: isSelected ? global.theme.rowSelectedColor : global.theme.cardColor,
         ),
         padding: EdgeInsets.only(
           left: 10,

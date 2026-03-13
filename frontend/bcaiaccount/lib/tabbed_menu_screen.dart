@@ -27,18 +27,18 @@ class TabbedMenuScreen extends StatefulWidget {
 }
 
 class TabbedMenuScreenState extends State<TabbedMenuScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, global.ThemeRefreshMixin {
   late TabController _tabController;
   final List<MenuTab> _tabs = [];
   final Map<int, GlobalKey<NavigatorState>> _navigatorKeys = {};
   final Map<int, TabNavigatorObserver> _navigatorObservers = {};
   int _tabIdCounter = 0;
 
-  // สีสำหรับ Tab Bar - ใช้สีจาก Flavor
+  // สีสำหรับ Tab Bar - ใช้สีจาก Flavor + รองรับ dark mode
   Color get primaryColor => F.primaryGradientColor;
   Color get primaryDarkColor => F.secondaryGradientColor;
-  final Color surfaceColor = const Color(0xFFFFFFFF);
-  final Color backgroundColor = const Color(0xFFF5F5F5);
+  Color get surfaceColor => global.theme.surfaceColor;
+  Color get backgroundColor => global.theme.backgroundColor;
 
   // Chatbot overlay state
   bool _showChatbot = false;
@@ -149,7 +149,7 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              style: TextButton.styleFrom(foregroundColor: global.theme.negativeHighlightTextColor),
               child: Text(global.language('confirm')),
             ),
           ],
@@ -263,14 +263,14 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(tab.icon, size: 16, color: Colors.white),
+                  Icon(tab.icon, size: 16, color: global.theme.onPrimaryColor),
                   const SizedBox(width: 8),
                   Text(
                     tab.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: global.theme.onPrimaryColor,
                     ),
                   ),
                 ],
@@ -323,7 +323,9 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
             Icon(
               tab.icon,
               size: 18,
-              color: isActive ? Colors.white : Colors.grey.shade600,
+              color: isActive
+                  ? global.theme.cardColor
+                  : global.theme.textSecondaryColor,
             ),
             const SizedBox(width: 8),
             // ชื่อ tab
@@ -334,7 +336,9 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: isActive ? FontWeight.w800 : FontWeight.normal,
-                  color: isActive ? Colors.white : Colors.grey.shade700,
+                  color: isActive
+                      ? global.theme.cardColor
+                      : global.theme.textSecondaryColor,
                   letterSpacing: 0.3,
                 ),
               ),
@@ -349,14 +353,16 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     color: isActive
-                        ? Colors.white.withValues(alpha: 0.25)
-                        : Colors.grey.shade200,
+                        ? global.theme.onPrimaryColor.withValues(alpha: 0.25)
+                        : global.theme.dividerBorderColor.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     Icons.close,
                     size: 16,
-                    color: isActive ? Colors.white : Colors.grey.shade700,
+                    color: isActive
+                        ? global.theme.cardColor
+                        : global.theme.textSecondaryColor,
                   ),
                 ),
               ),
@@ -385,7 +391,7 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
           preferredSize: const Size.fromHeight(kToolbarHeight),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: global.theme.surfaceColor,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.1),
@@ -402,11 +408,11 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                     child: TabBar(
                       controller: _tabController,
                       isScrollable: true,
-                      indicator: const BoxDecoration(), // ปิด indicator
+                      indicator: BoxDecoration(), // ปิด indicator
                       indicatorColor: Colors.transparent,
-                      labelColor: Colors.white, // สีตัวอักษร tab ที่ active
+                      labelColor: global.theme.onPrimaryColor, // สีตัวอักษร tab ที่ active
                       unselectedLabelColor:
-                          Colors.grey.shade700, // สีตัวอักษร tab ที่ไม่ active
+                          global.theme.textSecondaryColor, // สีตัวอักษร tab ที่ไม่ active
                       dividerColor: Colors.transparent,
                       tabAlignment: TabAlignment.start,
                       tabs: _tabs
@@ -441,10 +447,10 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                                   ),
                                 ],
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.add,
                                 size: 20,
-                                color: Colors.white,
+                                color: global.theme.onPrimaryColor,
                               ),
                             ),
                           ),
@@ -453,9 +459,9 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                       SizedBox(width: 8),
                       // ปุ่ม Cart System
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.shopping_cart,
-                          color: Colors.orange,
+                          color: global.theme.warningHighlightTextColor,
                           shadows: [
                             Shadow(
                               offset: Offset(1.0, 1.0),
@@ -475,7 +481,7 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                       SizedBox(width: 8),
                       // ปุ่ม AI Chat
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.smart_toy, // AI icon
                           shadows: [
                             Shadow(
@@ -496,9 +502,9 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                       SizedBox(width: 8),
                       // ปุ่ม AI Analysis - วิเคราะห์เอกสารด้วย AI
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.auto_awesome, // AI Analysis icon
-                          color: Colors.amber,
+                          color: global.theme.warningHighlightTextColor,
                           shadows: [
                             Shadow(
                               offset: Offset(1.0, 1.0),
@@ -519,7 +525,7 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                       SizedBox(width: 8),
                       // ปุ่ม Display Settings - ตั้งค่า Font และ Zoom
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.settings,
                           shadows: [
                             Shadow(
@@ -541,9 +547,32 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                         tooltip: global.language('display_settings'),
                       ),
                       SizedBox(width: 8),
+                      // ปุ่มเปลี่ยนธีม (auto/light/dark)
+                      IconButton(
+                        icon: Icon(
+                          _getThemeModeIcon(),
+                          color: _getThemeModeColor(),
+                          shadows: const [
+                            Shadow(
+                              offset: Offset(1.0, 1.0),
+                              blurRadius: 3.0,
+                              color: Color.fromARGB(128, 0, 0, 0),
+                            ),
+                          ],
+                        ),
+                        onPressed: () async {
+                          // สลับ light ↔ dark
+                          global.displayThemeMode =
+                              global.isDarkMode() ? 'light' : 'dark';
+                          await global.saveThemeSettings();
+                          setState(() {});
+                        },
+                        tooltip: _getThemeModeTooltip(),
+                      ),
+                      SizedBox(width: 8),
                       // ปุ่ม Dashboard
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.dashboard,
                           shadows: [
                             Shadow(
@@ -565,7 +594,7 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                       ),
                       // ปุ่มสลับร้าน
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.swap_vert,
                           shadows: [
                             Shadow(
@@ -583,9 +612,9 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                               return AlertDialog(
                                 title: Row(
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.warning,
-                                      color: Colors.orange,
+                                      color: global.theme.warningHighlightTextColor,
                                     ),
                                     SizedBox(width: 10),
                                     Text(
@@ -599,10 +628,10 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                                   children: [
                                     Text(
                                       global.language("warning"),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.red,
+                                        color: global.theme.negativeHighlightTextColor,
                                       ),
                                     ),
                                     SizedBox(height: 12),
@@ -610,7 +639,7 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                                       global.language("close_all_tabs"),
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: Colors.grey[700],
+                                        color: global.theme.textSecondaryColor,
                                       ),
                                     ),
                                     SizedBox(height: 8),
@@ -618,15 +647,16 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                                       global.language("work_data_lost"),
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: Colors.grey[700],
+                                        color: global.theme.textSecondaryColor,
                                       ),
                                     ),
                                     SizedBox(height: 16),
                                     Text(
                                       global.language("confirm_switch_shop"),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
+                                        color: global.theme.textColor,
                                       ),
                                     ),
                                   ],
@@ -641,8 +671,8 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                                     onPressed: () =>
                                         Navigator.of(context).pop(true),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.orange,
-                                      foregroundColor: Colors.white,
+                                      backgroundColor: global.theme.warningHighlightTextColor,
+                                      foregroundColor: global.theme.onPrimaryColor,
                                     ),
                                     child: Text(global.language("switch_shop")),
                                   ),
@@ -664,7 +694,7 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                       ),
                       // ปุ่ม Logout
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.logout,
                           shadows: [
                             Shadow(
@@ -681,9 +711,9 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                               return AlertDialog(
                                 title: Row(
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.logout,
-                                      color: Colors.orange,
+                                      color: global.theme.warningHighlightTextColor,
                                     ),
                                     SizedBox(width: 10),
                                     Text(global.language("logout_confirm")),
@@ -695,10 +725,10 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                                   children: [
                                     Text(
                                       global.language("warning"),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.red,
+                                        color: global.theme.negativeHighlightTextColor,
                                       ),
                                     ),
                                     SizedBox(height: 12),
@@ -706,7 +736,7 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                                       global.language("close_all_tabs"),
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: Colors.grey[700],
+                                        color: global.theme.textSecondaryColor,
                                       ),
                                     ),
                                     SizedBox(height: 8),
@@ -714,15 +744,16 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                                       global.language("work_data_lost"),
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: Colors.grey[700],
+                                        color: global.theme.textSecondaryColor,
                                       ),
                                     ),
                                     SizedBox(height: 16),
                                     Text(
                                       global.language("confirm_logout"),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
+                                        color: global.theme.textColor,
                                       ),
                                     ),
                                   ],
@@ -737,8 +768,8 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                                     onPressed: () =>
                                         Navigator.of(context).pop(true),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red,
-                                      foregroundColor: Colors.white,
+                                      backgroundColor: global.theme.negativeHighlightTextColor,
+                                      foregroundColor: global.theme.onPrimaryColor,
                                     ),
                                     child: Text(global.language("logout")),
                                   ),
@@ -795,13 +826,13 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                   child: SizedBox(
                     width: 8,
                     child: Container(
-                      color: Colors.grey.shade200,
+                      color: global.theme.dividerBorderColor,
                       child: Center(
                         child: Container(
                           width: 4,
                           height: 48,
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade400,
+                            color: global.theme.iconSecondaryColor,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -1050,6 +1081,25 @@ String getRouteTitle(Route<dynamic>? route) {
   };
 
   return routeTitles[routeName] ?? global.language('workspace');
+}
+
+// ================== Theme Mode Helpers ==================
+
+/// Icon ตามโหมดธีม (light ↔ dark)
+IconData _getThemeModeIcon() {
+  return global.isDarkMode() ? Icons.dark_mode : Icons.light_mode;
+}
+
+/// สีของ icon ตามโหมดธีม
+Color _getThemeModeColor() {
+  return global.isDarkMode() ? global.theme.primaryColor : global.theme.warningHighlightTextColor;
+}
+
+/// Tooltip ตามโหมดธีม
+String _getThemeModeTooltip() {
+  return global.isDarkMode()
+      ? global.language('theme_dark')
+      : global.language('theme_light');
 }
 
 /// ดึง Icon ตาม route name - ใช้ icon เดียวกับ menu_screen.dart

@@ -23,11 +23,11 @@ class LanguageSelectorWidget extends StatelessWidget {
       child: Center(
         child: Container(
           margin: const EdgeInsets.only(top: 10, bottom: 10),
-          padding: const EdgeInsets.all(10),
+          padding: EdgeInsets.all(10),
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade400),
+            border: Border.all(color: global.theme.textSecondaryColor),
             borderRadius: BorderRadius.circular(5),
-            color: Colors.white,
+            color: global.theme.cardColor,
           ),
           child: Column(
             children: [
@@ -96,8 +96,8 @@ class LanguageSelectorWidget extends StatelessWidget {
                               newList.removeAt(i);
                               onLanguagesChanged(newList);
                             },
-                            color: Colors.red,
-                            icon: const Icon(Icons.delete),
+                            color: global.theme.negativeHighlightTextColor,
+                            icon: Icon(Icons.delete),
                           ),
                         ),
                     ],

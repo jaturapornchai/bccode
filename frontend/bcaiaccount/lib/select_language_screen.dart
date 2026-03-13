@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smlaicloud/global.dart' as global;
 
 /// แสดง Dialog เลือกภาษา
 /// Returns: LanguageCode ที่เลือก (en, th, lo, cn, ja, ko, my, km, vi) หรือ null ถ้ายกเลิก
@@ -81,7 +82,7 @@ Future<String?> showLanguageSelectionDialog(BuildContext context) async {
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300, width: 1),
+                        border: Border.all(color: global.theme.dividerBorderColor, width: 1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -155,7 +156,7 @@ class SelectLanguageScreenState extends State<SelectLanguageScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
+      color: global.theme.cardColor,
       child: Scaffold(
         resizeToAvoidBottomInset: false,
         body: Container(
@@ -167,7 +168,7 @@ class SelectLanguageScreenState extends State<SelectLanguageScreen> {
               return ListTile(
                 dense: true,
                 shape: RoundedRectangleBorder(
-                  side: const BorderSide(color: Colors.grey, width: 1),
+                  side: BorderSide(color: global.theme.dividerBorderColor, width: 1),
                   borderRadius: BorderRadius.circular(5),
                 ),
                 title: Row(

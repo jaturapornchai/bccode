@@ -24,7 +24,8 @@ class TransactionPaymentDailyDialog extends StatefulWidget {
 }
 
 class _TransactionPaymentDailyDialogState
-    extends State<TransactionPaymentDailyDialog> {
+    extends State<TransactionPaymentDailyDialog>
+    with global.ThemeRefreshMixin {
   @override
   void initState() {
     super.initState();
@@ -99,12 +100,12 @@ class _TransactionPaymentDailyDialogState
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.green.shade100,
+                color: global.theme.positiveHighlightColor,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 Icons.payment_outlined,
-                color: Colors.green.shade700,
+                color: global.theme.positiveHighlightTextColor,
                 size: 20,
               ),
             ),
@@ -115,17 +116,17 @@ class _TransactionPaymentDailyDialogState
                 children: [
                   Text(
                     global.language('report_payment_daily_title'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.green,
+                      color: global.theme.positiveHighlightTextColor,
                     ),
                   ),
                   Text(
                     ReportUtils.formatDate(docDate),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey,
+                      color: global.theme.textSecondaryColor,
                     ),
                   ),
                 ],
@@ -146,16 +147,16 @@ class _TransactionPaymentDailyDialogState
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.grey.shade50,
+            color: global.theme.backgroundColor,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: global.theme.dividerBorderColor),
           ),
           child: Row(
             children: [
               Expanded(
                 child: Row(
                   children: [
-                    Icon(Icons.today, color: Colors.green.shade600, size: 16),
+                    Icon(Icons.today, color: global.theme.positiveHighlightTextColor, size: 16),
                     SizedBox(width: 6),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,13 +165,13 @@ class _TransactionPaymentDailyDialogState
                           global.language('report_date'),
                           style: TextStyle(
                             fontSize: 10,
-                            color: Colors.grey.shade600,
+                            color: global.theme.textSecondaryColor,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         Text(
                           ReportUtils.formatDate(docDate),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -185,7 +186,7 @@ class _TransactionPaymentDailyDialogState
                 child: Row(
                   children: [
                     Icon(Icons.receipt_long_outlined,
-                        color: Colors.green.shade600, size: 16),
+                        color: global.theme.positiveHighlightTextColor, size: 16),
                     SizedBox(width: 6),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,13 +195,13 @@ class _TransactionPaymentDailyDialogState
                           global.language('transaction_count'),
                           style: TextStyle(
                             fontSize: 10,
-                            color: Colors.grey.shade600,
+                            color: global.theme.textSecondaryColor,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         Text(
                           '$transactionCount ${global.language('transaction_items')}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -253,9 +254,9 @@ class _TransactionPaymentDailyDialogState
           SizedBox(height: 16),
           Text(
             global.language('loading_details'),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: Colors.grey,
+              color: global.theme.textSecondaryColor,
             ),
           ),
         ],
@@ -271,14 +272,14 @@ class _TransactionPaymentDailyDialogState
           Icon(
             Icons.error_outline,
             size: 64,
-            color: Colors.red.shade300,
+            color: global.theme.negativeHighlightTextColor,
           ),
           const SizedBox(height: 16),
           Text(
             errorMessage,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: Colors.red,
+              color: global.theme.negativeHighlightTextColor,
             ),
             textAlign: TextAlign.center,
           ),
@@ -298,17 +299,17 @@ class _TransactionPaymentDailyDialogState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Icons.inbox_outlined,
             size: 64,
-            color: Colors.grey,
+            color: global.theme.textSecondaryColor,
           ),
           SizedBox(height: 16),
           Text(
             global.language('no_detail_data'),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: Colors.grey,
+              color: global.theme.textSecondaryColor,
             ),
           ),
         ],
@@ -340,12 +341,12 @@ class _TransactionPaymentDailyDialogState
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.green.shade50, Colors.green.shade100],
+              colors: [global.theme.positiveHighlightColor, global.theme.positiveHighlightColor],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.green.shade300, width: 1),
+            border: Border.all(color: global.theme.positiveHighlightColor, width: 1),
           ),
           child: Row(
             children: [
@@ -378,9 +379,9 @@ class _TransactionPaymentDailyDialogState
           width: double.infinity,
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Colors.grey.shade50,
+            color: global.theme.backgroundColor,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: global.theme.dividerBorderColor),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,7 +391,7 @@ class _TransactionPaymentDailyDialogState
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade700,
+                  color: global.theme.iconColor,
                 ),
               ),
               const SizedBox(height: 8),
@@ -417,7 +418,7 @@ class _TransactionPaymentDailyDialogState
                 icon,
                 size: isHighlight ? 18 : 16,
                 color:
-                    isHighlight ? Colors.green.shade700 : Colors.green.shade600,
+                    isHighlight ? global.theme.positiveHighlightTextColor : global.theme.positiveHighlightTextColor,
               ),
               const SizedBox(width: 4),
               Flexible(
@@ -426,8 +427,8 @@ class _TransactionPaymentDailyDialogState
                   style: TextStyle(
                     fontSize: isHighlight ? 12 : 11,
                     color: isHighlight
-                        ? Colors.green.shade800
-                        : Colors.grey.shade600,
+                        ? global.theme.positiveHighlightTextColor
+                        : global.theme.textSecondaryColor,
                     fontWeight: FontWeight.w600,
                   ),
                   textAlign: TextAlign.center,
@@ -443,7 +444,7 @@ class _TransactionPaymentDailyDialogState
             style: TextStyle(
               fontSize: isHighlight ? 14 : 12,
               fontWeight: FontWeight.bold,
-              color: isHighlight ? Colors.green.shade800 : Colors.black87,
+              color: isHighlight ? global.theme.positiveHighlightTextColor : global.theme.textColor,
             ),
             textAlign: TextAlign.center,
             maxLines: 1,
@@ -458,7 +459,7 @@ class _TransactionPaymentDailyDialogState
     return Container(
       height: 40,
       width: 1,
-      color: Colors.green.shade300,
+      color: global.theme.positiveHighlightColor,
     );
   }
 
@@ -501,7 +502,7 @@ class _TransactionPaymentDailyDialogState
           global.language('no_payment_items'),
           style: TextStyle(
             fontSize: 12,
-            color: Colors.grey.shade500,
+            color: global.theme.textSecondaryColor,
             fontStyle: FontStyle.italic,
           ),
           textAlign: TextAlign.center,
@@ -539,25 +540,25 @@ class _TransactionPaymentDailyDialogState
     final creditLabel = global.language('payment_credit');
 
     if (method == cashLabel) {
-      backgroundColor = Colors.green.shade50;
-      borderColor = Colors.green.shade200;
-      iconColor = Colors.green.shade600;
-      textColor = Colors.green.shade700;
+      backgroundColor = global.theme.positiveHighlightColor;
+      borderColor = global.theme.positiveHighlightColor;
+      iconColor = global.theme.positiveHighlightTextColor;
+      textColor = global.theme.positiveHighlightTextColor;
     } else if (method == transferLabel) {
-      backgroundColor = Colors.blue.shade50;
-      borderColor = Colors.blue.shade200;
-      iconColor = Colors.blue.shade600;
-      textColor = Colors.blue.shade700;
+      backgroundColor = global.theme.infoHighlightColor;
+      borderColor = global.theme.infoHighlightColor;
+      iconColor = global.theme.infoHighlightTextColor;
+      textColor = global.theme.infoHighlightTextColor;
     } else if (method == creditCardLabel) {
       backgroundColor = Colors.purple.shade50;
       borderColor = Colors.purple.shade200;
       iconColor = Colors.purple.shade600;
       textColor = Colors.purple.shade700;
     } else if (method == chequeLabel) {
-      backgroundColor = Colors.orange.shade50;
-      borderColor = Colors.orange.shade200;
-      iconColor = Colors.orange.shade600;
-      textColor = Colors.orange.shade700;
+      backgroundColor = global.theme.warningHighlightColor;
+      borderColor = global.theme.warningHighlightColor;
+      iconColor = global.theme.warningHighlightTextColor;
+      textColor = global.theme.warningHighlightTextColor;
     } else if (method == couponLabel) {
       backgroundColor = Colors.pink.shade50;
       borderColor = Colors.pink.shade200;
@@ -574,10 +575,10 @@ class _TransactionPaymentDailyDialogState
       iconColor = Colors.amber.shade600;
       textColor = Colors.amber.shade700;
     } else {
-      backgroundColor = Colors.grey.shade50;
-      borderColor = Colors.grey.shade200;
-      iconColor = Colors.grey.shade600;
-      textColor = Colors.grey.shade700;
+      backgroundColor = global.theme.backgroundColor;
+      borderColor = global.theme.dividerBorderColor;
+      iconColor = global.theme.textSecondaryColor;
+      textColor = global.theme.iconColor;
     }
 
     return Container(
@@ -627,9 +628,9 @@ class _TransactionPaymentDailyDialogState
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.cardColor,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: global.theme.dividerBorderColor),
               ),
               child: Column(
                 children: [
@@ -638,7 +639,7 @@ class _TransactionPaymentDailyDialogState
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
+                      color: global.theme.backgroundColor,
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(12),
                         topRight: Radius.circular(12),
@@ -651,10 +652,10 @@ class _TransactionPaymentDailyDialogState
                           flex: 3,
                           child: Text(
                             global.language('document_number'),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: Colors.green,
+                              color: global.theme.positiveHighlightTextColor,
                             ),
                           ),
                         ),
@@ -664,7 +665,7 @@ class _TransactionPaymentDailyDialogState
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: Colors.green.shade700,
+                              color: global.theme.positiveHighlightTextColor,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -675,7 +676,7 @@ class _TransactionPaymentDailyDialogState
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: Colors.green.shade700,
+                              color: global.theme.positiveHighlightTextColor,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -686,7 +687,7 @@ class _TransactionPaymentDailyDialogState
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: Colors.green.shade700,
+                              color: global.theme.positiveHighlightTextColor,
                             ),
                             textAlign: TextAlign.right,
                           ),
@@ -710,9 +711,9 @@ class _TransactionPaymentDailyDialogState
                               padding: EdgeInsets.all(16.0),
                               child: Text(
                                 global.language('no_transactions'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
-                                  color: Colors.grey,
+                                  color: global.theme.textSecondaryColor,
                                   fontStyle: FontStyle.italic,
                                 ),
                               ),
@@ -735,7 +736,7 @@ class _TransactionPaymentDailyDialogState
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         border: index < totalTransactions - 1
-            ? Border(bottom: BorderSide(color: Colors.grey.shade100))
+            ? Border(bottom: BorderSide(color: global.theme.surfaceColor))
             : null,
       ),
       child: Row(
@@ -745,7 +746,7 @@ class _TransactionPaymentDailyDialogState
             width: 24,
             height: 24,
             decoration: BoxDecoration(
-              color: Colors.green.shade50,
+              color: global.theme.positiveHighlightColor,
               borderRadius: BorderRadius.circular(6),
             ),
             child: Center(
@@ -754,7 +755,7 @@ class _TransactionPaymentDailyDialogState
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  color: Colors.green.shade700,
+                  color: global.theme.positiveHighlightTextColor,
                 ),
               ),
             ),
@@ -768,7 +769,7 @@ class _TransactionPaymentDailyDialogState
               children: [
                 Text(
                   transaction.docNo,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -780,7 +781,7 @@ class _TransactionPaymentDailyDialogState
                   '${ReportUtils.formatDate(transaction.docDate)} • ${transaction.docTime}',
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey.shade600,
+                    color: global.theme.textSecondaryColor,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -794,7 +795,7 @@ class _TransactionPaymentDailyDialogState
               transaction.custName.isEmpty
                   ? global.language('customer_general')
                   : transaction.custName,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -810,7 +811,7 @@ class _TransactionPaymentDailyDialogState
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: Colors.green.shade700,
+                color: global.theme.positiveHighlightTextColor,
               ),
               textAlign: TextAlign.center,
               maxLines: 1,
@@ -824,7 +825,7 @@ class _TransactionPaymentDailyDialogState
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
-                color: Colors.green.shade700,
+                color: global.theme.positiveHighlightTextColor,
               ),
               textAlign: TextAlign.right,
             ),
@@ -839,8 +840,8 @@ class _TransactionPaymentDailyDialogState
       child: ElevatedButton(
         onPressed: () => Navigator.of(context).pop(),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.green.shade600,
-          foregroundColor: Colors.white,
+          backgroundColor: global.theme.positiveHighlightTextColor,
+          foregroundColor: global.theme.onPrimaryColor,
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -849,7 +850,7 @@ class _TransactionPaymentDailyDialogState
         ),
         child: Text(
           global.language('close'),
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
     );

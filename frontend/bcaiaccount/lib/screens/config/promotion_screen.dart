@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -26,7 +27,7 @@ class PromotionScreen extends StatefulWidget {
 }
 
 class PromotionScreenState extends State<PromotionScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
   late TabController tabController;
   ScrollController editScrollController = ScrollController();
@@ -715,7 +716,9 @@ class PromotionScreenState extends State<PromotionScreen>
 
   Color _getContainerColor(String itemGuid, int index) {
     if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
-      return global.theme.rowSelectedColor;
+      return isEditMode
+          ? global.theme.rowEditColor
+          : global.theme.rowSelectedColor;
     }
     if (_hoverIndex == index) {
       return global.theme.rowHoverColor;
@@ -1626,7 +1629,7 @@ class PromotionScreenState extends State<PromotionScreen>
     }
 
     return Scaffold(
-      backgroundColor: isEditMode ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
+      backgroundColor: global.theme.cardColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -1652,6 +1655,8 @@ class PromotionScreenState extends State<PromotionScreen>
             : null,
         title: Text(headerEdit + global.language("promotion")),
         actions: <Widget>[
+          EditFontSizeControl(onChanged: () => setState(() {})),
+          const SizedBox(width: 8),
           if (selectGuid.isNotEmpty)
             Padding(
               padding: EdgeInsets.only(right: 20.0),
@@ -1736,9 +1741,28 @@ class PromotionScreenState extends State<PromotionScreen>
             }
           }
         },
-        child: SingleChildScrollView(
-          controller: editScrollController,
-          child: Container(
+        child: Builder(
+          builder: (context) {
+            final scale = global.editFontScaleFactor;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(scale),
+              ),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                    contentPadding: EdgeInsets.fromLTRB(
+                      12 * scale, 20 * scale, 12 * scale, 12 * scale,
+                    ),
+                  ),
+                ),
+                child: IconTheme(
+                  data: IconTheme.of(context).copyWith(
+                    size: 24.0 * scale,
+                  ),
+                  child: SingleChildScrollView(
+                    controller: editScrollController,
+                    child: Container(
             width: double.infinity,
             padding: const EdgeInsets.only(top: 10, bottom: 15),
             child: Form(
@@ -1746,6 +1770,11 @@ class PromotionScreenState extends State<PromotionScreen>
               child: Column(children: formWidgets),
             ),
           ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

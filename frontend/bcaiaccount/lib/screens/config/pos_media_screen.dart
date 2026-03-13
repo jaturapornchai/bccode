@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide SegmentedButton, ButtonSegment;
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
@@ -485,15 +486,6 @@ class PosMediaScreenState extends State<PosMediaScreen>
                     '(${listData.length})',
                     style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const Icon(Icons.line_weight),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataLineSpaceChange();
-                      });
-                    },
-                  ),
                 ],
               ),
             ),
@@ -677,7 +669,9 @@ class PosMediaScreenState extends State<PosMediaScreen>
 
   Color _getContainerColor(String itemGuid, int index) {
     if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
-      return global.theme.rowSelectedColor;
+      return isEditMode
+          ? global.theme.rowEditColor
+          : global.theme.rowSelectedColor;
     }
     if (_hoverIndex == index) {
       return global.theme.rowHoverColor;
@@ -1054,7 +1048,7 @@ class PosMediaScreenState extends State<PosMediaScreen>
                                   selectedBackgroundColor: global.theme.primaryColor,
                                   selectedForegroundColor: Colors.white,
                                   foregroundColor: Colors.white,
-                                  backgroundColor: Colors.grey,
+                                  backgroundColor: global.theme.textSecondaryColor,
                                 ),
                                 segments: <ButtonSegment<int>>[
                                   ButtonSegment<int>(
@@ -1100,7 +1094,7 @@ class PosMediaScreenState extends State<PosMediaScreen>
                                             Center(
                                               child: DecoratedBox(
                                                 decoration: BoxDecoration(
-                                                  color: Colors.white,
+                                                  color: global.theme.cardColor,
                                                   border: Border.all(
                                                     color: global.theme.textColor,
                                                   ),
@@ -1724,7 +1718,7 @@ class PosMediaScreenState extends State<PosMediaScreen>
     }
 
     return Scaffold(
-      backgroundColor: isEditMode ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
+      backgroundColor: global.theme.cardColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -1750,6 +1744,8 @@ class PosMediaScreenState extends State<PosMediaScreen>
             : null,
         title: Text(headerEdit + global.language("pos_media")),
         actions: <Widget>[
+          EditFontSizeControl(onChanged: () => setState(() {})),
+          const SizedBox(width: 8),
           if (selectGuid.isNotEmpty)
             Padding(
               padding: EdgeInsets.only(right: 20.0),
@@ -1834,16 +1830,40 @@ class PosMediaScreenState extends State<PosMediaScreen>
             }
           }
         },
-        child: SingleChildScrollView(
-          controller: editScrollController,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.only(top: 10, bottom: 15),
-            child: Form(
-              key: _formKey,
-              child: Column(children: formWidgets),
-            ),
-          ),
+        child: Builder(
+          builder: (context) {
+            final scale = global.editFontScaleFactor;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(scale),
+              ),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                    contentPadding: EdgeInsets.fromLTRB(
+                      12 * scale, 20 * scale, 12 * scale, 12 * scale,
+                    ),
+                  ),
+                ),
+                child: IconTheme(
+                  data: IconTheme.of(context).copyWith(
+                    size: 24.0 * scale,
+                  ),
+                  child: SingleChildScrollView(
+                    controller: editScrollController,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.only(top: 10, bottom: 15),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(children: formWidgets),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

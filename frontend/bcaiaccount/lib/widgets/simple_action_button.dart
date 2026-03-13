@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smlaicloud/global.dart' as global;
 
 /// Simple Action Button - Icon + Text เสมอทุกขนาดหน้าจอ
 /// Design: เรียบง่าย สวยงาม ไม่มี border ไม่มี background
@@ -35,8 +36,8 @@ class _SimpleActionButtonState extends State<SimpleActionButton> {
   Widget build(BuildContext context) {
     if (!widget.visible) return const SizedBox.shrink();
 
-    final color = widget.color ?? Colors.white.withValues(alpha: 0.9);
-    final hoverColor = widget.color ?? Colors.white;
+    final color = widget.color ?? global.theme.onPrimaryColor.withValues(alpha: 0.9);
+    final hoverColor = widget.color ?? global.theme.onPrimaryColor;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -100,7 +101,7 @@ class _SimpleActionButtonState extends State<SimpleActionButton> {
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.red.shade500,
+                color: global.theme.negativeHighlightTextColor,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
@@ -113,8 +114,8 @@ class _SimpleActionButtonState extends State<SimpleActionButton> {
               constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
               child: Text(
                 widget.badgeCount! > 99 ? '99+' : widget.badgeCount.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: global.theme.onPrimaryColor,
                   fontSize: 9,
                   fontWeight: FontWeight.bold,
                   height: 1,
@@ -152,7 +153,7 @@ class SimpleButtonDivider extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             Colors.transparent,
-            (color ?? Colors.white.withValues(alpha: 0.3)),
+            (color ?? global.theme.onPrimaryColor.withValues(alpha: 0.3)),
             Colors.transparent,
           ],
           begin: Alignment.topCenter,
@@ -183,7 +184,7 @@ class ButtonGroupLabel extends StatelessWidget {
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w600,
-          color: (color ?? Colors.white).withValues(alpha: 0.6),
+          color: (color ?? global.theme.onPrimaryColor).withValues(alpha: 0.6),
           letterSpacing: 1.0,
         ),
       ),

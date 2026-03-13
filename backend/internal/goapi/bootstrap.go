@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"smlcloudplatform/internal/goapi/dataimport"
-	"smlcloudplatform/internal/goapi/datainfo"
 	"smlcloudplatform/internal/goapi/handlers"
 	"smlcloudplatform/internal/goapi/handlers/aichat"
 	"smlcloudplatform/internal/goapi/handlers/approval"
@@ -458,33 +457,6 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 	g.POST("/api/deploy/backend", handlers.DeployBackendHandler)
 	g.POST("/api/deploy/frontend", handlers.DeployFrontendHandler)
 	g.GET("/api/deploy/status", handlers.DeployStatusHandler)
-
-	// Data Information
-	g.POST("/datainfo", func(c echo.Context) error {
-		var reqBody struct {
-			ShopId   string `json:"shopid"`
-			Function string `json:"function"`
-			Mode     int    `json:"mode"`
-		}
-		if err := c.Bind(&reqBody); err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-				"status": "error", "code": 400, "message": "Invalid request body",
-			})
-		}
-		if reqBody.ShopId == "" || reqBody.Function == "" {
-			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-				"status": "error", "code": 400, "message": "Missing required parameters (shopid or function)",
-			})
-		}
-		if reqBody.Mode == 0 {
-			reqBody.Mode = 1
-		}
-		htmlContent := datainfo.DataInfoHtml(reqBody.ShopId, reqBody.Function, reqBody.Mode)
-		return c.JSON(http.StatusOK, map[string]interface{}{
-			"status": "success", "code": 200, "htmlContent": htmlContent,
-			"shopid": reqBody.ShopId, "function": reqBody.Function, "mode": reqBody.Mode,
-		})
-	})
 
 	logger.Success("GoAPI: ✅ Routes registered successfully")
 }

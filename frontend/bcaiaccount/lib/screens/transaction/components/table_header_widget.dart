@@ -19,15 +19,15 @@ class TableHeaderWidget extends StatelessWidget {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         decoration: BoxDecoration(
-          color: Colors.grey[100],
-          border: Border.all(color: Colors.grey[300]!),
+          color: global.theme.surfaceColor,
+          border: Border.all(color: global.theme.dividerBorderColor),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Table(
           columnWidths: {for (int i = 0; i < headers.length; i++) i: headers[i].code == 'line_number' ? const FixedColumnWidth(50.0) : FlexColumnWidth(headers[i].width)},
           children: [
             TableRow(
-              decoration: BoxDecoration(color: const Color(0xFF2A6F97), borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(color: global.theme.primaryColor, borderRadius: BorderRadius.circular(10)),
               children: headers
                   .map(
                     (header) => Container(
@@ -40,7 +40,7 @@ class TableHeaderWidget extends StatelessWidget {
                           child: Text(
                             header.label,
                             textAlign: _shouldAlignRight(header.code) ? TextAlign.right : TextAlign.left,
-                            style: const TextStyle(fontSize: 12, color: Colors.white),
+                            style: TextStyle(fontSize: 12, color: global.theme.onPrimaryColor),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),

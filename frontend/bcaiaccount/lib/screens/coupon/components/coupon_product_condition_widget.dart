@@ -65,7 +65,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                     codes: productCondition?.productCodes,
                     type: 'product',
                     icon: Icons.inventory_2,
-                    color: Colors.blue,
+                    color: global.theme.infoHighlightTextColor,
                     onAdd: onAddProductCodes,
                   ),
 
@@ -75,7 +75,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                     codes: productCondition?.groupCodes,
                     type: 'group',
                     icon: Icons.category,
-                    color: Colors.purple,
+                    color: global.theme.primaryColor,
                     onAdd: onAddGroupCodes,
                   ),
 
@@ -85,7 +85,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                     codes: productCondition?.groupSuboneCodes,
                     type: 'group_subone',
                     icon: Icons.subdirectory_arrow_right,
-                    color: Colors.deepPurple,
+                    color: global.theme.primaryColor,
                     onAdd: onAddGroupSuboneCodes,
                   ),
 
@@ -95,7 +95,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                     codes: productCondition?.groupSubtwoCodes,
                     type: 'group_subtwo',
                     icon: Icons.double_arrow,
-                    color: Colors.indigo,
+                    color: global.theme.primaryColor,
                     onAdd: onAddGroupSubtwoCodes,
                   ),
 
@@ -105,7 +105,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                     codes: productCondition?.brandCodes,
                     type: 'brand',
                     icon: Icons.label,
-                    color: Colors.orange,
+                    color: global.theme.warningHighlightTextColor,
                     onAdd: onAddBrandCodes,
                   ),
 
@@ -115,7 +115,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                     codes: productCondition?.designCodes,
                     type: 'design',
                     icon: Icons.design_services,
-                    color: Colors.pink,
+                    color: global.theme.primaryColor,
                     onAdd: onAddDesignCodes,
                   ),
                 ],
@@ -134,7 +134,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                     codes: productCondition?.modelCodes,
                     type: 'model',
                     icon: Icons.style,
-                    color: Colors.teal,
+                    color: global.theme.infoHighlightTextColor,
                     onAdd: onAddModelCodes,
                   ),
 
@@ -144,7 +144,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                     codes: productCondition?.patternCodes,
                     type: 'pattern',
                     icon: Icons.pattern,
-                    color: Colors.green,
+                    color: global.theme.positiveHighlightTextColor,
                     onAdd: onAddPatternCodes,
                   ),
 
@@ -154,7 +154,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                     codes: productCondition?.gradeCodes,
                     type: 'grade',
                     icon: Icons.grade,
-                    color: Colors.amber,
+                    color: global.theme.warningHighlightTextColor,
                     onAdd: onAddGradeCodes,
                   ),
 
@@ -164,7 +164,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                     codes: productCondition?.categoryCodes,
                     type: 'category',
                     icon: Icons.dashboard,
-                    color: Colors.cyan,
+                    color: global.theme.infoHighlightTextColor,
                     onAdd: onAddCategoryCodes,
                   ),
 
@@ -174,7 +174,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                     codes: productCondition?.classCodes,
                     type: 'class',
                     icon: Icons.class_,
-                    color: Colors.brown,
+                    color: global.theme.warningHighlightTextColor,
                     onAdd: onAddClassCodes,
                   ),
 
@@ -237,7 +237,7 @@ class CouponProductConditionWidget extends StatelessWidget {
               global.language("coupon_product_condition_description"),
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey[700],
+                color: global.theme.textColor,
                 height: 1.4,
               ),
             ),
@@ -262,9 +262,9 @@ class CouponProductConditionWidget extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: global.theme.cardColor,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey[300]!, width: 1),
+          border: Border.all(color: global.theme.dividerBorderColor, width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -282,7 +282,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey[700],
+                    color: global.theme.textColor,
                   ),
                 ),
                 const Spacer(),
@@ -309,7 +309,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                     icon: Icon(Icons.add, size: 16),
                     label: Text(
                       global.language("add"),
-                      style: const TextStyle(fontSize: 13),
+                      style: TextStyle(fontSize: 13),
                     ),
                   ),
               ],
@@ -328,15 +328,15 @@ class CouponProductConditionWidget extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: global.theme.surfaceColor,
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.grey[300]!),
+                  border: Border.all(color: global.theme.dividerBorderColor),
                 ),
                 child: Text(
                   global.language("coupon_no_condition_set"),
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey[600],
+                    color: global.theme.textSecondaryColor,
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -351,13 +351,13 @@ class CouponProductConditionWidget extends StatelessWidget {
     return Chip(
       label: Text(
         code,
-        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
       ),
-      deleteIcon: isEditMode ? const Icon(Icons.close, size: 16) : null,
+      deleteIcon: isEditMode ? Icon(Icons.close, size: 16) : null,
       onDeleted: isEditMode ? () => onRemoveCode(code, type) : null,
       backgroundColor: global.theme.appBarColor.withValues(alpha: 0.1),
       labelStyle: TextStyle(color: global.theme.appBarColor),
-      deleteIconColor: Colors.grey[600],
+      deleteIconColor: global.theme.textSecondaryColor,
       side: BorderSide(color: global.theme.appBarColor.withValues(alpha: 0.3)),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     );
@@ -373,9 +373,9 @@ class CouponProductConditionWidget extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: global.theme.cardColor,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey[300]!, width: 1),
+          border: Border.all(color: global.theme.dividerBorderColor, width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,7 +393,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey[700],
+                    color: global.theme.textColor,
                   ),
                 ),
                 const Spacer(),
@@ -422,7 +422,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                       hasMinimum
                           ? global.language("edit")
                           : global.language("set_amount"),
-                      style: const TextStyle(fontSize: 13),
+                      style: TextStyle(fontSize: 13),
                     ),
                   ),
               ],
@@ -434,12 +434,12 @@ class CouponProductConditionWidget extends StatelessWidget {
               decoration: BoxDecoration(
                 color: hasMinimum
                     ? global.theme.appBarColor.withValues(alpha: 0.05)
-                    : Colors.grey[100],
+                    : global.theme.surfaceColor,
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
                   color: hasMinimum
                       ? global.theme.appBarColor.withValues(alpha: 0.2)
-                      : Colors.grey[300]!,
+                      : global.theme.dividerBorderColor,
                 ),
               ),
               child: Row(
@@ -449,7 +449,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                     size: 18,
                     color: hasMinimum
                         ? global.theme.appBarColor
-                        : Colors.grey[600],
+                        : global.theme.textSecondaryColor,
                   ),
                   SizedBox(width: 10),
                   Expanded(
@@ -464,7 +464,7 @@ class CouponProductConditionWidget extends StatelessWidget {
                             : FontWeight.normal,
                         color: hasMinimum
                             ? global.theme.appBarColor
-                            : Colors.grey[600],
+                            : global.theme.textSecondaryColor,
                         fontStyle: hasMinimum
                             ? FontStyle.normal
                             : FontStyle.italic,

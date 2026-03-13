@@ -17,7 +17,6 @@ import 'package:smlaicloud/screen_search/product_group_search_screen.dart';
 import 'package:smlaicloud/screens/report/file_download.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:smlaicloud/global.dart' as global;
@@ -26,6 +25,8 @@ import 'package:split_view/split_view.dart';
 import 'package:intl/intl.dart';
 import 'package:smlaicloud/columns_csv_list.dart' as columns_csv;
 import 'package:smlaicloud/utils/logger/app_logger.dart';
+import 'package:smlaicloud/utils/date_picker.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 
 class PdfReportMainScreen extends StatefulWidget {
   const PdfReportMainScreen({super.key});
@@ -35,7 +36,7 @@ class PdfReportMainScreen extends StatefulWidget {
 }
 
 class PdfReportMainScreenState extends State<PdfReportMainScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   ReportRepository reportRepository = ReportRepository();
 
   late TabController tabController;
@@ -45,6 +46,7 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
   List<GlobalKey> listKeys = [];
 
   String selectCode = "";
+  int _hoverIndex = -1;
   late MediaQueryData queryData;
   int currentListIndex = -1;
   GlobalKey headerKey = GlobalKey();
@@ -559,53 +561,10 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
     context.read<ReportBloc>().add(FileStatusDeleteById(guid: guid));
   }
 
-  void selectFromDate(BuildContext context) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-    );
-
-    if (pickedDate != null) {
-      setState(() {
-        fromDate.text = DateFormat('dd/MM/yyyy').format(pickedDate);
-      });
-    }
-  }
-
-  void selectToDate(BuildContext context) async {
-    DateTime? pickedDate;
-
-    if (selectedReport.type == global.ReportEnum.saleinvoicedetail &&
-        fromDate.text.isNotEmpty) {
-      final DateTime fromDateValue = DateFormat(
-        'dd/MM/yyyy',
-      ).parse(fromDate.text);
-      final DateTime startDate = fromDateValue;
-      final DateTime endDate = fromDateValue.add(const Duration(days: 30));
-
-      pickedDate = await showDatePicker(
-        context: context,
-        initialDate: fromDateValue,
-        firstDate: startDate,
-        lastDate: endDate,
-      );
-    } else {
-      pickedDate = await showDatePicker(
-        context: context,
-        initialDate: DateTime.now(),
-        firstDate: DateTime(2020),
-        lastDate: DateTime.now(),
-      );
-    }
-
-    if (pickedDate != null) {
-      setState(() {
-        toDate.text = DateFormat('dd/MM/yyyy').format(pickedDate!);
-      });
-    }
-  }
+  // selectFromDate / selectToDate ถูกแทนที่ด้วย CustomDatePicker widgets
+  // stub methods เพื่อให้ buildDateField call sites ยังใช้ได้ (parameter ถูก ignore)
+  void selectFromDate(BuildContext context) {}
+  void selectToDate(BuildContext context) {}
 
   void searchCustomer(String type) {
     Navigator.push(
@@ -756,7 +715,7 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
         title: Text(global.language('report')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             _timer.cancel();
             global.gotoMainMenu(context);
@@ -768,7 +727,7 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
           Container(
             padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.surfaceColor,
               borderRadius: BorderRadius.circular(2),
             ),
             child: Row(
@@ -787,37 +746,20 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
                     autofocus: false,
                     focusNode: searchFocusNode,
                     controller: searchController,
+                    style: TextStyle(color: global.theme.textColor),
                     decoration: InputDecoration(
                       isDense: true,
-                      contentPadding: const EdgeInsets.only(
-                        top: 0,
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                       border: InputBorder.none,
+                      filled: false,
                       hintText: global.language('search'),
+                      hintStyle: TextStyle(color: global.theme.formHintColor),
+                          prefixIcon: Icon(Icons.search, size: 20, color: global.theme.formHintColor),
+                          prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                     ),
                   ),
                 ),
-                IconButton(
-                  focusNode: FocusNode(skipTraversal: true),
-                  icon: const FaIcon(FontAwesomeIcons.font),
-                  onPressed: () async {
-                    setState(() {
-                      global.listDataFontSizeChange();
-                    });
-                  },
-                ),
-                IconButton(
-                  focusNode: FocusNode(skipTraversal: true),
-                  icon: const Icon(Icons.line_weight),
-                  onPressed: () async {
-                    setState(() {
-                      global.listDataLineSpaceChange();
-                    });
-                  },
-                ),
+                ListFontSizeControl(onChanged: () => setState(() {})),
               ],
             ),
           ),
@@ -2022,8 +1964,8 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
             children: [
               Switch(
                 value: ispdf,
-                activeThumbColor: Colors.red,
-                inactiveThumbColor: Colors.green,
+                activeThumbColor: global.theme.negativeHighlightTextColor,
+                inactiveThumbColor: global.theme.positiveHighlightTextColor,
                 onChanged: (bool value) {
                   setState(() {
                     ispdf = value;
@@ -2173,8 +2115,8 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
             children: [
               Switch(
                 value: ispdf,
-                activeThumbColor: Colors.red,
-                inactiveThumbColor: Colors.green,
+                activeThumbColor: global.theme.negativeHighlightTextColor,
+                inactiveThumbColor: global.theme.positiveHighlightTextColor,
                 onChanged: (bool value) {
                   setState(() {
                     ispdf = value;
@@ -2322,7 +2264,7 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
           alignment: Alignment.centerRight,
           child: TextButton.icon(
             label: Text(global.language("advance_setting")),
-            icon: const Icon(Icons.settings_sharp),
+            icon: Icon(Icons.settings_sharp),
             onPressed: () {
               /// show dialog selected listColumns for export csv
               showDialog(
@@ -2444,8 +2386,8 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
               return Padding(
                 padding: const EdgeInsets.all(5.0),
                 child: FilterChip(
-                  selectedColor: Colors.blue.shade300,
-                  backgroundColor: Colors.grey.shade400,
+                  selectedColor: global.theme.infoHighlightTextColor,
+                  backgroundColor: global.theme.iconSecondaryColor,
                   label: Text(value.names.first.name),
                   selected: selectedBranch == value.code,
                   onSelected: (bool selected) {
@@ -2506,7 +2448,7 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
                 ? IconButton(
                     onPressed: () => onClear(context),
                     // Icon to clear text
-                    icon: const Icon(Icons.clear),
+                    icon: Icon(Icons.clear),
                   )
                 : const SizedBox(),
             IconButton(
@@ -2534,18 +2476,25 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
     TextEditingController controller,
     Function(BuildContext) onSelect,
   ) {
-    return TextField(
-      decoration: InputDecoration(
-        border: OutlineInputBorder(),
-        labelText: global.language(labelKey),
-        suffixIcon: IconButton(
-          focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.calendar_month),
-          onPressed: () => onSelect(context),
-        ),
-      ),
-      controller: controller,
-      onChanged: (value) {},
+    DateTime? initialDate;
+    if (controller.text.isNotEmpty) {
+      try {
+        initialDate = DateFormat('dd/MM/yyyy').parse(controller.text);
+      } catch (_) {}
+    }
+    return CustomDatePicker(
+      labelText: global.language(labelKey),
+      initialDate: initialDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      onDateSelected: (date) {
+        if (date != null) {
+          setState(() {
+            controller.text = DateFormat('dd/MM/yyyy').format(date);
+          });
+        }
+      },
+      decoration: InputDecoration(),
     );
   }
 
@@ -2572,67 +2521,81 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
     );
     // ลบการ add key ออก - keys ถูกสร้างใน LoadSuccess แล้ว
     // listKeys.add(GlobalKey());  // ❌ ตรงนี้ทำให้เกิด infinite loop!
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _timer.cancel();
-          selectCode = value.code;
-          logDownloadParth.clear();
-          getData(selectCode);
-          WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-            tabController.animateTo(1);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _timer.cancel();
+            selectCode = value.code;
+            logDownloadParth.clear();
+            getData(selectCode);
+            WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+              tabController.animateTo(1);
+            });
           });
-        });
-      },
-      child: Container(
-        key: index < listKeys.length ? listKeys[index] : null,
-        decoration: BoxDecoration(
-          color: (selectCode == value.code)
-              ? Colors.cyan[100]
-              : (index % 2 == 0)
-              ? global.theme.columnAlternateEvenColor
-              : global.theme.columnAlternateOddColor,
-        ),
-        padding: EdgeInsets.only(
-          left: 10,
-          right: 10,
-          top: global.deviceConfig.listDataLineSpace,
-          bottom: global.deviceConfig.listDataLineSpace,
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 1,
-              child: Text(
-                value.code,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: textStyle,
+        },
+        child: Container(
+          key: index < listKeys.length ? listKeys[index] : null,
+          color: _getContainerColor(value.code, index),
+          padding: EdgeInsets.only(
+            left: 10,
+            right: 10,
+            top: global.deviceConfig.listDataLineSpace,
+            bottom: global.deviceConfig.listDataLineSpace,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 1,
+                child: Text(
+                  value.code,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: textStyle,
+                ),
               ),
-            ),
-            Expanded(
-              flex: 2,
-              child: Text(
-                global.packName(value.names),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: textStyle,
+              Expanded(
+                flex: 2,
+                child: Text(
+                  global.packName(value.names),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: textStyle,
+                ),
               ),
-            ),
-            Expanded(
-              flex: 1,
-              child: Text(
-                value.group,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: textStyle,
+              Expanded(
+                flex: 1,
+                child: Text(
+                  value.group,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: textStyle,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  /// คำนวณสีพื้นหลังของแถวใน list (เลือก/hover/สลับสี)
+  Color? _getContainerColor(String itemCode, int index) {
+    if (selectCode.isNotEmpty && selectCode == itemCode) {
+      return (screenEvent == global.ScreenEventEnum.edit)
+          ? global.theme.rowEditColor
+          : global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
   }
 
   bool verifyData() {
@@ -2647,9 +2610,9 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
     if (errorList.isNotEmpty) {
       global.showSnackBar(
         context,
-        Icon(Icons.save, color: Colors.white),
+        Icon(Icons.save, color: global.theme.cardColor),
         "${global.language("not_success_process_report")} : ${errorList.join(",")}",
-        Colors.red,
+        global.theme.negativeHighlightTextColor,
       );
       return false;
     } else {
@@ -2890,7 +2853,7 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
         leading: mobileScreen
             ? IconButton(
                 focusNode: FocusNode(skipTraversal: true),
-                icon: const Icon(Icons.arrow_back),
+                icon: Icon(Icons.arrow_back),
                 onPressed: () async {
                   WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
                     tabController.animateTo(0);
@@ -2912,9 +2875,9 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
               } else if (state is DownloadReportFailed) {
                 global.showSnackBar(
                   context,
-                  Icon(Icons.save, color: Colors.white),
+                  Icon(Icons.save, color: global.theme.cardColor),
                   "${global.language("not_success_process_report")} : ${state.message}",
-                  Colors.red,
+                  global.theme.negativeHighlightTextColor,
                 );
               }
 
@@ -2928,9 +2891,9 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
                 if (mounted) {
                   global.showSnackBar(
                     context,
-                    Icon(Icons.save, color: Colors.white),
+                    Icon(Icons.save, color: global.theme.cardColor),
                     "${global.language("not_success_process_report")} : ${state.message}",
-                    Colors.red,
+                    global.theme.negativeHighlightTextColor,
                   );
                 }
               }
@@ -2941,9 +2904,9 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
                 if (mounted) {
                   global.showSnackBar(
                     context,
-                    Icon(Icons.save, color: Colors.white),
+                    Icon(Icons.save, color: global.theme.cardColor),
                     "${global.language("not_success_process_report")} : ${state.message}",
-                    Colors.red,
+                    global.theme.negativeHighlightTextColor,
                   );
                 }
               }
@@ -2954,9 +2917,9 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
                 if (mounted) {
                   global.showSnackBar(
                     context,
-                    Icon(Icons.save, color: Colors.white),
+                    Icon(Icons.save, color: global.theme.cardColor),
                     "${global.language("not_success_process_report")} : ${state.message}",
-                    Colors.red,
+                    global.theme.negativeHighlightTextColor,
                   );
                 }
               }
@@ -2967,9 +2930,9 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
                 if (mounted) {
                   global.showSnackBar(
                     context,
-                    Icon(Icons.save, color: Colors.white),
+                    Icon(Icons.save, color: global.theme.cardColor),
                     "${global.language("not_success_process_report")} : ${state.message}",
-                    Colors.red,
+                    global.theme.negativeHighlightTextColor,
                   );
                 }
               }
@@ -2999,7 +2962,7 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
                       height: 50,
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        icon: const Icon(Icons.play_circle_outline),
+                        icon: Icon(Icons.play_circle_outline),
                         onPressed: () {
                           pdfDownload();
                         },
@@ -3015,7 +2978,7 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
                         alignment: Alignment.centerRight,
                         child: TextButton(
                           style: TextButton.styleFrom(
-                            foregroundColor: Colors.red,
+                            foregroundColor: global.theme.negativeHighlightTextColor,
                           ),
                           onPressed: () {
                             setState(() {
@@ -3042,8 +3005,8 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
                             style: TextStyle(
                               color:
                                   logDownloadParth[index].status! == "success"
-                                  ? Colors.green
-                                  : Colors.blue,
+                                  ? global.theme.positiveHighlightTextColor
+                                  : global.theme.infoHighlightTextColor,
                             ),
                           ),
                           const SizedBox(width: 5),
@@ -3069,9 +3032,9 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
                         spacing: 12, // space between two icons
                         children: <Widget>[
                           IconButton(
-                            disabledColor: Colors.grey,
-                            icon: const Icon(Icons.download),
-                            color: Colors.blue,
+                            disabledColor: global.theme.textSecondaryColor,
+                            icon: Icon(Icons.download),
+                            color: global.theme.infoHighlightTextColor,
                             onPressed:
                                 (logDownloadParth[index].status == "processing")
                                 ? null
@@ -3093,9 +3056,9 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
                                   },
                           ),
                           IconButton(
-                            disabledColor: Colors.grey,
-                            icon: const Icon(Icons.delete),
-                            color: Colors.red,
+                            disabledColor: global.theme.textSecondaryColor,
+                            icon: Icon(Icons.delete),
+                            color: global.theme.negativeHighlightTextColor,
                             onPressed:
                                 (logDownloadParth[index].status == "processing")
                                 ? null
@@ -3143,7 +3106,7 @@ class PdfReportMainScreenState extends State<PdfReportMainScreen>
                   controller: splitViewController,
                   gripSize: 14,
                   gripColor: global.theme.appBarColor,
-                  gripColorActive: Colors.blue,
+                  gripColorActive: global.theme.infoHighlightTextColor,
                   viewMode: SplitViewMode.Horizontal,
                   indicator: const SplitIndicator(
                     viewMode: SplitViewMode.Horizontal,

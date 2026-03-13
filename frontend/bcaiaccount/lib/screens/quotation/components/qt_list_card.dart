@@ -41,7 +41,7 @@ class QTListCard extends StatelessWidget {
         elevation: isSelected ? 3 : 1,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
-          side: isSelected ? const BorderSide(color: Colors.blue, width: 2) : BorderSide.none,
+          side: isSelected ? BorderSide(color: global.theme.infoHighlightTextColor, width: 2) : BorderSide.none,
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
@@ -184,7 +184,7 @@ class QTListCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
               decoration: BoxDecoration(
-                color: Colors.grey[200],
+                color: global.theme.dividerBorderColor,
                 borderRadius: BorderRadius.circular(3),
               ),
               child: Text(
@@ -193,12 +193,12 @@ class QTListCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            Icon(Icons.person_outline, size: 12, color: Colors.grey[600]),
+            Icon(Icons.person_outline, size: 12, color: global.theme.iconSecondaryColor),
             const SizedBox(width: 3),
             Expanded(
               child: Text(
                 qt.creatorname ?? qt.creatorcode ?? 'System',
-                style: TextStyle(fontSize: fontSize - 1, color: Colors.grey[600]),
+                style: TextStyle(fontSize: fontSize - 1, color: global.theme.iconSecondaryColor),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -243,7 +243,7 @@ class QTListCard extends StatelessWidget {
         style: TextStyle(
           fontSize: fontSize,
           fontWeight: FontWeight.bold,
-          color: Colors.green[700],
+          color: global.theme.positiveHighlightTextColor,
         ),
       );
     }
@@ -263,7 +263,7 @@ class QTListCard extends StatelessWidget {
           style: TextStyle(
             fontSize: fontSize,
             fontWeight: FontWeight.bold,
-            color: Colors.blue[700],
+            color: global.theme.infoHighlightTextColor,
           ),
         ),
         Text(
@@ -271,7 +271,7 @@ class QTListCard extends StatelessWidget {
           style: TextStyle(
             fontSize: fontSize - 2,
             fontWeight: FontWeight.w500,
-            color: Colors.green[700],
+            color: global.theme.positiveHighlightTextColor,
           ),
         ),
       ],
@@ -285,7 +285,7 @@ class QTListCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
           decoration: BoxDecoration(
-            color: Colors.grey[200],
+            color: global.theme.dividerBorderColor,
             borderRadius: BorderRadius.circular(3),
           ),
           child: Text(
@@ -294,12 +294,12 @@ class QTListCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 6),
-        Icon(Icons.person_outline, size: 12, color: Colors.grey[600]),
+        Icon(Icons.person_outline, size: 12, color: global.theme.iconSecondaryColor),
         const SizedBox(width: 3),
         Flexible(
           child: Text(
             qt.creatorname ?? qt.creatorcode ?? 'System',
-            style: TextStyle(fontSize: fontSize, color: Colors.grey[600]),
+            style: TextStyle(fontSize: fontSize, color: global.theme.iconSecondaryColor),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -318,7 +318,7 @@ class QTListCard extends StatelessWidget {
           _buildStatusChip(
             icon: Icons.delete_forever,
             text: global.language('deleted'),
-            color: Colors.red,
+            color: global.theme.negativeHighlightTextColor,
             fontSize: fontSize,
           ),
 
@@ -326,7 +326,7 @@ class QTListCard extends StatelessWidget {
           _buildStatusChip(
             icon: Icons.cancel,
             text: global.language('cancelled'),
-            color: Colors.red,
+            color: global.theme.negativeHighlightTextColor,
             fontSize: fontSize,
           ),
 
@@ -342,7 +342,7 @@ class QTListCard extends StatelessWidget {
           _buildStatusChip(
             icon: Icons.link,
             text: global.language('referenced'),
-            color: Colors.blue,
+            color: global.theme.infoHighlightTextColor,
             fontSize: fontSize,
           ),
       ],
@@ -352,25 +352,25 @@ class QTListCard extends StatelessWidget {
   Widget _buildStatusChip({
     required IconData icon,
     required String text,
-    required MaterialColor color,
+    required Color color,
     required double fontSize,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color[50],
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color[200]!),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: color[700]),
+          Icon(icon, size: 12, color: color),
           const SizedBox(width: 3),
           Text(
             text,
             style: TextStyle(
-              color: color[700],
+              color: color,
               fontWeight: FontWeight.w600,
               fontSize: fontSize,
             ),

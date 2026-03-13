@@ -20,9 +20,9 @@ class CouponUsageTypeWidget extends StatelessWidget {
         children: [
           Container(
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.blue),
+              border: Border.all(color: global.theme.primaryColor),
               borderRadius: BorderRadius.circular(5),
-              color: Colors.white,
+              color: global.theme.cardColor,
             ),
             child: Column(
               children: [
@@ -30,7 +30,7 @@ class CouponUsageTypeWidget extends StatelessWidget {
                   padding: EdgeInsets.only(top: 8.0, left: 8.0),
                   child: Text(
                     global.language("coupon_usage_type"),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -40,7 +40,7 @@ class CouponUsageTypeWidget extends StatelessWidget {
                   title: Text(global.language("coupon_multiple_use")),
                   subtitle: Text(
                     global.language("coupon_can_use_multiple"),
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor),
                   ),
                   value: 0,
                   groupValue: couponUseType ?? 0,
@@ -51,7 +51,7 @@ class CouponUsageTypeWidget extends StatelessWidget {
                   title: Text(global.language("coupon_single_use")),
                   subtitle: Text(
                     global.language("coupon_can_use_once"),
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor),
                   ),
                   value: 1,
                   groupValue: couponUseType ?? 0,

@@ -87,7 +87,7 @@ class DesktopProductWidgets {
               child: Text(
                 dataText,
                 textAlign: state.headers[loop].textAlign,
-                style: const TextStyle(fontSize: 12),
+                style: TextStyle(fontSize: 12),
               ),
             ),
           );
@@ -187,8 +187,8 @@ class DesktopProductWidgets {
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.all(2),
                     alignment: state.headers[loop].alignment,
-                    foregroundColor: Colors.black,
-                    backgroundColor: Colors.white,
+                    foregroundColor: global.theme.textColor,
+                    backgroundColor: global.theme.cardColor,
                     shape: const RoundedRectangleBorder(
                       borderRadius: BorderRadius.all(Radius.circular(0)),
                     ),
@@ -197,7 +197,7 @@ class DesktopProductWidgets {
                   child: Text(
                     dataText,
                     textAlign: state.headers[loop].textAlign,
-                    style: const TextStyle(fontSize: 12),
+                    style: TextStyle(fontSize: 12),
                   ),
                 ),
               ),

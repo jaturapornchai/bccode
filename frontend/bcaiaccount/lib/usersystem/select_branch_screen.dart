@@ -36,7 +36,7 @@ class SelectBranchScreenState extends State<SelectBranchScreen> {
   Widget menuWidget(
       {required String guidfixed,
       required String label,
-      Color color = Colors.white,
+      Color? color,
       icon,
       required Function callback}) {
     Widget textWidget = Center(
@@ -47,8 +47,8 @@ class SelectBranchScreenState extends State<SelectBranchScreen> {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.all(4),
-        foregroundColor: Colors.black,
-        backgroundColor: color,
+        foregroundColor: global.theme.textColor,
+        backgroundColor: color ?? global.theme.cardColor,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(4)),
         ),

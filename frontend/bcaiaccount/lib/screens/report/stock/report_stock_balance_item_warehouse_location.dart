@@ -23,7 +23,7 @@ class ReportStockBalanceItemWareHouseLocation extends StatefulWidget {
 
 class ReportStockBalanceItemWareHouseLocationState
     extends State<ReportStockBalanceItemWareHouseLocation>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   int condition = 1;
   List<String> titles = [
     "แสดงสินค้าคงเหลือตามสินค้า",
@@ -53,20 +53,20 @@ class ReportStockBalanceItemWareHouseLocationState
   bool isLoadingMore = false;
 
   // Enhanced color scheme for better UI
-  final Color primaryColor = Colors.blue.shade700;
-  final Color secondaryColor = Colors.blue.shade100;
+  final Color primaryColor = global.theme.infoHighlightTextColor;
+  Color get secondaryColor => global.theme.columnHeaderColor;
   final Color accentColor = Colors.amber.shade600;
-  final Color successColor = Colors.green.shade600;
-  final Color errorColor = Colors.red.shade600;
-  final Color backgroundColor = Colors.grey.shade50;
+  final Color successColor = global.theme.positiveHighlightTextColor;
+  final Color errorColor = global.theme.negativeHighlightTextColor;
+  final Color backgroundColor = global.theme.backgroundColor;
 
-  final Color headerColor = Color(0xFFE3F2FD);
-  final Color footerColor = Color(0xFFE1F5FE);
-  final Color rowEvenColor = Color(0xFFF5F5F5);
-  final Color rowOddColor = Colors.white;
-  final Color warehouseColor = Color(0xFFFFF8E1);
-  final Color locationColor = Color(0xFFE8F5E9);
-  final Color helpColor = Colors.blue.shade50;
+  Color get headerColor => global.theme.columnHeaderColor;
+  Color get footerColor => global.theme.columnHeaderColor;
+  Color get rowEvenColor => global.theme.surfaceColor;
+  final Color rowOddColor = global.theme.cardColor;
+  Color get warehouseColor => global.theme.surfaceColor;
+  Color get locationColor => global.theme.surfaceColor;
+  Color get helpColor => global.theme.surfaceColor;
 
   // Text styles for consistent typography
   late TextStyle titleStyle;
@@ -126,7 +126,7 @@ class ReportStockBalanceItemWareHouseLocationState
       color: primaryColor.withValues(alpha: 0.8),
     );
 
-    normalStyle = TextStyle(fontSize: 13, color: Colors.grey.shade800);
+    normalStyle = TextStyle(fontSize: 13, color: global.theme.textColor);
 
     emphasisStyle = TextStyle(
       fontSize: 13,
@@ -230,7 +230,7 @@ class ReportStockBalanceItemWareHouseLocationState
     var header = Container(
       decoration: BoxDecoration(
         color: headerColor,
-        border: Border.all(color: Colors.blue.shade300),
+        border: Border.all(color: global.theme.infoHighlightTextColor),
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(8),
           topRight: Radius.circular(8),
@@ -575,7 +575,7 @@ class ReportStockBalanceItemWareHouseLocationState
           decoration: BoxDecoration(
             color: isEvenRow ? rowEvenColor : rowOddColor,
             border: Border(
-              bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+              bottom: BorderSide(color: global.theme.dividerBorderColor, width: 1),
             ),
           ),
           child: Row(
@@ -663,7 +663,7 @@ class ReportStockBalanceItemWareHouseLocationState
               decoration: BoxDecoration(
                 color: warehouseColor,
                 border: Border(
-                  bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+                  bottom: BorderSide(color: global.theme.dividerBorderColor, width: 1),
                 ),
               ),
               child: Row(
@@ -773,7 +773,7 @@ class ReportStockBalanceItemWareHouseLocationState
                   decoration: BoxDecoration(
                     color: locationColor,
                     border: Border(
-                      bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+                      bottom: BorderSide(color: global.theme.dividerBorderColor, width: 1),
                     ),
                   ),
                   child: Row(
@@ -902,7 +902,7 @@ class ReportStockBalanceItemWareHouseLocationState
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Container(
-          color: Colors.white,
+          color: global.theme.cardColor,
           child: Column(
             children: [
               header,
@@ -915,8 +915,8 @@ class ReportStockBalanceItemWareHouseLocationState
                     children: [
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: Colors.grey.shade300),
+                          color: global.theme.cardColor,
+                          border: Border.all(color: global.theme.dividerBorderColor),
                         ),
                         child: Column(children: data),
                       ),
@@ -986,7 +986,7 @@ class ReportStockBalanceItemWareHouseLocationState
                   ),
                   Spacer(),
                   IconButton(
-                    icon: Icon(Icons.close, color: Colors.grey.shade700),
+                    icon: Icon(Icons.close, color: global.theme.iconColor),
                     onPressed: () {
                       setState(() {
                         showHelp = false;
@@ -1044,8 +1044,8 @@ class ReportStockBalanceItemWareHouseLocationState
                     });
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey.shade200,
-                    foregroundColor: Colors.grey.shade800,
+                    backgroundColor: global.theme.columnHeaderColor,
+                    foregroundColor: global.theme.columnHeaderTextColor,
                     elevation: 0,
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     shape: RoundedRectangleBorder(
@@ -1080,7 +1080,7 @@ class ReportStockBalanceItemWareHouseLocationState
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
+                  color: global.theme.textColor.withValues(alpha: 0.1),
                   blurRadius: 3,
                   offset: Offset(0, 1),
                 ),
@@ -1090,7 +1090,7 @@ class ReportStockBalanceItemWareHouseLocationState
               child: Text(
                 step,
                 style: TextStyle(
-                  color: Colors.white,
+                  color: global.theme.onPrimaryColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
@@ -1119,7 +1119,7 @@ class ReportStockBalanceItemWareHouseLocationState
                 SizedBox(height: 4),
                 Text(
                   description,
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade800),
+                  style: TextStyle(fontSize: 14, color: global.theme.textColor),
                 ),
               ],
             ),
@@ -1149,26 +1149,26 @@ class ReportStockBalanceItemWareHouseLocationState
           children: [
             Row(
               children: [
-                Icon(Icons.inventory_2, color: Colors.white, size: 28),
+                Icon(Icons.inventory_2, color: global.theme.onPrimaryColor, size: 28),
                 SizedBox(width: 12),
                 Text(
                   global.language("inventory_report"),
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: global.theme.cardColor,
                   ),
                 ),
               ],
             ),
             SizedBox(height: 8),
-            Divider(color: Colors.white.withValues(alpha: 0.3), height: 24),
+            Divider(color: global.theme.cardColor.withValues(alpha: 0.3), height: 24),
             Text(
               "แสดงข้อมูลสินค้าคงเหลือตามสินค้า คลัง และที่เก็บ",
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Colors.white.withValues(alpha: 0.95),
+                color: global.theme.cardColor.withValues(alpha: 0.95),
               ),
             ),
             SizedBox(height: 8),
@@ -1176,7 +1176,7 @@ class ReportStockBalanceItemWareHouseLocationState
               "เลือกรูปแบบรายงานและเงื่อนไขต่างๆ ด้านล่างเพื่อสร้างรายงานตามที่ต้องการ",
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.white.withValues(alpha: 0.85),
+                color: global.theme.cardColor.withValues(alpha: 0.85),
               ),
             ),
           ],
@@ -1233,7 +1233,7 @@ class ReportStockBalanceItemWareHouseLocationState
             SizedBox(height: 12),
             Container(
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: global.theme.backgroundColor,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -1244,14 +1244,14 @@ class ReportStockBalanceItemWareHouseLocationState
                     global.language('balance_by_product'),
                     'แสดงสินค้าและยอดคงเหลือรวมทั้งหมด',
                   ),
-                  Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
+                  Divider(height: 1, thickness: 1, color: global.theme.dividerBorderColor),
                   _buildReportTypeButton(
                     2,
                     Icons.store,
                     global.language('balance_by_warehouse'),
                     'แสดงสินค้าและแยกตามคลังสินค้า',
                   ),
-                  Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
+                  Divider(height: 1, thickness: 1, color: global.theme.dividerBorderColor),
                   _buildReportTypeButton(
                     3,
                     Icons.grid_view,
@@ -1296,12 +1296,12 @@ class ReportStockBalanceItemWareHouseLocationState
             Container(
               padding: EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: isSelected ? primaryColor : Colors.grey.shade200,
+                color: isSelected ? primaryColor : global.theme.dividerBorderColor,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                color: isSelected ? Colors.white : Colors.grey.shade600,
+                color: isSelected ? global.theme.onPrimaryColor : global.theme.textSecondaryColor,
                 size: 22,
               ),
             ),
@@ -1315,7 +1315,7 @@ class ReportStockBalanceItemWareHouseLocationState
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      color: isSelected ? primaryColor : Colors.grey.shade800,
+                      color: isSelected ? primaryColor : global.theme.textColor,
                     ),
                   ),
                   SizedBox(height: 4),
@@ -1325,7 +1325,7 @@ class ReportStockBalanceItemWareHouseLocationState
                       fontSize: 13,
                       color: isSelected
                           ? primaryColor.withValues(alpha: 0.8)
-                          : Colors.grey.shade600,
+                          : global.theme.textSecondaryColor,
                     ),
                   ),
                 ],
@@ -1360,7 +1360,7 @@ class ReportStockBalanceItemWareHouseLocationState
                   child: Icon(
                     Icons.info_outline,
                     size: 16,
-                    color: Colors.grey.shade600,
+                    color: global.theme.textSecondaryColor,
                   ),
                 ),
               ],
@@ -1389,7 +1389,7 @@ class ReportStockBalanceItemWareHouseLocationState
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
+                  borderSide: BorderSide(color: global.theme.iconSecondaryColor),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -1398,7 +1398,7 @@ class ReportStockBalanceItemWareHouseLocationState
                 labelText: global.language('select_date'),
                 hintText: global.language('select_date_for_balance'),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: global.theme.formFillColor,
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 16,
@@ -1433,9 +1433,9 @@ class ReportStockBalanceItemWareHouseLocationState
             SizedBox(height: 12),
             Container(
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: global.theme.backgroundColor,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(color: global.theme.dividerBorderColor),
               ),
               child: CheckboxListTile(
                 title: Text(
@@ -1444,7 +1444,7 @@ class ReportStockBalanceItemWareHouseLocationState
                 ),
                 subtitle: Text(
                   "หากเลือก จะไม่แสดงสินค้าที่มียอดเป็นศูนย์ ทำให้รายงานกระชับขึ้น",
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                  style: TextStyle(fontSize: 12, color: global.theme.iconColor),
                 ),
                 value: reportCondition.showOnlyBalance,
                 secondary: Icon(
@@ -1520,7 +1520,7 @@ class ReportStockBalanceItemWareHouseLocationState
                     label: Text(global.language("report_condition_select_barcode")),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
-                      foregroundColor: Colors.white,
+                      foregroundColor: global.theme.onPrimaryColor,
                       elevation: 2,
                       padding: EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
@@ -1543,7 +1543,7 @@ class ReportStockBalanceItemWareHouseLocationState
                   label: Text(global.language("start_over")),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: accentColor,
-                    foregroundColor: Colors.white,
+                    foregroundColor: global.theme.onPrimaryColor,
                     elevation: 2,
                     padding: EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -1558,15 +1558,15 @@ class ReportStockBalanceItemWareHouseLocationState
               Container(
                 padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: global.theme.surfaceColor,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(color: global.theme.dividerBorderColor),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.info_outline,
-                      color: Colors.grey.shade600,
+                      color: global.theme.textSecondaryColor,
                       size: 18,
                     ),
                     SizedBox(width: 12),
@@ -1574,7 +1574,7 @@ class ReportStockBalanceItemWareHouseLocationState
                       child: Text(
                         global.language("no_products_selected_show_all"),
                         style: TextStyle(
-                          color: Colors.grey.shade700,
+                          color: global.theme.iconColor,
                           fontStyle: FontStyle.italic,
                         ),
                       ),
@@ -1591,7 +1591,7 @@ class ReportStockBalanceItemWareHouseLocationState
                       Icon(
                         Icons.shopping_cart,
                         size: 16,
-                        color: Colors.grey.shade700,
+                        color: global.theme.iconColor,
                       ),
                       SizedBox(width: 8),
                       Text(
@@ -1599,7 +1599,7 @@ class ReportStockBalanceItemWareHouseLocationState
                         style: TextStyle(
                           fontWeight: FontWeight.w500,
                           fontSize: 14,
-                          color: Colors.grey.shade800,
+                          color: global.theme.textColor,
                         ),
                       ),
                     ],
@@ -1608,9 +1608,9 @@ class ReportStockBalanceItemWareHouseLocationState
                   Container(
                     padding: EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
+                      color: helpColor,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue.shade200),
+                      border: Border.all(color: global.theme.infoHighlightColor),
                     ),
                     child: Wrap(
                       spacing: 8,
@@ -1623,20 +1623,20 @@ class ReportStockBalanceItemWareHouseLocationState
                             borderRadius: BorderRadius.circular(6),
                           ),
                           label: Text(item.itemCode),
-                          backgroundColor: Colors.white,
-                          side: BorderSide(color: Colors.blue.shade200),
+                          backgroundColor: global.theme.cardColor,
+                          side: BorderSide(color: global.theme.infoHighlightColor),
                           labelStyle: TextStyle(
                             color: primaryColor,
                             fontWeight: FontWeight.w500,
                           ),
-                          deleteIconColor: Colors.red.shade400,
+                          deleteIconColor: global.theme.negativeHighlightTextColor,
                           avatar: Icon(
                             Icons.inventory_2_outlined,
                             size: 16,
                             color: primaryColor,
                           ),
                           elevation: 1,
-                          shadowColor: Colors.grey.shade200,
+                          shadowColor: global.theme.dividerBorderColor,
                           onDeleted: () async {
                             reportCondition.conditionItemCodeList.remove(item);
                             await reportCondition.reloadWareHouseCode();
@@ -1706,14 +1706,14 @@ class ReportStockBalanceItemWareHouseLocationState
           children: [
             Row(
               children: [
-                Icon(Icons.grid_view, color: Colors.green.shade800, size: 20),
+                Icon(Icons.grid_view, color: global.theme.positiveHighlightTextColor, size: 20),
                 SizedBox(width: 10),
                 Text(
                   "เลือกที่เก็บสินค้า",
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.green.shade900,
+                    color: global.theme.positiveHighlightTextColor,
                   ),
                 ),
               ],
@@ -1725,8 +1725,8 @@ class ReportStockBalanceItemWareHouseLocationState
             ),
             SizedBox(height: 16),
             reportCondition.selectLocationWidget(
-              primaryColor: Colors.green.shade600,
-              secondaryColor: Colors.green.shade100,
+              primaryColor: global.theme.positiveHighlightTextColor,
+              secondaryColor: global.theme.positiveHighlightColor,
             ),
           ],
         ),
@@ -1743,12 +1743,12 @@ class ReportStockBalanceItemWareHouseLocationState
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.blue.shade50, Colors.blue.shade100],
+            colors: [helpColor, secondaryColor],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.blue.shade200),
+          border: Border.all(color: global.theme.infoHighlightColor),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1772,9 +1772,9 @@ class ReportStockBalanceItemWareHouseLocationState
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
-                      foregroundColor: Colors.white,
+                      foregroundColor: global.theme.onPrimaryColor,
                       elevation: 3,
-                      shadowColor: Colors.blue.shade300,
+                      shadowColor: global.theme.infoHighlightTextColor,
                       padding: EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -1795,13 +1795,13 @@ class ReportStockBalanceItemWareHouseLocationState
                   color: () {
                     switch (processState) {
                       case global.ProcessState.processing:
-                        return Colors.blue.shade50;
+                        return helpColor;
                       case global.ProcessState.success:
-                        return Colors.green.shade50;
+                        return global.theme.positiveHighlightColor;
                       case global.ProcessState.error:
-                        return Colors.red.shade50;
+                        return global.theme.negativeHighlightColor;
                       default:
-                        return Colors.grey.shade50;
+                        return global.theme.backgroundColor;
                     }
                   }(),
                   borderRadius: BorderRadius.circular(8),
@@ -1809,13 +1809,13 @@ class ReportStockBalanceItemWareHouseLocationState
                     color: () {
                       switch (processState) {
                         case global.ProcessState.processing:
-                          return Colors.blue.shade300;
+                          return global.theme.infoHighlightTextColor;
                         case global.ProcessState.success:
-                          return Colors.green.shade300;
+                          return global.theme.positiveHighlightTextColor;
                         case global.ProcessState.error:
-                          return Colors.red.shade300;
+                          return global.theme.negativeHighlightTextColor;
                         default:
-                          return Colors.grey.shade300;
+                          return global.theme.dividerBorderColor;
                       }
                     }(),
                   ),
@@ -1897,7 +1897,7 @@ class ReportStockBalanceItemWareHouseLocationState
                     Text(
                       "คลิกที่แท็บ \"แสดงผล\" หรือ \"PDF\" เพื่อดูผลลัพธ์",
                       style: TextStyle(
-                        color: Colors.grey.shade700,
+                        color: global.theme.iconColor,
                         fontSize: 12,
                       ),
                     ),
@@ -1969,7 +1969,7 @@ class ReportStockBalanceItemWareHouseLocationState
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.blue.shade300,
+                color: global.theme.infoHighlightTextColor,
                 spreadRadius: 1,
                 blurRadius: 4,
                 offset: Offset(0, 2),
@@ -1982,7 +1982,7 @@ class ReportStockBalanceItemWareHouseLocationState
             children: [
               Row(
                 children: [
-                  Icon(Icons.inventory_2, color: Colors.white, size: 24),
+                  Icon(Icons.inventory_2, color: global.theme.onPrimaryColor, size: 24),
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -1992,14 +1992,14 @@ class ReportStockBalanceItemWareHouseLocationState
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: global.theme.cardColor,
                       ),
                     ),
                   ),
                   Tooltip(
                     message: global.language("decrease_font_size"),
                     child: IconButton(
-                      icon: Icon(Icons.remove, color: Colors.white),
+                      icon: Icon(Icons.remove, color: global.theme.cardColor),
                       onPressed: () {
                         if (resultFontScale > 0.5) {
                           setState(() {
@@ -2013,7 +2013,7 @@ class ReportStockBalanceItemWareHouseLocationState
                   Tooltip(
                     message: global.language("increase_font_size"),
                     child: IconButton(
-                      icon: Icon(Icons.add, color: Colors.white),
+                      icon: Icon(Icons.add, color: global.theme.cardColor),
                       onPressed: () {
                         setState(() {
                           resultFontScale = resultFontScale + 0.1;
@@ -2024,16 +2024,16 @@ class ReportStockBalanceItemWareHouseLocationState
                   ),
                 ],
               ),
-              Divider(color: Colors.white.withValues(alpha: 0.2), height: 16),
+              Divider(color: global.theme.cardColor.withValues(alpha: 0.2), height: 16),
               Text(
                 "ข้อมูล ณ วันที่ ${conditionFinalDate.day}/${conditionFinalDate.month}/${conditionFinalDate.year}",
-                style: TextStyle(color: Colors.white, fontSize: 13),
+                style: TextStyle(color: global.theme.onPrimaryColor, fontSize: 13),
               ),
               SizedBox(height: 4),
               Text(
                 global.language("report_zoom_tip"),
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.9),
+                  color: global.theme.cardColor.withValues(alpha: 0.9),
                   fontSize: 12,
                 ),
               ),
@@ -2112,21 +2112,21 @@ class ReportStockBalanceItemWareHouseLocationState
                       prefixIcon: Icon(Icons.search, color: primaryColor),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.grey.shade400),
+                        borderSide: BorderSide(color: global.theme.iconSecondaryColor),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(color: primaryColor, width: 2),
                       ),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: global.theme.formFillColor,
                       suffixIcon: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
                             icon: Icon(
                               Icons.clear,
-                              color: Colors.grey.shade600,
+                              color: global.theme.textSecondaryColor,
                             ),
                             tooltip: global.language("clear_search"),
                             onPressed: () {
@@ -2160,7 +2160,7 @@ class ReportStockBalanceItemWareHouseLocationState
                           label: Text(global.language("save_as_pdf")),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryColor,
-                            foregroundColor: Colors.white,
+                            foregroundColor: global.theme.onPrimaryColor,
                             padding: EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -2185,7 +2185,7 @@ class ReportStockBalanceItemWareHouseLocationState
                           label: Text(global.language("print_report")),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: accentColor,
-                            foregroundColor: Colors.white,
+                            foregroundColor: global.theme.onPrimaryColor,
                             padding: EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -2219,9 +2219,9 @@ class ReportStockBalanceItemWareHouseLocationState
               ),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: global.theme.cardColor,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(color: global.theme.dividerBorderColor),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
@@ -2243,7 +2243,7 @@ class ReportStockBalanceItemWareHouseLocationState
                                   child: Text(
                                     global.language("report_not_processed_hint"),
                                     style: TextStyle(
-                                      color: Colors.grey.shade700,
+                                      color: global.theme.iconColor,
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
@@ -2270,7 +2270,7 @@ class ReportStockBalanceItemWareHouseLocationState
           automaticallyImplyLeading: false,
           elevation: 4,
           leading: IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
+            icon: Icon(Icons.close, color: global.theme.cardColor),
             onPressed: () {
               if (processSuccess == true) {
                 showDialog(
@@ -2295,7 +2295,7 @@ class ReportStockBalanceItemWareHouseLocationState
                           },
                           child: Text(
                             global.language("cancel"),
-                            style: TextStyle(color: Colors.grey.shade700),
+                            style: TextStyle(color: global.theme.iconColor),
                           ),
                         ),
                         ElevatedButton(
@@ -2326,7 +2326,7 @@ class ReportStockBalanceItemWareHouseLocationState
           ),
           actions: [
             IconButton(
-              icon: Icon(Icons.help_outline, color: Colors.white),
+              icon: Icon(Icons.help_outline, color: global.theme.cardColor),
               onPressed: () {
                 setState(() {
                   showHelp = !showHelp;
@@ -2337,10 +2337,10 @@ class ReportStockBalanceItemWareHouseLocationState
           ],
           title: TabBar(
             controller: tabController,
-            indicatorColor: Colors.white,
+            indicatorColor: global.theme.onPrimaryColor,
             indicatorWeight: 3,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
+            labelColor: global.theme.onPrimaryColor,
+            unselectedLabelColor: global.theme.onPrimaryColor.withValues(alpha: 0.7),
             labelStyle: TextStyle(fontWeight: FontWeight.bold),
             tabs: [
               Tab(
@@ -2380,7 +2380,7 @@ class ReportStockBalanceItemWareHouseLocationState
         ),
         bottomNavigationBar: processSuccess
             ? Container(
-                color: Colors.blue.shade50,
+                color: helpColor,
                 padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,

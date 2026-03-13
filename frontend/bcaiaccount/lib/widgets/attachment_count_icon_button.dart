@@ -106,15 +106,15 @@ class _AttachmentCountIconButtonState extends State<AttachmentCountIconButton> {
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: _attachmentCount > 0 ? Colors.blue : Colors.grey,
+                  color: _attachmentCount > 0 ? global.theme.infoHighlightTextColor : global.theme.iconSecondaryColor,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
+                  border: Border.all(color: global.theme.cardColor, width: 1.5),
                 ),
                 constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
                 child: Text(
                   _attachmentCount > 99 ? '99+' : _attachmentCount.toString(),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: global.theme.onPrimaryColor,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),

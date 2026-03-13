@@ -19,7 +19,7 @@ class ProductEditImageScreen extends StatefulWidget {
   _ProductEditImageState createState() => _ProductEditImageState();
 }
 
-class _ProductEditImageState extends State<ProductEditImageScreen> {
+class _ProductEditImageState extends State<ProductEditImageScreen> with global.ThemeRefreshMixin {
   File? _file;
   File? _sample;
   late File lastCropped;
@@ -59,7 +59,7 @@ class _ProductEditImageState extends State<ProductEditImageScreen> {
         },
         child: SafeArea(
           child: Container(
-            color: Colors.black,
+            color: global.theme.backgroundColor,
             padding: const EdgeInsets.symmetric(
               vertical: 40.0,
               horizontal: 20.0,
@@ -96,7 +96,7 @@ class _ProductEditImageState extends State<ProductEditImageScreen> {
                   global.language('save'),
                   style: Theme.of(
                     context,
-                  ).textTheme.labelLarge?.copyWith(color: Colors.white),
+                  ).textTheme.labelLarge?.copyWith(color: global.theme.onPrimaryColor),
                 ),
                 onPressed: () => _cropImage(),
               ),
@@ -107,7 +107,7 @@ class _ProductEditImageState extends State<ProductEditImageScreen> {
                   ),
                   style: Theme.of(
                     context,
-                  ).textTheme.labelLarge?.copyWith(color: Colors.white),
+                  ).textTheme.labelLarge?.copyWith(color: global.theme.onPrimaryColor),
                 ),
                 onPressed: () => _openImage(),
               ),
@@ -194,7 +194,7 @@ class _ProductEditImageState extends State<ProductEditImageScreen> {
           AndroidUiSettings(
             toolbarTitle: global.language('crop_image'),
             toolbarColor: Colors.deepOrange,
-            toolbarWidgetColor: Colors.white,
+            toolbarWidgetColor: global.theme.onPrimaryColor,
             aspectRatioPresets: [
               CropAspectRatioPreset.original,
               CropAspectRatioPreset.square,

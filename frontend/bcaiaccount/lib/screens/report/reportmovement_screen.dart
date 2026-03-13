@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:smlaicloud/global.dart' as global;
 // ignore: depend_on_referenced_packages
 import 'package:intl/intl.dart';
+import 'package:smlaicloud/utils/date_picker.dart';
 
 // ignore: avoid_web_libraries_in_flutter
 
@@ -20,7 +21,7 @@ class ReportMovementScreen extends StatefulWidget {
   State<ReportMovementScreen> createState() => _ReportMovementState();
 }
 
-class _ReportMovementState extends State<ReportMovementScreen> {
+class _ReportMovementState extends State<ReportMovementScreen> with global.ThemeRefreshMixin {
   final TextEditingController search = TextEditingController();
   final TextEditingController barcode = TextEditingController();
   final TextEditingController whcode = TextEditingController();
@@ -116,35 +117,7 @@ class _ReportMovementState extends State<ReportMovementScreen> {
     }
   }
 
-  void _selectFromDate(BuildContext context) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-    );
-
-    if (pickedDate != null) {
-      setState(() {
-        fromDate.text = DateFormat('yyyy-MM-dd').format(pickedDate);
-      });
-    }
-  }
-
-  void _selectToDate(BuildContext context) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-    );
-
-    if (pickedDate != null) {
-      setState(() {
-        toDate.text = DateFormat('yyyy-MM-dd').format(pickedDate);
-      });
-    }
-  }
+  // _selectFromDate / _selectToDate ถูกแทนที่ด้วย CustomDatePicker widgets
 
   void barcodeSearch() {
     Navigator.push(
@@ -268,7 +241,7 @@ class _ReportMovementState extends State<ReportMovementScreen> {
       appBar: AppBar(
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -291,56 +264,34 @@ class _ReportMovementState extends State<ReportMovementScreen> {
                         child: Row(
                           children: [
                             Expanded(
-                              child: TextField(
-                                decoration: InputDecoration(
-                                  border: OutlineInputBorder(),
-                                  labelText: global.language("from_date"),
-                                  suffixIcon: Row(
-                                    mainAxisAlignment: MainAxisAlignment
-                                        .spaceBetween, // added line
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        focusNode: FocusNode(
-                                          skipTraversal: true,
-                                        ),
-                                        icon: const Icon(Icons.calendar_month),
-                                        onPressed: () {
-                                          _selectFromDate(context);
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                controller: fromDate,
-                                onChanged: (value) {},
+                              child: CustomDatePicker(
+                                labelText: global.language("from_date"),
+                                initialDate: DateTime.now(),
+                                lastDate: DateTime.now(),
+                                onDateSelected: (date) {
+                                  if (date != null) {
+                                    setState(() {
+                                      fromDate.text = DateFormat('yyyy-MM-dd').format(date);
+                                    });
+                                  }
+                                },
+                                decoration: InputDecoration(),
                               ),
                             ),
                             SizedBox(width: 5),
                             Expanded(
-                              child: TextField(
-                                decoration: InputDecoration(
-                                  border: OutlineInputBorder(),
-                                  labelText: global.language("to_date"),
-                                  suffixIcon: Row(
-                                    mainAxisAlignment: MainAxisAlignment
-                                        .spaceBetween, // added line
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        focusNode: FocusNode(
-                                          skipTraversal: true,
-                                        ),
-                                        icon: const Icon(Icons.calendar_month),
-                                        onPressed: () {
-                                          _selectToDate(context);
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                controller: toDate,
-                                onChanged: (value) {},
+                              child: CustomDatePicker(
+                                labelText: global.language("to_date"),
+                                initialDate: DateTime.now(),
+                                lastDate: DateTime.now(),
+                                onDateSelected: (date) {
+                                  if (date != null) {
+                                    setState(() {
+                                      toDate.text = DateFormat('yyyy-MM-dd').format(date);
+                                    });
+                                  }
+                                },
+                                decoration: InputDecoration(),
                               ),
                             ),
                           ],
@@ -365,7 +316,7 @@ class _ReportMovementState extends State<ReportMovementScreen> {
                                         focusNode: FocusNode(
                                           skipTraversal: true,
                                         ),
-                                        icon: const Icon(Icons.search),
+                                        icon: Icon(Icons.search),
                                         onPressed: () {
                                           warehouseSearch().then((result) {
                                             if (result.code.isNotEmpty) {
@@ -397,7 +348,7 @@ class _ReportMovementState extends State<ReportMovementScreen> {
                                         focusNode: FocusNode(
                                           skipTraversal: true,
                                         ),
-                                        icon: const Icon(Icons.search),
+                                        icon: Icon(Icons.search),
                                         onPressed: () {
                                           locationSearch(whcode.text).then((
                                             result,
@@ -439,7 +390,7 @@ class _ReportMovementState extends State<ReportMovementScreen> {
                                             focusNode: FocusNode(
                                               skipTraversal: true,
                                             ),
-                                            icon: const Icon(Icons.search),
+                                            icon: Icon(Icons.search),
                                             onPressed: () {
                                               barcodeSearch();
                                             },

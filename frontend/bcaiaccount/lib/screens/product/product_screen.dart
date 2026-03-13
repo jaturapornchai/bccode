@@ -11,7 +11,7 @@ class ProductScreen extends StatefulWidget {
   State<ProductScreen> createState() => _ProductScreenState();
 }
 
-class _ProductScreenState extends State<ProductScreen> {
+class _ProductScreenState extends State<ProductScreen> with global.ThemeRefreshMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -19,8 +19,8 @@ class _ProductScreenState extends State<ProductScreen> {
         title: Text(global.language('product_registry')),
         appBar: AppBar(),
         leading: IconButton(
-          color: Colors.black,
-          icon: const Icon(Icons.arrow_back),
+          color: global.theme.textColor,
+          icon: Icon(Icons.arrow_back),
           onPressed: () {},
         ),
         widgets: const <Widget>[],
@@ -37,8 +37,8 @@ class _ProductScreenState extends State<ProductScreen> {
             ),
           );
         },
-        backgroundColor: Colors.blue,
-        child: const Icon(Icons.add),
+        backgroundColor: global.theme.infoHighlightTextColor,
+        child: Icon(Icons.add),
       ),
     );
   }

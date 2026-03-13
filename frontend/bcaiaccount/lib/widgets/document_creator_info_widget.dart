@@ -31,7 +31,8 @@ class DocumentCreatorInfoWidget extends StatefulWidget {
       _DocumentCreatorInfoWidgetState();
 }
 
-class _DocumentCreatorInfoWidgetState extends State<DocumentCreatorInfoWidget> {
+class _DocumentCreatorInfoWidgetState extends State<DocumentCreatorInfoWidget>
+    with global.ThemeRefreshMixin {
   bool _isLoading = true;
   DataHistoryModel? _creatorInfo; // ข้อมูลการสร้าง (action=create)
   DataHistoryModel? _lastModifierInfo; // ข้อมูลการแก้ไขล่าสุด (action=update)
@@ -118,7 +119,7 @@ class _DocumentCreatorInfoWidgetState extends State<DocumentCreatorInfoWidget> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -137,8 +138,8 @@ class _DocumentCreatorInfoWidgetState extends State<DocumentCreatorInfoWidget> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFF667eea).withValues(alpha: 0.1),
-                  const Color(0xFF764ba2).withValues(alpha: 0.05),
+                  global.theme.primaryColor.withValues(alpha: 0.1),
+                  global.theme.primaryLightColor.withValues(alpha: 0.05),
                 ],
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
@@ -150,14 +151,14 @@ class _DocumentCreatorInfoWidgetState extends State<DocumentCreatorInfoWidget> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.person_outline, color: Color(0xFF667eea), size: 20),
+                Icon(Icons.person_outline, color: global.theme.primaryColor, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   _getLabel("document_audit_info"),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF667eea),
+                    color: global.theme.primaryColor,
                   ),
                 ),
               ],
@@ -196,7 +197,7 @@ class _DocumentCreatorInfoWidgetState extends State<DocumentCreatorInfoWidget> {
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         child: Text(
           _getLabel("no_audit_info"),
-          style: TextStyle(color: Colors.grey[600], fontSize: 12),
+          style: TextStyle(color: global.theme.iconSecondaryColor, fontSize: 12),
         ),
       );
     }
@@ -217,7 +218,7 @@ class _DocumentCreatorInfoWidgetState extends State<DocumentCreatorInfoWidget> {
         // ผู้สร้างเอกสาร
         _buildInfoRow(
           icon: Icons.person_add,
-          iconColor: Colors.green,
+          iconColor: global.theme.positiveHighlightTextColor,
           label: _getLabel("creator"),
           userName: creatorUserName,
           userCode: creatorUserCode,
@@ -230,7 +231,7 @@ class _DocumentCreatorInfoWidgetState extends State<DocumentCreatorInfoWidget> {
           // ผู้แก้ไขล่าสุด
           _buildInfoRow(
             icon: Icons.edit,
-            iconColor: Colors.blue,
+            iconColor: global.theme.infoHighlightTextColor,
             label: _getLabel("last_modifier"),
             userName: _lastModifierInfo!.userName.isNotEmpty
                 ? _lastModifierInfo!.userName
@@ -258,7 +259,7 @@ class _DocumentCreatorInfoWidgetState extends State<DocumentCreatorInfoWidget> {
 
     return _buildInfoRow(
       icon: Icons.person_add,
-      iconColor: Colors.green,
+      iconColor: global.theme.positiveHighlightTextColor,
       label: _getLabel("creator"),
       userName: widget.fallbackCreatorName ?? widget.fallbackCreatorCode ?? '',
       userCode: widget.fallbackCreatorCode ?? '',
@@ -297,7 +298,7 @@ class _DocumentCreatorInfoWidgetState extends State<DocumentCreatorInfoWidget> {
                 label,
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.grey[600],
+                  color: global.theme.iconSecondaryColor,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -305,10 +306,10 @@ class _DocumentCreatorInfoWidgetState extends State<DocumentCreatorInfoWidget> {
               // User name
               Text(
                 userName,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: global.theme.textColor,
                 ),
               ),
               // User code (ถ้าต่างจาก name)
@@ -317,7 +318,7 @@ class _DocumentCreatorInfoWidgetState extends State<DocumentCreatorInfoWidget> {
                   '($userCode)',
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey[500],
+                    color: global.theme.iconSecondaryColor,
                   ),
                 ),
             ],
@@ -329,17 +330,17 @@ class _DocumentCreatorInfoWidgetState extends State<DocumentCreatorInfoWidget> {
           children: [
             Text(
               _formatDate(dateTime),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: Colors.black54,
+                color: global.theme.textSecondaryColor,
               ),
             ),
             Text(
               _formatTime(dateTime),
               style: TextStyle(
                 fontSize: 11,
-                color: Colors.grey[500],
+                color: global.theme.iconSecondaryColor,
               ),
             ),
           ],

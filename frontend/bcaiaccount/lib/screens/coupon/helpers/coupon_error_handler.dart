@@ -18,36 +18,36 @@ class CouponErrorHandler {
     if (error is NetworkException) {
       userMessage = global.language('coupon_error_network');
       icon = Icons.wifi_off;
-      messageColor = Colors.orange;
+      messageColor = global.theme.warningHighlightTextColor;
     } else if (error is ValidationException) {
       userMessage = error.message ?? global.language('coupon_error_validation');
       icon = Icons.error_outline;
-      messageColor = Colors.orange;
+      messageColor = global.theme.warningHighlightTextColor;
     } else if (error is DuplicateException) {
       userMessage = global.language('coupon_error_duplicate');
       icon = Icons.content_copy;
-      messageColor = Colors.orange;
+      messageColor = global.theme.warningHighlightTextColor;
     } else if (error is NotFoundException) {
       userMessage = global.language('coupon_error_not_found');
       icon = Icons.search_off;
-      messageColor = Colors.orange;
+      messageColor = global.theme.warningHighlightTextColor;
     } else if (error is PermissionException) {
       userMessage = global.language('coupon_error_permission');
       icon = Icons.lock;
-      messageColor = Colors.red;
+      messageColor = global.theme.negativeHighlightTextColor;
     } else if (error is TimeoutException) {
       userMessage = global.language('coupon_error_timeout');
       icon = Icons.hourglass_empty;
-      messageColor = Colors.orange;
+      messageColor = global.theme.warningHighlightTextColor;
     } else if (error is ServerException) {
       userMessage = global.language('coupon_error_server');
       icon = Icons.cloud_off;
-      messageColor = Colors.red;
+      messageColor = global.theme.negativeHighlightTextColor;
     } else {
       // Generic error
       userMessage = _getGenericErrorMessage(operation);
       icon = Icons.error;
-      messageColor = Colors.red;
+      messageColor = global.theme.negativeHighlightTextColor;
     }
 
     // Log technical error for debugging (can be sent to logging service)
@@ -56,7 +56,7 @@ class CouponErrorHandler {
     // Show user-friendly message
     global.showSnackBar(
       context,
-      Icon(icon, color: Colors.white),
+      Icon(icon, color: global.theme.onPrimaryColor),
       userMessage,
       messageColor,
     );
@@ -181,9 +181,9 @@ class CouponErrorHandler {
 
     global.showSnackBar(
       context,
-      Icon(icon, color: Colors.white),
+      Icon(icon, color: global.theme.onPrimaryColor),
       message,
-      Colors.green,
+      global.theme.positiveHighlightTextColor,
     );
   }
 
@@ -191,9 +191,9 @@ class CouponErrorHandler {
   static void showWarning(BuildContext context, String message) {
     global.showSnackBar(
       context,
-      const Icon(Icons.warning, color: Colors.white),
+      Icon(Icons.warning, color: global.theme.onPrimaryColor),
       message,
-      Colors.orange,
+      global.theme.warningHighlightTextColor,
     );
   }
 
@@ -201,9 +201,9 @@ class CouponErrorHandler {
   static void showInfo(BuildContext context, String message) {
     global.showSnackBar(
       context,
-      const Icon(Icons.info, color: Colors.white),
+      Icon(Icons.info, color: global.theme.onPrimaryColor),
       message,
-      Colors.blue,
+      global.theme.infoHighlightTextColor,
     );
   }
 }

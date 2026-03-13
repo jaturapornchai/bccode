@@ -8,6 +8,7 @@ import 'package:smlaicloud/bloc/staff/staff_bloc.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:smlaicloud/model/staff_model.dart';
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:split_view/split_view.dart';
 import 'package:translator/translator.dart';
 
@@ -424,6 +425,17 @@ class StaffScreenState extends State<StaffScreen>
     );
   }
 
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return isSaveAllow
+          ? global.theme.rowEditColor
+          : global.theme.rowSelectedColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
+  }
+
   void switchToEdit(StaffModel value) {
     setState(() {
       selectGuid = value.guidfixed;
@@ -486,12 +498,7 @@ class StaffScreenState extends State<StaffScreen>
       child: Container(
         key: index < listKeys.length ? listKeys[index] : null,
         decoration: BoxDecoration(
-          color: (selectGuid == value.guidfixed)
-              ? global.theme.rowSelectedColor
-              : global.theme.onPrimaryColor,
-          border: Border(
-            bottom: BorderSide(width: 1.0, color: global.theme.dividerBorderColor),
-          ),
+          color: _getContainerColor(value.guidfixed, index),
         ),
         padding: const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
         child: Row(
@@ -722,7 +729,7 @@ class StaffScreenState extends State<StaffScreen>
     }
 
     return Scaffold(
-      backgroundColor: isEditMode ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
+      backgroundColor: global.theme.cardColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -748,6 +755,8 @@ class StaffScreenState extends State<StaffScreen>
             : null,
         title: Text(headerEdit + global.language("Staff")),
         actions: <Widget>[
+          EditFontSizeControl(onChanged: () => setState(() {})),
+          const SizedBox(width: 8),
           if (selectGuid.isNotEmpty)
             IconButton(
               focusNode: FocusNode(skipTraversal: true),
@@ -830,13 +839,37 @@ class StaffScreenState extends State<StaffScreen>
           }
           return KeyEventResult.ignored;
         },
-        child: SingleChildScrollView(
-          controller: editScrollController,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(10),
-            child: Column(children: formWidgets),
-          ),
+        child: Builder(
+          builder: (context) {
+            final scale = global.editFontScaleFactor;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(scale),
+              ),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                    contentPadding: EdgeInsets.fromLTRB(
+                      12 * scale, 20 * scale, 12 * scale, 12 * scale,
+                    ),
+                  ),
+                ),
+                child: IconTheme(
+                  data: IconTheme.of(context).copyWith(
+                    size: 24.0 * scale,
+                  ),
+                  child: SingleChildScrollView(
+                    controller: editScrollController,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      child: Column(children: formWidgets),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

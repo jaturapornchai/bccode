@@ -28,7 +28,7 @@ class CartSystemScreen extends StatefulWidget {
   State<CartSystemScreen> createState() => _CartSystemScreenState();
 }
 
-class _CartSystemScreenState extends State<CartSystemScreen> {
+class _CartSystemScreenState extends State<CartSystemScreen> with global.ThemeRefreshMixin {
   String? _userEmail;
   String? _shopId;
 
@@ -487,8 +487,8 @@ class _CartSystemScreenState extends State<CartSystemScreen> {
       child: ElevatedButton(
         onPressed: () => _switchSystemType(systemType),
         style: ElevatedButton.styleFrom(
-          backgroundColor: isSelected ? Colors.blue[700] : null,
-          foregroundColor: isSelected ? Colors.white : null,
+          backgroundColor: isSelected ? global.theme.infoHighlightTextColor : null,
+          foregroundColor: isSelected ? global.theme.onPrimaryColor : null,
         ),
         child: Text(label),
       ),
@@ -540,7 +540,7 @@ class _CartSystemScreenState extends State<CartSystemScreen> {
             IconButton(
               icon: Icon(
                 _showingCartList ? Icons.store : Icons.shopping_cart,
-                color: Colors.white,
+                color: global.theme.onPrimaryColor,
               ),
               onPressed: () =>
                   setState(() => _showingCartList = !_showingCartList),
@@ -551,7 +551,7 @@ class _CartSystemScreenState extends State<CartSystemScreen> {
             if (!_showingCartList) ...[
               // ปุ่ม Zoom Out (-)
               IconButton(
-                icon: const Icon(Icons.remove, color: Colors.white),
+                icon: Icon(Icons.remove, color: global.theme.onPrimaryColor),
                 onPressed: _cardZoomLevel > 1
                     ? () => setState(() => _cardZoomLevel--)
                     : null,
@@ -559,7 +559,7 @@ class _CartSystemScreenState extends State<CartSystemScreen> {
               ),
               // ปุ่ม Reset (=)
               IconButton(
-                icon: const Icon(Icons.crop_square, color: Colors.white),
+                icon: Icon(Icons.crop_square, color: global.theme.onPrimaryColor),
                 onPressed: _cardZoomLevel != 2
                     ? () => setState(() => _cardZoomLevel = 2)
                     : null,
@@ -567,7 +567,7 @@ class _CartSystemScreenState extends State<CartSystemScreen> {
               ),
               // ปุ่ม Zoom In (+)
               IconButton(
-                icon: const Icon(Icons.add, color: Colors.white),
+                icon: Icon(Icons.add, color: global.theme.onPrimaryColor),
                 onPressed: _cardZoomLevel < 4
                     ? () => setState(() => _cardZoomLevel++)
                     : null,
@@ -616,8 +616,8 @@ class _CartSystemScreenState extends State<CartSystemScreen> {
         // บน: ตัวเลือก, search box และปุ่มต่างๆ (กระทัดรัด)
         Container(
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF1976D2), Color(0xFF42A5F5)],
+            gradient: LinearGradient(
+              colors: [global.theme.primaryColor, global.theme.primaryLightColor],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -684,14 +684,14 @@ class _CartSystemScreenState extends State<CartSystemScreen> {
               if (activeCart != null)
                 ElevatedButton.icon(
                   onPressed: () => _openCartDetail(activeCart),
-                  icon: const Icon(Icons.list_alt, size: 18),
+                  icon: Icon(Icons.list_alt, size: 18),
                   label: Text(
                     '${activeCart.cartName} [${activeCart.cartType.displayNameThai}] (${activeCart.itemCount})',
-                    style: const TextStyle(fontSize: 13),
+                    style: TextStyle(fontSize: 13),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[700],
-                    foregroundColor: Colors.white,
+                    backgroundColor: global.theme.infoHighlightTextColor,
+                    foregroundColor: global.theme.onPrimaryColor,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 8,
@@ -706,11 +706,11 @@ class _CartSystemScreenState extends State<CartSystemScreen> {
                 icon: Icon(Icons.add, size: 18),
                 label: Text(
                   global.language("create_cart"),
-                  style: const TextStyle(fontSize: 13),
+                  style: TextStyle(fontSize: 13),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
+                  backgroundColor: global.theme.positiveHighlightTextColor,
+                  foregroundColor: global.theme.onPrimaryColor,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 8,
@@ -775,18 +775,18 @@ class _CartSystemScreenState extends State<CartSystemScreen> {
       avatar: Icon(
         Icons.shopping_cart,
         size: 18,
-        color: isActive ? Colors.white : Colors.teal[700],
+        color: isActive ? global.theme.onPrimaryColor : global.theme.primaryColor,
       ),
       label: Text(
         '${cart.cartName} [${cart.cartType.displayNameThai}] (${cart.itemCount})',
         style: TextStyle(
           fontSize: 13,
-          color: isActive ? Colors.white : Colors.teal[700],
+          color: isActive ? global.theme.onPrimaryColor : global.theme.primaryColor,
           fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
         ),
       ),
-      backgroundColor: isActive ? Colors.teal[700] : Colors.teal[50],
-      side: BorderSide(color: Colors.teal[700]!, width: isActive ? 2 : 1),
+      backgroundColor: isActive ? global.theme.primaryColor : global.theme.infoHighlightColor,
+      side: BorderSide(color: global.theme.primaryColor, width: isActive ? 2 : 1),
       onPressed: () => _openCartSelectorDialog(systemType),
     );
   }
@@ -794,12 +794,12 @@ class _CartSystemScreenState extends State<CartSystemScreen> {
   /// Chip กระทัดรัดสำหรับเลือกลูกหนี้
   Widget _buildCompactDebtorChip() {
     return ActionChip(
-      avatar: Icon(Icons.person, size: 18, color: Colors.white),
+      avatar: Icon(Icons.person, size: 18, color: global.theme.onPrimaryColor),
       label: Text(
         _selectedDebtor?.displayName ?? '${global.language("debtor")}: ${global.language("not_selected")}',
-        style: const TextStyle(fontSize: 13, color: Colors.white),
+        style: TextStyle(fontSize: 13, color: global.theme.onPrimaryColor),
       ),
-      backgroundColor: Colors.blue[700],
+      backgroundColor: global.theme.infoHighlightTextColor,
       onPressed: _selectDebtor,
     );
   }
@@ -807,12 +807,12 @@ class _CartSystemScreenState extends State<CartSystemScreen> {
   /// Chip กระทัดรัดสำหรับเลือกเจ้าหนี้
   Widget _buildCompactCreditorChip() {
     return ActionChip(
-      avatar: Icon(Icons.business, size: 18, color: Colors.white),
+      avatar: Icon(Icons.business, size: 18, color: global.theme.onPrimaryColor),
       label: Text(
         _selectedCreditor?.displayName ?? '${global.language("creditor")}: ${global.language("not_selected")}',
-        style: const TextStyle(fontSize: 13, color: Colors.white),
+        style: TextStyle(fontSize: 13, color: global.theme.onPrimaryColor),
       ),
-      backgroundColor: Colors.orange[700],
+      backgroundColor: global.theme.warningHighlightTextColor,
       onPressed: _selectCreditor,
     );
   }
@@ -824,12 +824,12 @@ class _CartSystemScreenState extends State<CartSystemScreen> {
         : '${global.language("warehouse")}: $_selectedWarehouseName';
 
     return ActionChip(
-      avatar: const Icon(Icons.warehouse, size: 18, color: Colors.white),
+      avatar: Icon(Icons.warehouse, size: 18, color: global.theme.onPrimaryColor),
       label: Text(
         displayText,
-        style: const TextStyle(fontSize: 13, color: Colors.white),
+        style: TextStyle(fontSize: 13, color: global.theme.onPrimaryColor),
       ),
-      backgroundColor: Colors.purple[700],
+      backgroundColor: global.theme.primaryColor,
       onPressed: _selectWarehouse,
     );
   }
@@ -846,12 +846,12 @@ class _CartSystemScreenState extends State<CartSystemScreen> {
             Icon(
               Icons.shopping_cart_outlined,
               size: 80,
-              color: Colors.grey[400],
+              color: global.theme.iconSecondaryColor,
             ),
             SizedBox(height: 16),
             Text(
               global.language("please_create_cart_first"),
-              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 16, color: global.theme.iconSecondaryColor),
             ),
           ],
         ),
@@ -912,8 +912,8 @@ class _CartSystemScreenState extends State<CartSystemScreen> {
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context, true),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
+                      backgroundColor: global.theme.negativeHighlightTextColor,
+                      foregroundColor: global.theme.onPrimaryColor,
                     ),
                     child: Text(global.language("delete")),
                   ),

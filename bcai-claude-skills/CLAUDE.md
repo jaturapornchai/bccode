@@ -47,7 +47,10 @@ bcai-claude-skills/
 │   ├── model-gen/SKILL.md
 │   ├── enum-list/SKILL.md
 │   ├── mcp-check/SKILL.md
-│   └── master-data/SKILL.md
+│   ├── master-data/SKILL.md
+│   ├── data-list/SKILL.md
+│   ├── theming/SKILL.md
+│   └── formdesign/SKILL.md
 ├── references/            ← Domain knowledge + code templates
 │   ├── core/
 │   │   ├── business-rules.md     ← Validation, checklist, common mistakes

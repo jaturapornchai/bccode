@@ -171,7 +171,7 @@ class POAppBarActions {
                   const SizedBox(height: 2),
                   Text(
                     label,
-                    style: const TextStyle(fontSize: 9, color: Colors.white70),
+                    style: TextStyle(fontSize: 9, color: global.theme.onPrimaryColor.withValues(alpha: 0.7)),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
@@ -184,15 +184,15 @@ class POAppBarActions {
   }
 
   static Widget _buildLoadingIndicator() {
-    return const Padding(
-      padding: EdgeInsets.only(right: 12.0),
+    return Padding(
+      padding: const EdgeInsets.only(right: 12.0),
       child: Center(
         child: SizedBox(
           width: 20,
           height: 20,
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            valueColor: AlwaysStoppedAnimation<Color>(global.theme.onPrimaryColor),
           ),
         ),
       ),
@@ -205,7 +205,7 @@ class POAppBarActions {
     void Function({required bool taxInvoice}) onSaveOrUpdate,
   ) {
     return _buildActionButton(
-      icon: Icon(Icons.receipt_long_outlined, size: 22.0, color: Colors.white),
+      icon: Icon(Icons.receipt_long_outlined, size: 22.0, color: global.theme.onPrimaryColor),
       label: global.language('full_invoice'),
       onPressed: () async {
         final result = await showAlertConfirmFullInvoiceDialog(context, screenData.docno);
@@ -218,7 +218,7 @@ class POAppBarActions {
 
   static Widget _buildSlipImageButton(BuildContext context, TransactionModel screenData) {
     return _buildActionButton(
-      icon: Icon(Icons.image_outlined, size: 22.0, color: Colors.white),
+      icon: Icon(Icons.image_outlined, size: 22.0, color: global.theme.onPrimaryColor),
       label: global.language('view_slip'),
       onPressed: () {
         showDialog(
@@ -239,7 +239,7 @@ class POAppBarActions {
     String? disabledReason,
   }) {
     return _buildActionButton(
-      icon: Icon(Icons.delete, size: 22.0, color: Colors.white),
+      icon: Icon(Icons.delete, size: 22.0, color: global.theme.onPrimaryColor),
       label: global.language('delete'),
       enabled: enabled,
       disabledReason: disabledReason,
@@ -261,7 +261,7 @@ class POAppBarActions {
     String? disabledReason,
   }) {
     return _buildActionButton(
-      icon: Icon(Icons.cancel_rounded, size: 22.0, color: Colors.white),
+      icon: Icon(Icons.cancel_rounded, size: 22.0, color: global.theme.onPrimaryColor),
       label: global.language('cancel'),
       enabled: enabled,
       disabledReason: disabledReason,
@@ -303,7 +303,7 @@ class POAppBarActions {
       key: ValueKey('print_history_${screenData.docno}'),
       icon: Icons.print,
       label: global.language('print_history'),
-      badgeColor: Colors.red,
+      badgeColor: global.theme.negativeHighlightTextColor,
       enabled: enabled,
       disabledReason: disabledReason,
       countLoader: () async {
@@ -334,7 +334,7 @@ class POAppBarActions {
       key: ValueKey('edit_history_${screenData.docno}'),
       icon: Icons.edit_note,
       label: global.language('edit_history'),
-      badgeColor: Colors.orange,
+      badgeColor: global.theme.warningHighlightTextColor,
       enabled: enabled,
       disabledReason: disabledReason,
       countLoader: () async {
@@ -363,7 +363,7 @@ class POAppBarActions {
       key: ValueKey('approval_history_$docNo'),
       icon: Icons.approval,
       label: global.language('approval_history'),
-      badgeColor: Colors.green,
+      badgeColor: global.theme.positiveHighlightTextColor,
       enabled: enabled,
       disabledReason: disabledReason,
       countLoader: () async {
@@ -388,10 +388,10 @@ class POAppBarActions {
     final action = isCurrentlyClosed ? 'open' : 'close';
     final icon = isCurrentlyClosed ? Icons.lock_open : Icons.lock;
     final label = isCurrentlyClosed ? global.language('open_document') : global.language('close_document');
-    final color = isCurrentlyClosed ? Colors.green : Colors.purple;
+    final color = isCurrentlyClosed ? global.theme.positiveHighlightTextColor : Colors.purple.shade700;
 
     return _buildActionButton(
-      icon: Icon(icon, size: 22.0, color: color[200]),
+      icon: Icon(icon, size: 22.0, color: color),
       label: label,
       enabled: enabled,
       disabledReason: disabledReason,
@@ -467,7 +467,7 @@ class POAppBarActions {
             children: [
               Icon(
                 isCurrentlyClosed ? Icons.lock_open : Icons.lock,
-                color: isCurrentlyClosed ? Colors.green : Colors.purple,
+                color: isCurrentlyClosed ? global.theme.positiveHighlightTextColor : Colors.purple,
               ),
               const SizedBox(width: 8),
               Text(title),
@@ -490,8 +490,8 @@ class POAppBarActions {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: isCurrentlyClosed ? Colors.green : Colors.purple,
-                foregroundColor: Colors.white,
+                backgroundColor: isCurrentlyClosed ? global.theme.positiveHighlightTextColor : Colors.purple,
+                foregroundColor: global.theme.onPrimaryColor,
               ),
               onPressed: () {
                 final reason = controller.text.trim();
@@ -511,7 +511,7 @@ class POAppBarActions {
 
   static Widget _buildAddNewButton(VoidCallback onClearScreen) {
     return _buildActionButton(
-      icon: Icon(Icons.add, size: 22.0, color: Colors.white),
+      icon: Icon(Icons.add, size: 22.0, color: global.theme.onPrimaryColor),
       label: global.language('add_new'),
       onPressed: onClearScreen,
     );
@@ -522,7 +522,7 @@ class POAppBarActions {
       icon: Icon(
         showPreview ? Icons.visibility_off : Icons.visibility,
         size: 22.0,
-        color: Colors.white,
+        color: global.theme.onPrimaryColor,
       ),
       label: showPreview ? global.language('hide_preview') : global.language('show_preview'),
       onPressed: onToggle,
@@ -531,7 +531,7 @@ class POAppBarActions {
 
   static Widget _buildSearchButton(VoidCallback onSearch) {
     return _buildActionButton(
-      icon: Icon(Icons.list_alt, size: 22.0, color: Colors.white),
+      icon: Icon(Icons.list_alt, size: 22.0, color: global.theme.onPrimaryColor),
       label: global.language('search'),
       onPressed: onSearch,
     );
@@ -540,13 +540,13 @@ class POAppBarActions {
   static Widget _buildSwitchTabButton(TabController tabController) {
     if (tabController.index == 0) {
       return _buildActionButton(
-        icon: Icon(Icons.file_open, size: 22.0, color: Colors.white),
+        icon: Icon(Icons.file_open, size: 22.0, color: global.theme.onPrimaryColor),
         label: global.language('view_document'),
         onPressed: () => tabController.animateTo(1),
       );
     } else {
       return _buildActionButton(
-        icon: Icon(Icons.text_fields, size: 22.0, color: Colors.white),
+        icon: Icon(Icons.text_fields, size: 22.0, color: global.theme.onPrimaryColor),
         label: global.language('edit'),
         onPressed: () => tabController.animateTo(0),
       );
@@ -564,7 +564,7 @@ class POAppBarActions {
     String? disabledReason,
   }) {
     return _buildActionButton(
-      icon: Icon(Icons.save, size: 22.0, color: Colors.white),
+      icon: Icon(Icons.save, size: 22.0, color: global.theme.onPrimaryColor),
       label: global.language('save'),
       enabled: enabled,
       disabledReason: disabledReason,
@@ -620,7 +620,7 @@ class _HistoryBadgeButton extends StatefulWidget {
   State<_HistoryBadgeButton> createState() => _HistoryBadgeButtonState();
 }
 
-class _HistoryBadgeButtonState extends State<_HistoryBadgeButton> {
+class _HistoryBadgeButtonState extends State<_HistoryBadgeButton> with global.ThemeRefreshMixin {
   int _count = 0;
   bool _isLoading = true;
 
@@ -689,7 +689,7 @@ class _HistoryBadgeButtonState extends State<_HistoryBadgeButton> {
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    Icon(widget.icon, size: 20.0, color: Colors.white),
+                    Icon(widget.icon, size: 20.0, color: global.theme.onPrimaryColor),
                     if (!_isLoading && _count > 0)
                       Positioned(
                         right: -8,
@@ -699,12 +699,12 @@ class _HistoryBadgeButtonState extends State<_HistoryBadgeButton> {
                           decoration: BoxDecoration(
                             color: widget.badgeColor,
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 1.5),
+                            border: Border.all(color: global.theme.onPrimaryColor, width: 1.5),
                           ),
                           constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                           child: Text(
                             _count > 99 ? '99+' : _count.toString(),
-                            style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: global.theme.onPrimaryColor, fontSize: 8, fontWeight: FontWeight.bold),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -714,7 +714,7 @@ class _HistoryBadgeButtonState extends State<_HistoryBadgeButton> {
                 const SizedBox(height: 2),
                 Text(
                   widget.label,
-                  style: const TextStyle(fontSize: 9, color: Colors.white70),
+                  style: TextStyle(fontSize: 9, color: global.theme.onPrimaryColor.withValues(alpha: 0.7)),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],

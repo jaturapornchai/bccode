@@ -36,8 +36,8 @@ class TransactionConstants {
   static const int minimumQuantity = 0;
 
   /// Colors (ถ้าต้องการกำหนดสีเฉพาะ Transaction)
-  // static const Color deleteButtonColor = Colors.red;
-  // static const Color primaryActionColor = Colors.blue;
+  // static Color deleteButtonColor = global.theme.negativeHighlightTextColor;
+  // static Color primaryActionColor = global.theme.infoHighlightTextColor;
 }
 
 /// Payment Method Types Mapping

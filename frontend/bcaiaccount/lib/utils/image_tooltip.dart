@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:smlaicloud/global.dart' as global;
 
 class ImageTooltip extends StatefulWidget {
   final Widget child;
@@ -66,7 +67,7 @@ class ImageTooltipState extends State<ImageTooltip> {
             color: Colors.transparent,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.cardColor,
                 borderRadius: BorderRadius.circular(5),
                 boxShadow: [
                   BoxShadow(

@@ -22,7 +22,7 @@ class SaleReportTableView extends StatelessWidget {
       return Center(
         child: Text(
           global.language('sale_report_no_data'),
-          style: TextStyle(fontSize: 16, color: Colors.grey),
+          style: TextStyle(fontSize: 16, color: global.theme.textSecondaryColor),
         ),
       );
     }
@@ -33,9 +33,9 @@ class SaleReportTableView extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: global.theme.surfaceColor,
             border: Border(
-              bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+              bottom: BorderSide(color: global.theme.dividerBorderColor, width: 1),
             ),
           ),
           child: _buildHeaderRow(),
@@ -104,7 +104,7 @@ class SaleReportTableView extends StatelessWidget {
 
   Widget _buildDataRow(SaleReportData sale, int index) {
     final isEven = index % 2 == 0;
-    final backgroundColor = isEven ? Colors.white : Colors.grey.shade50;
+    final backgroundColor = isEven ? global.theme.cardColor : global.theme.backgroundColor;
 
     return InkWell(
       onTap: () {
@@ -114,7 +114,7 @@ class SaleReportTableView extends StatelessWidget {
           AppLogger.error('Error in row tap: $e');
         }
       },
-      hoverColor: Colors.indigo.shade50,
+      hoverColor: global.theme.rowHoverColor,
       highlightColor: Colors.indigo.shade100,
       splashColor: Colors.indigo.shade200,
       child: Container(
@@ -122,7 +122,7 @@ class SaleReportTableView extends StatelessWidget {
         decoration: BoxDecoration(
           color: backgroundColor,
           border: Border(
-            bottom: BorderSide(color: Colors.grey.shade200, width: 0.5),
+            bottom: BorderSide(color: global.theme.dividerBorderColor, width: 0.5),
           ),
         ),
         child: Row(
@@ -140,7 +140,7 @@ class SaleReportTableView extends StatelessWidget {
                 fontWeight: FontWeight.w600,
                 color: sale.transactions.isNotEmpty
                     ? Colors.indigo.shade700
-                    : Colors.black87,
+                    : global.theme.textColor,
                 decoration: sale.transactions.isNotEmpty
                     ? TextDecoration.underline
                     : null,
@@ -198,7 +198,7 @@ class SaleReportTableView extends StatelessWidget {
               child: _buildDataCell(
                 ReportUtils.formatCurrencySafe(sale.detailtotaldiscount),
                 textAlign: TextAlign.right,
-                color: Colors.red.shade700,
+                color: global.theme.negativeHighlightTextColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -232,7 +232,7 @@ class SaleReportTableView extends StatelessWidget {
               child: _buildDataCell(
                 ReportUtils.formatCurrencySafe(sale.totalvatvalue),
                 textAlign: TextAlign.right,
-                color: Colors.orange.shade700,
+                color: global.theme.warningHighlightTextColor,
                 fontWeight: FontWeight.w500,
               ),
             ),

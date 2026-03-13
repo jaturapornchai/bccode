@@ -23,7 +23,7 @@ class LoginGoogleScreen extends StatefulWidget {
   State<LoginGoogleScreen> createState() => LoginGoogleScreenState();
 }
 
-class LoginGoogleScreenState extends State<LoginGoogleScreen> {
+class LoginGoogleScreenState extends State<LoginGoogleScreen> with global.ThemeRefreshMixin {
   late FirebaseAuth _auth;
   bool _isSigningIn = false;
 
@@ -267,11 +267,11 @@ class LoginGoogleScreenState extends State<LoginGoogleScreen> {
             children: [
               Container(
                 margin: const EdgeInsets.all(10),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
+                decoration: BoxDecoration(
+                  color: global.theme.cardColor,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey,
+                      color: global.theme.iconSecondaryColor,
                       blurRadius: 10.0,
                       spreadRadius: 0.0,
                       offset: Offset(2.0, 2.0),
@@ -288,11 +288,11 @@ class LoginGoogleScreenState extends State<LoginGoogleScreen> {
                           return Container(
                             width: 100,
                             height: 100,
-                            color: Colors.grey.shade300,
-                            child: const Icon(
+                            color: global.theme.dividerBorderColor,
+                            child: Icon(
                               Icons.person,
                               size: 60,
-                              color: Colors.grey,
+                              color: global.theme.iconSecondaryColor,
                             ),
                           );
                         },
@@ -301,7 +301,7 @@ class LoginGoogleScreenState extends State<LoginGoogleScreen> {
                           return Container(
                             width: 100,
                             height: 100,
-                            color: Colors.grey.shade200,
+                            color: global.theme.dividerBorderColor,
                             child: Center(
                               child: CircularProgressIndicator(
                                 value:
@@ -317,11 +317,11 @@ class LoginGoogleScreenState extends State<LoginGoogleScreen> {
                     : Container(
                         width: 100,
                         height: 100,
-                        color: Colors.grey.shade300,
-                        child: const Icon(
+                        color: global.theme.dividerBorderColor,
+                        child: Icon(
                           Icons.person,
                           size: 60,
-                          color: Colors.grey,
+                          color: global.theme.iconSecondaryColor,
                         ),
                       ),
               ),
@@ -418,29 +418,29 @@ class LoginGoogleScreenState extends State<LoginGoogleScreen> {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.grey.shade200,
+            color: global.theme.dividerBorderColor,
             borderRadius: const BorderRadius.all(Radius.circular(10)),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withValues(alpha: 0.3),
+                color: global.theme.iconSecondaryColor.withValues(alpha: 0.3),
                 blurRadius: 10.0,
                 spreadRadius: 2.0,
                 offset: const Offset(-2.0, -2.0),
               ),
               BoxShadow(
-                color: Colors.grey.withValues(alpha: 0.5),
+                color: global.theme.iconSecondaryColor.withValues(alpha: 0.5),
                 blurRadius: 10.0,
                 spreadRadius: 2.0,
                 offset: const Offset(2.0, 2.0),
               ),
               BoxShadow(
-                color: Colors.grey.withValues(alpha: 0.3),
+                color: global.theme.iconSecondaryColor.withValues(alpha: 0.3),
                 blurRadius: 10.0,
                 spreadRadius: 2.0,
                 offset: const Offset(2.0, -2.0),
               ),
               BoxShadow(
-                color: Colors.grey.withValues(alpha: 0.3),
+                color: global.theme.iconSecondaryColor.withValues(alpha: 0.3),
                 blurRadius: 10.0,
                 spreadRadius: 2.0,
                 offset: const Offset(-2.0, 2.0),
@@ -456,11 +456,11 @@ class LoginGoogleScreenState extends State<LoginGoogleScreen> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.all(12),
-                    foregroundColor: Colors.black,
+                    foregroundColor: global.theme.textColor,
                     backgroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
-                      side: BorderSide(color: Colors.grey.shade400, width: 1),
+                      side: BorderSide(color: global.theme.iconSecondaryColor, width: 1),
                     ),
                   ),
                   onPressed: () async {
@@ -516,7 +516,7 @@ class LoginGoogleScreenState extends State<LoginGoogleScreen> {
                         Text(
                           'VERSION : ${F.title}',
                           style: TextStyle(
-                            color: Colors.black,
+                            color: global.theme.textColor,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -525,14 +525,14 @@ class LoginGoogleScreenState extends State<LoginGoogleScreen> {
                         Text(
                           'ENVIRONMENT: ${_getEnvironmentName()}',
                           style: TextStyle(
-                            color: Colors.grey[700],
+                            color: global.theme.textSecondaryColor,
                             fontSize: 12,
                           ),
                         ),
                         Text(
                           'SERVICE API: ${Environment().config.serviceApi}',
                           style: TextStyle(
-                            color: Colors.grey[700],
+                            color: global.theme.textSecondaryColor,
                             fontSize: 12,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -540,7 +540,7 @@ class LoginGoogleScreenState extends State<LoginGoogleScreen> {
                         Text(
                           'REPORT API: ${Environment().config.reportApi}',
                           style: TextStyle(
-                            color: Colors.grey[700],
+                            color: global.theme.textSecondaryColor,
                             fontSize: 12,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -548,7 +548,7 @@ class LoginGoogleScreenState extends State<LoginGoogleScreen> {
                         Text(
                           'WEBSOCKET: ${Environment().config.webSocketCartService}',
                           style: TextStyle(
-                            color: Colors.grey[700],
+                            color: global.theme.textSecondaryColor,
                             fontSize: 12,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -636,7 +636,7 @@ class LoginGoogleScreenState extends State<LoginGoogleScreen> {
             F.companyName,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey.shade600,
+              color: global.theme.textSecondaryColor,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -674,7 +674,7 @@ class LoginGoogleScreenState extends State<LoginGoogleScreen> {
     } else if (F.isProd) {
       return Colors.green;
     }
-    return Colors.grey;
+    return global.theme.iconSecondaryColor;
   }
 
   /// ดึงข้อความ Environment badge ตาม flavor
@@ -696,7 +696,7 @@ class LoginGoogleScreenState extends State<LoginGoogleScreen> {
         if (kIsWeb) ...[
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              foregroundColor: Colors.black,
+              foregroundColor: global.theme.textColor,
               backgroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -718,7 +718,7 @@ class LoginGoogleScreenState extends State<LoginGoogleScreen> {
                     Text(
                       'Signing in...',
                       style: TextStyle(
-                        color: Colors.black,
+                        color: global.theme.textColor,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -739,7 +739,7 @@ class LoginGoogleScreenState extends State<LoginGoogleScreen> {
                       'Sign in with Google',
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Colors.black,
+                        color: global.theme.textColor,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -850,7 +850,7 @@ class LoginGoogleScreenState extends State<LoginGoogleScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.orange.shade100,
+              color: global.theme.infoHighlightColor,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: Colors.orange),
             ),
@@ -880,12 +880,12 @@ class LoginGoogleScreenState extends State<LoginGoogleScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.white),
+        color: global.theme.cardColor,
+        border: Border.all(color: global.theme.dividerBorderColor),
         borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Colors.grey,
+            color: global.theme.iconSecondaryColor,
             blurRadius: 10.0,
             spreadRadius: 0.0,
             offset: Offset(2.0, 2.0),
@@ -900,7 +900,7 @@ class LoginGoogleScreenState extends State<LoginGoogleScreen> {
               children: <TextSpan>[
                 TextSpan(
                   text: global.language('you_have_accepted'),
-                  style: TextStyle(color: Colors.black, fontSize: 14),
+                  style: TextStyle(color: global.theme.textColor, fontSize: 14),
                 ),
                 TextSpan(
                   text: ' ${global.language('terms_of_use')} ',
@@ -924,7 +924,7 @@ class LoginGoogleScreenState extends State<LoginGoogleScreen> {
               children: <TextSpan>[
                 TextSpan(
                   text: ' ${global.language('read')} ',
-                  style: TextStyle(color: Colors.black, fontSize: 14),
+                  style: TextStyle(color: global.theme.textColor, fontSize: 14),
                 ),
                 TextSpan(
                   text: ' ${global.language('privacy_policy')} ',

@@ -18,6 +18,7 @@ import 'package:flutter_draggable_gridview/flutter_draggable_gridview.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:excel/excel.dart' as xl;
 import 'package:smlaicloud/utils/logger/app_logger.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 
 class ProductCategoryListScreen extends StatefulWidget {
   const ProductCategoryListScreen({super.key});
@@ -156,6 +157,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                     value.barcode!,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: global.theme.textColor),
                   ),
                 ),
                 Expanded(
@@ -164,6 +166,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                     global.packName(value.names!),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: global.theme.textColor),
                   ),
                 ),
                 Expanded(
@@ -172,6 +175,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                     global.packName(value.itemunitnames!),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: global.theme.textColor),
                   ),
                 ),
                 Expanded(
@@ -180,6 +184,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                     value.itemcode!,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: global.theme.textColor),
                   ),
                 ),
                 Expanded(
@@ -188,6 +193,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                     global.packName(value.groupnames!),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: global.theme.textColor),
                   ),
                 ),
                 IconButton(
@@ -263,6 +269,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
 
   Widget listScreen() {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: Column(
         children: [
@@ -300,6 +307,8 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                     ),
                   ),
                 ),
+                ListFontSizeControl(onChanged: () => setState(() {})),
+                const SizedBox(width: 4),
                 IconButton(
                   onPressed: () async {
                     setState(() {
@@ -656,7 +665,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
               Expanded(
                 child: (productList.isEmpty)
                     ? Center(
-                        child: Text(global.language("no_product_selected")),
+                        child: Text(global.language("no_product_selected"), style: TextStyle(color: global.theme.textSecondaryColor)),
                       )
                     : DraggableGridViewBuilder(
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -742,6 +751,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
+                      color: global.theme.textColor,
                     ),
                   ),
                   Expanded(
@@ -749,7 +759,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                       global.packName(item.name),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 12),
+                      style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor),
                     ),
                   ),
                   Text(
@@ -759,6 +769,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
+                      color: global.theme.textColor,
                     ),
                   ),
                   Expanded(
@@ -766,7 +777,7 @@ class ProductCategoryListScreenState extends State<ProductCategoryListScreen>
                       global.packName(item.unitname),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 12),
+                      style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor),
                     ),
                   ),
                 ],

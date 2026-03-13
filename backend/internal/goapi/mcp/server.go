@@ -783,6 +783,54 @@ var AvailableTools = []map[string]interface{}{
 		"description": "Get the data structure/schema of debtor (ลูกหนี้) documents with examples.",
 		"parameters":  map[string]interface{}{},
 	},
+	// Purchase Order Tools (ใบสั่งซื้อ)
+	{
+		"name":        "list_purchase_orders",
+		"description": "List/search purchase orders (ใบสั่งซื้อ). Returns docno, creditor, amounts, status.",
+		"parameters": map[string]interface{}{
+			"keyword": "string (optional) — Search by docno, creditor code/name, or description",
+			"limit":   "number (optional) — Max results (default: 50, max: 200)",
+		},
+	},
+	{
+		"name":        "create_purchase_order",
+		"description": "Create a new purchase order (ใบสั่งซื้อ). Requires docno.",
+		"parameters": map[string]interface{}{
+			"docno":       "string (required) — Document number e.g. 'PO-2026-0001'",
+			"custcode":    "string (optional) — Creditor code",
+			"custnames":   "string (optional) — JSON array of creditor names e.g. [{\"code\":\"th\",\"name\":\"บริษัท ABC\"}]",
+			"details":     "string (optional) — JSON array of line items [{\"barcode\":\"123\",\"itemcode\":\"SKU1\",\"qty\":10,\"price\":100,\"sumamount\":1000}]",
+			"description": "string (optional) — Description/remark",
+			"transflag":   "number (optional) — Transaction flag (default: 0)",
+			"vattype":     "number (optional) — VAT type (0=none, 1=inclusive, 2=exclusive)",
+			"vatrate":     "number (optional) — VAT rate %",
+			"totalamount": "number (optional) — Total amount",
+		},
+	},
+	{
+		"name":        "update_purchase_order",
+		"description": "Update an existing purchase order by guidfixed.",
+		"parameters": map[string]interface{}{
+			"guidfixed":   "string (required) — GuidFixed of the purchase order to update",
+			"custnames":   "string (optional) — JSON array of creditor names",
+			"details":     "string (optional) — JSON array of line items",
+			"description": "string (optional) — New description",
+			"totalamount": "number (optional) — New total amount",
+			"status":      "number (optional) — New status (0=draft, 1=pending, 2=approved, 3=rejected)",
+		},
+	},
+	{
+		"name":        "delete_purchase_order",
+		"description": "Delete a purchase order by guidfixed (soft delete).",
+		"parameters": map[string]interface{}{
+			"guidfixed": "string (required) — GuidFixed of the purchase order to delete",
+		},
+	},
+	{
+		"name":        "get_purchase_order_schema",
+		"description": "Get the data structure/schema of purchase order (ใบสั่งซื้อ) documents with examples.",
+		"parameters":  map[string]interface{}{},
+	},
 	// Model Schema Tool
 	{
 		"name":        "get_model_schema",
@@ -1169,6 +1217,17 @@ func (s *MCPServer) InvokeTool(c echo.Context) error {
 		result, err = s.invokeDeleteDebtors(ctx, req.Params)
 	case "get_debtor_schema":
 		result, err = s.invokeGetDebtorSchema(ctx, req.Params)
+	// Purchase Order Tools (ใบสั่งซื้อ)
+	case "list_purchase_orders":
+		result, err = s.invokeListPurchaseOrders(ctx, req.Params)
+	case "create_purchase_order":
+		result, err = s.invokeCreatePurchaseOrder(ctx, req.Params)
+	case "update_purchase_order":
+		result, err = s.invokeUpdatePurchaseOrder(ctx, req.Params)
+	case "delete_purchase_order":
+		result, err = s.invokeDeletePurchaseOrder(ctx, req.Params)
+	case "get_purchase_order_schema":
+		result, err = s.invokeGetPurchaseOrderSchema(ctx, req.Params)
 	// API Catalog & Frontend Dev Tools
 	case "list_api_endpoints":
 		result, err = s.invokeListAPIEndpoints(ctx, req.Params)
@@ -2121,6 +2180,50 @@ func (s *MCPServer) invokeDeleteDebtors(ctx context.Context, params map[string]i
 
 func (s *MCPServer) invokeGetDebtorSchema(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	return tools.GetDebtorSchema(), nil
+}
+
+// ==================== Purchase Order Invokers ====================
+
+func (s *MCPServer) invokeListPurchaseOrders(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	shopID := getStringParam(params, "shop_id")
+	keyword := getStringParam(params, "keyword")
+	limit := getIntParam(params, "limit")
+	return tools.ListPurchaseOrders(ctx, shopID, keyword, limit)
+}
+
+func (s *MCPServer) invokeCreatePurchaseOrder(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	shopID := getStringParam(params, "shop_id")
+	docno := getStringParam(params, "docno")
+	custcode := getStringParam(params, "custcode")
+	custnames := getStringParam(params, "custnames")
+	details := getStringParam(params, "details")
+	description := getStringParam(params, "description")
+	transflag := getIntParam(params, "transflag")
+	vattype := int8(getIntParam(params, "vattype"))
+	vatrate := getFloatParam(params, "vatrate")
+	totalamount := getFloatParam(params, "totalamount")
+	return tools.CreatePurchaseOrder(ctx, shopID, docno, custcode, custnames, details, description, transflag, vattype, vatrate, totalamount)
+}
+
+func (s *MCPServer) invokeUpdatePurchaseOrder(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	shopID := getStringParam(params, "shop_id")
+	guidfixed := getStringParam(params, "guidfixed")
+	custnames := getStringParam(params, "custnames")
+	details := getStringParam(params, "details")
+	description := getStringParam(params, "description")
+	totalamount := getFloatParam(params, "totalamount")
+	status := int8(getIntParam(params, "status"))
+	return tools.UpdatePurchaseOrder(ctx, shopID, guidfixed, custnames, details, description, totalamount, status)
+}
+
+func (s *MCPServer) invokeDeletePurchaseOrder(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	shopID := getStringParam(params, "shop_id")
+	guidfixed := getStringParam(params, "guidfixed")
+	return tools.DeletePurchaseOrder(ctx, shopID, guidfixed)
+}
+
+func (s *MCPServer) invokeGetPurchaseOrderSchema(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	return tools.GetPurchaseOrderSchema(), nil
 }
 
 // RegisterRoutesOnGroup registers MCP routes on an Echo Group (for embedded mode)

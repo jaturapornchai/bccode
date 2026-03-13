@@ -70,7 +70,7 @@ class ProductDetailDialog extends StatefulWidget {
   State<ProductDetailDialog> createState() => _ProductDetailDialogState();
 }
 
-class _ProductDetailDialogState extends State<ProductDetailDialog> {
+class _ProductDetailDialogState extends State<ProductDetailDialog> with global.ThemeRefreshMixin {
   final _service = PgSQLProductService();
   final _cartService = MongoDBCartService();
 
@@ -174,7 +174,7 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -196,9 +196,9 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFFEE4D2D), Color(0xFFFF6347)],
+          colors: [global.theme.primaryColor, global.theme.primaryLightColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -213,9 +213,9 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.cardColor,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.white, width: 2),
+                border: Border.all(color: global.theme.cardColor, width: 2),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(6),
@@ -231,17 +231,17 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                                 loadingProgress.expectedTotalBytes!
                             : null,
                         strokeWidth: 2,
-                        color: const Color(0xFFEE4D2D),
+                        color: global.theme.primaryColor,
                       ),
                     );
                   },
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
                       padding: const EdgeInsets.all(12),
-                      color: Colors.white,
-                      child: const Icon(
+                      color: global.theme.cardColor,
+                      child: Icon(
                         Icons.inventory_2,
-                        color: Color(0xFFEE4D2D),
+                        color: global.theme.primaryColor,
                         size: 32,
                       ),
                     );
@@ -253,12 +253,12 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.cardColor,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.inventory_2,
-                color: Color(0xFFEE4D2D),
+                color: global.theme.primaryColor,
                 size: 32,
               ),
             ),
@@ -271,10 +271,10 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
               children: [
                 Text(
                   widget.product.name0,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: global.theme.onPrimaryColor,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -282,11 +282,11 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                 SizedBox(height: 4),
                 Text(
                   '${global.language("code")}: ${widget.product.itemCode}',
-                  style: const TextStyle(fontSize: 14, color: Colors.white70),
+                  style: TextStyle(fontSize: 14, color: global.theme.onPrimaryColor.withValues(alpha: 0.7)),
                 ),
                 Text(
                   '${global.language("barcode")}: ${widget.product.barcode}',
-                  style: const TextStyle(fontSize: 12, color: Colors.white60),
+                  style: TextStyle(fontSize: 12, color: global.theme.onPrimaryColor.withValues(alpha: 0.6)),
                 ),
               ],
             ),
@@ -295,7 +295,7 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
           // Close Button
           IconButton(
             onPressed: () => Navigator.of(context).pop(),
-            icon: Icon(Icons.close, color: Colors.white),
+            icon: Icon(Icons.close, color: global.theme.onPrimaryColor),
             tooltip: global.language("close"),
           ),
         ],
@@ -357,11 +357,11 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
           children: [
             Row(
               children: [
-                Icon(Icons.info_outline, size: 16, color: Colors.blue[700]),
+                Icon(Icons.info_outline, size: 16, color: global.theme.infoHighlightTextColor),
                 SizedBox(width: 6),
                 Text(
                   global.language("basic_info"),
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -395,10 +395,10 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
             right: 10,
             bottom: 10,
           ),
-          leading: Icon(Icons.qr_code, color: Colors.orange[700], size: 18),
+          leading: Icon(Icons.qr_code, color: global.theme.warningHighlightTextColor, size: 18),
           title: Text(
             'Barcode (${_allUnits.length})',
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
           ),
           children: [
             if (_allUnits.isEmpty)
@@ -407,7 +407,7 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                 child: Center(
                   child: Text(
                     global.language("no_barcode_data"),
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    style: TextStyle(color: global.theme.iconSecondaryColor, fontSize: 12),
                   ),
                 ),
               )
@@ -420,12 +420,12 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                   margin: const EdgeInsets.only(bottom: 6),
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: isBasicUnit ? Colors.orange[50] : Colors.grey[50],
+                    color: isBasicUnit ? global.theme.warningHighlightColor : global.theme.surfaceColor,
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
                       color: isBasicUnit
-                          ? Colors.orange[200]!
-                          : Colors.grey[300]!,
+                          ? global.theme.warningHighlightTextColor.withValues(alpha: 0.3)
+                          : global.theme.dividerBorderColor,
                     ),
                   ),
                   child: Row(
@@ -439,8 +439,8 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                               Icons.qr_code_2,
                               size: 14,
                               color: isBasicUnit
-                                  ? Colors.orange[700]
-                                  : Colors.grey[700],
+                                  ? global.theme.warningHighlightTextColor
+                                  : global.theme.textColor,
                             ),
                             const SizedBox(width: 6),
                             Expanded(
@@ -450,8 +450,8 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                   color: isBasicUnit
-                                      ? Colors.orange[900]
-                                      : Colors.grey[900],
+                                      ? global.theme.warningHighlightTextColor
+                                      : global.theme.textColor,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -465,14 +465,14 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.orange[700],
+                                  color: global.theme.warningHighlightTextColor,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
                                   global.language("base_unit"),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 9,
-                                    color: Colors.white,
+                                    color: global.theme.onPrimaryColor,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -490,7 +490,7 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                           unit.unitName.isNotEmpty
                               ? unit.unitName
                               : unit.unitCode,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                           ),
@@ -508,8 +508,8 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: isBasicUnit
-                                ? Colors.orange[800]
-                                : Colors.grey[800],
+                                ? global.theme.warningHighlightTextColor
+                                : global.theme.textColor,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -523,7 +523,7 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: Colors.green[700],
+                            color: global.theme.positiveHighlightTextColor,
                           ),
                           textAlign: TextAlign.right,
                         ),
@@ -547,13 +547,13 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
             width: 80,
             child: Text(
               label,
-              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 11, color: global.theme.iconSecondaryColor),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
             ),
           ),
         ],
@@ -570,11 +570,11 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
           children: [
             Row(
               children: [
-                Icon(Icons.warehouse, color: Colors.blue[700], size: 18),
+                Icon(Icons.warehouse, color: global.theme.infoHighlightTextColor, size: 18),
                 SizedBox(width: 6),
                 Text(
                   global.language("detailed_balance"),
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -585,13 +585,13 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.purple[50],
+                  color: global.theme.primaryLightColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.purple[200]!),
+                  border: Border.all(color: global.theme.primaryLightColor.withValues(alpha: 0.4)),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.inventory, color: Colors.purple[700], size: 16),
+                    Icon(Icons.inventory, color: global.theme.primaryColor, size: 16),
                     SizedBox(width: 6),
                     Expanded(
                       child: Column(
@@ -602,7 +602,7 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
-                              color: Colors.purple[900],
+                              color: global.theme.primaryColor,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -610,7 +610,7 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                             _formatBalance(_totalBalance),
                             style: TextStyle(
                               fontSize: 10,
-                              color: Colors.purple[800],
+                              color: global.theme.primaryColor,
                               height: 1.3,
                             ),
                           ),
@@ -629,7 +629,7 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                 child: Center(
                   child: Text(
                     global.language("no_balance_data"),
-                    style: TextStyle(color: Colors.grey[600]),
+                    style: TextStyle(color: global.theme.iconSecondaryColor),
                   ),
                 ),
               )
@@ -649,9 +649,9 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.blue[50],
+        color: global.theme.infoHighlightColor,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: Colors.blue[200]!),
+        border: Border.all(color: global.theme.infoHighlightTextColor.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -660,7 +660,7 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.store, size: 16, color: Colors.blue[700]),
+              Icon(Icons.store, size: 16, color: global.theme.infoHighlightTextColor),
               const SizedBox(width: 6),
               Expanded(
                 child: Column(
@@ -672,7 +672,7 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue[900],
+                        color: global.theme.infoHighlightTextColor,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -681,7 +681,7 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                       _formatBalance(warehouse.totalBalance),
                       style: TextStyle(
                         fontSize: 10,
-                        color: Colors.blue[800],
+                        color: global.theme.infoHighlightTextColor,
                         fontWeight: FontWeight.w600,
                         height: 1.3,
                       ),
@@ -701,14 +701,14 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                 margin: const EdgeInsets.only(bottom: 4, top: 4),
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.green[50],
+                  color: global.theme.positiveHighlightColor,
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: Colors.green[200]!),
+                  border: Border.all(color: global.theme.positiveHighlightTextColor.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.location_on, size: 14, color: Colors.green[700]),
+                    Icon(Icons.location_on, size: 14, color: global.theme.positiveHighlightTextColor),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Column(
@@ -720,7 +720,7 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: Colors.grey[800],
+                              color: global.theme.textColor,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -729,7 +729,7 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                             _formatBalance(location.balance),
                             style: TextStyle(
                               fontSize: 10,
-                              color: Colors.green[900],
+                              color: global.theme.positiveHighlightTextColor,
                               fontWeight: FontWeight.w500,
                               height: 1.3,
                             ),
@@ -756,11 +756,11 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
           children: [
             Row(
               children: [
-                Icon(Icons.shopping_cart, color: Colors.green[700], size: 16),
+                Icon(Icons.shopping_cart, color: global.theme.positiveHighlightTextColor, size: 16),
                 SizedBox(width: 6),
                 Text(
                   global.language("recent_purchases"),
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -772,7 +772,7 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                 child: Center(
                   child: Text(
                     global.language("no_purchase_records"),
-                    style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                    style: TextStyle(color: global.theme.iconSecondaryColor, fontSize: 11),
                   ),
                 ),
               )
@@ -795,11 +795,11 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
           children: [
             Row(
               children: [
-                Icon(Icons.sell, color: Colors.orange[700], size: 16),
+                Icon(Icons.sell, color: global.theme.warningHighlightTextColor, size: 16),
                 SizedBox(width: 6),
                 Text(
                   global.language("recent_sales"),
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -811,7 +811,7 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                 child: Center(
                   child: Text(
                     global.language("no_sales_records"),
-                    style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                    style: TextStyle(color: global.theme.iconSecondaryColor, fontSize: 11),
                   ),
                 ),
               )
@@ -829,15 +829,16 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
     ProductTransactionModel transaction, {
     required bool isPurchase,
   }) {
-    final color = isPurchase ? Colors.green : Colors.orange;
+    final bgColor = isPurchase ? global.theme.positiveHighlightColor : global.theme.warningHighlightColor;
+    final textColor = isPurchase ? global.theme.positiveHighlightTextColor : global.theme.warningHighlightTextColor;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: color[50],
+        color: bgColor,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color[200]!),
+        border: Border.all(color: textColor.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -851,7 +852,7 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: color[900],
+                    color: textColor,
                   ),
                 ),
               ),
@@ -860,7 +861,7 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                   dateTime: transaction.docDate,
                   showTime: true,
                 ),
-                style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 10, color: global.theme.iconSecondaryColor),
               ),
             ],
           ),
@@ -869,11 +870,11 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
           // Qty & Unit
           Row(
             children: [
-              Icon(Icons.inventory_2_outlined, size: 12, color: color[700]),
+              Icon(Icons.inventory_2_outlined, size: 12, color: textColor),
               SizedBox(width: 4),
               Text(
                 '${global.language("qty")}: ${global.formatNumberRemoveRightZero(transaction.qty)} ${transaction.unitName}',
-                style: TextStyle(fontSize: 10, color: Colors.grey[800]),
+                style: TextStyle(fontSize: 10, color: global.theme.textColor),
               ),
             ],
           ),
@@ -882,11 +883,11 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
           // Price per unit
           Row(
             children: [
-              Icon(Icons.attach_money, size: 12, color: color[700]),
+              Icon(Icons.attach_money, size: 12, color: textColor),
               SizedBox(width: 4),
               Text(
                 '${global.language("price_per_unit")}: ${global.formatPrice(transaction.price)}',
-                style: TextStyle(fontSize: 10, color: Colors.grey[700]),
+                style: TextStyle(fontSize: 10, color: global.theme.textColor),
               ),
             ],
           ),
@@ -895,12 +896,12 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
           // Total Amount
           Row(
             children: [
-              Icon(Icons.payments_outlined, size: 12, color: color[700]),
+              Icon(Icons.payments_outlined, size: 12, color: textColor),
               SizedBox(width: 4),
               Expanded(
                 child: Text(
                   '${global.language("grand_total")}: ',
-                  style: TextStyle(fontSize: 10, color: Colors.grey[700]),
+                  style: TextStyle(fontSize: 10, color: global.theme.textColor),
                 ),
               ),
               Text(
@@ -908,7 +909,7 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  color: color[900],
+                  color: textColor,
                 ),
               ),
             ],
@@ -922,12 +923,12 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                 Icon(
                   Icons.description_outlined,
                   size: 12,
-                  color: Colors.grey[600],
+                  color: global.theme.iconSecondaryColor,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   transaction.docTypeName,
-                  style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: 10, color: global.theme.iconSecondaryColor),
                 ),
               ],
             ),
@@ -939,12 +940,12 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
             const SizedBox(height: 2),
             Row(
               children: [
-                Icon(Icons.person_outline, size: 12, color: Colors.grey[600]),
+                Icon(Icons.person_outline, size: 12, color: global.theme.iconSecondaryColor),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     transaction.customerName!,
-                    style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: 10, color: global.theme.iconSecondaryColor),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -958,12 +959,12 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
             const SizedBox(height: 2),
             Row(
               children: [
-                Icon(Icons.note_outlined, size: 12, color: Colors.grey[600]),
+                Icon(Icons.note_outlined, size: 12, color: global.theme.iconSecondaryColor),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     transaction.remark!,
-                    style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: 10, color: global.theme.iconSecondaryColor),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1137,13 +1138,13 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                 children: [
                   Icon(
                     Icons.add_shopping_cart,
-                    color: Colors.blue[700],
+                    color: global.theme.infoHighlightTextColor,
                     size: 18,
                   ),
                   SizedBox(width: 6),
                   Text(
                     global.language("add_product_to_cart"),
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -1156,13 +1157,13 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.purple[50],
-                    border: Border.all(color: Colors.purple[300]!),
+                    color: global.theme.primaryLightColor.withValues(alpha: 0.15),
+                    border: Border.all(color: global.theme.primaryLightColor),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.warehouse, size: 16, color: Colors.purple[700]),
+                      Icon(Icons.warehouse, size: 16, color: global.theme.primaryColor),
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -1174,12 +1175,12 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                           style: TextStyle(
                             fontSize: 12,
                             color: _selectedWarehouseName != null
-                                ? Colors.purple[900]
-                                : Colors.grey[600],
+                                ? global.theme.primaryColor
+                                : global.theme.textSecondaryColor,
                           ),
                         ),
                       ),
-                      Icon(Icons.arrow_forward_ios, size: 12, color: Colors.purple[700]),
+                      Icon(Icons.arrow_forward_ios, size: 12, color: global.theme.primaryColor),
                     ],
                   ),
                 ),
@@ -1248,12 +1249,12 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
       initialValue: _selectedUnit,
       decoration: InputDecoration(
         labelText: global.language("unit"),
-        labelStyle: const TextStyle(fontSize: 12),
+        labelStyle: TextStyle(fontSize: 12),
         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
         isDense: true,
       ),
-      style: const TextStyle(fontSize: 12, color: Colors.black87),
+      style: TextStyle(fontSize: 12, color: global.theme.textColor),
       items: _allUnits.map((unit) {
         final ratio = unit.unitStand / unit.unitDive;
         final isBasicUnit = ratio == 1.0;
@@ -1269,14 +1270,14 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
                     fontWeight: isBasicUnit
                         ? FontWeight.bold
                         : FontWeight.normal,
-                    color: isBasicUnit ? Colors.orange[900] : Colors.black87,
+                    color: isBasicUnit ? global.theme.warningHighlightTextColor : global.theme.textColor,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               Text(
                 ' (${global.formatNumberRemoveRightZero(unit.unitStand)}:${global.formatNumberRemoveRightZero(unit.unitDive)})',
-                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 11, color: global.theme.iconSecondaryColor),
               ),
             ],
           ),
@@ -1308,13 +1309,13 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
       controller: _quantityController,
       decoration: InputDecoration(
         labelText: global.language("qty"),
-        labelStyle: const TextStyle(fontSize: 12),
+        labelStyle: TextStyle(fontSize: 12),
         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
         isDense: true,
-        suffixIcon: Icon(Icons.straighten, size: 16, color: Colors.grey[600]),
+        suffixIcon: Icon(Icons.straighten, size: 16, color: global.theme.iconSecondaryColor),
       ),
-      style: const TextStyle(fontSize: 12),
+      style: TextStyle(fontSize: 12),
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [
         FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,6}')),
@@ -1338,14 +1339,14 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
       controller: _priceController,
       decoration: InputDecoration(
         labelText: global.language("price_per_unit"),
-        labelStyle: const TextStyle(fontSize: 12),
+        labelStyle: TextStyle(fontSize: 12),
         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
         isDense: true,
         prefixText: global.getBaseCurrency() == 'THB' ? null : '฿',
-        suffixIcon: Icon(Icons.attach_money, size: 16, color: Colors.grey[600]),
+        suffixIcon: Icon(Icons.attach_money, size: 16, color: global.theme.iconSecondaryColor),
       ),
-      style: const TextStyle(fontSize: 12),
+      style: TextStyle(fontSize: 12),
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [
         FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
@@ -1369,13 +1370,13 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
       controller: _discountController,
       decoration: InputDecoration(
         labelText: '${global.language("discount")} (%)',
-        labelStyle: const TextStyle(fontSize: 12),
+        labelStyle: TextStyle(fontSize: 12),
         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
         isDense: true,
-        suffixIcon: Icon(Icons.percent, size: 16, color: Colors.grey[600]),
+        suffixIcon: Icon(Icons.percent, size: 16, color: global.theme.iconSecondaryColor),
       ),
-      style: const TextStyle(fontSize: 12),
+      style: TextStyle(fontSize: 12),
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [
         FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
@@ -1398,13 +1399,13 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
       controller: _remarkController,
       decoration: InputDecoration(
         labelText: global.language("remark_optional"),
-        labelStyle: const TextStyle(fontSize: 12),
+        labelStyle: TextStyle(fontSize: 12),
         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
         isDense: true,
-        suffixIcon: Icon(Icons.note_alt, size: 16, color: Colors.grey[600]),
+        suffixIcon: Icon(Icons.note_alt, size: 16, color: global.theme.iconSecondaryColor),
       ),
-      style: const TextStyle(fontSize: 12),
+      style: TextStyle(fontSize: 12),
       maxLines: 1,
     );
   }
@@ -1416,22 +1417,22 @@ class _ProductDetailDialogState extends State<ProductDetailDialog> {
       child: ElevatedButton.icon(
         onPressed: _isSavingToCart ? null : _addToCart,
         icon: _isSavingToCart
-            ? const SizedBox(
+            ? SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: AlwaysStoppedAnimation<Color>(global.theme.onPrimaryColor),
                 ),
               )
             : Icon(Icons.add_shopping_cart, size: 18),
         label: Text(
           _isSavingToCart ? global.language("saving") : global.language("add_to_cart"),
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orange[700],
-          foregroundColor: Colors.white,
+          backgroundColor: global.theme.warningHighlightTextColor,
+          foregroundColor: global.theme.onPrimaryColor,
           padding: const EdgeInsets.symmetric(vertical: 12),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
         ),

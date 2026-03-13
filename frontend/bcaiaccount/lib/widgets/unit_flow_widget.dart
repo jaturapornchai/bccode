@@ -59,7 +59,9 @@ class UnitFlowWidget extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final accentColor = global.theme.appBarColor;
+    final accentColor = global.isDarkMode()
+        ? global.theme.primaryLightColor
+        : global.theme.appBarColor;
 
     return Card(
       elevation: 0,
@@ -217,10 +219,10 @@ class UnitFlowWidget extends StatelessWidget {
       _UnitGroup group, bool isSelected, Color accentColor) {
     final bgColor = isSelected
         ? accentColor.withValues(alpha: 0.1)
-        : Colors.grey.withValues(alpha: 0.05);
+        : global.theme.textSecondaryColor.withValues(alpha: 0.08);
     final borderColor =
-        isSelected ? accentColor : Colors.grey.withValues(alpha: 0.3);
-    final textColor = isSelected ? accentColor : Colors.grey[700]!;
+        isSelected ? accentColor : global.theme.dividerBorderColor;
+    final textColor = isSelected ? accentColor : global.theme.textColor;
 
     return Container(
       constraints: const BoxConstraints(minWidth: 80),
@@ -272,7 +274,7 @@ class UnitFlowWidget extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isCurrent
                     ? accentColor.withValues(alpha: 0.15)
-                    : Colors.white.withValues(alpha: 0.8),
+                    : global.theme.surfaceColor,
                 borderRadius: BorderRadius.circular(4),
                 border: isCurrent
                     ? Border.all(color: accentColor, width: 1)
@@ -287,7 +289,7 @@ class UnitFlowWidget extends StatelessWidget {
                       fontSize: 9,
                       fontWeight:
                           isCurrent ? FontWeight.w600 : FontWeight.w400,
-                      color: isCurrent ? accentColor : Colors.grey[600],
+                      color: isCurrent ? accentColor : global.theme.textSecondaryColor,
                       fontFamily: 'monospace',
                     ),
                     textAlign: TextAlign.center,
@@ -298,7 +300,7 @@ class UnitFlowWidget extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.w500,
-                        color: Colors.green[700],
+                        color: global.theme.positiveHighlightTextColor,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -401,7 +403,7 @@ class UnitFlowWidget extends StatelessWidget {
                       : Icons.compare_arrows_rounded,
                   size: 16,
                   color: isBase
-                      ? Colors.amber[700]
+                      ? global.theme.warningHighlightTextColor
                       : accentColor.withValues(alpha: 0.6),
                 ),
               ),
@@ -421,7 +423,7 @@ class UnitFlowWidget extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                             color: isSelected
                                 ? accentColor
-                                : Colors.grey[800],
+                                : global.theme.textColor,
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -429,14 +431,14 @@ class UnitFlowWidget extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 5, vertical: 1),
                           decoration: BoxDecoration(
-                            color: Colors.grey.withValues(alpha: 0.1),
+                            color: global.theme.surfaceColor,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             group.unitCode,
                             style: TextStyle(
                               fontSize: 10,
-                              color: Colors.grey[600],
+                              color: global.theme.textSecondaryColor,
                               fontFamily: 'monospace',
                             ),
                           ),
@@ -447,7 +449,7 @@ class UnitFlowWidget extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 5, vertical: 1),
                             decoration: BoxDecoration(
-                              color: Colors.amber.withValues(alpha: 0.15),
+                              color: global.theme.warningHighlightColor,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -455,7 +457,7 @@ class UnitFlowWidget extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w500,
-                                color: Colors.amber[800],
+                                color: global.theme.warningHighlightTextColor,
                               ),
                             ),
                           ),
@@ -473,12 +475,12 @@ class UnitFlowWidget extends StatelessWidget {
                               fontWeight: FontWeight.w600,
                               color: isSelected
                                   ? accentColor
-                                  : Colors.grey[700],
+                                  : global.theme.textColor,
                             ),
                           ),
                           TextSpan(
                             text: '  =  ',
-                            style: TextStyle(color: Colors.grey[400]),
+                            style: TextStyle(color: global.theme.textSecondaryColor),
                           ),
                           TextSpan(
                             text:
@@ -489,7 +491,7 @@ class UnitFlowWidget extends StatelessWidget {
                             ),
                           ),
                         ]),
-                        style: const TextStyle(fontSize: 12),
+                        style: TextStyle(fontSize: 12),
                       ),
                     ],
                     // barcode + ราคาขายปลีก ในกลุ่มนี้
@@ -505,7 +507,7 @@ class UnitFlowWidget extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: isCurrent
                                 ? accentColor.withValues(alpha: 0.12)
-                                : Colors.grey.withValues(alpha: 0.08),
+                                : global.theme.surfaceColor,
                             borderRadius: BorderRadius.circular(4),
                             border: isCurrent
                                 ? Border.all(
@@ -523,7 +525,7 @@ class UnitFlowWidget extends StatelessWidget {
                                   fontFamily: 'monospace',
                                   color: isCurrent
                                       ? accentColor
-                                      : Colors.grey[600],
+                                      : global.theme.textSecondaryColor,
                                 ),
                               ),
                               if (bcInfo.retailPrice != null) ...[
@@ -533,7 +535,7 @@ class UnitFlowWidget extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.green[700],
+                                    color: global.theme.positiveHighlightTextColor,
                                   ),
                                 ),
                               ],

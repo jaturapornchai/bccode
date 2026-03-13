@@ -10,6 +10,7 @@ import 'package:smlaicloud/model/transaction_model.dart';
 import 'package:smlaicloud/model/shift_detail_model.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/utils/date_picker.dart';
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 
 /// Cash in the Drawer Screen - Simple transaction list grouped by shift
 class EnhancedCashInDrawerScreen extends StatefulWidget {
@@ -21,7 +22,8 @@ class EnhancedCashInDrawerScreen extends StatefulWidget {
 }
 
 class _EnhancedCashInDrawerScreenState
-    extends State<EnhancedCashInDrawerScreen> {
+    extends State<EnhancedCashInDrawerScreen>
+    with global.ThemeRefreshMixin {
   // Constants
   static const int _itemsPerPage = 1000;
 
@@ -173,9 +175,26 @@ class _EnhancedCashInDrawerScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFC),
+      backgroundColor: global.theme.backgroundColor,
       appBar: _buildAppBar(),
-      body: Column(
+      body: Builder(
+        builder: (context) {
+          final scaleFactor = global.editFontScaleFactor;
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(scaleFactor),
+            ),
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12 * scaleFactor,
+                    vertical: 10 * scaleFactor,
+                  ),
+                ),
+                iconTheme: IconThemeData(size: 24 * scaleFactor),
+              ),
+              child: Column(
         children: [
           _buildSearchPanel(),
           Expanded(
@@ -185,6 +204,10 @@ class _EnhancedCashInDrawerScreenState
             ),
           ),
         ],
+      ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -198,6 +221,7 @@ class _EnhancedCashInDrawerScreenState
         style: const TextStyle(fontWeight: FontWeight.w600),
       ),
       actions: [
+        EditFontSizeControl(onChanged: () => setState(() {})),
         IconButton(
           icon: Icon(Icons.refresh),
           tooltip: global.language('refresh_data'),
@@ -253,7 +277,7 @@ class _EnhancedCashInDrawerScreenState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -282,7 +306,7 @@ class _EnhancedCashInDrawerScreenState
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: global.theme.dividerBorderColor),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -301,7 +325,7 @@ class _EnhancedCashInDrawerScreenState
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
                         color: _currentFilterType == 'cash_in'
-                            ? const Color(0xFF77A17B)
+                            ? global.theme.positiveHighlightTextColor
                             : Colors.transparent,
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(8),
@@ -315,8 +339,8 @@ class _EnhancedCashInDrawerScreenState
                             Icons.add_circle,
                             size: 16,
                             color: _currentFilterType == 'cash_in'
-                                ? Colors.white
-                                : const Color(0xFF77A17B),
+                                ? global.theme.onPrimaryColor
+                                : global.theme.positiveHighlightTextColor,
                           ),
                           SizedBox(width: 8),
                           Text(
@@ -325,8 +349,8 @@ class _EnhancedCashInDrawerScreenState
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: _currentFilterType == 'cash_in'
-                                  ? Colors.white
-                                  : const Color(0xFF77A17B),
+                                  ? global.theme.onPrimaryColor
+                                  : global.theme.positiveHighlightTextColor,
                             ),
                           ),
                         ],
@@ -348,7 +372,7 @@ class _EnhancedCashInDrawerScreenState
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
                         color: _currentFilterType == 'cash_out'
-                            ? const Color(0xFFE57373)
+                            ? global.theme.negativeHighlightTextColor
                             : Colors.transparent,
                         borderRadius: const BorderRadius.only(
                           topRight: Radius.circular(8),
@@ -362,8 +386,8 @@ class _EnhancedCashInDrawerScreenState
                             Icons.remove_circle,
                             size: 16,
                             color: _currentFilterType == 'cash_out'
-                                ? Colors.white
-                                : const Color(0xFFE57373),
+                                ? global.theme.onPrimaryColor
+                                : global.theme.negativeHighlightTextColor,
                           ),
                           SizedBox(width: 8),
                           Text(
@@ -372,8 +396,8 @@ class _EnhancedCashInDrawerScreenState
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: _currentFilterType == 'cash_out'
-                                  ? Colors.white
-                                  : const Color(0xFFE57373),
+                                  ? global.theme.onPrimaryColor
+                                  : global.theme.negativeHighlightTextColor,
                             ),
                           ),
                         ],
@@ -451,7 +475,7 @@ class _EnhancedCashInDrawerScreenState
 
   InputDecoration _buildInputDecoration(IconData icon) {
     return InputDecoration(
-      prefixIcon: Icon(icon, color: const Color(0xFF6B8E9B)),
+      prefixIcon: Icon(icon, color: global.theme.iconColor),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       isDense: true,
@@ -466,8 +490,8 @@ class _EnhancedCashInDrawerScreenState
         icon: Icon(Icons.search),
         label: Text(global.language('search')),
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF5D8A9E),
-          foregroundColor: Colors.white,
+          backgroundColor: global.theme.primaryColor,
+          foregroundColor: global.theme.onPrimaryColor,
           padding: const EdgeInsets.symmetric(vertical: 12),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
@@ -478,7 +502,7 @@ class _EnhancedCashInDrawerScreenState
   /// Optimized shift list
   Widget _buildShiftList() {
     return Container(
-      color: Colors.white,
+      color: global.theme.cardColor,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _shifts.length,
@@ -496,9 +520,9 @@ class _EnhancedCashInDrawerScreenState
     // Determine status color based on transaction type
     Color statusColor;
     if (_currentFilterType == 'cash_in') {
-      statusColor = const Color(0xFF77A17B); // Green for cash in
+      statusColor = global.theme.positiveHighlightTextColor;
     } else {
-      statusColor = const Color(0xFFE57373); // Red for cash out
+      statusColor = global.theme.negativeHighlightTextColor;
     }
 
     return Card(
@@ -567,7 +591,7 @@ class _EnhancedCashInDrawerScreenState
     return Row(
       children: [
         const SizedBox(width: 12),
-        Icon(Icons.point_of_sale, size: 16, color: Colors.grey[600]),
+        Icon(Icons.point_of_sale, size: 16, color: global.theme.iconSecondaryColor),
         const SizedBox(width: 8),
         Text(transaction.posid,
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
@@ -576,7 +600,7 @@ class _EnhancedCashInDrawerScreenState
         const Spacer(),
         Icon(
           isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-          color: Colors.grey[600],
+          color: global.theme.iconSecondaryColor,
         ),
       ],
     );
@@ -606,12 +630,12 @@ class _EnhancedCashInDrawerScreenState
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(statusIcon, size: 14, color: Colors.white),
+          Icon(statusIcon, size: 14, color: global.theme.onPrimaryColor),
           const SizedBox(width: 4),
           Text(
             statusText,
-            style: const TextStyle(
-                fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(
+                fontSize: 12, fontWeight: FontWeight.bold, color: global.theme.onPrimaryColor),
           ),
         ],
       ),
@@ -641,7 +665,7 @@ class _EnhancedCashInDrawerScreenState
         // Transaction time info with local timezone
         Row(
           children: [
-            Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
+            Icon(Icons.access_time, size: 16, color: global.theme.iconSecondaryColor),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -649,7 +673,7 @@ class _EnhancedCashInDrawerScreenState
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Colors.grey[700],
+                  color: global.theme.textColor,
                 ),
               ),
             ),
@@ -661,7 +685,7 @@ class _EnhancedCashInDrawerScreenState
         // User info
         Row(
           children: [
-            Icon(Icons.person, size: 16, color: Colors.grey[600]),
+            Icon(Icons.person, size: 16, color: global.theme.iconSecondaryColor),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -680,14 +704,14 @@ class _EnhancedCashInDrawerScreenState
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.note, size: 16, color: Colors.grey[600]),
+              Icon(Icons.note, size: 16, color: global.theme.iconSecondaryColor),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   transaction.remark!,
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey[600],
+                    color: global.theme.iconSecondaryColor,
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -705,13 +729,13 @@ class _EnhancedCashInDrawerScreenState
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: _currentFilterType == 'cash_in'
-            ? const Color(0xFF77A17B).withValues(alpha: 0.1)
-            : const Color(0xFFE57373).withValues(alpha: 0.1),
+            ? global.theme.positiveHighlightTextColor.withValues(alpha: 0.1)
+            : global.theme.negativeHighlightTextColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: _currentFilterType == 'cash_in'
-              ? const Color(0xFF77A17B).withValues(alpha: 0.3)
-              : const Color(0xFFE57373).withValues(alpha: 0.3),
+              ? global.theme.positiveHighlightTextColor.withValues(alpha: 0.3)
+              : global.theme.negativeHighlightTextColor.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -722,8 +746,8 @@ class _EnhancedCashInDrawerScreenState
                 : Icons.trending_down,
             size: 16,
             color: _currentFilterType == 'cash_in'
-                ? const Color(0xFF77A17B)
-                : const Color(0xFFE57373),
+                ? global.theme.positiveHighlightTextColor
+                : global.theme.negativeHighlightTextColor,
           ),
           const SizedBox(width: 8),
           Text(
@@ -732,8 +756,8 @@ class _EnhancedCashInDrawerScreenState
               fontSize: 13,
               fontWeight: FontWeight.w500,
               color: _currentFilterType == 'cash_in'
-                  ? const Color(0xFF77A17B)
-                  : const Color(0xFFE57373),
+                  ? global.theme.positiveHighlightTextColor
+                  : global.theme.negativeHighlightTextColor,
             ),
           ),
           const Spacer(),
@@ -743,8 +767,8 @@ class _EnhancedCashInDrawerScreenState
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: _currentFilterType == 'cash_in'
-                  ? const Color(0xFF77A17B)
-                  : const Color(0xFFE57373),
+                  ? global.theme.positiveHighlightTextColor
+                  : global.theme.negativeHighlightTextColor,
             ),
           ),
         ],
@@ -757,9 +781,9 @@ class _EnhancedCashInDrawerScreenState
       ShiftSummary shift, CashDrawerTransaction transaction) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: Color(0xFFF8F9FA),
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: global.theme.backgroundColor,
+        borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(12),
           bottomRight: Radius.circular(12),
         ),
@@ -802,7 +826,7 @@ class _EnhancedCashInDrawerScreenState
                   global.language('tap_to_view_detail'),
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey[600],
+                    color: global.theme.iconSecondaryColor,
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -831,9 +855,9 @@ class _EnhancedCashInDrawerScreenState
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: global.theme.cardColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: global.theme.dividerBorderColor),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -841,14 +865,14 @@ class _EnhancedCashInDrawerScreenState
               Row(
                 children: [
                   Icon(Icons.trending_up,
-                      size: 18, color: const Color(0xFF48BB78)),
+                      size: 18, color: global.theme.positiveHighlightTextColor),
                   SizedBox(width: 8),
                   Text(
                     global.language('sales_summary'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF4A5568),
+                      color: global.theme.textColor,
                     ),
                   ),
                 ],
@@ -858,21 +882,21 @@ class _EnhancedCashInDrawerScreenState
                 global.language('sales_amount'),
                 summary.totalSales,
                 Icons.trending_up,
-                const Color(0xFF48BB78),
+                global.theme.positiveHighlightTextColor,
               ),
               SizedBox(height: 8),
               _buildSummaryRow(
                 global.language('cancelled_sales'),
                 summary.totalCancelledSales,
                 Icons.cancel,
-                const Color(0xFFED8936),
+                global.theme.warningHighlightTextColor,
               ),
               Divider(height: 16),
               _buildSummaryRow(
                 global.language('net_sales'),
                 summary.netSales,
                 Icons.account_balance,
-                const Color(0xFF38B2AC),
+                global.theme.infoHighlightTextColor,
                 isBold: true,
               ),
             ],
@@ -885,23 +909,23 @@ class _EnhancedCashInDrawerScreenState
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: global.theme.cardColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: global.theme.dividerBorderColor),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(Icons.payment, size: 18, color: const Color(0xFF4299E1)),
+                  Icon(Icons.payment, size: 18, color: global.theme.primaryColor),
                   SizedBox(width: 8),
                   Text(
                     global.language('payment_detail'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF4A5568),
+                      color: global.theme.textColor,
                     ),
                   ),
                 ],
@@ -911,35 +935,35 @@ class _EnhancedCashInDrawerScreenState
                 global.language('cash'),
                 paymentBreakdown.cash,
                 Icons.money,
-                const Color(0xFF48BB78),
+                global.theme.positiveHighlightTextColor,
               ),
               SizedBox(height: 8),
               _buildPaymentRow(
                 global.language('credit_card'),
                 paymentBreakdown.creditCard,
                 Icons.credit_card,
-                const Color(0xFF4299E1),
+                global.theme.primaryColor,
               ),
               SizedBox(height: 8),
               _buildPaymentRow(
                 global.language('bank_transfer'),
                 paymentBreakdown.transfer,
                 Icons.transform,
-                const Color(0xFF805AD5),
+                global.theme.primaryColor,
               ),
               const SizedBox(height: 8),
               _buildPaymentRow(
                 'QR Code',
                 paymentBreakdown.qr,
                 Icons.qr_code,
-                const Color(0xFF38B2AC),
+                global.theme.infoHighlightTextColor,
               ),
               Divider(height: 16),
               _buildPaymentRow(
                 global.language('grand_total'),
                 paymentBreakdown.total,
                 Icons.account_balance,
-                const Color(0xFF2D3748),
+                global.theme.textColor,
                 isBold: true,
               ),
             ],
@@ -952,10 +976,10 @@ class _EnhancedCashInDrawerScreenState
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFFF0F8FF),
+            color: global.theme.backgroundColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-                color: const Color(0xFF5D8A9E).withValues(alpha: 0.3)),
+                color: global.theme.primaryColor.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -965,15 +989,15 @@ class _EnhancedCashInDrawerScreenState
                   Icon(
                     Icons.account_balance_wallet,
                     size: 18,
-                    color: const Color(0xFF5D8A9E),
+                    color: global.theme.primaryColor,
                   ),
                   SizedBox(width: 8),
                   Text(
                     global.language('cash_drawer_summary'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF5D8A9E),
+                      color: global.theme.primaryColor,
                     ),
                   ),
                 ],
@@ -983,28 +1007,28 @@ class _EnhancedCashInDrawerScreenState
                 global.language('change_money'),
                 cashDrawerSummary.initialCash,
                 Icons.savings,
-                const Color(0xFF2196F3),
+                global.theme.primaryColor,
               ),
               SizedBox(height: 8),
               _buildCashDrawerRow(
                 global.language('received_from_sales'),
                 cashDrawerSummary.salesCash,
                 Icons.point_of_sale,
-                const Color(0xFF4CAF50),
+                global.theme.positiveHighlightTextColor,
               ),
               SizedBox(height: 8),
               _buildCashDrawerRow(
                 global.language('cash_out'),
                 cashDrawerSummary.cashWithdrawn,
                 Icons.money_off,
-                const Color(0xFFFF5722),
+                global.theme.negativeHighlightTextColor,
               ),
               Divider(height: 16),
               _buildCashDrawerRow(
                 global.language('cash_remaining_in_drawer'),
                 cashDrawerSummary.remainingCash,
                 Icons.account_balance_wallet,
-                const Color(0xFF5D8A9E),
+                global.theme.primaryColor,
                 isBold: true,
                 isHighlight: true,
               ),
@@ -1032,7 +1056,7 @@ class _EnhancedCashInDrawerScreenState
             style: TextStyle(
               fontSize: 13,
               fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-              color: const Color(0xFF4A5568),
+              color: global.theme.textColor,
             ),
           ),
         ),
@@ -1065,7 +1089,7 @@ class _EnhancedCashInDrawerScreenState
             style: TextStyle(
               fontSize: 13,
               fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-              color: const Color(0xFF4A5568),
+              color: global.theme.textColor,
             ),
           ),
         ),
@@ -1107,7 +1131,7 @@ class _EnhancedCashInDrawerScreenState
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-                color: const Color(0xFF4A5568),
+                color: global.theme.textColor,
               ),
             ),
           ),
@@ -1371,7 +1395,7 @@ class _EnhancedCashInDrawerScreenState
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: const Color(0xFF6D7A8D)),
+        Icon(icon, size: 16, color: global.theme.iconSecondaryColor),
         const SizedBox(width: 8),
         Expanded(
           child: Column(
@@ -1379,17 +1403,17 @@ class _EnhancedCashInDrawerScreenState
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: Color(0xFF6D7A8D),
+                  color: global.theme.iconSecondaryColor,
                 ),
               ),
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF546374),
+                  color: global.theme.textSecondaryColor,
                 ),
               ),
             ],
@@ -1408,7 +1432,7 @@ class _EnhancedCashInDrawerScreenState
           SizedBox(height: 16),
           Text(
             global.language('loading_data'),
-            style: const TextStyle(fontSize: 16, color: Colors.grey),
+            style: TextStyle(fontSize: 16, color: global.theme.textSecondaryColor),
           ),
         ],
       ),
@@ -1422,12 +1446,12 @@ class _EnhancedCashInDrawerScreenState
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF9E5E3),
+            decoration: BoxDecoration(
+              color: global.theme.negativeHighlightColor,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.error_outline,
-                size: 48, color: Color(0xFFCB867E)),
+            child: Icon(Icons.error_outline,
+                size: 48, color: global.theme.negativeHighlightTextColor),
           ),
           SizedBox(height: 16),
           Text(
@@ -1435,7 +1459,6 @@ class _EnhancedCashInDrawerScreenState
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF9A6E69),
             ),
           ),
           const SizedBox(height: 8),
@@ -1444,7 +1467,7 @@ class _EnhancedCashInDrawerScreenState
             child: Text(
               message,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[700]),
+              style: TextStyle(color: global.theme.textColor),
             ),
           ),
           SizedBox(height: 24),
@@ -1453,8 +1476,8 @@ class _EnhancedCashInDrawerScreenState
             icon: Icon(Icons.refresh),
             label: Text(global.language('try_again')),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF5D8A9E),
-              foregroundColor: Colors.white,
+              backgroundColor: global.theme.primaryColor,
+              foregroundColor: global.theme.onPrimaryColor,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -1473,12 +1496,12 @@ class _EnhancedCashInDrawerScreenState
         children: [
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: const BoxDecoration(
-              color: Color(0xFFEEF2F7),
+            decoration: BoxDecoration(
+              color: global.theme.surfaceColor,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.account_balance_wallet,
-                size: 64, color: Color(0xFF5D8A9E)),
+            child: Icon(Icons.account_balance_wallet,
+                size: 64, color: global.theme.primaryColor),
           ),
           SizedBox(height: 24),
           Text(
@@ -1486,7 +1509,7 @@ class _EnhancedCashInDrawerScreenState
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[700],
+              color: global.theme.textColor,
             ),
           ),
           SizedBox(height: 8),
@@ -1494,7 +1517,7 @@ class _EnhancedCashInDrawerScreenState
             global.language('no_transactions_in_period'),
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: global.theme.iconSecondaryColor,
             ),
           ),
         ],

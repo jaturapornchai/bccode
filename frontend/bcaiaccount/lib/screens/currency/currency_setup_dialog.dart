@@ -636,7 +636,7 @@ class _BranchSetupDialogContent extends StatefulWidget {
   State<_BranchSetupDialogContent> createState() => _BranchSetupDialogContentState();
 }
 
-class _BranchSetupDialogContentState extends State<_BranchSetupDialogContent> {
+class _BranchSetupDialogContentState extends State<_BranchSetupDialogContent> with global.ThemeRefreshMixin {
   String? _selectedCurrency;
   String? _selectedLanguage;
   TimezonesModel? _selectedTimezone;
@@ -716,12 +716,12 @@ class _BranchSetupDialogContentState extends State<_BranchSetupDialogContent> {
     return AlertDialog(
       title: Row(
         children: [
-          Icon(Icons.settings, color: Colors.blue.shade700),
+          Icon(Icons.settings, color: global.theme.infoHighlightTextColor),
           SizedBox(width: 8),
           Expanded(
             child: Text(
               global.language("branch_initial_setup"),
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -735,7 +735,7 @@ class _BranchSetupDialogContentState extends State<_BranchSetupDialogContent> {
             children: [
               Text(
                 global.language("please_setup_branch_settings"),
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                style: TextStyle(color: global.theme.iconSecondaryColor, fontSize: 14),
               ),
               const SizedBox(height: 20),
 
@@ -753,7 +753,7 @@ class _BranchSetupDialogContentState extends State<_BranchSetupDialogContent> {
               _buildSectionLabel(
                 icon: Icons.language,
                 label: global.language("branch_language"),
-                color: Colors.green.shade700,
+                color: global.theme.positiveHighlightTextColor,
               ),
               const SizedBox(height: 8),
               _buildLanguageDropdown(),
@@ -799,25 +799,25 @@ class _BranchSetupDialogContentState extends State<_BranchSetupDialogContent> {
                   }
                 : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue.shade700,
-              foregroundColor: Colors.white,
+              backgroundColor: global.theme.infoHighlightTextColor,
+              foregroundColor: global.theme.onPrimaryColor,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
             child: _saving
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: global.theme.onPrimaryColor,
                     ),
                   )
                 : Text(
                     global.language("confirm"),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -856,7 +856,7 @@ class _BranchSetupDialogContentState extends State<_BranchSetupDialogContent> {
   Widget _buildCurrencyDropdown() {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: global.theme.dividerBorderColor),
         borderRadius: BorderRadius.circular(8),
       ),
       child: DropdownButtonHideUnderline(
@@ -910,7 +910,7 @@ class _BranchSetupDialogContentState extends State<_BranchSetupDialogContent> {
   Widget _buildLanguageDropdown() {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: global.theme.dividerBorderColor),
         borderRadius: BorderRadius.circular(8),
       ),
       child: DropdownButtonHideUnderline(
@@ -938,7 +938,7 @@ class _BranchSetupDialogContentState extends State<_BranchSetupDialogContent> {
   Widget _buildTimezoneDropdown() {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: global.theme.dividerBorderColor),
         borderRadius: BorderRadius.circular(8),
       ),
       child: DropdownButtonHideUnderline(
@@ -953,7 +953,7 @@ class _BranchSetupDialogContentState extends State<_BranchSetupDialogContent> {
               child: Text(
                 tz.text,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13),
+                style: TextStyle(fontSize: 13),
               ),
             );
           }).toList(),
@@ -970,7 +970,7 @@ class _BranchSetupDialogContentState extends State<_BranchSetupDialogContent> {
   Widget _buildYeartypeSelector() {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: global.theme.dividerBorderColor),
         borderRadius: BorderRadius.circular(8),
       ),
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -985,11 +985,11 @@ class _BranchSetupDialogContentState extends State<_BranchSetupDialogContent> {
                 children: [
                   Text(
                     global.language("christian_era"),
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                   Text(
                     '${global.language("christian_era_short")} (${DateTime.now().year})',
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 11, color: global.theme.iconSecondaryColor),
                   ),
                 ],
               ),
@@ -1007,11 +1007,11 @@ class _BranchSetupDialogContentState extends State<_BranchSetupDialogContent> {
                 children: [
                   Text(
                     global.language("buddhist_era"),
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                   Text(
                     '${global.language("buddhist_era_short")} (${DateTime.now().year + 543})',
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 11, color: global.theme.iconSecondaryColor),
                   ),
                 ],
               ),

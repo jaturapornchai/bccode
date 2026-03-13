@@ -24,8 +24,8 @@ class TransactionUIUtils {
     _showSnackBar(
       message: message,
       icon: icon,
-      backgroundColor: Colors.green,
-      textColor: Colors.white,
+      backgroundColor: global.theme.positiveHighlightTextColor,
+      textColor: global.theme.onPrimaryColor,
     );
   }
 
@@ -34,8 +34,8 @@ class TransactionUIUtils {
     _showSnackBar(
       message: message,
       icon: icon,
-      backgroundColor: Colors.red,
-      textColor: Colors.white,
+      backgroundColor: global.theme.negativeHighlightTextColor,
+      textColor: global.theme.onPrimaryColor,
     );
   }
 
@@ -44,12 +44,12 @@ class TransactionUIUtils {
     _showSnackBar(
       message: message,
       icon: icon,
-      backgroundColor: Colors.orange.shade50,
-      textColor: Colors.orange.shade800,
+      backgroundColor: global.theme.warningHighlightColor,
+      textColor: global.theme.warningHighlightTextColor,
       duration: Duration(seconds: 5),
       action: SnackBarAction(
         label: global.language('understood'),
-        textColor: Colors.orange,
+        textColor: global.theme.warningHighlightTextColor,
         onPressed: () {},
       ),
     );
@@ -60,8 +60,8 @@ class TransactionUIUtils {
     _showSnackBar(
       message: message,
       icon: icon,
-      backgroundColor: Colors.blue,
-      textColor: Colors.white,
+      backgroundColor: global.theme.infoHighlightTextColor,
+      textColor: global.theme.onPrimaryColor,
     );
   }
 
@@ -123,7 +123,7 @@ class TransactionUIUtils {
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              style: TextButton.styleFrom(foregroundColor: confirmColor ?? Colors.red),
+              style: TextButton.styleFrom(foregroundColor: confirmColor ?? global.theme.negativeHighlightTextColor),
               child: Text(confirmText ?? global.language("confirm")),
             ),
           ],
@@ -138,7 +138,7 @@ class TransactionUIUtils {
       title: global.language("alert"),
       message: '${global.language("confirm_delete")} ${docno.isNotEmpty ? '"$docno"' : ''}?',
       confirmText: global.language("delete"),
-      confirmColor: Colors.red,
+      confirmColor: global.theme.negativeHighlightTextColor,
     );
   }
 
@@ -169,7 +169,7 @@ class TransactionUIUtils {
                 labelText: labelText,
                 border: const OutlineInputBorder(),
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.clear),
+                  icon: Icon(Icons.clear),
                   onPressed: () => controller.clear(),
                 ),
               ),
@@ -250,8 +250,9 @@ class TransactionUIUtils {
     required String Function(T) getTitle,
     required String Function(T) getSubtitle,
     IconData leadingIcon = Icons.check_circle_outline,
-    Color headerColor = const Color(0xFF2A6F97),
+    Color? headerColor,
   }) async {
+    final Color effectiveHeaderColor = headerColor ?? global.theme.primaryColor;
     return showDialog<T?>(
       context: context,
       barrierDismissible: true,
@@ -268,7 +269,7 @@ class TransactionUIUtils {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: headerColor,
+                    color: effectiveHeaderColor,
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(16),
                       topRight: Radius.circular(16),
@@ -276,13 +277,13 @@ class TransactionUIUtils {
                   ),
                   child: Row(
                     children: [
-                      Icon(leadingIcon, color: Colors.white, size: 24),
+                      Icon(leadingIcon, color: global.theme.onPrimaryColor, size: 24),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           title,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: global.theme.onPrimaryColor,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -311,10 +312,10 @@ class TransactionUIUtils {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: headerColor.withValues(alpha: 0.1),
+                                    color: effectiveHeaderColor.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: Icon(leadingIcon, color: headerColor, size: 20),
+                                  child: Icon(leadingIcon, color: effectiveHeaderColor, size: 20),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
@@ -326,7 +327,7 @@ class TransactionUIUtils {
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 14,
-                                          color: headerColor,
+                                          color: effectiveHeaderColor,
                                         ),
                                       ),
                                       const SizedBox(height: 2),
@@ -334,13 +335,13 @@ class TransactionUIUtils {
                                         getSubtitle(item),
                                         style: TextStyle(
                                           fontSize: 13,
-                                          color: Colors.grey[600],
+                                          color: global.theme.textSecondaryColor,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                const Icon(Icons.chevron_right, color: Colors.grey),
+                                Icon(Icons.chevron_right, color: global.theme.iconSecondaryColor),
                               ],
                             ),
                           ),
@@ -353,7 +354,7 @@ class TransactionUIUtils {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    border: Border(top: BorderSide(color: Colors.grey[300]!)),
+                    border: Border(top: BorderSide(color: global.theme.dividerBorderColor)),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,

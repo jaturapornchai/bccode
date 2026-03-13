@@ -3,7 +3,7 @@ import 'package:smlaicloud/model/bi_report/branch_selection_model.dart';
 import 'package:smlaicloud/model/bi_report/entity_selection_model.dart';
 import 'package:smlaicloud/model/bi_report/bi_report_models.dart'; // เพิ่ม import
 import 'package:smlaicloud/screens/report/dedebi/utils/report_utils.dart';
-import '../../../../global.dart' as global;
+import 'package:smlaicloud/global.dart' as global;
 
 class FilterPanel extends StatelessWidget {
   final DateTime? fromDate;
@@ -42,9 +42,9 @@ class FilterPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -76,7 +76,7 @@ class FilterPanel extends StatelessWidget {
                       ? '${ReportUtils.formatDate(fromDate.toString())} - ${ReportUtils.formatDate(toDate.toString())}'
                       : global.language('not_specified')),
             Icons.date_range,
-            Colors.blue.shade600,
+            global.theme.infoHighlightTextColor,
           ),
 
           // สำหรับ Stock Balance แสดงเฉพาะบาร์โค้ด
@@ -95,7 +95,7 @@ class FilterPanel extends StatelessWidget {
               global.language('branch'),
               _getBranchDisplayText(),
               Icons.business,
-              Colors.orange.shade600,
+              global.theme.warningHighlightTextColor,
             ),
           ],
 
@@ -116,7 +116,7 @@ class FilterPanel extends StatelessWidget {
               global.language('branch'),
               _getBranchDisplayText(),
               Icons.business,
-              Colors.orange.shade600,
+              global.theme.warningHighlightTextColor,
             ),
           ],
 
@@ -128,7 +128,7 @@ class FilterPanel extends StatelessWidget {
               global.language('branch'),
               _getBranchDisplayText(),
               Icons.business,
-              Colors.orange.shade600,
+              global.theme.warningHighlightTextColor,
             ),
 
             // Sale Type Condition
@@ -136,7 +136,7 @@ class FilterPanel extends StatelessWidget {
               global.language('sale_type'),
               saleType ?? global.language('not_specified'),
               Icons.point_of_sale,
-              Colors.green.shade600,
+              global.theme.positiveHighlightTextColor,
             ),
 
             // POS Type Condition
@@ -160,7 +160,7 @@ class FilterPanel extends StatelessWidget {
               global.language('show_cancelled_documents'),
               showCancelledDocuments ?? global.language('not_specified'),
               Icons.cancel,
-              Colors.red.shade600,
+              global.theme.negativeHighlightTextColor,
             ),
 
             // Creditors และ Salespersons เฉพาะ Sale Report
@@ -171,7 +171,7 @@ class FilterPanel extends StatelessWidget {
                   global.language('debtor'),
                   _getCreditorsDisplayText(),
                   Icons.people,
-                  Colors.blue.shade600,
+                  global.theme.infoHighlightTextColor,
                 ),
 
               // Salespersons Condition (only show if has data)
@@ -180,7 +180,7 @@ class FilterPanel extends StatelessWidget {
                   global.language('sale_person'),
                   _getSalespersonsDisplayText(),
                   Icons.person_pin,
-                  Colors.green.shade600,
+                  global.theme.positiveHighlightTextColor,
                 ),
             ],
           ],
@@ -191,7 +191,7 @@ class FilterPanel extends StatelessWidget {
               global.language('branch'),
               _getBranchDisplayText(),
               Icons.business,
-              Colors.orange.shade600,
+              global.theme.warningHighlightTextColor,
             ),
 
             // Cancelled Documents Condition
@@ -199,7 +199,7 @@ class FilterPanel extends StatelessWidget {
               global.language('show_cancelled_documents'),
               showCancelledDocuments ?? global.language('not_specified'),
               Icons.cancel,
-              Colors.red.shade600,
+              global.theme.negativeHighlightTextColor,
             ),
 
             if (_hasCreditors())
@@ -207,7 +207,7 @@ class FilterPanel extends StatelessWidget {
                 global.language('creditor'),
                 _getCreditorsDisplayText(),
                 Icons.people,
-                Colors.blue.shade600,
+                global.theme.infoHighlightTextColor,
               ),
           ],
 
@@ -218,7 +218,7 @@ class FilterPanel extends StatelessWidget {
               global.language('branch'),
               _getBranchDisplayText(),
               Icons.business,
-              Colors.orange.shade600,
+              global.theme.warningHighlightTextColor,
             ),
 
             // Creditor Condition
@@ -227,7 +227,7 @@ class FilterPanel extends StatelessWidget {
                 global.language('creditor'),
                 _getCreditorsDisplayText(),
                 Icons.people,
-                Colors.blue.shade600,
+                global.theme.infoHighlightTextColor,
               ),
 
             // Cancelled Documents Condition
@@ -235,7 +235,7 @@ class FilterPanel extends StatelessWidget {
               global.language('show_cancelled_documents'),
               showCancelledDocuments ?? global.language('not_specified'),
               Icons.cancel,
-              Colors.red.shade600,
+              global.theme.negativeHighlightTextColor,
             ),
           ],
 
@@ -254,7 +254,7 @@ class FilterPanel extends StatelessWidget {
               global.language('branch'),
               _getBranchDisplayText(),
               Icons.business,
-              Colors.orange.shade600,
+              global.theme.warningHighlightTextColor,
             ),
           ],
 
@@ -265,7 +265,7 @@ class FilterPanel extends StatelessWidget {
               global.language('branch'),
               _getBranchDisplayText(),
               Icons.business,
-              Colors.orange.shade600,
+              global.theme.warningHighlightTextColor,
             ),
           ],
 
@@ -276,7 +276,7 @@ class FilterPanel extends StatelessWidget {
               global.language('branch'),
               _getBranchDisplayText(),
               Icons.business,
-              Colors.orange.shade600,
+              global.theme.warningHighlightTextColor,
             ),
           ],
 
@@ -308,7 +308,7 @@ class FilterPanel extends StatelessWidget {
                   label: Text(global.language('database_master_info.refresh'), style: TextStyle(fontSize: 12)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.indigo.shade600,
-                    foregroundColor: Colors.white,
+                    foregroundColor: global.theme.onPrimaryColor,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(6),
@@ -363,7 +363,7 @@ class FilterPanel extends StatelessWidget {
   }
 
   Color _getShowDetailsColor() {
-    return showDetails == true ? Colors.green.shade600 : Colors.grey.shade600;
+    return showDetails == true ? global.theme.positiveHighlightTextColor : global.theme.textSecondaryColor;
   }
 
   bool _hasCreditors() {
@@ -422,18 +422,18 @@ class FilterPanel extends StatelessWidget {
           Expanded(
             child: RichText(
               text: TextSpan(
-                style: const TextStyle(fontSize: 12, color: Colors.black87),
+                style: TextStyle(fontSize: 12, color: global.theme.textColor),
                 children: [
                   TextSpan(
                     text: '$label: ',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w500,
-                      color: Colors.grey,
+                      color: global.theme.textSecondaryColor,
                     ),
                   ),
                   TextSpan(
                     text: value,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ],
               ),

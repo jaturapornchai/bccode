@@ -23,8 +23,6 @@ class InventoryRepository {
         // print(rawData);
 
         if (rawData['error'] != null) {
-          String errorMessage = '${rawData['code']}: ${rawData['message']}';
-          // print(errorMessage);
           throw Exception('${rawData['code']}: ${rawData['message']}');
         }
 
@@ -34,9 +32,7 @@ class InventoryRepository {
         throw Exception(ex);
       }
     } on DioException catch (ex) {
-      String errorMessage = ex.response.toString();
-      // print(errorMessage);
-      throw Exception(errorMessage);
+      throw Exception(ex.response.toString());
     }
   }
 
@@ -51,8 +47,6 @@ class InventoryRepository {
         // print(rawData);
 
         if (rawData['error'] != null) {
-          String errorMessage = '${rawData['code']}: ${rawData['message']}';
-          // print(errorMessage);
           throw Exception('${rawData['code']}: ${rawData['message']}');
         }
 
@@ -62,9 +56,7 @@ class InventoryRepository {
         throw Exception(ex);
       }
     } on DioException catch (ex) {
-      String errorMessage = ex.response.toString();
-      // print(errorMessage);
-      throw Exception(errorMessage);
+      throw Exception(ex.response.toString());
     }
   }
 

@@ -13,7 +13,7 @@ class TelephoneScreen extends StatefulWidget {
   State<TelephoneScreen> createState() => _TelephoneScreenState();
 }
 
-class _TelephoneScreenState extends State<TelephoneScreen> {
+class _TelephoneScreenState extends State<TelephoneScreen> with global.ThemeRefreshMixin {
   final UserRepository _userRepository = UserRepository();
   List<int> number = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
   int numberIndex = 0;

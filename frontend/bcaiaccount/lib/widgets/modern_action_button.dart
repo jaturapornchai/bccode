@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smlaicloud/global.dart' as global;
 
 /// Modern Action Button with beautiful design
 /// - สวยงาม modern
@@ -34,7 +35,7 @@ class ModernActionButton extends StatefulWidget {
 }
 
 class _ModernActionButtonState extends State<ModernActionButton>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   bool _isHovered = false;
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
@@ -123,7 +124,7 @@ class _ModernActionButtonState extends State<ModernActionButton>
                   border: Border.all(
                     color: _isHovered
                         ? color.withValues(alpha: 0.5)
-                        : Colors.grey.withValues(alpha: 0.2),
+                        : global.theme.dividerBorderColor.withValues(alpha: 0.3),
                     width: 1.5,
                   ),
                 ),
@@ -191,14 +192,14 @@ class _ModernActionButtonState extends State<ModernActionButton>
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.red.shade400, Colors.red.shade600],
+                  colors: [global.theme.negativeHighlightTextColor, global.theme.negativeHighlightTextColor],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.red.withValues(alpha: 0.4),
+                    color: global.theme.negativeHighlightTextColor.withValues(alpha: 0.4),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -207,8 +208,8 @@ class _ModernActionButtonState extends State<ModernActionButton>
               constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
               child: Text(
                 widget.badgeCount! > 99 ? '99+' : widget.badgeCount.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: global.theme.onPrimaryColor,
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
@@ -266,7 +267,7 @@ class ActionButtonGroup extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade600,
+                color: global.theme.textSecondaryColor,
                 letterSpacing: 0.5,
               ),
             ),
@@ -300,7 +301,7 @@ class ModernButtonDivider extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             Colors.transparent,
-            (color ?? Colors.grey.shade300).withValues(alpha: 0.5),
+            (color ?? global.theme.dividerBorderColor).withValues(alpha: 0.5),
             Colors.transparent,
           ],
           begin: Alignment.topCenter,
@@ -336,7 +337,7 @@ class ModernAppBarActions extends StatelessWidget {
         color: backgroundColor ?? Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
+          color: global.theme.cardColor.withValues(alpha: 0.1),
           width: 1,
         ),
       ),

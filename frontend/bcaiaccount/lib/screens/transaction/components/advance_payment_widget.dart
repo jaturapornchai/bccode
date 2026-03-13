@@ -22,7 +22,8 @@ class AdvancePaymentWidget extends StatefulWidget {
   State<AdvancePaymentWidget> createState() => _AdvancePaymentWidgetState();
 }
 
-class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
+class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget>
+    with global.ThemeRefreshMixin {
   @override
   void initState() {
     super.initState();
@@ -54,8 +55,8 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        border: Border.all(color: Colors.grey[300]!),
+        color: global.theme.surfaceColor,
+        border: Border.all(color: global.theme.dividerBorderColor),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Table(
@@ -68,7 +69,7 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
         children: [
           TableRow(
             decoration: BoxDecoration(
-              color: const Color(0xFF2A6F97),
+              color: global.theme.primaryColor,
               borderRadius: BorderRadius.circular(4),
             ),
             children: [
@@ -88,7 +89,7 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF2A6F97),
+        color: global.theme.primaryColor,
         borderRadius: BorderRadius.circular(4),
       ),
       child: Semantics(
@@ -97,10 +98,10 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
         child: Text(
           text,
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             // fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: global.theme.onPrimaryColor,
           ),
           overflow: TextOverflow.ellipsis,
         ),
@@ -129,27 +130,27 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
       margin: const EdgeInsets.symmetric(horizontal: 8),
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: global.theme.dividerBorderColor),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.payment_outlined, size: 48, color: Colors.grey[400]),
+            Icon(Icons.payment_outlined, size: 48, color: global.theme.iconSecondaryColor),
             SizedBox(height: 16),
             Text(
               global.language('no_items_yet'),
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey[600],
+                color: global.theme.textSecondaryColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
             SizedBox(height: 8),
             Text(
               global.language('press_add_item_to_start'),
-              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+              style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
             ),
           ],
         ),
@@ -161,7 +162,7 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: global.theme.dividerBorderColor),
         borderRadius: BorderRadius.circular(4),
       ),
       child: ListView.builder(
@@ -191,9 +192,9 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
       key: ValueKey('advance_payment_row_$index'),
       child: Container(
         decoration: BoxDecoration(
-          color: isEven ? Colors.white : Colors.grey[50],
+          color: isEven ? global.theme.cardColor : global.theme.surfaceColor,
           border: Border(
-            bottom: BorderSide(color: Colors.grey[200]!, width: 0.5),
+            bottom: BorderSide(color: global.theme.dividerBorderColor, width: 0.5),
           ),
         ),
         child: Table(
@@ -227,9 +228,9 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: Colors.red[50],
+          color: global.theme.negativeHighlightColor,
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: Colors.red[200]!),
+          border: Border.all(color: global.theme.negativeHighlightColor),
           boxShadow: [
             BoxShadow(
               color: Colors.red.withValues(alpha: 0.1),
@@ -241,9 +242,9 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
         child: IconButton(
           padding: EdgeInsets.zero,
           onPressed: () => widget.deleteItemDetail(index),
-          icon: Icon(Icons.delete_outline, color: Colors.red[600], size: 16),
+          icon: Icon(Icons.delete_outline, color: global.theme.negativeHighlightTextColor, size: 16),
           tooltip: global.language('delete_item'),
-          hoverColor: Colors.red[100],
+          hoverColor: global.theme.negativeHighlightColor,
           splashRadius: 16,
         ),
       ),
@@ -263,7 +264,7 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
-            color: const Color(0xFF2A6F97),
+            color: global.theme.primaryColor,
           ),
         ),
       ),
@@ -281,13 +282,13 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
       child: TextFormField(
         key: ValueKey('description_${index}_$description'),
         initialValue: description,
-        style: const TextStyle(fontSize: 12),
+        style: TextStyle(fontSize: 12),
         textAlignVertical: TextAlignVertical.center,
         decoration: _buildInputDecoration(
           hintText: global.language('specify_details'),
           prefixIcon: Icons.description_outlined,
-          iconColor: const Color(0xFF2A6F97),
-          focusColor: const Color(0xFF2A6F97).withValues(alpha: 0.7),
+          iconColor: global.theme.primaryColor,
+          focusColor: global.theme.primaryColor.withValues(alpha: 0.7),
         ),
         onChanged: (value) {
           widget.screenData.details![index].description = value;
@@ -307,7 +308,7 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
       child: TextFormField(
         key: ValueKey('amount_${index}_${detail.sumamount}'),
         initialValue: amount,
-        style: const TextStyle(fontSize: 12),
+        style: TextStyle(fontSize: 12),
         textAlign: TextAlign.right,
         textAlignVertical: TextAlignVertical.center,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -315,8 +316,8 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
         decoration: _buildInputDecoration(
           hintText: '0.00',
           prefixIcon: Icons.attach_money,
-          iconColor: Colors.green[600]!,
-          focusColor: Colors.green[400]!,
+          iconColor: global.theme.positiveHighlightTextColor,
+          focusColor: global.theme.positiveHighlightTextColor,
         ),
         onChanged: (value) {
           _handleAmountChange(index, value);
@@ -336,20 +337,20 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
-        borderSide: BorderSide(color: Colors.grey[300]!),
+        borderSide: BorderSide(color: global.theme.dividerBorderColor),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
-        borderSide: BorderSide(color: Colors.grey[300]!),
+        borderSide: BorderSide(color: global.theme.dividerBorderColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
         borderSide: BorderSide(color: focusColor, width: 2),
       ),
       hintText: hintText,
-      hintStyle: TextStyle(color: Colors.grey[400]),
+      hintStyle: TextStyle(color: global.theme.formHintColor),
       filled: true,
-      fillColor: Colors.white,
+      fillColor: global.theme.formFillColor,
       prefixIcon: Icon(prefixIcon, size: 16, color: iconColor),
     );
   }
@@ -373,9 +374,9 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: global.theme.cardColor,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey[300]!),
+          border: Border.all(color: global.theme.dividerBorderColor),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
@@ -412,7 +413,7 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF2A6F97),
+              color: global.theme.primaryColor,
             ),
           ),
         ),
@@ -420,14 +421,14 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: Colors.red[50],
+            color: global.theme.negativeHighlightColor,
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: Colors.red[200]!),
+            border: Border.all(color: global.theme.negativeHighlightColor),
           ),
           child: IconButton(
             padding: EdgeInsets.zero,
             onPressed: () => widget.deleteItemDetail(index),
-            icon: Icon(Icons.delete_outline, color: Colors.red[600], size: 16),
+            icon: Icon(Icons.delete_outline, color: global.theme.negativeHighlightTextColor, size: 16),
             tooltip: global.language('delete_item'),
           ),
         ),
@@ -447,7 +448,7 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
+            color: global.theme.textColor,
           ),
         ),
         SizedBox(height: 6),
@@ -458,8 +459,8 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
           decoration: _buildMobileInputDecoration(
             hintText: global.language('specify_details'),
             prefixIcon: Icons.description_outlined,
-            iconColor: const Color(0xFF2A6F97),
-            focusColor: const Color(0xFF2A6F97).withValues(alpha: 0.7),
+            iconColor: global.theme.primaryColor,
+            focusColor: global.theme.primaryColor.withValues(alpha: 0.7),
           ),
           onChanged: (value) {
             widget.screenData.details![index].description = value;
@@ -481,22 +482,22 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
+            color: global.theme.textColor,
           ),
         ),
         const SizedBox(height: 6),
         TextFormField(
           key: ValueKey('mobile_amount_${index}_${detail.sumamount}'),
           initialValue: amount,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           textAlign: TextAlign.right,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [_NumberTextInputFormatter()],
           decoration: _buildMobileInputDecoration(
             hintText: '0.00',
             prefixIcon: Icons.attach_money,
-            iconColor: Colors.green[600]!,
-            focusColor: Colors.green[400]!,
+            iconColor: global.theme.positiveHighlightTextColor,
+            focusColor: global.theme.positiveHighlightTextColor,
           ),
           onChanged: (value) {
             _handleAmountChange(index, value);
@@ -517,20 +518,20 @@ class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
-        borderSide: BorderSide(color: Colors.grey[300]!),
+        borderSide: BorderSide(color: global.theme.dividerBorderColor),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
-        borderSide: BorderSide(color: Colors.grey[300]!),
+        borderSide: BorderSide(color: global.theme.dividerBorderColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
         borderSide: BorderSide(color: focusColor, width: 2),
       ),
       hintText: hintText,
-      hintStyle: TextStyle(color: Colors.grey[400]),
+      hintStyle: TextStyle(color: global.theme.formHintColor),
       filled: true,
-      fillColor: Colors.grey[50],
+      fillColor: global.theme.formFillColor,
       prefixIcon: Icon(prefixIcon, size: 18, color: iconColor),
     );
   }

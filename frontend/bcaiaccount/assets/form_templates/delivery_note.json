@@ -1,0 +1,366 @@
+{
+  "id": "delivery_note",
+  "name": "ใบส่งของ",
+  "description": "ใบส่งของ / Delivery Note",
+  "paperSize": "A4",
+  "header": {
+    "id": "header",
+    "type": "header",
+    "height": 120.0,
+    "backgroundImagePath": null,
+    "rows": [
+      {
+        "id": "row_0",
+        "cells": [
+          {
+            "id": "logo",
+            "type": "dataField",
+            "flex": 0.6,
+            "dataBindingKey": "company_logo",
+            "fontSize": 7.0,
+            "minHeight": 28.8
+          },
+          {
+            "id": "sep_h",
+            "type": "separator",
+            "flex": 1,
+            "fontSize": 7.0,
+            "borderColor": 4278190080,
+            "borderWidth": 0.5,
+            "lineStyle": "solid"
+          },
+          {
+            "id": "company_name",
+            "type": "dataField",
+            "flex": 2.3,
+            "dataBindingKey": "company_name",
+            "fontSize": 10.0,
+            "fontBold": true,
+            "textColor": 4278190080
+          },
+          {
+            "id": "title",
+            "type": "text",
+            "flex": 1.5,
+            "text": "ใบส่งของ / DELIVERY NOTE",
+            "fontSize": 14.0,
+            "fontBold": true,
+            "textAlign": 1,
+            "textColor": 4278190080
+          }
+        ]
+      },
+      {
+        "id": "row_0b",
+        "cells": [
+          {
+            "id": "addr_spacer",
+            "type": "text",
+            "flex": 0.6,
+            "text": "",
+            "fontSize": 7.0
+          },
+          {
+            "id": "sep_h2",
+            "type": "separator",
+            "flex": 1,
+            "fontSize": 7.0,
+            "borderColor": 4278190080,
+            "borderWidth": 0.5,
+            "lineStyle": "solid"
+          },
+          {
+            "id": "company_address",
+            "type": "dataField",
+            "flex": 2.3,
+            "dataBindingKey": "company_address",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "title_spacer",
+            "type": "text",
+            "flex": 1.5,
+            "text": "",
+            "fontSize": 7.0
+          }
+        ]
+      },
+      {
+        "id": "row_0c",
+        "cells": [
+          {
+            "id": "phone_spacer",
+            "type": "text",
+            "flex": 0.6,
+            "text": "",
+            "fontSize": 7.0
+          },
+          {
+            "id": "sep_h3",
+            "type": "separator",
+            "flex": 1,
+            "fontSize": 7.0,
+            "borderColor": 4278190080,
+            "borderWidth": 0.5,
+            "lineStyle": "solid"
+          },
+          {
+            "id": "phone_label",
+            "type": "text",
+            "fixedWidth": 18.0,
+            "text": "โทร:",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "company_phone",
+            "type": "dataField",
+            "flex": 2.3,
+            "dataBindingKey": "company_phone",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          }
+        ]
+      },
+      {
+        "id": "row_1",
+        "cells": [
+          {
+            "id": "cust_label",
+            "type": "text",
+            "fixedWidth": 24.0,
+            "text": "ส่งถึง:",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "contact_name",
+            "type": "dataField",
+            "flex": 2.1,
+            "dataBindingKey": "contact_name",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "docno_label",
+            "type": "text",
+            "fixedWidth": 24.0,
+            "text": "เลขที่:",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "doc_number",
+            "type": "dataField",
+            "flex": 1.1,
+            "dataBindingKey": "doc_number",
+            "fontSize": 7.0,
+            "fontBold": true,
+            "textColor": 4278190080,
+            "textAlign": 2
+          }
+        ]
+      },
+      {
+        "id": "row_2",
+        "cells": [
+          {
+            "id": "cust_addr",
+            "type": "text",
+            "fixedWidth": 24.0,
+            "text": "ที่อยู่:",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "contact_address",
+            "type": "dataField",
+            "flex": 2.1,
+            "dataBindingKey": "contact_address",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "docdate_label",
+            "type": "text",
+            "fixedWidth": 24.0,
+            "text": "วันที่:",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "doc_date",
+            "type": "dataField",
+            "flex": 1.1,
+            "dataBindingKey": "doc_date_be",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          }
+        ]
+      },
+      {
+        "id": "row_3",
+        "cells": [
+          {
+            "id": "cust_phone",
+            "type": "text",
+            "fixedWidth": 18.0,
+            "text": "โทร:",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "contact_phone",
+            "type": "dataField",
+            "flex": 1.4,
+            "dataBindingKey": "contact_phone",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "docref_label",
+            "type": "text",
+            "fixedWidth": 27.0,
+            "text": "อ้างอิง:",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "doc_ref",
+            "type": "dataField",
+            "flex": 1.1,
+            "dataBindingKey": "doc_ref",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          }
+        ]
+      }
+    ]
+  },
+  "detail": {
+    "id": "detail",
+    "type": "detail",
+    "height": 294.0,
+    "backgroundImagePath": null,
+    "rows": [
+      {
+        "id": "row_0",
+        "cells": [
+          {
+            "id": "items_table",
+            "type": "table",
+            "flex": 1,
+            "fontSize": 7.0,
+            "textColor": 4278190080,
+            "borderColor": 4278190080,
+            "borderWidth": 0.5,
+            "rows": 2,
+            "columns": 6,
+            "tableData": [
+              [
+                "ลำดับ",
+                "รหัสสินค้า",
+                "รายการ",
+                "จำนวน",
+                "หน่วย",
+                "หมายเหตุ"
+              ],
+              [
+                "line_number",
+                "item_code",
+                "item_name",
+                "item_qty",
+                "item_unit",
+                "item_discount"
+              ]
+            ],
+            "tableHasHeader": true,
+            "columnAligns": [
+              1,
+              0,
+              0,
+              2,
+              0,
+              0
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "id": "footer",
+    "type": "footer",
+    "height": 72.0,
+    "backgroundImagePath": null,
+    "rows": [
+      {
+        "id": "row_0",
+        "cells": [
+          {
+            "id": "remark_label",
+            "type": "text",
+            "fixedWidth": 33.0,
+            "text": "หมายเหตุ:",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "doc_remark",
+            "type": "dataField",
+            "flex": 2.0,
+            "dataBindingKey": "doc_remark",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          }
+        ]
+      },
+      {
+        "id": "row_1",
+        "cells": [
+          {
+            "id": "prepared_signature",
+            "type": "signature",
+            "flex": 1.1,
+            "text": "ผู้ส่งของ",
+            "dataBindingKey": "prepared_by",
+            "fontSize": 7.0,
+            "textAlign": 2,
+            "textColor": 4278190080
+          },
+          {
+            "id": "received_signature",
+            "type": "signature",
+            "flex": 1.1,
+            "text": "ผู้รับของ",
+            "dataBindingKey": "received_by",
+            "fontSize": 7.0,
+            "textAlign": 2,
+            "textColor": 4278190080
+          },
+          {
+            "id": "page_num",
+            "type": "pageNumber",
+            "flex": 0.7,
+            "fontSize": 7.0,
+            "textAlign": 1,
+            "textColor": 4288585374
+          }
+        ],
+        "paddingTop": 8.5
+      }
+    ]
+  },
+  "globalBackgroundImagePath": null,
+  "createdAt": "2024-01-01T00:00:00.000",
+  "updatedAt": "2024-01-01T00:00:00.000",
+  "printMode": "color",
+  "multiPageEnabled": true,
+  "detailRowsPerPage": 20,
+  "documentType": "delivery_note",
+  "marginTop": 20.0,
+  "marginBottom": 20.0,
+  "marginLeft": 20.0,
+  "marginRight": 20.0
+}

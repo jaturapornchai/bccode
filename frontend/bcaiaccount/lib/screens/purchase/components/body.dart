@@ -19,7 +19,7 @@ class Body extends StatefulWidget {
   State<Body> createState() => _BodyState();
 }
 
-class _BodyState extends State<Body> {
+class _BodyState extends State<Body> with global.ThemeRefreshMixin {
   // รายการข้อมูลจาก API
   List<TransactionModel> _transactionList = [];
 
@@ -305,7 +305,7 @@ class _BodyState extends State<Body> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.text_decrease, size: 18),
+                            icon: Icon(Icons.text_decrease, size: 18),
                             onPressed:
                                 _fontSize > _minFontSize ? _decreaseFontSize : null,
                             tooltip: global.language("decrease_font_size"),
@@ -314,10 +314,10 @@ class _BodyState extends State<Body> {
                           ),
                           Text(
                             '${_fontSize.toInt()}',
-                            style: const TextStyle(fontSize: 12),
+                            style: TextStyle(fontSize: 12),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.text_increase, size: 18),
+                            icon: Icon(Icons.text_increase, size: 18),
                             onPressed:
                                 _fontSize < _maxFontSize ? _increaseFontSize : null,
                             tooltip: global.language("increase_font_size"),
@@ -341,7 +341,7 @@ class _BodyState extends State<Body> {
                     Text(
                       '${global.language("total")} ${_applyClientSideFilters(_transactionList).length} ${global.language("items")}',
                       style: TextStyle(
-                        color: Colors.grey.shade600,
+                        color: global.theme.iconSecondaryColor,
                         fontSize: 11,
                       ),
                     ),
@@ -363,13 +363,13 @@ class _BodyState extends State<Body> {
                                       ? Icons.arrow_downward
                                       : Icons.arrow_upward,
                                   size: 14,
-                                  color: Colors.blue.shade700,
+                                  color: global.theme.infoHighlightTextColor,
                                 ),
                                 SizedBox(width: 2),
                                 Text(
                                   _dateOrder == 1 ? global.language("newest_first") : global.language("oldest_first"),
                                   style: TextStyle(
-                                    color: Colors.blue.shade700,
+                                    color: global.theme.infoHighlightTextColor,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -415,13 +415,13 @@ class _BodyState extends State<Body> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_off, size: 48, color: Colors.grey.shade400),
+            Icon(Icons.search_off, size: 48, color: global.theme.dividerBorderColor),
             SizedBox(height: 8),
             Text(
               global.language("no_matching_data"),
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade600,
+                color: global.theme.iconSecondaryColor,
               ),
             ),
             SizedBox(height: 4),
@@ -479,9 +479,9 @@ class _BodyState extends State<Body> {
       elevation: 1,
       margin: const EdgeInsets.only(bottom: 4),
       color: isCancel
-          ? Colors.red.shade50
+          ? global.theme.negativeHighlightColor
           : isClosed
-              ? Colors.green.shade50
+              ? global.theme.positiveHighlightColor
               : null,
       child: InkWell(
         onTap: () {
@@ -503,16 +503,16 @@ class _BodyState extends State<Body> {
                     constraints: const BoxConstraints(minWidth: 90),
                     decoration: BoxDecoration(
                       color: isCancel
-                          ? Colors.red.shade100
-                          : Colors.blue.shade50,
+                          ? global.theme.negativeHighlightColor
+                          : global.theme.surfaceColor,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       formattedDate,
                       style: TextStyle(
                         color: isCancel
-                            ? Colors.red.shade700
-                            : Colors.blue.shade700,
+                            ? global.theme.negativeHighlightTextColor
+                            : global.theme.infoHighlightTextColor,
                         fontWeight: FontWeight.bold,
                         fontSize: _fontSize,
                       ),
@@ -526,7 +526,7 @@ class _BodyState extends State<Body> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: _fontSize,
-                        color: isCancel ? Colors.red : null,
+                        color: isCancel ? global.theme.negativeHighlightTextColor : null,
                         decoration:
                             isCancel ? TextDecoration.lineThrough : null,
                       ),
@@ -538,13 +538,13 @@ class _BodyState extends State<Body> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.red.shade100,
+                        color: global.theme.negativeHighlightColor,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         global.language("cancelled"),
                         style: TextStyle(
-                          color: Colors.red.shade700,
+                          color: global.theme.negativeHighlightTextColor,
                           fontWeight: FontWeight.bold,
                           fontSize: _fontSize - 2,
                         ),
@@ -555,13 +555,13 @@ class _BodyState extends State<Body> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.green.shade100,
+                        color: global.theme.positiveHighlightColor,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         global.language("closed"),
                         style: TextStyle(
-                          color: Colors.green.shade700,
+                          color: global.theme.positiveHighlightTextColor,
                           fontWeight: FontWeight.bold,
                           fontSize: _fontSize - 2,
                         ),
@@ -588,7 +588,7 @@ class _BodyState extends State<Body> {
                 style: TextStyle(
                   fontSize: _fontSize + 2,
                   fontWeight: FontWeight.w500,
-                  color: isCancel ? Colors.grey : null,
+                  color: isCancel ? global.theme.iconSecondaryColor : null,
                 ),
               ),
 
@@ -599,25 +599,25 @@ class _BodyState extends State<Body> {
                 children: [
                   // จำนวนสินค้า
                   Icon(Icons.inventory_2,
-                      size: _fontSize, color: Colors.grey.shade600),
+                      size: _fontSize, color: global.theme.iconSecondaryColor),
                   const SizedBox(width: 2),
                   Text(
                     '${item.detailcount ?? 0} ${global.language("items")}',
                     style: TextStyle(
-                      color: Colors.grey.shade700,
+                      color: global.theme.textColor,
                       fontSize: _fontSize - 1,
                     ),
                   ),
                   const SizedBox(width: 8),
                   // หมายเหตุ
                   if ((item.description?.isNotEmpty ?? false)) ...[
-                    Icon(Icons.notes, size: _fontSize, color: Colors.grey.shade600),
+                    Icon(Icons.notes, size: _fontSize, color: global.theme.iconSecondaryColor),
                     const SizedBox(width: 2),
                     Expanded(
                       child: Text(
                         item.description!,
                         style: TextStyle(
-                          color: Colors.grey.shade700,
+                          color: global.theme.textColor,
                           fontSize: _fontSize - 1,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -630,8 +630,8 @@ class _BodyState extends State<Body> {
                     '฿${global.moneyFormat.format(item.totalamount)}',
                     style: TextStyle(
                       color: isCancel
-                          ? Colors.grey
-                          : Colors.orange.shade700,
+                          ? global.theme.iconSecondaryColor
+                          : global.theme.warningHighlightTextColor,
                       fontWeight: FontWeight.bold,
                       fontSize: _fontSize + 4,
                     ),
@@ -645,12 +645,12 @@ class _BodyState extends State<Body> {
                 Row(
                   children: [
                     Icon(Icons.person_outline,
-                        size: _fontSize - 1, color: Colors.grey.shade500),
+                        size: _fontSize - 1, color: global.theme.iconSecondaryColor),
                     const SizedBox(width: 2),
                     Text(
                       '${global.language("created_by")}: ${item.creatorname}',
                       style: TextStyle(
-                        color: Colors.grey.shade500,
+                        color: global.theme.iconSecondaryColor,
                         fontSize: _fontSize - 2,
                         fontStyle: FontStyle.italic,
                       ),
@@ -664,7 +664,7 @@ class _BodyState extends State<Body> {
                           showTime: true,
                         ),
                         style: TextStyle(
-                          color: Colors.grey.shade400,
+                          color: global.theme.dividerBorderColor,
                           fontSize: _fontSize - 2,
                         ),
                       ),
@@ -697,7 +697,7 @@ class _POApprovalStatusBadge extends StatefulWidget {
   State<_POApprovalStatusBadge> createState() => _POApprovalStatusBadgeState();
 }
 
-class _POApprovalStatusBadgeState extends State<_POApprovalStatusBadge> {
+class _POApprovalStatusBadgeState extends State<_POApprovalStatusBadge> with global.ThemeRefreshMixin {
   bool _isLoading = false;
   POApprovalStatusModel? _status;
   bool _hasLoaded = false;
@@ -771,32 +771,32 @@ class _POApprovalStatusBadgeState extends State<_POApprovalStatusBadge> {
     final (Color bgColor, Color textColor, String text, IconData icon) =
         switch (status) {
       POApprovalStatus.pending => (
-          Colors.orange.shade100,
-          Colors.orange.shade800,
+          global.theme.infoHighlightColor,
+          global.theme.warningHighlightTextColor,
           global.language('pending_approval'),
           Icons.hourglass_empty
         ),
       POApprovalStatus.approved => (
-          Colors.green.shade100,
-          Colors.green.shade800,
+          global.theme.positiveHighlightColor,
+          global.theme.positiveHighlightTextColor,
           global.language('approval_approved'),
           Icons.check_circle
         ),
       POApprovalStatus.autoApproved => (
-          Colors.green.shade50,
-          Colors.green.shade700,
+          global.theme.positiveHighlightColor,
+          global.theme.positiveHighlightTextColor,
           global.language('approved_auto'),
           Icons.auto_awesome
         ),
       POApprovalStatus.rejected => (
-          Colors.red.shade100,
-          Colors.red.shade800,
+          global.theme.negativeHighlightColor,
+          global.theme.negativeHighlightTextColor,
           global.language('reject'),
           Icons.cancel
         ),
       POApprovalStatus.draft => (
-          Colors.grey.shade100,
-          Colors.grey.shade700,
+          global.theme.surfaceColor,
+          global.theme.textColor,
           '',
           Icons.edit
         ),

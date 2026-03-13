@@ -32,7 +32,7 @@ class CartSelectorDialog extends StatefulWidget {
   State<CartSelectorDialog> createState() => _CartSelectorDialogState();
 }
 
-class _CartSelectorDialogState extends State<CartSelectorDialog> {
+class _CartSelectorDialogState extends State<CartSelectorDialog> with global.ThemeRefreshMixin {
   CartModel? _selectedCart;
 
   @override
@@ -61,14 +61,14 @@ class _CartSelectorDialogState extends State<CartSelectorDialog> {
                       : widget.systemType == CartSystemType.purchase
                       ? Icons.add_shopping_cart
                       : Icons.inventory_2,
-                  color: Colors.blue[700],
+                  color: global.theme.infoHighlightTextColor,
                   size: 28,
                 ),
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     '${global.language("select_cart")} ${widget.systemType.displayNameThai}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -76,7 +76,7 @@ class _CartSelectorDialogState extends State<CartSelectorDialog> {
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
+                  icon: Icon(Icons.close),
                 ),
               ],
             ),
@@ -92,14 +92,14 @@ class _CartSelectorDialogState extends State<CartSelectorDialog> {
                           Icon(
                             Icons.shopping_cart_outlined,
                             size: 64,
-                            color: Colors.grey[400],
+                            color: global.theme.iconSecondaryColor,
                           ),
                           SizedBox(height: 16),
                           Text(
                             global.language("no_cart_yet"),
                             style: TextStyle(
                               fontSize: 16,
-                              color: Colors.grey[600],
+                              color: global.theme.iconSecondaryColor,
                             ),
                           ),
                         ],
@@ -117,10 +117,10 @@ class _CartSelectorDialogState extends State<CartSelectorDialog> {
                         return Card(
                           elevation: isSelected ? 4 : 1,
                           color: isSelected
-                              ? Colors.blue[50]
+                              ? global.theme.infoHighlightColor
                               : isCurrent
-                              ? Colors.green[50]
-                              : Colors.white,
+                              ? global.theme.positiveHighlightColor
+                              : global.theme.cardColor,
                           margin: const EdgeInsets.only(bottom: 12),
                           child: InkWell(
                             onTap: () {
@@ -173,14 +173,14 @@ class _CartSelectorDialogState extends State<CartSelectorDialog> {
                                                       vertical: 4,
                                                     ),
                                                 decoration: BoxDecoration(
-                                                  color: Colors.green[700],
+                                                  color: global.theme.positiveHighlightTextColor,
                                                   borderRadius:
                                                       BorderRadius.circular(4),
                                                 ),
                                                 child: Text(
                                                   global.language("in_use"),
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
+                                                  style: TextStyle(
+                                                    color: global.theme.onPrimaryColor,
                                                     fontSize: 12,
                                                   ),
                                                 ),
@@ -192,14 +192,14 @@ class _CartSelectorDialogState extends State<CartSelectorDialog> {
                                           '${global.language("cart_type_label")}: ${cart.cartType.displayNameThai}',
                                           style: TextStyle(
                                             fontSize: 14,
-                                            color: Colors.grey[600],
+                                            color: global.theme.iconSecondaryColor,
                                           ),
                                         ),
                                         Text(
                                           '${global.language("product")} ${cart.itemCount} ${global.language("items")} • ${global.formatPrice(cart.totalAmount)}',
                                           style: TextStyle(
                                             fontSize: 14,
-                                            color: Colors.grey[600],
+                                            color: global.theme.iconSecondaryColor,
                                           ),
                                         ),
                                       ],
@@ -211,7 +211,7 @@ class _CartSelectorDialogState extends State<CartSelectorDialog> {
                                     onPressed: () => _showCartEditDialog(cart),
                                     icon: Icon(Icons.edit),
                                     tooltip: global.language("edit_cart_name_and_type"),
-                                    color: Colors.blue[700],
+                                    color: global.theme.infoHighlightTextColor,
                                   ),
                                 ],
                               ),
@@ -243,8 +243,8 @@ class _CartSelectorDialogState extends State<CartSelectorDialog> {
                           }
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[700],
-                    foregroundColor: Colors.white,
+                    backgroundColor: global.theme.infoHighlightTextColor,
+                    foregroundColor: global.theme.onPrimaryColor,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
                       vertical: 12,
@@ -334,7 +334,7 @@ class _CartEditDialog extends StatefulWidget {
   State<_CartEditDialog> createState() => _CartEditDialogState();
 }
 
-class _CartEditDialogState extends State<_CartEditDialog> {
+class _CartEditDialogState extends State<_CartEditDialog> with global.ThemeRefreshMixin {
   late TextEditingController _nameController;
   late CartType _selectedCartType;
 
@@ -368,17 +368,17 @@ class _CartEditDialogState extends State<_CartEditDialog> {
             // หัวข้อ
             Row(
               children: [
-                Icon(Icons.edit, color: Colors.blue[700], size: 28),
+                Icon(Icons.edit, color: global.theme.infoHighlightTextColor, size: 28),
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     global.language("edit_cart_name_and_type"),
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
+                  icon: Icon(Icons.close),
                 ),
               ],
             ),
@@ -387,7 +387,7 @@ class _CartEditDialogState extends State<_CartEditDialog> {
             // ชื่อตะกร้า
             Text(
               global.language("cart_name"),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8),
             TextField(
@@ -403,7 +403,7 @@ class _CartEditDialogState extends State<_CartEditDialog> {
             // ประเภทตะกร้า
             Text(
               global.language("cart_type_label"),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
 
@@ -450,8 +450,8 @@ class _CartEditDialogState extends State<_CartEditDialog> {
                     });
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[700],
-                    foregroundColor: Colors.white,
+                    backgroundColor: global.theme.infoHighlightTextColor,
+                    foregroundColor: global.theme.onPrimaryColor,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
                       vertical: 12,

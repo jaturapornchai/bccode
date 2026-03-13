@@ -31,7 +31,7 @@ class CartItemWidget extends StatelessWidget {
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
@@ -52,10 +52,10 @@ class CartItemWidget extends StatelessWidget {
           },
           errorBuilder: (context, error, stackTrace) {
             return Container(
-              color: Colors.grey[200],
+              color: global.theme.dividerBorderColor,
               child: Icon(
                 Icons.image_not_supported,
-                color: Colors.grey[400],
+                color: global.theme.iconSecondaryColor,
                 size: 24,
               ),
             );
@@ -86,7 +86,7 @@ class CartItemWidget extends StatelessWidget {
                     children: [
                       Text(
                         item.productName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -94,14 +94,14 @@ class CartItemWidget extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         'Code: ${item.itemCode}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor),
                       ),
                       if (item.barcode.isNotEmpty)
                         Text(
                           'Barcode: ${item.barcode}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: global.theme.iconSecondaryColor,
                           ),
                         ),
                     ],
@@ -109,7 +109,7 @@ class CartItemWidget extends StatelessWidget {
                 ),
                 if (isEditable && onDelete != null)
                   IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    icon: Icon(Icons.delete_outline, color: global.theme.negativeHighlightTextColor),
                     onPressed: onDelete,
                   ),
               ],
@@ -127,15 +127,15 @@ class CartItemWidget extends StatelessWidget {
                   children: [
                     Text(
                       'Price/Unit',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       global.formatPrice(item.price),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                        color: global.theme.infoHighlightTextColor,
                       ),
                     ),
                   ],
@@ -154,12 +154,12 @@ class CartItemWidget extends StatelessWidget {
                     children: [
                       Text(
                         'Quantity',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '${item.quantity.toStringAsFixed(2)} ${item.unitName}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -175,23 +175,23 @@ class CartItemWidget extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.1),
+                color: global.theme.positiveHighlightColor,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green, width: 1),
+                border: Border.all(color: global.theme.positiveHighlightTextColor, width: 1),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Total',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                   ),
                   Text(
                     global.formatPrice(item.totalPrice),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.green,
+                      color: global.theme.positiveHighlightTextColor,
                     ),
                   ),
                 ],
@@ -206,7 +206,7 @@ class CartItemWidget extends StatelessWidget {
                   'Unit conversion: ${item.unitStand}:${item.unitDive}',
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey[600],
+                    color: global.theme.iconSecondaryColor,
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -234,7 +234,7 @@ class _QuantityControls extends StatefulWidget {
   State<_QuantityControls> createState() => _QuantityControlsState();
 }
 
-class _QuantityControlsState extends State<_QuantityControls> {
+class _QuantityControlsState extends State<_QuantityControls> with global.ThemeRefreshMixin {
   late TextEditingController _controller;
 
   @override
@@ -257,7 +257,7 @@ class _QuantityControlsState extends State<_QuantityControls> {
       children: [
         // Decrease button
         IconButton(
-          icon: const Icon(Icons.remove_circle_outline),
+          icon: Icon(Icons.remove_circle_outline),
           onPressed: () {
             final newQty = widget.quantity - 1;
             if (newQty > 0) {
@@ -288,7 +288,7 @@ class _QuantityControlsState extends State<_QuantityControls> {
               ),
               suffix: Text(
                 widget.unitName,
-                style: const TextStyle(fontSize: 12),
+                style: TextStyle(fontSize: 12),
               ),
             ),
             onSubmitted: (value) {
@@ -305,7 +305,7 @@ class _QuantityControlsState extends State<_QuantityControls> {
 
         // Increase button
         IconButton(
-          icon: const Icon(Icons.add_circle_outline),
+          icon: Icon(Icons.add_circle_outline),
           onPressed: () {
             final newQty = widget.quantity + 1;
             _controller.text = newQty.toStringAsFixed(2);

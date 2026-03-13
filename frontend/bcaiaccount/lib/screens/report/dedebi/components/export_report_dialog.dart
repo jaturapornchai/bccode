@@ -22,7 +22,7 @@ class ExportReportDialog extends StatefulWidget {
   State<ExportReportDialog> createState() => _ExportReportDialogState();
 }
 
-class _ExportReportDialogState extends State<ExportReportDialog> {
+class _ExportReportDialogState extends State<ExportReportDialog> with global.ThemeRefreshMixin {
   ExportFormat? _selectedFormat;
 
   @override
@@ -72,12 +72,12 @@ class _ExportReportDialogState extends State<ExportReportDialog> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade800,
+                  color: global.theme.textColor,
                 ),
               ),
               Text(
                 widget.reportType.displayName,
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
               ),
             ],
           ),
@@ -103,7 +103,7 @@ class _ExportReportDialogState extends State<ExportReportDialog> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.grey.shade800,
+            color: global.theme.textColor,
           ),
         ),
         SizedBox(height: 12),
@@ -150,18 +150,18 @@ class _ExportReportDialogState extends State<ExportReportDialog> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           border: Border.all(
-            color: isSelected ? Colors.indigo.shade600 : Colors.grey.shade300,
+            color: isSelected ? Colors.indigo.shade600 : global.theme.dividerBorderColor,
             width: 2,
           ),
           borderRadius: BorderRadius.circular(12),
-          color: isSelected ? Colors.indigo.shade50 : Colors.white,
+          color: isSelected ? Colors.indigo.shade50 : global.theme.cardColor,
         ),
         child: Column(
           children: [
             Icon(
               icon,
               size: 32,
-              color: isSelected ? Colors.indigo.shade600 : Colors.grey.shade600,
+              color: isSelected ? Colors.indigo.shade600 : global.theme.textSecondaryColor,
             ),
             const SizedBox(height: 8),
             Text(
@@ -171,13 +171,13 @@ class _ExportReportDialogState extends State<ExportReportDialog> {
                 fontWeight: FontWeight.w600,
                 color: isSelected
                     ? Colors.indigo.shade600
-                    : Colors.grey.shade800,
+                    : global.theme.textColor,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               description,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor),
               textAlign: TextAlign.center,
             ),
           ],
@@ -224,9 +224,9 @@ class _ExportReportDialogState extends State<ExportReportDialog> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
+        color: global.theme.surfaceColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Column(
         children: [
@@ -238,7 +238,7 @@ class _ExportReportDialogState extends State<ExportReportDialog> {
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    Colors.blue.shade600,
+                    global.theme.infoHighlightTextColor,
                   ),
                 ),
               ),
@@ -248,7 +248,7 @@ class _ExportReportDialogState extends State<ExportReportDialog> {
                   message,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.blue.shade800,
+                    color: global.theme.infoHighlightTextColor,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -259,15 +259,15 @@ class _ExportReportDialogState extends State<ExportReportDialog> {
             const SizedBox(height: 12),
             LinearProgressIndicator(
               value: progress / 100,
-              backgroundColor: Colors.blue.shade100,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
+              backgroundColor: global.theme.surfaceColor,
+              valueColor: AlwaysStoppedAnimation<Color>(global.theme.infoHighlightTextColor),
             ),
             const SizedBox(height: 4),
             Text(
               '$progress%',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.blue.shade600,
+                color: global.theme.infoHighlightTextColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -281,15 +281,15 @@ class _ExportReportDialogState extends State<ExportReportDialog> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.green.shade50,
+        color: global.theme.positiveHighlightColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green.shade200),
+        border: Border.all(color: global.theme.positiveHighlightColor),
       ),
       child: Column(
         children: [
           Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.green.shade600, size: 24),
+              Icon(Icons.check_circle, color: global.theme.positiveHighlightTextColor, size: 24),
               SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -299,7 +299,7 @@ class _ExportReportDialogState extends State<ExportReportDialog> {
                       global.language('export_report_file_ready'),
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.green.shade800,
+                        color: global.theme.positiveHighlightTextColor,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -307,7 +307,7 @@ class _ExportReportDialogState extends State<ExportReportDialog> {
                       state.fileName,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.green.shade600,
+                        color: global.theme.positiveHighlightTextColor,
                       ),
                     ),
                   ],
@@ -323,8 +323,8 @@ class _ExportReportDialogState extends State<ExportReportDialog> {
               icon: Icon(Icons.download),
               label: Text(global.language('export_report_download')),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green.shade600,
-                foregroundColor: Colors.white,
+                backgroundColor: global.theme.positiveHighlightTextColor,
+                foregroundColor: global.theme.onPrimaryColor,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -341,18 +341,18 @@ class _ExportReportDialogState extends State<ExportReportDialog> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
+        color: global.theme.negativeHighlightColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.shade200),
+        border: Border.all(color: global.theme.negativeHighlightColor),
       ),
       child: Row(
         children: [
-          Icon(Icons.error, color: Colors.red.shade600, size: 24),
+          Icon(Icons.error, color: global.theme.negativeHighlightTextColor, size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               message,
-              style: TextStyle(fontSize: 14, color: Colors.red.shade800),
+              style: TextStyle(fontSize: 14, color: global.theme.negativeHighlightTextColor),
             ),
           ),
         ],
@@ -385,8 +385,8 @@ class _ExportReportDialogState extends State<ExportReportDialog> {
                         Navigator.of(context).pop();
                       },
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.grey.shade700,
-                  side: BorderSide(color: Colors.grey.shade300),
+                  foregroundColor: global.theme.iconColor,
+                  side: BorderSide(color: global.theme.dividerBorderColor),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -403,7 +403,7 @@ class _ExportReportDialogState extends State<ExportReportDialog> {
                     : _startExport,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.indigo.shade600,
-                  foregroundColor: Colors.white,
+                  foregroundColor: global.theme.onPrimaryColor,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -489,7 +489,7 @@ class _ExportReportDialogState extends State<ExportReportDialog> {
             SizedBox(height: 8),
             Text(
               '${global.language('export_report_filename')}: ${state.fileName}',
-              style: const TextStyle(fontWeight: FontWeight.w500),
+              style: TextStyle(fontWeight: FontWeight.w500),
             ),
           ],
         ),

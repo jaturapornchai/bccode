@@ -27,15 +27,15 @@ class SaleReturnTableView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.assignment_return_outlined,
               size: 64,
-              color: Colors.grey,
+              color: global.theme.textSecondaryColor,
             ),
             SizedBox(height: 16),
             Text(
               global.language('sale_return.no_data'),
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
+              style: TextStyle(fontSize: 16, color: global.theme.textSecondaryColor),
             ),
           ],
         ),
@@ -48,9 +48,9 @@ class SaleReturnTableView extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: global.theme.surfaceColor,
             border: Border(
-              bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+              bottom: BorderSide(color: global.theme.dividerBorderColor, width: 1),
             ),
           ),
           child: _buildHeaderRow(),
@@ -72,7 +72,7 @@ class SaleReturnTableView extends StatelessWidget {
               onPressed: onLoadMore,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.indigo,
-                foregroundColor: Colors.white,
+                foregroundColor: global.theme.onPrimaryColor,
                 minimumSize: const Size(double.infinity, 48),
               ),
               child: Text(global.language('sale_return.load_more')),
@@ -131,7 +131,7 @@ class SaleReturnTableView extends StatelessWidget {
 
   Widget _buildDataRow(SaleReturnModel saleReturn, int index) {
     final isEven = index % 2 == 0;
-    final backgroundColor = isEven ? Colors.white : Colors.grey.shade50;
+    final backgroundColor = isEven ? global.theme.cardColor : global.theme.backgroundColor;
 
     return InkWell(
       onTap: () {
@@ -141,7 +141,7 @@ class SaleReturnTableView extends StatelessWidget {
           AppLogger.error('Error in sale return row tap: $e');
         }
       },
-      hoverColor: Colors.indigo.shade50,
+      hoverColor: global.theme.rowHoverColor,
       highlightColor: Colors.indigo.shade100,
       splashColor: Colors.indigo.shade200,
       child: Container(
@@ -149,7 +149,7 @@ class SaleReturnTableView extends StatelessWidget {
         decoration: BoxDecoration(
           color: backgroundColor,
           border: Border(
-            bottom: BorderSide(color: Colors.grey.shade200, width: 0.5),
+            bottom: BorderSide(color: global.theme.dividerBorderColor, width: 0.5),
           ),
         ),
         child: Row(
@@ -171,7 +171,7 @@ class SaleReturnTableView extends StatelessWidget {
                 saleReturn.docno,
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: Colors.blue.shade700,
+                color: global.theme.infoHighlightTextColor,
               ),
             ),
             // ลูกค้า
@@ -180,7 +180,7 @@ class SaleReturnTableView extends StatelessWidget {
               child: _buildDataCell(
                 _getCreditorName(saleReturn.creditorNames),
                 fontSize: 11,
-                color: Colors.green.shade700,
+                color: global.theme.positiveHighlightTextColor,
               ),
             ),
 
@@ -203,8 +203,8 @@ class SaleReturnTableView extends StatelessWidget {
                     : '-',
                 textAlign: TextAlign.right,
                 color: saleReturn.detailTotalDiscount > 0
-                    ? Colors.red.shade700
-                    : Colors.grey.shade500,
+                    ? global.theme.negativeHighlightTextColor
+                    : global.theme.textSecondaryColor,
                 fontWeight: saleReturn.detailTotalDiscount > 0
                     ? FontWeight.w600
                     : FontWeight.normal,
@@ -236,7 +236,7 @@ class SaleReturnTableView extends StatelessWidget {
               child: _buildDataCell(
                 ReportUtils.formatCurrency(saleReturn.totalBeforeVat),
                 textAlign: TextAlign.right,
-                color: Colors.orange.shade700,
+                color: global.theme.warningHighlightTextColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -250,7 +250,7 @@ class SaleReturnTableView extends StatelessWidget {
                 textAlign: TextAlign.right,
                 color: saleReturn.totalVatValue > 0
                     ? Colors.brown.shade700
-                    : Colors.grey.shade500,
+                    : global.theme.textSecondaryColor,
                 fontWeight: saleReturn.totalVatValue > 0
                     ? FontWeight.w500
                     : FontWeight.normal,

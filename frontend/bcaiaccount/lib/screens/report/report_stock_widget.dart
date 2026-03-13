@@ -56,8 +56,8 @@ class ReportStockConditionClass {
       margin: const EdgeInsets.only(top: 8.0),
       padding: const EdgeInsets.all(8.0),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey),
+        color: global.theme.cardColor,
+        border: Border.all(color: global.theme.textSecondaryColor),
         borderRadius: BorderRadius.circular(4.0),
       ),
       child: Column(
@@ -81,8 +81,8 @@ class ReportStockConditionClass {
                     Icon(Icons.check_box, size: 18), // เพิ่มไอคอน global.language("add")
                 label: Text(global.language("select_all_warehouses")),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade600, // สีปุ่มน้ำเงินเข้ม
-                  foregroundColor: Colors.white, // สีตัวอักษรและไอคอน
+                  backgroundColor: global.theme.infoHighlightTextColor, // สีปุ่มน้ำเงินเข้ม
+                  foregroundColor: global.theme.onPrimaryColor, // สีตัวอักษรและไอคอน
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(4.0),
                   ),
@@ -104,8 +104,8 @@ class ReportStockConditionClass {
                 icon: Icon(Icons.delete, size: 18),
                 label: Text(global.language("deselect_all_warehouses")),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange.shade800, // สีปุ่มส้ม
-                  foregroundColor: Colors.white,
+                  backgroundColor: global.theme.warningHighlightTextColor, // สีปุ่มส้ม
+                  foregroundColor: global.theme.onPrimaryColor,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(4.0),
                   ),
@@ -115,7 +115,7 @@ class ReportStockConditionClass {
               Text(
                 global.language("select_warehouse_for_report"),
                 style: TextStyle(
-                  color: Colors.grey.shade800, // สีเทาเข้มเพื่อความนุ่มนวล
+                  color: global.theme.textColor, // สีเทาเข้มเพื่อความนุ่มนวล
                   fontSize: 14,
                 ),
               ),
@@ -137,9 +137,9 @@ class ReportStockConditionClass {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: item.isSelected
-                      ? Colors.blue.shade600
-                      : Colors.blue.shade300,
-                  foregroundColor: Colors.white,
+                      ? global.theme.infoHighlightTextColor
+                      : global.theme.infoHighlightTextColor,
+                  foregroundColor: global.theme.onPrimaryColor,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(4.0),
                   ),
@@ -150,7 +150,7 @@ class ReportStockConditionClass {
                       Icon(
                         (item.isSelected) ? Icons.check_circle : Icons.circle,
                         size: 16,
-                        color: Colors.white,
+                        color: global.theme.cardColor,
                       ),
                       const SizedBox(width: 4),
                     ],
@@ -176,8 +176,8 @@ class ReportStockConditionClass {
           margin: const EdgeInsets.only(top: 8.0),
           padding: const EdgeInsets.all(8.0),
           decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: Colors.grey),
+            color: global.theme.cardColor,
+            border: Border.all(color: global.theme.textSecondaryColor),
             borderRadius: BorderRadius.circular(4.0),
           ),
           child: Column(
@@ -188,13 +188,13 @@ class ReportStockConditionClass {
                 children: [
                   Text(
                     "คลังสินค้า ${wareHouse.code}",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: Icon(Icons.close),
                     onPressed: () {
                       wareHouse.isSelected = false;
                       if (onStateUpdate != null) {
@@ -224,8 +224,8 @@ class ReportStockConditionClass {
                     label: Text(global.language("select_all_locations")),
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
-                          Colors.blue.shade600, // สีปุ่มน้ำเงินเข้ม
-                      foregroundColor: Colors.white, // สีตัวอักษรและไอคอน
+                          global.theme.infoHighlightTextColor, // สีปุ่มน้ำเงินเข้ม
+                      foregroundColor: global.theme.onPrimaryColor, // สีตัวอักษรและไอคอน
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(4.0),
                       ),
@@ -247,8 +247,8 @@ class ReportStockConditionClass {
                         size: 18), // เพิ่มไอคอน global.language("database_master_info.refresh")
                     label: Text(global.language("deselect_all_locations")),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange.shade800, // สีปุ่มส้ม
-                      foregroundColor: Colors.white,
+                      backgroundColor: global.theme.warningHighlightTextColor, // สีปุ่มส้ม
+                      foregroundColor: global.theme.onPrimaryColor,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(4.0),
                       ),
@@ -258,7 +258,7 @@ class ReportStockConditionClass {
                   Text(
                     global.language("select_location_for_report"),
                     style: TextStyle(
-                      color: Colors.grey.shade800,
+                      color: global.theme.textColor,
                       fontSize: 14,
                     ),
                   ),
@@ -280,9 +280,9 @@ class ReportStockConditionClass {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: item.isSelected
-                          ? Colors.blue.shade600
-                          : Colors.blue.shade300,
-                      foregroundColor: Colors.white,
+                          ? global.theme.infoHighlightTextColor
+                          : global.theme.infoHighlightTextColor,
+                      foregroundColor: global.theme.onPrimaryColor,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(4.0),
                       ),
@@ -295,7 +295,7 @@ class ReportStockConditionClass {
                                 ? Icons.check_circle
                                 : Icons.circle,
                             size: 16,
-                            color: Colors.white,
+                            color: global.theme.cardColor,
                           ),
                           const SizedBox(width: 4),
                         ],

@@ -20,7 +20,7 @@ class ProductGroupSub2SearchScreen extends StatefulWidget {
 
 class ProductGroupSub2SearchScreenState
     extends State<ProductGroupSub2SearchScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   TextEditingController searchController = TextEditingController();
   FocusNode searchFocusNode = FocusNode(skipTraversal: true);
   ScrollController listScrollController = ScrollController();
@@ -29,6 +29,7 @@ class ProductGroupSub2SearchScreenState
   bool isKeyUp = false;
   bool isKeyDown = false;
   String selectGuid = "";
+  int _hoverIndex = -1;
   int currentListIndex = 0;
   final _debouncer = global.Debouncer(1000);
   bool loadingData = false;
@@ -84,6 +85,7 @@ class ProductGroupSub2SearchScreenState
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -91,7 +93,7 @@ class ProductGroupSub2SearchScreenState
         title: Text(global.language('group_sub2')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.pop(
               context,
@@ -175,11 +177,11 @@ class ProductGroupSub2SearchScreenState
               child: Container(
                 padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: global.theme.surfaceColor,
                   borderRadius: BorderRadius.circular(2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withValues(alpha: 0.5),
+                      color: global.theme.dividerBorderColor.withValues(alpha: 0.5),
                       spreadRadius: 5,
                       blurRadius: 7,
                       offset: const Offset(0, 2),
@@ -205,14 +207,19 @@ class ProductGroupSub2SearchScreenState
                     autofocus: true,
                     focusNode: searchFocusNode,
                     controller: searchController,
+                    style: TextStyle(color: global.theme.textColor),
                     decoration: InputDecoration(
                       isDense: true,
+                      filled: false,
                       contentPadding: const EdgeInsets.only(
                         top: 10,
                         bottom: 10,
                       ),
                       border: InputBorder.none,
+                      prefixIcon: Icon(Icons.search, size: 20, color: global.theme.iconColor),
+                      prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                       hintText: global.language('search'),
+                      hintStyle: TextStyle(color: global.theme.formHintColor),
                     ),
                   ),
                 ),
@@ -227,8 +234,8 @@ class ProductGroupSub2SearchScreenState
               ),
               decoration: BoxDecoration(
                 color: global.theme.columnHeaderColor,
-                border: const Border(
-                  bottom: BorderSide(width: 1.0, color: Colors.grey),
+                border: Border(
+                bottom: BorderSide(width: 1.0, color: global.theme.dividerBorderColor),
                 ),
               ),
               child: Row(
@@ -237,8 +244,8 @@ class ProductGroupSub2SearchScreenState
                     flex: 5,
                     child: Text(
                       global.language("group_sub2_code"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                      color: global.theme.columnHeaderTextColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -247,8 +254,8 @@ class ProductGroupSub2SearchScreenState
                     flex: 10,
                     child: Text(
                       global.language("group_sub2_name"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                      color: global.theme.columnHeaderTextColor,
                         fontWeight: FontWeight.bold,
                       ),
                       maxLines: 2,
@@ -263,7 +270,7 @@ class ProductGroupSub2SearchScreenState
                 controller: listScrollController,
                 child: Column(
                   children: masterGroupSub2ListData
-                      .map((value) => listObject(value))
+                      .asMap().entries.map((e) => listObject(e.value, e.key))
                       .toList(),
                 ),
               ),
@@ -274,8 +281,29 @@ class ProductGroupSub2SearchScreenState
     );
   }
 
-  Widget listObject(MasterGroupSub2Model value) {
-    return GestureDetector(
+
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
+  }
+
+  Widget listObject(MasterGroupSub2Model value, int index) {
+    final isSelected = selectGuid == value.guidfixed;
+    TextStyle textStyle = isSelected
+        ? TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w700, color: global.theme.textColor)
+        : TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w400, color: global.theme.textSecondaryColor);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         Navigator.pop(
           context,
@@ -289,11 +317,9 @@ class ProductGroupSub2SearchScreenState
       },
       child: Container(
         decoration: BoxDecoration(
-          color: (selectGuid == value.guidfixed)
-              ? Colors.cyan[100]
-              : Colors.white,
-          border: const Border(
-            bottom: BorderSide(width: 1.0, color: Colors.grey),
+          color: _getContainerColor(value.guidfixed ?? "", index),
+          border: Border(
+                bottom: BorderSide(width: 1.0, color: global.theme.dividerBorderColor),
           ),
         ),
         padding: const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
@@ -304,6 +330,7 @@ class ProductGroupSub2SearchScreenState
               flex: 5,
               child: Text(
                 value.code,
+                style: textStyle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -312,6 +339,7 @@ class ProductGroupSub2SearchScreenState
               flex: 10,
               child: Text(
                 global.packName(value.names),
+                style: textStyle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -319,6 +347,7 @@ class ProductGroupSub2SearchScreenState
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -331,6 +360,7 @@ class ProductGroupSub2SearchScreenState
       }
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {

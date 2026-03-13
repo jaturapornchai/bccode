@@ -12,7 +12,8 @@ class ImportProductDetailScreen extends StatefulWidget {
       _ImportProductDetailScreenState();
 }
 
-class _ImportProductDetailScreenState extends State<ImportProductDetailScreen> {
+class _ImportProductDetailScreenState extends State<ImportProductDetailScreen>
+    with global.ThemeRefreshMixin {
   // Filter and search
   String searchQuery = '';
   int filterAction = -1; // -1=ทั้งหมด, 0=ไม่เปลี่ยนแปลง, 1=Insert, 2=Update
@@ -82,7 +83,7 @@ class _ImportProductDetailScreenState extends State<ImportProductDetailScreen> {
             width: 80,
             child: Text(
               '$label:',
-              style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+              style: TextStyle(fontSize: 13, color: global.theme.textColor),
             ),
           ),
           Expanded(
@@ -91,7 +92,7 @@ class _ImportProductDetailScreenState extends State<ImportProductDetailScreen> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: value != null ? FontWeight.w500 : FontWeight.normal,
-                color: value != null ? Colors.black : Colors.grey,
+                color: value != null ? global.theme.textColor : global.theme.textSecondaryColor,
                 fontStyle: value != null ? FontStyle.normal : FontStyle.italic,
               ),
             ),
@@ -108,14 +109,14 @@ class _ImportProductDetailScreenState extends State<ImportProductDetailScreen> {
         title: Text(
           global.language('import_product_detail.product_import_details'),
         ),
-        backgroundColor: const Color(0xFF0A3880),
+        backgroundColor: global.theme.appBarColor,
       ),
       body: Column(
         children: [
           // Search and Filter Section
           Container(
             padding: const EdgeInsets.all(16),
-            color: Colors.grey[100],
+            color: global.theme.surfaceColor,
             child: Column(
               children: [
                 // Header with count
@@ -123,7 +124,7 @@ class _ImportProductDetailScreenState extends State<ImportProductDetailScreen> {
                   children: [
                     Text(
                       '${global.language('import_product_detail.total')} ${widget.importResult.comparison?.products.length ?? 0} ${global.language('import_product_detail.items')}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -131,7 +132,7 @@ class _ImportProductDetailScreenState extends State<ImportProductDetailScreen> {
                     Spacer(),
                     Text(
                       '${global.language('import_product_detail.showing')} ${_filteredProducts.length} ${global.language('import_product_detail.items')}',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 14, color: global.theme.iconSecondaryColor),
                     ),
                   ],
                 ),
@@ -145,10 +146,10 @@ class _ImportProductDetailScreenState extends State<ImportProductDetailScreen> {
                     hintText: global.language(
                       'import_product_detail.search_hint',
                     ),
-                    prefixIcon: const Icon(Icons.search),
+                    prefixIcon: Icon(Icons.search),
                     suffixIcon: searchQuery.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear),
+                            icon: Icon(Icons.clear),
                             onPressed: () {
                               _searchController.clear();
                               searchQuery = '';
@@ -160,7 +161,7 @@ class _ImportProductDetailScreenState extends State<ImportProductDetailScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: global.theme.formFillColor,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 12,
@@ -209,7 +210,7 @@ class _ImportProductDetailScreenState extends State<ImportProductDetailScreen> {
                         filterAction = 2;
                         _updateFilteredProducts();
                       },
-                      selectedColor: Colors.orange[100],
+                      selectedColor: global.theme.rowSelectedColor,
                     ),
                     FilterChip(
                       label: Text(
@@ -220,7 +221,7 @@ class _ImportProductDetailScreenState extends State<ImportProductDetailScreen> {
                         filterAction = 0;
                         _updateFilteredProducts();
                       },
-                      selectedColor: Colors.grey[300],
+                      selectedColor: global.theme.dividerBorderColor,
                     ),
                   ],
                 ),
@@ -238,7 +239,7 @@ class _ImportProductDetailScreenState extends State<ImportProductDetailScreen> {
                         Icon(
                           Icons.search_off,
                           size: 64,
-                          color: Colors.grey[400],
+                          color: global.theme.iconSecondaryColor,
                         ),
                         SizedBox(height: 16),
                         Text(
@@ -247,7 +248,7 @@ class _ImportProductDetailScreenState extends State<ImportProductDetailScreen> {
                           ),
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.grey[600],
+                            color: global.theme.iconSecondaryColor,
                           ),
                         ),
                       ],
@@ -286,8 +287,8 @@ class _ImportProductDetailScreenState extends State<ImportProductDetailScreen> {
                                   ),
                                   child: Text(
                                     product.actionText,
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: global.theme.onPrimaryColor,
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -296,14 +297,14 @@ class _ImportProductDetailScreenState extends State<ImportProductDetailScreen> {
                                 const SizedBox(width: 12),
                                 Icon(
                                   Icons.qr_code,
-                                  color: Colors.grey[700],
+                                  color: global.theme.textColor,
                                   size: 20,
                                 ),
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
                                     product.barcode,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),

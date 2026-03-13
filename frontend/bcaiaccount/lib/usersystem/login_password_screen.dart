@@ -33,7 +33,7 @@ class LoginPasswordScreen extends StatefulWidget {
   State<LoginPasswordScreen> createState() => LoginPasswordScreenState();
 }
 
-class LoginPasswordScreenState extends State<LoginPasswordScreen> {
+class LoginPasswordScreenState extends State<LoginPasswordScreen> with global.ThemeRefreshMixin {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _backendUrlController = TextEditingController();
@@ -349,6 +349,9 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
     'register': {'en': 'Register', 'th': 'สมัครผู้ใช้งาน', 'lo': 'ລົງທະບຽນ', 'zh': '注册', 'ja': '登録', 'ko': '회원가입', 'my': 'စာရင်းသွင်း', 'km': 'ចុះឈ្មោះ', 'vi': 'Đăng ký'},
     'manual': {'en': 'Manual', 'th': 'คู่มือ', 'lo': 'ຄູ່ມື', 'zh': '使用手册', 'ja': 'マニュアル', 'ko': '매뉴얼', 'my': 'လမ်းညွှန်', 'km': 'សៀវភៅណែនាំ', 'vi': 'Hướng dẫn'},
     'setup': {'en': 'Setup', 'th': 'ตั้งค่า', 'lo': 'ຕັ້ງຄ່າ', 'zh': '设置', 'ja': '設定', 'ko': '설정', 'my': 'ပြင်ဆင်', 'km': 'ការកំណត់', 'vi': 'Cài đặt'},
+    'theme_auto': {'en': 'Auto', 'th': 'อัตโนมัติ', 'lo': 'ອັດຕະໂນມັດ', 'zh': '自动', 'ja': '自動', 'ko': '자동', 'my': 'အလိုအလျောက်', 'km': 'ស្វ័យប្រវត្តិ', 'vi': 'Tự động'},
+    'theme_light': {'en': 'Light', 'th': 'สว่าง', 'lo': 'ແສງ', 'zh': '浅色', 'ja': 'ライト', 'ko': '밝게', 'my': 'အလင်း', 'km': 'ភ្លឺ', 'vi': 'Sáng'},
+    'theme_dark': {'en': 'Dark', 'th': 'มืด', 'lo': 'ມືດ', 'zh': '深色', 'ja': 'ダーク', 'ko': '어둡게', 'my': 'မှောင်', 'km': 'ងងឹត', 'vi': 'Tối'},
   };
 
   String _loginText(String key) {
@@ -555,11 +558,17 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                _darkenColor(F.primaryGradientColor, 0.3), // สีเข้มขึ้น
-                F.primaryGradientColor,
-                F.secondaryGradientColor,
-              ],
+              colors: global.isDarkMode()
+                  ? [
+                      const Color(0xFF0D1B2A),
+                      const Color(0xFF1A1A2E),
+                      const Color(0xFF16213E),
+                    ]
+                  : [
+                      _darkenColor(F.primaryGradientColor, 0.3),
+                      F.primaryGradientColor,
+                      F.secondaryGradientColor,
+                    ],
               stops: const [0.0, 0.5, 1.0],
             ),
           ),
@@ -615,19 +624,6 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
     setState(() {});
   }
 
-  String _getEnvironmentName() {
-    switch (F.appFlavor) {
-      case Flavor.bcaidev:
-        return 'BC DEV';
-      case Flavor.bcaiuat:
-        return 'BC UAT';
-      case Flavor.bcaiprod:
-        return 'BC PROD';
-      default:
-        return kDebugMode ? 'DEV' : 'PROD';
-    }
-  }
-
   /// ทำให้สีเข้มขึ้น (darken)
   Color _darkenColor(Color color, double factor) {
     final int a = (color.a * 255.0).round().clamp(0, 255);
@@ -663,7 +659,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
           Container(
             padding: EdgeInsets.all(cardPadding),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               borderRadius: BorderRadius.circular(24),
               boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 30, offset: const Offset(0, 15))],
             ),
@@ -674,12 +670,12 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
                 if (global.userLoginData.token.isEmpty) ...[
                   Text(
                     _loginText("welcome"),
-                    style: TextStyle(fontSize: isCompactScreen ? 22 : 28, fontWeight: FontWeight.bold, color: const Color(0xFF1A237E)),
+                    style: TextStyle(fontSize: isCompactScreen ? 22 : 28, fontWeight: FontWeight.bold, color: global.isDarkMode() ? global.theme.primaryLightColor : const Color(0xFF1A237E)),
                   ),
                   SizedBox(height: isCompactScreen ? 4 : 8),
                   Text(
                     _loginText("login"),
-                    style: TextStyle(fontSize: isCompactScreen ? 14 : 16, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: isCompactScreen ? 14 : 16, color: global.theme.iconSecondaryColor),
                   ),
                   SizedBox(height: sectionSpacing),
                   _buildUsernamePasswordLogin(isCompact: isCompactScreen),
@@ -696,7 +692,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
 
           SizedBox(height: isCompactScreen ? 4 : 8),
 
-          // ปุ่ม คู่มือ + Setup Config
+          // ปุ่ม คู่มือ + ธีม + ตั้งค่า
           Center(
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -708,7 +704,26 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
                   icon: Icon(Icons.menu_book_rounded, size: 14, color: Colors.white.withValues(alpha: 0.6)),
                   label: Text(_loginText('manual'), style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12)),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
+                // ปุ่มเปลี่ยนธีม (light ↔ dark)
+                TextButton.icon(
+                  onPressed: () async {
+                    global.displayThemeMode =
+                        global.isDarkMode() ? 'light' : 'dark';
+                    await global.saveThemeSettings();
+                    setState(() {});
+                  },
+                  icon: Icon(
+                    _getThemeModeIcon(),
+                    size: 14,
+                    color: _getThemeModeIconColor(),
+                  ),
+                  label: Text(
+                    _getThemeModeLabel(),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
+                  ),
+                ),
+                const SizedBox(width: 4),
                 TextButton.icon(
                   onPressed: () {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const SetupScreen()));
@@ -778,6 +793,24 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
   }
 
   /// ดึงข้อความ Environment badge ตาม flavor
+  // ================== Theme Mode Helpers ==================
+
+  IconData _getThemeModeIcon() {
+    return global.isDarkMode() ? Icons.dark_mode : Icons.light_mode;
+  }
+
+  Color _getThemeModeIconColor() {
+    return global.isDarkMode()
+        ? Colors.indigo.shade300
+        : Colors.orange;
+  }
+
+  String _getThemeModeLabel() {
+    return global.isDarkMode()
+        ? _loginText('theme_dark')
+        : _loginText('theme_light');
+  }
+
   String _getEnvironmentBadgeText() {
     if (F.isDev) {
       return '🔧 Development';
@@ -823,12 +856,12 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
         // User info
         Text(
           global.userLoginData.name.isNotEmpty ? global.userLoginData.name : global.userLoginData.email,
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF1A237E)),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: global.isDarkMode() ? global.theme.primaryLightColor : const Color(0xFF1A237E)),
         ),
         if (global.userLoginData.email.isNotEmpty && global.userLoginData.name.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 4),
-            child: Text(global.userLoginData.email, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+            child: Text(global.userLoginData.email, style: TextStyle(fontSize: 14, color: global.theme.iconSecondaryColor)),
           ),
         const SizedBox(height: 8),
         Container(
@@ -1074,7 +1107,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 10))],
       ),
@@ -1101,9 +1134,9 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
         // Username field with modern styling
         Container(
           decoration: BoxDecoration(
-            color: Colors.grey[50],
+            color: global.theme.surfaceColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: global.theme.dividerBorderColor),
           ),
           child: TextField(
             controller: _usernameController,
@@ -1114,7 +1147,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
             style: TextStyle(fontSize: fontSize),
             decoration: InputDecoration(
               labelText: _loginText('username'),
-              labelStyle: TextStyle(color: Colors.grey[600], fontSize: fontSize),
+              labelStyle: TextStyle(color: global.theme.iconSecondaryColor, fontSize: fontSize),
               border: InputBorder.none,
               prefixIcon: Container(
                 margin: EdgeInsets.all(iconMargin),
@@ -1132,9 +1165,9 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
         // Password field with modern styling
         Container(
           decoration: BoxDecoration(
-            color: Colors.grey[50],
+            color: global.theme.surfaceColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: global.theme.dividerBorderColor),
           ),
           child: TextField(
             controller: _passwordController,
@@ -1145,7 +1178,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
             style: TextStyle(fontSize: fontSize),
             decoration: InputDecoration(
               labelText: _loginText('password'),
-              labelStyle: TextStyle(color: Colors.grey[600], fontSize: fontSize),
+              labelStyle: TextStyle(color: global.theme.iconSecondaryColor, fontSize: fontSize),
               border: InputBorder.none,
               prefixIcon: Container(
                 margin: EdgeInsets.all(iconMargin),
@@ -1200,7 +1233,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
               },
               child: Text(
                 _loginText('remember_password'),
-                style: TextStyle(fontSize: fontSize, color: Colors.grey[600]),
+                style: TextStyle(fontSize: fontSize, color: global.theme.iconSecondaryColor),
               ),
             ),
           ],
@@ -1234,7 +1267,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
                         const SizedBox(width: 10),
                         Text(
                           'กำลังเข้าสู่ระบบ...',
-                          style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w600, color: Colors.grey[600]),
+                          style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w600, color: global.theme.iconSecondaryColor),
                         ),
                       ],
                     )
@@ -1265,7 +1298,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
                 },
           child: Text(
             _loginText('register'),
-            style: TextStyle(color: const Color(0xFF3949AB), fontSize: isCompact ? 13 : 15, fontWeight: FontWeight.w500),
+            style: TextStyle(color: global.isDarkMode() ? global.theme.primaryLightColor : const Color(0xFF3949AB), fontSize: isCompact ? 13 : 15, fontWeight: FontWeight.w500),
           ),
         ),
 
@@ -1288,9 +1321,9 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: isCompact ? 14 : 20, vertical: isCompact ? 10 : 14),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
+              color: global.theme.surfaceColor,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: global.theme.dividerBorderColor),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -1302,10 +1335,10 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
                 SizedBox(width: isCompact ? 8 : 12),
                 Text(
                   _getLanguageText(),
-                  style: TextStyle(fontSize: isCompact ? 12 : 14, fontWeight: FontWeight.w500, color: Colors.grey[700]),
+                  style: TextStyle(fontSize: isCompact ? 12 : 14, fontWeight: FontWeight.w500, color: global.theme.textSecondaryColor),
                 ),
                 SizedBox(width: isCompact ? 4 : 8),
-                Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey[500], size: isCompact ? 16 : 20),
+                Icon(Icons.keyboard_arrow_down_rounded, color: global.theme.iconSecondaryColor, size: isCompact ? 16 : 20),
               ],
             ),
           ),
@@ -1320,20 +1353,20 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
               Expanded(
                 child: Container(
                   height: 1,
-                  decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.transparent, Colors.grey.shade300])),
+                  decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.transparent, global.theme.dividerBorderColor])),
                 ),
               ),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: isCompact ? 12 : 20),
                 child: Text(
                   "OR",
-                  style: TextStyle(color: Colors.grey[500], fontWeight: FontWeight.w500, fontSize: isCompact ? 11 : 13),
+                  style: TextStyle(color: global.theme.textSecondaryColor, fontWeight: FontWeight.w500, fontSize: isCompact ? 11 : 13),
                 ),
               ),
               Expanded(
                 child: Container(
                   height: 1,
-                  decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.grey.shade300, Colors.transparent])),
+                  decoration: BoxDecoration(gradient: LinearGradient(colors: [global.theme.dividerBorderColor, Colors.transparent])),
                 ),
               ),
             ],
@@ -1455,7 +1488,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
                   Image(width: 24, height: 24, image: AssetImage("assets/img/google_logo.png")),
                   const SizedBox(width: 14),
                   Text(_isSigningIn ? 'Signing in...' : 'Sign in with Google', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                  if (_isSigningIn) ...[const SizedBox(width: 12), SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey[600]))],
+                  if (_isSigningIn) ...[SizedBox(width: 12), SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: global.theme.iconSecondaryColor))],
                 ],
               ),
             ),
@@ -1650,361 +1683,6 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
         });
         global.showSnackBar(context, const Icon(Icons.error, color: Colors.white), 'เกิดข้อผิดพลาด: $e', Colors.red);
       }
-    }
-  }
-
-  /// เริ่ม polling ตรวจสอบสถานะ LINE Login
-  void _startLineLoginPolling(String sessionId, int pollIntervalMs, BuildContext dialogContext) {
-    _stopLineLoginPolling();
-
-    final lineBackendUrl = _getLineBackendUrl();
-
-    _lineLoginPollingTimer = Timer.periodic(Duration(milliseconds: pollIntervalMs), (timer) async {
-      try {
-        final statusResponse = await http.get(Uri.parse('$lineBackendUrl/api/line/session/$sessionId/status'));
-
-        if (statusResponse.statusCode != 200) {
-          return; // ลองใหม่รอบหน้า
-        }
-
-        final statusData = jsonDecode(statusResponse.body);
-        final status = statusData['data']?['status'];
-
-        if (status == 'success') {
-          // Login สำเร็จ!
-          timer.cancel();
-          _lineLoginPollingTimer = null;
-
-          final token = statusData['data']['token'];
-          final user = statusData['data']['user'];
-
-          if (kDebugMode) {
-            AppLogger.debug('LINE Login Success! Token: $token');
-            AppLogger.debug('LINE Login User Data: $user');
-            AppLogger.debug('LINE Login display_name: ${user?['display_name']}');
-            AppLogger.debug('LINE Login picture_url: ${user?['picture_url']}');
-            AppLogger.debug('LINE Login email: ${user?['email']}');
-          }
-
-          // ปิด dialog
-          if (mounted && Navigator.canPop(dialogContext)) {
-            Navigator.pop(dialogContext);
-          }
-
-          // ส่งข้อมูลไปยัง Bloc
-          if (mounted) {
-            context.read<LoginBloc>().add(
-              LineLogin(lineUserId: user['line_user_id'] ?? '', accessToken: token, displayName: user['display_name'], pictureUrl: user['picture_url'], email: user['email']),
-            );
-          }
-        } else if (status == 'expired' || status == 'failed') {
-          // Session หมดอายุหรือ login ล้มเหลว
-          timer.cancel();
-          _lineLoginPollingTimer = null;
-
-          final errorMessage = statusData['error']?['message'] ?? 'Session expired';
-
-          if (mounted && Navigator.canPop(dialogContext)) {
-            Navigator.pop(dialogContext);
-          }
-
-          if (mounted) {
-            global.showSnackBar(context, const Icon(Icons.error, color: Colors.white), errorMessage, Colors.red);
-          }
-        }
-        // status == 'pending' → ไม่ต้องทำอะไร รอ poll รอบหน้า
-      } catch (e) {
-        if (kDebugMode) {
-          AppLogger.error('Polling error: $e');
-        }
-        // ไม่หยุด polling เมื่อเกิด error เพราะอาจเป็นปัญหาชั่วคราว
-      }
-    });
-  }
-
-  /// แสดง Login Code Dialog พร้อม polling รอ Backend ตอบกลับ
-  /// user ต้องพิมพ์รหัส 4 หลักส่งไปหา LINE Bot
-  void _showLineLoginCodeDialogWithPolling(String loginCode, String sessionId, int pollIntervalMs) {
-    showDialog(
-      context: context,
-      barrierDismissible: false, // ไม่ให้ปิดโดยกดข้างนอก เพราะต้องหยุด polling ก่อน
-      builder: (dialogContext) {
-        // เริ่ม polling เมื่อ dialog แสดง
-        _startLineLoginPolling(sessionId, pollIntervalMs, dialogContext);
-
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: Container(
-            width: 380,
-            padding: const EdgeInsets.all(24),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Title
-                  Row(
-                    children: [
-                      Image.asset('assets/img/line_logo.png', width: 36, height: 36),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _getLineLoginTitle(),
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF00B900)),
-                        ),
-                      ),
-                      // ปุ่มปิด
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.grey),
-                        onPressed: () {
-                          _stopLineLoginPolling();
-                          Navigator.pop(dialogContext);
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // เพิ่มเพื่อน LINE Bot - แสดง QR Code สำหรับ user ที่ยังไม่ได้เพิ่มเพื่อน (อยู่ด้านบน)
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.orange.shade200),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.person_add_alt_1, color: Colors.orange[700], size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _getAddFriendHintText(),
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.orange[800]),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        // QR Code สำหรับเพิ่มเพื่อน LINE Bot @bcaccount
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFF00B900), width: 2),
-                          ),
-                          child: SizedBox(
-                            width: 100,
-                            height: 100,
-                            child: QrImageView(
-                              data: 'https://line.me/R/ti/p/@bcaccount',
-                              version: QrVersions.auto,
-                              size: 100,
-                              backgroundColor: Colors.white,
-                              errorStateBuilder: (context, error) {
-                                return const Center(child: Text('QR Error', style: TextStyle(fontSize: 10)));
-                              },
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '@bcaccount',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Login Code - แสดงรหัสตัวใหญ่ๆ
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 32),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF00B900).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF00B900), width: 3),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(_getLoginCodeLabelText(), style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                        const SizedBox(height: 8),
-                        // รหัส Login Code ตัวใหญ่
-                        Text(
-                          loginCode,
-                          style: const TextStyle(fontSize: 56, fontWeight: FontWeight.bold, color: Color(0xFF00B900), letterSpacing: 12, fontFamily: 'monospace'),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // คำแนะนำ - บอกให้พิมพ์รหัสส่งไปหา LINE Bot
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(12)),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.chat_bubble_outline, color: Color(0xFF00B900), size: 24),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                _getLoginCodeInstructionTitle(),
-                                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF00B900)),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        // ขั้นตอน
-                        _buildInstructionStep(1, _getLoginCodeStep1Text()),
-                        const SizedBox(height: 8),
-                        _buildInstructionStep(2, _getLoginCodeStep2Text()),
-                        const SizedBox(height: 8),
-                        _buildInstructionStep(3, _getLoginCodeStep3Text()),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // สถานะ polling - แสดงว่ากำลังรอ
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(12)),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00B900))),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(_getWaitingForLoginCodeText(), style: TextStyle(fontSize: 14, color: Colors.grey[700])),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ปุ่มยกเลิก
-                  SizedBox(
-                    width: double.infinity,
-                    child: TextButton(
-                      onPressed: () {
-                        _stopLineLoginPolling();
-                        Navigator.pop(dialogContext);
-                      },
-                      child: Text(_getCancelText(), style: const TextStyle(color: Colors.grey, fontSize: 16)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    ).then((_) {
-      // หยุด polling เมื่อ dialog ถูกปิด
-      _stopLineLoginPolling();
-    });
-  }
-
-  /// สร้าง widget แสดงขั้นตอน
-  Widget _buildInstructionStep(int stepNumber, String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 22,
-          height: 22,
-          decoration: BoxDecoration(color: const Color(0xFF00B900), shape: BoxShape.circle),
-          child: Center(
-            child: Text(
-              '$stepNumber',
-              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(text, style: TextStyle(fontSize: 14, color: Colors.grey[700])),
-        ),
-      ],
-    );
-  }
-
-  // Localized texts for Login Code Dialog
-  String _getLineLoginTitle() {
-    switch (global.userLanguage) {
-      case 'th':
-        return 'เข้าสู่ระบบด้วย LINE';
-      default:
-        return 'Login with LINE';
-    }
-  }
-
-  String _getLoginCodeLabelText() {
-    switch (global.userLanguage) {
-      case 'th':
-        return 'รหัสเข้าสู่ระบบ';
-      default:
-        return 'Login Code';
-    }
-  }
-
-  String _getLoginCodeInstructionTitle() {
-    switch (global.userLanguage) {
-      case 'th':
-        return 'วิธีเข้าสู่ระบบ';
-      default:
-        return 'How to login';
-    }
-  }
-
-  String _getLoginCodeStep1Text() {
-    switch (global.userLanguage) {
-      case 'th':
-        return 'เปิดแอป LINE บนมือถือของคุณ';
-      default:
-        return 'Open LINE app on your phone';
-    }
-  }
-
-  String _getLoginCodeStep2Text() {
-    switch (global.userLanguage) {
-      case 'th':
-        return 'เข้าห้องแชท LINE Bot ของเรา';
-      default:
-        return 'Open our LINE Bot chat room';
-    }
-  }
-
-  String _getLoginCodeStep3Text() {
-    switch (global.userLanguage) {
-      case 'th':
-        return 'พิมพ์รหัสด้านบนส่งไปหา Bot';
-      default:
-        return 'Type the code above and send to Bot';
-    }
-  }
-
-  String _getWaitingForLoginCodeText() {
-    switch (global.userLanguage) {
-      case 'th':
-        return 'รอการเข้าสู่ระบบ... กรุณาพิมพ์รหัสส่งไปหา LINE Bot';
-      default:
-        return 'Waiting for login... Please send the code to LINE Bot';
-    }
-  }
-
-  String _getAddFriendHintText() {
-    switch (global.userLanguage) {
-      case 'th':
-        return 'ยังไม่ได้เพิ่มเพื่อน?';
-      default:
-        return 'Not a friend yet?';
     }
   }
 
@@ -2401,7 +2079,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: global.theme.cardColor,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: const Color(0xFF4285F4), width: 3),
                     ),

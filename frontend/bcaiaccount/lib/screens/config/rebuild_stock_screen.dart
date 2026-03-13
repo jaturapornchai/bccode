@@ -210,7 +210,7 @@ class _RebuildStockScreenState extends State<RebuildStockScreen>
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.warning_amber, color: Colors.orange[700]),
+            Icon(Icons.warning_amber, color: global.theme.warningHighlightTextColor),
             const SizedBox(width: 10),
             Text(title),
           ],
@@ -220,7 +220,7 @@ class _RebuildStockScreenState extends State<RebuildStockScreen>
           TextButton(onPressed: () => Navigator.pop(context, false), child: Text(global.language("cancel"))),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange[700], foregroundColor: global.theme.onPrimaryColor),
+            style: ElevatedButton.styleFrom(backgroundColor: global.theme.warningHighlightTextColor, foregroundColor: global.theme.onPrimaryColor),
             child: Text(global.language("confirm")),
           ),
         ],
@@ -231,6 +231,7 @@ class _RebuildStockScreenState extends State<RebuildStockScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
         title: Text(global.language("config_rebuild_stock_test")),
@@ -270,7 +271,7 @@ class _RebuildStockScreenState extends State<RebuildStockScreen>
             title: global.language("rebuild_all"),
             subtitle: global.language("rebuild_all_subtitle"),
             icon: Icons.refresh,
-            color: Colors.orange[700]!,
+            color: global.theme.warningHighlightTextColor,
             buttonLabel: global.language("start_rebuild"),
             onPressed: _isSending ? null : () => _sendRebuildCommand(1),
           ),
@@ -280,7 +281,7 @@ class _RebuildStockScreenState extends State<RebuildStockScreen>
             title: global.language("calculate_stock_only"),
             subtitle: global.language("calculate_stock_only_subtitle"),
             icon: Icons.calculate,
-            color: Colors.blue[700]!,
+            color: global.theme.primaryColor,
             buttonLabel: global.language("start_calculate"),
             onPressed: _isSending ? null : () => _sendRebuildCommand(2),
           ),
@@ -290,7 +291,7 @@ class _RebuildStockScreenState extends State<RebuildStockScreen>
             title: global.language("calculate_specific_items"),
             subtitle: global.language("select_products_to_calculate"),
             icon: Icons.checklist,
-            color: Colors.green[700]!,
+            color: global.theme.positiveHighlightTextColor,
             buttonLabel: _selectedOption == 3 ? global.language("hide") : global.language("select_products"),
             onPressed: _isSending ? null : () => setState(() {
               _selectedOption = _selectedOption == 3 ? 0 : 3;
@@ -302,7 +303,7 @@ class _RebuildStockScreenState extends State<RebuildStockScreen>
             title: global.language("calculate_document_flow"),
             subtitle: global.language("calculate_document_flow_subtitle"),
             icon: Icons.account_tree,
-            color: Colors.purple[700]!,
+            color: global.theme.secondaryColor,
             buttonLabel: global.language("start_calculate"),
             onPressed: _isSending ? null : () => _sendRebuildCommand(4),
           ),
@@ -316,7 +317,7 @@ class _RebuildStockScreenState extends State<RebuildStockScreen>
               color: global.theme.cardColor,
               child: Row(
                 children: [
-                  Icon(Icons.shopping_cart, color: Colors.green[700]),
+                  Icon(Icons.shopping_cart, color: global.theme.positiveHighlightTextColor),
                   SizedBox(width: 8),
                   Text(
                     "${global.language("selected_products")} (${_selectedProducts.length} ${global.language("items")})",
@@ -334,7 +335,7 @@ class _RebuildStockScreenState extends State<RebuildStockScreen>
                       icon: Icon(Icons.play_arrow, size: 18),
                       label: Text("${global.language("start_calculate")} ${_selectedProducts.length} items"),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green[700],
+                        backgroundColor: global.theme.positiveHighlightTextColor,
                         foregroundColor: global.theme.onPrimaryColor,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
@@ -366,8 +367,8 @@ class _RebuildStockScreenState extends State<RebuildStockScreen>
                           child: ListTile(
                             dense: true,
                             leading: CircleAvatar(
-                              backgroundColor: Colors.green[100],
-                              child: Text("${index + 1}", style: TextStyle(color: Colors.green[700], fontSize: 12)),
+                              backgroundColor: global.theme.positiveHighlightColor,
+                              child: Text("${index + 1}", style: TextStyle(color: global.theme.positiveHighlightTextColor, fontSize: 12)),
                             ),
                             title: Text(product.itemcode, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                             subtitle: Text(global.packName(product.names ?? []), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12)),
@@ -582,7 +583,7 @@ class _RebuildStockScreenState extends State<RebuildStockScreen>
                           child: Container(
                             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                             decoration: BoxDecoration(
-                              color: isSelected ? Colors.green[50] : (index % 2 == 0 ? global.theme.cardColor : global.theme.surfaceColor),
+                              color: isSelected ? global.theme.positiveHighlightColor : (index % 2 == 0 ? global.theme.cardColor : global.theme.surfaceColor),
                               border: Border(bottom: BorderSide(color: global.theme.dividerBorderColor)),
                             ),
                             child: Row(
@@ -599,7 +600,7 @@ class _RebuildStockScreenState extends State<RebuildStockScreen>
                                         _removeProduct(product);
                                       }
                                     },
-                                    activeColor: Colors.green[700],
+                                    activeColor: global.theme.positiveHighlightTextColor,
                                   ),
                                 ),
                                 // Product code
@@ -607,7 +608,7 @@ class _RebuildStockScreenState extends State<RebuildStockScreen>
                                   flex: 3,
                                   child: Text(
                                     product.itemcode,
-                                    style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? Colors.green[700] : global.theme.textColor),
+                                    style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? global.theme.positiveHighlightTextColor : global.theme.textColor),
                                   ),
                                 ),
                                 // Product name
@@ -616,9 +617,9 @@ class _RebuildStockScreenState extends State<RebuildStockScreen>
                                 SizedBox(
                                   width: 50,
                                   child: isSelected
-                                      ? Icon(Icons.check_circle, color: Colors.green[700])
+                                      ? Icon(Icons.check_circle, color: global.theme.positiveHighlightTextColor)
                                       : IconButton(
-                                          icon: Icon(Icons.add_circle_outline, color: Colors.blue[700]),
+                                          icon: Icon(Icons.add_circle_outline, color: global.theme.primaryColor),
                                           onPressed: () => _addProduct(product),
                                         ),
                                 ),
@@ -868,7 +869,7 @@ class _RebuildProgressDialogState extends State<_RebuildProgressDialog>
             if (_totalSteps > 0) ...[
               Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.blue[700], size: 18),
+                  Icon(Icons.info_outline, color: global.theme.primaryColor, size: 18),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -876,7 +877,7 @@ class _RebuildProgressDialogState extends State<_RebuildProgressDialog>
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: _status == 'error' ? Colors.red[700] : Colors.blue[900],
+                        color: _status == 'error' ? global.theme.negativeHighlightTextColor : global.theme.primaryColor,
                       ),
                     ),
                   ),
@@ -889,7 +890,7 @@ class _RebuildProgressDialogState extends State<_RebuildProgressDialog>
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: _status == 'completed' ? Colors.green[700] : Colors.blue[700],
+                          color: _status == 'completed' ? global.theme.positiveHighlightTextColor : global.theme.primaryColor,
                         ),
                       ),
                       Text(
@@ -943,18 +944,18 @@ class _RebuildProgressDialogState extends State<_RebuildProgressDialog>
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.red[50],
+                  color: global.theme.negativeHighlightColor,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red[200]!),
+                  border: Border.all(color: global.theme.negativeHighlightTextColor.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.error_outline, color: Colors.red[700], size: 18),
+                    Icon(Icons.error_outline, color: global.theme.negativeHighlightTextColor, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         _errorMessage,
-                        style: TextStyle(color: Colors.red[700], fontSize: 12),
+                        style: TextStyle(color: global.theme.negativeHighlightTextColor, fontSize: 12),
                       ),
                     ),
                   ],
@@ -1008,7 +1009,7 @@ class _RebuildProgressDialogState extends State<_RebuildProgressDialog>
                                           log.message,
                                           style: TextStyle(
                                             fontSize: 12,
-                                            color: log.status == LogStatus.error ? Colors.red[700] : global.theme.textColor,
+                                            color: log.status == LogStatus.error ? global.theme.negativeHighlightTextColor : global.theme.textColor,
                                           ),
                                         ),
                                       ),
@@ -1072,7 +1073,7 @@ class _RebuildProgressDialogState extends State<_RebuildProgressDialog>
         return SizedBox(
           width: 24,
           height: 24,
-          child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.orange[700]),
+          child: CircularProgressIndicator(strokeWidth: 2.5, color: global.theme.warningHighlightTextColor),
         );
     }
   }

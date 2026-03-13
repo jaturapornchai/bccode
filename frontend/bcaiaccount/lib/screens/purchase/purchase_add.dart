@@ -6,6 +6,7 @@ import 'package:smlaicloud/components/appbar.dart';
 import 'package:smlaicloud/components/background_main.dart';
 import 'package:smlaicloud/components/textfield_input.dart';
 import 'package:smlaicloud/global.dart' as global;
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 
 class PurchaseAdd extends StatefulWidget {
   const PurchaseAdd({super.key});
@@ -14,7 +15,7 @@ class PurchaseAdd extends StatefulWidget {
   State<PurchaseAdd> createState() => _PurchaseAddState();
 }
 
-class _PurchaseAddState extends State<PurchaseAdd> {
+class _PurchaseAddState extends State<PurchaseAdd> with global.ThemeRefreshMixin {
   final memberId = TextEditingController();
   final fristName = TextEditingController();
   final lastName = TextEditingController();
@@ -46,9 +47,30 @@ class _PurchaseAddState extends State<PurchaseAdd> {
       appBar: BaseAppBar(
         title: Text(global.language('create_purchase_document')),
         appBar: AppBar(),
-        widgets: const <Widget>[],
+        widgets: <Widget>[
+          EditFontSizeControl(
+            onChanged: () => setState(() {}),
+          ),
+        ],
       ),
-      body: BackgroundMain(
+      body: Builder(
+        builder: (context) {
+          final scaleFactor = global.editFontScaleFactor;
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(scaleFactor),
+            ),
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12 * scaleFactor,
+                    vertical: 10 * scaleFactor,
+                  ),
+                ),
+                iconTheme: IconThemeData(size: 24 * scaleFactor),
+              ),
+              child: BackgroundMain(
         child: SingleChildScrollView(
           child: Column(
             children: [
@@ -240,7 +262,7 @@ class _PurchaseAddState extends State<PurchaseAdd> {
                                               'credit_purchase',
                                             ),
                                             groupValue: _purchaseType,
-                                            activeColor: Colors.red,
+                                            activeColor: global.theme.negativeHighlightTextColor,
                                             onChanged: (value) => setState(
                                               () => _purchaseType = value
                                                   .toString(),
@@ -282,7 +304,7 @@ class _PurchaseAddState extends State<PurchaseAdd> {
                                               'tax_excluded',
                                             ),
                                             groupValue: _taxType,
-                                            activeColor: Colors.red,
+                                            activeColor: global.theme.negativeHighlightTextColor,
                                             onChanged: (value) => setState(
                                               () => _taxType = value.toString(),
                                             ),
@@ -295,7 +317,7 @@ class _PurchaseAddState extends State<PurchaseAdd> {
                                               'zero_rated_tax',
                                             ),
                                             groupValue: _taxType,
-                                            activeColor: Colors.orange,
+                                            activeColor: global.theme.warningHighlightTextColor,
                                             onChanged: (value) => setState(
                                               () => _taxType = value.toString(),
                                             ),
@@ -356,11 +378,15 @@ class _PurchaseAddState extends State<PurchaseAdd> {
             ],
           ),
         ),
+              ),
+            ),
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
-        backgroundColor: Colors.green,
-        child: const Icon(Icons.save),
+        backgroundColor: global.theme.positiveHighlightTextColor,
+        child: Icon(Icons.save),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smlaicloud/global.dart' as global;
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/model/currency_model.dart';
 import 'package:smlaicloud/services/currency_api_service.dart';
 import 'package:smlaicloud/utils/logger/app_logger.dart';
@@ -13,7 +14,7 @@ class CurrencyFormScreen extends StatefulWidget {
   State<CurrencyFormScreen> createState() => _CurrencyFormScreenState();
 }
 
-class _CurrencyFormScreenState extends State<CurrencyFormScreen> {
+class _CurrencyFormScreenState extends State<CurrencyFormScreen> with global.ThemeRefreshMixin {
   final _formKey = GlobalKey<FormState>();
   final CurrencyApiService _apiService = CurrencyApiService();
 
@@ -142,25 +143,43 @@ class _CurrencyFormScreenState extends State<CurrencyFormScreen> {
         title: Text(_isEditMode ? global.language("edit_currency") : global.language("add_currency")),
         backgroundColor: global.theme.appBarColor,
         actions: [
+          EditFontSizeControl(onChanged: () => setState(() {})),
           if (_isSaving)
-            const Center(
+            Center(
               child: Padding(
-                padding: EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16.0),
                 child: CircularProgressIndicator(
-                  color: Colors.white,
+                  color: global.theme.onPrimaryColor,
                   strokeWidth: 2,
                 ),
               ),
             )
           else
             IconButton(
-              icon: const Icon(Icons.save),
+              icon: Icon(Icons.save),
               onPressed: _saveCurrency,
               tooltip: global.language("save"),
             ),
         ],
       ),
-      body: Form(
+      body: Builder(
+        builder: (context) {
+          final scaleFactor = global.editFontScaleFactor;
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(scaleFactor),
+            ),
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12 * scaleFactor,
+                    vertical: 10 * scaleFactor,
+                  ),
+                ),
+                iconTheme: IconThemeData(size: 24 * scaleFactor),
+              ),
+              child: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16.0),
@@ -217,7 +236,7 @@ class _CurrencyFormScreenState extends State<CurrencyFormScreen> {
             const SizedBox(height: 12),
             Container(
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(color: global.theme.dividerBorderColor),
                 borderRadius: BorderRadius.circular(8),
               ),
               padding: const EdgeInsets.all(12),
@@ -238,13 +257,13 @@ class _CurrencyFormScreenState extends State<CurrencyFormScreen> {
                       height: 80,
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: isSelected ? global.theme.appBarColor : Colors.grey.shade300,
+                          color: isSelected ? global.theme.appBarColor : global.theme.dividerBorderColor,
                           width: isSelected ? 2 : 1,
                         ),
                         borderRadius: BorderRadius.circular(8),
                         color: isSelected
                             ? global.theme.appBarColor.withValues(alpha: 0.1)
-                            : Colors.white,
+                            : global.theme.cardColor,
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -254,7 +273,7 @@ class _CurrencyFormScreenState extends State<CurrencyFormScreen> {
                             style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
-                              color: isSelected ? global.theme.appBarColor : Colors.black,
+                              color: isSelected ? global.theme.appBarColor : global.theme.textColor,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -265,7 +284,7 @@ class _CurrencyFormScreenState extends State<CurrencyFormScreen> {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 9,
-                              color: isSelected ? global.theme.appBarColor : Colors.grey.shade700,
+                              color: isSelected ? global.theme.appBarColor : global.theme.textSecondaryColor,
                             ),
                           ),
                         ],
@@ -305,12 +324,16 @@ class _CurrencyFormScreenState extends State<CurrencyFormScreen> {
               label: Text(_isSaving ? global.language("saving") : global.language("save")),
               style: ElevatedButton.styleFrom(
                 backgroundColor: global.theme.appBarColor,
-                foregroundColor: Colors.white,
+                foregroundColor: global.theme.onPrimaryColor,
                 padding: const EdgeInsets.all(16),
               ),
             ),
           ],
         ),
+      ),
+            ),
+          );
+        },
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:smlaicloud/global.dart' as global;
 import 'dart:async';
 import 'package:flutter/material.dart';
 
@@ -312,7 +313,7 @@ class _NotificationOverlayState extends State<_NotificationOverlay>
                   children: [
                     Icon(
                       _getIcon(notification.type),
-                      color: Colors.white,
+                      color: global.theme.cardColor,
                       size: 28,
                     ),
                     const SizedBox(width: 12),
@@ -323,8 +324,8 @@ class _NotificationOverlayState extends State<_NotificationOverlay>
                         children: [
                           Text(
                             notification.title,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: global.theme.onPrimaryColor,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                             ),
@@ -333,7 +334,7 @@ class _NotificationOverlayState extends State<_NotificationOverlay>
                           Text(
                             notification.message,
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
+                              color: global.theme.onPrimaryColor.withValues(alpha: 0.9),
                               fontSize: 12,
                             ),
                             maxLines: 2,
@@ -343,7 +344,7 @@ class _NotificationOverlayState extends State<_NotificationOverlay>
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                      icon: Icon(Icons.close, color: global.theme.onPrimaryColor, size: 20),
                       onPressed: () => widget.service.dismiss(),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(

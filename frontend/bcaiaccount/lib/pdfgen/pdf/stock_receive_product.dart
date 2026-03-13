@@ -295,31 +295,6 @@ class StockTransfer {
     );
   }
 
-  pw.Widget _detailRowCust(String label, String value,
-      {bool isMultiline = false}) {
-    return !isMultiline
-        ? pw.Row(
-            children: [
-              _text(label, bold: true, size: 12),
-              pw.SizedBox(width: 10),
-              _text(value, size: 12),
-            ],
-          )
-        : pw.Row(
-            children: [
-              pw.Container(
-                height: 30,
-                child: _text(label, bold: true, size: 12),
-              ),
-              pw.SizedBox(width: 10),
-              pw.Container(
-                height: 30,
-                child: _text(value, size: 12),
-              ),
-            ],
-          );
-  }
-
   pw.Text _text(String data, {bool bold = false, double size = 8}) {
     return pw.Text(
       data,

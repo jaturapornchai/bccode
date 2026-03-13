@@ -16,7 +16,7 @@ class StockBalanceTableView extends StatefulWidget {
   State<StockBalanceTableView> createState() => _StockBalanceTableViewState();
 }
 
-class _StockBalanceTableViewState extends State<StockBalanceTableView> {
+class _StockBalanceTableViewState extends State<StockBalanceTableView> with global.ThemeRefreshMixin {
   int? _hoveredIndex;
 
   @override
@@ -39,21 +39,21 @@ class _StockBalanceTableViewState extends State<StockBalanceTableView> {
             Icon(
               Icons.inventory_2_outlined,
               size: 64,
-              color: Colors.grey.shade400,
+              color: global.theme.iconSecondaryColor,
             ),
             const SizedBox(height: 16),
             Text(
               'ไม่พบข้อมูลยอดคงเหลือสินค้า',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey.shade600,
+                color: global.theme.textSecondaryColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'ลองเปลี่ยนเงื่อนไขการค้นหาใหม่',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
             ),
           ],
         ),
@@ -62,12 +62,12 @@ class _StockBalanceTableViewState extends State<StockBalanceTableView> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.shade100,
+            color: global.theme.surfaceColor,
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -198,7 +198,7 @@ class _StockBalanceTableViewState extends State<StockBalanceTableView> {
     if (isHovered) {
       rowColor = Colors.purple.shade100;
     } else {
-      rowColor = index.isEven ? Colors.white : Colors.grey.shade50;
+      rowColor = index.isEven ? global.theme.cardColor : global.theme.backgroundColor;
     }
 
     return MouseRegion(
@@ -211,7 +211,7 @@ class _StockBalanceTableViewState extends State<StockBalanceTableView> {
           color: rowColor,
           border:
               index < widget.stockBalances.length - 1
-                  ? Border(bottom: BorderSide(color: Colors.grey.shade100))
+                  ? Border(bottom: BorderSide(color: global.theme.surfaceColor))
                   : null,
         ),
         child: Row(
@@ -247,7 +247,7 @@ class _StockBalanceTableViewState extends State<StockBalanceTableView> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: isHovered ? Colors.black87 : Colors.black,
+                    color: isHovered ? global.theme.textColor : global.theme.textSecondaryColor,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -265,7 +265,7 @@ class _StockBalanceTableViewState extends State<StockBalanceTableView> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: isHovered ? Colors.black87 : Colors.black,
+                    color: isHovered ? global.theme.textColor : global.theme.textSecondaryColor,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -280,7 +280,7 @@ class _StockBalanceTableViewState extends State<StockBalanceTableView> {
                 style: TextStyle(
                   fontSize: 11,
                   color:
-                      isHovered ? Colors.grey.shade700 : Colors.grey.shade600,
+                      isHovered ? global.theme.iconColor : global.theme.textSecondaryColor,
                   fontWeight: FontWeight.w500,
                 ),
                 textAlign: TextAlign.center,
@@ -300,11 +300,11 @@ class _StockBalanceTableViewState extends State<StockBalanceTableView> {
                   color:
                       isNegative
                           ? (isHovered
-                              ? Colors.red.shade800
-                              : Colors.red.shade700)
+                              ? global.theme.negativeHighlightTextColor
+                              : global.theme.negativeHighlightTextColor)
                           : (isHovered
-                              ? Colors.green.shade800
-                              : Colors.green.shade700),
+                              ? global.theme.positiveHighlightTextColor
+                              : global.theme.positiveHighlightTextColor),
                 ),
                 textAlign: TextAlign.right,
               ),
@@ -322,8 +322,8 @@ class _StockBalanceTableViewState extends State<StockBalanceTableView> {
                   fontWeight: FontWeight.w500,
                   color:
                       isHovered
-                          ? Colors.orange.shade800
-                          : Colors.orange.shade700,
+                          ? global.theme.warningHighlightTextColor
+                          : global.theme.warningHighlightTextColor,
                 ),
                 textAlign: TextAlign.right,
                 maxLines: 1,
@@ -345,8 +345,8 @@ class _StockBalanceTableViewState extends State<StockBalanceTableView> {
                       stockBalance.balanceAmount != null &&
                               stockBalance.balanceAmount! < 0
                           ? (isHovered
-                              ? Colors.red.shade800
-                              : Colors.red.shade700)
+                              ? global.theme.negativeHighlightTextColor
+                              : global.theme.negativeHighlightTextColor)
                           : (isHovered
                               ? Colors.purple.shade800
                               : Colors.purple.shade700),

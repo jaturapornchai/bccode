@@ -3,6 +3,7 @@
 import 'dart:io';
 import 'dart:async';
 import 'package:smlaicloud/bloc/export_csv/export_csv_bloc.dart';
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/imports_bloc.dart';
 import 'package:smlaicloud/model/book_bank_model.dart';
 import 'package:smlaicloud/model/global_model.dart';
@@ -758,11 +759,11 @@ class PurchaseOrderEditScreenState extends State<PurchaseOrderEditScreen> with T
       height: 100,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.5),
+            color: global.theme.dividerBorderColor.withValues(alpha: 0.5),
             spreadRadius: 5,
             blurRadius: 7,
             offset: const Offset(0, 3), // changes position of shadow
@@ -944,7 +945,28 @@ class PurchaseOrderEditScreenState extends State<PurchaseOrderEditScreen> with T
         },
         child: Focus(
           skipTraversal: true,
-          child: TabBarView(controller: editTabController, physics: const NeverScrollableScrollPhysics(), children: childrenList),
+          child: Builder(
+            builder: (context) {
+              final scaleFactor = global.editFontScaleFactor;
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(scaleFactor),
+                ),
+                child: Theme(
+                  data: Theme.of(context).copyWith(
+                    inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12 * scaleFactor,
+                        vertical: 10 * scaleFactor,
+                      ),
+                    ),
+                    iconTheme: IconThemeData(size: 24 * scaleFactor),
+                  ),
+                  child: TabBarView(controller: editTabController, physics: const NeverScrollableScrollPhysics(), children: childrenList),
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -1145,36 +1167,39 @@ class PurchaseOrderEditScreenState extends State<PurchaseOrderEditScreen> with T
       appBar: AppBar(
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             global.gotoMainMenu(context);
           },
         ),
         backgroundColor: global.theme.appBarColor,
         title: Text(global.transactionName(transactionType)),
-        actions: POAppBarActions.build(
-          context: context,
-          screenData: screenData,
-          screenDataTemp: screenDataTemp,
-          transactionType: transactionType,
-          isLoading: _isLoading,
-          showPreview: _showPreview,
-          canEditPO: _canEditPO(),
-          canPrintPO: _canPrintPO(),
-          editDisabledReason: _getPOEditDisabledReason(),
-          getCollectionName: _getCollectionNameForType,
-          getDocumentTitle: _getDocumentTitle,
-          tabController: tabController,
-          onClearScreen: clearScreenData,
-          onTogglePreview: togglePreview,
-          onSearchTrans: _searchHandlers.searchTrans,
-          onDeleteDoc: deleteDoc,
-          onSaveOrUpdate: saveOrUpdateData,
-          onManualCloseToggle: () {
-            setState(() {});
-            _refreshListAfterSave();
-          },
-        ),
+        actions: [
+          EditFontSizeControl(onChanged: () => setState(() {})),
+          ...POAppBarActions.build(
+            context: context,
+            screenData: screenData,
+            screenDataTemp: screenDataTemp,
+            transactionType: transactionType,
+            isLoading: _isLoading,
+            showPreview: _showPreview,
+            canEditPO: _canEditPO(),
+            canPrintPO: _canPrintPO(),
+            editDisabledReason: _getPOEditDisabledReason(),
+            getCollectionName: _getCollectionNameForType,
+            getDocumentTitle: _getDocumentTitle,
+            tabController: tabController,
+            onClearScreen: clearScreenData,
+            onTogglePreview: togglePreview,
+            onSearchTrans: _searchHandlers.searchTrans,
+            onDeleteDoc: deleteDoc,
+            onSaveOrUpdate: saveOrUpdateData,
+            onManualCloseToggle: () {
+              setState(() {});
+              _refreshListAfterSave();
+            },
+          ),
+        ],
       ),
       body: Stack(
         children: [

@@ -45,7 +45,8 @@ class DisplaySettingsDialog extends StatefulWidget {
   State<DisplaySettingsDialog> createState() => _DisplaySettingsDialogState();
 }
 
-class _DisplaySettingsDialogState extends State<DisplaySettingsDialog> {
+class _DisplaySettingsDialogState extends State<DisplaySettingsDialog>
+    with global.ThemeRefreshMixin {
   late String _selectedFontFamily;
   late double _zoomLevel;
 
@@ -74,7 +75,7 @@ class _DisplaySettingsDialogState extends State<DisplaySettingsDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
             // Font Family Section
-            const Text(
+            Text(
               'Font Family',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
@@ -82,7 +83,7 @@ class _DisplaySettingsDialogState extends State<DisplaySettingsDialog> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(color: global.theme.dividerBorderColor),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: DropdownButton<String>(
@@ -114,7 +115,7 @@ class _DisplaySettingsDialogState extends State<DisplaySettingsDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Zoom Level',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
@@ -137,7 +138,7 @@ class _DisplaySettingsDialogState extends State<DisplaySettingsDialog> {
             const SizedBox(height: 8),
             Row(
               children: [
-                const Text('50%', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                Text('50%', style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor)),
                 Expanded(
                   child: Slider(
                     value: _zoomLevel,
@@ -152,7 +153,7 @@ class _DisplaySettingsDialogState extends State<DisplaySettingsDialog> {
                     },
                   ),
                 ),
-                const Text('300%', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                Text('300%', style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor)),
               ],
             ),
 
@@ -177,16 +178,16 @@ class _DisplaySettingsDialogState extends State<DisplaySettingsDialog> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: global.theme.surfaceColor,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(color: global.theme.dividerBorderColor),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     '${global.language("preview")}:',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -201,7 +202,7 @@ class _DisplaySettingsDialogState extends State<DisplaySettingsDialog> {
                     style: _getGoogleFontStyle(
                       _selectedFontFamily,
                       fontSize: 14 * (_zoomLevel / 100),
-                      color: Colors.grey.shade600,
+                      color: global.theme.textSecondaryColor,
                     ),
                   ),
                 ],
@@ -243,7 +244,7 @@ class _DisplaySettingsDialogState extends State<DisplaySettingsDialog> {
               Navigator.of(context).pop(true);
             }
           },
-          child: Text(global.language("save"), style: TextStyle(color: Colors.white)),
+          child: Text(global.language("save"), style: TextStyle(color: global.theme.onPrimaryColor)),
         ),
       ],
     );
@@ -263,14 +264,14 @@ class _DisplaySettingsDialogState extends State<DisplaySettingsDialog> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: isSelected ? global.theme.primaryColor : Colors.grey.shade200,
+            color: isSelected ? global.theme.primaryColor : global.theme.dividerBorderColor,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
             '$zoom%',
             style: TextStyle(
               fontSize: 12,
-              color: isSelected ? Colors.white : Colors.grey.shade700,
+              color: isSelected ? global.theme.onPrimaryColor : global.theme.textColor,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),

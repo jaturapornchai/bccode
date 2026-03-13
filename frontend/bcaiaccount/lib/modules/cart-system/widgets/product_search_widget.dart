@@ -56,7 +56,7 @@ class ProductSearchWidget extends StatefulWidget {
   State<ProductSearchWidget> createState() => _ProductSearchWidgetState();
 }
 
-class _ProductSearchWidgetState extends State<ProductSearchWidget> with AutomaticKeepAliveClientMixin {
+class _ProductSearchWidgetState extends State<ProductSearchWidget> with AutomaticKeepAliveClientMixin, global.ThemeRefreshMixin {
   late TextEditingController _searchController;
   late FocusNode _searchFocusNode;
   late ValueNotifier<bool> _hasText;
@@ -187,9 +187,9 @@ class _ProductSearchWidgetState extends State<ProductSearchWidget> with Automati
   /// Footer สำหรับ infinite scroll (loading indicator / scroll for more)
   Widget _buildScrollFooter(bool isLoadingMore, bool hasMore, int loadedCount, int displayTotal) {
     if (isLoadingMore) {
-      return const Padding(
-        padding: EdgeInsets.all(16),
-        child: Center(child: CircularProgressIndicator(color: Color(0xFFEE4D2D))),
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Center(child: CircularProgressIndicator(color: global.theme.primaryColor)),
       );
     }
     if (hasMore) {
@@ -200,12 +200,12 @@ class _ProductSearchWidgetState extends State<ProductSearchWidget> with Automati
             children: [
               Text(
                 '${global.language("showing")} $loadedCount ${global.language("of")} $displayTotal ${global.language("items")}',
-                style: TextStyle(color: Colors.grey[600], fontSize: 12, fontWeight: FontWeight.w500),
+                style: TextStyle(color: global.theme.iconSecondaryColor, fontSize: 12, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 4),
               Text(
                 '${global.language("scroll_down_to_load_more")}...',
-                style: TextStyle(color: Colors.grey[400], fontSize: 11),
+                style: TextStyle(color: global.theme.iconSecondaryColor, fontSize: 11),
               ),
             ],
           ),
@@ -252,8 +252,8 @@ class _ProductSearchWidgetState extends State<ProductSearchWidget> with Automati
           children: [
             // Shopee-style Search bar with gradient background
             Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(colors: [Color(0xFFEE4D2D), Color(0xFFFF6347)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [global.theme.primaryColor, global.theme.primaryLightColor], begin: Alignment.topLeft, end: Alignment.bottomRight),
               ),
               child: SafeArea(
                 bottom: false,
@@ -265,7 +265,7 @@ class _ProductSearchWidgetState extends State<ProductSearchWidget> with Automati
                       Expanded(
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: global.theme.surfaceColor,
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))],
                           ),
@@ -274,14 +274,14 @@ class _ProductSearchWidgetState extends State<ProductSearchWidget> with Automati
                             focusNode: _searchFocusNode,
                             decoration: InputDecoration(
                               hintText: global.language("search_product_hint"),
-                              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-                              prefixIcon: Icon(Icons.search, color: Color(0xFFEE4D2D)),
+                              hintStyle: TextStyle(color: global.theme.formHintColor, fontSize: 14),
+                              prefixIcon: Icon(Icons.search, color: global.theme.primaryColor),
                               suffixIcon: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   // Toggle View Mode Button
                                   IconButton(
-                                    icon: Icon(_viewMode == ProductViewMode.grid ? Icons.list : Icons.apps, color: const Color(0xFFEE4D2D), size: 20),
+                                    icon: Icon(_viewMode == ProductViewMode.grid ? Icons.list : Icons.apps, color: global.theme.primaryColor, size: 20),
                                     onPressed: () {
                                       setState(() {
                                         _viewMode = _viewMode == ProductViewMode.grid ? ProductViewMode.list : ProductViewMode.grid;
@@ -295,14 +295,14 @@ class _ProductSearchWidgetState extends State<ProductSearchWidget> with Automati
                                     builder: (context, hasText, child) {
                                       return hasText
                                           ? IconButton(
-                                              icon: Icon(Icons.clear, color: Colors.grey[400]),
+                                              icon: Icon(Icons.clear, color: global.theme.iconSecondaryColor),
                                               onPressed: () {
                                                 _searchController.clear();
                                                 _hasText.value = false;
                                                 _onSearch('');
                                               },
                                             )
-                                          : Icon(Icons.qr_code_scanner, color: Colors.grey[400]);
+                                          : Icon(Icons.qr_code_scanner, color: global.theme.iconSecondaryColor);
                                     },
                                   ),
                                 ],
@@ -338,17 +338,17 @@ class _ProductSearchWidgetState extends State<ProductSearchWidget> with Automati
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
+                              color: global.theme.cardColor.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.inventory_2_outlined, size: 14, color: Colors.white),
+                                Icon(Icons.inventory_2_outlined, size: 14, color: global.theme.onPrimaryColor),
                                 const SizedBox(width: 4),
                                 Text(
                                   '$headerTotal',
-                                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                                  style: TextStyle(color: global.theme.onPrimaryColor, fontSize: 13, fontWeight: FontWeight.bold),
                                 ),
                               ],
                             ),
@@ -416,11 +416,11 @@ class _ProductSearchWidgetState extends State<ProductSearchWidget> with Automati
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
+                        Icon(Icons.search_off, size: 64, color: global.theme.iconSecondaryColor),
                         SizedBox(height: 16),
                         Text(
                           global.language("please_enter_search_text"),
-                          style: TextStyle(fontSize: 16, color: Colors.grey[600], fontWeight: FontWeight.w500),
+                          style: TextStyle(fontSize: 16, color: global.theme.iconSecondaryColor, fontWeight: FontWeight.w500),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -499,9 +499,9 @@ class _ProductSearchWidgetState extends State<ProductSearchWidget> with Automati
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.inventory_2_outlined, size: 80, color: Colors.grey[300]),
+                          Icon(Icons.inventory_2_outlined, size: 80, color: global.theme.dividerBorderColor),
                           SizedBox(height: 16),
-                          Text(global.language("no_products_yet"), style: TextStyle(fontSize: 18, color: Colors.grey[600])),
+                          Text(global.language("no_products_yet"), style: TextStyle(fontSize: 18, color: global.theme.iconSecondaryColor)),
                         ],
                       ),
                     ),
@@ -634,9 +634,9 @@ class _ProductSearchWidgetState extends State<ProductSearchWidget> with Automati
                   // มีผลลัพธ์เดิม → แสดง faded + progress bar ด้านบน
                   return Column(
                     children: [
-                      const LinearProgressIndicator(
-                        color: Color(0xFFEE4D2D),
-                        backgroundColor: Color(0xFFFFE0D6),
+                      LinearProgressIndicator(
+                        color: global.theme.primaryColor,
+                        backgroundColor: global.theme.primaryColor.withValues(alpha: 0.15),
                       ),
                       Expanded(
                         child: AnimatedOpacity(
@@ -685,7 +685,7 @@ class _ShopeeProductCard extends StatefulWidget {
   State<_ShopeeProductCard> createState() => _ShopeeProductCardState();
 }
 
-class _ShopeeProductCardState extends State<_ShopeeProductCard> {
+class _ShopeeProductCardState extends State<_ShopeeProductCard> with global.ThemeRefreshMixin {
   /// Helper function: เรียงลำดับ units ตามอัตราส่วน (มาก→น้อย) แล้วตาม barcode (A→Z)
   List<ProductSearchModel> _sortUnitsByRatioAndBarcode(List<ProductSearchModel> units) {
     final sortedUnits = List<ProductSearchModel>.from(units);
@@ -718,7 +718,7 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
   // Generate color based on itemCode
   // สร้างสีที่แตกต่างกันสำหรับแต่ละ itemCode เพื่อให้เห็นเป็นกลุ่มชัดเจน
   Color _getItemCodeColor(String itemCode) {
-    if (itemCode.isEmpty) return Colors.blue;
+    if (itemCode.isEmpty) return global.theme.infoHighlightTextColor;
 
     // Hash the itemCode to get consistent color
     int hash = 0;
@@ -728,30 +728,30 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
 
     // ชุดสีที่เด่นชัดและแตกต่างกันมาก (24 สี)
     final colorPalette = [
-      Colors.blue[400]!, // น้ำเงิน
-      Colors.green[400]!, // เขียว
-      Colors.orange[400]!, // ส้ม
-      Colors.purple[400]!, // ม่วง
-      Colors.pink[400]!, // ชมพู
-      Colors.teal[400]!, // เขียวอมฟ้า
-      Colors.indigo[400]!, // คราม
-      Colors.cyan[400]!, // ฟ้าอมเขียว
-      Colors.red[400]!, // แดง
-      Colors.amber[600]!, // เหลืองทอง
-      Colors.deepOrange[400]!, // ส้มเข้ม
-      Colors.lightGreen[500]!, // เขียวอ่อน
-      Colors.deepPurple[400]!, // ม่วงเข้ม
-      Colors.lightBlue[400]!, // ฟ้าอ่อน
-      Colors.lime[700]!, // เหลืองมะนาว
-      Colors.brown[400]!, // น้ำตาล
-      Colors.blueGrey[400]!, // เทาน้ำเงิน
-      Colors.pinkAccent[200]!, // ชมพูสด
-      Colors.tealAccent[400]!, // เขียวมิ้นท์
-      Colors.purpleAccent[200]!, // ม่วงสด
-      Colors.orangeAccent[400]!, // ส้มสด
-      Colors.greenAccent[400]!, // เขียวสด
-      Colors.blueAccent[400]!, // น้ำเงินสด
-      Colors.redAccent[400]!, // แดงสด
+      global.theme.infoHighlightTextColor, // น้ำเงิน
+      global.theme.positiveHighlightTextColor, // เขียว
+      global.theme.warningHighlightTextColor, // ส้ม
+      global.theme.primaryColor, // ม่วง
+      global.theme.primaryLightColor, // ชมพู
+      global.theme.infoHighlightTextColor, // เขียวอมฟ้า
+      global.theme.primaryColor, // คราม
+      global.theme.infoHighlightTextColor, // ฟ้าอมเขียว
+      global.theme.negativeHighlightTextColor, // แดง
+      global.theme.warningHighlightTextColor, // เหลืองทอง
+      global.theme.warningHighlightTextColor, // ส้มเข้ม
+      global.theme.positiveHighlightTextColor, // เขียวอ่อน
+      global.theme.primaryColor, // ม่วงเข้ม
+      global.theme.infoHighlightTextColor, // ฟ้าอ่อน
+      global.theme.warningHighlightTextColor, // เหลืองมะนาว
+      global.theme.textSecondaryColor, // น้ำตาล
+      global.theme.iconSecondaryColor, // เทาน้ำเงิน
+      global.theme.primaryLightColor, // ชมพูสด
+      global.theme.infoHighlightTextColor, // เขียวมิ้นท์
+      global.theme.primaryColor, // ม่วงสด
+      global.theme.warningHighlightTextColor, // ส้มสด
+      global.theme.positiveHighlightTextColor, // เขียวสด
+      global.theme.infoHighlightTextColor, // น้ำเงินสด
+      global.theme.negativeHighlightTextColor, // แดงสด
     ];
 
     // เลือกสีจาก palette ตาม hash
@@ -778,9 +778,9 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
       margin: const EdgeInsets.only(top: 4),
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: Colors.indigo[50],
+        color: global.theme.primaryLightColor.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: Colors.indigo[200]!, width: 0.5),
+        border: Border.all(color: global.theme.primaryLightColor.withValues(alpha: 0.4), width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -788,11 +788,11 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
           // Header
           Row(
             children: [
-              Icon(Icons.warehouse, size: 12, color: Colors.indigo[700]),
+              Icon(Icons.warehouse, size: 12, color: global.theme.primaryColor),
               SizedBox(width: 4),
               Text(
                 global.language("warehouse_location"),
-                style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.indigo[900]),
+                style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: global.theme.primaryColor),
               ),
             ],
           ),
@@ -808,17 +808,17 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
                   margin: const EdgeInsets.only(bottom: 2),
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.blue[100],
+                    color: global.theme.infoHighlightColor,
                     borderRadius: BorderRadius.circular(3),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.store, size: 10, color: Colors.blue[800]),
+                      Icon(Icons.store, size: 10, color: global.theme.infoHighlightTextColor),
                       SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           warehouse.warehouseCode.isNotEmpty ? warehouse.warehouseCode : global.language("default_warehouse"),
-                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: Colors.blue[900]),
+                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: global.theme.infoHighlightTextColor),
                         ),
                       ),
                       // แสดงยอดคงเหลือ 2 แบบ: 1:1 unit และ word format
@@ -828,13 +828,13 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
                           // 1. ยอดคงเหลือตามหน่วย 1:1
                           Text(
                             '${_formatNumber(warehouse.balanceQty)} $unitName',
-                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.blue[900]),
+                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: global.theme.infoHighlightTextColor),
                           ),
                           // 2. ยอดคงเหลือแบบ word (ถ้ามี)
                           if (warehouse.balanceWord.isNotEmpty)
                             Text(
                               warehouse.balanceWord,
-                              style: TextStyle(fontSize: 8, color: Colors.blue[700]),
+                              style: TextStyle(fontSize: 8, color: global.theme.infoHighlightTextColor),
                             ),
                         ],
                       ),
@@ -849,17 +849,17 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
                       margin: const EdgeInsets.only(left: 12, bottom: 2),
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.green[50],
+                        color: global.theme.positiveHighlightColor,
                         borderRadius: BorderRadius.circular(3),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.location_on, size: 10, color: Colors.green[700]),
+                          Icon(Icons.location_on, size: 10, color: global.theme.positiveHighlightTextColor),
                           SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               location.locationCode.isNotEmpty ? location.locationCode : global.language("general_location"),
-                              style: TextStyle(fontSize: 8, color: Colors.green[800]),
+                              style: TextStyle(fontSize: 8, color: global.theme.positiveHighlightTextColor),
                             ),
                           ),
                           // แสดงยอดคงเหลือ 2 แบบ: 1:1 unit และ word format
@@ -869,13 +869,13 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
                               // 1. ยอดคงเหลือตามหน่วย 1:1
                               Text(
                                 '${_formatNumber(location.balanceQty)} $unitName',
-                                style: TextStyle(fontSize: 8, fontWeight: FontWeight.w600, color: Colors.green[900]),
+                                style: TextStyle(fontSize: 8, fontWeight: FontWeight.w600, color: global.theme.positiveHighlightTextColor),
                               ),
                               // 2. ยอดคงเหลือแบบ word (ถ้ามี)
                               if (location.balanceWord.isNotEmpty)
                                 Text(
                                   location.balanceWord,
-                                  style: TextStyle(fontSize: 7, color: Colors.green[700]),
+                                  style: TextStyle(fontSize: 7, color: global.theme.positiveHighlightTextColor),
                                 ),
                             ],
                           ),
@@ -916,7 +916,7 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
                 child: Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: global.theme.surfaceColor,
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
                   ),
                   child: Stack(
@@ -960,7 +960,7 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
                             decoration: BoxDecoration(color: itemColorDark, borderRadius: BorderRadius.circular(4)),
                             child: Text(
                               widget.cardData.product.itemCode,
-                              style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                              style: TextStyle(color: global.theme.onPrimaryColor, fontSize: 9, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
@@ -971,10 +971,10 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
                           left: 8,
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(4)),
+                            decoration: BoxDecoration(color: global.theme.negativeHighlightTextColor, borderRadius: BorderRadius.circular(4)),
                             child: Text(
                               'Pack ${widget.cardData.product.unitStand}',
-                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                              style: TextStyle(color: global.theme.onPrimaryColor, fontSize: 10, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
@@ -993,7 +993,7 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
                   // Product Name
                   Text(
                     widget.cardData.product.name0,
-                    style: const TextStyle(fontSize: 13, height: 1.2, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 13, height: 1.2, fontWeight: FontWeight.bold),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1026,13 +1026,13 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
                       margin: const EdgeInsets.only(top: 4),
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.green[50],
+                        color: global.theme.positiveHighlightColor,
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: Colors.green[300]!, width: 1),
+                        border: Border.all(color: global.theme.positiveHighlightTextColor, width: 1),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.inventory_2, size: 14, color: Colors.green[700]),
+                          Icon(Icons.inventory_2, size: 14, color: global.theme.positiveHighlightTextColor),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Builder(
@@ -1063,7 +1063,7 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
                                     // บรรทัดแรก: ยอดคงเหลือแบบ 1:1 (ปกติ)
                                     Text(
                                       '${global.language("balance_remaining")}: ${_formatNumber(widget.cardData.totalBalance)} $baseUnitName',
-                                      style: TextStyle(fontSize: 10, color: Colors.green[900], fontWeight: FontWeight.bold),
+                                      style: TextStyle(fontSize: 10, color: global.theme.positiveHighlightTextColor, fontWeight: FontWeight.bold),
                                     ),
 
                                     // บรรทัดที่สอง: ยอดคงเหลือแบบ Multi-Level Packing
@@ -1072,7 +1072,7 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
                                       const SizedBox(height: 2),
                                       Text(
                                         multiLevelPacking,
-                                        style: TextStyle(fontSize: 9, color: Colors.green[700], fontStyle: FontStyle.italic),
+                                        style: TextStyle(fontSize: 9, color: global.theme.positiveHighlightTextColor, fontStyle: FontStyle.italic),
                                       ),
                                     ],
                                   ],
@@ -1090,9 +1090,9 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
                       margin: const EdgeInsets.only(top: 4),
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.orange[50],
+                        color: global.theme.warningHighlightColor,
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: Colors.orange[300]!, width: 1),
+                        border: Border.all(color: global.theme.warningHighlightTextColor, width: 1),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1100,12 +1100,12 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
                           if (widget.cardData.hasPendingRecv)
                             Row(
                               children: [
-                                Icon(Icons.call_received, size: 12, color: Colors.blue[700]),
+                                Icon(Icons.call_received, size: 12, color: global.theme.infoHighlightTextColor),
                                 const SizedBox(width: 4),
                                 Expanded(
                                   child: Text(
                                     '${global.language("pending_receive")}: ${widget.cardData.pendingRecvWord.isNotEmpty ? widget.cardData.pendingRecvWord : _formatNumber(widget.cardData.pendingRecvQty)}',
-                                    style: TextStyle(fontSize: 10, color: Colors.blue[900], fontWeight: FontWeight.w600),
+                                    style: TextStyle(fontSize: 10, color: global.theme.infoHighlightTextColor, fontWeight: FontWeight.w600),
                                   ),
                                 ),
                               ],
@@ -1115,12 +1115,12 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
                           if (widget.cardData.hasPendingSend)
                             Row(
                               children: [
-                                Icon(Icons.call_made, size: 12, color: Colors.red[700]),
+                                Icon(Icons.call_made, size: 12, color: global.theme.negativeHighlightTextColor),
                                 const SizedBox(width: 4),
                                 Expanded(
                                   child: Text(
                                     '${global.language("pending_delivery")}: ${widget.cardData.pendingSendWord.isNotEmpty ? widget.cardData.pendingSendWord : _formatNumber(widget.cardData.pendingSendQty)}',
-                                    style: TextStyle(fontSize: 10, color: Colors.red[900], fontWeight: FontWeight.w600),
+                                    style: TextStyle(fontSize: 10, color: global.theme.negativeHighlightTextColor, fontWeight: FontWeight.w600),
                                   ),
                                 ),
                               ],
@@ -1138,9 +1138,9 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
                       margin: const EdgeInsets.only(top: 4),
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: Colors.blue[50],
+                        color: global.theme.infoHighlightColor,
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: Colors.blue[200]!, width: 0.5),
+                        border: Border.all(color: global.theme.infoHighlightTextColor.withValues(alpha: 0.3), width: 0.5),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1175,14 +1175,14 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.blue[50],
+                                color: global.theme.infoHighlightColor,
                                 borderRadius: BorderRadius.circular(3),
                               ),
                               child: Text(
                                 widget.cardData.product.unitCode,
                                 style: TextStyle(
                                   fontSize: 8,
-                                  color: Colors.blue[700],
+                                  color: global.theme.infoHighlightTextColor,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -1197,14 +1197,14 @@ class _ShopeeProductCardState extends State<_ShopeeProductCard> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.orange[50],
+                                color: global.theme.warningHighlightColor,
                                 borderRadius: BorderRadius.circular(3),
                               ),
                               child: Text(
                                 '${widget.cardData.product.unitStand}:${widget.cardData.product.unitDive}',
                                 style: TextStyle(
                                   fontSize: 8,
-                                  color: Colors.orange[700],
+                                  color: global.theme.warningHighlightTextColor,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -1233,7 +1233,7 @@ class _BarcodeRowWithHover extends StatefulWidget {
   State<_BarcodeRowWithHover> createState() => _BarcodeRowWithHoverState();
 }
 
-class _BarcodeRowWithHoverState extends State<_BarcodeRowWithHover> {
+class _BarcodeRowWithHoverState extends State<_BarcodeRowWithHover> with global.ThemeRefreshMixin {
   bool _isHovered = false;
 
   @override
@@ -1247,26 +1247,26 @@ class _BarcodeRowWithHoverState extends State<_BarcodeRowWithHover> {
         child: Container(
           margin: const EdgeInsets.only(bottom: 2),
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-          decoration: BoxDecoration(color: _isHovered ? Colors.blue[100] : Colors.transparent, borderRadius: BorderRadius.circular(3)),
+          decoration: BoxDecoration(color: _isHovered ? global.theme.infoHighlightColor : Colors.transparent, borderRadius: BorderRadius.circular(3)),
           child: Row(
             children: [
               // อัตราส่วนและหน่วย
               Text(
                 '${global.formatNumberRemoveRightZero(widget.unit.unitStand)}:${global.formatNumberRemoveRightZero(widget.unit.unitDive)} ${widget.unit.unitName}',
-                style: TextStyle(fontSize: 9, color: Colors.blue[900], fontWeight: widget.isCurrentUnit ? FontWeight.bold : FontWeight.w500),
+                style: TextStyle(fontSize: 9, color: global.theme.infoHighlightTextColor, fontWeight: widget.isCurrentUnit ? FontWeight.bold : FontWeight.w500),
               ),
               const SizedBox(width: 6),
               // Barcode (ไม่มี background)
               Text(
                 widget.unit.barcode,
-                style: TextStyle(fontSize: 8, color: Colors.grey[700], fontFamily: 'monospace'),
+                style: TextStyle(fontSize: 8, color: global.theme.textColor, fontFamily: 'monospace'),
               ),
               // ใช้ Spacer เพื่อผลักราคาไปทางขวา
               const Spacer(),
               // ราคา (ใช้ราคาขายปลีก ถ้าไม่มีใช้ price1)
               Text(
                 global.formatPrice(widget.unit.priceRetail > 0 ? widget.unit.priceRetail : widget.unit.price1),
-                style: TextStyle(fontSize: 9, color: Colors.green[700], fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 9, color: global.theme.positiveHighlightTextColor, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -1289,7 +1289,7 @@ class _ShopeeProductListCard extends StatefulWidget {
   State<_ShopeeProductListCard> createState() => _ShopeeProductListCardState();
 }
 
-class _ShopeeProductListCardState extends State<_ShopeeProductListCard> {
+class _ShopeeProductListCardState extends State<_ShopeeProductListCard> with global.ThemeRefreshMixin {
   /// Helper function: เรียงลำดับ units ตามอัตราส่วน (มาก→น้อย) แล้วตาม barcode (A→Z)
   List<ProductSearchModel> _sortUnitsByRatioAndBarcode(List<ProductSearchModel> units) {
     final sortedUnits = List<ProductSearchModel>.from(units);
@@ -1318,7 +1318,7 @@ class _ShopeeProductListCardState extends State<_ShopeeProductListCard> {
 
   // Generate color based on itemCode
   Color _getItemCodeColor(String itemCode) {
-    if (itemCode.isEmpty) return Colors.blue;
+    if (itemCode.isEmpty) return global.theme.infoHighlightTextColor;
 
     int hash = 0;
     for (int i = 0; i < itemCode.length; i++) {
@@ -1327,30 +1327,30 @@ class _ShopeeProductListCardState extends State<_ShopeeProductListCard> {
 
     // ชุดสีที่เด่นชัดและแตกต่างกันมาก (24 สี)
     final colorPalette = [
-      Colors.blue[400]!, // น้ำเงิน
-      Colors.green[400]!, // เขียว
-      Colors.orange[400]!, // ส้ม
-      Colors.purple[400]!, // ม่วง
-      Colors.pink[400]!, // ชมพู
-      Colors.teal[400]!, // เขียวอมฟ้า
-      Colors.indigo[400]!, // คราม
-      Colors.cyan[400]!, // ฟ้าอมเขียว
-      Colors.red[400]!, // แดง
-      Colors.amber[600]!, // เหลืองทอง
-      Colors.deepOrange[400]!, // ส้มเข้ม
-      Colors.lightGreen[500]!, // เขียวอ่อน
-      Colors.deepPurple[400]!, // ม่วงเข้ม
-      Colors.lightBlue[400]!, // ฟ้าอ่อน
-      Colors.lime[700]!, // เหลืองมะนาว
-      Colors.brown[400]!, // น้ำตาล
-      Colors.blueGrey[400]!, // เทาน้ำเงิน
-      Colors.pinkAccent[200]!, // ชมพูสด
-      Colors.tealAccent[400]!, // เขียวมิ้นท์
-      Colors.purpleAccent[200]!, // ม่วงสด
-      Colors.orangeAccent[400]!, // ส้มสด
-      Colors.greenAccent[400]!, // เขียวสด
-      Colors.blueAccent[400]!, // น้ำเงินสด
-      Colors.redAccent[400]!, // แดงสด
+      global.theme.infoHighlightTextColor, // น้ำเงิน
+      global.theme.positiveHighlightTextColor, // เขียว
+      global.theme.warningHighlightTextColor, // ส้ม
+      global.theme.primaryColor, // ม่วง
+      global.theme.primaryLightColor, // ชมพู
+      global.theme.infoHighlightTextColor, // เขียวอมฟ้า
+      global.theme.primaryColor, // คราม
+      global.theme.infoHighlightTextColor, // ฟ้าอมเขียว
+      global.theme.negativeHighlightTextColor, // แดง
+      global.theme.warningHighlightTextColor, // เหลืองทอง
+      global.theme.warningHighlightTextColor, // ส้มเข้ม
+      global.theme.positiveHighlightTextColor, // เขียวอ่อน
+      global.theme.primaryColor, // ม่วงเข้ม
+      global.theme.infoHighlightTextColor, // ฟ้าอ่อน
+      global.theme.warningHighlightTextColor, // เหลืองมะนาว
+      global.theme.textSecondaryColor, // น้ำตาล
+      global.theme.iconSecondaryColor, // เทาน้ำเงิน
+      global.theme.primaryLightColor, // ชมพูสด
+      global.theme.infoHighlightTextColor, // เขียวมิ้นท์
+      global.theme.primaryColor, // ม่วงสด
+      global.theme.warningHighlightTextColor, // ส้มสด
+      global.theme.positiveHighlightTextColor, // เขียวสด
+      global.theme.infoHighlightTextColor, // น้ำเงินสด
+      global.theme.negativeHighlightTextColor, // แดงสด
     ];
 
     final colorIndex = hash.abs() % colorPalette.length;
@@ -1381,7 +1381,7 @@ class _ShopeeProductListCardState extends State<_ShopeeProductListCard> {
                 Container(
                   width: 100,
                   height: 100,
-                  decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(color: global.theme.surfaceColor, borderRadius: BorderRadius.circular(8)),
                   child: Stack(
                     children: [
                       ClipRRect(
@@ -1419,7 +1419,7 @@ class _ShopeeProductListCardState extends State<_ShopeeProductListCard> {
                             decoration: BoxDecoration(color: itemColorDark, borderRadius: BorderRadius.circular(3)),
                             child: Text(
                               widget.cardData.product.itemCode,
-                              style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                              style: TextStyle(color: global.theme.onPrimaryColor, fontSize: 8, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
@@ -1437,7 +1437,7 @@ class _ShopeeProductListCardState extends State<_ShopeeProductListCard> {
                     // ชื่อสินค้า
                     Text(
                       widget.cardData.product.name0,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, height: 1.2),
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, height: 1.2),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -1469,13 +1469,13 @@ class _ShopeeProductListCardState extends State<_ShopeeProductListCard> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.green[50],
+                          color: global.theme.positiveHighlightColor,
                           borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.green[300]!, width: 1),
+                          border: Border.all(color: global.theme.positiveHighlightTextColor, width: 1),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.inventory_2, size: 12, color: Colors.green[700]),
+                            Icon(Icons.inventory_2, size: 12, color: global.theme.positiveHighlightTextColor),
                             SizedBox(width: 4),
                             Expanded(
                               child: Builder(
@@ -1497,13 +1497,13 @@ class _ShopeeProductListCardState extends State<_ShopeeProductListCard> {
                                     children: [
                                       Text(
                                         '${global.language("balance_remaining")}: ${_formatNumber(widget.cardData.totalBalance)} $baseUnitName',
-                                        style: TextStyle(fontSize: 10, color: Colors.green[900], fontWeight: FontWeight.bold),
+                                        style: TextStyle(fontSize: 10, color: global.theme.positiveHighlightTextColor, fontWeight: FontWeight.bold),
                                       ),
                                       if (widget.cardData.allUnits.length > 1) ...[
                                         const SizedBox(height: 2),
                                         Text(
                                           multiLevelPacking,
-                                          style: TextStyle(fontSize: 9, color: Colors.green[700], fontStyle: FontStyle.italic),
+                                          style: TextStyle(fontSize: 9, color: global.theme.positiveHighlightTextColor, fontStyle: FontStyle.italic),
                                         ),
                                       ],
                                     ],
@@ -1522,9 +1522,9 @@ class _ShopeeProductListCardState extends State<_ShopeeProductListCard> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.orange[50],
+                            color: global.theme.warningHighlightColor,
                             borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: Colors.orange[300]!, width: 1),
+                            border: Border.all(color: global.theme.warningHighlightTextColor, width: 1),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1532,12 +1532,12 @@ class _ShopeeProductListCardState extends State<_ShopeeProductListCard> {
                               if (widget.cardData.hasPendingRecv)
                                 Row(
                                   children: [
-                                    Icon(Icons.call_received, size: 12, color: Colors.blue[700]),
+                                    Icon(Icons.call_received, size: 12, color: global.theme.infoHighlightTextColor),
                                     const SizedBox(width: 4),
                                     Expanded(
                                       child: Text(
                                         '${global.language("pending_receive")}: ${widget.cardData.pendingRecvWord.isNotEmpty ? widget.cardData.pendingRecvWord : _formatNumber(widget.cardData.pendingRecvQty)}',
-                                        style: TextStyle(fontSize: 10, color: Colors.blue[900], fontWeight: FontWeight.w600),
+                                        style: TextStyle(fontSize: 10, color: global.theme.infoHighlightTextColor, fontWeight: FontWeight.w600),
                                       ),
                                     ),
                                   ],
@@ -1547,12 +1547,12 @@ class _ShopeeProductListCardState extends State<_ShopeeProductListCard> {
                               if (widget.cardData.hasPendingSend)
                                 Row(
                                   children: [
-                                    Icon(Icons.call_made, size: 12, color: Colors.red[700]),
+                                    Icon(Icons.call_made, size: 12, color: global.theme.negativeHighlightTextColor),
                                     const SizedBox(width: 4),
                                     Expanded(
                                       child: Text(
                                         '${global.language("pending_delivery")}: ${widget.cardData.pendingSendWord.isNotEmpty ? widget.cardData.pendingSendWord : _formatNumber(widget.cardData.pendingSendQty)}',
-                                        style: TextStyle(fontSize: 10, color: Colors.red[900], fontWeight: FontWeight.w600),
+                                        style: TextStyle(fontSize: 10, color: global.theme.negativeHighlightTextColor, fontWeight: FontWeight.w600),
                                       ),
                                     ),
                                   ],
@@ -1569,9 +1569,9 @@ class _ShopeeProductListCardState extends State<_ShopeeProductListCard> {
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: Colors.blue[50],
+                          color: global.theme.infoHighlightColor,
                           borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.blue[200]!, width: 0.5),
+                          border: Border.all(color: global.theme.infoHighlightTextColor.withValues(alpha: 0.3), width: 0.5),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1716,8 +1716,8 @@ class _ShimmerSkeletonGridState extends State<_ShimmerSkeletonGrid>
   }
 
   Widget _buildSkeletonCard(double shimmerValue) {
-    final baseColor = Colors.grey[200]!;
-    final highlightColor = Colors.grey[100]!;
+    final baseColor = global.theme.dividerBorderColor;
+    final highlightColor = global.theme.surfaceColor;
     final opacity = 0.5 + 0.5 * math.sin(shimmerValue * math.pi * 2);
     final color = Color.lerp(baseColor, highlightColor, opacity)!;
 

@@ -20,13 +20,14 @@ class ProductLocationSearchScreen extends StatefulWidget {
 
 class ProductLocationSearchScreenState
     extends State<ProductLocationSearchScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   ScrollController listScrollController = ScrollController();
   String searchWhcode = "";
   List<LocationModel> locationListData = [];
   bool isKeyUp = false;
   bool isKeyDown = false;
   String selectGuid = "";
+  int _hoverIndex = -1;
   int currentListIndex = 0;
 
   void setSystemLanguageList() async {
@@ -64,6 +65,7 @@ class ProductLocationSearchScreenState
 
   Widget listScreen({bool mobileScreen = false}) {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
@@ -71,7 +73,7 @@ class ProductLocationSearchScreenState
         title: Text(global.language('location')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.pop(
               context,
@@ -158,8 +160,8 @@ class ProductLocationSearchScreenState
               ),
               decoration: BoxDecoration(
                 color: global.theme.columnHeaderColor,
-                border: const Border(
-                  bottom: BorderSide(width: 1.0, color: Colors.grey),
+                border: Border(
+                bottom: BorderSide(width: 1.0, color: global.theme.dividerBorderColor),
                 ),
               ),
               child: Row(
@@ -168,8 +170,8 @@ class ProductLocationSearchScreenState
                     flex: 5,
                     child: Text(
                       global.language("location_code"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                      color: global.theme.columnHeaderTextColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -178,8 +180,8 @@ class ProductLocationSearchScreenState
                     flex: 10,
                     child: Text(
                       global.language("location_name"),
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                      color: global.theme.columnHeaderTextColor,
                         fontWeight: FontWeight.bold,
                       ),
                       maxLines: 2,
@@ -194,7 +196,7 @@ class ProductLocationSearchScreenState
                 controller: listScrollController,
                 child: Column(
                   children: locationListData
-                      .map((value) => listObject(value))
+                      .asMap().entries.map((e) => listObject(e.value, e.key))
                       .toList(),
                 ),
               ),
@@ -205,8 +207,29 @@ class ProductLocationSearchScreenState
     );
   }
 
-  Widget listObject(LocationModel value) {
-    return GestureDetector(
+
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
+  }
+
+  Widget listObject(LocationModel value, int index) {
+    final isSelected = selectGuid == value.code;
+    TextStyle textStyle = isSelected
+        ? TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w700, color: global.theme.textColor)
+        : TextStyle(fontSize: global.deviceConfig.listDataFontSize, fontWeight: FontWeight.w400, color: global.theme.textSecondaryColor);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         Navigator.pop(
           context,
@@ -220,9 +243,9 @@ class ProductLocationSearchScreenState
       },
       child: Container(
         decoration: BoxDecoration(
-          color: (selectGuid == value.code) ? Colors.cyan[100] : Colors.white,
-          border: const Border(
-            bottom: BorderSide(width: 1.0, color: Colors.grey),
+          color: (selectGuid == value.code) ? global.theme.rowSelectedColor : global.theme.cardColor,
+          border: Border(
+                bottom: BorderSide(width: 1.0, color: global.theme.dividerBorderColor),
           ),
         ),
         padding: const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
@@ -233,6 +256,7 @@ class ProductLocationSearchScreenState
               flex: 5,
               child: Text(
                 value.code,
+                style: textStyle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -241,6 +265,7 @@ class ProductLocationSearchScreenState
               flex: 10,
               child: Text(
                 global.packName(value.names),
+                style: textStyle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -248,6 +273,7 @@ class ProductLocationSearchScreenState
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -260,6 +286,7 @@ class ProductLocationSearchScreenState
       }
     }
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {

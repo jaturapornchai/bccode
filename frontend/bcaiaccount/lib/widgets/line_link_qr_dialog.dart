@@ -151,10 +151,10 @@ class _LineLinkQRDialogState extends State<LineLinkQRDialog> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF06C755).withValues(alpha: 0.1),
+              color: Color(0xFF06C755).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.qr_code,
               color: Color(0xFF06C755),
             ),
@@ -170,7 +170,7 @@ class _LineLinkQRDialogState extends State<LineLinkQRDialog> {
                 ),
                 Text(
                   widget.employeeName,
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: 14, color: global.theme.iconSecondaryColor),
                 ),
               ],
             ),
@@ -186,8 +186,8 @@ class _LineLinkQRDialogState extends State<LineLinkQRDialog> {
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF06C755),
-                  foregroundColor: Colors.white,
+                  backgroundColor: Color(0xFF06C755),
+                  foregroundColor: global.theme.onPrimaryColor,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
                 child: Text(global.language('close')),
@@ -213,27 +213,27 @@ class _LineLinkQRDialogState extends State<LineLinkQRDialog> {
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.green[50],
+            color: global.theme.positiveHighlightColor,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
             children: [
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Color(0xFF06C755),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.check,
-                  color: Colors.white,
+                  color: global.theme.onPrimaryColor,
                   size: 48,
                 ),
               ),
               const SizedBox(height: 16),
               Text(
                 global.language("link_success"),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF06C755),
@@ -242,12 +242,12 @@ class _LineLinkQRDialogState extends State<LineLinkQRDialog> {
               const SizedBox(height: 8),
               Text(
                 _linkedUserName ?? '',
-                style: const TextStyle(fontSize: 16),
+                style: TextStyle(fontSize: 16),
               ),
               const SizedBox(height: 4),
               Text(
                 'รหัส: ${widget.employeeCode}',
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 14, color: global.theme.iconSecondaryColor),
               ),
             ],
           ),
@@ -264,15 +264,15 @@ class _LineLinkQRDialogState extends State<LineLinkQRDialog> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: global.theme.cardColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[300]!),
+            border: Border.all(color: global.theme.dividerBorderColor),
           ),
           child: QrImageView(
             data: _liffUrl,
             version: QrVersions.auto,
             size: 200,
-            backgroundColor: Colors.white,
+            backgroundColor: global.theme.cardColor,
             errorCorrectionLevel: QrErrorCorrectLevel.M,
           ),
         ),
@@ -282,20 +282,20 @@ class _LineLinkQRDialogState extends State<LineLinkQRDialog> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.amber[50],
+            color: global.theme.warningHighlightColor,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.amber[200]!),
+            border: Border.all(color: global.theme.warningHighlightTextColor.withValues(alpha: 0.3)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 global.language("code_label"),
-                style: const TextStyle(fontSize: 14),
+                style: TextStyle(fontSize: 14),
               ),
               Text(
                 _linkCode,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 4,
@@ -311,7 +311,7 @@ class _LineLinkQRDialogState extends State<LineLinkQRDialog> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.grey[100],
+            color: global.theme.surfaceColor,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
@@ -323,11 +323,11 @@ class _LineLinkQRDialogState extends State<LineLinkQRDialog> {
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF06C755),
+                      color: Color(0xFF06C755),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Center(
-                      child: Text('1', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    child: Center(
+                      child: Text('1', style: TextStyle(color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold)),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -341,11 +341,11 @@ class _LineLinkQRDialogState extends State<LineLinkQRDialog> {
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF06C755),
+                      color: Color(0xFF06C755),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Center(
-                      child: Text('2', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    child: Center(
+                      child: Text('2', style: TextStyle(color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold)),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -359,11 +359,11 @@ class _LineLinkQRDialogState extends State<LineLinkQRDialog> {
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF06C755),
+                      color: Color(0xFF06C755),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Center(
-                      child: Text('3', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    child: Center(
+                      child: Text('3', style: TextStyle(color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold)),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -396,13 +396,13 @@ class _LineLinkQRDialogState extends State<LineLinkQRDialog> {
                 height: 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.grey[400],
+                  color: global.theme.iconSecondaryColor,
                 ),
               ),
               const SizedBox(width: 8),
               Text(
                 global.language("waiting_for_link"),
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor),
               ),
             ],
           ),
@@ -414,7 +414,7 @@ class _LineLinkQRDialogState extends State<LineLinkQRDialog> {
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               global.language("code_expires_in_30_min"),
-              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+              style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
             ),
           ),
       ],

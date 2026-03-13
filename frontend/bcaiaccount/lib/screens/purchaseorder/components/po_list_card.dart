@@ -41,7 +41,7 @@ class POListCard extends StatelessWidget {
         elevation: isSelected ? 3 : 1,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
-          side: isSelected ? const BorderSide(color: Colors.blue, width: 2) : BorderSide.none,
+          side: isSelected ? BorderSide(color: global.theme.infoHighlightTextColor, width: 2) : BorderSide.none,
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
@@ -72,14 +72,14 @@ class POListCard extends StatelessWidget {
               flex: 3,
               child: Row(
                 children: [
-                  Icon(Icons.description_outlined, size: 16, color: Colors.blue[700]),
+                  Icon(Icons.description_outlined, size: 16, color: global.theme.infoHighlightTextColor),
                   const SizedBox(width: 6),
                   Text(
                     _formatDate(po.docdatetime),
                     style: TextStyle(
                       fontSize: fontSize,
                       fontWeight: FontWeight.w500,
-                      color: Colors.blue[700],
+                      color: global.theme.infoHighlightTextColor,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -151,14 +151,14 @@ class POListCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.description_outlined, size: 16, color: Colors.blue[700]),
+                Icon(Icons.description_outlined, size: 16, color: global.theme.infoHighlightTextColor),
                 const SizedBox(width: 6),
                 Text(
                   _formatDate(po.docdatetime),
                   style: TextStyle(
                     fontSize: fontSize,
                     fontWeight: FontWeight.w500,
-                    color: Colors.blue[700],
+                    color: global.theme.infoHighlightTextColor,
                   ),
                 ),
               ],
@@ -189,7 +189,7 @@ class POListCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
               decoration: BoxDecoration(
-                color: Colors.grey[200],
+                color: global.theme.dividerBorderColor,
                 borderRadius: BorderRadius.circular(3),
               ),
               child: Text(
@@ -198,12 +198,12 @@ class POListCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            Icon(Icons.person_outline, size: 12, color: Colors.grey[600]),
+            Icon(Icons.person_outline, size: 12, color: global.theme.iconSecondaryColor),
             const SizedBox(width: 3),
             Expanded(
               child: Text(
                 po.creatorname ?? po.creatorcode ?? 'System',
-                style: TextStyle(fontSize: fontSize - 1, color: Colors.grey[600]),
+                style: TextStyle(fontSize: fontSize - 1, color: global.theme.iconSecondaryColor),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -256,7 +256,7 @@ class POListCard extends StatelessWidget {
         style: TextStyle(
           fontSize: fontSize,
           fontWeight: FontWeight.bold,
-          color: Colors.green[700],
+          color: global.theme.positiveHighlightTextColor,
         ),
       );
     }
@@ -279,7 +279,7 @@ class POListCard extends StatelessWidget {
           style: TextStyle(
             fontSize: fontSize,
             fontWeight: FontWeight.bold,
-            color: Colors.blue[700],
+            color: global.theme.infoHighlightTextColor,
           ),
         ),
         // ยอด base currency (เช่น ฿2,203.13 THB)
@@ -288,7 +288,7 @@ class POListCard extends StatelessWidget {
           style: TextStyle(
             fontSize: fontSize - 2,
             fontWeight: FontWeight.w500,
-            color: Colors.green[700],
+            color: global.theme.positiveHighlightTextColor,
           ),
         ),
       ],
@@ -303,7 +303,7 @@ class POListCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
           decoration: BoxDecoration(
-            color: Colors.grey[200],
+            color: global.theme.dividerBorderColor,
             borderRadius: BorderRadius.circular(3),
           ),
           child: Text(
@@ -312,12 +312,12 @@ class POListCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 6),
-        Icon(Icons.person_outline, size: 12, color: Colors.grey[600]),
+        Icon(Icons.person_outline, size: 12, color: global.theme.iconSecondaryColor),
         const SizedBox(width: 3),
         Flexible(
           child: Text(
             po.creatorname ?? po.creatorcode ?? 'System',
-            style: TextStyle(fontSize: fontSize, color: Colors.grey[600]),
+            style: TextStyle(fontSize: fontSize, color: global.theme.iconSecondaryColor),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -338,7 +338,7 @@ class POListCard extends StatelessWidget {
           _buildStatusChip(
             icon: Icons.delete_forever,
             text: global.language('deleted'),
-            color: Colors.red,
+            color: global.theme.negativeHighlightTextColor,
             fontSize: fontSize,
           ),
 
@@ -347,7 +347,7 @@ class POListCard extends StatelessWidget {
           _buildStatusChip(
             icon: Icons.cancel,
             text: global.language('cancelled'),
-            color: Colors.red,
+            color: global.theme.negativeHighlightTextColor,
             fontSize: fontSize,
           ),
 
@@ -364,7 +364,7 @@ class POListCard extends StatelessWidget {
           _buildStatusChip(
             icon: Icons.link,
             text: global.language('referenced'),
-            color: Colors.blue,
+            color: global.theme.infoHighlightTextColor,
             fontSize: fontSize,
           ),
 
@@ -373,21 +373,21 @@ class POListCard extends StatelessWidget {
           _buildStatusChip(
             icon: Icons.check_circle,
             text: global.language('fully_received'),
-            color: Colors.green,
+            color: global.theme.positiveHighlightTextColor,
             fontSize: fontSize,
           ),
         if (po.iscomparedsuccess == 2)
           _buildStatusChip(
             icon: Icons.pending,
             text: global.language('partially_received'),
-            color: Colors.orange,
+            color: global.theme.warningHighlightTextColor,
             fontSize: fontSize,
           ),
         if (po.iscomparedsuccess == 3)
           _buildStatusChip(
             icon: Icons.warning,
             text: global.language('over_received'),
-            color: Colors.orange,
+            color: global.theme.warningHighlightTextColor,
             fontSize: fontSize,
           ),
 
@@ -407,25 +407,25 @@ class POListCard extends StatelessWidget {
   Widget _buildStatusChip({
     required IconData icon,
     required String text,
-    required MaterialColor color,
+    required Color color,
     required double fontSize,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color[50],
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color[200]!),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: color[700]),
+          Icon(icon, size: 12, color: color),
           const SizedBox(width: 3),
           Text(
             text,
             style: TextStyle(
-              color: color[700],
+              color: color,
               fontWeight: FontWeight.w600,
               fontSize: fontSize,
             ),
@@ -471,32 +471,32 @@ class POApprovalBadge extends StatelessWidget {
 
     switch (status.status) {
       case POApprovalStatus.autoApproved:
-        bgColor = Colors.blue[50]!;
-        textColor = Colors.blue[700]!;
+        bgColor = global.theme.infoHighlightColor;
+        textColor = global.theme.infoHighlightTextColor;
         icon = Icons.verified;
         text = global.language('approval_auto_approved');
         break;
       case POApprovalStatus.approved:
-        bgColor = Colors.green[50]!;
-        textColor = Colors.green[700]!;
+        bgColor = global.theme.positiveHighlightColor;
+        textColor = global.theme.positiveHighlightTextColor;
         icon = Icons.check_circle;
         text = global.language('approval_approved');
         break;
       case POApprovalStatus.rejected:
-        bgColor = Colors.red[50]!;
-        textColor = Colors.red[700]!;
+        bgColor = global.theme.negativeHighlightColor;
+        textColor = global.theme.negativeHighlightTextColor;
         icon = Icons.cancel;
         text = global.language('reject');
         break;
       case POApprovalStatus.pending:
-        bgColor = Colors.orange[50]!;
-        textColor = Colors.orange[700]!;
+        bgColor = global.theme.warningHighlightColor;
+        textColor = global.theme.warningHighlightTextColor;
         icon = Icons.hourglass_empty;
         text = global.language('pending_approval');
         break;
       case POApprovalStatus.draft:
-        bgColor = Colors.grey[100]!;
-        textColor = Colors.grey[600]!;
+        bgColor = global.theme.cardColor;
+        textColor = global.theme.textSecondaryColor;
         icon = Icons.edit_note;
         text = global.language('draft');
         break;
@@ -550,19 +550,19 @@ class POPendingBadge extends StatelessWidget {
         vertical: isCompact ? 2 : 4,
       ),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: global.theme.surfaceColor,
         borderRadius: BorderRadius.circular(isCompact ? 4 : 4),
-        border: Border.all(color: Colors.grey[400]!),
+        border: Border.all(color: global.theme.iconSecondaryColor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.schedule, size: isCompact ? 12 : 14, color: Colors.grey[600]),
+          Icon(Icons.schedule, size: isCompact ? 12 : 14, color: global.theme.iconSecondaryColor),
           SizedBox(width: 3),
           Text(
             global.language('not_yet_submitted'),
             style: TextStyle(
-              color: Colors.grey[600],
+              color: global.theme.iconSecondaryColor,
               fontWeight: FontWeight.w600,
               fontSize: fontSize,
             ),
@@ -590,9 +590,9 @@ class POStatusBadges extends StatelessWidget {
       margin: const EdgeInsets.only(top: 6),
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: Colors.blue[50],
+        color: global.theme.infoHighlightColor,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: Colors.blue[200]!),
+        border: Border.all(color: global.theme.infoHighlightColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -601,12 +601,12 @@ class POStatusBadges extends StatelessWidget {
           if (po.isref == true) ...[
             Row(
               children: [
-                Icon(Icons.link, size: 14, color: Colors.blue[700]),
+                Icon(Icons.link, size: 14, color: global.theme.infoHighlightTextColor),
                 SizedBox(width: 4),
                 Text(
                   global.language('referenced'),
                   style: TextStyle(
-                    color: Colors.blue[700],
+                    color: global.theme.infoHighlightTextColor,
                     fontWeight: FontWeight.bold,
                     fontSize: fontSize,
                   ),
@@ -618,13 +618,13 @@ class POStatusBadges extends StatelessWidget {
                 Icon(
                   po.isclosed == true ? Icons.check_circle : Icons.pending,
                   size: 14,
-                  color: po.isclosed == true ? Colors.green[700] : Colors.orange[700],
+                  color: po.isclosed == true ? global.theme.positiveHighlightTextColor : global.theme.warningHighlightTextColor,
                 ),
                 SizedBox(width: 4),
                 Text(
                   po.isclosed == true ? global.language('fully_received') : global.language('partially_received'),
                   style: TextStyle(
-                    color: po.isclosed == true ? Colors.green[700] : Colors.orange[700],
+                    color: po.isclosed == true ? global.theme.positiveHighlightTextColor : global.theme.warningHighlightTextColor,
                     fontWeight: FontWeight.bold,
                     fontSize: fontSize,
                   ),
@@ -635,12 +635,12 @@ class POStatusBadges extends StatelessWidget {
           if (po.iscancel)
             Row(
               children: [
-                Icon(Icons.cancel, size: 14, color: Colors.red[700]),
+                Icon(Icons.cancel, size: 14, color: global.theme.negativeHighlightTextColor),
                 SizedBox(width: 4),
                 Text(
                   global.language('cancelled'),
                   style: TextStyle(
-                    color: Colors.red[700],
+                    color: global.theme.negativeHighlightTextColor,
                     fontWeight: FontWeight.bold,
                     fontSize: fontSize,
                   ),

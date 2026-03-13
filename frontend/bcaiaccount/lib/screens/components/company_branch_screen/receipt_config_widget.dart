@@ -18,18 +18,18 @@ class ReceiptConfigWidget extends StatelessWidget {
       padding: EdgeInsets.all(10.0),
       child: Container(
         margin: const EdgeInsets.only(top: 10, bottom: 10),
-        padding: const EdgeInsets.all(10),
+        padding: EdgeInsets.all(10),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.blue),
+          border: Border.all(color: global.theme.primaryColor),
           borderRadius: BorderRadius.circular(5),
-          color: Colors.white,
+          color: global.theme.cardColor,
         ),
         child: Column(
           children: [
             // Header Receipt
             Text(
               global.language("header_receipt_pos"),
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),
             TextFormField(
@@ -53,7 +53,7 @@ class ReceiptConfigWidget extends StatelessWidget {
             // Footer Receipt
             Text(
               global.language("footer_receipt_pos"),
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),
             TextFormField(

@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -412,15 +413,6 @@ class UserScreenState extends State<UserScreen>
                     '(${listData.length})',
                     style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const Icon(Icons.line_weight),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataLineSpaceChange();
-                      });
-                    },
-                  ),
                 ],
               ),
             ),
@@ -505,6 +497,7 @@ class UserScreenState extends State<UserScreen>
       fontSize: (selected)
           ? global.deviceConfig.listDataFontSize + 2.0
           : global.deviceConfig.listDataFontSize,
+      color: (selected) ? global.theme.textColor : global.theme.textSecondaryColor,
     );
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -1556,7 +1549,7 @@ class UserScreenState extends State<UserScreen>
 
 
     return Scaffold(
-      backgroundColor: isEditMode ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
+      backgroundColor: global.theme.cardColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -1582,6 +1575,8 @@ class UserScreenState extends State<UserScreen>
         title: Text(headerEdit + global.language("user")),
         centerTitle: true,
         actions: <Widget>[
+          EditFontSizeControl(onChanged: () => setState(() {})),
+          const SizedBox(width: 8),
           // ปุ่มลบ - แสดงเฉพาะเมื่อเลือก user แล้ว
           if (username.trim().isNotEmpty)
             Padding(
@@ -1667,7 +1662,26 @@ class UserScreenState extends State<UserScreen>
                   }
                 }
               },
-              child: SingleChildScrollView(
+              child: Builder(
+          builder: (context) {
+            final scale = global.editFontScaleFactor;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(scale),
+              ),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                    contentPadding: EdgeInsets.fromLTRB(
+                      12 * scale, 20 * scale, 12 * scale, 12 * scale,
+                    ),
+                  ),
+                ),
+                child: IconTheme(
+                  data: IconTheme.of(context).copyWith(
+                    size: 24.0 * scale,
+                  ),
+                  child: SingleChildScrollView(
                     controller: editScrollController,
                     child: Container(
                       width: double.infinity,
@@ -1678,6 +1692,11 @@ class UserScreenState extends State<UserScreen>
                       ),
                     ),
                   ),
+                ),
+              ),
+            );
+          },
+        ),
             ),
     );
   }

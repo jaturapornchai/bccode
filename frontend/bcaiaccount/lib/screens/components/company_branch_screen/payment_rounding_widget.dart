@@ -22,24 +22,25 @@ class PaymentRoundingWidget extends StatefulWidget {
   State<PaymentRoundingWidget> createState() => _PaymentRoundingWidgetState();
 }
 
-class _PaymentRoundingWidgetState extends State<PaymentRoundingWidget> {
+class _PaymentRoundingWidgetState extends State<PaymentRoundingWidget>
+    with global.ThemeRefreshMixin {
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.all(10.0),
       child: Container(
         margin: const EdgeInsets.only(top: 10, bottom: 10),
-        padding: const EdgeInsets.all(10),
+        padding: EdgeInsets.all(10),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.blue),
+          border: Border.all(color: global.theme.primaryColor),
           borderRadius: BorderRadius.circular(5),
-          color: Colors.white,
+          color: global.theme.cardColor,
         ),
         child: Column(
           children: [
             Text(
               global.language("payment_rounding"),
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 20),
             DefaultTabController(
@@ -48,8 +49,8 @@ class _PaymentRoundingWidgetState extends State<PaymentRoundingWidget> {
                 children: [
                   TabBar(
                     isScrollable: true,
-                    labelColor: Colors.blue,
-                    unselectedLabelColor: Colors.grey,
+                    labelColor: global.theme.infoHighlightTextColor,
+                    unselectedLabelColor: global.theme.textSecondaryColor,
                     tabs: [
                       Tab(text: global.language("cash")),
                       Tab(text: global.language("credit_card")),
@@ -115,36 +116,36 @@ class _PaymentRoundingWidgetState extends State<PaymentRoundingWidget> {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
-            color: Colors.grey[200],
+            padding: EdgeInsets.all(8),
+            color: global.theme.dividerBorderColor,
             child: Row(
               children: [
                 SizedBox(
                   width: 30,
                   child: Text(
                     global.language("#"),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
                 Expanded(
                   flex: 3,
                   child: Text(
                     global.language("lower_bound"),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
                 Expanded(
                   flex: 3,
                   child: Text(
                     global.language("upper_bound"),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
                 Expanded(
                   flex: 3,
                   child: Text(
                     global.language("round_to"),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
                 Expanded(flex: 1, child: Container()),
@@ -183,7 +184,7 @@ class _PaymentRoundingWidgetState extends State<PaymentRoundingWidget> {
               padding: const EdgeInsets.all(8.0),
               child: Text(
                 "${index + 1}",
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -248,7 +249,7 @@ class _PaymentRoundingWidgetState extends State<PaymentRoundingWidget> {
           Expanded(
             flex: 1,
             child: IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
+              icon: Icon(Icons.delete, color: global.theme.negativeHighlightTextColor),
               onPressed: () => widget.onRemoveRule(method, index),
             ),
           ),

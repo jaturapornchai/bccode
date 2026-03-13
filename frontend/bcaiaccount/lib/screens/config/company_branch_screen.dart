@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:smlaicloud/global.dart' as global;
@@ -585,15 +586,6 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
                     '(${listData.length})',
                     style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const Icon(Icons.line_weight),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataLineSpaceChange();
-                      });
-                    },
-                  ),
                 ],
               ),
             ),
@@ -672,6 +664,20 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
     );
   }
 
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return isSaveAllow
+          ? global.theme.rowEditColor
+          : global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
+  }
+
   void switchToEdit(CompanyBranchModel value) {
     setState(() {
       selectGuid = value.guidfixed;
@@ -742,11 +748,7 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
       child: Container(
         key: index < listKeys.length ? listKeys[index] : null,
         decoration: BoxDecoration(
-          color: (selectGuid == value.guidfixed)
-              ? global.theme.rowSelectedColor
-              : (index % 2 == 0)
-              ? global.theme.columnAlternateEvenColor
-              : global.theme.columnAlternateOddColor,
+          color: _getContainerColor(value.guidfixed, index),
         ),
         padding: EdgeInsets.only(
           left: 10,
@@ -1144,7 +1146,7 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
           decoration: BoxDecoration(
             border: Border.all(color: global.theme.primaryColor),
             borderRadius: BorderRadius.circular(5),
-            color: Colors.white,
+            color: global.theme.cardColor,
           ),
           child: Column(
             children: [
@@ -1165,7 +1167,7 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
                     TabBar(
                       isScrollable: true,
                       labelColor: global.theme.primaryColor,
-                      unselectedLabelColor: Colors.grey,
+                      unselectedLabelColor: global.theme.textSecondaryColor,
                       tabs: [
                         Tab(text: global.language("cash")),
                         Tab(text: global.language("credit_card")),
@@ -1839,9 +1841,9 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1873,15 +1875,15 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
             value: dropdownValue,
             decoration: InputDecoration(
               filled: true,
-              fillColor: Colors.grey.shade50,
+              fillColor: global.theme.inputFillColor,
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey.shade300),
+                borderSide: BorderSide(color: global.theme.dividerBorderColor),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey.shade300),
+                borderSide: BorderSide(color: global.theme.dividerBorderColor),
               ),
             ),
             items: currencies.map((currency) {
@@ -1923,9 +1925,9 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1951,15 +1953,15 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
                 : 'th',
             decoration: InputDecoration(
               filled: true,
-              fillColor: Colors.grey.shade50,
+              fillColor: global.theme.inputFillColor,
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey.shade300),
+                borderSide: BorderSide(color: global.theme.dividerBorderColor),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey.shade300),
+                borderSide: BorderSide(color: global.theme.dividerBorderColor),
               ),
             ),
             items: languages.map((lang) {
@@ -2044,9 +2046,9 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2097,7 +2099,7 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected ? Colors.teal.shade700 : Colors.black87,
+                      color: isSelected ? Colors.teal.shade700 : global.theme.textColor,
                     ),
                   ),
                   dense: true,
@@ -2108,15 +2110,15 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
             decoratorProps: DropDownDecoratorProps(
               decoration: InputDecoration(
                 filled: true,
-                fillColor: Colors.grey.shade50,
+                fillColor: global.theme.inputFillColor,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: global.theme.dividerBorderColor),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: global.theme.dividerBorderColor),
                 ),
               ),
             ),
@@ -2142,9 +2144,9 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2235,15 +2237,15 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
                 value: currentValue,
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: Colors.grey.shade50,
+                  fillColor: global.theme.inputFillColor,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                    borderSide: BorderSide(color: global.theme.dividerBorderColor),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                    borderSide: BorderSide(color: global.theme.dividerBorderColor),
                   ),
                 ),
                 items: decimalOptions.map((v) {
@@ -2264,9 +2266,9 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2660,7 +2662,7 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
     formWidgets.add(const SizedBox(height: 10));
 
     return Scaffold(
-      backgroundColor: isEditMode ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
+      backgroundColor: global.theme.cardColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -2686,6 +2688,8 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
             : null,
         title: Text(headerEdit + global.language("company_branch")),
         actions: <Widget>[
+          EditFontSizeControl(onChanged: () => setState(() {})),
+          const SizedBox(width: 8),
           if (selectGuid.isNotEmpty)
             Padding(
               padding: EdgeInsets.only(right: 20.0),
@@ -2790,69 +2794,93 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
             }
           }
         },
-        child: SingleChildScrollView(
-          controller: editScrollController,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.only(top: 10, bottom: 10),
-            child: Form(
-              child: Column(
-                children: [
-                  Column(children: formWidgets),
-                  const SizedBox(height: 10),
-                  // กำหนดค่าเพิ่มเติม - แสดงตลอดไม่มีปุ่ม expand
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Header
-                        Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Icon(
-                                  Icons.settings,
-                                  color: global.theme.primaryColor,
-                                  size: 20,
-                                ),
-                              ),
-                              SizedBox(width: 12),
-                              Text(
-                                global.language("advanced_settings"),
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: global.theme.textColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Content
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: formWidgetsExpansion,
-                          ),
-                        ),
-                      ],
+        child: Builder(
+          builder: (context) {
+            final scale = global.editFontScaleFactor;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(scale),
+              ),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                    contentPadding: EdgeInsets.fromLTRB(
+                      12 * scale, 20 * scale, 12 * scale, 12 * scale,
                     ),
                   ),
-                ],
+                ),
+                child: IconTheme(
+                  data: IconTheme.of(context).copyWith(
+                    size: 24.0 * scale,
+                  ),
+                  child: SingleChildScrollView(
+                    controller: editScrollController,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.only(top: 10, bottom: 10),
+                      child: Form(
+                        child: Column(
+                          children: [
+                            Column(children: formWidgets),
+                            const SizedBox(height: 10),
+                            // กำหนดค่าเพิ่มเติม - แสดงตลอดไม่มีปุ่ม expand
+                            Container(
+                              decoration: BoxDecoration(
+                                color: global.theme.surfaceColor,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Header
+                                  Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          padding: EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Icon(
+                                            Icons.settings,
+                                            color: global.theme.primaryColor,
+                                            size: 20,
+                                          ),
+                                        ),
+                                        SizedBox(width: 12),
+                                        Text(
+                                          global.language("advanced_settings"),
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: global.theme.textColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  // Content
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: formWidgetsExpansion,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );

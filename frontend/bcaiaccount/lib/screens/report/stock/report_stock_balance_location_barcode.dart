@@ -23,7 +23,7 @@ class ReportStockBalanceLocationBarcode extends StatefulWidget {
 
 class _ReportStockBalanceLocationBarcodeState
     extends State<ReportStockBalanceLocationBarcode>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   bool processSuccess = false;
   bool pdfCreated = false;
   bool pdfDownloaded = false;
@@ -49,18 +49,18 @@ class _ReportStockBalanceLocationBarcodeState
   final Color primaryColor = Colors.indigo;
   final Color secondaryColor = Colors.teal;
   final Color accentColor = Colors.amber;
-  final Color backgroundColor = Colors.grey.shade50;
-  final Color cardColor = Colors.white;
-  final Color headerColor = Colors.indigo.shade100;
-  final Color footerColor = Colors.indigo.shade50;
-  final Color rowEvenColor = Colors.grey.shade50;
-  final Color rowOddColor = Colors.white;
-  final Color warehouseColor = Colors.amber.shade50;
-  final Color locationColor = Colors.teal.shade50;
-  final Color successColor = Colors.green.shade600;
-  final Color errorColor = Colors.red.shade600;
-  final Color warningColor = Colors.orange.shade600;
-  final Color infoColor = Colors.blue.shade600;
+  final Color backgroundColor = global.theme.backgroundColor;
+  final Color cardColor = global.theme.cardColor;
+  Color get headerColor => global.theme.columnHeaderColor;
+  Color get footerColor => global.theme.surfaceColor;
+  final Color rowEvenColor = global.theme.backgroundColor;
+  final Color rowOddColor = global.theme.cardColor;
+  Color get warehouseColor => global.theme.surfaceColor;
+  Color get locationColor => global.theme.surfaceColor;
+  final Color successColor = global.theme.positiveHighlightTextColor;
+  final Color errorColor = global.theme.negativeHighlightTextColor;
+  final Color warningColor = global.theme.warningHighlightTextColor;
+  final Color infoColor = global.theme.infoHighlightTextColor;
 
   @override
   void initState() {
@@ -184,7 +184,7 @@ class _ReportStockBalanceLocationBarcodeState
               SizedBox(height: 8),
               Text(
                 global.language("please_try_process_report_again"),
-                style: TextStyle(color: Colors.grey.shade700),
+                style: TextStyle(color: global.theme.iconColor),
               ),
               SizedBox(height: 24),
               ElevatedButton.icon(
@@ -192,7 +192,7 @@ class _ReportStockBalanceLocationBarcodeState
                 label: Text(global.language("export_report_retry")),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
+                  foregroundColor: global.theme.onPrimaryColor,
                   padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -347,28 +347,28 @@ class _ReportStockBalanceLocationBarcodeState
           height: 200,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: Colors.grey.shade50,
+            color: global.theme.backgroundColor,
             border: Border(
-              bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+              bottom: BorderSide(color: global.theme.dividerBorderColor, width: 1),
             ),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.info_outline, size: 48, color: Colors.grey.shade400),
+              Icon(Icons.info_outline, size: 48, color: global.theme.iconSecondaryColor),
               SizedBox(height: 16),
               Text(
                 global.language("no_data_for_selected_criteria"),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.grey.shade600,
+                  color: global.theme.textSecondaryColor,
                 ),
               ),
               SizedBox(height: 8),
               Text(
                 "ลองเปลี่ยนเงื่อนไขการค้นหาและประมวลผลใหม่อีกครั้ง",
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
               ),
             ],
           ),
@@ -381,7 +381,7 @@ class _ReportStockBalanceLocationBarcodeState
             decoration: BoxDecoration(
               color: isEvenRow ? rowEvenColor : rowOddColor,
               border: Border(
-                bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+                bottom: BorderSide(color: global.theme.dividerBorderColor, width: 1),
               ),
             ),
             child: Row(
@@ -467,8 +467,8 @@ class _ReportStockBalanceLocationBarcodeState
                   children: [
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: Colors.grey.shade300),
+                        color: global.theme.cardColor,
+                        border: Border.all(color: global.theme.dividerBorderColor),
                       ),
                       child: Column(children: data),
                     ),
@@ -520,14 +520,14 @@ class _ReportStockBalanceLocationBarcodeState
       margin: EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.blue.shade50, Colors.indigo.shade50],
+          colors: [footerColor, footerColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: global.theme.textColor.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: Offset(0, 5),
           ),
@@ -560,7 +560,7 @@ class _ReportStockBalanceLocationBarcodeState
                 ),
                 Spacer(),
                 IconButton(
-                  icon: Icon(Icons.close, color: Colors.grey.shade700),
+                  icon: Icon(Icons.close, color: global.theme.iconColor),
                   onPressed: () {
                     setState(() {
                       showHelpTips = false;
@@ -636,13 +636,13 @@ class _ReportStockBalanceLocationBarcodeState
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
+                color: global.theme.textColor.withValues(alpha: 0.1),
                 blurRadius: 4,
                 offset: Offset(0, 2),
               ),
             ],
           ),
-          child: Icon(icon, color: Colors.white, size: 18),
+          child: Icon(icon, color: global.theme.onPrimaryColor, size: 18),
         ),
         SizedBox(width: 12),
         Expanded(
@@ -660,7 +660,7 @@ class _ReportStockBalanceLocationBarcodeState
               SizedBox(height: 4),
               Text(
                 description,
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade800),
+                style: TextStyle(fontSize: 14, color: global.theme.textColor),
               ),
               if (!isLast)
                 Container(
@@ -712,14 +712,14 @@ class _ReportStockBalanceLocationBarcodeState
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.place, color: Colors.white, size: 28),
+                      Icon(Icons.place, color: global.theme.onPrimaryColor, size: 28),
                       SizedBox(width: 12),
                       Text(
                         global.language("inventory_report"),
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: global.theme.cardColor,
                         ),
                       ),
                     ],
@@ -728,7 +728,7 @@ class _ReportStockBalanceLocationBarcodeState
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: global.theme.cardColor.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -736,7 +736,7 @@ class _ReportStockBalanceLocationBarcodeState
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Colors.white,
+                        color: global.theme.cardColor,
                       ),
                     ),
                   ),
@@ -745,7 +745,7 @@ class _ReportStockBalanceLocationBarcodeState
                     "รายงานนี้แสดงยอดคงเหลือของสินค้าตามคลังสินค้าและตำแหน่งที่เก็บ ช่วยให้คุณติดตามสินค้าได้อย่างมีประสิทธิภาพ",
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: global.theme.cardColor.withValues(alpha: 0.9),
                     ),
                   ),
                 ],
@@ -762,7 +762,7 @@ class _ReportStockBalanceLocationBarcodeState
               children: [
                 Text(
                   "เลือกวันที่ที่ต้องการทราบยอดคงเหลือของสินค้า",
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                  style: TextStyle(fontSize: 14, color: global.theme.iconColor),
                 ),
                 SizedBox(height: 16),
                 CustomDatePicker(
@@ -773,7 +773,7 @@ class _ReportStockBalanceLocationBarcodeState
                     prefixIcon: Icon(Icons.event, color: secondaryColor),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade400),
+                      borderSide: BorderSide(color: global.theme.iconSecondaryColor),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -784,7 +784,7 @@ class _ReportStockBalanceLocationBarcodeState
                       vertical: 16,
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: global.theme.formFillColor,
                     labelText: global.language("select_date"),
                     hintText: global.language("click_to_select_date"),
                     floatingLabelBehavior: FloatingLabelBehavior.never,
@@ -837,14 +837,14 @@ class _ReportStockBalanceLocationBarcodeState
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
-                        color: Colors.grey.shade800,
+                        color: global.theme.textColor,
                       ),
                     ),
                     subtitle: Text(
                       "ซ่อนรายการที่มีจำนวน 0 ชิ้น ช่วยให้รายงานกระชับขึ้น",
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey.shade700,
+                        color: global.theme.iconColor,
                       ),
                     ),
                     value: reportCondition.showOnlyBalance,
@@ -858,7 +858,7 @@ class _ReportStockBalanceLocationBarcodeState
                       decoration: BoxDecoration(
                         color: reportCondition.showOnlyBalance
                             ? secondaryColor.withValues(alpha: 0.1)
-                            : Colors.grey.shade200,
+                            : global.theme.dividerBorderColor,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -867,7 +867,7 @@ class _ReportStockBalanceLocationBarcodeState
                             : Icons.visibility_off,
                         color: reportCondition.showOnlyBalance
                             ? secondaryColor
-                            : Colors.grey.shade600,
+                            : global.theme.textSecondaryColor,
                         size: 20,
                       ),
                     ),
@@ -894,16 +894,16 @@ class _ReportStockBalanceLocationBarcodeState
                       ),
                       margin: EdgeInsets.symmetric(horizontal: 4),
                       decoration: BoxDecoration(
-                        color: Colors.green.shade50,
+                        color: global.theme.positiveHighlightColor,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.green.shade200),
+                        border: Border.all(color: global.theme.positiveHighlightColor),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             Icons.check_circle,
                             size: 16,
-                            color: Colors.green.shade700,
+                            color: global.theme.positiveHighlightTextColor,
                           ),
                           SizedBox(width: 8),
                           Expanded(
@@ -911,7 +911,7 @@ class _ReportStockBalanceLocationBarcodeState
                               "รายงานจะแสดงเฉพาะรายการที่มีสินค้าคงเหลือมากกว่า 0 เท่านั้น",
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Colors.green.shade900,
+                                color: global.theme.positiveHighlightTextColor,
                               ),
                             ),
                           ),
@@ -933,7 +933,7 @@ class _ReportStockBalanceLocationBarcodeState
               children: [
                 Text(
                   "เลือกสินค้าที่ต้องการแสดงในรายงาน หากไม่เลือกจะแสดงสินค้าทั้งหมด",
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                  style: TextStyle(fontSize: 14, color: global.theme.iconColor),
                 ),
                 SizedBox(height: 16),
                 Row(
@@ -964,7 +964,7 @@ class _ReportStockBalanceLocationBarcodeState
                         label: Text(global.language("report_condition_select_barcode")),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: primaryColor,
-                          foregroundColor: Colors.white,
+                          foregroundColor: global.theme.onPrimaryColor,
                           elevation: 2,
                           padding: EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
@@ -1002,9 +1002,9 @@ class _ReportStockBalanceLocationBarcodeState
                   width: double.infinity,
                   padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
+                    color: global.theme.backgroundColor,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade300),
+                    border: Border.all(color: global.theme.dividerBorderColor),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1040,13 +1040,13 @@ class _ReportStockBalanceLocationBarcodeState
                                     Icon(
                                       Icons.info_outline,
                                       size: 24,
-                                      color: Colors.grey.shade400,
+                                      color: global.theme.iconSecondaryColor,
                                     ),
                                     SizedBox(height: 8),
                                     Text(
                                       "ยังไม่ได้เลือกสินค้า (จะแสดงสินค้าทั้งหมด)",
                                       style: TextStyle(
-                                        color: Colors.grey.shade600,
+                                        color: global.theme.textSecondaryColor,
                                         fontStyle: FontStyle.italic,
                                       ),
                                     ),
@@ -1067,12 +1067,12 @@ class _ReportStockBalanceLocationBarcodeState
                                       ),
                                       label: Text(item.itemCode),
                                       labelStyle: TextStyle(
-                                        color: Colors.grey.shade800,
+                                        color: global.theme.textColor,
                                         fontWeight: FontWeight.w500,
                                       ),
-                                      backgroundColor: Colors.white,
+                                      backgroundColor: global.theme.cardColor,
                                       elevation: 1,
-                                      shadowColor: Colors.grey.shade200,
+                                      shadowColor: global.theme.dividerBorderColor,
                                       side: BorderSide(
                                         color: secondaryColor.withValues(alpha: 0.3),
                                       ),
@@ -1179,16 +1179,16 @@ class _ReportStockBalanceLocationBarcodeState
           Container(
             margin: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
+                  color: global.theme.textColor.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: Offset(0, 5),
                 ),
               ],
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: global.theme.dividerBorderColor),
             ),
             padding: EdgeInsets.all(20),
             child: Column(
@@ -1205,7 +1205,7 @@ class _ReportStockBalanceLocationBarcodeState
                 SizedBox(height: 8),
                 Text(
                   "เมื่อตั้งค่าเงื่อนไขเรียบร้อยแล้ว กดปุ่มด้านล่างเพื่อประมวลผลรายงาน",
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                  style: TextStyle(fontSize: 14, color: global.theme.iconColor),
                 ),
                 SizedBox(height: 20),
                 SizedBox(
@@ -1222,7 +1222,7 @@ class _ReportStockBalanceLocationBarcodeState
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: secondaryColor,
-                      foregroundColor: Colors.white,
+                      foregroundColor: global.theme.onPrimaryColor,
                       elevation: 3,
                       shadowColor: secondaryColor.withValues(alpha: 0.5),
                       shape: RoundedRectangleBorder(
@@ -1261,16 +1261,16 @@ class _ReportStockBalanceLocationBarcodeState
     return Container(
       margin: EdgeInsets.fromLTRB(16, 0, 16, isLastSection ? 0 : 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: global.theme.textColor.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: Offset(0, 5),
           ),
         ],
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1278,7 +1278,7 @@ class _ReportStockBalanceLocationBarcodeState
           Container(
             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+              border: Border(bottom: BorderSide(color: global.theme.dividerBorderColor)),
             ),
             child: Row(
               children: [
@@ -1490,7 +1490,7 @@ class _ReportStockBalanceLocationBarcodeState
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
+                color: global.theme.textColor.withValues(alpha: 0.1),
                 spreadRadius: 1,
                 blurRadius: 4,
                 offset: Offset(0, 2),
@@ -1503,7 +1503,7 @@ class _ReportStockBalanceLocationBarcodeState
             children: [
               Row(
                 children: [
-                  Icon(Icons.place, color: Colors.white, size: 24),
+                  Icon(Icons.place, color: global.theme.onPrimaryColor, size: 24),
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -1512,13 +1512,13 @@ class _ReportStockBalanceLocationBarcodeState
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: global.theme.cardColor,
                       ),
                     ),
                   ),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: global.theme.cardColor.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -1527,7 +1527,7 @@ class _ReportStockBalanceLocationBarcodeState
                       children: [
                         Text(
                           global.language("font_size"),
-                          style: TextStyle(fontSize: 12, color: Colors.white),
+                          style: TextStyle(fontSize: 12, color: global.theme.cardColor),
                         ),
                         SizedBox(width: 4),
                         InkWell(
@@ -1542,12 +1542,12 @@ class _ReportStockBalanceLocationBarcodeState
                           child: Container(
                             padding: EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
+                              color: global.theme.cardColor.withValues(alpha: 0.2),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
                               Icons.remove,
-                              color: Colors.white,
+                              color: global.theme.onPrimaryColor,
                               size: 16,
                             ),
                           ),
@@ -1563,12 +1563,12 @@ class _ReportStockBalanceLocationBarcodeState
                           child: Container(
                             padding: EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
+                              color: global.theme.cardColor.withValues(alpha: 0.2),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
                               Icons.add,
-                              color: Colors.white,
+                              color: global.theme.onPrimaryColor,
                               size: 16,
                             ),
                           ),
@@ -1582,7 +1582,7 @@ class _ReportStockBalanceLocationBarcodeState
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
+                  color: global.theme.cardColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -1590,14 +1590,14 @@ class _ReportStockBalanceLocationBarcodeState
                     Icon(
                       Icons.calendar_today,
                       size: 16,
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: global.theme.cardColor.withValues(alpha: 0.9),
                     ),
                     SizedBox(width: 8),
                     Text(
                       "ข้อมูล ณ วันที่ ${conditionFinalDate.day}/${conditionFinalDate.month}/${conditionFinalDate.year}",
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: global.theme.cardColor.withValues(alpha: 0.9),
                       ),
                     ),
                   ],
@@ -1614,20 +1614,20 @@ class _ReportStockBalanceLocationBarcodeState
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.search, size: 64, color: Colors.grey.shade400),
+                  Icon(Icons.search, size: 64, color: global.theme.iconSecondaryColor),
                   SizedBox(height: 24),
                   Text(
                     global.language("report_not_processed"),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade700,
+                      color: global.theme.iconColor,
                     ),
                   ),
                   SizedBox(height: 12),
                   Text(
                     global.language("report_go_to_condition_tab"),
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
                   ),
                   SizedBox(height: 24),
                   ElevatedButton.icon(
@@ -1635,7 +1635,7 @@ class _ReportStockBalanceLocationBarcodeState
                     label: Text(global.language("go_to_condition_page")),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
-                      foregroundColor: Colors.white,
+                      foregroundColor: global.theme.onPrimaryColor,
                       padding: EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 12,
@@ -1697,9 +1697,9 @@ class _ReportStockBalanceLocationBarcodeState
             margin: EdgeInsets.only(bottom: 16),
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
+              color: footerColor,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.shade200),
+              border: Border.all(color: global.theme.infoHighlightColor),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1723,7 +1723,7 @@ class _ReportStockBalanceLocationBarcodeState
                         "• คุณสามารถค้นหาข้อความในเอกสาร PDF ได้\n• บันทึกเอกสารเป็นไฟล์ PDF ไว้ในอุปกรณ์\n• สั่งพิมพ์รายงานผ่านเครื่องพิมพ์ที่เชื่อมต่อ",
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey.shade800,
+                          color: global.theme.textColor,
                           height: 1.5,
                         ),
                       ),
@@ -1751,11 +1751,11 @@ class _ReportStockBalanceLocationBarcodeState
                       hintText: global.language("type_search_keyword"),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade400),
+                        borderSide: BorderSide(color: global.theme.iconSecondaryColor),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade400),
+                        borderSide: BorderSide(color: global.theme.iconSecondaryColor),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -1768,7 +1768,7 @@ class _ReportStockBalanceLocationBarcodeState
                           IconButton(
                             icon: Icon(
                               Icons.clear,
-                              color: Colors.grey.shade600,
+                              color: global.theme.textSecondaryColor,
                             ),
                             tooltip: global.language("clear_search"),
                             onPressed: () {
@@ -1801,7 +1801,7 @@ class _ReportStockBalanceLocationBarcodeState
                           label: Text(global.language("save_as_pdf")),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryColor,
-                            foregroundColor: Colors.white,
+                            foregroundColor: global.theme.onPrimaryColor,
                             padding: EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -1826,7 +1826,7 @@ class _ReportStockBalanceLocationBarcodeState
                           label: Text(global.language("print_report")),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: secondaryColor,
-                            foregroundColor: Colors.white,
+                            foregroundColor: global.theme.onPrimaryColor,
                             padding: EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -1868,7 +1868,7 @@ class _ReportStockBalanceLocationBarcodeState
                           Icon(
                             Icons.picture_as_pdf,
                             size: 64,
-                            color: Colors.grey.shade400,
+                            color: global.theme.iconSecondaryColor,
                           ),
                           SizedBox(height: 24),
                           Text(
@@ -1876,7 +1876,7 @@ class _ReportStockBalanceLocationBarcodeState
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.grey.shade700,
+                              color: global.theme.iconColor,
                             ),
                           ),
                           SizedBox(height: 12),
@@ -1884,7 +1884,7 @@ class _ReportStockBalanceLocationBarcodeState
                             global.language("report_go_to_condition_tab"),
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey.shade600,
+                              color: global.theme.textSecondaryColor,
                             ),
                           ),
                           SizedBox(height: 24),
@@ -1893,7 +1893,7 @@ class _ReportStockBalanceLocationBarcodeState
                             label: Text(global.language("go_to_condition_page")),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: primaryColor,
-                              foregroundColor: Colors.white,
+                              foregroundColor: global.theme.onPrimaryColor,
                               padding: EdgeInsets.symmetric(
                                 horizontal: 16,
                                 vertical: 12,
@@ -1957,7 +1957,7 @@ class _ReportStockBalanceLocationBarcodeState
           automaticallyImplyLeading: false,
           elevation: 2,
           leading: IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
+            icon: Icon(Icons.close, color: global.theme.cardColor),
             onPressed: () async {
               if (processSuccess) {
                 final confirmed = await showDialog(
@@ -1982,7 +1982,7 @@ class _ReportStockBalanceLocationBarcodeState
                           },
                           child: Text(
                             global.language("cancel"),
-                            style: TextStyle(color: Colors.grey.shade700),
+                            style: TextStyle(color: global.theme.iconColor),
                           ),
                         ),
                         ElevatedButton(
@@ -1991,7 +1991,7 @@ class _ReportStockBalanceLocationBarcodeState
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryColor,
-                            foregroundColor: Colors.white,
+                            foregroundColor: global.theme.onPrimaryColor,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -2017,7 +2017,7 @@ class _ReportStockBalanceLocationBarcodeState
           ),
           actions: [
             IconButton(
-              icon: Icon(Icons.help_outline, color: Colors.white),
+              icon: Icon(Icons.help_outline, color: global.theme.cardColor),
               tooltip: global.language("show_hide_tips"),
               onPressed: () {
                 setState(() {
@@ -2028,7 +2028,7 @@ class _ReportStockBalanceLocationBarcodeState
           ],
           bottom: TabBar(
             controller: tabController,
-            indicatorColor: Colors.white,
+            indicatorColor: global.theme.onPrimaryColor,
             indicatorWeight: 3,
             labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             tabs: [

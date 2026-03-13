@@ -39,7 +39,7 @@ class ReportDedebiSalesScreen extends StatefulWidget {
       _ReportDedebiSalesScreenState();
 }
 
-class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
+class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> with global.ThemeRefreshMixin {
   // Report polling configuration
   static const Duration _pollInterval = Duration(
     seconds: 2,
@@ -151,18 +151,18 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.grey.shade50,
+        backgroundColor: global.theme.backgroundColor,
         appBar: AppBar(
           title: Text(
             global.language('report_dedebi_sales_title'),
-            style: const TextStyle(fontWeight: FontWeight.w600),
+            style: TextStyle(fontWeight: FontWeight.w600),
           ),
           centerTitle: true,
           backgroundColor: Colors.indigo.shade600,
-          foregroundColor: Colors.white,
+          foregroundColor: global.theme.onPrimaryColor,
           elevation: 2,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: Icon(Icons.arrow_back),
             onPressed: () {
               if (kDebugMode) {
                 AppLogger.debug('🔙 Back button pressed');
@@ -201,12 +201,12 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
                   : global.language('report_dedebi_show_filter_panel'),
             ),
             IconButton(
-              icon: const Icon(Icons.filter_alt_outlined),
+              icon: Icon(Icons.filter_alt_outlined),
               onPressed: _showConditionDialog,
               tooltip: global.language('report_dedebi_set_search_conditions'),
             ),
             IconButton(
-              icon: const Icon(Icons.refresh),
+              icon: Icon(Icons.refresh),
               onPressed: () {
                 // Reset and refresh data
                 if (_biReportBloc != null) {
@@ -217,7 +217,7 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
               tooltip: global.language('report_dedebi_refresh_data'),
             ),
             IconButton(
-              icon: const Icon(Icons.download),
+              icon: Icon(Icons.download),
               onPressed: _showExportDialog,
               tooltip: global.language('report_dedebi_export_report'),
             ),
@@ -449,12 +449,12 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
   Widget _buildDataGrid(List<SaleReportData> data) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: global.theme.textColor.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -473,7 +473,7 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
   Widget _buildLoadingOverlay() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.8),
+        color: global.theme.cardColor.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Center(
@@ -495,7 +495,7 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
               global.language('report_dedebi_loading_new_page'),
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade700,
+                color: global.theme.iconColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -531,7 +531,7 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
             global.language('report_dedebi_sales_dedebi_title'),
             style: TextStyle(
               fontSize: 24,
-              color: Colors.grey.shade800,
+              color: global.theme.textColor,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -542,7 +542,7 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
               global.language('report_dedebi_set_conditions_to_view'),
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey.shade600,
+                color: global.theme.textSecondaryColor,
                 fontWeight: FontWeight.w400,
               ),
               textAlign: TextAlign.center,
@@ -555,13 +555,13 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
             label: Text(global.language('report_dedebi_set_search_conditions')),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.indigo.shade600,
-              foregroundColor: Colors.white,
+              foregroundColor: global.theme.onPrimaryColor,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               elevation: 3,
-              textStyle: const TextStyle(
+              textStyle: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
@@ -589,7 +589,7 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
                   child: CircularProgressIndicator(
                     value: null, // ❌ เปลี่ยนให้เป็น null เพื่อให้หมุนตลอด
                     strokeWidth: 6,
-                    backgroundColor: Colors.grey.shade300,
+                    backgroundColor: global.theme.dividerBorderColor,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       Colors.indigo.shade600,
                     ),
@@ -612,14 +612,14 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
             message,
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey.shade700,
+              color: global.theme.iconColor,
               fontWeight: FontWeight.w500,
             ),
           ),
           SizedBox(height: 8),
           Text(
             global.language('report_dedebi_please_wait'),
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
           ),
         ],
       ),
@@ -638,14 +638,14 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(16),
           bottomRight: Radius.circular(16),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: global.theme.textColor.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -658,7 +658,7 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
           Expanded(
             child: Text(
               '${global.language('report_dedebi_showing_items')} $startItem-$endItem ${global.language('report_dedebi_all').toLowerCase()} $totalItems ${global.language('report_dedebi_items')}',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
             ),
           ),
 
@@ -667,7 +667,7 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
             children: [
               Text(
                 global.language('report_dedebi_showing_items'),
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
               ),
               const SizedBox(width: 8),
               DropdownButton<int>(
@@ -687,12 +687,12 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
                   }
                 },
                 underline: Container(),
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade800),
+                style: TextStyle(fontSize: 14, color: global.theme.textColor),
               ),
               SizedBox(width: 8),
               Text(
                 global.language('report_dedebi_items'),
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
               ),
             ],
           ),
@@ -727,12 +727,12 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: global.theme.surfaceColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   '$currentPage / $totalPages',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -784,13 +784,13 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
+          Icon(Icons.error_outline, size: 64, color: global.theme.negativeHighlightTextColor),
           SizedBox(height: 16),
           Text(
             global.language('report_dedebi_error_occurred'),
             style: TextStyle(
               fontSize: 18,
-              color: Colors.red.shade600,
+              color: global.theme.negativeHighlightTextColor,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -800,7 +800,7 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
               errorMessage,
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
               textAlign: TextAlign.center,
             ),
           ),
@@ -820,7 +820,7 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
                 label: Text(global.language('report_dedebi_try_again')),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.indigo.shade600,
-                  foregroundColor: Colors.white,
+                  foregroundColor: global.theme.onPrimaryColor,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 16,
@@ -859,7 +859,7 @@ class _ReportDedebiSalesScreenState extends State<ReportDedebiSalesScreen> {
             },
             icon: Icon(Icons.clear_all),
             label: Text(global.language('report_dedebi_clear_data')),
-            style: TextButton.styleFrom(foregroundColor: Colors.grey.shade600),
+            style: TextButton.styleFrom(foregroundColor: global.theme.textSecondaryColor),
           ),
         ],
       ),

@@ -26,7 +26,7 @@ class TransactionDetailDialog extends StatefulWidget {
       _TransactionDetailDialogState();
 }
 
-class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
+class _TransactionDetailDialogState extends State<TransactionDetailDialog> with global.ThemeRefreshMixin {
   @override
   void initState() {
     super.initState();
@@ -140,7 +140,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
               children: [
                 Text(
                   '${global.language('transaction_detail')} $docno',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.indigo,
@@ -148,9 +148,9 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
                 ),
                 Text(
                   '${ReportUtils.formatDate(docdate)}${docTime.isNotEmpty ? ' • $docTime' : ''}${branchcode.isNotEmpty ? ' • ${global.language('transaction_branch')} $branchcode' : ''}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey,
+                    color: global.theme.textSecondaryColor,
                   ),
                 ),
               ],
@@ -212,9 +212,9 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
           SizedBox(height: 16),
           Text(
             global.language('transaction_loading_detail'),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: Colors.grey,
+              color: global.theme.textSecondaryColor,
             ),
           ),
         ],
@@ -230,14 +230,14 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
           Icon(
             Icons.error_outline,
             size: 64,
-            color: Colors.red.shade300,
+            color: global.theme.negativeHighlightTextColor,
           ),
           const SizedBox(height: 16),
           Text(
             errorMessage,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: Colors.red,
+              color: global.theme.negativeHighlightTextColor,
             ),
             textAlign: TextAlign.center,
           ),
@@ -257,17 +257,17 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Icons.inbox_outlined,
             size: 64,
-            color: Colors.grey,
+            color: global.theme.textSecondaryColor,
           ),
           SizedBox(height: 16),
           Text(
             global.language('transaction_no_detail_data'),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: Colors.grey,
+              color: global.theme.textSecondaryColor,
             ),
           ),
         ],
@@ -332,7 +332,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
             SizedBox(width: 8),
             Text(
               '1. ${global.language('transaction_customer_info')}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.indigo,
@@ -363,9 +363,9 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.grey.shade50,
+            color: global.theme.backgroundColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: global.theme.dividerBorderColor),
           ),
           child: Column(
             children: [
@@ -380,14 +380,14 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
                           global.language('transaction_customer_name'),
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade600,
+                            color: global.theme.textSecondaryColor,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           creditorName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -407,14 +407,14 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
                             global.language('transaction_customer_code'),
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey.shade600,
+                              color: global.theme.textSecondaryColor,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             creditorCode,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -467,7 +467,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
             SizedBox(width: 6),
             Text(
               '2. ${global.language('transaction_summary')}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: Colors.indigo,
@@ -524,7 +524,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
           label,
           style: TextStyle(
             fontSize: 10,
-            color: isTotal ? Colors.indigo.shade700 : Colors.grey.shade600,
+            color: isTotal ? Colors.indigo.shade700 : global.theme.textSecondaryColor,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -537,8 +537,8 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
             color: isTotal
                 ? Colors.indigo.shade700
                 : isVat
-                    ? Colors.orange.shade700
-                    : Colors.black87,
+                    ? global.theme.warningHighlightTextColor
+                    : global.theme.textColor,
           ),
         ),
       ],
@@ -573,7 +573,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
               SizedBox(width: 8),
               Text(
                 '3. ${global.language('transaction_product_list')} ($transactionCount ${global.language('transaction_items')})',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.indigo,
@@ -585,9 +585,9 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.cardColor,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: global.theme.dividerBorderColor),
               ),
               child: Column(
                 children: [
@@ -596,7 +596,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
+                      color: global.theme.backgroundColor,
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(12),
                         topRight: Radius.circular(12),
@@ -609,7 +609,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
                           flex: 3,
                           child: Text(
                             global.language('transaction_product'),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: Colors.indigo,
@@ -660,8 +660,8 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
                             child: Center(
                               child: Text(
                                 global.language('transaction_no_products'),
-                                style: const TextStyle(
-                                  color: Colors.grey,
+                                style: TextStyle(
+                                  color: global.theme.textSecondaryColor,
                                   fontSize: 14,
                                 ),
                               ),
@@ -697,7 +697,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         border: index < (transaction.linenumber) - 1
-            ? Border(bottom: BorderSide(color: Colors.grey.shade100))
+            ? Border(bottom: BorderSide(color: global.theme.surfaceColor))
             : null,
       ),
       child: Row(
@@ -707,7 +707,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
             width: 24,
             height: 24,
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
+              color: global.theme.surfaceColor,
               borderRadius: BorderRadius.circular(6),
             ),
             child: Center(
@@ -716,7 +716,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade700,
+                  color: global.theme.infoHighlightTextColor,
                 ),
               ),
             ),
@@ -730,7 +730,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
               children: [
                 Text(
                   ReportUtils.getItemNameSafe(transaction.itemnames),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -742,7 +742,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
                   transaction.barcode,
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey.shade600,
+                    color: global.theme.textSecondaryColor,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -756,7 +756,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
               children: [
                 Text(
                   '${transaction.qty}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -766,7 +766,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
                   ReportUtils.getUnitNameSafe(transaction.unitnames),
                   style: TextStyle(
                     fontSize: 10,
-                    color: Colors.grey.shade600,
+                    color: global.theme.textSecondaryColor,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -779,7 +779,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
           Expanded(
             child: Text(
               widget.formatCurrency(transaction.price),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -811,7 +811,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         border: index < transaction.itemNames.length - 1
-            ? Border(bottom: BorderSide(color: Colors.grey.shade100))
+            ? Border(bottom: BorderSide(color: global.theme.surfaceColor))
             : null,
       ),
       child: Row(
@@ -821,7 +821,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
             width: 24,
             height: 24,
             decoration: BoxDecoration(
-              color: Colors.red.shade50,
+              color: global.theme.negativeHighlightColor,
               borderRadius: BorderRadius.circular(6),
             ),
             child: Center(
@@ -830,7 +830,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  color: Colors.red.shade700,
+                  color: global.theme.negativeHighlightTextColor,
                 ),
               ),
             ),
@@ -846,7 +846,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
                   transaction.itemNames.isNotEmpty
                       ? transaction.itemNames.first.getDisplayName()
                       : '-',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -858,7 +858,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
                   transaction.barcode,
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey.shade600,
+                    color: global.theme.textSecondaryColor,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -872,7 +872,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
               children: [
                 Text(
                   '${transaction.qty}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -884,7 +884,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
                       : '-',
                   style: TextStyle(
                     fontSize: 10,
-                    color: Colors.grey.shade600,
+                    color: global.theme.textSecondaryColor,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -897,7 +897,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
           Expanded(
             child: Text(
               widget.formatCurrency(transaction.price),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -913,7 +913,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
-                color: Colors.red.shade700, // Use red for returns
+                color: global.theme.negativeHighlightTextColor, // Use red for returns
               ),
               textAlign: TextAlign.right,
             ),
@@ -929,7 +929,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
         onPressed: () => Navigator.of(context).pop(),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.indigo.shade600,
-          foregroundColor: Colors.white,
+          foregroundColor: global.theme.onPrimaryColor,
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -938,7 +938,7 @@ class _TransactionDetailDialogState extends State<TransactionDetailDialog> {
         ),
         child: Text(
           global.language('transaction_close'),
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
     );

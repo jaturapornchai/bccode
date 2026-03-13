@@ -19,7 +19,7 @@ class PurchasePartialTableView extends StatefulWidget {
       _PurchasePartialTableViewState();
 }
 
-class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
+class _PurchasePartialTableViewState extends State<PurchasePartialTableView> with global.ThemeRefreshMixin {
   int? _hoveredIndex;
 
   @override
@@ -41,13 +41,13 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.inventory_outlined, size: 64, color: Colors.grey),
+              Icon(Icons.inventory_outlined, size: 64, color: global.theme.textSecondaryColor),
               SizedBox(height: 16),
               Text(
                 global.language('no_purchase_partial_report_data'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey,
+                  color: global.theme.textSecondaryColor,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -59,12 +59,12 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.shade100,
+            color: global.theme.surfaceColor,
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -105,7 +105,7 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
             flex: 2,
             child: Text(
               global.language('date'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: Colors.indigo,
@@ -116,7 +116,7 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
             flex: 3,
             child: Text(
               global.language('document_number'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: Colors.indigo,
@@ -127,7 +127,7 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
             flex: 2,
             child: Text(
               global.language('reference_document'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: Colors.indigo,
@@ -138,7 +138,7 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
             flex: 2,
             child: Text(
               global.language('creditor_code'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: Colors.indigo,
@@ -149,7 +149,7 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
             flex: 3,
             child: Text(
               global.language('creditor_name'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: Colors.indigo,
@@ -160,7 +160,7 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
             flex: 2,
             child: Text(
               global.language('product_value'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: Colors.indigo,
@@ -172,7 +172,7 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
             flex: 2,
             child: Text(
               global.language('tax_exempt'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: Colors.indigo,
@@ -184,7 +184,7 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
             flex: 2,
             child: Text(
               global.language('before_tax'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: Colors.indigo,
@@ -196,7 +196,7 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
             flex: 2,
             child: Text(
               global.language('tax_value'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: Colors.indigo,
@@ -208,7 +208,7 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
             flex: 2,
             child: Text(
               global.language('net_value'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: Colors.indigo,
@@ -229,7 +229,7 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
     if (isHovered) {
       rowColor = Colors.indigo.shade100;
     } else {
-      rowColor = index.isEven ? Colors.white : Colors.grey.shade50;
+      rowColor = index.isEven ? global.theme.cardColor : global.theme.backgroundColor;
     }
 
     return MouseRegion(
@@ -245,7 +245,7 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
           decoration: BoxDecoration(
             color: rowColor,
             border: index < widget.data.length - 1
-                ? Border(bottom: BorderSide(color: Colors.grey.shade100))
+                ? Border(bottom: BorderSide(color: global.theme.surfaceColor))
                 : null,
           ),
           child: Row(
@@ -278,8 +278,8 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: isHovered
-                          ? Colors.blue.shade800
-                          : Colors.blue.shade700,
+                          ? global.theme.infoHighlightTextColor
+                          : global.theme.infoHighlightTextColor,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -300,10 +300,10 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: purchasePartial.docrefno.isNotEmpty
-                          ? (isHovered ? Colors.black87 : Colors.black)
+                          ? (isHovered ? global.theme.textColor : global.theme.textSecondaryColor)
                           : (isHovered
-                                ? Colors.grey.shade600
-                                : Colors.grey.shade500),
+                                ? global.theme.textSecondaryColor
+                                : global.theme.iconSecondaryColor),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -321,7 +321,7 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: isHovered ? Colors.black87 : Colors.black,
+                      color: isHovered ? global.theme.textColor : global.theme.textSecondaryColor,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -339,7 +339,7 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: isHovered ? Colors.black87 : Colors.black,
+                      color: isHovered ? global.theme.textColor : global.theme.textSecondaryColor,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -356,8 +356,8 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: isHovered
-                        ? Colors.green.shade800
-                        : Colors.green.shade700,
+                        ? global.theme.positiveHighlightTextColor
+                        : global.theme.positiveHighlightTextColor,
                   ),
                   textAlign: TextAlign.right,
                 ),
@@ -372,8 +372,8 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: isHovered
-                        ? Colors.orange.shade800
-                        : Colors.orange.shade700,
+                        ? global.theme.warningHighlightTextColor
+                        : global.theme.warningHighlightTextColor,
                   ),
                   textAlign: TextAlign.right,
                   maxLines: 1,
@@ -408,8 +408,8 @@ class _PurchasePartialTableViewState extends State<PurchasePartialTableView> {
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: isHovered
-                        ? Colors.red.shade800
-                        : Colors.red.shade700,
+                        ? global.theme.negativeHighlightTextColor
+                        : global.theme.negativeHighlightTextColor,
                   ),
                   textAlign: TextAlign.right,
                   maxLines: 1,

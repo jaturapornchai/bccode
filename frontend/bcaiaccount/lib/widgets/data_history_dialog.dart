@@ -32,7 +32,8 @@ class DataHistoryDialog extends StatefulWidget {
   State<DataHistoryDialog> createState() => _DataHistoryDialogState();
 }
 
-class _DataHistoryDialogState extends State<DataHistoryDialog> {
+class _DataHistoryDialogState extends State<DataHistoryDialog>
+    with global.ThemeRefreshMixin {
   List<DataHistoryModel> _historyList = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -85,25 +86,25 @@ class _DataHistoryDialogState extends State<DataHistoryDialog> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.history, color: Colors.white),
+                  Icon(Icons.history, color: global.theme.onPrimaryColor),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       '${widget.title.isNotEmpty ? widget.title : global.language("edit_history")} - ${widget.docNo}',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: global.theme.onPrimaryColor,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.refresh, color: Colors.white),
+                    icon: Icon(Icons.refresh, color: global.theme.onPrimaryColor),
                     onPressed: _loadHistory,
                     tooltip: global.language("refresh"),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
+                    icon: Icon(Icons.close, color: global.theme.onPrimaryColor),
                     onPressed: () => Navigator.of(context).pop(),
                     tooltip: global.language("close"),
                   ),
@@ -139,9 +140,9 @@ class _DataHistoryDialogState extends State<DataHistoryDialog> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            Icon(Icons.error_outline, size: 48, color: global.theme.negativeHighlightTextColor),
             const SizedBox(height: 16),
-            Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+            Text(_errorMessage!, style: TextStyle(color: global.theme.negativeHighlightTextColor)),
             SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadHistory,
@@ -167,18 +168,18 @@ class _DataHistoryDialogState extends State<DataHistoryDialog> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue[50],
+                  color: global.theme.infoHighlightColor,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue[200]!),
+                  border: Border.all(color: global.theme.infoHighlightColor),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.blue[700]),
+                    Icon(Icons.info_outline, color: global.theme.infoHighlightTextColor),
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         global.language("no_detailed_history_show_creator"),
-                        style: const TextStyle(fontSize: 13),
+                        style: TextStyle(fontSize: 13),
                       ),
                     ),
                   ],
@@ -188,7 +189,7 @@ class _DataHistoryDialogState extends State<DataHistoryDialog> {
               // ข้อมูลผู้สร้าง
               _buildCreatorModifierCard(
                 icon: Icons.person_add,
-                iconColor: Colors.green,
+                iconColor: global.theme.positiveHighlightTextColor,
                 title: global.language("document_creator"),
                 code: widget.creatorCode ?? '-',
                 name: widget.creatorName ?? '-',
@@ -203,9 +204,9 @@ class _DataHistoryDialogState extends State<DataHistoryDialog> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.inbox, size: 48, color: Colors.grey),
+            Icon(Icons.inbox, size: 48, color: global.theme.iconSecondaryColor),
             SizedBox(height: 16),
-            Text(global.language("no_edit_history_found"), style: TextStyle(color: Colors.grey)),
+            Text(global.language("no_edit_history_found"), style: TextStyle(color: global.theme.textSecondaryColor)),
           ],
         ),
       );
@@ -226,18 +227,18 @@ class _DataHistoryDialogState extends State<DataHistoryDialog> {
                 leading: _buildActionBadge(item.action),
                 title: Text(
                   item.actionText,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       '${global.language("by_user")} ${item.userName} (${item.userCode})',
-                      style: const TextStyle(fontSize: 12),
+                      style: TextStyle(fontSize: 12),
                     ),
                     Text(
                       '${global.language("time_label")} ${_formatDateTime(item.timestamp)}',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor),
                     ),
                   ],
                 ),
@@ -269,26 +270,26 @@ class _DataHistoryDialogState extends State<DataHistoryDialog> {
 
     switch (action) {
       case 'create':
-        color = Colors.green;
+        color = global.theme.positiveHighlightTextColor;
         icon = Icons.add_circle;
         break;
       case 'update':
-        color = Colors.blue;
+        color = global.theme.infoHighlightTextColor;
         icon = Icons.edit;
         break;
       case 'delete':
-        color = Colors.red;
+        color = global.theme.negativeHighlightTextColor;
         icon = Icons.delete;
         break;
       default:
-        color = Colors.grey;
+        color = global.theme.iconSecondaryColor;
         icon = Icons.info;
     }
 
     return CircleAvatar(
       backgroundColor: color,
       radius: 20,
-      child: Icon(icon, color: Colors.white, size: 20),
+      child: Icon(icon, color: global.theme.onPrimaryColor, size: 20),
     );
   }
 
@@ -296,7 +297,7 @@ class _DataHistoryDialogState extends State<DataHistoryDialog> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: global.theme.surfaceColor,
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(4),
           bottomRight: Radius.circular(4),
@@ -309,7 +310,7 @@ class _DataHistoryDialogState extends State<DataHistoryDialog> {
           if (item.changes.isNotEmpty) ...[
             Text(
               '${global.language("changes")}:',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             ...item.changes.map((change) => _buildChangeRow(change)),
@@ -353,7 +354,7 @@ class _DataHistoryDialogState extends State<DataHistoryDialog> {
             width: 120,
             child: Text(
               change.field,
-              style: const TextStyle(fontWeight: FontWeight.w500),
+              style: TextStyle(fontWeight: FontWeight.w500),
             ),
           ),
           const SizedBox(width: 8),
@@ -362,12 +363,12 @@ class _DataHistoryDialogState extends State<DataHistoryDialog> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.red[50],
+                  color: global.theme.negativeHighlightColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   '${change.oldValue}',
-                  style: TextStyle(color: Colors.red[700], fontSize: 12),
+                  style: TextStyle(color: global.theme.negativeHighlightTextColor, fontSize: 12),
                 ),
               ),
             ),
@@ -381,12 +382,12 @@ class _DataHistoryDialogState extends State<DataHistoryDialog> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.green[50],
+                  color: global.theme.positiveHighlightColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   '${change.newValue}',
-                  style: TextStyle(color: Colors.green[700], fontSize: 12),
+                  style: TextStyle(color: global.theme.positiveHighlightTextColor, fontSize: 12),
                 ),
               ),
             ),
@@ -409,23 +410,23 @@ class _DataHistoryDialogState extends State<DataHistoryDialog> {
             children: [
               Container(
                 padding: const EdgeInsets.all(16),
-                color: Colors.grey[800],
+                color: global.theme.cardColor,
                 child: Row(
                   children: [
-                    const Icon(Icons.code, color: Colors.white),
+                    Icon(Icons.code, color: global.theme.onPrimaryColor),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         title,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: global.theme.onPrimaryColor,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
+                      icon: Icon(Icons.close, color: global.theme.onPrimaryColor),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
@@ -433,12 +434,12 @@ class _DataHistoryDialogState extends State<DataHistoryDialog> {
               ),
               Expanded(
                 child: Container(
-                  color: Colors.grey[900],
+                  color: global.theme.textColor,
                   padding: const EdgeInsets.all(16),
                   child: SingleChildScrollView(
                     child: SelectableText(
                       jsonString,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 12,
                         color: Colors.lightGreenAccent,
@@ -507,23 +508,23 @@ class _DataHistoryDialogState extends State<DataHistoryDialog> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.person, size: 16, color: Colors.grey),
+                      Icon(Icons.person, size: 16, color: global.theme.iconSecondaryColor),
                       const SizedBox(width: 4),
                       Text(
                         name,
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                       ),
                       if (code.isNotEmpty && code != '-') ...[
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.grey[200],
+                            color: global.theme.dividerBorderColor,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             code,
-                            style: const TextStyle(fontSize: 11, color: Colors.grey),
+                            style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                           ),
                         ),
                       ],
@@ -532,11 +533,11 @@ class _DataHistoryDialogState extends State<DataHistoryDialog> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.access_time, size: 16, color: Colors.grey),
+                      Icon(Icons.access_time, size: 16, color: global.theme.iconSecondaryColor),
                       const SizedBox(width: 4),
                       Text(
                         formattedDateTime,
-                        style: const TextStyle(fontSize: 13, color: Colors.grey),
+                        style: TextStyle(fontSize: 13, color: global.theme.textSecondaryColor),
                       ),
                     ],
                   ),

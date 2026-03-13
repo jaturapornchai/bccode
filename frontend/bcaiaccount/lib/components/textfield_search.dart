@@ -12,7 +12,7 @@ class TextFieldSearch extends StatelessWidget {
       child: TextField(
         onChanged: onChange,
         decoration: InputDecoration(
-          icon: Icon(Icons.search, color: Color(0xff046AF3)),
+          icon: Icon(Icons.search, color: global.theme.primaryColor),
           hintText: global.language("search"),
           border: InputBorder.none,
         ),

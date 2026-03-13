@@ -62,14 +62,14 @@ class CouponRemarkWidget extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: Colors.grey[700],
+                color: global.theme.textColor,
               ),
             ),
             SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.grey[300]!),
+                border: Border.all(color: global.theme.dividerBorderColor),
               ),
               child: TextFormField(
                 controller: remarkController,
@@ -79,7 +79,7 @@ class CouponRemarkWidget extends StatelessWidget {
                 style: TextStyle(fontSize: 16),
                 decoration: InputDecoration(
                   hintText: global.language("coupon_hint_remark"),
-                  hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
+                  hintStyle: TextStyle(color: global.theme.formHintColor, fontSize: 15),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 14,

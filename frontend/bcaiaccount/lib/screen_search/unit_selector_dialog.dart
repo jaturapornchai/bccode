@@ -32,7 +32,7 @@ class UnitSelectorDialog extends StatelessWidget {
             // Header
             Row(
               children: [
-                Icon(Icons.inventory_2, color: Colors.blue[700], size: 24),
+                Icon(Icons.inventory_2, color: global.theme.primaryColor, size: 24),
                 SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -43,15 +43,15 @@ class UnitSelectorDialog extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.blue[700],
+                          color: global.theme.primaryColor,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         productName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Colors.black87,
+                          color: global.theme.textColor,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -60,14 +60,14 @@ class UnitSelectorDialog extends StatelessWidget {
                         itemCode,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey[600],
+                          color: global.theme.iconSecondaryColor,
                         ),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: Icon(Icons.close),
                   onPressed: () => Navigator.pop(context),
                   tooltip: global.language("close"),
                 ),
@@ -106,12 +106,12 @@ class UnitSelectorDialog extends StatelessWidget {
                             width: 44,
                             height: 44,
                             decoration: BoxDecoration(
-                              color: Colors.blue[50],
+                              color: global.theme.primaryColor,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
                               Icons.category,
-                              color: Colors.blue[700],
+                              color: global.theme.primaryColor,
                               size: 22,
                             ),
                           ),
@@ -125,10 +125,10 @@ class UnitSelectorDialog extends StatelessWidget {
                                 // ชื่อหน่วยนับ
                                 Text(
                                   unit.unitName,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.black87,
+                                    color: global.theme.textColor,
                                   ),
                                 ),
                                 const SizedBox(height: 6),
@@ -140,15 +140,15 @@ class UnitSelectorDialog extends StatelessWidget {
                                     vertical: 3,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.blue[50],
+                                    color: global.theme.primaryColor,
                                     borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(color: Colors.blue[200]!),
+                                    border: Border.all(color: global.theme.primaryColor),
                                   ),
                                   child: Text(
                                     unit.barcode,
                                     style: TextStyle(
                                       fontSize: 13,
-                                      color: Colors.blue[900],
+                                      color: global.theme.primaryColor,
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 0.5,
                                     ),
@@ -166,15 +166,15 @@ class UnitSelectorDialog extends StatelessWidget {
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Colors.grey[100],
+                                        color: global.theme.surfaceColor,
                                         borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(color: Colors.grey[300]!),
+                                        border: Border.all(color: global.theme.dividerBorderColor),
                                       ),
                                       child: Text(
                                         unit.unitCode,
                                         style: TextStyle(
                                           fontSize: 11,
-                                          color: Colors.grey[700],
+                                          color: global.theme.textColor,
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
@@ -186,7 +186,7 @@ class UnitSelectorDialog extends StatelessWidget {
                                       '${global.language("ratio")}: $ratioText',
                                       style: TextStyle(
                                         fontSize: 13,
-                                        color: Colors.grey[600],
+                                        color: global.theme.iconSecondaryColor,
                                       ),
                                     ),
                                   ],
@@ -199,7 +199,7 @@ class UnitSelectorDialog extends StatelessWidget {
                           Icon(
                             Icons.arrow_forward_ios,
                             size: 16,
-                            color: Colors.grey[400],
+                            color: global.theme.iconSecondaryColor,
                           ),
                         ],
                       ),

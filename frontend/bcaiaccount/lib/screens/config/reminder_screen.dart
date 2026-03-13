@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -366,15 +367,6 @@ class ReminderScreenState extends State<ReminderScreen>
                     '(${listData.length})',
                     style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const Icon(Icons.line_weight),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataLineSpaceChange();
-                      });
-                    },
-                  ),
                 ],
               ),
             ),
@@ -453,6 +445,20 @@ class ReminderScreenState extends State<ReminderScreen>
     );
   }
 
+  Color _getContainerColor(String itemGuid, int index) {
+    if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
+      return isSaveAllow
+          ? global.theme.rowEditColor
+          : global.theme.rowSelectedColor;
+    }
+    if (_hoverIndex == index) {
+      return global.theme.rowHoverColor;
+    }
+    return (index % 2 == 0)
+        ? global.theme.columnAlternateEvenColor
+        : global.theme.columnAlternateOddColor;
+  }
+
   void switchToEdit(LineNotifyModel value) {
     setState(() {
       selectGuid = value.guidfixed!;
@@ -522,11 +528,7 @@ class ReminderScreenState extends State<ReminderScreen>
       child: Container(
         key: index < listKeys.length ? listKeys[index] : null,
         decoration: BoxDecoration(
-          color: (selectGuid == value.guidfixed)
-              ? global.theme.rowSelectedColor
-              : (index % 2 == 0)
-              ? global.theme.columnAlternateEvenColor
-              : global.theme.columnAlternateOddColor,
+          color: _getContainerColor(value.guidfixed!, index),
         ),
         padding: EdgeInsets.only(
           left: 10,
@@ -700,7 +702,7 @@ class ReminderScreenState extends State<ReminderScreen>
                         child: ElevatedButton(
                           style: ButtonStyle(
                             backgroundColor: WidgetStateProperty.all<Color>(
-                              const Color.fromARGB(255, 238, 86, 144),
+                              global.theme.negativeHighlightTextColor,
                             ),
                           ),
                           onPressed: (isEditMode)
@@ -853,10 +855,10 @@ class ReminderScreenState extends State<ReminderScreen>
           child: ElevatedButton.icon(
             style: ButtonStyle(
               backgroundColor: WidgetStateProperty.all<Color>(
-                const Color.fromARGB(255, 148, 160, 194),
+                global.theme.primaryLightColor,
               ),
               foregroundColor: WidgetStateProperty.all<Color>(
-                const Color.fromARGB(255, 0, 0, 0),
+                global.theme.iconColor,
               ),
             ),
             focusNode: FocusNode(skipTraversal: true),
@@ -895,7 +897,7 @@ class ReminderScreenState extends State<ReminderScreen>
     }
 
     return Scaffold(
-      backgroundColor: isEditMode ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
+      backgroundColor: global.theme.cardColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -921,6 +923,8 @@ class ReminderScreenState extends State<ReminderScreen>
             : null,
         title: Text(headerEdit + global.language("line_notify")),
         actions: <Widget>[
+          EditFontSizeControl(onChanged: () => setState(() {})),
+          const SizedBox(width: 8),
           if (selectGuid.isNotEmpty)
             Padding(
               padding: EdgeInsets.only(right: 20.0),
@@ -1011,18 +1015,42 @@ class ReminderScreenState extends State<ReminderScreen>
             }
           }
         },
-        child: SingleChildScrollView(
-          controller: editScrollController,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.only(top: 10, bottom: 15),
-            child: Form(
-              child: Form(
-                key: _formKey,
-                child: Column(children: formWidgets),
+        child: Builder(
+          builder: (context) {
+            final scale = global.editFontScaleFactor;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(scale),
               ),
-            ),
-          ),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                    contentPadding: EdgeInsets.fromLTRB(
+                      12 * scale, 20 * scale, 12 * scale, 12 * scale,
+                    ),
+                  ),
+                ),
+                child: IconTheme(
+                  data: IconTheme.of(context).copyWith(
+                    size: 24.0 * scale,
+                  ),
+                  child: SingleChildScrollView(
+                    controller: editScrollController,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.only(top: 10, bottom: 15),
+                      child: Form(
+                        child: Form(
+                          key: _formKey,
+                          child: Column(children: formWidgets),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

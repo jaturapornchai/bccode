@@ -68,16 +68,16 @@ class DocumentReferencesWidget extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.add,
                               size: 16,
-                              color: Colors.white,
+                              color: global.theme.onPrimaryColor,
                             ),
                             SizedBox(width: 4),
                             Text(
                               global.language('add'),
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: global.theme.onPrimaryColor,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -100,7 +100,7 @@ class DocumentReferencesWidget extends StatelessWidget {
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: global.theme.dividerBorderColor),
               ),
               child: Column(
                 children:
@@ -111,7 +111,7 @@ class DocumentReferencesWidget extends StatelessWidget {
 
                   return Container(
                     decoration: BoxDecoration(
-                      color: index % 2 == 0 ? Colors.white : Colors.grey[50],
+                      color: index % 2 == 0 ? global.theme.cardColor : global.theme.surfaceColor,
                       borderRadius: BorderRadius.only(
                         topLeft: Radius.circular(index == 0 ? 8 : 0),
                         topRight: Radius.circular(index == 0 ? 8 : 0),
@@ -154,7 +154,7 @@ class DocumentReferencesWidget extends StatelessWidget {
                               children: [
                                 Text(
                                   docRef.docno,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 13,
                                   ),
@@ -165,7 +165,7 @@ class DocumentReferencesWidget extends StatelessWidget {
                                       DateTime.parse(docRef.docdatetime)),
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: Colors.grey[600],
+                                    color: global.theme.textSecondaryColor,
                                   ),
                                 ),
                               ],
@@ -190,7 +190,7 @@ class DocumentReferencesWidget extends StatelessWidget {
                                 child: Icon(
                                   Icons.close,
                                   size: 16,
-                                  color: Colors.red[600],
+                                  color: global.theme.negativeHighlightTextColor,
                                 ),
                               ),
                             ),
@@ -207,9 +207,9 @@ class DocumentReferencesWidget extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               decoration: BoxDecoration(
-                color: Colors.grey[50],
+                color: global.theme.surfaceColor,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey[200]!),
+                border: Border.all(color: global.theme.dividerBorderColor),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -217,13 +217,13 @@ class DocumentReferencesWidget extends StatelessWidget {
                   Icon(
                     Icons.inbox_outlined,
                     size: 20,
-                    color: Colors.grey[400],
+                    color: global.theme.iconSecondaryColor,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     _getEmptyStateText(),
                     style: TextStyle(
-                      color: Colors.grey[500],
+                      color: global.theme.textSecondaryColor,
                       fontSize: 13,
                       fontStyle: FontStyle.italic,
                     ),

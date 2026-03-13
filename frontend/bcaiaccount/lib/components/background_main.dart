@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smlaicloud/global.dart' as global;
 
 class BackgroundMain extends StatelessWidget {
   final Widget child;
@@ -12,7 +13,7 @@ class BackgroundMain extends StatelessWidget {
       width: double.infinity,
       child: Stack(
         children: <Widget>[
-          Container(color: Color.fromARGB(255, 255, 255, 255)),
+          Container(color: global.theme.backgroundColor),
           child,
         ],
       ),

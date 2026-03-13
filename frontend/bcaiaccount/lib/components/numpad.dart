@@ -30,7 +30,7 @@ class NumPadDialog extends StatefulWidget {
   State<NumPadDialog> createState() => _NumPadDialogState();
 }
 
-class _NumPadDialogState extends State<NumPadDialog> {
+class _NumPadDialogState extends State<NumPadDialog> with global.ThemeRefreshMixin {
   String _displayValue = '';
   late TextEditingController _textController;
   late FocusNode _focusNode;
@@ -160,7 +160,7 @@ class _NumPadDialogState extends State<NumPadDialog> {
       child: Container(
         width: 320,
         decoration: BoxDecoration(
-          color: Colors.black,
+          color: global.theme.textColor,
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
@@ -179,10 +179,10 @@ class _NumPadDialogState extends State<NumPadDialog> {
               // Title
               Text(
                 widget.title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white70,
+                  color: global.theme.onPrimaryColor.withValues(alpha: 0.7),
                 ),
               ),
 
@@ -197,7 +197,7 @@ class _NumPadDialogState extends State<NumPadDialog> {
                   vertical: 16,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: global.theme.cardColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: GestureDetector(
@@ -217,10 +217,10 @@ class _NumPadDialogState extends State<NumPadDialog> {
                               ),
                             ],
                             textAlign: TextAlign.right,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 36,
                               fontWeight: FontWeight.w300,
-                              color: Colors.black,
+                              color: global.theme.textColor,
                             ),
                             decoration: const InputDecoration(
                               border: InputBorder.none,
@@ -233,10 +233,10 @@ class _NumPadDialogState extends State<NumPadDialog> {
                             _displayValue.isEmpty
                                 ? '0'
                                 : _formatDisplayValue(_displayValue),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 36,
                               fontWeight: FontWeight.w300,
-                              color: Colors.black,
+                              color: global.theme.textColor,
                             ),
                             textAlign: TextAlign.right,
                             maxLines: 1,
@@ -353,8 +353,8 @@ class _NumPadDialogState extends State<NumPadDialog> {
                                 ),
                                 child: _buildActionButton(
                                   'C',
-                                  const Color(0xFFA6A6A6),
-                                  Colors.black,
+                                  global.theme.dividerBorderColor,
+                                  global.theme.textColor,
                                   _onClear,
                                 ),
                               ),
@@ -367,8 +367,8 @@ class _NumPadDialogState extends State<NumPadDialog> {
                                 ),
                                 child: _buildActionButton(
                                   global.language('cancel'),
-                                  const Color(0xFF333333),
-                                  Colors.white70,
+                                  global.theme.appBarColor,
+                                  global.theme.onPrimaryColor.withValues(alpha: 0.7),
                                   () {
                                     if (widget.onCancel != null) {
                                       widget.onCancel!();
@@ -386,8 +386,8 @@ class _NumPadDialogState extends State<NumPadDialog> {
                                 ),
                                 child: _buildActionButton(
                                   global.language('ok'),
-                                  const Color(0xFFFF9500),
-                                  Colors.white,
+                                  global.theme.primaryColor,
+                                  global.theme.onPrimaryColor,
                                   () => _confirmInput(),
                                 ),
                               ),
@@ -448,16 +448,16 @@ class _NumPadDialogState extends State<NumPadDialog> {
 
     switch (type) {
       case ButtonType.number:
-        buttonColor = const Color(0xFF333333);
-        textColor = Colors.white;
+        buttonColor = global.theme.appBarColor;
+        textColor = global.theme.onPrimaryColor;
         break;
       case ButtonType.operator:
-        buttonColor = const Color(0xFFFF9500);
-        textColor = Colors.white;
+        buttonColor = global.theme.primaryColor;
+        textColor = global.theme.onPrimaryColor;
         break;
       case ButtonType.function:
-        buttonColor = const Color(0xFFA6A6A6);
-        textColor = Colors.black;
+        buttonColor = global.theme.dividerBorderColor;
+        textColor = global.theme.textColor;
         break;
     }
 

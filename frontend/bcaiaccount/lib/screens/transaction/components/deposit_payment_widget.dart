@@ -25,7 +25,8 @@ class DepositPaymentWidget extends StatefulWidget {
   State<DepositPaymentWidget> createState() => _DepositPaymentWidgetState();
 }
 
-class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
+class _DepositPaymentWidgetState extends State<DepositPaymentWidget>
+    with global.ThemeRefreshMixin {
   late List<DepositDocModel> _depositDocs;
   double _sumDeposit = 0.0;
   Timer? _debounceTimer;
@@ -333,8 +334,8 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
                       icon: Icon(Icons.add, size: 18),
                       label: Text(global.language('add')),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[600],
-                        foregroundColor: Colors.white,
+                        backgroundColor: global.theme.infoHighlightTextColor,
+                        foregroundColor: global.theme.onPrimaryColor,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 8,
@@ -379,7 +380,7 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.blue[50],
+            color: global.theme.infoHighlightColor,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.blue[100]!),
           ),
@@ -388,7 +389,7 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
             children: [
               Text(
                 global.language("total_deduction"),
-                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
               ),
               Text(
                 '${_formatAmount(_sumDeposit)} ${global.language("baht")}',
@@ -415,9 +416,9 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -427,7 +428,7 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
             children: [
               Text(
                 '${global.language('deposit')} #${index + 1}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -435,7 +436,7 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
               const Spacer(),
               GestureDetector(
                 onTap: () => _removeDepositDoc(index),
-                child: Icon(Icons.close, size: 20, color: Colors.grey[600]),
+                child: Icon(Icons.close, size: 20, color: global.theme.iconSecondaryColor),
               ),
             ],
           ),
@@ -447,7 +448,7 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                 decoration: BoxDecoration(
-                  color: Colors.blue[50],
+                  color: global.theme.infoHighlightColor,
                   borderRadius: BorderRadius.circular(4),
                   border: Border.all(color: Colors.blue[200]!),
                 ),
@@ -463,7 +464,7 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
                         ),
                       ),
                     ),
-                    Icon(Icons.edit, size: 16, color: Colors.blue[600]),
+                    Icon(Icons.edit, size: 16, color: global.theme.infoHighlightTextColor),
                   ],
                 ),
               ),
@@ -475,19 +476,19 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: global.theme.surfaceColor,
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: Colors.grey[300]!),
+                  border: Border.all(color: global.theme.dividerBorderColor),
                 ),
                 child: Row(
                   children: [
                     Expanded(
                       child: Text(
                         global.language('tap_to_select_document'),
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
                       ),
                     ),
-                    Icon(Icons.search, size: 16, color: Colors.grey[600]),
+                    Icon(Icons.search, size: 16, color: global.theme.iconSecondaryColor),
                   ],
                 ),
               ),
@@ -498,7 +499,7 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
             const SizedBox(height: 4),
             Text(
               '${global.language("date")}:  ${global.dateTimeBuddhist(DateTime.parse(depositDoc.docdatetime), format: global.DateTimeFormatEnum.dateDay)}',
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
             ),
           ],
 
@@ -513,12 +514,12 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
                   children: [
                     Text(
                       global.language("deposit_amount"),
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       _formatAmount(depositDoc.totalamount),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
@@ -532,7 +533,7 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
                   children: [
                     Text(
                       global.language('stock_balance'),
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -562,7 +563,7 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Colors.grey[700],
+                  color: global.theme.textColor,
                 ),
               ),
               const SizedBox(height: 8),
@@ -572,7 +573,7 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
                   decimal: true,
                 ),
                 inputFormatters: [global.NumberInputFormatter()],
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
@@ -583,8 +584,8 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(
                       color: _errorStates[index] == true
-                          ? Colors.red
-                          : Colors.grey[300]!,
+                          ? global.theme.negativeHighlightTextColor
+                          : global.theme.dividerBorderColor,
                       width: _errorStates[index] == true ? 2 : 1,
                     ),
                   ),
@@ -592,8 +593,8 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(
                       color: _errorStates[index] == true
-                          ? Colors.red
-                          : Colors.grey[300]!,
+                          ? global.theme.negativeHighlightTextColor
+                          : global.theme.dividerBorderColor,
                       width: _errorStates[index] == true ? 2 : 1,
                     ),
                   ),
@@ -601,8 +602,8 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(
                       color: _errorStates[index] == true
-                          ? Colors.red
-                          : Colors.blue[400]!,
+                          ? global.theme.negativeHighlightTextColor
+                          : global.theme.infoHighlightTextColor,
                       width: 2,
                     ),
                   ),
@@ -613,7 +614,7 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
                   filled: true,
                   fillColor: _errorStates[index] == true
                       ? Colors.red[50]
-                      : Colors.grey[50],
+                      : global.theme.surfaceColor,
                 ),
                 onChanged: (value) {
                   // ยกเลิก timer เก่า (ถ้ามี)
@@ -642,7 +643,7 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Colors.grey[700],
+                  color: global.theme.textColor,
                 ),
               ),
               SizedBox(height: 8),
@@ -654,18 +655,18 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
                   hintText: global.language('add_remark'),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
+                    borderSide: BorderSide(color: global.theme.dividerBorderColor),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.blue[400]!, width: 2),
+                    borderSide: BorderSide(color: global.theme.infoHighlightTextColor, width: 2),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 12,
                   ),
                   filled: true,
-                  fillColor: Colors.grey[50],
+                  fillColor: global.theme.formFillColor,
                 ),
                 onChanged: (value) {
                   _updateDepositDoc(index, depositDoc.copyWith(remark: value));
@@ -683,7 +684,7 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
 
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: global.theme.dividerBorderColor),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -693,7 +694,7 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
             height: 30,
             padding: const EdgeInsets.symmetric(horizontal: 8),
             decoration: BoxDecoration(
-              color: Colors.blue[50],
+              color: global.theme.infoHighlightColor,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(8),
                 topRight: Radius.circular(8),
@@ -727,7 +728,7 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
       alignment: Alignment.center,
       child: Text(
         text,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
         textAlign: TextAlign.center,
       ),
     );
@@ -745,8 +746,8 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
       height: height,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
-        color: isEven ? Colors.white : Colors.grey[50],
-        border: Border(bottom: BorderSide(color: Colors.grey[200]!, width: 1)),
+        color: isEven ? global.theme.cardColor : global.theme.surfaceColor,
+        border: Border(bottom: BorderSide(color: global.theme.dividerBorderColor, width: 1)),
       ),
       child: Row(
         children: [
@@ -847,7 +848,7 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
               child: IconButton(
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
-                icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                icon: Icon(Icons.delete, size: 18, color: global.theme.negativeHighlightTextColor),
                 onPressed: () => _removeDepositDoc(index),
                 tooltip: global.language('delete'),
               ),
@@ -901,19 +902,19 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
         decoration: InputDecoration(
           border: OutlineInputBorder(
             borderSide: BorderSide(
-              color: hasError ? Colors.red : Colors.grey[300]!,
+              color: hasError ? global.theme.negativeHighlightTextColor : global.theme.dividerBorderColor,
               width: 1,
             ),
           ),
           enabledBorder: OutlineInputBorder(
             borderSide: BorderSide(
-              color: hasError ? Colors.red : Colors.grey[300]!,
+              color: hasError ? global.theme.negativeHighlightTextColor : global.theme.dividerBorderColor,
               width: 1,
             ),
           ),
           focusedBorder: OutlineInputBorder(
             borderSide: BorderSide(
-              color: hasError ? Colors.red : Colors.blue[400]!,
+              color: hasError ? global.theme.negativeHighlightTextColor : global.theme.infoHighlightTextColor,
               width: 1,
             ),
           ),
@@ -925,7 +926,7 @@ class _DepositPaymentWidgetState extends State<DepositPaymentWidget> {
           filled: true,
           fillColor: hasError
               ? Colors.red[50]
-              : (isReadOnly ? Colors.grey[100] : Colors.white),
+              : (isReadOnly ? global.theme.surfaceColor : global.theme.cardColor),
           suffixIcon: suffixIcon,
         ),
       ),

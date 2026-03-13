@@ -27,7 +27,7 @@ class POApprovalActionsWidget extends StatefulWidget {
       _POApprovalActionsWidgetState();
 }
 
-class _POApprovalActionsWidgetState extends State<POApprovalActionsWidget> {
+class _POApprovalActionsWidgetState extends State<POApprovalActionsWidget> with global.ThemeRefreshMixin {
   bool _isResending = false;
 
   @override
@@ -66,8 +66,8 @@ class _POApprovalActionsWidgetState extends State<POApprovalActionsWidget> {
       icon: Icon(Icons.send, size: 18),
       label: Text(global.language('submit_for_approval')),
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+        backgroundColor: global.theme.infoHighlightTextColor,
+        foregroundColor: global.theme.onPrimaryColor,
       ),
       onPressed: widget.onSubmitApproval,
     );
@@ -82,7 +82,7 @@ class _POApprovalActionsWidgetState extends State<POApprovalActionsWidget> {
                 height: 18,
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
-            : const Icon(Icons.notifications_active),
+            : Icon(Icons.notifications_active),
         tooltip: global.language('resend_notification'),
         onPressed: _isResending ? null : () => _resendNotification(context),
       );
@@ -90,19 +90,19 @@ class _POApprovalActionsWidgetState extends State<POApprovalActionsWidget> {
 
     return ElevatedButton.icon(
       icon: _isResending
-          ? const SizedBox(
+          ? SizedBox(
               width: 18,
               height: 18,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: Colors.white,
+                color: global.theme.onPrimaryColor,
               ),
             )
-          : const Icon(Icons.notifications_active, size: 18),
+          : Icon(Icons.notifications_active, size: 18),
       label: Text(_isResending ? global.language('sending') : global.language('resend_notification')),
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.orange,
-        foregroundColor: Colors.white,
+        backgroundColor: global.theme.warningHighlightTextColor,
+        foregroundColor: global.theme.onPrimaryColor,
       ),
       onPressed: _isResending ? null : () => _resendNotification(context),
     );
@@ -164,21 +164,21 @@ class POQuickActionsBar extends StatelessWidget {
             icon: Icon(Icons.edit, size: 20),
             tooltip: global.language('edit'),
             onPressed: onEdit,
-            color: Colors.blue,
+            color: global.theme.infoHighlightTextColor,
           ),
         if (canPrint && onPrint != null)
           IconButton(
             icon: Icon(Icons.print, size: 20),
             tooltip: global.language('print'),
             onPressed: onPrint,
-            color: Colors.green,
+            color: global.theme.positiveHighlightTextColor,
           ),
         if (canCancel && onCancel != null)
           IconButton(
             icon: Icon(Icons.cancel, size: 20),
             tooltip: global.language('cancel'),
             onPressed: onCancel,
-            color: Colors.red,
+            color: global.theme.negativeHighlightTextColor,
           ),
       ],
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smlaicloud/global.dart' as global;
 
 class RoundPayMenu extends StatelessWidget {
   final String label;
@@ -7,7 +8,7 @@ class RoundPayMenu extends StatelessWidget {
 
   final int actived;
   final String img;
-  const RoundPayMenu({
+  RoundPayMenu({
     super.key,
     required this.label,
     this.onPressed,
@@ -21,13 +22,13 @@ class RoundPayMenu extends StatelessWidget {
       width: double.infinity,
       child: TextButton(
         onPressed: onPressed,
-        style: TextButton.styleFrom(backgroundColor: Colors.white),
+        style: TextButton.styleFrom(backgroundColor: global.theme.cardColor),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
             Text(
               label,
-              style: const TextStyle(color: Colors.white, fontSize: 15),
+              style: TextStyle(color: global.theme.onPrimaryColor, fontSize: 15),
             ),
           ],
         ),

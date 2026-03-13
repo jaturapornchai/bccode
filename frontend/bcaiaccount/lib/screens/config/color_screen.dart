@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smlaicloud/bloc/color/color_bloc.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/model/color_model.dart';
 import 'package:split_view/split_view.dart';
 import 'package:flex_color_picker/flex_color_picker.dart';
@@ -535,9 +536,7 @@ class ColorScreenState extends State<ColorScreen>
       child: Container(
         key: index < listKeys.length ? listKeys[index] : null,
         decoration: BoxDecoration(
-          color: (selectGuid == value.guidfixed)
-              ? global.theme.rowSelectedColor
-              : Colors.white,
+          color: _getContainerColor(value.guidfixed, index),
           border: Border(
             bottom: BorderSide(width: 1.0, color: global.theme.textSecondaryColor),
           ),
@@ -603,7 +602,9 @@ class ColorScreenState extends State<ColorScreen>
 
   Color _getContainerColor(String itemGuid, int index) {
     if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
-      return global.theme.rowSelectedColor;
+      return isEditMode
+          ? global.theme.rowEditColor
+          : global.theme.rowSelectedColor;
     }
     if (_hoverIndex == index) {
       return global.theme.rowHoverColor;
@@ -696,7 +697,7 @@ class ColorScreenState extends State<ColorScreen>
 
   Widget editScreen({mobileScreen}) {
     return Scaffold(
-      backgroundColor: isEditMode ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
+      backgroundColor: global.theme.cardColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -722,6 +723,8 @@ class ColorScreenState extends State<ColorScreen>
             : null,
         title: Text("$headerEdit${global.language("colors")}"),
         actions: <Widget>[
+          EditFontSizeControl(onChanged: () => setState(() {})),
+          const SizedBox(width: 8),
           if (selectGuid.isNotEmpty)
             Padding(
               padding: EdgeInsets.only(right: 20.0),
@@ -825,15 +828,34 @@ class ColorScreenState extends State<ColorScreen>
           }
           return KeyEventResult.ignored;
         },
-        child: SingleChildScrollView(
-          controller: editScrollController,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              children: [
-                Form(
-                  child: TextFormField(
+        child: Builder(
+          builder: (context) {
+            final scale = global.editFontScaleFactor;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(scale),
+              ),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                    contentPadding: EdgeInsets.fromLTRB(
+                      12 * scale, 20 * scale, 12 * scale, 12 * scale,
+                    ),
+                  ),
+                ),
+                child: IconTheme(
+                  data: IconTheme.of(context).copyWith(
+                    size: 24.0 * scale,
+                  ),
+                  child: SingleChildScrollView(
+                    controller: editScrollController,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      child: Column(
+                        children: [
+                          Form(
+                            child: TextFormField(
                     readOnly: !isEditMode,
                     onFieldSubmitted: (value) {
                       findFocusNext(0);
@@ -1097,6 +1119,11 @@ class ColorScreenState extends State<ColorScreen>
               ],
             ),
           ),
+        ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

@@ -1,7 +1,6 @@
 ﻿import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:http/http.dart' as http;
 import 'package:smlaicloud/components/create_sub_shop_dialog.dart';
 import 'package:smlaicloud/model/shop_model.dart';
@@ -28,7 +27,7 @@ class MenuScreen extends StatefulWidget {
   State<MenuScreen> createState() => MenuScreenState();
 }
 
-class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
+class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin, global.ThemeRefreshMixin {
   late TabController mainTabController = TabController(length: 4, vsync: this, initialIndex: global.activeIndexMenu);
   List<Widget> masterMenuList = [];
   List<Widget> masterProductMenuList = [];
@@ -52,10 +51,6 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   List<Widget> productSettingMenuList = []; // ตั้งค่าสินค้า
   List<Widget> importExportMenuList = [];
 
-  // HTML content from web
-  String htmlContent = '';
-  int htmlContentVersion = 0; // ใช้เป็น key เพื่อบังคับ rebuild
-
   // Build info variables
   String buildVersion = '';
   String buildTime = '';
@@ -65,16 +60,16 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   // สีจากตารางสี - Modern Theme (ใช้สีจาก Flavor)
   Color get primaryColor => F.primaryGradientColor;
   Color get primaryDarkColor => F.secondaryGradientColor;
-  final Color primaryLightColor = const Color(0xFFa5b4fc);
-  final Color secondaryColor = const Color(0xFF06b6d4);
-  final Color secondaryDarkColor = const Color(0xFF0891b2);
-  final Color secondaryLightColor = const Color(0xFF67e8f9);
-  final Color backgroundColor = const Color(0xFFF8FAFC);
-  final Color surfaceColor = const Color(0xFFFFFFFF);
-  final Color errorColor = const Color(0xFFef4444);
-  final Color successColor = const Color(0xFF22c55e);
-  final Color warningColor = const Color(0xFFf59e0b);
-  final Color infoColor = const Color(0xFF3b82f6);
+  Color get primaryLightColor => global.theme.primaryLightColor;
+  Color get secondaryColor => global.theme.primaryLightColor;
+  Color get secondaryDarkColor => global.theme.primaryColor;
+  Color get secondaryLightColor => global.theme.primaryLightColor;
+  Color get backgroundColor => global.theme.backgroundColor;
+  Color get surfaceColor => global.theme.surfaceColor;
+  Color get errorColor => Colors.red;
+  Color get successColor => Colors.green;
+  Color get warningColor => Colors.orange;
+  Color get infoColor => global.theme.primaryColor;
 
   // สีสำหรับปุ่มและการแสดงข้อมูลทางการเงิน
   final Color positiveColor = const Color(0xFF0B8043);
@@ -103,18 +98,35 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   };
 
   // ปรับปรุงสีใหม่สำหรับปุ่มเมนู (Modern Gradient Theme - ใช้สีจาก Flavor)
-  Map<String, List<Color>> get menuButtonColors => {
-    'config': [F.primaryGradientColor, F.secondaryGradientColor],
-    'customer': [const Color(0xFF06b6d4), const Color(0xFF0891b2)],
-    'master': [const Color(0xFF10b981), const Color(0xFF059669)],
-    'transaction': [const Color(0xFF22c55e), const Color(0xFF16a34a)],
-    'report': [const Color(0xFFf59e0b), const Color(0xFFd97706)],
-    'restaurant': [const Color(0xFF8b5cf6), const Color(0xFF7c3aed)],
-    'gl': [const Color(0xFF06b6d4), const Color(0xFF0e7490)],
-    'finance': [const Color(0xFFec4899), const Color(0xFFdb2777)],
-    'system': [F.primaryGradientColor, F.secondaryGradientColor],
-    'advance_payment': [const Color(0xFF14b8a6), const Color(0xFF0d9488)],
-  };
+  Map<String, List<Color>> get menuButtonColors {
+    if (global.isDarkMode()) {
+      // Dark mode: สีเข้ม muted ลง ไม่แสบตา
+      return {
+        'config': [F.primaryGradientColor.withValues(alpha: 0.7), F.secondaryGradientColor.withValues(alpha: 0.7)],
+        'customer': [const Color(0xFF0E7490), const Color(0xFF065F73)],
+        'master': [const Color(0xFF0D7A5F), const Color(0xFF065F46)],
+        'transaction': [const Color(0xFF15803D), const Color(0xFF166534)],
+        'report': [const Color(0xFFB45309), const Color(0xFF92400E)],
+        'restaurant': [const Color(0xFF6D28D9), const Color(0xFF5B21B6)],
+        'gl': [const Color(0xFF0E7490), const Color(0xFF0C5E75)],
+        'finance': [const Color(0xFFBE185D), const Color(0xFF9D174D)],
+        'system': [F.primaryGradientColor.withValues(alpha: 0.7), F.secondaryGradientColor.withValues(alpha: 0.7)],
+        'advance_payment': [const Color(0xFF0F766E), const Color(0xFF115E59)],
+      };
+    }
+    return {
+      'config': [F.primaryGradientColor, F.secondaryGradientColor],
+      'customer': [const Color(0xFF06b6d4), const Color(0xFF0891b2)],
+      'master': [const Color(0xFF10b981), const Color(0xFF059669)],
+      'transaction': [const Color(0xFF22c55e), const Color(0xFF16a34a)],
+      'report': [const Color(0xFFf59e0b), const Color(0xFFd97706)],
+      'restaurant': [const Color(0xFF8b5cf6), const Color(0xFF7c3aed)],
+      'gl': [const Color(0xFF06b6d4), const Color(0xFF0e7490)],
+      'finance': [const Color(0xFFec4899), const Color(0xFFdb2777)],
+      'system': [F.primaryGradientColor, F.secondaryGradientColor],
+      'advance_payment': [const Color(0xFF14b8a6), const Color(0xFF0d9488)],
+    };
+  }
 
   List<Widget> get reportMenuAuditList => [
     menuWidget(label: global.language("test_reprocess"), category: 'report', icon: Icons.build, routeName: '/rebuild_stock_screen'),
@@ -135,8 +147,6 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             buildMenuCategoryContainer(title: global.language("sale_report"), menuItems: reportMenuSaleList),
             SizedBox(height: 15),
             buildMenuCategoryContainer(title: global.language("other_reports"), menuItems: reportMenuListOld),
-            const SizedBox(height: 15),
-            htmlView(),
           ],
         ),
       ),
@@ -164,7 +174,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                 children: [
                   Icon(Icons.lock_outline, color: Colors.red[400], size: 24),
                   SizedBox(width: 8),
-                  Text(global.language('no_permission_title'), style: TextStyle(fontSize: 18)),
+                  Text(global.language('no_permission_title'), style: TextStyle(fontSize: 18, color: global.theme.textColor)),
                 ],
               ),
               content: Text(global.language('no_permission_message')),
@@ -197,13 +207,14 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
         label,
         maxLines: 3,
         textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white, letterSpacing: 0.3),
+        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: global.theme.onPrimaryColor, letterSpacing: 0.3),
       ),
     );
 
+    final isDark = global.isDarkMode();
     return Container(
       decoration: BoxDecoration(
-        boxShadow: [BoxShadow(color: gradientColors[0].withValues(alpha: 0.35), spreadRadius: 0, blurRadius: 12, offset: const Offset(0, 6))],
+        boxShadow: [BoxShadow(color: gradientColors[0].withValues(alpha: isDark ? 0.15 : 0.35), spreadRadius: 0, blurRadius: isDark ? 8 : 12, offset: const Offset(0, 6))],
         borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: gradientColors),
       ),
@@ -222,7 +233,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                   child: Container(
                     width: 50,
                     height: 50,
-                    decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.1)),
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: global.theme.cardColor.withValues(alpha: 0.1)),
                   ),
                 ),
                 Center(
@@ -235,8 +246,8 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                         if (icon != null) ...[
                           Container(
                             padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
-                            child: Icon(icon, size: 26, color: Colors.white),
+                            decoration: BoxDecoration(color: global.theme.cardColor.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
+                            child: Icon(icon, size: 26, color: global.theme.onPrimaryColor),
                           ),
                           const SizedBox(height: 10),
                         ],
@@ -601,13 +612,14 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       return const SizedBox.shrink();
     }
 
+    final isDark = global.isDarkMode();
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? global.theme.cardColor.withValues(alpha: 0.6) : global.theme.cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: primaryColor.withValues(alpha: 0.3), width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2))],
+        border: Border.all(color: isDark ? global.theme.dividerBorderColor.withValues(alpha: 0.3) : primaryColor.withValues(alpha: 0.3), width: 1),
+        boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -616,7 +628,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             padding: const EdgeInsets.only(left: 5, bottom: 8),
             child: Text(
               title,
-              style: TextStyle(color: primaryDarkColor, fontWeight: FontWeight.bold, fontSize: 16),
+              style: TextStyle(color: global.isDarkMode() ? global.theme.textSecondaryColor : primaryDarkColor, fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ),
           GridView.builder(
@@ -673,16 +685,6 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> loadHtmlContent(int mode) async {
-    final response = await global.getApiDataInfo("main_menu", mode);
-    if (mounted) {
-      setState(() {
-        htmlContent = response.toString();
-        htmlContentVersion++;
-      });
-    }
-  }
-
   @override
   void initState() {
     super.initState();
@@ -703,8 +705,6 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // โหลด HTML ทุกครั้งที่เข้าหน้าจอนี้
-    loadHtmlContent(1);
     // โหลดสิทธิ์ทุกครั้งที่กลับมาหน้าเมนู
     _loadUserPermissions();
     // Refresh branch settings จาก MongoDB ทุกครั้งที่เข้าเมนู
@@ -755,17 +755,17 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: global.theme.surfaceColor,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey[300]!),
+                border: Border.all(color: global.theme.dividerBorderColor),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.badge_outlined, color: Colors.grey[600], size: 20),
+                  Icon(Icons.badge_outlined, color: global.theme.iconSecondaryColor, size: 20),
                   SizedBox(width: 8),
                   Text(
                     '${global.language("employee_code")} : $username',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                    style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
                   ),
                 ],
               ),
@@ -845,30 +845,6 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  Widget htmlView() {
-    return Container(
-      key: ValueKey('html_$htmlContentVersion'), // ✅ เพิ่ม key เพื่อบังคับ rebuild
-      width: double.infinity,
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: primaryColor.withValues(alpha: 0.3), width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2))],
-      ),
-      child: SelectionArea(
-        // ✅ เพิ่ม SelectionArea เพื่อให้เลือกข้อความได้
-        child: HtmlWidget(
-          htmlContent,
-          key: ValueKey('html_widget_$htmlContentVersion'), // ✅ เพิ่ม key ให้ HtmlWidget ด้วย
-          textStyle: const TextStyle(fontSize: 14, color: Colors.black87),
-          // เพิ่ม renderMode เพื่อให้ support selection ได้ดีขึ้น
-          renderMode: RenderMode.column,
-        ),
-      ),
-    );
-  }
-
   String getHeader() {
     String headTitle = "";
     global.activeLangName(global.companyBranchSelectData.names);
@@ -895,6 +871,8 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuild menu ทุกครั้งที่ build เพื่อให้สีเปลี่ยนตาม theme
+    buildMenu();
     return MultiBlocListener(
       listeners: [
         BlocListener<LoginBloc, LoginState>(
@@ -908,7 +886,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
           listener: (context, state) {
             if (state is UpdateProfileSuccess) {
               setState(() {
-                global.showSnackBar(context, Icon(Icons.edit, color: Colors.white), global.language("edit_success"), Colors.blue);
+                global.showSnackBar(context, Icon(Icons.edit, color: global.theme.onPrimaryColor), global.language("edit_success"), Colors.blue);
               });
               context.read<ProfileBloc>().add(const GetProfile());
             }
@@ -934,27 +912,27 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                 getHeader(),
                 style: TextStyle(
                   fontSize: 18,
-                  color: Colors.white,
+                  color: global.theme.onPrimaryColor,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
                   shadows: [Shadow(offset: const Offset(1.5, 1.5), blurRadius: 3.0, color: Colors.black.withValues(alpha: 0.4))],
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
-              const Text(' : ', style: TextStyle(fontSize: 14, color: Colors.white54)),
+              Text(' : ', style: TextStyle(fontSize: 14, color: global.theme.onPrimaryColor.withValues(alpha: 0.54))),
               Expanded(
                 child: Text(
                   global.goApiUrlPath('').replaceAll(RegExp(r'/+$'), ''),
-                  style: const TextStyle(fontSize: 12, color: Colors.white70),
+                  style: TextStyle(fontSize: 12, color: global.theme.onPrimaryColor.withValues(alpha: 0.7)),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          backgroundColor: const Color(0xFF0A3880),
+          backgroundColor: global.theme.appBarColor,
           actions: const [
-            ManualButton(),
             SizedBox(width: 8),
+            ManualButton(),
           ],
         ),
         body: Container(
@@ -963,7 +941,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             gradient: LinearGradient(
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
-              colors: [Colors.white, primaryLightColor.withValues(alpha: 0.3), Colors.white.withValues(alpha: 0.9)],
+              colors: global.theme.bodyGradientColors,
               stops: const [0.0, 0.5, 1.0],
             ),
           ),
@@ -972,7 +950,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.only(left: 10, right: 10, top: 4, bottom: 4),
-                color: primaryDarkColor.withValues(alpha: 0.95),
+                color: global.theme.infoBarColor,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -981,10 +959,10 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                       children: [
                         Text(
                           (appConfig.getString("name") != "") ? (appConfig.getString("name") ?? "") : global.activeLangName(global.shopSelectData.names!),
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: global.theme.onPrimaryColor),
                         ),
                         SizedBox(width: 10),
-                        Text(" (${global.activeLangName(global.companyBranchSelectData.names)})", style: const TextStyle(fontSize: 12, color: Colors.white)),
+                        Text(" (${global.activeLangName(global.companyBranchSelectData.names)})", style: TextStyle(fontSize: 12, color: global.theme.onPrimaryColor)),
                         /*if (appConfig.getInt("branch_total") != 1)
                       ElevatedButton(
                         onPressed: (appConfig.getInt("branch_total") != 1)
@@ -1003,13 +981,13 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                         Text(
                           "SHOP ID : ${global.getShopId()} : Api (${global.goApiVersion})",
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: Colors.white, fontSize: 10),
+                          style: TextStyle(color: global.theme.onPrimaryColor, fontSize: 10),
                         ),
                         SizedBox(width: 8),
                         Text(
                           global.goApiUrlPath('').replaceAll(RegExp(r'/+$'), ''),
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: Colors.white70, fontSize: 10),
+                          style: TextStyle(color: global.theme.onPrimarySecondaryColor, fontSize: 10),
                         ),
                       ],
                     ),
@@ -1019,10 +997,10 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                         child: Wrap(
                           spacing: 8,
                           children: [
-                            Text("Version: $buildVersion", style: const TextStyle(color: Colors.white70, fontSize: 9)),
-                            if (buildGitBranch.isNotEmpty) Text("Branch: $buildGitBranch", style: const TextStyle(color: Colors.white70, fontSize: 9)),
-                            if (buildGitHash.isNotEmpty) Text("Hash: $buildGitHash", style: const TextStyle(color: Colors.white70, fontSize: 9)),
-                            if (buildTime.isNotEmpty) Text("Build: $buildTime", style: const TextStyle(color: Colors.white70, fontSize: 9)),
+                            Text("Version: $buildVersion", style: TextStyle(color: global.theme.onPrimarySecondaryColor, fontSize: 9)),
+                            if (buildGitBranch.isNotEmpty) Text("Branch: $buildGitBranch", style: TextStyle(color: global.theme.onPrimarySecondaryColor, fontSize: 9)),
+                            if (buildGitHash.isNotEmpty) Text("Hash: $buildGitHash", style: TextStyle(color: global.theme.onPrimarySecondaryColor, fontSize: 9)),
+                            if (buildTime.isNotEmpty) Text("Build: $buildTime", style: TextStyle(color: global.theme.onPrimarySecondaryColor, fontSize: 9)),
                           ],
                         ),
                       ),
@@ -1041,16 +1019,16 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                               children: [
                                 Text(
                                   _getDisplayName(),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.white,
+                                    color: global.theme.onPrimaryColor,
                                     fontWeight: FontWeight.bold,
-                                    shadows: [Shadow(offset: Offset(1.0, 1.0), blurRadius: 3.0, color: Color.fromARGB(128, 0, 0, 0))],
+                                    shadows: const [Shadow(offset: Offset(1.0, 1.0), blurRadius: 3.0, color: Color.fromARGB(128, 0, 0, 0))],
                                   ),
                                 ),
                                 const SizedBox(width: 5),
                                 Icon(
-                                  color: Colors.white,
+                                  color: global.theme.onPrimaryColor,
                                   global.loginName.isEmpty ? Icons.edit : Icons.person,
                                   size: 16,
                                   shadows: const [Shadow(offset: Offset(1.0, 1.0), blurRadius: 3.0, color: Colors.black54)],
@@ -1060,17 +1038,17 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                           ),
                           const SizedBox(width: 10),
                           // Divider
-                          Container(width: 1, height: 16, color: Colors.white54),
+                          Container(width: 1, height: 16, color: global.theme.onPrimarySecondaryColor),
                           const SizedBox(width: 10),
                           // Branch Code & Name
-                          const Icon(Icons.store, color: Colors.white70, size: 14),
+                          Icon(Icons.store, color: global.theme.onPrimarySecondaryColor, size: 14),
                           const SizedBox(width: 4),
                           Text(
                             "${global.companyBranchSelectData.code} - ${global.activeLangName(global.companyBranchSelectData.names)}",
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Colors.white,
-                              shadows: [Shadow(offset: Offset(1.0, 1.0), blurRadius: 3.0, color: Color.fromARGB(128, 0, 0, 0))],
+                              color: global.theme.onPrimaryColor,
+                              shadows: const [Shadow(offset: Offset(1.0, 1.0), blurRadius: 3.0, color: Color.fromARGB(128, 0, 0, 0))],
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -1080,7 +1058,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                             decoration: BoxDecoration(color: Colors.amber.shade700, borderRadius: BorderRadius.circular(4)),
                             child: Text(
                               global.companyBranchSelectData.baseCurrency ?? 'THB',
-                              style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+                              style: TextStyle(fontSize: 10, color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold),
                             ),
                           ),
                           const SizedBox(width: 6),
@@ -1093,7 +1071,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                             ),
                             child: Text(
                               global.companyBranchSelectData.yeartype == 'buddhist' ? global.language("buddhist_era") : global.language("christian_era"),
-                              style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+                              style: TextStyle(fontSize: 10, color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold),
                             ),
                           ),
                           const SizedBox(width: 6),
@@ -1109,7 +1087,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                   decoration: BoxDecoration(color: Colors.red.shade600, borderRadius: BorderRadius.circular(4)),
                                   child: Text(
                                     '$languageKey: ${global.language("not_configured")}',
-                                    style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
+                                    style: TextStyle(fontSize: 11, color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold),
                                   ),
                                 );
                               }
@@ -1119,7 +1097,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                 decoration: BoxDecoration(color: Colors.green.shade600, borderRadius: BorderRadius.circular(4)),
                                 child: Text(
                                   '$languageKey: ${rawLanguage.toUpperCase()}',
-                                  style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
+                                  style: TextStyle(fontSize: 11, color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold),
                                 ),
                               );
                             },
@@ -1143,7 +1121,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                   decoration: BoxDecoration(color: Colors.red.shade600, borderRadius: BorderRadius.circular(4)),
                                   child: Text(
                                     '$timezoneKey: ไม่ได้ตั้งค่า',
-                                    style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
+                                    style: TextStyle(fontSize: 11, color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold),
                                   ),
                                 );
                               }
@@ -1153,7 +1131,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                 decoration: BoxDecoration(color: Colors.teal.shade600, borderRadius: BorderRadius.circular(4)),
                                 child: Text(
                                   '$timezoneKey: $timezoneValue',
-                                  style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
+                                  style: TextStyle(fontSize: 11, color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold),
                                 ),
                               );
                             },
@@ -1215,8 +1193,8 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                   }
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: isLinked ? const Color(0xFF06C755) : Colors.grey.shade600,
-                                  foregroundColor: Colors.white,
+                                  backgroundColor: isLinked ? const Color(0xFF06C755) : global.theme.textSecondaryColor,
+                                  foregroundColor: global.theme.onPrimaryColor,
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
                                   minimumSize: const Size(0, 28),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
@@ -1242,7 +1220,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
 
                               return Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20)),
+                                decoration: BoxDecoration(color: global.theme.cardColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20)),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -1254,18 +1232,18 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                         if (displayName.isNotEmpty)
                                           Text(
                                             displayName,
-                                            style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
+                                            style: TextStyle(fontSize: 11, color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold),
                                           ),
-                                        if (email.isNotEmpty) Text(email, style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.8))),
+                                        if (email.isNotEmpty) Text(email, style: TextStyle(fontSize: 10, color: global.theme.onPrimaryColor.withValues(alpha: 0.8))),
                                       ],
                                     ),
                                     const SizedBox(width: 8),
                                     // Google profile avatar
                                     CircleAvatar(
                                       radius: 14,
-                                      backgroundColor: Colors.white24,
+                                      backgroundColor: global.theme.cardColor.withValues(alpha: 0.24),
                                       backgroundImage: photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
-                                      child: photoUrl.isEmpty ? const Icon(Icons.account_circle, size: 24, color: Colors.white70) : null,
+                                      child: photoUrl.isEmpty ? Icon(Icons.account_circle, size: 24, color: global.theme.onPrimaryColor.withValues(alpha: 0.7)) : null,
                                     ),
                                   ],
                                 ),
@@ -1297,8 +1275,6 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                             buildMenuCategoryContainer(title: global.language("payment_list"), menuItems: transactionPaidMenuList),
                             SizedBox(height: 15),
                             buildMenuCategoryContainer(title: global.language("accounting_list"), menuItems: glMenuList),
-                            const SizedBox(height: 15),
-                            htmlView(),
                           ],
                         ),
                       ),
@@ -1326,8 +1302,6 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                             buildMenuCategoryContainer(title: global.language("import_export_data"), menuItems: importExportMenuList),
                             SizedBox(height: 15),
                             if (global.posVersion == global.PosVersionEnum.restaurant) buildMenuCategoryContainer(title: global.language("restaurant_cafe"), menuItems: restaurantMenuList),
-                            const SizedBox(height: 15),
-                            htmlView(),
                           ],
                         ),
                       ),
@@ -1338,8 +1312,6 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                         child: Column(
                           children: [
                             buildMenuCategoryContainer(title: global.language("system_settings"), menuItems: configMenuList),
-                            const SizedBox(height: 15),
-                            htmlView(),
                           ],
                         ),
                       ),
@@ -1354,9 +1326,9 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
           type: BottomNavigationBarType.fixed,
           elevation: 10.0,
           currentIndex: global.activeIndexMenu,
-          backgroundColor: primaryDarkColor.withValues(alpha: 0.95),
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.white.withValues(alpha: .60),
+          backgroundColor: global.theme.bottomNavColor,
+          selectedItemColor: global.theme.bottomNavSelectedColor,
+          unselectedItemColor: global.theme.bottomNavUnselectedColor,
           selectedLabelStyle: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 14,
@@ -1383,7 +1355,6 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             }
             AppLogger.info('📑 TAB CHANGE: เปลี่ยนไปยังแท็บ "$tabName" (index: $value)');
 
-            loadHtmlContent(value);
             setState(() {
               global.activeIndexMenu = value;
               mainTabController.animateTo(value);

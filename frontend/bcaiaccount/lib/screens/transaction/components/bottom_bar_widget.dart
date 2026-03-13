@@ -32,8 +32,8 @@ class BottomBarWidget extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
-        border: Border.all(color: Colors.grey[300]!),
+        color: global.theme.surfaceColor,
+        border: Border.all(color: global.theme.dividerBorderColor),
         borderRadius: BorderRadius.circular(10),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -68,11 +68,11 @@ class BottomBarWidget extends StatelessWidget {
 
     return Wrap(
       children: [
-        Icon(Icons.add_shopping_cart, size: 14, color: const Color(0xFF2A6F97)),
+        Icon(Icons.add_shopping_cart, size: 14, color: global.theme.primaryColor),
         SizedBox(width: 4),
         Text(
           '${global.language('add_product')}:',
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2A6F97)),
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: global.theme.primaryColor),
         ),
         const SizedBox(width: 8),
 
@@ -96,7 +96,7 @@ class BottomBarWidget extends StatelessWidget {
       onPressed: _handleCartButtonPressed,
       icon: Icon(Icons.shopping_cart, size: 16),
       label: Text(global.language('cart')),
-      style: TextButton.styleFrom(foregroundColor: Colors.grey[700], padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4)),
+      style: TextButton.styleFrom(foregroundColor: global.theme.textSecondaryColor, padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4)),
     );
   }
 
@@ -108,16 +108,16 @@ class BottomBarWidget extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.calculate, size: 14, color: const Color(0xFF2A6F97)),
+        Icon(Icons.calculate, size: 14, color: global.theme.primaryColor),
         SizedBox(width: 4),
         Text(
           '${global.language("total_value")}: ',
-          style: TextStyle(fontSize: 12, color: const Color(0xFF2A6F97), fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 12, color: global.theme.primaryColor, fontWeight: FontWeight.w600),
         ),
         // Document Currency Value
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(color: const Color(0xFF2A6F97), borderRadius: BorderRadius.circular(6)),
+          decoration: BoxDecoration(color: global.theme.primaryColor, borderRadius: BorderRadius.circular(6)),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -126,12 +126,12 @@ class BottomBarWidget extends StatelessWidget {
                   padding: const EdgeInsets.only(right: 2),
                   child: Text(
                     docCurrencySymbol,
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.normal, color: Colors.white70),
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.normal, color: global.theme.onPrimaryColor.withValues(alpha: 0.7)),
                   ),
                 ),
               Text(
                 global.formatNumber(screenData.totalvalue),
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: global.theme.onPrimaryColor),
               ),
             ],
           ),
@@ -142,13 +142,13 @@ class BottomBarWidget extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.grey[200],
+              color: global.theme.dividerBorderColor,
               borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: Colors.grey[400]!, width: 0.5),
+              border: Border.all(color: global.theme.dividerBorderColor, width: 0.5),
             ),
             child: Text(
               '$baseCurrencySymbol ${global.formatNumber(_convertToBaseCurrency(screenData.totalvalue))}',
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: Colors.grey[700]),
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: global.theme.textSecondaryColor),
             ),
           ),
         ],
@@ -176,20 +176,20 @@ class BottomBarWidget extends StatelessWidget {
   Widget _buildSimpleButton({required IconData icon, required String label, required VoidCallback onPressed}) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[400]!),
+        border: Border.all(color: global.theme.dividerBorderColor),
         borderRadius: BorderRadius.circular(6),
-        color: Colors.white,
+        color: global.theme.cardColor,
       ),
       child: TextButton.icon(
         onPressed: onPressed,
         icon: Icon(icon, size: 12),
         label: Text(label),
         style: TextButton.styleFrom(
-          foregroundColor: Colors.grey[700],
+          foregroundColor: global.theme.textColor,
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
           minimumSize: Size.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          textStyle: const TextStyle(fontSize: 11),
+          textStyle: TextStyle(fontSize: 11),
         ),
       ),
     );

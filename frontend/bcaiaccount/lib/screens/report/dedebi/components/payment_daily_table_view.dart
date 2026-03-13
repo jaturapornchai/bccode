@@ -26,17 +26,17 @@ class PaymentDailyTableView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.payment_outlined,
               size: 64,
-              color: Colors.grey,
+              color: global.theme.textSecondaryColor,
             ),
             SizedBox(height: 16),
             Text(
               global.language('payment_daily_no_data'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey,
+                color: global.theme.textSecondaryColor,
               ),
             ),
           ],
@@ -50,9 +50,9 @@ class PaymentDailyTableView extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: global.theme.surfaceColor,
             border: Border(
-              bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+              bottom: BorderSide(color: global.theme.dividerBorderColor, width: 1),
             ),
           ),
           child: _buildHeaderRow(),
@@ -74,7 +74,7 @@ class PaymentDailyTableView extends StatelessWidget {
               onPressed: onLoadMore,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.indigo,
-                foregroundColor: Colors.white,
+                foregroundColor: global.theme.onPrimaryColor,
                 minimumSize: const Size(double.infinity, 48),
               ),
               child: Text(global.language('sale_return.load_more')),
@@ -152,7 +152,7 @@ class PaymentDailyTableView extends StatelessWidget {
 
   Widget _buildDataRow(PaymentDailyModel item, int index) {
     final isEven = index % 2 == 0;
-    final backgroundColor = isEven ? Colors.white : Colors.grey.shade50;
+    final backgroundColor = isEven ? global.theme.cardColor : global.theme.backgroundColor;
 
     return InkWell(
       onTap: () {
@@ -162,7 +162,7 @@ class PaymentDailyTableView extends StatelessWidget {
           AppLogger.error('Error in payment daily row tap: $e');
         }
       },
-      hoverColor: Colors.indigo.shade50,
+      hoverColor: global.theme.rowHoverColor,
       highlightColor: Colors.indigo.shade100,
       splashColor: Colors.indigo.shade200,
       child: Container(
@@ -170,7 +170,7 @@ class PaymentDailyTableView extends StatelessWidget {
         decoration: BoxDecoration(
           color: backgroundColor,
           border: Border(
-            bottom: BorderSide(color: Colors.grey.shade200, width: 0.5),
+            bottom: BorderSide(color: global.theme.dividerBorderColor, width: 0.5),
           ),
         ),
         child: Row(
@@ -184,7 +184,7 @@ class PaymentDailyTableView extends StatelessWidget {
                 fontWeight: FontWeight.w600,
                 color: item.transactions!.isNotEmpty
                     ? Colors.indigo.shade700
-                    : Colors.black87,
+                    : global.theme.textColor,
               ),
             ),
             // มูลค่ารวม
@@ -204,8 +204,8 @@ class PaymentDailyTableView extends StatelessWidget {
                 _formatCurrency(item.roundAmount),
                 textAlign: TextAlign.right,
                 color: item.roundAmount != 0
-                    ? Colors.orange.shade700
-                    : Colors.grey.shade500,
+                    ? global.theme.warningHighlightTextColor
+                    : global.theme.textSecondaryColor,
                 fontWeight:
                     item.roundAmount != 0 ? FontWeight.w500 : FontWeight.normal,
               ),
@@ -226,8 +226,8 @@ class PaymentDailyTableView extends StatelessWidget {
                 _formatCurrency(item.payCashAmount),
                 textAlign: TextAlign.right,
                 color: item.payCashAmount > 0
-                    ? Colors.green.shade700
-                    : Colors.grey.shade500,
+                    ? global.theme.positiveHighlightTextColor
+                    : global.theme.textSecondaryColor,
                 fontWeight: item.payCashAmount > 0
                     ? FontWeight.w600
                     : FontWeight.normal,
@@ -240,8 +240,8 @@ class PaymentDailyTableView extends StatelessWidget {
                 _formatCurrency(item.sumTransfer),
                 textAlign: TextAlign.right,
                 color: item.sumTransfer > 0
-                    ? Colors.blue.shade700
-                    : Colors.grey.shade500,
+                    ? global.theme.infoHighlightTextColor
+                    : global.theme.textSecondaryColor,
                 fontWeight:
                     item.sumTransfer > 0 ? FontWeight.w600 : FontWeight.normal,
               ),
@@ -254,7 +254,7 @@ class PaymentDailyTableView extends StatelessWidget {
                 textAlign: TextAlign.right,
                 color: item.sumCreditCard > 0
                     ? Colors.purple.shade700
-                    : Colors.grey.shade500,
+                    : global.theme.textSecondaryColor,
                 fontWeight: item.sumCreditCard > 0
                     ? FontWeight.w600
                     : FontWeight.normal,
@@ -267,8 +267,8 @@ class PaymentDailyTableView extends StatelessWidget {
                 _formatCurrency(item.sumCheque),
                 textAlign: TextAlign.right,
                 color: item.sumCheque > 0
-                    ? Colors.orange.shade700
-                    : Colors.grey.shade500,
+                    ? global.theme.warningHighlightTextColor
+                    : global.theme.textSecondaryColor,
                 fontWeight:
                     item.sumCheque > 0 ? FontWeight.w600 : FontWeight.normal,
               ),
@@ -280,8 +280,8 @@ class PaymentDailyTableView extends StatelessWidget {
                 _formatCurrency(item.sumCoupon),
                 textAlign: TextAlign.right,
                 color: item.sumCoupon > 0
-                    ? Colors.red.shade700
-                    : Colors.grey.shade500,
+                    ? global.theme.negativeHighlightTextColor
+                    : global.theme.textSecondaryColor,
                 fontWeight:
                     item.sumCoupon > 0 ? FontWeight.w600 : FontWeight.normal,
               ),
@@ -294,7 +294,7 @@ class PaymentDailyTableView extends StatelessWidget {
                 textAlign: TextAlign.right,
                 color: item.sumQRCode > 0
                     ? Colors.teal.shade700
-                    : Colors.grey.shade500,
+                    : global.theme.textSecondaryColor,
                 fontWeight:
                     item.sumQRCode > 0 ? FontWeight.w600 : FontWeight.normal,
               ),

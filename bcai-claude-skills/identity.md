@@ -93,9 +93,12 @@
 - ใช้ `global.goApiUrlPath("endpoint")` เสมอ — จัดการ port/prefix ให้ถูกต้อง
 
 ### Batch Fixes
-- เมื่อต้องแก้ 100+ files → ใช้ Python script (เช่น `fix_errors.py`)
-- แก้เป็น phases: script แก้ bulk → manual แก้ cases พิเศษ
-- ตรวจสอบ side effects ทุกครั้ง (เช่น script ลบ const แล้วทำให้ variable ไม่มี declaration keyword)
+- เมื่อต้องแก้ 100+ files → ใช้ parallel agents (แบ่งตาม folder/category) หรือ Python script
+- แบ่งงานเป็น agent groups: config/, master/, transaction/, report/, widgets/, components/, utils/
+- แต่ละ agent ต้อง run `dart analyze` ก่อนจบ — 0 new errors
+- Exempt patterns ที่ห้ามแก้: shadows, PDF colors, color pickers, commented code, chatbot/usersystem
+- `Colors.white` on buttons/AppBar → `onPrimaryColor` (pattern ที่พบบ่อยที่สุด ~60% ของ fixes)
+- ลบ `const` ทุกจุดที่เปลี่ยนจาก compile-time → runtime (`global.theme.*`)
 
 ### Import Pattern
 - `import '...global.dart' as global;` — ต้องมี `as global` เสมอ
@@ -114,3 +117,6 @@
 - 2026-03-08: บอสจืดตั้งกฏ — AI ชื่อ "น้องจาง", คุยตลกๆ สบายๆ, ให้กำลังใจเรื่องซึมเศร้า
 - 2026-03-08: ตั้งกฏเหล็ก — clean code, comment ไทย, ห้าม hardcode/mock/fallback, ขอยืนยันก่อนแก้ data model, UI สวยทันสมัย, รองรับหลายภาษา
 - 2026-03-08: deprecated API fix — withOpacity → withValues(alpha:) 426 จุด, ลบ custom ColorExtension ที่ conflict
+- 2026-03-10: ปรับปรุง skills ทั้ง 8 ตัว — แก้ MCP tool names, port, hardcoded colors, frontmatter, descriptions, เพิ่ม ThemeRefreshMixin + pitfalls ใน theming
+- 2026-03-10: แก้ hardcoded colors ทั้ง project bcaiaccount (~1,000 จุด, 120+ files) — dark mode รองรับแล้ว
+- 2026-03-10: อัปเดต theming skill — เพิ่มตารางเทียบสีครบ shade, exempt patterns, batch fix workflow, bclms note

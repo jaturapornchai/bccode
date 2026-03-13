@@ -14,8 +14,8 @@ class OptionScreen extends StatelessWidget {
         title: Text(global.language('supplement_options')),
         appBar: AppBar(),
         leading: IconButton(
-          color: Colors.black,
-          icon: const Icon(Icons.arrow_back),
+          color: global.theme.textColor,
+          icon: Icon(Icons.arrow_back),
           onPressed: () {},
         ),
         widgets: const <Widget>[],
@@ -27,8 +27,8 @@ class OptionScreen extends StatelessWidget {
             context,
           ).pushReplacement(MaterialPageRoute(builder: (_) => OptionAdd()));
         },
-        backgroundColor: Colors.blue,
-        child: const Icon(Icons.add),
+        backgroundColor: global.theme.infoHighlightTextColor,
+        child: Icon(Icons.add),
       ),
     );
   }

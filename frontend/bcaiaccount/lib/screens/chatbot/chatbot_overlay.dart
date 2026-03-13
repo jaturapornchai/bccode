@@ -21,7 +21,7 @@ class ChatbotOverlay extends StatefulWidget {
 }
 
 class _ChatbotOverlayState extends State<ChatbotOverlay>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
@@ -43,10 +43,10 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
   final double _maxHeight = 900;
 
   // สีธีม
-  final Color primaryColor = const Color(0xFF1A73E8);
-  final Color primaryDarkColor = const Color(0xFF0D47A1);
-  final Color aiMessageColor = const Color(0xFFE3F2FD);
-  final Color userMessageColor = const Color(0xFF1A73E8);
+  Color get primaryColor => global.theme.primaryColor;
+  Color get primaryDarkColor => global.theme.primaryColor;
+  Color get aiMessageColor => global.theme.surfaceColor;
+  Color get userMessageColor => global.theme.primaryColor;
 
   @override
   void initState() {
@@ -708,9 +708,9 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
     if (widget.isEmbedded) {
       return Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: global.theme.cardColor,
           border: Border(
-            left: BorderSide(color: Colors.grey.shade300, width: 1),
+            left: BorderSide(color: global.theme.dividerBorderColor, width: 1),
           ),
         ),
         child: Column(
@@ -749,7 +749,7 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
                   width: _isMinimized ? 300 : _width,
                   height: _isMinimized ? 60 : _height,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: global.theme.cardColor,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
@@ -844,7 +844,7 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
                               width: 6,
                               height: 48,
                               decoration: BoxDecoration(
-                                color: Colors.grey.shade400,
+                                color: global.theme.iconSecondaryColor,
                                 borderRadius: BorderRadius.circular(3),
                                 boxShadow: [
                                   BoxShadow(
@@ -862,7 +862,7 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
                                       width: 3,
                                       height: 3,
                                       decoration: BoxDecoration(
-                                        color: Colors.grey.shade600,
+                                        color: global.theme.textSecondaryColor,
                                         shape: BoxShape.circle,
                                       ),
                                     ),
@@ -1113,7 +1113,7 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
 
   Widget _buildChatContent() {
     return Container(
-      color: Colors.grey[50],
+      color: global.theme.surfaceColor,
       child: ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.all(12),
@@ -1132,8 +1132,8 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+        color: global.theme.cardColor,
+        border: Border(top: BorderSide(color: global.theme.dividerBorderColor)),
       ),
       child: Row(
         children: [
@@ -1142,14 +1142,14 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
               controller: _messageController,
               decoration: InputDecoration(
                 hintText: global.language('chatbot_type_message'),
-                hintStyle: TextStyle(fontSize: 14, color: Colors.grey[400]),
+                hintStyle: TextStyle(fontSize: 14, color: global.theme.formHintColor),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: global.theme.formBorderColor),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: global.theme.formBorderColor),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -1160,7 +1160,7 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
                   vertical: 10,
                 ),
                 filled: true,
-                fillColor: Colors.grey[50],
+                fillColor: global.theme.formFillColor,
                 isDense: true,
               ),
               style: const TextStyle(fontSize: 14),
@@ -1242,7 +1242,7 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
                             ? Colors.white
                             : (message.isError
                                   ? Colors.red[900]
-                                  : Colors.black87),
+                                  : global.theme.textColor),
                         height: 1.3,
                       ),
                       toolbarOptions: const ToolbarOptions(
@@ -1266,9 +1266,9 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
+                        color: global.theme.surfaceColor,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue.shade200),
+                        border: Border.all(color: global.theme.dividerBorderColor),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1415,7 +1415,7 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
                           fontSize: 10,
                           color: message.isUser
                               ? Colors.white70
-                              : Colors.grey.shade600,
+                              : global.theme.textSecondaryColor,
                         ),
                       ),
                       // ปุ่ม copy สำหรับข้อความ AI เท่านั้น
@@ -1431,14 +1431,14 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
                                 Icon(
                                   Icons.copy,
                                   size: 12,
-                                  color: Colors.grey.shade600,
+                                  color: global.theme.textSecondaryColor,
                                 ),
                                 SizedBox(width: 4),
                                 Text(
                                   global.language('chatbot_copy'),
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: Colors.grey.shade600,
+                                    color: global.theme.textSecondaryColor,
                                   ),
                                 ),
                               ],
@@ -1540,7 +1540,7 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
                   ),
                   Text(
                     '${durationMs}ms',
-                    style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                    style: TextStyle(fontSize: 10, color: global.theme.iconSecondaryColor),
                   ),
                 ],
               ),
@@ -1586,14 +1586,14 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
                     const SizedBox(width: 8),
                     Text(
                       global.language('ai_thinking'),
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor),
                     ),
                   ],
                 ),
                 const SizedBox(height: 2),
                 Text(
                   global.language('fetching_data_from_system'),
-                  style: TextStyle(fontSize: 10, color: Colors.grey[400]),
+                  style: TextStyle(fontSize: 10, color: global.theme.iconSecondaryColor),
                 ),
               ],
             ),
@@ -2011,7 +2011,7 @@ class _WebViewDialogState extends State<_WebViewDialog> {
         width: MediaQuery.of(context).size.width * 0.9,
         height: MediaQuery.of(context).size.height * 0.9,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: global.theme.cardColor,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(

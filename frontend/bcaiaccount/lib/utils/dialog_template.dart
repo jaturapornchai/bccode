@@ -88,7 +88,7 @@ class DialogTemplate {
                                 return Card(
                                   shape: RoundedRectangleBorder(
                                     side: BorderSide(
-                                      color: Colors.grey.withValues(alpha: 0.2),
+                                      color: global.theme.dividerBorderColor.withValues(alpha: 0.3),
                                     ),
                                     borderRadius: BorderRadius.circular(10.0),
                                   ),

@@ -92,7 +92,7 @@ class POPurchaseTypeSelector extends StatelessWidget {
       ),
       child: Text(
         global.language('no_purchase_type_data'),
-        style: TextStyle(color: Colors.grey[600]),
+        style: TextStyle(color: global.theme.iconSecondaryColor),
       ),
     );
   }

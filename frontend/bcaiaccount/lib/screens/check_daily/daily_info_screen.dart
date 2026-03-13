@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:smlaicloud/bloc/company/company_bloc.dart';
 import 'package:smlaicloud/bloc/trans/trans_bloc.dart';
 import 'package:smlaicloud/model/transaction_model.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:json_view/json_view.dart';
 import 'package:split_view/split_view.dart';
+import 'package:smlaicloud/widgets/list_font_size_control.dart';
 
 class DailyInfoScreen extends StatefulWidget {
   const DailyInfoScreen({super.key});
@@ -20,7 +20,7 @@ class DailyInfoScreen extends StatefulWidget {
 }
 
 class DailyInfoScreenState extends State<DailyInfoScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   late TabController tabController;
   ScrollController editScrollController = ScrollController();
   TextEditingController searchController = TextEditingController();
@@ -186,7 +186,7 @@ class DailyInfoScreenState extends State<DailyInfoScreen>
           Container(
             padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.surfaceColor,
               borderRadius: BorderRadius.circular(2),
             ),
             child: Row(
@@ -207,37 +207,20 @@ class DailyInfoScreenState extends State<DailyInfoScreen>
                     autofocus: false,
                     focusNode: searchFocusNode,
                     controller: searchController,
+                    style: TextStyle(color: global.theme.textColor),
                     decoration: InputDecoration(
                       isDense: true,
-                      contentPadding: const EdgeInsets.only(
-                        top: 0,
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                       border: InputBorder.none,
+                      filled: false,
                       hintText: global.language('search'),
+                      hintStyle: TextStyle(color: global.theme.formHintColor),
+                          prefixIcon: Icon(Icons.search, size: 20, color: global.theme.formHintColor),
+                          prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                     ),
                   ),
                 ),
-                IconButton(
-                  focusNode: FocusNode(skipTraversal: true),
-                  icon: const FaIcon(FontAwesomeIcons.font),
-                  onPressed: () async {
-                    setState(() {
-                      global.listDataFontSizeChange();
-                    });
-                  },
-                ),
-                IconButton(
-                  focusNode: FocusNode(skipTraversal: true),
-                  icon: const Icon(Icons.line_weight),
-                  onPressed: () async {
-                    setState(() {
-                      global.listDataLineSpaceChange();
-                    });
-                  },
-                ),
+                ListFontSizeControl(onChanged: () => setState(() {})),
               ],
             ),
           ),
@@ -359,7 +342,11 @@ class DailyInfoScreenState extends State<DailyInfoScreen>
           ? global.deviceConfig.listDataFontSize + 2.0
           : global.deviceConfig.listDataFontSize,
     );
-    return GestureDetector(
+    return MouseRegion(
+
+      cursor: SystemMouseCursors.click,
+
+      child: GestureDetector(
       onTap: () {
         setState(() {
           changeScreenEvent(global.ScreenEventEnum.list);
@@ -374,7 +361,7 @@ class DailyInfoScreenState extends State<DailyInfoScreen>
         key: index < listKeys.length ? listKeys[index] : null,
         decoration: BoxDecoration(
           color: (selectGuid == value.guidfixed!)
-              ? Colors.cyan[100]
+              ? global.theme.rowSelectedColor
               : (index % 2 == 0)
               ? global.theme.columnAlternateEvenColor
               : global.theme.columnAlternateOddColor,
@@ -418,6 +405,7 @@ class DailyInfoScreenState extends State<DailyInfoScreen>
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -444,7 +432,7 @@ class DailyInfoScreenState extends State<DailyInfoScreen>
       ),
       body: Scaffold(
         backgroundColor:
-            Colors.grey[900], // Set your desired default background color here
+            global.theme.backgroundColor, // ใช้สีพื้นหลังจาก theme
         body: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             return
@@ -473,8 +461,8 @@ class DailyInfoScreenState extends State<DailyInfoScreen>
                                   ),
                                   animationCurve: Curves.ease,
                                   itemPadding: const EdgeInsets.only(left: 8),
-                                  color: const JsonColorScheme(
-                                    stringColor: Colors.grey,
+                                  color: JsonColorScheme(
+                                    stringColor: global.theme.textSecondaryColor,
                                   ),
                                   style: const JsonStyleScheme(
                                     arrow: Icon(Icons.arrow_right),
@@ -523,7 +511,7 @@ class DailyInfoScreenState extends State<DailyInfoScreen>
                     controller: splitViewController,
                     gripSize: 14,
                     gripColor: global.theme.appBarColor,
-                    gripColorActive: Colors.blue,
+                    gripColorActive: global.theme.infoHighlightTextColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(
                       viewMode: SplitViewMode.Horizontal,

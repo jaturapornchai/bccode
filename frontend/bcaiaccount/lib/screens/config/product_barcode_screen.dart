@@ -1,5 +1,6 @@
 ﻿import 'dart:async';
 import 'package:smlaicloud/widgets/manual_button.dart';
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -114,7 +115,6 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
   double? _filterPriceMax;
   final TextEditingController _priceMinController = TextEditingController();
   final TextEditingController _priceMaxController = TextEditingController();
-  double _listFontSize = 12.0;
   int _totalItems = 0;
   int _hoverIndex = -1;
   final String _sortField = 'barcode';
@@ -510,12 +510,12 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
           content: Text(global.language('leave_this_screen')),
           actions: <Widget>[
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              style: ElevatedButton.styleFrom(backgroundColor: global.theme.buttonDangerColor),
               onPressed: () => Navigator.pop(context),
               child: Text(global.language('no')),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+              style: ElevatedButton.styleFrom(backgroundColor: global.theme.primaryColor),
               onPressed: () {
                 Navigator.pop(context);
                 callBack();
@@ -619,11 +619,11 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                               child: DropdownButton<LanguageModel>(
                                 value: selectedLanguage,
                                 icon: const Icon(Icons.arrow_drop_down),
-                                style: const TextStyle(
-                                  color: Colors.deepPurple,
+                                style: TextStyle(
+                                  color: global.theme.secondaryColor,
                                 ),
                                 underline: Container(
-                                  color: Colors.deepPurpleAccent,
+                                  color: global.theme.secondaryColor,
                                 ),
                                 onChanged: (LanguageModel? value) {
                                   setState(() {
@@ -669,7 +669,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                         // Text button cancel
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
+                            backgroundColor: global.theme.buttonDangerColor,
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -716,9 +716,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                         showCheckBox = true;
                         global.showSnackBar(
                           context,
-                          Icon(Icons.delete, color: Colors.white),
+                          Icon(Icons.delete, color: global.theme.onPrimaryColor),
                           global.language("choose_item_delete"),
-                          Colors.blue,
+                          global.theme.primaryColor,
                         );
                       }
                     });
@@ -743,7 +743,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                       actions: <Widget>[
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
+                            backgroundColor: global.theme.buttonDangerColor,
                           ),
                           onPressed: () => Navigator.pop(context),
                           child: Text(global.language('no')),
@@ -888,7 +888,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.cardColor,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Row(
@@ -924,7 +924,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                       _showFilterPanel ? Icons.filter_alt : Icons.filter_alt_outlined,
                       color: (_filterGroupCode.isNotEmpty || _filterBrandCode.isNotEmpty ||
                               _filterCategoryCode.isNotEmpty || _filterPriceMin != null || _filterPriceMax != null)
-                          ? Colors.blue
+                          ? global.theme.primaryColor
                           : global.theme.textSecondaryColor,
                     ),
                     tooltip: global.language('filter'),
@@ -947,51 +947,13 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                       });
                     },
                   ),
-                  // Font size: A- size A+
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        InkWell(
-                          onTap: () {
-                            setState(() {
-                              if (_listFontSize > 10) _listFontSize -= 1;
-                            });
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                            child: Text('A-', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey[700])),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Text('${_listFontSize.toInt()}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue[700])),
-                        ),
-                        InkWell(
-                          onTap: () {
-                            setState(() {
-                              if (_listFontSize < 24) _listFontSize += 1;
-                            });
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                            child: Text('A+', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey[700])),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  ListFontSizeControl(onChanged: () => setState(() {})),
                   const SizedBox(width: 4),
                   // Total items
                   if (_totalItems > 0)
                     Text(
                       '($_totalItems)',
-                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                      style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                     ),
                 ],
               ),
@@ -1125,19 +1087,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.blue.shade50, Colors.green.shade50],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: global.theme.surfaceColor,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1271,7 +1223,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                           hintStyle: const TextStyle(fontSize: 12),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: global.theme.cardColor,
                         ),
                         style: TextStyle(fontSize: 12),
                         onSubmitted: (_) => _applyPriceFilter(),
@@ -1292,7 +1244,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                           hintStyle: const TextStyle(fontSize: 12),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: global.theme.cardColor,
                         ),
                         style: const TextStyle(fontSize: 12),
                         onSubmitted: (_) => _applyPriceFilter(),
@@ -1310,9 +1262,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                           });
                           loadDataList(searchText, filterBarcode);
                         },
-                        child: const Padding(
-                          padding: EdgeInsets.only(left: 4),
-                          child: Icon(Icons.close, size: 18, color: Colors.red),
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: Icon(Icons.close, size: 18, color: global.theme.negativeHighlightTextColor),
                         ),
                       ),
                   ],
@@ -1344,11 +1296,11 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.clear_all, size: 16, color: Colors.red),
+                    Icon(Icons.clear_all, size: 16, color: global.theme.negativeHighlightTextColor),
                     const SizedBox(width: 4),
                     Text(
                       global.language('clear_filter'),
-                      style: const TextStyle(fontSize: 12, color: Colors.red),
+                      style: TextStyle(fontSize: 12, color: global.theme.negativeHighlightTextColor),
                     ),
                   ],
                 ),
@@ -1371,22 +1323,22 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? Colors.blue.shade50 : Colors.white,
+          color: isActive ? global.theme.infoHighlightColor : global.theme.cardColor,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isActive ? Colors.blue : Colors.grey.shade300,
+            color: isActive ? global.theme.primaryColor : global.theme.dividerBorderColor,
           ),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 16, color: isActive ? Colors.blue : Colors.grey),
+            Icon(icon, size: 16, color: isActive ? global.theme.primaryColor : global.theme.textSecondaryColor),
             const SizedBox(width: 4),
             Expanded(
               child: Text(
                 label,
                 style: TextStyle(
                   fontSize: 12,
-                  color: isActive ? Colors.blue.shade700 : Colors.grey.shade600,
+                  color: isActive ? global.theme.primaryColor : global.theme.textSecondaryColor,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -1395,7 +1347,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
             if (onClear != null)
               InkWell(
                 onTap: onClear,
-                child: const Icon(Icons.close, size: 14, color: Colors.red),
+                child: Icon(Icons.close, size: 14, color: global.theme.negativeHighlightTextColor),
               ),
           ],
         ),
@@ -1460,7 +1412,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                   child: Text(global.language("confirm")),
                 ),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  style: ElevatedButton.styleFrom(backgroundColor: global.theme.buttonDangerColor),
                   onPressed: () {
                     Navigator.pop(context);
                   },
@@ -1803,9 +1755,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                 toTime.minute <= fromTime.minute)) {
           global.showSnackBar(
             context,
-            Icon(Icons.edit, color: Colors.white),
+            Icon(Icons.edit, color: global.theme.onPrimaryColor),
             global.language("to_time_must_be_later_than_from_time"),
-            Colors.red,
+            global.theme.buttonDangerColor,
           );
           timeForSales[mediaIndex].totime = '';
           mediaToTimeController[mediaIndex].text = '';
@@ -1832,10 +1784,14 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
     final isSelected = selectBarcode == (value.barcode ?? '');
     TextStyle textStyle = isSelected
         ? TextStyle(
-            fontSize: _listFontSize,
+            fontSize: global.deviceConfig.listDataFontSize,
             fontWeight: FontWeight.bold,
+            color: global.theme.textColor,
           )
-        : TextStyle(fontSize: _listFontSize);
+        : TextStyle(
+            fontSize: global.deviceConfig.listDataFontSize,
+            color: global.theme.textSecondaryColor,
+          );
     if (showCheckBox) {
       for (int i = 0; i < guidListChecked.length; i++) {
         if (guidListChecked[i] == (value.barcode ?? '')) {
@@ -1863,9 +1819,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
             }
             global.showSnackBar(
               context,
-              Icon(Icons.check, color: Colors.white),
+              Icon(Icons.check, color: global.theme.onPrimaryColor),
               "${global.language("chosen")} ${guidListChecked.length} ${global.language("list")}",
-              Colors.blue,
+              global.theme.primaryColor,
             );
           });
         } else {
@@ -1928,10 +1884,10 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
 
   Color? _getContainerColor(String selectedBarcode, String itemBarcode, int index) {
     if (selectedBarcode.isNotEmpty && selectedBarcode == itemBarcode) {
-      return isEditMode ? Colors.orange[100] : global.theme.rowSelectedColor;
+      return isEditMode ? global.theme.rowEditColor : global.theme.rowSelectedColor;
     }
     if (_hoverIndex == index) {
-      return Colors.blue[50];
+      return global.theme.rowHoverColor;
     }
     return (index % 2 == 0)
         ? global.theme.columnAlternateEvenColor
@@ -1970,12 +1926,12 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
         children: [
           Row(
             children: [
-              Icon(Icons.layers, size: 12, color: Colors.blue[700]),
+              Icon(Icons.layers, size: 12, color: global.theme.primaryColor),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
                   unitName,
-                  style: textStyle.copyWith(color: Colors.blue[800]),
+                  style: textStyle.copyWith(color: global.theme.primaryColor),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1983,13 +1939,13 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                 decoration: BoxDecoration(
-                  color: Colors.blue[50],
+                  color: global.theme.infoHighlightColor,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue[200]!),
+                  border: Border.all(color: global.theme.infoHighlightTextColor.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   '${value.unitCount}',
-                  style: TextStyle(fontSize: 9, color: Colors.blue[700], fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 9, color: global.theme.primaryColor, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -2056,7 +2012,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                 ? value.balanceFormatted
                 : '0',
             style: textStyle.copyWith(
-              color: value.balanceQty <= 0 ? Colors.red[700] : null,
+              color: value.balanceQty <= 0 ? global.theme.negativeHighlightTextColor : null,
             ),
           ),
         ),
@@ -2114,7 +2070,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
         border: Border.all(color: global.theme.textSecondaryColor, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.5),
+            color: global.theme.textSecondaryColor.withValues(alpha: 0.5),
             spreadRadius: 1,
             blurRadius: 1,
             offset: const Offset(1, 1),
@@ -2547,9 +2503,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
         child: Container(
           height: 36,
           decoration: BoxDecoration(
-            border: Border.all(color: isSelected ? global.theme.appBarColor : Colors.grey.shade400),
+            border: Border.all(color: isSelected ? global.theme.primaryColor : global.theme.textSecondaryColor),
             borderRadius: BorderRadius.circular(4),
-            color: isSelected ? global.theme.appBarColor.withValues(alpha: 0.05) : null,
+            color: isSelected ? global.theme.primaryColor.withValues(alpha: 0.08) : null,
           ),
           child: Row(
             children: [
@@ -2565,7 +2521,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                 child: Text(
                   isSelected ? '$code ~ $displayName' : '-',
                   style: TextStyle(
-                    color: isSelected ? Colors.black : Colors.grey[400],
+                    color: isSelected ? global.theme.textColor : global.theme.textSecondaryColor,
                     fontSize: 13,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -2574,14 +2530,14 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
               if (isSelected && isEditMode)
                 InkWell(
                   onTap: onClear,
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 4),
-                    child: Icon(Icons.clear, color: Colors.red, size: 16),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Icon(Icons.clear, color: global.theme.negativeHighlightTextColor, size: 16),
                   ),
                 ),
               Icon(
                 Icons.search,
-                color: isEditMode ? global.theme.appBarColor : Colors.grey,
+                color: isEditMode ? global.theme.primaryColor : global.theme.textSecondaryColor,
                 size: 16,
               ),
               const SizedBox(width: 6),
@@ -2635,7 +2591,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
               Radio(
                 value: 1,
                 groupValue: screenData.itemtype,
-                activeColor: Colors.red,
+                activeColor: global.theme.negativeHighlightTextColor,
                 onChanged: (value) {
                   if (isEditMode) {
                     setState(() {
@@ -2661,7 +2617,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
               Radio(
                 value: 2,
                 groupValue: screenData.itemtype,
-                activeColor: Colors.yellow,
+                activeColor: global.theme.warningHighlightTextColor,
                 onChanged: (value) {
                   if (isEditMode) {
                     setState(() {
@@ -2686,7 +2642,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                 Radio(
                   value: 3,
                   groupValue: screenData.itemtype,
-                  activeColor: Colors.red,
+                  activeColor: global.theme.negativeHighlightTextColor,
                   onChanged: (value) {
                     if (isEditMode) {
                       setState(() {
@@ -2718,7 +2674,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
               Radio(
                 value: 0,
                 groupValue: screenData.materialtype,
-                activeColor: Colors.red,
+                activeColor: global.theme.negativeHighlightTextColor,
                 onChanged: (value) {
                   if (isEditMode) {
                     setState(() {
@@ -2742,7 +2698,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
               Radio(
                 value: 1,
                 groupValue: screenData.materialtype,
-                activeColor: Colors.red,
+                activeColor: global.theme.negativeHighlightTextColor,
                 onChanged: (value) {
                   if (isEditMode) {
                     setState(() {
@@ -2766,7 +2722,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
               Radio(
                 value: 2,
                 groupValue: screenData.materialtype,
-                activeColor: Colors.yellow,
+                activeColor: global.theme.warningHighlightTextColor,
                 onChanged: (value) {
                   if (isEditMode) {
                     setState(() {
@@ -2827,7 +2783,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                 Radio(
                   value: 1,
                   groupValue: screenData.foodtype,
-                  activeColor: Colors.red,
+                  activeColor: global.theme.negativeHighlightTextColor,
                   onChanged: (value) {
                     if (isEditMode) {
                       setState(() {
@@ -2851,7 +2807,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                 Radio(
                   value: 2,
                   groupValue: screenData.foodtype,
-                  activeColor: Colors.yellow,
+                  activeColor: global.theme.warningHighlightTextColor,
                   onChanged: (value) {
                     if (isEditMode) {
                       setState(() {
@@ -2875,7 +2831,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                 Radio(
                   value: 3,
                   groupValue: screenData.foodtype,
-                  activeColor: Colors.red,
+                  activeColor: global.theme.negativeHighlightTextColor,
                   onChanged: (value) {
                     if (isEditMode) {
                       setState(() {
@@ -2937,7 +2893,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                 Radio(
                   value: 1,
                   groupValue: screenData.vatcal,
-                  activeColor: Colors.red,
+                  activeColor: global.theme.negativeHighlightTextColor,
                   onChanged: (value) {
                     if (isEditMode) {
                       setState(() {
@@ -2999,7 +2955,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                 Radio(
                   value: false,
                   groupValue: screenData.issumpoint,
-                  activeColor: Colors.red,
+                  activeColor: global.theme.negativeHighlightTextColor,
                   onChanged: (value) {
                     if (isEditMode) {
                       setState(() {
@@ -3214,9 +3170,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
               child: ElevatedButton(
                 style: ButtonStyle(
                   backgroundColor: WidgetStateProperty.all<Color>(
-                    const Color.fromARGB(255, 123, 235, 157),
+                    global.theme.positiveHighlightTextColor,
                   ),
-                  foregroundColor: WidgetStateProperty.all<Color>(Colors.black),
+                  foregroundColor: WidgetStateProperty.all<Color>(global.theme.onPrimaryColor),
                 ),
                 onPressed: () {
                   subbarcodeSearch().then((result) {
@@ -3235,9 +3191,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                       data.barcode = "";
                       global.showSnackBar(
                         context,
-                        Icon(Icons.warning_amber, color: Colors.white),
+                        Icon(Icons.warning_amber, color: global.theme.onPrimaryColor),
                         global.language("ref_barcode_is_sub_barcode"),
-                        Colors.orange,
+                        global.theme.warningHighlightTextColor,
                       );
                     }
                     setState(() {});
@@ -3403,10 +3359,10 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                       child: ElevatedButton(
                         style: ButtonStyle(
                           backgroundColor: WidgetStateProperty.all<Color>(
-                            const Color.fromARGB(255, 123, 235, 157),
+                            global.theme.positiveHighlightTextColor,
                           ),
                           foregroundColor: WidgetStateProperty.all<Color>(
-                            Colors.black,
+                            global.theme.onPrimaryColor,
                           ),
                         ),
                         onPressed: () {
@@ -3465,7 +3421,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                         }
                       });
                     },
-                    icon: const Icon(Icons.delete, color: Colors.red),
+                    icon: Icon(Icons.delete, color: global.theme.negativeHighlightTextColor),
                   ),
                 ],
               ),
@@ -3574,8 +3530,8 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                               screenData.itemtype == 3 ||
                               screenData.itemtype == 4 ||
                               screenData.itemtype == 5)
-                          ? Colors.grey
-                          : Colors.black,
+                          ? global.theme.textSecondaryColor
+                          : global.theme.textColor,
                     ),
                   ),
                   Switch(
@@ -3650,7 +3606,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(4),
                             side: BorderSide(
-                              color: Colors.blue.shade100,
+                              color: global.theme.infoHighlightTextColor.withValues(alpha: 0.3),
                               width: 2,
                             ), // Set the border color and width
                           ),
@@ -3730,10 +3686,10 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                     child: ElevatedButton(
                       style: ButtonStyle(
                         backgroundColor: WidgetStateProperty.all<Color>(
-                          const Color.fromARGB(255, 235, 147, 123),
+                          global.theme.warningHighlightTextColor,
                         ),
                         foregroundColor: WidgetStateProperty.all<Color>(
-                          Colors.black,
+                          global.theme.onPrimaryColor,
                         ),
                       ),
                       onPressed: () {
@@ -3792,7 +3748,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                       }
                     });
                   },
-                  icon: const Icon(Icons.delete, color: Colors.red),
+                  icon: Icon(Icons.delete, color: global.theme.negativeHighlightTextColor),
                 ),
               ],
             ),
@@ -3871,8 +3827,8 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                 style: TextStyle(
                   fontSize: 16,
                   color: (screenData.itemtype == 1)
-                      ? Colors.grey
-                      : Colors.black,
+                      ? global.theme.textSecondaryColor
+                      : global.theme.textColor,
                 ),
               ),
               Switch(
@@ -3910,10 +3866,10 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                         child: ElevatedButton.icon(
                           style: ButtonStyle(
                             backgroundColor: WidgetStateProperty.all<Color?>(
-                              Colors.blue.shade100,
+                              global.theme.infoHighlightColor,
                             ),
                             foregroundColor: WidgetStateProperty.all<Color>(
-                              Colors.black,
+                              global.theme.textColor,
                             ),
                           ),
                           icon: const Icon(Icons.add),
@@ -3966,7 +3922,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(4),
                     side: BorderSide(
-                      color: Colors.blue.shade100,
+                      color: global.theme.infoHighlightTextColor.withValues(alpha: 0.3),
                       width: 2,
                     ), // Set the border color and width
                   ),
@@ -4139,11 +4095,22 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                   style: ButtonStyle(
                     backgroundColor: WidgetStateProperty.all<Color>(
                       (screenData.producttype!.guidfixed!.isNotEmpty)
-                          ? const Color.fromARGB(255, 168, 171, 136)
-                          : const Color.fromARGB(255, 168, 171, 136),
+                          ? global.theme.primaryColor.withValues(alpha: 0.08)
+                          : global.theme.cardColor,
                     ),
                     foregroundColor: WidgetStateProperty.all<Color>(
-                      Colors.black,
+                      global.theme.textColor,
+                    ),
+                    elevation: WidgetStateProperty.all(0),
+                    shape: WidgetStateProperty.all(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(
+                          color: (screenData.producttype!.guidfixed!.isNotEmpty)
+                              ? global.theme.primaryColor
+                              : global.theme.dividerBorderColor,
+                        ),
+                      ),
                     ),
                   ),
                   onPressed: () {
@@ -4171,8 +4138,8 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Add your new icon here
-                      Icon(Icons.category),
+                      Icon(Icons.category, color: global.theme.primaryColor),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           (screenData.producttype!.guidfixed!.isEmpty)
@@ -4186,16 +4153,15 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                           ? IconButton(
                               onPressed: () {
                                 setState(() {
-                                  // Reset the selected product type
                                   screenData.producttype!.guidfixed = '';
                                   screenData.producttype!.code = '';
                                   screenData.producttype!.names = [];
                                 });
                               },
-                              icon: const Icon(Icons.delete),
+                              icon: Icon(Icons.clear, color: global.theme.negativeHighlightTextColor),
                             )
                           : Container(),
-                      const Icon(Icons.search),
+                      Icon(Icons.search, color: global.theme.textSecondaryColor),
                     ],
                   ),
                 ),
@@ -4586,11 +4552,22 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                   style: ButtonStyle(
                     backgroundColor: WidgetStateProperty.all<Color>(
                       (screenData.manufacturerguid!.isNotEmpty)
-                          ? const Color.fromARGB(255, 158, 236, 255)
-                          : const Color.fromARGB(255, 221, 240, 245),
+                          ? global.theme.primaryColor.withValues(alpha: 0.08)
+                          : global.theme.cardColor,
                     ),
                     foregroundColor: WidgetStateProperty.all<Color>(
-                      Colors.black,
+                      global.theme.textColor,
+                    ),
+                    elevation: WidgetStateProperty.all(0),
+                    shape: WidgetStateProperty.all(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(
+                          color: (screenData.manufacturerguid!.isNotEmpty)
+                              ? global.theme.primaryColor
+                              : global.theme.dividerBorderColor,
+                        ),
+                      ),
                     ),
                   ),
                   onPressed: () {
@@ -4617,8 +4594,8 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Add your new icon here
-                      Icon(Icons.person_search_rounded),
+                      Icon(Icons.person_search_rounded, color: global.theme.primaryColor),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           (screenData.manufacturerguid!.isEmpty)
@@ -4632,16 +4609,15 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                           ? IconButton(
                               onPressed: () {
                                 setState(() {
-                                  // Reset the selected product type
                                   screenData.manufacturerguid = '';
                                   screenData.manufacturercode = '';
                                   screenData.manufacturernames = [];
                                 });
                               },
-                              icon: const Icon(Icons.delete),
+                              icon: Icon(Icons.clear, color: global.theme.negativeHighlightTextColor),
                             )
                           : Container(),
-                      const Icon(Icons.search),
+                      Icon(Icons.search, color: global.theme.textSecondaryColor),
                     ],
                   ),
                 ),
@@ -4677,7 +4653,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
           },
           style: ButtonStyle(
             backgroundColor: WidgetStateProperty.all<Color>(
-              const Color.fromARGB(182, 59, 63, 21),
+              global.theme.primaryColor,
             ), // Set the background color here
           ),
           icon: Icon(Icons.add), // Set the icon here
@@ -4705,10 +4681,10 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                     child: ElevatedButton(
                       style: ButtonStyle(
                         backgroundColor: WidgetStateProperty.all<Color>(
-                          const Color.fromARGB(182, 59, 63, 21),
+                          global.theme.primaryColor,
                         ),
                         foregroundColor: WidgetStateProperty.all<Color>(
-                          Colors.white,
+                          global.theme.onPrimaryColor,
                         ),
                       ),
                       onPressed: () {
@@ -4776,12 +4752,12 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                               );
                           global.showSnackBar(
                             context,
-                            const Icon(
+                            Icon(
                               Icons.warning_amber,
-                              color: Colors.white,
+                              color: global.theme.onPrimaryColor,
                             ),
                             global.language("ref_dimension_is_disabled"),
-                            Colors.orange,
+                            global.theme.warningHighlightTextColor,
                           );
                         });
                       }
@@ -4812,7 +4788,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                   },
                   icon: const Icon(Icons.delete),
                   focusNode: FocusNode(skipTraversal: true),
-                  color: Colors.red,
+                  color: global.theme.negativeHighlightTextColor,
                   iconSize: 20,
                 ),
               ],
@@ -5248,8 +5224,8 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                     padding: const EdgeInsets.only(bottom: 10, top: 10),
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green.shade300,
-                        foregroundColor: Colors.black,
+                        backgroundColor: global.theme.positiveHighlightTextColor,
+                        foregroundColor: global.theme.textColor,
                       ),
                       focusNode: FocusNode(skipTraversal: true),
                       onPressed: () {
@@ -5317,7 +5293,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
 
                                 setState(() {});
                               },
-                              icon: const Icon(Icons.delete, color: Colors.red),
+                              icon: Icon(Icons.delete, color: global.theme.negativeHighlightTextColor),
                             ),
                           ],
                         ),
@@ -5718,11 +5694,11 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                                   .ordertypes![optionTypeIndex]
                                   .code
                                   .isNotEmpty)
-                              ? const Color.fromARGB(255, 171, 192, 233)
-                              : const Color.fromARGB(255, 199, 194, 194),
+                              ? global.theme.primaryLightColor
+                              : global.theme.surfaceColor,
                         ),
                         foregroundColor: WidgetStateProperty.all<Color>(
-                          Colors.black,
+                          global.theme.textColor,
                         ),
                       ),
                       onPressed: () {
@@ -5789,7 +5765,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                   },
                   icon: const Icon(Icons.delete),
                   focusNode: FocusNode(skipTraversal: true),
-                  color: Colors.red,
+                  color: global.theme.negativeHighlightTextColor,
                   iconSize: 20,
                 ),
               ],
@@ -5827,7 +5803,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
             },
             style: ButtonStyle(
               backgroundColor: WidgetStateProperty.all<Color>(
-                const Color.fromARGB(255, 65, 66, 74),
+                global.theme.primaryColor,
               ), // Set the background color here
             ),
             icon: Icon(Icons.add), // Set the icon here
@@ -5884,7 +5860,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                   },
                   icon: const Icon(Icons.delete),
                   focusNode: FocusNode(skipTraversal: true),
-                  color: Colors.red,
+                  color: global.theme.negativeHighlightTextColor,
                   iconSize: 20,
                 ),
                 if (optionIndex > 0)
@@ -5913,7 +5889,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                       });
                     },
                     icon: const Icon(Icons.move_down),
-                    color: Colors.red,
+                    color: global.theme.negativeHighlightTextColor,
                     focusNode: FocusNode(skipTraversal: true),
                     iconSize: 20,
                   ),
@@ -6030,7 +6006,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                   },
                   icon: const Icon(Icons.delete),
                   focusNode: FocusNode(skipTraversal: true),
-                  color: Colors.red,
+                  color: global.theme.negativeHighlightTextColor,
                   iconSize: 20,
                 ),
                 if (choiceIndex > 0)
@@ -6064,7 +6040,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                       });
                     },
                     icon: const Icon(Icons.move_down),
-                    color: Colors.green,
+                    color: global.theme.positiveHighlightTextColor,
                     focusNode: FocusNode(skipTraversal: true),
                     iconSize: 20,
                   ),
@@ -6140,7 +6116,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                         Center(
                           child: DecoratedBox(
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: global.theme.cardColor,
                               border: Border.all(color: global.theme.textColor),
                               borderRadius: BorderRadius.circular(5),
                               image:
@@ -6368,7 +6344,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
               width: double.infinity,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
+                  color: global.theme.surfaceColor,
                   border: Border.all(color: global.theme.textSecondaryColor),
                   borderRadius: BorderRadius.circular(5),
                 ),
@@ -6423,7 +6399,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
             width: double.infinity,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: global.theme.surfaceColor,
                 border: Border.all(color: global.theme.textSecondaryColor),
                 borderRadius: BorderRadius.circular(5),
               ),
@@ -6588,8 +6564,8 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
               padding: EdgeInsets.only(bottom: 10, top: 10),
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color.fromARGB(255, 67, 206, 74),
-                  foregroundColor: Colors.black,
+                  backgroundColor: global.theme.positiveHighlightTextColor,
+                  foregroundColor: global.theme.onPrimaryColor,
                 ),
                 focusNode: FocusNode(skipTraversal: true),
                 onPressed: () {
@@ -6633,7 +6609,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
 
                             setState(() {});
                           },
-                          icon: const Icon(Icons.delete, color: Colors.red),
+                          icon: Icon(Icons.delete, color: global.theme.negativeHighlightTextColor),
                         ),
                       ],
                     ),
@@ -6893,7 +6869,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
               Center(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: global.theme.cardColor,
                     border: Border.all(color: global.theme.textColor),
                     borderRadius: BorderRadius.circular(5),
                     image: (imageWeb != null)
@@ -6934,7 +6910,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
               heading: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: global.theme.cardColor,
                   border: Border.all(color: global.theme.textSecondaryColor),
                   borderRadius: BorderRadius.circular(5),
                 ),
@@ -7043,7 +7019,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
     }
 
     return Scaffold(
-      backgroundColor: isEditMode ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
+      backgroundColor: global.theme.cardColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: (isEditMode)
@@ -7069,6 +7045,8 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
             : null,
         title: Text(headerEdit + global.language("barcode")),
         actions: <Widget>[
+          EditFontSizeControl(onChanged: () => setState(() {})),
+          const SizedBox(width: 8),
           if (selectGuid.isNotEmpty)
             Tooltip(
               message: global.language("show_product_bom"),
@@ -7127,7 +7105,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                       actions: <Widget>[
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
+                            backgroundColor: global.theme.negativeHighlightTextColor,
                           ),
                           onPressed: () => Navigator.pop(context),
                           child: Text(global.language('no')),
@@ -7188,7 +7166,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                       actions: <Widget>[
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
+                            backgroundColor: global.theme.negativeHighlightTextColor,
                           ),
                           onPressed: () => Navigator.pop(context),
                           child: Text(global.language('no')),
@@ -7294,37 +7272,74 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
               // }
             }
           },
-          child: SingleChildScrollView(
-            controller: editScrollController,
-            scrollDirection: Axis.vertical,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.only(top: 10, bottom: 10),
-              child: (!isPreviewBom)
-                  ? Form(
-                      key: _formKey,
-                      child: Column(
-                        children: (isPreview)
-                            ? [
-                                ProductPreviewScreen(
-                                  screenData: screenData,
-                                  priceList: priceList,
-                                  imageWeb: imageWeb,
-                                  allProductBarcodes: listData
-                                      .where((item) =>
-                                          item.itemcode ==
-                                          screenData.itemcode)
-                                      .toList(),
-                                ),
-                              ]
-                            : formWidgets,
+          child: Builder(
+            builder: (context) {
+              final scale = global.editFontScaleFactor;
+              // เพิ่ม spacing ระหว่าง formWidgets ตาม scale
+              List<Widget> scaledFormWidgets = formWidgets;
+              if (scale > 1.0) {
+                final extraGap = 8.0 * (scale - 1);
+                scaledFormWidgets = [];
+                for (int i = 0; i < formWidgets.length; i++) {
+                  scaledFormWidgets.add(formWidgets[i]);
+                  if (i < formWidgets.length - 1) {
+                    scaledFormWidgets.add(SizedBox(height: extraGap));
+                  }
+                }
+              }
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(scale),
+                ),
+                child: Theme(
+                  data: Theme.of(context).copyWith(
+                    inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                      contentPadding: EdgeInsets.fromLTRB(
+                        12 * scale, 20 * scale, 12 * scale, 12 * scale,
                       ),
-                    )
-                  : ProductBomWidget(productBom: productBom),
-            ),
+                    ),
+                  ),
+                  child: IconTheme(
+                    data: IconTheme.of(context).copyWith(
+                      size: 24.0 * scale,
+                    ),
+                    child: SingleChildScrollView(
+                      controller: editScrollController,
+                      scrollDirection: Axis.vertical,
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          top: 10 * scale, bottom: 10 * scale,
+                        ),
+                        child: (!isPreviewBom)
+                            ? Form(
+                                key: _formKey,
+                                child: Column(
+                                  children: (isPreview)
+                                      ? [
+                                          ProductPreviewScreen(
+                                            screenData: screenData,
+                                            priceList: priceList,
+                                            imageWeb: imageWeb,
+                                            allProductBarcodes: listData
+                                                .where((item) =>
+                                                    item.itemcode ==
+                                                    screenData.itemcode)
+                                                .toList(),
+                                          ),
+                                        ]
+                                      : scaledFormWidgets,
+                                ),
+                              )
+                            : ProductBomWidget(productBom: productBom),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
-        ),
-      ),
+  ),
+),
     );
   }
 
@@ -7473,9 +7488,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                       loadingData = false;
                       global.showSnackBar(
                         context,
-                        const Icon(Icons.error_outline, color: Colors.white),
+                        Icon(Icons.error_outline, color: global.theme.onPrimaryColor),
                         state.message,
-                        Colors.red,
+                        global.theme.negativeHighlightTextColor,
                       );
                     });
                   }
@@ -7489,9 +7504,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                       loadingData = false;
                       global.showSnackBar(
                         context,
-                        const Icon(Icons.error_outline, color: Colors.white),
+                        Icon(Icons.error_outline, color: global.theme.onPrimaryColor),
                         state.message,
-                        Colors.red,
+                        global.theme.negativeHighlightTextColor,
                       );
                     });
                   }
@@ -7500,9 +7515,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                     setState(() {
                       global.showSnackBar(
                         context,
-                        Icon(Icons.save, color: Colors.white),
+                        Icon(Icons.save, color: global.theme.onPrimaryColor),
                         global.language("save_success"),
-                        Colors.blue,
+                        global.theme.primaryColor,
                       );
                       clearEditData();
                       listData = [];
@@ -7518,9 +7533,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                     setState(() {
                       global.showSnackBar(
                         context,
-                        Icon(Icons.save, color: Colors.white),
+                        Icon(Icons.save, color: global.theme.onPrimaryColor),
                         "//${global.language("not_success_save")} : ${state.message}",
-                        Colors.red,
+                        global.theme.negativeHighlightTextColor,
                       );
                     });
                   }
@@ -7528,9 +7543,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                   if (state is ProductBarcodeUpdateSuccess) {
                     global.showSnackBar(
                       context,
-                      Icon(Icons.edit, color: Colors.white),
+                      Icon(Icons.edit, color: global.theme.onPrimaryColor),
                       global.language("edit_success"),
-                      Colors.blue,
+                      global.theme.primaryColor,
                     );
                     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
                       tabController.animateTo(0);
@@ -7549,9 +7564,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                     setState(() {
                       global.showSnackBar(
                         context,
-                        Icon(Icons.edit, color: Colors.white),
+                        Icon(Icons.edit, color: global.theme.onPrimaryColor),
                         "${global.language("not_edit_success")} : ${state.message}",
-                        Colors.red,
+                        global.theme.negativeHighlightTextColor,
                       );
                     });
                   }
@@ -7560,9 +7575,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                     setState(() {
                       global.showSnackBar(
                         context,
-                        Icon(Icons.delete, color: Colors.white),
+                        Icon(Icons.delete, color: global.theme.onPrimaryColor),
                         global.language("delete_success"),
-                        Colors.blue,
+                        global.theme.primaryColor,
                       );
                       listData = [];
                       clearEditData();
@@ -7580,9 +7595,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                     setState(() {
                       global.showSnackBar(
                         context,
-                        Icon(Icons.delete, color: Colors.white),
+                        Icon(Icons.delete, color: global.theme.onPrimaryColor),
                         "${global.language("not_delete_success")} : ${state.message}",
-                        Colors.red,
+                        global.theme.negativeHighlightTextColor,
                       );
                     });
                   }
@@ -7591,9 +7606,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                     setState(() {
                       global.showSnackBar(
                         context,
-                        Icon(Icons.delete, color: Colors.white),
+                        Icon(Icons.delete, color: global.theme.onPrimaryColor),
                         "${global.language("not_delete_success")} : ${state.message}",
-                        Colors.blue,
+                        global.theme.primaryColor,
                       );
                       listData = [];
                       clearEditData();
@@ -7609,9 +7624,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                     setState(() {
                       global.showSnackBar(
                         context,
-                        Icon(Icons.delete, color: Colors.white),
+                        Icon(Icons.delete, color: global.theme.onPrimaryColor),
                         "${global.language("not_delete_success")} : ${state.message}",
-                        Colors.red,
+                        global.theme.negativeHighlightTextColor,
                       );
                     });
                   }
@@ -7631,9 +7646,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                     setState(() {
                       global.showSnackBar(
                         context,
-                        const Icon(Icons.error_outline, color: Colors.white),
+                        Icon(Icons.error_outline, color: global.theme.onPrimaryColor),
                         '❌ โหลดข้อมูลสินค้าล้มเหลว: ${state.message}',
-                        Colors.red,
+                        global.theme.negativeHighlightTextColor,
                       );
                     });
                   }
@@ -7987,9 +8002,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                     context.loaderOverlay.hide();
                     global.showSnackBar(
                       context,
-                      const Icon(Icons.error_outline, color: Colors.white),
+                      Icon(Icons.error_outline, color: global.theme.onPrimaryColor),
                       state.message,
-                      Colors.red,
+                      global.theme.negativeHighlightTextColor,
                     );
                   }
                 },
@@ -8041,17 +8056,17 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                   } else if (state is ProductBarcodeExportSuccess) {
                     global.showSnackBar(
                       context,
-                      Icon(Icons.save, color: Colors.white),
+                      Icon(Icons.save, color: global.theme.onPrimaryColor),
                       global.language("export_success"),
-                      Colors.blue,
+                      global.theme.primaryColor,
                     );
                   } else if (state is ProductBarcodeExportFailed) {
                     // Show an error message
                     global.showSnackBar(
                       context,
-                      Icon(Icons.save, color: Colors.white),
+                      Icon(Icons.save, color: global.theme.onPrimaryColor),
                       "${global.language("not_export_success")} : ${state.message}",
-                      Colors.red,
+                      global.theme.negativeHighlightTextColor,
                     );
                   }
                 },
@@ -8150,7 +8165,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
             child: (constraints.maxWidth > 800)
                 ? SplitView(
                     gripSize: 8,
-                    gripColor: global.theme.appBarColor,
+                    gripColor: global.theme.dividerBorderColor,
                     gripColorActive: global.theme.primaryColor,
                     viewMode: SplitViewMode.Horizontal,
                     indicator: const SplitIndicator(

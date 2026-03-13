@@ -169,7 +169,7 @@ class PaymentSummaryWidget extends StatelessWidget {
               child: Text(
                 global.language('no_payment'),
                 style: TextStyle(
-                  color: Colors.grey.shade500,
+                  color: global.theme.textSecondaryColor,
                   fontSize: 14,
                   fontStyle: FontStyle.italic,
                 ),
@@ -223,12 +223,12 @@ class PaymentSummaryWidget extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: hasAmount ? Colors.blue.shade300 : Colors.grey.shade300,
+              color: hasAmount ? global.theme.infoHighlightTextColor : global.theme.dividerBorderColor,
               width: 2,
             ),
             boxShadow: [
               BoxShadow(
-                color: (hasAmount ? Colors.blue.shade100 : Colors.grey.shade200)
+                color: (hasAmount ? global.theme.infoHighlightColor : global.theme.dividerBorderColor)
                     .withValues(alpha: 0.5),
                 blurRadius: 6,
                 offset: const Offset(0, 3),
@@ -242,7 +242,7 @@ class PaymentSummaryWidget extends StatelessWidget {
                 width: double.infinity,
                 height: double.infinity,
                 decoration: BoxDecoration(
-                  color: hasAmount ? Colors.blue.shade50 : Colors.white,
+                  color: hasAmount ? global.theme.infoHighlightColor : global.theme.cardColor,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Column(
@@ -256,8 +256,8 @@ class PaymentSummaryWidget extends StatelessWidget {
                       style: TextStyle(
                         fontSize: titleSize,
                         color: hasAmount
-                            ? Colors.blue.shade800
-                            : Colors.grey.shade700,
+                            ? global.theme.infoHighlightTextColor
+                            : global.theme.textColor,
                         fontWeight: FontWeight.w700,
                       ),
                       maxLines: 2,
@@ -273,8 +273,8 @@ class PaymentSummaryWidget extends StatelessWidget {
                       style: TextStyle(
                         fontSize: amountSize,
                         color: hasAmount
-                            ? Colors.blue.shade900
-                            : Colors.grey.shade800,
+                            ? global.theme.infoHighlightTextColor
+                            : global.theme.textColor,
                         fontWeight: FontWeight.bold,
                       ),
                       maxLines: 1,
@@ -292,8 +292,8 @@ class PaymentSummaryWidget extends StatelessWidget {
                   icon,
                   size: 70,
                   color: hasAmount
-                      ? Colors.blue.shade300.withValues(alpha: 0.1)
-                      : Colors.grey.shade300.withValues(alpha: 0.3),
+                      ? global.theme.infoHighlightTextColor.withValues(alpha: 0.1)
+                      : global.theme.dividerBorderColor.withValues(alpha: 0.3),
                 ),
               ),
             ],

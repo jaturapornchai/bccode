@@ -12,7 +12,7 @@ class DashBoardDatabaseMasterInfo extends StatefulWidget {
 }
 
 class _DashBoardDatabaseMasterInfoState
-    extends State<DashBoardDatabaseMasterInfo> {
+    extends State<DashBoardDatabaseMasterInfo> with global.ThemeRefreshMixin {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -27,7 +27,7 @@ class _DashBoardDatabaseMasterInfoState
               children: [
                 Text(
                   global.language('database_master_info.data_by_type'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
@@ -35,7 +35,7 @@ class _DashBoardDatabaseMasterInfoState
                 BlocBuilder<DatabaseMasterInfoCubit, DatabaseMasterInfoState>(
                   builder: (context, state) {
                     return IconButton(
-                      icon: const Icon(Icons.refresh),
+                      icon: Icon(Icons.refresh),
                       onPressed: () {
                         context.read<DatabaseMasterInfoCubit>().refresh();
                       },
@@ -60,7 +60,7 @@ class _DashBoardDatabaseMasterInfoState
                 if (state is DatabaseMasterInfoError) {
                   return Card(
                     child: ListTile(
-                      leading: const Icon(Icons.error, color: Colors.red),
+                      leading: Icon(Icons.error, color: global.theme.negativeHighlightTextColor),
                       title: Text(global.language('error')),
                       subtitle: Text(state.message),
                     ),
@@ -72,7 +72,7 @@ class _DashBoardDatabaseMasterInfoState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Table(
-                        border: TableBorder.all(color: Colors.grey[300]!),
+                        border: TableBorder.all(color: global.theme.dividerBorderColor),
                         columnWidths: const {
                           0: FixedColumnWidth(60),
                           1: FlexColumnWidth(3),
@@ -81,7 +81,7 @@ class _DashBoardDatabaseMasterInfoState
                         children: [
                           // Header Row
                           TableRow(
-                            decoration: BoxDecoration(color: Colors.blue[100]),
+                            decoration: BoxDecoration(color: global.theme.columnHeaderColor),
                             children: [
                               const Padding(
                                 padding: EdgeInsets.all(4.0),
@@ -100,7 +100,7 @@ class _DashBoardDatabaseMasterInfoState
                                   global.language(
                                     'database_master_info.data_type',
                                   ),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
                                   ),
@@ -112,7 +112,7 @@ class _DashBoardDatabaseMasterInfoState
                                   global.language(
                                     'database_master_info.item_count',
                                   ),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
                                   ),
@@ -174,8 +174,8 @@ class _DashBoardDatabaseMasterInfoState
                             return TableRow(
                               decoration: BoxDecoration(
                                 color: index % 2 == 0
-                                    ? Colors.white
-                                    : Colors.grey[50],
+                                    ? global.theme.columnAlternateEvenColor
+                                    : global.theme.columnAlternateOddColor,
                               ),
                               children: [
                                 Padding(
@@ -183,7 +183,7 @@ class _DashBoardDatabaseMasterInfoState
                                   child: Text(
                                     '${index + 1}',
                                     style: TextStyle(
-                                      color: Colors.grey[600],
+                                      color: global.theme.iconSecondaryColor,
                                       fontSize: 12,
                                     ),
                                     textAlign: TextAlign.center,
@@ -193,7 +193,7 @@ class _DashBoardDatabaseMasterInfoState
                                   padding: const EdgeInsets.all(4.0),
                                   child: Text(
                                     getDataTypeName(tableName),
-                                    style: const TextStyle(fontSize: 13),
+                                    style: TextStyle(fontSize: 13),
                                   ),
                                 ),
                                 Padding(
@@ -205,7 +205,7 @@ class _DashBoardDatabaseMasterInfoState
                                         vertical: 4,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Colors.blue[100],
+                                        color: global.theme.columnHeaderColor.withValues(alpha: 0.5),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Text(
@@ -213,7 +213,7 @@ class _DashBoardDatabaseMasterInfoState
                                           item['xcount']?.toDouble() ?? 0.0,
                                         ),
                                         style: TextStyle(
-                                          color: Colors.blue[900],
+                                          color: global.theme.columnHeaderTextColor,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 12,
                                         ),
@@ -231,7 +231,7 @@ class _DashBoardDatabaseMasterInfoState
                 } else {
                   return Card(
                     child: ListTile(
-                      leading: const Icon(Icons.info, color: Colors.blue),
+                      leading: Icon(Icons.info, color: global.theme.infoHighlightTextColor),
                       title: Text(global.language('no_data_available')),
                     ),
                   );

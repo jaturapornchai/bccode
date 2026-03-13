@@ -35,7 +35,8 @@ class MultiEntitySearchScreen extends StatefulWidget {
       _MultiEntitySearchScreenState();
 }
 
-class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
+class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen>
+    with global.ThemeRefreshMixin {
   TextEditingController searchController = TextEditingController();
   FocusNode searchFocusNode = FocusNode(skipTraversal: true);
   ScrollController listScrollController = ScrollController();
@@ -43,6 +44,7 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
   List<dynamic> entityListData = []; // Can hold CreditorModel or EmployeeModel
   Set<String> selectedEntityGuids = {};
   final _debouncer = global.Debouncer(1000);
+  int _hoverIndex = -1;
 
   // Performance optimization - cache loaded data
   bool _isLoading = false;
@@ -310,7 +312,7 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: global.theme.cardColor,
       body: Focus(
         focusNode: FocusNode(skipTraversal: true, canRequestFocus: true),
         onKey: (node, event) {
@@ -439,11 +441,11 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
               // Simple AppBar
               AppBar(
                 title: Text('${_getTitle()} (${selectedEntityGuids.length})'),
-                backgroundColor: Colors.indigo.shade600,
-                foregroundColor: Colors.white,
+                backgroundColor: global.theme.primaryColor,
+                foregroundColor: global.theme.onPrimaryColor,
                 elevation: 1,
                 leading: IconButton(
-                  icon: const Icon(Icons.arrow_back),
+                  icon: Icon(Icons.arrow_back),
                   onPressed: () {
                     Navigator.pop(context, EntitySelectionModel.cancelled());
                   },
@@ -452,14 +454,14 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
                   // ซ่อน Select All สำหรับ barcode
                   if (widget.entityType != EntityType.barcode)
                     IconButton(
-                      icon: const Icon(Icons.select_all),
+                      icon: Icon(Icons.select_all),
                       onPressed: selectAllVisible,
                       tooltip: global.language('select_all'),
                     ),
 
                   // Clear All
                   IconButton(
-                    icon: const Icon(Icons.clear_all),
+                    icon: Icon(Icons.clear_all),
                     onPressed: clearAllSelection,
                     tooltip: global.language('clear_all'),
                   ),
@@ -467,7 +469,7 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
                   // Confirm Button
                   if (selectedEntityGuids.isNotEmpty)
                     IconButton(
-                      icon: const Icon(Icons.check),
+                      icon: Icon(Icons.check),
                       onPressed: () {
                         Navigator.pop(
                           context,
@@ -488,12 +490,12 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
                 margin: const EdgeInsets.all(8),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: global.theme.dividerBorderColor,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.search, color: Colors.grey.shade600),
+                    Icon(Icons.search, color: global.theme.textSecondaryColor),
                     const SizedBox(width: 8),
                     Expanded(
                       child: TextFormField(
@@ -516,9 +518,12 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
                         autofocus: true,
                         focusNode: searchFocusNode,
                         controller: searchController,
+                        style: TextStyle(color: global.theme.textColor),
                         decoration: InputDecoration(
+                          filled: false,
                           border: InputBorder.none,
                           hintText: _getSearchHint(),
+                          hintStyle: TextStyle(color: global.theme.formHintColor),
                           contentPadding: const EdgeInsets.symmetric(
                             vertical: 12,
                           ),
@@ -527,7 +532,7 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
                     ),
                     if (searchController.text.isNotEmpty)
                       IconButton(
-                        icon: Icon(Icons.clear, color: Colors.grey.shade600),
+                        icon: Icon(Icons.clear, color: global.theme.textSecondaryColor),
                         onPressed: () {
                           searchController.clear();
                           setState(() {
@@ -578,11 +583,11 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
+          Icon(Icons.search_off, size: 64, color: global.theme.iconSecondaryColor),
           SizedBox(height: 16),
           Text(
             searchText.isEmpty ? global.language('no_data') : global.language('import_product_detail.no_data_found'),
-            style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 18, color: global.theme.textSecondaryColor),
           ),
           if (searchText.isNotEmpty) ...[
             SizedBox(height: 16),
@@ -605,81 +610,6 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
     );
   }
 
-  Widget _buildEntityItem(dynamic entity) {
-    String guid, code, name;
-
-    if (entity is CreditorModel) {
-      guid = entity.guidfixed;
-      code = entity.code;
-      name = global.packName(entity.names);
-    } else if (entity is DebtorModel) {
-      guid = entity.guidfixed;
-      code = entity.code;
-      name = global.packName(entity.names);
-    } else if (entity is EmployeeModel) {
-      guid = entity.guidfixed;
-      code = entity.code;
-      name = entity.name;
-    } else if (entity is ProductBarcodeModel) {
-      // เพิ่มการจัดการ ProductBarcodeModel
-      guid = entity.guidfixed;
-      code = entity.barcode!;
-      name = global.packName(entity.names!);
-    } else {
-      // Fallback case
-      guid = '';
-      code = '';
-      name = 'Unknown Entity';
-    }
-
-    final isSelected = selectedEntityGuids.contains(guid);
-
-    return ListTile(
-      leading: widget.entityType == EntityType.barcode
-          ? Icon(Icons.qr_code, color: Colors.purple.shade600)
-          : Checkbox(
-              value: isSelected,
-              onChanged: (_) => toggleEntitySelection(entity),
-              activeColor: Colors.indigo.shade600,
-            ),
-      title: Text(
-        name,
-        style: TextStyle(
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-        ),
-      ),
-      subtitle: Text(
-        widget.entityType == EntityType.barcode
-            ? 'รหัสบาร์โค้ด: $code'
-            : 'รหัส: $code',
-      ),
-      onTap: () {
-        if (widget.entityType == EntityType.barcode) {
-          // สำหรับ barcode: เลือกแล้วกลับทันที
-          final selectedEntity = SearchGuidCodeNameModel(
-            guid: guid,
-            code: code,
-            names: entity is ProductBarcodeModel
-                ? entity.names!
-                : [LanguageDataModel(code: 'th', name: name)],
-            isCancel: false,
-          );
-          Navigator.pop(
-            context,
-            EntitySelectionModel.fromEntities([selectedEntity]),
-          );
-        } else {
-          // สำหรับประเภทอื่น: ใช้ toggle selection ปกติ
-          toggleEntitySelection(entity);
-        }
-      },
-      tileColor: isSelected ? Colors.indigo.shade50 : null,
-      trailing: isSelected
-          ? Icon(Icons.check_circle, color: Colors.indigo.shade600)
-          : null,
-    );
-  }
-
   /// สร้าง widget แสดงรายการแบบ wrap grid (แทน ListView)
   Widget _buildEntityGrid() {
     return SingleChildScrollView(
@@ -688,13 +618,13 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
-        children: [...entityListData.map((entity) => _buildEntityCard(entity))],
+        children: [...entityListData.asMap().entries.map((e) => _buildEntityCard(e.value, e.key))],
       ),
     );
   }
 
   /// สร้าง card สำหรับแต่ละ entity
-  Widget _buildEntityCard(dynamic entity) {
+  Widget _buildEntityCard(dynamic entity, [int index = 0]) {
     String guid, code, name;
 
     if (entity is CreditorModel) {
@@ -721,7 +651,11 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
 
     final isSelected = selectedEntityGuids.contains(guid);
 
-    return GestureDetector(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () {
         if (widget.entityType == EntityType.barcode) {
           // สำหรับ barcode: เลือกแล้วกลับทันที
@@ -745,15 +679,15 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
         width: 160,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.indigo.shade50 : Colors.white,
+          color: isSelected ? global.theme.primaryColor.withValues(alpha: 0.1) : global.theme.cardColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? Colors.indigo.shade400 : Colors.grey.shade300,
+            color: isSelected ? global.theme.primaryColor : global.theme.dividerBorderColor,
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: global.theme.textColor.withValues(alpha: 0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -770,8 +704,8 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: widget.entityType == EntityType.barcode
-                        ? Colors.purple.shade100
-                        : Colors.indigo.shade100,
+                        ? global.theme.primaryColor.withValues(alpha: 0.15)
+                        : global.theme.primaryColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -784,8 +718,8 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
                         : Icons.people,
                     size: 16,
                     color: widget.entityType == EntityType.barcode
-                        ? Colors.purple.shade600
-                        : Colors.indigo.shade600,
+                        ? global.theme.primaryColor
+                        : global.theme.primaryColor,
                   ),
                 ),
                 const Spacer(),
@@ -794,14 +728,14 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
                     : Checkbox(
                         value: isSelected,
                         onChanged: (_) => toggleEntitySelection(entity),
-                        activeColor: Colors.indigo.shade600,
+                        activeColor: global.theme.primaryColor,
                         visualDensity: VisualDensity.compact,
                       ),
                 if (isSelected)
                   Icon(
                     Icons.check_circle,
                     size: 18,
-                    color: Colors.indigo.shade600,
+                    color: global.theme.primaryColor,
                   ),
               ],
             ),
@@ -812,7 +746,7 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
+                color: global.theme.textColor,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -825,8 +759,8 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
                   fontSize: 13,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   color: isSelected
-                      ? Colors.indigo.shade700
-                      : Colors.grey.shade800,
+                      ? global.theme.primaryColor
+                      : global.theme.textColor,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -838,8 +772,8 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: widget.entityType == EntityType.barcode
-                    ? Colors.purple.shade50
-                    : Colors.indigo.shade50,
+                    ? global.theme.primaryColor.withValues(alpha: 0.1)
+                    : global.theme.primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
@@ -853,8 +787,8 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
                 style: TextStyle(
                   fontSize: 10,
                   color: widget.entityType == EntityType.barcode
-                      ? Colors.purple.shade600
-                      : Colors.indigo.shade600,
+                      ? global.theme.primaryColor
+                      : global.theme.primaryColor,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -862,6 +796,7 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -875,21 +810,21 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
       margin: const EdgeInsets.all(8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.orange.shade50,
+        color: global.theme.warningHighlightColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange.shade300),
+        border: Border.all(color: global.theme.warningHighlightTextColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.handshake, color: Colors.orange.shade600, size: 20),
+              Icon(Icons.handshake, color: global.theme.warningHighlightTextColor, size: 20),
               const SizedBox(width: 8),
               Text(
                 'คู่ค้าที่เลือก (${selectedEntities.length})',
                 style: TextStyle(
-                  color: Colors.orange.shade700,
+                  color: global.theme.warningHighlightTextColor,
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
                 ),
@@ -907,7 +842,7 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
                 ),
                 child: Text(
                   global.language('clear_all'),
-                  style: TextStyle(color: Colors.red.shade600, fontSize: 12),
+                  style: TextStyle(color: global.theme.negativeHighlightTextColor, fontSize: 12),
                 ),
               ),
             ],
@@ -934,12 +869,12 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.orange.shade400),
+        border: Border.all(color: global.theme.warningHighlightTextColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: global.theme.textColor.withValues(alpha: 0.1),
             blurRadius: 2,
             offset: const Offset(0, 1),
           ),
@@ -951,7 +886,7 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
           Container(
             padding: const EdgeInsets.all(2),
             decoration: BoxDecoration(
-              color: Colors.orange.shade100,
+              color: global.theme.infoHighlightColor,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -963,7 +898,7 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
                   ? Icons.people
                   : Icons.qr_code,
               size: 12,
-              color: Colors.orange.shade600,
+              color: global.theme.warningHighlightTextColor,
             ),
           ),
           const SizedBox(width: 6),
@@ -971,7 +906,7 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
             child: Text(
               entity.code,
               style: TextStyle(
-                color: Colors.orange.shade700,
+                color: global.theme.warningHighlightTextColor,
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
               ),
@@ -984,7 +919,7 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
             child: Text(
               displayName,
               style: TextStyle(
-                color: Colors.orange.shade700,
+                color: global.theme.warningHighlightTextColor,
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
               ),
@@ -1003,10 +938,10 @@ class _MultiEntitySearchScreenState extends State<MultiEntitySearchScreen> {
             child: Container(
               padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
-                color: Colors.red.shade100,
+                color: global.theme.negativeHighlightColor,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(Icons.close, size: 12, color: Colors.red.shade600),
+              child: Icon(Icons.close, size: 12, color: global.theme.negativeHighlightTextColor),
             ),
           ),
         ],

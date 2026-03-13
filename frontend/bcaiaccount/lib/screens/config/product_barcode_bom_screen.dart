@@ -276,15 +276,6 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
                     '(${listData.length})',
                     style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
                   ),
-                  IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    icon: const Icon(Icons.line_weight),
-                    onPressed: () async {
-                      setState(() {
-                        global.listDataLineSpaceChange();
-                      });
-                    },
-                  ),
                 ],
               ),
             ),
@@ -451,8 +442,12 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
         ? TextStyle(
             fontSize: global.deviceConfig.listDataFontSize,
             fontWeight: FontWeight.bold,
+            color: global.theme.textColor,
           )
-        : TextStyle(fontSize: global.deviceConfig.listDataFontSize);
+        : TextStyle(
+            fontSize: global.deviceConfig.listDataFontSize,
+            color: global.theme.textSecondaryColor,
+          );
 
     // ลบการ add key ออก - keys ถูกสร้างใน LoadSuccess แล้ว
     // listKeys.add(GlobalKey());  // ❌ ตรงนี้ทำให้เกิด infinite loop!
@@ -659,7 +654,7 @@ class ProductBarcodeBomScreenState extends State<ProductBarcodeBomScreen>
         title: Text(global.language("product_bom")),
       ),
       body: LoaderOverlay(
-        overlayColor: Colors.white,
+        overlayColor: global.theme.cardColor,
         child: SizedBox(
           child: (productBom.bom!.isNotEmpty)
               ? ProductBomWidget(productBom: productBom)

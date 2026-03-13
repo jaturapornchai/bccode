@@ -1,0 +1,493 @@
+{
+  "id": "payment_voucher",
+  "name": "ใบสำคัญจ่าย",
+  "description": "ใบสำคัญจ่าย / Payment Voucher",
+  "paperSize": "A4",
+  "header": {
+    "id": "header",
+    "type": "header",
+    "height": 120.0,
+    "backgroundImagePath": null,
+    "rows": [
+      {
+        "id": "row_0",
+        "cells": [
+          {
+            "id": "logo",
+            "type": "dataField",
+            "flex": 0.6,
+            "dataBindingKey": "company_logo",
+            "fontSize": 7.0,
+            "minHeight": 28.8
+          },
+          {
+            "id": "sep_h",
+            "type": "separator",
+            "flex": 1,
+            "fontSize": 7.0,
+            "borderColor": 4278190080,
+            "borderWidth": 0.5,
+            "lineStyle": "solid"
+          },
+          {
+            "id": "company_name",
+            "type": "dataField",
+            "flex": 2.3,
+            "dataBindingKey": "company_name",
+            "fontSize": 10.0,
+            "fontBold": true,
+            "textColor": 4278190080
+          },
+          {
+            "id": "title",
+            "type": "text",
+            "flex": 1.7,
+            "text": "ใบสำคัญจ่าย / PAYMENT VOUCHER",
+            "fontSize": 12.0,
+            "fontBold": true,
+            "textAlign": 1,
+            "textColor": 4278190080
+          }
+        ]
+      },
+      {
+        "id": "row_0b",
+        "cells": [
+          {
+            "id": "addr_spacer",
+            "type": "text",
+            "flex": 0.6,
+            "text": "",
+            "fontSize": 7.0
+          },
+          {
+            "id": "sep_h2",
+            "type": "separator",
+            "flex": 1,
+            "fontSize": 7.0,
+            "borderColor": 4278190080,
+            "borderWidth": 0.5,
+            "lineStyle": "solid"
+          },
+          {
+            "id": "company_address",
+            "type": "dataField",
+            "flex": 2.3,
+            "dataBindingKey": "company_address",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "title_spacer",
+            "type": "text",
+            "flex": 1.7,
+            "text": "",
+            "fontSize": 7.0
+          }
+        ]
+      },
+      {
+        "id": "row_0c",
+        "cells": [
+          {
+            "id": "tax_spacer",
+            "type": "text",
+            "flex": 0.6,
+            "text": "",
+            "fontSize": 7.0
+          },
+          {
+            "id": "sep_h3",
+            "type": "separator",
+            "flex": 1,
+            "fontSize": 7.0,
+            "borderColor": 4278190080,
+            "borderWidth": 0.5,
+            "lineStyle": "solid"
+          },
+          {
+            "id": "tax_label",
+            "type": "text",
+            "fixedWidth": 90.0,
+            "text": "เลขประจำตัวผู้เสียภาษี:",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "company_tax_id",
+            "type": "dataField",
+            "flex": 2.3,
+            "dataBindingKey": "company_tax_id",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          }
+        ]
+      },
+      {
+        "id": "row_1",
+        "cells": [
+          {
+            "id": "payee_label",
+            "type": "text",
+            "fixedWidth": 27.0,
+            "text": "จ่ายให้:",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "contact_name",
+            "type": "dataField",
+            "flex": 2.0,
+            "dataBindingKey": "contact_name",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "docno_label",
+            "type": "text",
+            "fixedWidth": 24.0,
+            "text": "เลขที่:",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "doc_number",
+            "type": "dataField",
+            "flex": 1.1,
+            "dataBindingKey": "doc_number",
+            "fontSize": 7.0,
+            "fontBold": true,
+            "textColor": 4278190080,
+            "textAlign": 2
+          }
+        ]
+      },
+      {
+        "id": "row_2",
+        "cells": [
+          {
+            "id": "payee_addr",
+            "type": "text",
+            "fixedWidth": 24.0,
+            "text": "ที่อยู่:",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "contact_address",
+            "type": "dataField",
+            "flex": 2.1,
+            "dataBindingKey": "contact_address",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "docdate_label",
+            "type": "text",
+            "fixedWidth": 24.0,
+            "text": "วันที่:",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "doc_date",
+            "type": "dataField",
+            "flex": 1.1,
+            "dataBindingKey": "doc_date_be",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          }
+        ]
+      },
+      {
+        "id": "row_3",
+        "cells": [
+          {
+            "id": "payee_tax",
+            "type": "text",
+            "flex": 0.6,
+            "text": "เลขผู้เสียภาษี:",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "contact_tax_id",
+            "type": "dataField",
+            "flex": 1.4,
+            "dataBindingKey": "contact_tax_id",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "docref_label",
+            "type": "text",
+            "fixedWidth": 27.0,
+            "text": "อ้างอิง:",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "doc_ref",
+            "type": "dataField",
+            "flex": 1.1,
+            "dataBindingKey": "doc_ref",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          }
+        ]
+      }
+    ]
+  },
+  "detail": {
+    "id": "detail",
+    "type": "detail",
+    "height": 270.0,
+    "backgroundImagePath": null,
+    "rows": [
+      {
+        "id": "row_0",
+        "cells": [
+          {
+            "id": "items_table",
+            "type": "table",
+            "flex": 1,
+            "fontSize": 7.0,
+            "textColor": 4278190080,
+            "borderColor": 4278190080,
+            "borderWidth": 0.5,
+            "rows": 2,
+            "columns": 3,
+            "tableData": [
+              [
+                "ลำดับ",
+                "รายละเอียด",
+                "จำนวนเงิน"
+              ],
+              [
+                "line_number",
+                "item_name",
+                "item_amount"
+              ]
+            ],
+            "tableHasHeader": true,
+            "columnAligns": [
+              1,
+              0,
+              2
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "id": "footer",
+    "type": "footer",
+    "height": 102.0,
+    "backgroundImagePath": null,
+    "rows": [
+      {
+        "id": "row_0",
+        "cells": [
+          {
+            "id": "total_text_label",
+            "type": "text",
+            "flex": 0.8,
+            "text": "จำนวนเงิน (ตัวอักษร):",
+            "fontSize": 7.0,
+            "textColor": 4278190080
+          },
+          {
+            "id": "total_text",
+            "type": "dataField",
+            "flex": 1.6,
+            "dataBindingKey": "total_text",
+            "fontSize": 7.0,
+            "fontBold": true,
+            "textColor": 4278190080,
+            "textAlign": 2
+          },
+          {
+            "id": "subtotal_label",
+            "type": "text",
+            "flex": 0.6,
+            "text": "รวมเงิน",
+            "fontSize": 7.0,
+            "textAlign": 1,
+            "textColor": 4278190080
+          },
+          {
+            "id": "subtotal",
+            "type": "dataField",
+            "flex": 0.7,
+            "dataBindingKey": "subtotal",
+            "fontSize": 7.0,
+            "textAlign": 2,
+            "textColor": 4278190080
+          }
+        ]
+      },
+      {
+        "id": "row_1",
+        "cells": [
+          {
+            "id": "wht_spacer",
+            "type": "text",
+            "flex": 2.4,
+            "text": "",
+            "fontSize": 7.0
+          },
+          {
+            "id": "wht_label",
+            "type": "text",
+            "flex": 0.6,
+            "text": "หัก ณ ที่จ่าย",
+            "fontSize": 7.0,
+            "textAlign": 1,
+            "textColor": 4278190080
+          },
+          {
+            "id": "wht",
+            "type": "dataField",
+            "flex": 0.7,
+            "dataBindingKey": "withholding_tax",
+            "fontSize": 7.0,
+            "textAlign": 2,
+            "textColor": 4278190080
+          }
+        ]
+      },
+      {
+        "id": "row_2",
+        "cells": [
+          {
+            "id": "vat_spacer",
+            "type": "text",
+            "flex": 2.4,
+            "text": "",
+            "fontSize": 7.0
+          },
+          {
+            "id": "vat_label",
+            "type": "text",
+            "flex": 0.6,
+            "text": "ภาษีมูลค่าเพิ่ม",
+            "fontSize": 7.0,
+            "textAlign": 1,
+            "textColor": 4278190080
+          },
+          {
+            "id": "vat_amount",
+            "type": "dataField",
+            "flex": 0.7,
+            "dataBindingKey": "vat_amount",
+            "fontSize": 7.0,
+            "textAlign": 2,
+            "textColor": 4278190080
+          }
+        ]
+      },
+      {
+        "id": "row_3",
+        "cells": [
+          {
+            "id": "sep_total",
+            "type": "separator",
+            "flex": 1.4,
+            "fontSize": 7.0,
+            "borderColor": 4278190080,
+            "borderWidth": 0.5,
+            "lineStyle": "solid"
+          }
+        ]
+      },
+      {
+        "id": "row_4",
+        "cells": [
+          {
+            "id": "net_spacer",
+            "type": "text",
+            "flex": 2.4,
+            "text": "",
+            "fontSize": 7.0
+          },
+          {
+            "id": "net_label",
+            "type": "text",
+            "flex": 0.6,
+            "text": "จ่ายสุทธิ",
+            "fontSize": 8.0,
+            "fontBold": true,
+            "textAlign": 1,
+            "textColor": 4278190080
+          },
+          {
+            "id": "net_amount",
+            "type": "dataField",
+            "flex": 0.7,
+            "dataBindingKey": "net_amount",
+            "fontSize": 8.0,
+            "fontBold": true,
+            "textAlign": 2,
+            "textColor": 4278190080
+          }
+        ]
+      },
+      {
+        "id": "row_5",
+        "cells": [
+          {
+            "id": "prepared_signature",
+            "type": "signature",
+            "flex": 1.1,
+            "text": "ผู้จัดทำ",
+            "dataBindingKey": "prepared_by",
+            "fontSize": 7.0,
+            "textAlign": 2,
+            "textColor": 4278190080
+          },
+          {
+            "id": "approved_signature",
+            "type": "signature",
+            "flex": 1.1,
+            "text": "ผู้อนุมัติ",
+            "dataBindingKey": "approved_by",
+            "fontSize": 7.0,
+            "textAlign": 2,
+            "textColor": 4278190080
+          },
+          {
+            "id": "received_signature",
+            "type": "signature",
+            "flex": 1.1,
+            "text": "ผู้รับเงิน",
+            "dataBindingKey": "received_by",
+            "fontSize": 7.0,
+            "textAlign": 2,
+            "textColor": 4278190080
+          },
+          {
+            "id": "page_num",
+            "type": "pageNumber",
+            "flex": 0.7,
+            "fontSize": 7.0,
+            "textAlign": 1,
+            "textColor": 4288585374
+          }
+        ],
+        "paddingTop": 17.0
+      }
+    ]
+  },
+  "globalBackgroundImagePath": null,
+  "createdAt": "2024-01-01T00:00:00.000",
+  "updatedAt": "2024-01-01T00:00:00.000",
+  "printMode": "color",
+  "multiPageEnabled": true,
+  "detailRowsPerPage": 15,
+  "documentType": "payment_voucher",
+  "marginTop": 20.0,
+  "marginBottom": 20.0,
+  "marginLeft": 20.0,
+  "marginRight": 20.0
+}

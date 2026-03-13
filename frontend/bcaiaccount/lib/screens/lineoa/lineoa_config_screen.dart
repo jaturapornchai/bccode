@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:smlaicloud/model/lineoa_model.dart';
 import 'package:smlaicloud/services/lineoa_api_service.dart';
 import 'package:smlaicloud/global.dart' as global;
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/widgets/line_link_qr_dialog.dart';
 
 /// Line OA Configuration Screen
@@ -14,7 +15,8 @@ class LineOAConfigScreen extends StatefulWidget {
   State<LineOAConfigScreen> createState() => _LineOAConfigScreenState();
 }
 
-class _LineOAConfigScreenState extends State<LineOAConfigScreen> {
+class _LineOAConfigScreenState extends State<LineOAConfigScreen>
+    with global.ThemeRefreshMixin {
   bool _isLoading = true;
   Map<LineOAType, LineOAConfigModel> _configs = {};
   LineOAType? _selectedType;
@@ -65,6 +67,7 @@ class _LineOAConfigScreenState extends State<LineOAConfigScreen> {
       appBar: AppBar(
         title: Text(global.language('lineoa_config_title')),
         actions: [
+          EditFontSizeControl(onChanged: () => setState(() {})),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadConfigs,
@@ -72,9 +75,30 @@ class _LineOAConfigScreenState extends State<LineOAConfigScreen> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _buildBody(),
+      body: Builder(
+        builder: (context) {
+          final scaleFactor = global.editFontScaleFactor;
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(scaleFactor),
+            ),
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12 * scaleFactor,
+                    vertical: 10 * scaleFactor,
+                  ),
+                ),
+                iconTheme: IconThemeData(size: 24 * scaleFactor),
+              ),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _buildBody(),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -130,15 +154,15 @@ class _LineOAConfigScreenState extends State<LineOAConfigScreen> {
                               backgroundColor: isConfigured
                                   ? (isActive
                                       ? Colors.green.shade100
-                                      : Colors.orange.shade100)
-                                  : Colors.grey.shade200,
+                                      : global.theme.rowEditColor)
+                                  : global.theme.dividerBorderColor,
                               child: Icon(
                                 _getIconForType(type),
                                 color: isConfigured
                                     ? (isActive
                                         ? Colors.green.shade700
                                         : Colors.orange.shade700)
-                                    : Colors.grey,
+                                    : global.theme.textSecondaryColor,
                               ),
                             ),
                             if (isConfigured && isActive)
@@ -152,7 +176,7 @@ class _LineOAConfigScreenState extends State<LineOAConfigScreen> {
                                     color: Colors.green,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: Colors.white,
+                                      color: global.theme.cardColor,
                                       width: 2,
                                     ),
                                   ),
@@ -172,7 +196,7 @@ class _LineOAConfigScreenState extends State<LineOAConfigScreen> {
                             fontSize: 12,
                             color: isConfigured
                                 ? (isActive ? Colors.green : Colors.orange)
-                                : Colors.grey,
+                                : global.theme.textSecondaryColor,
                           ),
                         ),
                         trailing: const Icon(Icons.chevron_right),
@@ -203,17 +227,17 @@ class _LineOAConfigScreenState extends State<LineOAConfigScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Icons.touch_app,
             size: 64,
-            color: Colors.grey,
+            color: global.theme.iconSecondaryColor,
           ),
           const SizedBox(height: 16),
           Text(
             global.language('select_lineoa_type'),
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey,
+              color: global.theme.textSecondaryColor,
             ),
           ),
         ],
@@ -270,7 +294,7 @@ class LineOAConfigFormWidget extends StatefulWidget {
   State<LineOAConfigFormWidget> createState() => _LineOAConfigFormWidgetState();
 }
 
-class _LineOAConfigFormWidgetState extends State<LineOAConfigFormWidget> {
+class _LineOAConfigFormWidgetState extends State<LineOAConfigFormWidget> with global.ThemeRefreshMixin {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _channelIdController;
   late TextEditingController _channelSecretController;
@@ -497,7 +521,7 @@ class _LineOAConfigFormWidgetState extends State<LineOAConfigFormWidget> {
                                 _isTesting ? global.language('testing') : global.language('test_connection')),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
-                              foregroundColor: Colors.blue,
+                              foregroundColor: global.theme.primaryColor,
                             ),
                           ),
                         ),
@@ -508,12 +532,12 @@ class _LineOAConfigFormWidgetState extends State<LineOAConfigFormWidget> {
                           child: ElevatedButton.icon(
                             onPressed: _isSaving ? null : _saveConfig,
                             icon: _isSaving
-                                ? const SizedBox(
+                                ? SizedBox(
                                     width: 20,
                                     height: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: Colors.white,
+                                      color: global.theme.onPrimaryColor,
                                     ),
                                   )
                                 : Icon(Icons.save),
@@ -521,7 +545,7 @@ class _LineOAConfigFormWidgetState extends State<LineOAConfigFormWidget> {
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               backgroundColor: Colors.green,
-                              foregroundColor: Colors.white,
+                              foregroundColor: global.theme.onPrimaryColor,
                             ),
                           ),
                         ),
@@ -647,7 +671,7 @@ class _LineOAConfigFormWidgetState extends State<LineOAConfigFormWidget> {
       children: [
         Row(
           children: [
-            const Icon(Icons.people, color: Colors.blue),
+            Icon(Icons.people, color: global.theme.primaryColor),
             const SizedBox(width: 8),
             Text(
               global.language('connected_employees'),
@@ -662,8 +686,8 @@ class _LineOAConfigFormWidgetState extends State<LineOAConfigFormWidget> {
               icon: Icon(Icons.person_add, size: 18),
               label: Text(global.language('add_employee')),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
+                backgroundColor: global.theme.primaryColor,
+                foregroundColor: global.theme.onPrimaryColor,
               ),
             ),
           ],
@@ -704,7 +728,7 @@ class LineOAEmployeeListWidget extends StatefulWidget {
       _LineOAEmployeeListWidgetState();
 }
 
-class _LineOAEmployeeListWidgetState extends State<LineOAEmployeeListWidget> {
+class _LineOAEmployeeListWidgetState extends State<LineOAEmployeeListWidget> with global.ThemeRefreshMixin {
   bool _isLoading = true;
   List<LineOAEmployeeModel> _employees = [];
 
@@ -744,17 +768,17 @@ class _LineOAEmployeeListWidgetState extends State<LineOAEmployeeListWidget> {
       return Container(
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: global.theme.dividerBorderColor,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Center(
           child: Column(
             children: [
-              const Icon(Icons.people_outline, size: 48, color: Colors.grey),
+              Icon(Icons.people_outline, size: 48, color: global.theme.iconSecondaryColor),
               const SizedBox(height: 8),
               Text(
                 global.language('no_connected_employees'),
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(color: global.theme.textSecondaryColor),
               ),
             ],
           ),
@@ -792,7 +816,7 @@ class _LineOAEmployeeListWidgetState extends State<LineOAEmployeeListWidget> {
               children: [
                 if (employee.lineUserId.isEmpty)
                   IconButton(
-                    icon: const Icon(Icons.link, color: Colors.blue),
+                    icon: Icon(Icons.link, color: global.theme.primaryColor),
                     onPressed: () => _generateLink(employee),
                     tooltip: global.language('create_connect_link'),
                   ),
@@ -881,7 +905,7 @@ class AddEmployeeDialog extends StatefulWidget {
   State<AddEmployeeDialog> createState() => _AddEmployeeDialogState();
 }
 
-class _AddEmployeeDialogState extends State<AddEmployeeDialog> {
+class _AddEmployeeDialogState extends State<AddEmployeeDialog> with global.ThemeRefreshMixin {
   final _employeeCodeController = TextEditingController();
   final _employeeNameController = TextEditingController();
   bool _isLoading = false;

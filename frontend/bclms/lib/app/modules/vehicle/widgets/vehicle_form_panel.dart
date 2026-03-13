@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:bclms/app/core/theme/app_theme.dart';
-import 'package:bclms/app/core/utils/global.dart';
+import 'package:bclms/app/core/utils/date_picker.dart';
 import 'package:bclms/app/modules/vehicle/vehicle_controller.dart';
 import 'package:bclms/app/modules/vehicle/vehicle_model.dart';
 import 'package:bclms/app/modules/vehicle/widgets/vehicle_status_badge.dart';
@@ -570,7 +570,7 @@ class _NotesSection extends StatelessWidget {
 // DatePicker Field
 // ============================================================
 
-/// DatePicker field สำหรับวันหมดอายุ
+/// DatePicker field สำหรับวันหมดอายุ — ใช้ BclmsDatePicker แบบ modern
 class _DatePickerField extends StatelessWidget {
   final String label;
   final DateTime? value;
@@ -586,61 +586,35 @@ class _DatePickerField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateText = value != null
-        ? dateTimeBuddhist(value!, format: DateTimeFormatEnum.date)
-        : '';
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: TextFormField(
-        readOnly: true,
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: 'เลือกวันที่',
-          suffixIcon: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (value != null)
-                IconButton(
-                  icon: Icon(
-                    Icons.clear,
-                    size: 18,
-                    color: AppTheme.earthBrown.withValues(alpha: 0.4),
-                  ),
-                  onPressed: () => onChanged(null),
-                ),
-              IconButton(
-                icon: const Icon(Icons.calendar_today, size: 18),
-                onPressed: _pickDate,
-              ),
-            ],
+      child: Row(
+        children: [
+          Expanded(
+            child: BclmsDatePicker(
+              labelText: label,
+              initialDate: value ?? DateTime.now(),
+              firstDate: DateTime(2020),
+              lastDate: DateTime(2040),
+              onDateSelected: (date) {
+                if (date != null) {
+                  onChanged(date);
+                }
+              },
+            ),
           ),
-        ),
-        controller: TextEditingController(text: dateText),
-        onTap: _pickDate,
+          if (value != null)
+            IconButton(
+              icon: Icon(
+                Icons.clear,
+                size: 18,
+                color: AppTheme.earthBrown.withValues(alpha: 0.4),
+              ),
+              onPressed: () => onChanged(null),
+            ),
+        ],
       ),
     );
-  }
-
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: value ?? DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2040),
-      builder: (ctx, child) {
-        return Theme(
-          data: Theme.of(ctx).copyWith(
-            colorScheme: Theme.of(ctx).colorScheme.copyWith(
-                  primary: AppTheme.terracotta,
-                ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      onChanged(picked);
-    }
   }
 }
 

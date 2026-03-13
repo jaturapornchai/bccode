@@ -1028,9 +1028,5 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "POST", Path: "/goapi/api/deploy/frontend", Description: "Trigger frontend deployment webhook", Category: "deploy", Source: "goapi", AuthRequired: false,
 			Parameters: []APIParam{{Name: "token", In: "query", Type: "string", Required: true, Description: "Deploy token"}}},
 		{Method: "GET", Path: "/goapi/api/deploy/status", Description: "Get deployment status", Category: "deploy", Source: "goapi", AuthRequired: false},
-
-		// ===== Data Info =====
-		{Method: "POST", Path: "/goapi/datainfo", Description: "Get data information as HTML content", Category: "datainfo", Source: "goapi", AuthRequired: false,
-			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"shopid": "SHOP001", "function": "sales", "mode": 1}}},
 	}
 }

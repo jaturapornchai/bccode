@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smlaicloud/global.dart' as global;
 
 /// Horizontal ruler widget
 class HorizontalRuler extends StatelessWidget {
@@ -16,7 +17,7 @@ class HorizontalRuler extends StatelessWidget {
     return Container(
       height: 25,
       width: width * zoom,
-      color: Colors.grey[300],
+      color: global.theme.dividerBorderColor,
       child: CustomPaint(
         painter: _RulerPainter(
           width: width,
@@ -44,7 +45,7 @@ class VerticalRuler extends StatelessWidget {
     return Container(
       width: 25,
       height: height * zoom,
-      color: Colors.grey[300],
+      color: global.theme.dividerBorderColor,
       child: CustomPaint(
         painter: _RulerPainter(
           width: height,
@@ -70,7 +71,7 @@ class _RulerPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.black87
+      ..color = global.theme.textColor
       ..strokeWidth = 1;
 
     final textPainter = TextPainter(
@@ -94,8 +95,8 @@ class _RulerPainter extends CustomPainter {
         // Draw number
         textPainter.text = TextSpan(
           text: '${i * interval}',
-          style: const TextStyle(
-            color: Colors.black87,
+          style: TextStyle(
+            color: global.theme.textColor,
             fontSize: 9,
           ),
         );

@@ -1,11 +1,12 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:smlaicloud/global.dart' as global;
 
 typedef KeyboardTapCallback = void Function(String text);
 
 class OtpNumericKeyboard extends StatefulWidget {
-  final Color textColor;
+  final Color? textColor;
   final Icon? rightIcon;
   final Function()? rightButtonFn;
   final Icon? leftIcon;
@@ -16,7 +17,7 @@ class OtpNumericKeyboard extends StatefulWidget {
   const OtpNumericKeyboard({
     super.key,
     required this.onKeyboardTap,
-    this.textColor = Colors.black,
+    this.textColor,
     this.rightButtonFn,
     this.rightIcon,
     this.leftButtonFn,
@@ -30,7 +31,7 @@ class OtpNumericKeyboard extends StatefulWidget {
   }
 }
 
-class _OtpNumericKeyboardState extends State<OtpNumericKeyboard> {
+class _OtpNumericKeyboardState extends State<OtpNumericKeyboard> with global.ThemeRefreshMixin {
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -108,7 +109,7 @@ class _OtpNumericKeyboardState extends State<OtpNumericKeyboard> {
           style: TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.bold,
-            color: widget.textColor,
+            color: widget.textColor ?? global.theme.textColor,
           ),
         ),
       ),

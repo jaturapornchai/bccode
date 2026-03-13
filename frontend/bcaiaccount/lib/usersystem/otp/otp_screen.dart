@@ -19,7 +19,7 @@ class OtpScreen extends StatefulWidget {
   State<OtpScreen> createState() => _OtpScreenState();
 }
 
-class _OtpScreenState extends State<OtpScreen> {
+class _OtpScreenState extends State<OtpScreen> with global.ThemeRefreshMixin {
   final UserRepository _userRepository = UserRepository();
   List<int> number = [0, 0, 0, 0, 0, 0];
   int numberIndex = 0;

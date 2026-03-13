@@ -24,7 +24,8 @@ class TransactionDailyDetailDialog extends StatefulWidget {
 }
 
 class _TransactionDailyDetailDialogState
-    extends State<TransactionDailyDetailDialog> {
+    extends State<TransactionDailyDetailDialog>
+    with global.ThemeRefreshMixin {
   @override
   void initState() {
     super.initState();
@@ -113,7 +114,7 @@ class _TransactionDailyDetailDialogState
               children: [
                 Text(
                   global.language('daily_sales_report'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.indigo,
@@ -121,9 +122,9 @@ class _TransactionDailyDetailDialogState
                 ),
                 Text(
                   ReportUtils.formatDate(docDate),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey,
+                    color: global.theme.textSecondaryColor,
                   ),
                 ),
               ],
@@ -177,9 +178,9 @@ class _TransactionDailyDetailDialogState
           SizedBox(height: 16),
           Text(
             global.language('loading_details'),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: Colors.grey,
+              color: global.theme.textSecondaryColor,
             ),
           ),
         ],
@@ -195,14 +196,14 @@ class _TransactionDailyDetailDialogState
           Icon(
             Icons.error_outline,
             size: 64,
-            color: Colors.red.shade300,
+            color: global.theme.negativeHighlightTextColor,
           ),
           const SizedBox(height: 16),
           Text(
             errorMessage,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: Colors.red,
+              color: global.theme.negativeHighlightTextColor,
             ),
             textAlign: TextAlign.center,
           ),
@@ -222,17 +223,17 @@ class _TransactionDailyDetailDialogState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Icons.inbox_outlined,
             size: 64,
-            color: Colors.grey,
+            color: global.theme.textSecondaryColor,
           ),
           SizedBox(height: 16),
           Text(
             global.language('no_detail_data'),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: Colors.grey,
+              color: global.theme.textSecondaryColor,
             ),
           ),
         ],
@@ -267,7 +268,7 @@ class _TransactionDailyDetailDialogState
             SizedBox(width: 8),
             Text(
               '1. ${global.language('date_information')}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.indigo,
@@ -277,7 +278,7 @@ class _TransactionDailyDetailDialogState
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.green.shade100,
+                color: global.theme.positiveHighlightColor,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -285,7 +286,7 @@ class _TransactionDailyDetailDialogState
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: Colors.green.shade800,
+                  color: global.theme.positiveHighlightTextColor,
                 ),
               ),
             ),
@@ -296,9 +297,9 @@ class _TransactionDailyDetailDialogState
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.grey.shade50,
+            color: global.theme.backgroundColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: global.theme.dividerBorderColor),
           ),
           child: Column(
             children: [
@@ -313,14 +314,14 @@ class _TransactionDailyDetailDialogState
                           global.language('report_date'),
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade600,
+                            color: global.theme.textSecondaryColor,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           ReportUtils.formatDate(sale.docDate),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -337,14 +338,14 @@ class _TransactionDailyDetailDialogState
                           global.language('transaction_count'),
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade600,
+                            color: global.theme.textSecondaryColor,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         SizedBox(height: 4),
                         Text(
                           '${sale.transactions?.length ?? 0} ${global.language('items')}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -373,7 +374,7 @@ class _TransactionDailyDetailDialogState
             SizedBox(width: 6),
             Text(
               '2. ${global.language('summary')}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: Colors.indigo,
@@ -436,7 +437,7 @@ class _TransactionDailyDetailDialogState
               SizedBox(width: 8),
               Text(
                 '3. ${global.language('transactions')} (${transactions.length} ${global.language('items')})',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.indigo,
@@ -448,9 +449,9 @@ class _TransactionDailyDetailDialogState
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: global.theme.cardColor,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: global.theme.dividerBorderColor),
               ),
               child: Column(
                 children: [
@@ -459,7 +460,7 @@ class _TransactionDailyDetailDialogState
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
+                      color: global.theme.backgroundColor,
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(12),
                         topRight: Radius.circular(12),
@@ -472,7 +473,7 @@ class _TransactionDailyDetailDialogState
                           flex: 3,
                           child: Text(
                             global.language('document_no'),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: Colors.indigo,
@@ -523,8 +524,8 @@ class _TransactionDailyDetailDialogState
                             child: Center(
                               child: Text(
                                 global.language('no_transactions'),
-                                style: const TextStyle(
-                                  color: Colors.grey,
+                                style: TextStyle(
+                                  color: global.theme.textSecondaryColor,
                                   fontSize: 14,
                                 ),
                               ),
@@ -557,7 +558,7 @@ class _TransactionDailyDetailDialogState
           label,
           style: TextStyle(
             fontSize: 10,
-            color: isTotal ? Colors.indigo.shade700 : Colors.grey.shade600,
+            color: isTotal ? Colors.indigo.shade700 : global.theme.textSecondaryColor,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -570,8 +571,8 @@ class _TransactionDailyDetailDialogState
             color: isTotal
                 ? Colors.indigo.shade700
                 : isVat
-                    ? Colors.orange.shade700
-                    : Colors.black87,
+                    ? global.theme.warningHighlightTextColor
+                    : global.theme.textColor,
           ),
         ),
       ],
@@ -584,7 +585,7 @@ class _TransactionDailyDetailDialogState
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         border: index < totalCount - 1
-            ? Border(bottom: BorderSide(color: Colors.grey.shade100))
+            ? Border(bottom: BorderSide(color: global.theme.surfaceColor))
             : null,
       ),
       child: Row(
@@ -594,7 +595,7 @@ class _TransactionDailyDetailDialogState
             width: 24,
             height: 24,
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
+              color: global.theme.surfaceColor,
               borderRadius: BorderRadius.circular(6),
             ),
             child: Center(
@@ -603,7 +604,7 @@ class _TransactionDailyDetailDialogState
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade700,
+                  color: global.theme.infoHighlightTextColor,
                 ),
               ),
             ),
@@ -617,7 +618,7 @@ class _TransactionDailyDetailDialogState
               children: [
                 Text(
                   transaction.docno,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -629,7 +630,7 @@ class _TransactionDailyDetailDialogState
                   ReportUtils.formatDate(transaction.docDate),
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey.shade600,
+                    color: global.theme.textSecondaryColor,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -641,7 +642,7 @@ class _TransactionDailyDetailDialogState
           Expanded(
             child: Text(
               widget.formatCurrency(transaction.totalBeforeVat),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -657,7 +658,7 @@ class _TransactionDailyDetailDialogState
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: Colors.orange.shade700,
+                color: global.theme.warningHighlightTextColor,
               ),
               textAlign: TextAlign.center,
               maxLines: 1,
@@ -687,7 +688,7 @@ class _TransactionDailyDetailDialogState
         onPressed: () => Navigator.of(context).pop(),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.indigo.shade600,
-          foregroundColor: Colors.white,
+          foregroundColor: global.theme.onPrimaryColor,
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -696,7 +697,7 @@ class _TransactionDailyDetailDialogState
         ),
         child: Text(
           global.language('close'),
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
     );

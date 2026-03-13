@@ -195,8 +195,8 @@ class DocumentProductListWidget extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 4),
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: const Color(0xFF2A6F97).withValues(alpha: 0.1),
-          border: Border.all(color: const Color(0xFF2A6F97).withValues(alpha: 0.3)),
+          color: global.theme.primaryColor.withValues(alpha: 0.1),
+          border: Border.all(color: global.theme.primaryColor.withValues(alpha: 0.3)),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
@@ -211,7 +211,7 @@ class DocumentProductListWidget extends StatelessWidget {
                     children: [
                       Text(
                         global.language("from"),
-                        style: const TextStyle(fontSize: 11, color: Color(0xFF2A6F97), fontWeight: FontWeight.w500),
+                        style: TextStyle(fontSize: 11, color: global.theme.primaryColor, fontWeight: FontWeight.w500),
                       ),
                       SizedBox(height: 2),
                       Row(
@@ -285,7 +285,7 @@ class DocumentProductListWidget extends StatelessWidget {
                 // Compact Arrow
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Icon(Icons.arrow_forward, color: const Color(0xFF2A6F97), size: 14),
+                  child: Icon(Icons.arrow_forward, color: global.theme.primaryColor, size: 14),
                 ),
 
                 // TO Section - Compact
@@ -295,7 +295,7 @@ class DocumentProductListWidget extends StatelessWidget {
                     children: [
                       Text(
                         global.language("to"),
-                        style: TextStyle(fontSize: 11, color: const Color(0xFF2A6F97).withValues(alpha: 0.8), fontWeight: FontWeight.w500),
+                        style: TextStyle(fontSize: 11, color: global.theme.primaryColor.withValues(alpha: 0.8), fontWeight: FontWeight.w500),
                       ),
                       SizedBox(height: 2),
                       Row(
@@ -379,13 +379,13 @@ class DocumentProductListWidget extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 8, vertical: compact ? 4 : 6),
         decoration: BoxDecoration(
-          color: enabled ? Colors.white : Colors.grey[100],
-          border: Border.all(color: enabled ? Colors.grey[300]! : Colors.grey[200]!),
+          color: enabled ? global.theme.onPrimaryColor : global.theme.surfaceColor,
+          border: Border.all(color: enabled ? global.theme.dividerBorderColor : global.theme.dividerBorderColor),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           children: [
-            Icon(icon, size: compact ? 14 : 16, color: enabled ? Colors.grey[600] : Colors.grey[400]),
+            Icon(icon, size: compact ? 14 : 16, color: enabled ? global.theme.iconSecondaryColor : global.theme.iconSecondaryColor),
             SizedBox(width: 6),
             Expanded(
               child: Column(
@@ -394,13 +394,13 @@ class DocumentProductListWidget extends StatelessWidget {
                   if (!compact)
                     Text(
                       label,
-                      style: TextStyle(fontSize: 10, color: Colors.grey[500], fontWeight: FontWeight.w500),
+                      style: TextStyle(fontSize: 10, color: global.theme.textSecondaryColor, fontWeight: FontWeight.w500),
                     ),
                   Text(
                     value.isEmpty ? '${global.language("select_label")}$label' : value,
                     style: TextStyle(
                       fontSize: compact ? 11 : 12,
-                      color: enabled ? (value.isEmpty ? Colors.grey[500] : Colors.black87) : Colors.grey[400],
+                      color: enabled ? (value.isEmpty ? global.theme.textSecondaryColor : global.theme.textColor) : global.theme.iconSecondaryColor,
                       fontWeight: value.isEmpty ? FontWeight.normal : FontWeight.w500,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -408,7 +408,7 @@ class DocumentProductListWidget extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.keyboard_arrow_down, size: compact ? 14 : 16, color: enabled ? Colors.grey[500] : Colors.grey[300]),
+            Icon(Icons.keyboard_arrow_down, size: compact ? 14 : 16, color: enabled ? global.theme.iconSecondaryColor : global.theme.iconSecondaryColor),
           ],
         ),
       ),
@@ -429,21 +429,21 @@ class DocumentProductListWidget extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 4),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!),
+          border: Border.all(color: global.theme.dividerBorderColor),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.inventory_2_outlined, size: 36, color: Colors.grey[400]),
+              Icon(Icons.inventory_2_outlined, size: 36, color: global.theme.iconSecondaryColor),
               SizedBox(height: 8),
               Text(
                 global.language("no_product_items"),
-                style: TextStyle(fontSize: 14, color: Colors.grey[600], fontWeight: FontWeight.w500),
+                style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor, fontWeight: FontWeight.w500),
               ),
               SizedBox(height: 4),
-              Text(global.language("press_add_product_button"), style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+              Text(global.language("press_add_product_button"), style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor)),
             ],
           ),
         ),
@@ -454,7 +454,7 @@ class DocumentProductListWidget extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: global.theme.dividerBorderColor),
         borderRadius: BorderRadius.circular(10),
       ),
       clipBehavior: Clip.antiAlias,
@@ -493,8 +493,8 @@ class DocumentProductListWidget extends StatelessWidget {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
-        color: isEven ? Colors.white : Colors.grey[50],
-        border: Border(bottom: BorderSide(color: Colors.grey[200]!, width: 0.5)),
+        color: isEven ? global.theme.cardColor : global.theme.surfaceColor,
+        border: Border(bottom: BorderSide(color: global.theme.dividerBorderColor, width: 0.5)),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 1, offset: const Offset(0, 0.5))],
       ),
       child: TweenAnimationBuilder<double>(
@@ -535,7 +535,7 @@ class DocumentProductListWidget extends StatelessWidget {
             onPressed: () {
               deleteItemDetail(index);
             },
-            icon: Icon(Icons.delete_outline, color: Colors.red[600], size: 16),
+            icon: Icon(Icons.delete_outline, color: global.theme.negativeHighlightTextColor, size: 16),
             tooltip: global.language("delete_item"),
           ),
         ),
@@ -561,9 +561,9 @@ class DocumentProductListWidget extends StatelessWidget {
               showDialogCommand(header.code, index, screenData.details![index]);
             },
             borderRadius: BorderRadius.circular(6),
-            hoverColor: const Color(0xFF2A6F97).withValues(alpha: 0.1),
-            splashColor: const Color(0xFF2A6F97).withValues(alpha: 0.2),
-            focusColor: const Color(0xFF2A6F97).withValues(alpha: 0.15),
+            hoverColor: global.theme.primaryColor.withValues(alpha: 0.1),
+            splashColor: global.theme.primaryColor.withValues(alpha: 0.2),
+            focusColor: global.theme.primaryColor.withValues(alpha: 0.15),
             child: TweenAnimationBuilder<double>(
               duration: const Duration(milliseconds: 300),
               tween: Tween(begin: 0.0, end: 1.0),
@@ -595,7 +595,7 @@ class DocumentProductListWidget extends StatelessWidget {
                                 _getDocCurrencySymbol(),
                                 style: TextStyle(
                                   fontSize: _getSimpleFontSize(header.code) - 1,
-                                  color: Colors.grey[600],
+                                  color: global.theme.textSecondaryColor,
                                   fontWeight: FontWeight.normal,
                                 ),
                               ),
@@ -606,7 +606,7 @@ class DocumentProductListWidget extends StatelessWidget {
                               textAlign: _shouldAlignRight(header.code) ? TextAlign.right : header.textAlign,
                               style: TextStyle(
                                 fontSize: _getSimpleFontSize(header.code),
-                                color: dataText.isEmpty ? Colors.grey[500] : _getSimpleTextColor(header.code),
+                                color: dataText.isEmpty ? global.theme.textSecondaryColor : _getSimpleTextColor(header.code),
                                 fontWeight: _getSimpleFontWeight(header.code),
                                 fontFamily: _shouldUseMonospace(header.code) ? 'monospace' : null,
                               ),
@@ -629,7 +629,7 @@ class DocumentProductListWidget extends StatelessWidget {
                                 '${_getBaseCurrencySymbol()} ${global.formatNumber(_getBaseCurrencyValue(header.code, index))}',
                                 style: TextStyle(
                                   fontSize: _getSimpleFontSize(header.code) - 2,
-                                  color: Colors.grey[500],
+                                  color: global.theme.textSecondaryColor,
                                   fontStyle: FontStyle.italic,
                                 ),
                               ),
@@ -712,7 +712,7 @@ class DocumentProductListWidget extends StatelessWidget {
                                                 (option) => Container(
                                                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                                   decoration: BoxDecoration(
-                                                    color: Colors.white,
+                                                    color: global.theme.cardColor,
                                                     borderRadius: BorderRadius.circular(6),
                                                     border: Border.all(color: Colors.indigo[300]!),
                                                   ),
@@ -766,14 +766,14 @@ class DocumentProductListWidget extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.shopping_cart_outlined, size: 36, color: Colors.grey[400]),
+              Icon(Icons.shopping_cart_outlined, size: 36, color: global.theme.iconSecondaryColor),
               SizedBox(height: 8),
               Text(
                 global.language("no_product_items"),
-                style: TextStyle(fontSize: 14, color: Colors.grey[600], fontWeight: FontWeight.w500),
+                style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor, fontWeight: FontWeight.w500),
               ),
               SizedBox(height: 4),
-              Text(global.language("tap_add_product_button"), style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+              Text(global.language("tap_add_product_button"), style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor)),
             ],
           ),
         ),
@@ -836,8 +836,8 @@ class DocumentProductListWidget extends StatelessWidget {
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.grey[300]!, width: 0.5),
+                    color: global.theme.cardColor,
+                    border: Border.all(color: global.theme.dividerBorderColor, width: 0.5),
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 4, offset: const Offset(0, 2))],
                   ),
@@ -857,8 +857,8 @@ class DocumentProductListWidget extends StatelessWidget {
                           showDialogCommand('product_name', index, detail);
                         },
                         borderRadius: BorderRadius.circular(10),
-                        splashColor: const Color(0xFF2A6F97).withValues(alpha: 0.1),
-                        focusColor: const Color(0xFF2A6F97).withValues(alpha: 0.15),
+                        splashColor: global.theme.primaryColor.withValues(alpha: 0.1),
+                        focusColor: global.theme.primaryColor.withValues(alpha: 0.15),
                         child: Padding(
                           padding: const EdgeInsets.all(8),
                           child: Column(
@@ -869,10 +869,10 @@ class DocumentProductListWidget extends StatelessWidget {
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(color: const Color(0xFF2A6F97).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(3)),
+                                    decoration: BoxDecoration(color: global.theme.primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(3)),
                                     child: Text(
                                       '#${index + 1}',
-                                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF2A6F97)),
+                                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: global.theme.primaryColor),
                                     ),
                                   ),
                                   const Spacer(),
@@ -882,7 +882,7 @@ class DocumentProductListWidget extends StatelessWidget {
                                     onPressed: () {
                                       deleteItemDetail(index);
                                     },
-                                    icon: Icon(Icons.delete_outline, color: Colors.red[600], size: 18),
+                                    icon: Icon(Icons.delete_outline, color: global.theme.negativeHighlightTextColor, size: 18),
                                   ),
                                 ],
                               ),
@@ -899,13 +899,13 @@ class DocumentProductListWidget extends StatelessWidget {
                                   width: double.infinity,
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: Colors.blue[50],
+                                    color: global.theme.infoHighlightColor,
                                     borderRadius: BorderRadius.circular(6),
                                     border: Border.all(color: Colors.blue[200]!),
                                   ),
                                   child: Row(
                                     children: [
-                                      Icon(Icons.edit, size: 14, color: Colors.blue[600]),
+                                      Icon(Icons.edit, size: 14, color: global.theme.infoHighlightTextColor),
                                       const SizedBox(width: 6),
                                       Expanded(
                                         child: Text(
@@ -999,19 +999,19 @@ class DocumentProductListWidget extends StatelessWidget {
                               Row(
                                 children: [
                                   Expanded(
-                                    child: _buildMobileClickableInfoItem(global.language("quantity"), global.formatQuantity(detail.qty), Colors.orange, () => showDialogCommand('qty', index, detail)),
+                                    child: _buildMobileClickableInfoItem(global.language("quantity"), global.formatQuantity(detail.qty), global.theme.warningHighlightTextColor, () => showDialogCommand('qty', index, detail)),
                                   ),
                                   if (_shouldShowPriceAmount()) ...[
                                     SizedBox(width: 8),
                                     Expanded(
-                                      child: _buildMobileClickableInfoItem(global.language("price"), global.formatUnitPrice(detail.price), Colors.blue, () => showDialogCommand('price', index, detail)),
+                                      child: _buildMobileClickableInfoItem(global.language("price"), global.formatUnitPrice(detail.price), global.theme.infoHighlightTextColor, () => showDialogCommand('price', index, detail)),
                                     ),
                                     SizedBox(width: 8),
                                     Expanded(
                                       child: _buildMobileClickableInfoItem(
                                         global.language("amount"),
                                         global.formatNumber(detail.sumamount),
-                                        Colors.green,
+                                        global.theme.positiveHighlightTextColor,
                                         () => showDialogCommand('product_amount', index, detail),
                                       ),
                                     ),
@@ -1179,7 +1179,7 @@ class DocumentProductListWidget extends StatelessWidget {
                                                     (option) => Container(
                                                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                                       decoration: BoxDecoration(
-                                                        color: Colors.white,
+                                                        color: global.theme.cardColor,
                                                         borderRadius: BorderRadius.circular(6),
                                                         border: Border.all(color: Colors.indigo[300]!),
                                                       ),
@@ -1225,17 +1225,17 @@ class DocumentProductListWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildMobileClickableInfoItem(String label, String value, MaterialColor color, VoidCallback onTap) {
+  Widget _buildMobileClickableInfoItem(String label, String value, Color color, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(6),
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: color[50],
+          color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: color[200]!),
-          boxShadow: [BoxShadow(color: color[100]!.withValues(alpha: 0.3), blurRadius: 2, offset: const Offset(0, 1))],
+          border: Border.all(color: color.withValues(alpha: 0.35)),
+          boxShadow: [BoxShadow(color: color.withValues(alpha: 0.1), blurRadius: 2, offset: const Offset(0, 1))],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1245,16 +1245,16 @@ class DocumentProductListWidget extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: TextStyle(fontSize: 9, color: color[600], fontWeight: FontWeight.w500),
+                  style: TextStyle(fontSize: 9, color: color, fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(width: 4),
-                Icon(Icons.edit, size: 10, color: color[500]),
+                Icon(Icons.edit, size: 10, color: color),
               ],
             ),
             const SizedBox(height: 4),
             Text(
               value,
-              style: TextStyle(fontSize: 12, color: color[800], fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
           ],
@@ -1278,15 +1278,15 @@ class DocumentProductListWidget extends StatelessWidget {
   Color _getSimpleTextColor(String code) {
     switch (code) {
       case 'product_amount':
-        return const Color(0xFF2A6F97);
+        return global.theme.primaryColor;
       case 'product_price':
-        return const Color(0xFF2A6F97).withValues(alpha: 0.8);
+        return global.theme.primaryColor.withValues(alpha: 0.8);
       case 'product_qty':
         return Colors.orange[700]!;
       case 'line_number':
-        return Colors.grey[600]!;
+        return global.theme.textSecondaryColor;
       default:
-        return Colors.black87;
+        return global.theme.textColor;
     }
   }
 

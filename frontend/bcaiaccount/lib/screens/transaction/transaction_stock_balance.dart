@@ -43,7 +43,7 @@ class TransactionStockBalaceScreen extends StatefulWidget {
 
 class TransactionStockBalaceScreenState
     extends State<TransactionStockBalaceScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, global.ThemeRefreshMixin {
   late SplitViewController splitViewController;
   late TabController editTabController;
   late TransactionModel screenData;
@@ -359,7 +359,7 @@ class TransactionStockBalaceScreenState
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
@@ -429,7 +429,7 @@ class TransactionStockBalaceScreenState
                           children: [
                             IconButton(
                               focusNode: FocusNode(skipTraversal: true),
-                              icon: const Icon(Icons.search),
+                              icon: Icon(Icons.search),
                               onPressed: () {
                                 searchSale(word: "");
                               },
@@ -449,8 +449,8 @@ class TransactionStockBalaceScreenState
                     controller: saleNameController,
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.all(10.0),
-                      enabledBorder: const OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.grey, width: 0.0),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
                       ),
                       floatingLabelBehavior: FloatingLabelBehavior.always,
                       border: OutlineInputBorder(),
@@ -587,13 +587,13 @@ class TransactionStockBalaceScreenState
                         children: [
                           /// frist page
                           IconButton(
-                            icon: const Icon(Icons.first_page),
+                            icon: Icon(Icons.first_page),
                             onPressed: pagination.page > 1
                                 ? () => fetchData(1, limit, q)
                                 : null,
                           ),
                           IconButton(
-                            icon: const Icon(Icons.chevron_left),
+                            icon: Icon(Icons.chevron_left),
                             onPressed: pagination.page > 1
                                 ? () => fetchData(pagination.page - 1, limit, q)
                                 : null,
@@ -602,7 +602,7 @@ class TransactionStockBalaceScreenState
                             'Page ${pagination.page} of ${pagination.totalPage}',
                           ),
                           IconButton(
-                            icon: const Icon(Icons.chevron_right),
+                            icon: Icon(Icons.chevron_right),
                             onPressed: pagination.page < pagination.totalPage
                                 ? () => fetchData(pagination.page + 1, limit, q)
                                 : null,
@@ -610,7 +610,7 @@ class TransactionStockBalaceScreenState
 
                           /// last page
                           IconButton(
-                            icon: const Icon(Icons.last_page),
+                            icon: Icon(Icons.last_page),
                             onPressed: pagination.page < pagination.totalPage
                                 ? () =>
                                       fetchData(pagination.totalPage, limit, q)
@@ -618,7 +618,7 @@ class TransactionStockBalaceScreenState
                           ),
 
                           /// size box width 10
-                          const SizedBox(width: 10),
+                          SizedBox(width: 10),
                           DropdownButton<int>(
                             value: limit,
                             items: _limitOptions.map<DropdownMenuItem<int>>((
@@ -649,12 +649,12 @@ class TransactionStockBalaceScreenState
                         decoration: InputDecoration(
                           labelText: global.language('search'),
                           suffixIcon: isLoadingText
-                              ? const Padding(
+                              ? Padding(
                                   padding: EdgeInsets.all(8.0),
                                   child: CircularProgressIndicator(),
                                 )
                               : null, // Loading indicator
-                          prefixIcon: const Icon(Icons.search),
+                          prefixIcon: Icon(Icons.search),
                         ),
                         onChanged: (value) {
                           setState(() {
@@ -761,12 +761,12 @@ class TransactionStockBalaceScreenState
                                                   Text(
                                                     item.barcode!,
                                                     style: (item.isnotexist!)
-                                                        ? const TextStyle(
+                                                        ? TextStyle(
                                                             fontWeight:
                                                                 FontWeight.bold,
-                                                            color: Colors.red,
+                                                            color: global.theme.negativeHighlightTextColor,
                                                           )
-                                                        : const TextStyle(
+                                                        : TextStyle(
                                                             fontWeight:
                                                                 FontWeight
                                                                     .normal,
@@ -777,12 +777,12 @@ class TransactionStockBalaceScreenState
                                                   Text(
                                                     item.name!,
                                                     style: (item.isnotexist!)
-                                                        ? const TextStyle(
+                                                        ? TextStyle(
                                                             fontWeight:
                                                                 FontWeight.bold,
-                                                            color: Colors.red,
+                                                            color: global.theme.negativeHighlightTextColor,
                                                           )
-                                                        : const TextStyle(
+                                                        : TextStyle(
                                                             fontWeight:
                                                                 FontWeight
                                                                     .normal,
@@ -793,12 +793,12 @@ class TransactionStockBalaceScreenState
                                                   Text(
                                                     item.unitcode!,
                                                     style: (item.isnotexist!)
-                                                        ? const TextStyle(
+                                                        ? TextStyle(
                                                             fontWeight:
                                                                 FontWeight.bold,
-                                                            color: Colors.red,
+                                                            color: global.theme.negativeHighlightTextColor,
                                                           )
-                                                        : const TextStyle(
+                                                        : TextStyle(
                                                             fontWeight:
                                                                 FontWeight
                                                                     .normal,
@@ -809,12 +809,12 @@ class TransactionStockBalaceScreenState
                                                   Text(
                                                     item.warehousecode!,
                                                     style: (item.isnotexist!)
-                                                        ? const TextStyle(
+                                                        ? TextStyle(
                                                             fontWeight:
                                                                 FontWeight.bold,
-                                                            color: Colors.red,
+                                                            color: global.theme.negativeHighlightTextColor,
                                                           )
-                                                        : const TextStyle(
+                                                        : TextStyle(
                                                             fontWeight:
                                                                 FontWeight
                                                                     .normal,
@@ -825,12 +825,12 @@ class TransactionStockBalaceScreenState
                                                   Text(
                                                     item.shelfcode!,
                                                     style: (item.isnotexist!)
-                                                        ? const TextStyle(
+                                                        ? TextStyle(
                                                             fontWeight:
                                                                 FontWeight.bold,
-                                                            color: Colors.red,
+                                                            color: global.theme.negativeHighlightTextColor,
                                                           )
-                                                        : const TextStyle(
+                                                        : TextStyle(
                                                             fontWeight:
                                                                 FontWeight
                                                                     .normal,
@@ -844,13 +844,13 @@ class TransactionStockBalaceScreenState
                                                     child: Text(
                                                       item.qty.toString(),
                                                       style: (item.isnotexist!)
-                                                          ? const TextStyle(
+                                                          ? TextStyle(
                                                               fontWeight:
                                                                   FontWeight
                                                                       .bold,
-                                                              color: Colors.red,
+                                                              color: global.theme.negativeHighlightTextColor,
                                                             )
-                                                          : const TextStyle(
+                                                          : TextStyle(
                                                               fontWeight:
                                                                   FontWeight
                                                                       .normal,
@@ -865,13 +865,13 @@ class TransactionStockBalaceScreenState
                                                     child: Text(
                                                       item.price.toString(),
                                                       style: (item.isnotexist!)
-                                                          ? const TextStyle(
+                                                          ? TextStyle(
                                                               fontWeight:
                                                                   FontWeight
                                                                       .bold,
-                                                              color: Colors.red,
+                                                              color: global.theme.negativeHighlightTextColor,
                                                             )
-                                                          : const TextStyle(
+                                                          : TextStyle(
                                                               fontWeight:
                                                                   FontWeight
                                                                       .normal,
@@ -886,13 +886,13 @@ class TransactionStockBalaceScreenState
                                                     child: Text(
                                                       item.sumamount.toString(),
                                                       style: (item.isnotexist!)
-                                                          ? const TextStyle(
+                                                          ? TextStyle(
                                                               fontWeight:
                                                                   FontWeight
                                                                       .bold,
-                                                              color: Colors.red,
+                                                              color: global.theme.negativeHighlightTextColor,
                                                             )
-                                                          : const TextStyle(
+                                                          : TextStyle(
                                                               fontWeight:
                                                                   FontWeight
                                                                       .normal,
@@ -904,7 +904,7 @@ class TransactionStockBalaceScreenState
                                                   Align(
                                                     alignment: Alignment.center,
                                                     child: IconButton(
-                                                      icon: const Icon(
+                                                      icon: Icon(
                                                         Icons.edit,
                                                       ),
                                                       onPressed: () {
@@ -920,8 +920,8 @@ class TransactionStockBalaceScreenState
                                                   Align(
                                                     alignment: Alignment.center,
                                                     child: IconButton(
-                                                      color: Colors.red,
-                                                      icon: const Icon(
+                                                      color: global.theme.negativeHighlightTextColor,
+                                                      icon: Icon(
                                                         Icons.delete,
                                                       ),
                                                       onPressed: () {
@@ -1032,7 +1032,7 @@ class TransactionStockBalaceScreenState
                         ),
                       ),
                       (isLoadingTable)
-                          ? const Padding(
+                          ? Padding(
                               padding: EdgeInsets.only(top: 10.0),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1045,7 +1045,7 @@ class TransactionStockBalaceScreenState
                                       strokeWidth:
                                           4, // Optional: Set the thickness of the indicator
                                       valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.blue,
+                                        global.theme.infoHighlightTextColor,
                                       ), // Optional: Set the color
                                     ),
                                   ),
@@ -1127,7 +1127,7 @@ class TransactionStockBalaceScreenState
             children: [
               Expanded(
                 child: (isLoading)
-                    ? const Center(
+                    ? Center(
                         child: SizedBox(
                           width: 100, // Set the desired width
                           height: 100, // Set the desired height
@@ -1135,7 +1135,7 @@ class TransactionStockBalaceScreenState
                             strokeWidth:
                                 4, // Optional: Set the thickness of the indicator
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.blue,
+                              global.theme.infoHighlightTextColor,
                             ), // Optional: Set the color
                           ),
                         ),
@@ -1153,9 +1153,9 @@ class TransactionStockBalaceScreenState
                         children: [
                           IconButton(
                             iconSize: 150,
-                            color: Colors.grey,
+                            color: global.theme.iconSecondaryColor,
                             tooltip: global.language('import_product_balance'),
-                            icon: const Icon(Icons.upload_file),
+                            icon: Icon(Icons.upload_file),
                             onPressed: () {
                               uploadFileExcel();
                             },
@@ -1164,9 +1164,9 @@ class TransactionStockBalaceScreenState
                             global.language(
                               'import_stock_balance_from_excel_file_size_2mb',
                             ),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 20,
-                              color: Colors.grey,
+                              color: global.theme.iconSecondaryColor,
                             ),
                           ),
 
@@ -1210,7 +1210,7 @@ class TransactionStockBalaceScreenState
                               global.language(
                                 'download_file_excel_ex_sample_stock_balance',
                               ),
-                              style: const TextStyle(fontSize: 20),
+                              style: TextStyle(fontSize: 20),
                             ),
                           ),
                         ],
@@ -1249,8 +1249,8 @@ class TransactionStockBalaceScreenState
                     : ElevatedButton.icon(
                         /// button red
                         style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          backgroundColor: Colors.red,
+                          foregroundColor: global.theme.onPrimaryColor,
+                          backgroundColor: global.theme.negativeHighlightTextColor,
                         ),
 
                         onPressed: () {
@@ -1262,7 +1262,7 @@ class TransactionStockBalaceScreenState
                             },
                           );
                         },
-                        icon: const Icon(Icons.clear),
+                        icon: Icon(Icons.clear),
                         label: Text(fileImportName),
                       ),
               ),
@@ -1277,7 +1277,7 @@ class TransactionStockBalaceScreenState
                     children: [
                       Text(
                         '${global.language('total_item')} : ${global.formatNumber((screenData.guidfixed!.isEmpty) ? double.parse(totalModel.totalitem.toString()) : screenData.totalqty!)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1285,7 +1285,7 @@ class TransactionStockBalaceScreenState
                       SizedBox(width: 10),
                       Text(
                         '${global.language('total_amount')} : ${global.formatNumber((screenData.guidfixed!.isEmpty) ? double.parse(totalModel.totalamount.toString()) : screenData.totalamount)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1309,7 +1309,7 @@ class TransactionStockBalaceScreenState
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 28, 52, 88),
+        backgroundColor: global.theme.surfaceColor,
         automaticallyImplyLeading: false,
         title: TabBar(controller: editTabController, tabs: tabx),
       ),
@@ -1419,7 +1419,7 @@ class TransactionStockBalaceScreenState
                       TextSpan(text: ' '),
                       TextSpan(
                         text: '${global.language('file_size')} : $filesize MB',
-                        style: const TextStyle(color: Colors.red),
+                        style: TextStyle(color: global.theme.negativeHighlightTextColor),
                       ),
                     ],
                   ),
@@ -1589,10 +1589,10 @@ class TransactionStockBalaceScreenState
                                 }
                               });
                             },
-                            icon: const Icon(Icons.search),
+                            icon: Icon(Icons.search),
                           ),
                           suffixIcon: IconButton(
-                            icon: const Icon(Icons.clear),
+                            icon: Icon(Icons.clear),
                             onPressed: () {
                               barcode.text = '';
                               name.text = '';
@@ -1720,7 +1720,7 @@ class TransactionStockBalaceScreenState
                                 }
                               });
                             },
-                            icon: const Icon(Icons.search),
+                            icon: Icon(Icons.search),
                           ),
                         ),
                       ),
@@ -1760,7 +1760,7 @@ class TransactionStockBalaceScreenState
                                 }
                               });
                             },
-                            icon: const Icon(Icons.search),
+                            icon: Icon(Icons.search),
                           ),
                         ),
                       ),
@@ -1935,12 +1935,12 @@ class TransactionStockBalaceScreenState
           ),
           actions: <Widget>[
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              style: ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
               onPressed: () => Navigator.pop(context),
               child: Text(global.language('no')),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+              style: ElevatedButton.styleFrom(backgroundColor: global.theme.infoHighlightTextColor),
               onPressed: () {
                 Navigator.pop(context);
                 callBack();
@@ -1961,7 +1961,7 @@ class TransactionStockBalaceScreenState
       appBar: AppBar(
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             setState(() {
               if (fileImportName.isNotEmpty) {
@@ -1976,49 +1976,40 @@ class TransactionStockBalaceScreenState
         backgroundColor: global.theme.appBarColor,
         title: Text(global.transactionName(widget.type)),
         actions: <Widget>[
-          Padding(
-            padding: const EdgeInsets.only(right: 20.0),
-            child: IconButton(
-              focusNode: FocusNode(skipTraversal: true),
-              onPressed: () async {
-                searchTrans();
-              },
-              icon: const Icon(Icons.list_alt, size: 26.0),
-            ),
+          IconButton(
+            focusNode: FocusNode(skipTraversal: true),
+            onPressed: () async {
+              searchTrans();
+            },
+            icon: Icon(Icons.list_alt, size: 26.0),
           ),
           (screenData.guidfixed == '')
-              ? Padding(
-                  padding: const EdgeInsets.only(right: 20.0),
-                  child: IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    onPressed: () async {
-                      final result = await _showAlertConfirmSaveDialog(
-                        context,
-                        screenData.guidfixed ?? '',
-                      );
-                      if (result != null && result) {
-                        saveOrUpdateData();
-                      }
-                    },
-                    icon: const Icon(Icons.save, size: 26.0),
-                  ),
-                )
-              : Padding(
-                  padding: const EdgeInsets.only(right: 20.0),
-                  child: IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    onPressed: () async {
-                      final result = await _showAlertConfirmDeleteDialog(
-                        context,
-                        screenData.docno,
-                      );
-                      if (result != null && result) {
-                        deleteDoc();
-                      }
-                    },
-                    icon: const Icon(Icons.delete, size: 26.0),
-                  ),
-                ),
+              ? IconButton(
+                focusNode: FocusNode(skipTraversal: true),
+                onPressed: () async {
+                  final result = await _showAlertConfirmSaveDialog(
+                    context,
+                    screenData.guidfixed ?? '',
+                  );
+                  if (result != null && result) {
+                    saveOrUpdateData();
+                  }
+                },
+                icon: Icon(Icons.save, size: 26.0),
+              )
+              : IconButton(
+                focusNode: FocusNode(skipTraversal: true),
+                onPressed: () async {
+                  final result = await _showAlertConfirmDeleteDialog(
+                    context,
+                    screenData.docno,
+                  );
+                  if (result != null && result) {
+                    deleteDoc();
+                  }
+                },
+                icon: Icon(Icons.delete, size: 26.0),
+              ),
         ],
       ),
       body: LayoutBuilder(
@@ -2088,9 +2079,9 @@ class TransactionStockBalaceScreenState
                     });
                     global.showSnackBar(
                       context,
-                      Icon(Icons.error, color: Colors.white),
+                      Icon(Icons.error, color: global.theme.onPrimaryColor),
                       global.language(state.message),
-                      Colors.red,
+                      global.theme.negativeHighlightTextColor,
                     );
                   }
 
@@ -2111,9 +2102,9 @@ class TransactionStockBalaceScreenState
                     );
                     global.showSnackBar(
                       context,
-                      Icon(Icons.save, color: Colors.white),
+                      Icon(Icons.save, color: global.theme.onPrimaryColor),
                       global.language("update_success"),
-                      Colors.blue,
+                      global.theme.infoHighlightTextColor,
                     );
                   }
 
@@ -2128,9 +2119,9 @@ class TransactionStockBalaceScreenState
                     );
                     global.showSnackBar(
                       context,
-                      Icon(Icons.save, color: Colors.white),
+                      Icon(Icons.save, color: global.theme.onPrimaryColor),
                       global.language("save_success"),
-                      Colors.blue,
+                      global.theme.infoHighlightTextColor,
                     );
                   }
 
@@ -2153,9 +2144,9 @@ class TransactionStockBalaceScreenState
 
                     global.showSnackBar(
                       context,
-                      Icon(Icons.error, color: Colors.white),
+                      Icon(Icons.error, color: global.theme.onPrimaryColor),
                       global.language(state.message),
-                      Colors.red,
+                      global.theme.negativeHighlightTextColor,
                     );
                   }
 
@@ -2163,9 +2154,9 @@ class TransactionStockBalaceScreenState
                     clearScreenData();
                     global.showSnackBar(
                       context,
-                      Icon(Icons.save, color: Colors.white),
+                      Icon(Icons.save, color: global.theme.onPrimaryColor),
                       global.language("save_success"),
-                      Colors.blue,
+                      global.theme.infoHighlightTextColor,
                     );
                   }
 
@@ -2237,9 +2228,9 @@ class TransactionStockBalaceScreenState
                     clearScreenData();
                     global.showSnackBar(
                       context,
-                      Icon(Icons.delete, color: Colors.white),
+                      Icon(Icons.delete, color: global.theme.onPrimaryColor),
                       global.language("delete_success"),
-                      Colors.blue,
+                      global.theme.infoHighlightTextColor,
                     );
                   }
                 },

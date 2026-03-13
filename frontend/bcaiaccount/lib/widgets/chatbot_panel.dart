@@ -18,7 +18,8 @@ class ChatbotPanel extends StatefulWidget {
   State<ChatbotPanel> createState() => _ChatbotPanelState();
 }
 
-class _ChatbotPanelState extends State<ChatbotPanel> {
+class _ChatbotPanelState extends State<ChatbotPanel>
+    with global.ThemeRefreshMixin {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
@@ -26,10 +27,10 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
   late String _sessionId;
 
   // สีธีม
-  final Color primaryColor = const Color(0xFF1A73E8);
-  final Color primaryDarkColor = const Color(0xFF0D47A1);
-  final Color aiMessageColor = const Color(0xFFE3F2FD);
-  final Color userMessageColor = const Color(0xFF1A73E8);
+  Color get primaryColor => global.theme.primaryColor;
+  Color get primaryDarkColor => global.theme.primaryColor;
+  Color get aiMessageColor => global.theme.infoHighlightColor;
+  Color get userMessageColor => global.theme.primaryColor;
 
   @override
   void initState() {
@@ -197,8 +198,8 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        border: Border(left: BorderSide(color: Colors.grey.shade300, width: 1)),
+        color: global.theme.surfaceColor,
+        border: Border(left: BorderSide(color: global.theme.dividerBorderColor, width: 1)),
       ),
       child: Column(
         children: [
@@ -228,10 +229,10 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: global.theme.cardColor.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.smart_toy, size: 24, color: Colors.white),
+            child: Icon(Icons.smart_toy, size: 24, color: global.theme.onPrimaryColor),
           ),
           SizedBox(width: 12),
           Expanded(
@@ -240,15 +241,15 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
               children: [
                 Text(
                   widget.title ?? 'AI Assistant',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: global.theme.onPrimaryColor,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
                   global.language("chatbot_ready_to_help"),
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  style: TextStyle(color: global.theme.onPrimaryColor.withValues(alpha: 0.7), fontSize: 12),
                 ),
               ],
             ),
@@ -301,8 +302,8 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
                 color: message.isUser
                     ? userMessageColor
                     : (message.isError
-                          ? Colors.red[50]
-                          : (message.isHtml ? Colors.white : aiMessageColor)),
+                          ? global.theme.negativeHighlightColor
+                          : (message.isHtml ? global.theme.cardColor : aiMessageColor)),
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
                   topRight: const Radius.circular(16),
@@ -334,10 +335,10 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
                           style: TextStyle(
                             fontSize: 15,
                             color: message.isUser
-                                ? Colors.white
+                                ? global.theme.cardColor
                                 : (message.isError
-                                      ? Colors.red[900]
-                                      : Colors.black87),
+                                      ? global.theme.negativeHighlightTextColor
+                                      : global.theme.textColor),
                             height: 1.4,
                           ),
                         ),
@@ -348,7 +349,7 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
                             fontSize: 11,
                             color: message.isUser
                                 ? Colors.white70
-                                : Colors.grey.shade600,
+                                : global.theme.textSecondaryColor,
                           ),
                         ),
                       ],
@@ -413,7 +414,7 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
   Widget _buildChatInput() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
@@ -432,11 +433,11 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
                 hintText: global.language("chatbot_type_message"),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: global.theme.formBorderColor),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: global.theme.formBorderColor),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
@@ -447,7 +448,7 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
                   vertical: 12,
                 ),
                 filled: true,
-                fillColor: Colors.grey[50],
+                fillColor: global.theme.formFillColor,
               ),
               maxLines: null,
               textInputAction: TextInputAction.send,
@@ -461,7 +462,7 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
               shape: BoxShape.circle,
             ),
             child: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white),
+              icon: Icon(Icons.send, color: global.theme.onPrimaryColor),
               onPressed: _isLoading ? null : _sendMessage,
             ),
           ),
@@ -501,7 +502,8 @@ class _HtmlContentView extends StatefulWidget {
   State<_HtmlContentView> createState() => _HtmlContentViewState();
 }
 
-class _HtmlContentViewState extends State<_HtmlContentView> {
+class _HtmlContentViewState extends State<_HtmlContentView>
+    with global.ThemeRefreshMixin {
   double _contentHeight = 400; // เริ่มต้นที่ 400 แทน 100
   static const double _maxHeight = 2000; // จำกัดความสูงสูงสุด
 

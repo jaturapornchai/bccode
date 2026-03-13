@@ -1,7 +1,7 @@
 name: smlaicloud
 description: SML AI Cloud Flutter Application.
 publish_to: "none"
-version: 1.1.0+13
+version: 1.1.0+14
 
 environment:
   sdk: ^3.8.0
@@ -18,26 +18,26 @@ dependencies:
 
   # State Management (Latest)
   flutter_bloc: ^9.1.1
-  bloc: ^9.0.1
+  bloc: ^9.2.0
 
   # HTTP & Network (Latest)
-  http: ^1.5.0
+  http: ^1.6.0
   web_socket_channel: ^3.0.2
 
   # Firebase (Latest)
-  firebase_core: ^4.1.1
-  firebase_auth: ^6.1.0
+  firebase_core: ^4.5.0
+  firebase_auth: ^6.2.0
 
   # UI & Layout (Latest)
   flutter_spinkit: ^5.2.1
   loader_overlay: ^5.0.0
   flutter_staggered_grid_view: ^0.7.0
-  flutter_svg: ^2.0.11
+  flutter_svg: ^2.2.4
   flutter_colorpicker: ^1.1.0
   font_awesome_flutter: ^10.10.0
 
   # Missing packages found
-  split_view: ^3.2.1
+  split_view: ^3.2.2
   auto_size_text: ^3.0.0
   qr_flutter: ^4.1.0
   flutter_draggable_gridview: ^0.0.13
@@ -55,35 +55,35 @@ dependencies:
   # Database & Storage (Latest)
 
   # Google Services (Latest)
-  google_fonts: ^6.2.1
+  google_fonts: ^6.3.3
   gsheets: ^0.5.0
-  google_mlkit_text_recognition: ^0.15.0 # แทน google_ml_vision deprecated
-  google_maps_flutter: ^2.9.0
+  google_mlkit_text_recognition: ^0.15.1 # แทน google_ml_vision deprecated
+  google_maps_flutter: ^2.14.2
 
   # Buddhist calendar support
   thai_buddhist_date: ^0.2.7
-  google_maps_flutter_platform_interface: ^2.9.5
-  google_maps_flutter_web: ^0.5.10
+  google_maps_flutter_platform_interface: ^2.14.2
+  google_maps_flutter_web: ^0.5.14+3
   latlong2: ^0.9.1
   google_sign_in: ^7.2.0
-  google_sign_in_web: ^1.1.0
+  google_sign_in_web: ^1.1.2
   google_sign_in_platform_interface: ^3.1.0
-  oauth2: ^2.0.3
+  oauth2: ^2.0.5
 
   # Device & Platform (Latest)
   device_info_plus: ^11.5.0
   path_provider: ^2.1.5
-  shared_preferences: ^2.5.3
+  shared_preferences: ^2.5.4
   url_launcher: ^6.3.1
 
   # Media & Files (Latest)
-  file_picker: ^10.3.3
-  image_picker: ^1.1.2
+  file_picker: ^10.3.10
+  image_picker: ^1.2.1
   image_picker_web: ^4.0.0
   image_cropper: ^11.0.0 # แทน image_crop deprecated
-  video_player: ^2.9.2
+  video_player: ^2.11.1
   video_player_web: ^2.3.3
-  crypto: ^3.0.3
+  crypto: ^3.0.7
 
   # PDF & Documents (Latest)
   syncfusion_flutter_pdfviewer: ^31.1.21
@@ -94,15 +94,15 @@ dependencies:
 
   # UI Components (Latest)
   cupertino_icons: ^1.0.8
-  data_table_2: ^2.5.15
+  data_table_2: ^2.7.2
   decimal: ^3.0.2
   decorated_icon: ^1.2.1
-  dio: ^5.7.0
+  dio: ^5.9.2
   dropdown_search: ^6.0.2
   email_validator: ^3.0.0
   excel: ^4.0.6
   flash: ^3.1.1
-  flex_color_picker: ^3.6.0
+  flex_color_picker: ^3.8.0
   flutter_html: ^3.0.0
   flutter_launcher_icons: ^0.14.1
   flutter_screenutil: ^5.9.3
@@ -121,26 +121,25 @@ dependencies:
   network_to_file_image: ^7.0.0
   package_info_plus: ^9.0.0
   pretty_json: any
-  uuid: ^4.5.1
+  uuid: ^4.5.3
   translator: ^1.0.0
   scrollable_positioned_list: ^0.3.8
   tuple: ^2.0.2
   intl: ^0.20.2
-  json_annotation: ^4.9.0
+  json_annotation: ^4.11.0
   json_view: ^0.4.2
   flutter_cache_manager: ^3.4.1
 
   # Web Support (Latest - Replaced deprecated packages)
   flutter_inappwebview: ^6.1.5 # ✅ แทน webview_flutter deprecated
-  flutter_widget_from_html: ^0.17.1 # ✅ แทน flutter_html deprecated
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: any
-  build_runner: ^2.4.0
-  json_serializable: ^6.8.0
-  equatable: ^2.0.5
+  build_runner: ^2.12.2
+  json_serializable: ^6.13.0
+  equatable: ^2.0.8
 
 flutter:
   uses-material-design: true
@@ -155,6 +154,7 @@ flutter:
     - assets/logos/
     - assets/
     - assets/file_import/
+    - assets/form_templates/
 
   # fonts:
   #   - family: Roboto

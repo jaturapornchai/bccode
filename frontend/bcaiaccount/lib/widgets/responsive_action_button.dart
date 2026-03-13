@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smlaicloud/global.dart' as global;
 
 /// Responsive Action Button สำหรับ AppBar
 /// รองรับหน้าจอตั้งแต่เล็ก (mobile) ถึงใหญ่ (desktop)
@@ -95,9 +96,9 @@ class ResponsiveActionButton extends StatelessWidget {
       iconWidget = Badge(
         label: Text(
           badgeCount! > 99 ? '99+' : badgeCount.toString(),
-          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: badgeCount! > 0 ? Colors.red : Colors.grey,
+        backgroundColor: badgeCount! > 0 ? global.theme.negativeHighlightTextColor : global.theme.iconSecondaryColor,
         child: iconWidget,
       );
     }
@@ -203,7 +204,7 @@ class ResponsiveActionButton extends StatelessWidget {
           icon: iconWidget,
           label: Text(
             labelText,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             overflow: TextOverflow.ellipsis,
           ),
           style: ElevatedButton.styleFrom(
@@ -222,7 +223,7 @@ class ResponsiveActionButton extends StatelessWidget {
           icon: iconWidget,
           label: Text(
             labelText,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             overflow: TextOverflow.ellipsis,
           ),
           style: OutlinedButton.styleFrom(
@@ -240,7 +241,7 @@ class ResponsiveActionButton extends StatelessWidget {
           icon: iconWidget,
           label: Text(
             labelText,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             overflow: TextOverflow.ellipsis,
           ),
           style: TextButton.styleFrom(
@@ -332,7 +333,7 @@ class ActionButtonDivider extends StatelessWidget {
       height: height,
       width: 1,
       margin: const EdgeInsets.symmetric(horizontal: 8),
-      color: color ?? Colors.white.withValues(alpha: 0.3),
+      color: color ?? global.theme.onPrimaryColor.withValues(alpha: 0.3),
     );
   }
 }

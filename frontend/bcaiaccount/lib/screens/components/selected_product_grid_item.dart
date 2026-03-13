@@ -33,14 +33,14 @@ class SelectedProductGridItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.1),
+      shadowColor: global.theme.textColor.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          color: Colors.white,
+          color: global.theme.cardColor,
         ),
         child: Column(
           children: [
@@ -49,7 +49,7 @@ class SelectedProductGridItem extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.indigo.shade400,
+                color: global.theme.primaryColor,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(12),
                   topRight: Radius.circular(12),
@@ -60,8 +60,8 @@ class SelectedProductGridItem extends StatelessWidget {
                   Expanded(
                     child: Text(
                       product.product.barcode,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: global.theme.onPrimaryColor,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         fontFamily: 'Monospace',
@@ -76,13 +76,13 @@ class SelectedProductGridItem extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: global.theme.onPrimaryColor.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(15),
                       ),
                       child: Icon(
                         Icons.close,
                         size: 16,
-                        color: Colors.white,
+                        color: global.theme.onPrimaryColor,
                       ),
                     ),
                   ),
@@ -103,7 +103,7 @@ class SelectedProductGridItem extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11, // ลดจาก 12 เป็น 11
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade800,
+                        color: global.theme.textColor,
                         height: 1.0, // ลดจาก 1.1 เป็น 1.0
                       ),
                       maxLines: 2,
@@ -121,13 +121,13 @@ class SelectedProductGridItem extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(2), // ลดจาก 3 เป็น 2
                               decoration: BoxDecoration(
-                                color: Colors.blue.shade50,
+                                color: global.theme.rowHoverColor,
                                 borderRadius: BorderRadius.circular(3), // ลดจาก 4 เป็น 3
                               ),
                               child: Icon(
                                 Icons.straighten,
                                 size: 10, // ลดจาก 12 เป็น 10
-                                color: Colors.blue.shade600,
+                                color: global.theme.infoHighlightTextColor,
                               ),
                             ),
                             const SizedBox(width: 4), // ลดจาก 6 เป็น 4
@@ -137,7 +137,7 @@ class SelectedProductGridItem extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 9, // ลดจาก 10 เป็น 9
                                   fontWeight: FontWeight.w500,
-                                  color: Colors.blue.shade700,
+                                  color: global.theme.infoHighlightTextColor,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -154,13 +154,13 @@ class SelectedProductGridItem extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.all(2), // ลดจาก 3 เป็น 2
                                 decoration: BoxDecoration(
-                                  color: Colors.orange.shade50,
+                                  color: global.theme.warningHighlightColor,
                                   borderRadius: BorderRadius.circular(3), // ลดจาก 4 เป็น 3
                                 ),
                                 child: Icon(
                                   Icons.inventory_2,
                                   size: 10, // ลดจาก 12 เป็น 10
-                                  color: Colors.orange.shade600,
+                                  color: global.theme.warningHighlightTextColor,
                                 ),
                               ),
                               const SizedBox(width: 4), // ลดจาก 6 เป็น 4
@@ -170,7 +170,7 @@ class SelectedProductGridItem extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 9, // ลดจาก 10 เป็น 9
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.orange.shade700,
+                                    color: global.theme.warningHighlightTextColor,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -185,9 +185,9 @@ class SelectedProductGridItem extends StatelessWidget {
                     // Quantity section - ปรับให้สวยกว่าเดิม
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
+                        color: global.theme.rowHoverColor,
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: Colors.blue.shade200, width: 1),
+                        border: Border.all(color: global.theme.infoHighlightColor, width: 1),
                       ),
                       child: Row(
                         children: [
@@ -207,7 +207,7 @@ class SelectedProductGridItem extends StatelessWidget {
                               child: Container(
                                 height: 26,
                                 decoration: BoxDecoration(
-                                  color: product.copies > 1 ? Colors.red.shade100.withValues(alpha: 0.7) : Colors.grey.shade100,
+                                  color: product.copies > 1 ? global.theme.negativeHighlightColor.withValues(alpha: 0.7) : global.theme.dividerBorderColor,
                                   borderRadius: const BorderRadius.only(
                                     topLeft: Radius.circular(6),
                                     bottomLeft: Radius.circular(6),
@@ -216,7 +216,7 @@ class SelectedProductGridItem extends StatelessWidget {
                                 child: Icon(
                                   Icons.remove,
                                   size: 16,
-                                  color: product.copies > 1 ? Colors.red.shade600 : Colors.grey.shade400,
+                                  color: product.copies > 1 ? global.theme.negativeHighlightTextColor : global.theme.iconSecondaryColor,
                                 ),
                               ),
                             ),
@@ -227,9 +227,9 @@ class SelectedProductGridItem extends StatelessWidget {
                             width: 50,
                             height: 26,
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: global.theme.cardColor,
                               border: Border.symmetric(
-                                vertical: BorderSide(color: Colors.blue.shade200, width: 1),
+                                vertical: BorderSide(color: global.theme.infoHighlightColor, width: 1),
                               ),
                             ),
                             child: InkWell(
@@ -240,7 +240,7 @@ class SelectedProductGridItem extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
-                                    color: Colors.blue.shade700,
+                                    color: global.theme.infoHighlightTextColor,
                                   ),
                                 ),
                               ),
@@ -263,7 +263,7 @@ class SelectedProductGridItem extends StatelessWidget {
                               child: Container(
                                 height: 26,
                                 decoration: BoxDecoration(
-                                  color: product.copies < 99 ? Colors.green.shade100.withValues(alpha: 0.7) : Colors.grey.shade100,
+                                  color: product.copies < 99 ? global.theme.positiveHighlightColor.withValues(alpha: 0.7) : global.theme.dividerBorderColor,
                                   borderRadius: const BorderRadius.only(
                                     topRight: Radius.circular(6),
                                     bottomRight: Radius.circular(6),
@@ -272,7 +272,7 @@ class SelectedProductGridItem extends StatelessWidget {
                                 child: Icon(
                                   Icons.add,
                                   size: 16,
-                                  color: product.copies < 99 ? Colors.green.shade600 : Colors.grey.shade400,
+                                  color: product.copies < 99 ? global.theme.positiveHighlightTextColor : global.theme.iconSecondaryColor,
                                 ),
                               ),
                             ),

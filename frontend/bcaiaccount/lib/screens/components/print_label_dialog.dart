@@ -64,18 +64,35 @@ extension LabelSizeExtension on LabelSize {
     }
   }
 
-  MaterialColor get color {
+  /// สีพื้นหลัง (highlight bg) ของแต่ละขนาดฉลาก
+  Color get bgColor {
     switch (this) {
       case LabelSize.regular:
-        return Colors.blue;
+        return global.theme.infoHighlightColor;
       case LabelSize.small:
-        return Colors.orange;
+        return global.theme.warningHighlightColor;
       case LabelSize.medium:
-        return Colors.teal;
+        return global.theme.infoHighlightColor;
       case LabelSize.large:
-        return Colors.green;
+        return global.theme.positiveHighlightColor;
       case LabelSize.xlarge:
-        return Colors.purple;
+        return global.theme.primaryColor.withValues(alpha: 0.1);
+    }
+  }
+
+  /// สีขอบ/ไอคอน/ข้อความ (highlight text) ของแต่ละขนาดฉลาก
+  Color get color {
+    switch (this) {
+      case LabelSize.regular:
+        return global.theme.infoHighlightTextColor;
+      case LabelSize.small:
+        return global.theme.warningHighlightTextColor;
+      case LabelSize.medium:
+        return global.theme.infoHighlightTextColor;
+      case LabelSize.large:
+        return global.theme.positiveHighlightTextColor;
+      case LabelSize.xlarge:
+        return global.theme.primaryColor;
     }
   }
 
@@ -225,13 +242,13 @@ class _PrintLabelSelectionDialog extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: labelSize.color.shade50,
-          border: Border.all(color: labelSize.color.shade200),
+          color: labelSize.bgColor,
+          border: Border.all(color: labelSize.bgColor),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           children: [
-            Icon(labelSize.icon, color: labelSize.color.shade700),
+            Icon(labelSize.icon, color: labelSize.color),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -242,7 +259,7 @@ class _PrintLabelSelectionDialog extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: labelSize.color.shade700,
+                      color: labelSize.color,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -250,7 +267,7 @@ class _PrintLabelSelectionDialog extends StatelessWidget {
                     labelSize.description,
                     style: TextStyle(
                       fontSize: 12,
-                      color: labelSize.color.shade900,
+                      color: labelSize.color,
                     ),
                   ),
                 ],
@@ -309,7 +326,8 @@ class _ColorSelectionDialog extends StatefulWidget {
   State<_ColorSelectionDialog> createState() => _ColorSelectionDialogState();
 }
 
-class _ColorSelectionDialogState extends State<_ColorSelectionDialog> {
+class _ColorSelectionDialogState extends State<_ColorSelectionDialog>
+    with global.ThemeRefreshMixin {
   PdfColor _priceTextColor = PdfColors.black;
   bool _showBorder = true;
 
@@ -333,9 +351,9 @@ class _ColorSelectionDialogState extends State<_ColorSelectionDialog> {
           // ตัวเลือกสีดำ
           _buildColorOption(
             color: PdfColors.black,
-            displayColor: Colors.grey,
-            backgroundColor: Colors.grey.shade50,
-            borderColor: Colors.grey.shade300,
+            displayColor: global.theme.textSecondaryColor,
+            backgroundColor: global.theme.surfaceColor,
+            borderColor: global.theme.dividerBorderColor,
             title: global.language('color_black'),
             description: global.language('label_general_description'),
           ),
@@ -345,9 +363,9 @@ class _ColorSelectionDialogState extends State<_ColorSelectionDialog> {
           // ตัวเลือกสีแดง
           _buildColorOption(
             color: PdfColors.red,
-            displayColor: Colors.red,
-            backgroundColor: Colors.grey.shade50,
-            borderColor: Colors.grey.shade300,
+            displayColor: global.theme.negativeHighlightTextColor,
+            backgroundColor: global.theme.surfaceColor,
+            borderColor: global.theme.dividerBorderColor,
             title: global.language('color_red'),
             description: global.language('label_special_price_description'),
           ),
@@ -367,8 +385,8 @@ class _ColorSelectionDialogState extends State<_ColorSelectionDialog> {
       padding: const EdgeInsets.all(12),
       margin: const EdgeInsets.only(bottom: 15),
       decoration: BoxDecoration(
-        color: widget.labelSize.color.shade50,
-        border: Border.all(color: widget.labelSize.color.shade200),
+        color: widget.labelSize.bgColor,
+        border: Border.all(color: widget.labelSize.bgColor),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -379,7 +397,7 @@ class _ColorSelectionDialogState extends State<_ColorSelectionDialog> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: widget.labelSize.color.shade700,
+              color: widget.labelSize.color,
             ),
           ),
           const SizedBox(height: 8),
@@ -423,9 +441,9 @@ class _ColorSelectionDialogState extends State<_ColorSelectionDialog> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
         decoration: BoxDecoration(
-          color: isSelected ? widget.labelSize.color.shade100 : Colors.white,
+          color: isSelected ? widget.labelSize.bgColor : global.theme.cardColor,
           border: Border.all(
-            color: isSelected ? widget.labelSize.color : Colors.grey.shade300,
+            color: isSelected ? widget.labelSize.color : global.theme.dividerBorderColor,
             width: 2,
           ),
           borderRadius: BorderRadius.circular(6),
@@ -435,7 +453,7 @@ class _ColorSelectionDialogState extends State<_ColorSelectionDialog> {
           children: [
             Icon(
               icon,
-              color: isSelected ? widget.labelSize.color.shade700 : Colors.grey,
+              color: isSelected ? widget.labelSize.color : global.theme.iconSecondaryColor,
               size: 18,
             ),
             const SizedBox(width: 6),
@@ -443,8 +461,8 @@ class _ColorSelectionDialogState extends State<_ColorSelectionDialog> {
               label,
               style: TextStyle(
                 color: isSelected
-                    ? widget.labelSize.color.shade700
-                    : Colors.grey.shade600,
+                    ? widget.labelSize.color
+                    : global.theme.textSecondaryColor,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
@@ -482,8 +500,8 @@ class _ColorSelectionDialogState extends State<_ColorSelectionDialog> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: title == global.language('color_black') ? Colors.black : displayColor,
-                border: Border.all(color: Colors.grey),
+                color: title == global.language('color_black') ? global.theme.textColor : displayColor,
+                border: Border.all(color: global.theme.iconSecondaryColor),
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
@@ -498,8 +516,8 @@ class _ColorSelectionDialogState extends State<_ColorSelectionDialog> {
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: title == global.language('color_black')
-                          ? Colors.grey.shade800
-                          : Colors.red.shade700,
+                          ? global.theme.textColor
+                          : global.theme.negativeHighlightTextColor,
                     ),
                   ),
                   Text(
@@ -507,8 +525,8 @@ class _ColorSelectionDialogState extends State<_ColorSelectionDialog> {
                     style: TextStyle(
                       fontSize: 12,
                       color: title == global.language('color_black')
-                          ? Colors.grey.shade600
-                          : Colors.red.shade600,
+                          ? global.theme.textSecondaryColor
+                          : global.theme.negativeHighlightTextColor,
                     ),
                   ),
                 ],

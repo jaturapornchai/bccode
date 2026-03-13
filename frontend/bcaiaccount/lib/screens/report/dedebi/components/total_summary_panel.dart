@@ -13,7 +13,7 @@ import 'package:smlaicloud/model/bi_report/stock_balance_model.dart';
 import 'package:smlaicloud/model/bi_report/stock_movment_summary_model.dart';
 import 'package:smlaicloud/screens/report/dedebi/utils/report_utils.dart';
 import 'package:smlaicloud/utils/logger/app_logger.dart';
-import '../../../../global.dart' as global;
+import 'package:smlaicloud/global.dart' as global;
 
 class TotalSummaryPanel extends StatelessWidget {
   final SaleReportSummary? totalSummary;
@@ -114,12 +114,12 @@ class TotalSummaryPanel extends StatelessWidget {
   Widget _buildLoadingWidget() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: global.theme.textColor.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -142,7 +142,7 @@ class TotalSummaryPanel extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade800,
+                  color: global.theme.textColor,
                 ),
               ),
             ],
@@ -164,7 +164,7 @@ class TotalSummaryPanel extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   'กำลังโหลดยอดรวม...',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
                 ),
               ],
             ),
@@ -177,12 +177,12 @@ class TotalSummaryPanel extends StatelessWidget {
   Widget _buildEmptyWidget() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: global.theme.textColor.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -196,7 +196,7 @@ class TotalSummaryPanel extends StatelessWidget {
             children: [
               Icon(
                 Icons.summarize_outlined,
-                color: Colors.grey.shade400,
+                color: global.theme.iconSecondaryColor,
                 size: 20,
               ),
               SizedBox(width: 8),
@@ -205,7 +205,7 @@ class TotalSummaryPanel extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade400,
+                  color: global.theme.iconSecondaryColor,
                 ),
               ),
             ],
@@ -214,7 +214,7 @@ class TotalSummaryPanel extends StatelessWidget {
           Center(
             child: Text(
               global.language('no_total_data'),
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
             ),
           ),
         ],
@@ -225,12 +225,12 @@ class TotalSummaryPanel extends StatelessWidget {
   Widget _buildSummaryContent() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: global.theme.textColor.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -254,7 +254,7 @@ class TotalSummaryPanel extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade800,
+                  color: global.theme.textColor,
                 ),
               ),
             ],
@@ -267,7 +267,7 @@ class TotalSummaryPanel extends StatelessWidget {
             _buildSummaryRow(
               global.language('database_master_info.item_count'),
               '${totalSummary!.totalRecords ?? 0} รายการ',
-              Colors.blue.shade600,
+              global.theme.infoHighlightTextColor,
               Icons.receipt_long_outlined,
             ),
             SizedBox(height: 12),
@@ -304,21 +304,21 @@ class TotalSummaryPanel extends StatelessWidget {
             _buildSummaryRow(
               global.language('before_tax'),
               ReportUtils.formatCurrency(totalSummary!.totalBeforeVat ?? 0),
-              Colors.orange.shade600,
+              global.theme.warningHighlightTextColor,
               Icons.calculate_outlined,
             ),
             SizedBox(height: 12),
             _buildSummaryRow(
               global.language('sale_daily_report_vat_value'),
               ReportUtils.formatCurrency(totalSummary!.totalVatValue ?? 0),
-              Colors.red.shade600,
+              global.theme.negativeHighlightTextColor,
               Icons.percent_outlined,
             ),
             SizedBox(height: 12),
             _buildSummaryRow(
               global.language('net_amount'),
               ReportUtils.formatCurrency(totalSummary!.totalAmount ?? 0),
-              Colors.green.shade600,
+              global.theme.positiveHighlightTextColor,
               Icons.payments_outlined,
             ),
 
@@ -326,14 +326,14 @@ class TotalSummaryPanel extends StatelessWidget {
             if (totalSummary!.totalByBranch != null &&
                 totalSummary!.totalByBranch!.length > 1) ...[
               const SizedBox(height: 16),
-              Divider(color: Colors.grey.shade300),
+              Divider(color: global.theme.dividerBorderColor),
               const SizedBox(height: 12),
               Text(
                 'แยกตามสาขา',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade700,
+                  color: global.theme.iconColor,
                 ),
               ),
               const SizedBox(height: 8),
@@ -347,14 +347,14 @@ class TotalSummaryPanel extends StatelessWidget {
             _buildSummaryRow(
               global.language('database_master_info.item_count'),
               '${dailySummary!.totalDays ?? 0} รายการ',
-              Colors.blue.shade600,
+              global.theme.infoHighlightTextColor,
               Icons.receipt_long_outlined,
             ),
             SizedBox(height: 12),
             _buildSummaryRow(
               global.language('total_sales'),
               ReportUtils.formatCurrency(dailySummary!.totalAmount ?? 0),
-              Colors.green.shade600,
+              global.theme.positiveHighlightTextColor,
               Icons.payments_outlined,
             ),
             const SizedBox(height: 12),
@@ -370,63 +370,63 @@ class TotalSummaryPanel extends StatelessWidget {
             _buildSummaryRow(
               global.language('database_master_info.item_count'),
               '${stockSummary!.totalRecords} รายการ',
-              Colors.blue.shade600,
+              global.theme.infoHighlightTextColor,
               Icons.receipt_long_outlined,
             ),
             const SizedBox(height: 12),
             _buildSummaryRow(
               'ยอดเข้า',
               '${stockSummary!.totalQtyIn!.toStringAsFixed(2)} ',
-              Colors.green.shade600,
+              global.theme.positiveHighlightTextColor,
               Icons.add_box_outlined,
             ),
             const SizedBox(height: 12),
             _buildSummaryRow(
               'ต้นทุนเฉลี่ยเข้า',
               ReportUtils.formatCurrency(stockSummary!.averageCostIn!),
-              Colors.green.shade400,
+              global.theme.positiveHighlightTextColor,
               Icons.trending_up_outlined,
             ),
             const SizedBox(height: 12),
             _buildSummaryRow(
               'มูลค่าเข้า',
               ReportUtils.formatCurrency(stockSummary!.totalBalanceIn!),
-              Colors.green.shade700,
+              global.theme.positiveHighlightTextColor,
               Icons.account_balance_wallet_outlined,
             ),
             const SizedBox(height: 12),
             _buildSummaryRow(
               'ยอดออก',
               '${stockSummary!.totalQtyOut!.toStringAsFixed(2)} ',
-              Colors.red.shade600,
+              global.theme.negativeHighlightTextColor,
               Icons.remove_circle_outline,
             ),
             const SizedBox(height: 12),
             _buildSummaryRow(
               'ต้นทุนเฉลี่ยออก',
               ReportUtils.formatCurrency(stockSummary!.averageCostOut!),
-              Colors.red.shade400,
+              global.theme.negativeHighlightTextColor,
               Icons.trending_down_outlined,
             ),
             const SizedBox(height: 12),
             _buildSummaryRow(
               'มูลค่าออก',
               ReportUtils.formatCurrency(stockSummary!.totalBalanceOut!),
-              Colors.red.shade700,
+              global.theme.negativeHighlightTextColor,
               Icons.account_balance_wallet_outlined,
             ),
             SizedBox(height: 12),
             _buildSummaryRow(
               global.language('stock_balance'),
               '${stockSummary!.finalBalanceQty!.toStringAsFixed(2)} ',
-              Colors.orange.shade600,
+              global.theme.warningHighlightTextColor,
               Icons.inventory_outlined,
             ),
             const SizedBox(height: 12),
             _buildSummaryRow(
               'ต้นทุนเฉลี่ยสุดท้าย',
               ReportUtils.formatCurrency(stockSummary!.finalAverageCost!),
-              Colors.orange.shade400,
+              global.theme.warningHighlightTextColor,
               Icons.calculate_outlined,
             ),
             SizedBox(height: 12),
@@ -442,14 +442,14 @@ class TotalSummaryPanel extends StatelessWidget {
             _buildSummaryRow(
               global.language('date_range'),
               '${ReportUtils.formatDate(paymentSummary!.fromDate)} - ${ReportUtils.formatDate(paymentSummary!.toDate)}',
-              Colors.blue.shade600,
+              global.theme.infoHighlightTextColor,
               Icons.date_range,
             ),
             SizedBox(height: 12),
             _buildSummaryRow(
               global.language('total_sales'),
               ReportUtils.formatCurrency(paymentSummary!.totalAmount),
-              Colors.green.shade600,
+              global.theme.positiveHighlightTextColor,
               Icons.account_balance_wallet_outlined,
             ),
             const SizedBox(height: 12),
@@ -465,14 +465,14 @@ class TotalSummaryPanel extends StatelessWidget {
             _buildSummaryRow(
               global.language('database_master_info.item_count'),
               '${saleReturnSummary!.totalRecords} รายการ',
-              Colors.orange.shade600,
+              global.theme.warningHighlightTextColor,
               Icons.receipt_long_outlined,
             ),
             const SizedBox(height: 12),
             _buildSummaryRow(
               'ยอดคืนรวม',
               ReportUtils.formatCurrency(saleReturnSummary!.totalAmount),
-              Colors.red.shade600,
+              global.theme.negativeHighlightTextColor,
               Icons.assignment_return_outlined,
             ),
           ] else if (reportType == BiReportType.stockBalance &&
@@ -481,7 +481,7 @@ class TotalSummaryPanel extends StatelessWidget {
             _buildSummaryRow(
               global.language('date'),
               ReportUtils.formatDate(stockBalanceSummary!.toDate),
-              Colors.blue.shade600,
+              global.theme.infoHighlightTextColor,
               Icons.date_range,
             ),
             SizedBox(height: 12),
@@ -495,7 +495,7 @@ class TotalSummaryPanel extends StatelessWidget {
             _buildSummaryRow(
               'ยอดคงเหลือรวม',
               '${stockBalanceSummary!.totalBalanceQty.toStringAsFixed(2)} ',
-              Colors.orange.shade600,
+              global.theme.warningHighlightTextColor,
               Icons.inventory_outlined,
             ),
             SizedBox(height: 12),
@@ -506,7 +506,7 @@ class TotalSummaryPanel extends StatelessWidget {
                       stockBalanceSummary!.averageCost!,
                     )
                   : global.language('no_data_available'),
-              Colors.green.shade600,
+              global.theme.positiveHighlightTextColor,
               Icons.calculate_outlined,
             ),
             SizedBox(height: 12),
@@ -529,7 +529,7 @@ class TotalSummaryPanel extends StatelessWidget {
                       purchasePartialSummary!.toDate != null
                   ? '${ReportUtils.formatDate(purchasePartialSummary!.fromDate!)} - ${ReportUtils.formatDate(purchasePartialSummary!.toDate!)}'
                   : global.language('no_data_available'),
-              Colors.blue.shade600,
+              global.theme.infoHighlightTextColor,
               Icons.date_range,
             ),
             SizedBox(height: 12),
@@ -545,7 +545,7 @@ class TotalSummaryPanel extends StatelessWidget {
               ReportUtils.formatCurrency(
                 purchasePartialSummary!.totalValue ?? 0,
               ),
-              Colors.orange.shade600,
+              global.theme.warningHighlightTextColor,
               Icons.inventory_2_outlined,
             ),
             SizedBox(height: 12),
@@ -572,7 +572,7 @@ class TotalSummaryPanel extends StatelessWidget {
               ReportUtils.formatCurrency(
                 purchasePartialSummary!.totalVatValue ?? 0,
               ),
-              Colors.red.shade600,
+              global.theme.negativeHighlightTextColor,
               Icons.percent_outlined,
             ),
             SizedBox(height: 12),
@@ -581,7 +581,7 @@ class TotalSummaryPanel extends StatelessWidget {
               ReportUtils.formatCurrency(
                 purchasePartialSummary!.totalAmount ?? 0,
               ),
-              Colors.green.shade600,
+              global.theme.positiveHighlightTextColor,
               Icons.payments_outlined,
             ),
           ] else if (reportType == BiReportType.grossProfitByDocument &&
@@ -590,7 +590,7 @@ class TotalSummaryPanel extends StatelessWidget {
             _buildSummaryRow(
               global.language('date_range'),
               '${ReportUtils.formatDate(grossProfitSummary!.fromdate!)} - ${ReportUtils.formatDate(grossProfitSummary!.todate!)}',
-              Colors.blue.shade600,
+              global.theme.infoHighlightTextColor,
               Icons.date_range,
             ),
             SizedBox(height: 12),
@@ -606,7 +606,7 @@ class TotalSummaryPanel extends StatelessWidget {
               ReportUtils.formatCurrency(
                 grossProfitSummary!.totalTotalBeforeVat!,
               ),
-              Colors.orange.shade600,
+              global.theme.warningHighlightTextColor,
               Icons.inventory_2_outlined,
             ),
             SizedBox(height: 12),
@@ -631,7 +631,7 @@ class TotalSummaryPanel extends StatelessWidget {
             _buildSummaryRow(
               global.language('total_cost'),
               ReportUtils.formatCurrency(grossProfitSummary!.totalTotalCost!),
-              Colors.red.shade600,
+              global.theme.negativeHighlightTextColor,
               Icons.money_off_outlined,
             ),
             SizedBox(height: 12),
@@ -639,8 +639,8 @@ class TotalSummaryPanel extends StatelessWidget {
               global.language('total_gross_profit'),
               ReportUtils.formatCurrency(grossProfitSummary!.totalPal!),
               grossProfitSummary!.totalPal! >= 0
-                  ? Colors.green.shade600
-                  : Colors.red.shade600,
+                  ? global.theme.positiveHighlightTextColor
+                  : global.theme.negativeHighlightTextColor,
               Icons.trending_up_outlined,
             ),
             SizedBox(height: 12),
@@ -648,8 +648,8 @@ class TotalSummaryPanel extends StatelessWidget {
               global.language('avg_profit_pct'),
               '${grossProfitSummary!.averageProfitPercentage.toStringAsFixed(2)}%',
               grossProfitSummary!.averageProfitPercentage >= 0
-                  ? Colors.green.shade600
-                  : Colors.red.shade600,
+                  ? global.theme.positiveHighlightTextColor
+                  : global.theme.negativeHighlightTextColor,
               Icons.percent_outlined,
             ),
           ] else if (reportType == BiReportType.grossProfitByProduct &&
@@ -658,7 +658,7 @@ class TotalSummaryPanel extends StatelessWidget {
             _buildSummaryRow(
               global.language('date_range'),
               '${ReportUtils.formatDate(grossProfitByProductSummary!.fromdate!)} - ${ReportUtils.formatDate(grossProfitByProductSummary!.todate!)}',
-              Colors.blue.shade600,
+              global.theme.infoHighlightTextColor,
               Icons.date_range,
             ),
             SizedBox(height: 12),
@@ -681,7 +681,7 @@ class TotalSummaryPanel extends StatelessWidget {
               ReportUtils.formatCurrency(
                 grossProfitByProductSummary!.totalSumAmountExcludeVat!,
               ),
-              Colors.orange.shade600,
+              global.theme.warningHighlightTextColor,
               Icons.shopping_cart_outlined,
             ),
             SizedBox(height: 12),
@@ -690,7 +690,7 @@ class TotalSummaryPanel extends StatelessWidget {
               ReportUtils.formatCurrency(
                 grossProfitByProductSummary!.totalTotalCost!,
               ),
-              Colors.red.shade600,
+              global.theme.negativeHighlightTextColor,
               Icons.money_off_outlined,
             ),
             SizedBox(height: 12),
@@ -700,8 +700,8 @@ class TotalSummaryPanel extends StatelessWidget {
                 grossProfitByProductSummary!.totalPal!,
               ),
               grossProfitByProductSummary!.totalPal! >= 0
-                  ? Colors.green.shade600
-                  : Colors.red.shade600,
+                  ? global.theme.positiveHighlightTextColor
+                  : global.theme.negativeHighlightTextColor,
               Icons.trending_up_outlined,
             ),
             SizedBox(height: 12),
@@ -709,8 +709,8 @@ class TotalSummaryPanel extends StatelessWidget {
               global.language('avg_profit_pct'),
               '${grossProfitByProductSummary!.averageProfitPercentage.toStringAsFixed(2)}%',
               grossProfitByProductSummary!.averageProfitPercentage >= 0
-                  ? Colors.green.shade600
-                  : Colors.red.shade600,
+                  ? global.theme.positiveHighlightTextColor
+                  : global.theme.negativeHighlightTextColor,
               Icons.percent_outlined,
             ),
           ] else if (reportType == BiReportType.vatSale &&
@@ -719,7 +719,7 @@ class TotalSummaryPanel extends StatelessWidget {
             _buildSummaryRow(
               global.language('date_range'),
               '${ReportUtils.formatDate(vatSaleSummary!.fromdate)} - ${ReportUtils.formatDate(vatSaleSummary!.todate)}',
-              Colors.blue.shade600,
+              global.theme.infoHighlightTextColor,
               Icons.calendar_month_outlined,
             ),
             SizedBox(height: 12),
@@ -740,21 +740,21 @@ class TotalSummaryPanel extends StatelessWidget {
             _buildSummaryRow(
               global.language('tax_included'),
               ReportUtils.formatCurrency(vatSaleSummary!.totalTotalVatValue),
-              Colors.blue.shade600,
+              global.theme.infoHighlightTextColor,
               Icons.money_outlined,
             ),
             SizedBox(height: 12),
             _buildSummaryRow(
               global.language('total_tax_exempt'),
               ReportUtils.formatCurrency(vatSaleSummary!.totalTotalExceptVat),
-              Colors.orange.shade600,
+              global.theme.warningHighlightTextColor,
               Icons.money_off_outlined,
             ),
             SizedBox(height: 12),
             _buildSummaryRow(
               global.language('product_amount'),
               ReportUtils.formatCurrency(vatSaleSummary!.totalTotalAmount),
-              Colors.green.shade600,
+              global.theme.positiveHighlightTextColor,
               Icons.payments_outlined,
             ),
           ] else if (reportType == BiReportType.vatBuy &&
@@ -763,7 +763,7 @@ class TotalSummaryPanel extends StatelessWidget {
             _buildSummaryRow(
               global.language('date_range'),
               '${ReportUtils.formatDate(vatBuySummary!.fromdate)} - ${ReportUtils.formatDate(vatBuySummary!.todate)}',
-              Colors.blue.shade600,
+              global.theme.infoHighlightTextColor,
               Icons.calendar_month_outlined,
             ),
             SizedBox(height: 12),
@@ -784,21 +784,21 @@ class TotalSummaryPanel extends StatelessWidget {
             _buildSummaryRow(
               global.language('tax_included'),
               ReportUtils.formatCurrency(vatBuySummary!.totalTotalVatValue),
-              Colors.blue.shade600,
+              global.theme.infoHighlightTextColor,
               Icons.money_outlined,
             ),
             SizedBox(height: 12),
             _buildSummaryRow(
               global.language('total_tax_exempt'),
               ReportUtils.formatCurrency(vatBuySummary!.totalTotalExceptVat),
-              Colors.orange.shade600,
+              global.theme.warningHighlightTextColor,
               Icons.money_off_outlined,
             ),
             SizedBox(height: 12),
             _buildSummaryRow(
               global.language('product_amount'),
               ReportUtils.formatCurrency(vatBuySummary!.totalTotalAmount),
-              Colors.green.shade600,
+              global.theme.positiveHighlightTextColor,
               Icons.payments_outlined,
             ),
           ] else ...[
@@ -806,7 +806,7 @@ class TotalSummaryPanel extends StatelessWidget {
             Center(
               child: Text(
                 global.language('no_total_data'),
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
               ),
             ),
           ],
@@ -841,7 +841,7 @@ class TotalSummaryPanel extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey.shade600,
+                  color: global.theme.textSecondaryColor,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -849,7 +849,7 @@ class TotalSummaryPanel extends StatelessWidget {
                 value,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey.shade800,
+                  color: global.theme.textColor,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -865,23 +865,23 @@ class TotalSummaryPanel extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: global.theme.backgroundColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.store_outlined, size: 14, color: Colors.grey.shade600),
+              Icon(Icons.store_outlined, size: 14, color: global.theme.textSecondaryColor),
               const SizedBox(width: 6),
               Text(
                 'สาขา ${branch.branchcode ?? '-'}',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade700,
+                  color: global.theme.iconColor,
                 ),
               ),
             ],
@@ -892,13 +892,13 @@ class TotalSummaryPanel extends StatelessWidget {
             children: [
               Text(
                 '${branch.totalRecords ?? 0} รายการ',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor),
               ),
               Text(
                 ReportUtils.formatCurrency(branch.totalAmount ?? 0),
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey.shade800,
+                  color: global.theme.textColor,
                   fontWeight: FontWeight.w600,
                 ),
               ),

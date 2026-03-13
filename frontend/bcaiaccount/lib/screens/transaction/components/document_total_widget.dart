@@ -14,10 +14,10 @@ class DocumentTotalWidget extends StatelessWidget {
       margin: const EdgeInsets.only(top: 4.0),
       padding: const EdgeInsets.all(4.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
-        boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.15), spreadRadius: 1, blurRadius: 4, offset: const Offset(0, 2))],
+        border: Border.all(color: global.theme.dividerBorderColor),
+        boxShadow: [BoxShadow(color: global.theme.iconSecondaryColor.withValues(alpha: 0.15), spreadRadius: 1, blurRadius: 4, offset: const Offset(0, 2))],
       ),
       child: Column(children: _buildFinancialSummary()),
     );
@@ -128,18 +128,18 @@ class DocumentTotalWidget extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 1.0),
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: global.theme.surfaceColor,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Row(
         children: [
-          Icon(_getIconForLabel(labelKey), size: 13, color: Colors.grey[600]),
+          Icon(_getIconForLabel(labelKey), size: 13, color: global.theme.iconSecondaryColor),
           SizedBox(width: 6),
           Expanded(
             child: Text(
               global.language(labelKey),
-              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12, color: Colors.grey[700]),
+              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12, color: global.theme.textSecondaryColor),
             ),
           ),
           Column(
@@ -149,11 +149,11 @@ class DocumentTotalWidget extends StatelessWidget {
               if (isMulti)
                 Text(
                   '$docSymbol ${global.formatNumber(_resolveDocValue(value, docValue: docValue, rate: rate))}',
-                  style: TextStyle(fontSize: 11, color: Colors.blue[600], fontWeight: FontWeight.w500),
+                  style: TextStyle(fontSize: 11, color: global.theme.infoHighlightTextColor, fontWeight: FontWeight.w500),
                 ),
               Text(
                 global.formatNumber(value.toDouble()),
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.black87),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: global.theme.textColor),
               ),
             ],
           ),
@@ -193,13 +193,13 @@ class DocumentTotalWidget extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 1.0),
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       decoration: BoxDecoration(
-        color: Colors.orange[50],
+        color: global.theme.warningHighlightColor,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: Colors.orange[200]!),
+        border: Border.all(color: global.theme.warningHighlightColor),
       ),
       child: Row(
         children: [
-          Icon(Icons.calculate, size: 13, color: Colors.orange[600]),
+          Icon(Icons.calculate, size: 13, color: global.theme.warningHighlightTextColor),
           SizedBox(width: 6),
           Expanded(
             child: Column(
@@ -207,12 +207,12 @@ class DocumentTotalWidget extends StatelessWidget {
               children: [
                 Text(
                   global.language(labelKey),
-                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12, color: Colors.orange[700]),
+                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12, color: global.theme.warningHighlightTextColor),
                 ),
                 if (formula.isNotEmpty)
                   Text(
                     '${global.language('formula')}: $formula',
-                    style: TextStyle(fontSize: 10, color: Colors.orange[600], fontStyle: FontStyle.italic),
+                    style: TextStyle(fontSize: 10, color: global.theme.warningHighlightTextColor, fontStyle: FontStyle.italic),
                   ),
               ],
             ),
@@ -224,11 +224,11 @@ class DocumentTotalWidget extends StatelessWidget {
               if (isMulti)
                 Text(
                   '$docSymbol ${global.formatNumber(_resolveDocValue(value, docValue: docValue, rate: rate))}',
-                  style: TextStyle(fontSize: 11, color: Colors.blue[600], fontWeight: FontWeight.w500),
+                  style: TextStyle(fontSize: 11, color: global.theme.infoHighlightTextColor, fontWeight: FontWeight.w500),
                 ),
               Text(
                 value.toString(),
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.orange[800]),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: global.theme.warningHighlightTextColor),
               ),
             ],
           ),
@@ -242,13 +242,13 @@ class DocumentTotalWidget extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 1.0),
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       decoration: BoxDecoration(
-        color: Colors.green[50],
+        color: global.theme.positiveHighlightColor,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: Colors.green[200]!),
+        border: Border.all(color: global.theme.positiveHighlightColor),
       ),
       child: Row(
         children: [
-          Icon(Icons.percent, size: 13, color: Colors.green[600]),
+          Icon(Icons.percent, size: 13, color: global.theme.positiveHighlightTextColor),
           SizedBox(width: 6),
           Expanded(
             child: Column(
@@ -256,11 +256,11 @@ class DocumentTotalWidget extends StatelessWidget {
               children: [
                 Text(
                   global.language(labelKey),
-                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12, color: Colors.green[700]),
+                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12, color: global.theme.positiveHighlightTextColor),
                 ),
                 Text(
                   '${global.language('rate')}: $vatRate%',
-                  style: TextStyle(fontSize: 10, color: Colors.green[600], fontStyle: FontStyle.italic),
+                  style: TextStyle(fontSize: 10, color: global.theme.positiveHighlightTextColor, fontStyle: FontStyle.italic),
                 ),
               ],
             ),
@@ -272,11 +272,11 @@ class DocumentTotalWidget extends StatelessWidget {
               if (isMulti)
                 Text(
                   '$docSymbol ${global.formatNumber(_resolveDocValue(value, docValue: docValue, rate: rate))}',
-                  style: TextStyle(fontSize: 11, color: Colors.blue[600], fontWeight: FontWeight.w500),
+                  style: TextStyle(fontSize: 11, color: global.theme.infoHighlightTextColor, fontWeight: FontWeight.w500),
                 ),
               Text(
                 global.formatNumber(value.toDouble()),
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.green[800]),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: global.theme.positiveHighlightTextColor),
               ),
             ],
           ),
@@ -319,7 +319,7 @@ class DocumentTotalWidget extends StatelessWidget {
       margin: const EdgeInsets.only(top: 2.0),
       padding: const EdgeInsets.all(8.0),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [Colors.blue[500]!, Colors.blue[600]!], begin: Alignment.topLeft, end: Alignment.bottomRight),
+        gradient: LinearGradient(colors: [global.theme.infoHighlightTextColor, global.theme.infoHighlightTextColor], begin: Alignment.topLeft, end: Alignment.bottomRight),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Column(
@@ -329,41 +329,41 @@ class DocumentTotalWidget extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.receipt, color: Colors.white70, size: 14),
+                Icon(Icons.receipt, color: global.theme.onPrimaryColor.withValues(alpha: 0.7), size: 14),
                 SizedBox(width: 4),
                 Text(
                   '${global.language('sum_pay')} ($docCurrency)',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
+                  style: TextStyle(color: global.theme.onPrimaryColor.withValues(alpha: 0.7), fontSize: 12, fontWeight: FontWeight.w500),
                 ),
                 Spacer(),
                 Text(
                   '$docCurrencySymbol ${global.formatNumber(finalTotalDoc)}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: global.theme.onPrimaryColor.withValues(alpha: 0.7), fontSize: 14, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 4),
-            Divider(color: Colors.white.withValues(alpha: 0.3), height: 1),
+            Divider(color: global.theme.cardColor.withValues(alpha: 0.3), height: 1),
             const SizedBox(height: 4),
           ],
           // ยอดรวมในสกุลเงินหลัก (Base Currency)
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(isMultiCurrency ? Icons.account_balance : Icons.monetization_on, color: Colors.white, size: isMultiCurrency ? 16 : 18),
+              Icon(isMultiCurrency ? Icons.account_balance : Icons.monetization_on, color: global.theme.onPrimaryColor, size: isMultiCurrency ? 16 : 18),
               SizedBox(width: 4),
               Text(
                 isMultiCurrency
                     ? '${global.language('sum_pay')} ($baseCurrency)'
                     : global.language('sum_pay'),
-                style: TextStyle(color: Colors.white, fontSize: isMultiCurrency ? 14 : 18, fontWeight: FontWeight.w500),
+                style: TextStyle(color: global.theme.onPrimaryColor, fontSize: isMultiCurrency ? 14 : 18, fontWeight: FontWeight.w500),
               ),
               Spacer(),
               Text(
                 isMultiCurrency
                     ? '$baseCurrencySymbol ${global.formatNumber(finalTotalBase)}'
                     : global.formatNumber(finalTotalBase),
-                style: TextStyle(color: Colors.white, fontSize: isMultiCurrency ? 16 : 18, fontWeight: FontWeight.bold),
+                style: TextStyle(color: global.theme.onPrimaryColor, fontSize: isMultiCurrency ? 16 : 18, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -374,11 +374,11 @@ class DocumentTotalWidget extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Icon(Icons.sync_alt, color: Colors.white54, size: 10),
+                Icon(Icons.sync_alt, color: global.theme.onPrimaryColor.withValues(alpha: 0.54), size: 10),
                 const SizedBox(width: 4),
                 Text(
                   '1 $docCurrency = ${safeExchangeRate.toStringAsFixed(4)} $baseCurrency',
-                  style: TextStyle(color: Colors.white54, fontSize: 10, fontStyle: FontStyle.italic),
+                  style: TextStyle(color: global.theme.onPrimaryColor.withValues(alpha: 0.54), fontSize: 10, fontStyle: FontStyle.italic),
                 ),
               ],
             ),

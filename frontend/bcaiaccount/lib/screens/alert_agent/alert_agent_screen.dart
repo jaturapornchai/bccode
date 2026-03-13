@@ -7,6 +7,7 @@ import 'dart:math';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/alert_agent_model.dart';
 import 'package:smlaicloud/utils/logger/app_logger.dart';
+import 'package:smlaicloud/utils/time_picker.dart';
 
 class AlertAgentScreen extends StatefulWidget {
   const AlertAgentScreen({super.key});
@@ -15,13 +16,14 @@ class AlertAgentScreen extends StatefulWidget {
   State<AlertAgentScreen> createState() => _AlertAgentScreenState();
 }
 
-class _AlertAgentScreenState extends State<AlertAgentScreen> {
+class _AlertAgentScreenState extends State<AlertAgentScreen>
+    with global.ThemeRefreshMixin {
   List<AlertAgentModel> _alerts = [];
   bool _isLoading = false;
   AlertAgentModel? _selectedAlert; // Alert ที่เลือก
   bool _isEditing = false; // กำลังแก้ไขอยู่หรือไม่
 
-  final Color primaryColor = const Color(0xFF2E7D32);
+  Color get primaryColor => global.theme.positiveHighlightTextColor;
   static const String mongoCollection = 'email';
 
   String get apiBaseUrl {
@@ -241,7 +243,7 @@ class _AlertAgentScreenState extends State<AlertAgentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: global.theme.surfaceColor,
       appBar: AppBar(
         backgroundColor: primaryColor,
         title: Row(
@@ -260,7 +262,7 @@ class _AlertAgentScreenState extends State<AlertAgentScreen> {
                 // ===== ซ้าย: รายการ Alert =====
                 SizedBox(width: 350, child: _buildLeftPanel()),
                 // ===== เส้นแบ่ง =====
-                Container(width: 1, color: Colors.grey[300]),
+                Container(width: 1, color: global.theme.dividerBorderColor),
                 // ===== ขวา: รายละเอียด/แก้ไข =====
                 Expanded(child: _buildRightPanel()),
               ],
@@ -275,7 +277,7 @@ class _AlertAgentScreenState extends State<AlertAgentScreen> {
         // Header + ปุ่มเพิ่ม
         Container(
           padding: const EdgeInsets.all(12),
-          color: Colors.white,
+          color: global.theme.cardColor,
           child: Row(
             children: [
               Icon(Icons.list, color: primaryColor),
@@ -302,9 +304,9 @@ class _AlertAgentScreenState extends State<AlertAgentScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.notifications_off, size: 48, color: Colors.grey[400]),
+                      Icon(Icons.notifications_off, size: 48, color: global.theme.iconSecondaryColor),
                       SizedBox(height: 8),
-                      Text(global.language("alert_no_notifications"), style: TextStyle(color: Colors.grey[600])),
+                      Text(global.language("alert_no_notifications"), style: TextStyle(color: global.theme.iconSecondaryColor)),
                     ],
                   ),
                 )
@@ -328,10 +330,10 @@ class _AlertAgentScreenState extends State<AlertAgentScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? primaryColor.withValues(alpha: 0.1) : Colors.white,
+          color: isSelected ? primaryColor.withValues(alpha: 0.1) : global.theme.cardColor,
           border: Border(
             left: BorderSide(color: isSelected ? primaryColor : Colors.transparent, width: 4),
-            bottom: BorderSide(color: Colors.grey[200]!),
+            bottom: BorderSide(color: global.theme.dividerBorderColor),
           ),
         ),
         child: Row(
@@ -339,8 +341,8 @@ class _AlertAgentScreenState extends State<AlertAgentScreen> {
             // Status Icon
             Container(
               padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(color: alert.isActive ? Colors.green.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-              child: Icon(Icons.notifications_active, color: alert.isActive ? Colors.green : Colors.grey, size: 18),
+              decoration: BoxDecoration(color: alert.isActive ? Colors.green.withValues(alpha: 0.1) : global.theme.surfaceColor, borderRadius: BorderRadius.circular(6)),
+              child: Icon(Icons.notifications_active, color: alert.isActive ? Colors.green : global.theme.iconSecondaryColor, size: 18),
             ),
             const SizedBox(width: 10),
             // Info
@@ -350,18 +352,18 @@ class _AlertAgentScreenState extends State<AlertAgentScreen> {
                 children: [
                   Text(
                     alert.taskName,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: alert.isActive ? Colors.black87 : Colors.grey),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: alert.isActive ? global.theme.textColor : global.theme.textSecondaryColor),
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
-                  Text(_getReportTypeLabel(alert.reportConfig.type), style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                  Text(_getReportTypeLabel(alert.reportConfig.type), style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor)),
                 ],
               ),
             ),
             // Status Badge
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(color: alert.isActive ? Colors.green : Colors.grey, borderRadius: BorderRadius.circular(4)),
+              decoration: BoxDecoration(color: alert.isActive ? Colors.green : global.theme.iconSecondaryColor, borderRadius: BorderRadius.circular(4)),
               child: Text(
                 alert.isActive ? 'ON' : 'OFF',
                 style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
@@ -393,11 +395,11 @@ class _AlertAgentScreenState extends State<AlertAgentScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.touch_app, size: 64, color: Colors.grey[300]),
+            Icon(Icons.touch_app, size: 64, color: global.theme.dividerBorderColor),
             SizedBox(height: 16),
-            Text(global.language("alert_select_from_left"), style: TextStyle(fontSize: 16, color: Colors.grey[500])),
+            Text(global.language("alert_select_from_left"), style: TextStyle(fontSize: 16, color: global.theme.iconSecondaryColor)),
             SizedBox(height: 8),
-            Text(global.language("alert_or_add_new"), style: TextStyle(fontSize: 14, color: Colors.grey[400])),
+            Text(global.language("alert_or_add_new"), style: TextStyle(fontSize: 14, color: global.theme.iconSecondaryColor)),
           ],
         ),
       );
@@ -411,13 +413,13 @@ class _AlertAgentScreenState extends State<AlertAgentScreen> {
         // Header + ปุ่ม
         Container(
           padding: const EdgeInsets.all(16),
-          color: Colors.white,
+          color: global.theme.cardColor,
           child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: alert.isActive ? Colors.green.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                child: Icon(Icons.notifications_active, color: alert.isActive ? Colors.green : Colors.grey, size: 24),
+                decoration: BoxDecoration(color: alert.isActive ? Colors.green.withValues(alpha: 0.1) : global.theme.surfaceColor, borderRadius: BorderRadius.circular(8)),
+                child: Icon(Icons.notifications_active, color: alert.isActive ? Colors.green : global.theme.iconSecondaryColor, size: 24),
               ),
               SizedBox(width: 12),
               Expanded(
@@ -430,7 +432,7 @@ class _AlertAgentScreenState extends State<AlertAgentScreen> {
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(color: alert.isActive ? Colors.green : Colors.grey, borderRadius: BorderRadius.circular(4)),
+                          decoration: BoxDecoration(color: alert.isActive ? Colors.green : global.theme.iconSecondaryColor, borderRadius: BorderRadius.circular(4)),
                           child: Text(alert.isActive ? global.language("alert_enabled") : global.language("alert_disabled"), style: TextStyle(color: Colors.white, fontSize: 11)),
                         ),
                         const SizedBox(width: 8),
@@ -481,7 +483,7 @@ class _AlertAgentScreenState extends State<AlertAgentScreen> {
                 _buildDetailCard(global.language("alert_notification_channel"), Icons.send, [
                   if (alert.channels.email.isEnabled) _buildChannelDetail('Email', Icons.email, Colors.blue, alert.channels.email.addresses),
                   if (alert.channels.line.isEnabled) _buildChannelDetail('LINE Notify', Icons.chat, Colors.green, alert.channels.line.tokens),
-                  if (!alert.channels.email.isEnabled && !alert.channels.line.isEnabled) Text(global.language("alert_no_channel_set"), style: TextStyle(color: Colors.grey[500])),
+                  if (!alert.channels.email.isEnabled && !alert.channels.line.isEnabled) Text(global.language("alert_no_channel_set"), style: TextStyle(color: global.theme.iconSecondaryColor)),
                 ]),
               ],
             ),
@@ -527,7 +529,7 @@ class _AlertAgentScreenState extends State<AlertAgentScreen> {
             width: 120,
             child: Text(
               '$label:',
-              style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w500),
+              style: TextStyle(color: global.theme.iconSecondaryColor, fontWeight: FontWeight.w500),
             ),
           ),
           Expanded(child: Text(value)),
@@ -671,7 +673,8 @@ class AlertAgentEditForm extends StatefulWidget {
   State<AlertAgentEditForm> createState() => _AlertAgentEditFormState();
 }
 
-class _AlertAgentEditFormState extends State<AlertAgentEditForm> {
+class _AlertAgentEditFormState extends State<AlertAgentEditForm>
+    with global.ThemeRefreshMixin {
   final _formKey = GlobalKey<FormState>();
   final _taskNameController = TextEditingController();
 
@@ -777,7 +780,7 @@ class _AlertAgentEditFormState extends State<AlertAgentEditForm> {
         // Header
         Container(
           padding: const EdgeInsets.all(16),
-          color: Colors.white,
+          color: global.theme.cardColor,
           child: Row(
             children: [
               Icon(isNew ? Icons.add_circle : Icons.edit, color: widget.primaryColor),
@@ -853,7 +856,7 @@ class _AlertAgentEditFormState extends State<AlertAgentEditForm> {
                     SizedBox(height: 4),
                     Text(
                       global.language("alert_send_format_note"),
-                      style: TextStyle(fontSize: 11, color: Colors.grey[600], fontStyle: FontStyle.italic),
+                      style: TextStyle(fontSize: 11, color: global.theme.iconSecondaryColor, fontStyle: FontStyle.italic),
                     ),
                     const SizedBox(height: 12),
                     _buildScheduleModeSelector(),
@@ -972,19 +975,19 @@ class _AlertAgentEditFormState extends State<AlertAgentEditForm> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? widget.primaryColor.withValues(alpha: 0.1) : Colors.grey[100],
+          color: isSelected ? widget.primaryColor.withValues(alpha: 0.1) : global.theme.cardColor,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: isSelected ? widget.primaryColor : Colors.grey[300]!, width: isSelected ? 2 : 1),
+          border: Border.all(color: isSelected ? widget.primaryColor : global.theme.dividerBorderColor, width: isSelected ? 2 : 1),
         ),
         child: Column(
           children: [
-            Icon(icon, color: isSelected ? widget.primaryColor : Colors.grey, size: 24),
+            Icon(icon, color: isSelected ? widget.primaryColor : global.theme.iconSecondaryColor, size: 24),
             const SizedBox(height: 4),
             Text(
               title,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: isSelected ? widget.primaryColor : Colors.grey[700]),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: isSelected ? widget.primaryColor : global.theme.textColor),
             ),
-            Text(subtitle, style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+            Text(subtitle, style: TextStyle(fontSize: 10, color: global.theme.iconSecondaryColor)),
           ],
         ),
       ),
@@ -1003,9 +1006,9 @@ class _AlertAgentEditFormState extends State<AlertAgentEditForm> {
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: isEnabled ? widget.primaryColor.withValues(alpha: 0.05) : Colors.grey[50],
+            color: isEnabled ? widget.primaryColor.withValues(alpha: 0.05) : global.theme.surfaceColor,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: isEnabled ? widget.primaryColor.withValues(alpha: 0.3) : Colors.grey[300]!),
+            border: Border.all(color: isEnabled ? widget.primaryColor.withValues(alpha: 0.3) : global.theme.dividerBorderColor),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1013,11 +1016,11 @@ class _AlertAgentEditFormState extends State<AlertAgentEditForm> {
               // Header: ชื่อวัน + ปุ่มเพิ่มเวลา
               Row(
                 children: [
-                  Icon(isEnabled ? Icons.check_circle : Icons.circle_outlined, color: isEnabled ? widget.primaryColor : Colors.grey, size: 20),
+                  Icon(isEnabled ? Icons.check_circle : Icons.circle_outlined, color: isEnabled ? widget.primaryColor : global.theme.iconSecondaryColor, size: 20),
                   const SizedBox(width: 8),
                   Text(
                     dayName,
-                    style: TextStyle(fontWeight: FontWeight.bold, color: isEnabled ? widget.primaryColor : Colors.grey[700]),
+                    style: TextStyle(fontWeight: FontWeight.bold, color: isEnabled ? widget.primaryColor : global.theme.textColor),
                   ),
                   const Spacer(),
                   // ปุ่มเพิ่มเวลา
@@ -1056,7 +1059,21 @@ class _AlertAgentEditFormState extends State<AlertAgentEditForm> {
 
   /// เพิ่มเวลาสำหรับวันที่ระบุ
   Future<void> _addTimeForDay(int dayIndex) async {
-    final time = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+    final TimeOfDay? time = await showDialog<TimeOfDay>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      builder: (BuildContext context) {
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: CustomTimePickerDialog(
+              initialTime: TimeOfDay.now(),
+              languageCode: global.getBranchLanguage(),
+            ),
+          ),
+        );
+      },
+    );
     if (time != null) {
       final timeStr = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
       setState(() {
@@ -1111,7 +1128,7 @@ class _AlertAgentEditFormState extends State<AlertAgentEditForm> {
               icon: Icon(Icons.last_page, size: 16),
               label: Text(global.language("alert_end_of_month"), style: TextStyle(fontSize: 12)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: _monthlySchedule.containsKey(-1) ? Colors.grey : Colors.orange,
+                backgroundColor: _monthlySchedule.containsKey(-1) ? global.theme.iconSecondaryColor : Colors.orange,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
@@ -1123,9 +1140,9 @@ class _AlertAgentEditFormState extends State<AlertAgentEditForm> {
         if (configuredDates.isEmpty)
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
+            decoration: BoxDecoration(color: global.theme.surfaceColor, borderRadius: BorderRadius.circular(8)),
             child: Center(
-              child: Text(global.language("alert_no_date_set"), style: TextStyle(color: Colors.grey[500])),
+              child: Text(global.language("alert_no_date_set"), style: TextStyle(color: global.theme.iconSecondaryColor)),
             ),
           )
         else
@@ -1198,7 +1215,7 @@ class _AlertAgentEditFormState extends State<AlertAgentEditForm> {
               padding: EdgeInsets.only(top: 4),
               child: Text(
                 global.language("alert_please_add_time"),
-                style: TextStyle(fontSize: 11, color: Colors.grey[500], fontStyle: FontStyle.italic),
+                style: TextStyle(fontSize: 11, color: global.theme.iconSecondaryColor, fontStyle: FontStyle.italic),
               ),
             ),
         ],
@@ -1252,7 +1269,21 @@ class _AlertAgentEditFormState extends State<AlertAgentEditForm> {
 
   /// เพิ่มเวลาสำหรับวันที่ในเดือน
   Future<void> _addTimeForMonth(int date) async {
-    final time = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+    final TimeOfDay? time = await showDialog<TimeOfDay>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      builder: (BuildContext context) {
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: CustomTimePickerDialog(
+              initialTime: TimeOfDay.now(),
+              languageCode: global.getBranchLanguage(),
+            ),
+          ),
+        );
+      },
+    );
     if (time != null) {
       final timeStr = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
       setState(() {
@@ -1326,17 +1357,17 @@ class _AlertAgentEditFormState extends State<AlertAgentEditForm> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
           decoration: BoxDecoration(
-            color: isSelected ? widget.primaryColor.withValues(alpha: 0.1) : Colors.grey[100],
+            color: isSelected ? widget.primaryColor.withValues(alpha: 0.1) : global.theme.cardColor,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: isSelected ? widget.primaryColor : Colors.grey[300]!, width: isSelected ? 2 : 1),
+            border: Border.all(color: isSelected ? widget.primaryColor : global.theme.dividerBorderColor, width: isSelected ? 2 : 1),
           ),
           child: Column(
             children: [
               Text(
                 title,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: isSelected ? widget.primaryColor : Colors.grey[700]),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: isSelected ? widget.primaryColor : global.theme.textColor),
               ),
-              Text(subtitle, style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+              Text(subtitle, style: TextStyle(fontSize: 10, color: global.theme.iconSecondaryColor)),
             ],
           ),
         ),
@@ -1370,7 +1401,7 @@ class _AlertAgentEditFormState extends State<AlertAgentEditForm> {
       margin: const EdgeInsets.only(top: 12, bottom: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [BoxShadow(color: Colors.green.withValues(alpha: 0.2), blurRadius: 10, spreadRadius: 2, offset: const Offset(0, 4))],
         border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
@@ -1390,7 +1421,7 @@ class _AlertAgentEditFormState extends State<AlertAgentEditForm> {
                       style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green[700], fontSize: 14),
                     ),
                     SizedBox(height: 4),
-                    Text(global.language("alert_register_line_hint"), style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                    Text(global.language("alert_register_line_hint"), style: TextStyle(fontSize: 11, color: global.theme.iconSecondaryColor)),
                   ],
                 ),
               ),
@@ -1753,7 +1784,8 @@ class _LineRegistrationDialog extends StatefulWidget {
   State<_LineRegistrationDialog> createState() => _LineRegistrationDialogState();
 }
 
-class _LineRegistrationDialogState extends State<_LineRegistrationDialog> {
+class _LineRegistrationDialogState extends State<_LineRegistrationDialog>
+    with global.ThemeRefreshMixin {
   String? _registrationCode;
   String? _lineUserId;
   String? _displayName;
@@ -2044,12 +2076,12 @@ class _LineRegistrationDialogState extends State<_LineRegistrationDialog> {
                 ),
                 const SizedBox(height: 8),
                 if (_displayName != null && _displayName!.isNotEmpty) ...[
-                  Text(global.language("alert_line_name"), style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                  Text(global.language("alert_line_name"), style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor)),
                   const SizedBox(height: 4),
                   Text(_displayName!, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                 ],
-                Text('LINE User ID:', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                Text('LINE User ID:', style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor)),
                 const SizedBox(height: 4),
                 SelectableText(
                   _lineUserId!,
@@ -2070,7 +2102,7 @@ class _LineRegistrationDialogState extends State<_LineRegistrationDialog> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: global.theme.cardColor,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [BoxShadow(color: Colors.green.withValues(alpha: 0.2), blurRadius: 8, spreadRadius: 2)],
             border: Border.all(color: Colors.green.shade200),
@@ -2093,14 +2125,14 @@ class _LineRegistrationDialogState extends State<_LineRegistrationDialog> {
                     return Container(
                       width: 140,
                       height: 140,
-                      color: Colors.grey[200],
-                      child: Icon(Icons.qr_code, size: 60, color: Colors.grey),
+                      color: global.theme.dividerBorderColor,
+                      child: Icon(Icons.qr_code, size: 60, color: global.theme.iconSecondaryColor),
                     );
                   },
                 ),
               ),
               SizedBox(height: 8),
-              Text(global.language("alert_scan_qr_search"), style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+              Text(global.language("alert_scan_qr_search"), style: TextStyle(fontSize: 11, color: global.theme.iconSecondaryColor)),
             ],
           ),
         ),
@@ -2156,7 +2188,7 @@ class _LineRegistrationDialogState extends State<_LineRegistrationDialog> {
             children: [
               SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.green)),
               SizedBox(width: 8),
-              Text(global.language("alert_waiting_registration"), style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+              Text(global.language("alert_waiting_registration"), style: TextStyle(color: global.theme.iconSecondaryColor, fontSize: 12)),
             ],
           ),
       ],

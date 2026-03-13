@@ -31,17 +31,18 @@ class ChatbotWidget extends StatefulWidget {
   State<ChatbotWidget> createState() => _ChatbotWidgetState();
 }
 
-class _ChatbotWidgetState extends State<ChatbotWidget> {
+class _ChatbotWidgetState extends State<ChatbotWidget>
+    with global.ThemeRefreshMixin {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
 
   // สีธีม
-  final Color primaryColor = const Color(0xFF1A73E8);
-  final Color primaryDarkColor = const Color(0xFF0D47A1);
-  final Color aiMessageColor = const Color(0xFFE3F2FD);
-  final Color userMessageColor = const Color(0xFF1A73E8);
+  Color get primaryColor => global.theme.primaryColor;
+  Color get primaryDarkColor => global.theme.primaryColor;
+  Color get aiMessageColor => global.theme.infoHighlightColor;
+  Color get userMessageColor => global.theme.primaryColor;
 
   // API URL - ใช้ Go API endpoint (URL มาจากตั้งค่าระบบ)
   String get chatApiUrl {
@@ -271,7 +272,7 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: global.theme.surfaceColor,
       appBar: widget.showAppBar ? _buildAppBar() : null,
       body: Column(
         children: [
@@ -301,16 +302,16 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
     return AppBar(
       elevation: 2,
       backgroundColor: primaryDarkColor,
-      foregroundColor: Colors.white,
+      foregroundColor: global.theme.onPrimaryColor,
       title: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: global.theme.cardColor.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.smart_toy, size: 24),
+            child: Icon(Icons.smart_toy, size: 24),
           ),
           SizedBox(width: 12),
           Column(
@@ -318,14 +319,14 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
             children: [
               Text(
                 widget.title ?? 'AI Assistant',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
                 global.language("chatbot_ready_to_help"),
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
               ),
             ],
           ),
@@ -364,8 +365,8 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
+                      backgroundColor: global.theme.negativeHighlightTextColor,
+                      foregroundColor: global.theme.onPrimaryColor,
                     ),
                     child: Text(global.language("chatbot_clear_messages")),
                   ),
@@ -406,7 +407,7 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
               decoration: BoxDecoration(
                 color: message.isUser
                     ? userMessageColor
-                    : (message.isError ? Colors.red[50] : aiMessageColor),
+                    : (message.isError ? global.theme.negativeHighlightColor : aiMessageColor),
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
                   topRight: const Radius.circular(16),
@@ -429,10 +430,10 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
                     style: TextStyle(
                       fontSize: 15,
                       color: message.isUser
-                          ? Colors.white
+                          ? global.theme.cardColor
                           : (message.isError
-                                ? Colors.red[900]
-                                : Colors.black87),
+                                ? global.theme.negativeHighlightTextColor
+                                : global.theme.textColor),
                       height: 1.4,
                     ),
                   ),
@@ -444,9 +445,9 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
+                        color: global.theme.columnHeaderColor,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue.shade200),
+                        border: Border.all(color: global.theme.infoHighlightColor),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -456,7 +457,7 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
                               Icon(
                                 Icons.token,
                                 size: 14,
-                                color: Colors.blue.shade700,
+                                color: global.theme.infoHighlightTextColor,
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -464,7 +465,7 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.blue.shade700,
+                                  color: global.theme.infoHighlightTextColor,
                                 ),
                               ),
                               if (message.cached == true) ...[
@@ -475,7 +476,7 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.green.shade100,
+                                    color: global.theme.positiveHighlightColor,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
@@ -483,7 +484,7 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.green.shade700,
+                                      color: global.theme.positiveHighlightTextColor,
                                     ),
                                   ),
                                 ),
@@ -493,15 +494,15 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
                           const SizedBox(height: 4),
                           Text(
                             '• Model: ${message.tokenUsage!['model'] ?? 'N/A'}',
-                            style: const TextStyle(fontSize: 11),
+                            style: TextStyle(fontSize: 11),
                           ),
                           Text(
                             '• Tokens: ${message.tokenUsage!['total_tokens'] ?? 0}',
-                            style: const TextStyle(fontSize: 11),
+                            style: TextStyle(fontSize: 11),
                           ),
                           Text(
                             '• Cost: ${message.tokenUsage!['cost_thb'] ?? 0} THB',
-                            style: const TextStyle(fontSize: 11),
+                            style: TextStyle(fontSize: 11),
                           ),
                         ],
                       ),
@@ -516,9 +517,9 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.purple.shade50,
+                        color: global.theme.primaryColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.purple.shade200),
+                        border: Border.all(color: global.theme.primaryColor.withValues(alpha: 0.3)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -528,7 +529,7 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
                               Icon(
                                 Icons.lightbulb_outline,
                                 size: 14,
-                                color: Colors.purple.shade700,
+                                color: global.theme.primaryColor,
                               ),
                               SizedBox(width: 4),
                               Text(
@@ -536,7 +537,7 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.purple.shade700,
+                                  color: global.theme.primaryColor,
                                 ),
                               ),
                             ],
@@ -557,7 +558,7 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
                                       '${entry.key + 1}.',
                                       style: TextStyle(
                                         fontSize: 11,
-                                        color: Colors.purple.shade700,
+                                        color: global.theme.primaryColor,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -567,7 +568,7 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
                                         entry.value,
                                         style: TextStyle(
                                           fontSize: 11,
-                                          color: Colors.purple.shade900,
+                                          color: global.theme.primaryColor,
                                         ),
                                       ),
                                     ),
@@ -588,7 +589,7 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
                       fontSize: 11,
                       color: message.isUser
                           ? Colors.white70
-                          : Colors.grey.shade600,
+                          : global.theme.textSecondaryColor,
                     ),
                   ),
                 ],
@@ -694,7 +695,7 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
   Widget _buildChatInput() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
@@ -714,11 +715,11 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
                 hintText: global.language("chatbot_type_message"),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: global.theme.formBorderColor),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: global.theme.formBorderColor),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
@@ -729,7 +730,7 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
                   vertical: 12,
                 ),
                 filled: true,
-                fillColor: Colors.grey[50],
+                fillColor: global.theme.formFillColor,
               ),
               maxLines: null,
               textInputAction: TextInputAction.send,
@@ -751,7 +752,7 @@ class _ChatbotWidgetState extends State<ChatbotWidget> {
               ],
             ),
             child: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white),
+              icon: Icon(Icons.send, color: global.theme.onPrimaryColor),
               onPressed: _isLoading ? null : _sendMessage,
             ),
           ),

@@ -39,7 +39,8 @@ class LineLoginQRDialog extends StatefulWidget {
   State<LineLoginQRDialog> createState() => _LineLoginQRDialogState();
 }
 
-class _LineLoginQRDialogState extends State<LineLoginQRDialog> {
+class _LineLoginQRDialogState extends State<LineLoginQRDialog>
+    with global.ThemeRefreshMixin {
   String _loginCode = '';
   String _liffUrl = '';
   Timer? _pollingTimer;
@@ -208,10 +209,10 @@ class _LineLoginQRDialogState extends State<LineLoginQRDialog> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF06C755).withValues(alpha: 0.1),
+              color: Color(0xFF06C755).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.login,
               color: Color(0xFF06C755),
             ),
@@ -263,7 +264,7 @@ class _LineLoginQRDialogState extends State<LineLoginQRDialog> {
         const SizedBox(height: 24),
         Text(
           global.language("creating_code"),
-          style: const TextStyle(fontSize: 16),
+          style: TextStyle(fontSize: 16),
         ),
         const SizedBox(height: 40),
       ],
@@ -277,7 +278,7 @@ class _LineLoginQRDialogState extends State<LineLoginQRDialog> {
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.red[50],
+            color: global.theme.negativeHighlightColor,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -285,12 +286,12 @@ class _LineLoginQRDialogState extends State<LineLoginQRDialog> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.red[400],
+                  color: global.theme.negativeHighlightTextColor,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.error_outline,
-                  color: Colors.white,
+                  color: global.theme.onPrimaryColor,
                   size: 48,
                 ),
               ),
@@ -300,21 +301,21 @@ class _LineLoginQRDialogState extends State<LineLoginQRDialog> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.red[700],
+                  color: global.theme.negativeHighlightTextColor,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 _errorMessage ?? global.language("cannot_create_code"),
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
+                style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _regenerateCode,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF06C755),
-                  foregroundColor: Colors.white,
+                  backgroundColor: Color(0xFF06C755),
+                  foregroundColor: global.theme.onPrimaryColor,
                 ),
                 child: Text(global.language('export_report_retry')),
               ),
@@ -332,7 +333,7 @@ class _LineLoginQRDialogState extends State<LineLoginQRDialog> {
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.orange[50],
+            color: global.theme.warningHighlightColor,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -340,12 +341,12 @@ class _LineLoginQRDialogState extends State<LineLoginQRDialog> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.orange[400],
+                  color: global.theme.warningHighlightTextColor,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.timer_off,
-                  color: Colors.white,
+                  color: global.theme.onPrimaryColor,
                   size: 48,
                 ),
               ),
@@ -355,13 +356,13 @@ class _LineLoginQRDialogState extends State<LineLoginQRDialog> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.orange[700],
+                  color: global.theme.warningHighlightTextColor,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 global.language("please_create_new_code"),
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
+                style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
               ),
             ],
           ),
@@ -377,20 +378,20 @@ class _LineLoginQRDialogState extends State<LineLoginQRDialog> {
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.green[50],
+            color: global.theme.positiveHighlightColor,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
             children: [
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Color(0xFF06C755),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.check,
-                  color: Colors.white,
+                  color: global.theme.onPrimaryColor,
                   size: 48,
                 ),
               ),
@@ -406,14 +407,14 @@ class _LineLoginQRDialogState extends State<LineLoginQRDialog> {
               const SizedBox(height: 8),
               Text(
                 _confirmedUserName ?? '',
-                style: const TextStyle(fontSize: 16),
+                style: TextStyle(fontSize: 16),
               ),
               const SizedBox(height: 12),
               // Countdown indicator
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF06C755).withValues(alpha: 0.1),
+                  color: Color(0xFF06C755).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -425,14 +426,14 @@ class _LineLoginQRDialogState extends State<LineLoginQRDialog> {
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         value: _countdownSeconds / 5,
-                        color: const Color(0xFF06C755),
-                        backgroundColor: Colors.grey[300],
+                        color: Color(0xFF06C755),
+                        backgroundColor: global.theme.dividerBorderColor,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'กำลังเข้าสู่ระบบใน $_countdownSeconds วินาที...',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                      style: TextStyle(fontSize: 14, color: global.theme.textColor),
                     ),
                   ],
                 ),
@@ -452,15 +453,15 @@ class _LineLoginQRDialogState extends State<LineLoginQRDialog> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: global.theme.cardColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF06C755), width: 2),
+            border: Border.all(color: Color(0xFF06C755), width: 2),
           ),
           child: QrImageView(
             data: _liffUrl,
             version: QrVersions.auto,
             size: 200,
-            backgroundColor: Colors.white,
+            backgroundColor: global.theme.cardColor,
             errorCorrectionLevel: QrErrorCorrectLevel.M,
           ),
         ),
@@ -470,20 +471,20 @@ class _LineLoginQRDialogState extends State<LineLoginQRDialog> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFF06C755).withValues(alpha: 0.1),
+            color: Color(0xFF06C755).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFF06C755).withValues(alpha: 0.3)),
+            border: Border.all(color: Color(0xFF06C755).withValues(alpha: 0.3)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 global.language("code_label"),
-                style: const TextStyle(fontSize: 14),
+                style: TextStyle(fontSize: 14),
               ),
               Text(
                 _loginCode,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 4,
@@ -500,7 +501,7 @@ class _LineLoginQRDialogState extends State<LineLoginQRDialog> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.grey[100],
+            color: global.theme.surfaceColor,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
@@ -512,11 +513,11 @@ class _LineLoginQRDialogState extends State<LineLoginQRDialog> {
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF06C755),
+                      color: Color(0xFF06C755),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Center(
-                      child: Text('1', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    child: Center(
+                      child: Text('1', style: TextStyle(color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold)),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -530,11 +531,11 @@ class _LineLoginQRDialogState extends State<LineLoginQRDialog> {
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF06C755),
+                      color: Color(0xFF06C755),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Center(
-                      child: Text('2', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    child: Center(
+                      child: Text('2', style: TextStyle(color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold)),
                     ),
                   ),
                   SizedBox(width: 8),
@@ -548,11 +549,11 @@ class _LineLoginQRDialogState extends State<LineLoginQRDialog> {
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF06C755),
+                      color: Color(0xFF06C755),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Center(
-                      child: Text('3', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    child: Center(
+                      child: Text('3', style: TextStyle(color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold)),
                     ),
                   ),
                   SizedBox(width: 8),
@@ -585,13 +586,13 @@ class _LineLoginQRDialogState extends State<LineLoginQRDialog> {
                 height: 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.grey[400],
+                  color: global.theme.iconSecondaryColor,
                 ),
               ),
               SizedBox(width: 8),
               Text(
                 global.language('waiting_confirmation'),
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor),
               ),
             ],
           ),
@@ -603,7 +604,7 @@ class _LineLoginQRDialogState extends State<LineLoginQRDialog> {
             padding: EdgeInsets.only(top: 8),
             child: Text(
               global.language('code_expires_in_5_min'),
-              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+              style: TextStyle(fontSize: 11, color: global.theme.iconSecondaryColor),
             ),
           ),
       ],

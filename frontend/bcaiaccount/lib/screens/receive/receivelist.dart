@@ -10,18 +10,19 @@ class ReceiveList extends StatefulWidget {
   State<ReceiveList> createState() => _ReceiveListState();
 }
 
-class _ReceiveListState extends State<ReceiveList> {
+class _ReceiveListState extends State<ReceiveList>
+    with global.ThemeRefreshMixin {
   TextEditingController txtSearch = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromRGBO(241, 241, 255, 1),
+      backgroundColor: global.theme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: global.theme.appBarColor,
         centerTitle: true,
         leading: IconButton(
-          color: const Color.fromRGBO(121, 130, 142, 1),
+          color: global.theme.textSecondaryColor,
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
             // Navigator.of(context).pushAndRemoveUntil(
@@ -31,7 +32,7 @@ class _ReceiveListState extends State<ReceiveList> {
         ),
         title: Text(
           global.language('receivelist_title'),
-          style: const TextStyle(color: Color.fromRGBO(121, 130, 142, 1)),
+          style: TextStyle(color: global.theme.textSecondaryColor),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -67,7 +68,7 @@ class _ReceiveListState extends State<ReceiveList> {
               padding: EdgeInsets.only(right: 8),
               child: Card(
                 elevation: 5.0,
-                color: Colors.white,
+                color: global.theme.cardColor,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -174,7 +175,7 @@ class _ReceiveListState extends State<ReceiveList> {
               padding: const EdgeInsets.only(top: 10, right: 8),
               child: Card(
                 elevation: 10.0,
-                color: Colors.white,
+                color: global.theme.cardColor,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -198,7 +199,7 @@ class _ReceiveListState extends State<ReceiveList> {
               padding: EdgeInsets.only(top: 10, right: 8),
               child: Card(
                 elevation: 10.0,
-                color: Colors.white,
+                color: global.theme.cardColor,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -246,10 +247,10 @@ class _ReceiveListState extends State<ReceiveList> {
 
   Table _tableDetailHeader() {
     return Table(
-      border: const TableBorder(
-        bottom: const BorderSide(
+      border: TableBorder(
+        bottom: BorderSide(
           width: 1,
-          color: Colors.grey,
+          color: global.theme.dividerBorderColor,
           style: BorderStyle.solid,
         ),
       ),
@@ -754,7 +755,7 @@ class _ReceiveListState extends State<ReceiveList> {
           padding: const EdgeInsets.only(left: 8.0, right: 8.0),
           child: Card(
             elevation: 5.0,
-            color: Colors.white,
+            color: global.theme.cardColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
@@ -778,10 +779,10 @@ class _ReceiveListState extends State<ReceiveList> {
 
   Widget _tableHeader() {
     return Table(
-      border: const TableBorder(
-        bottom: const BorderSide(
+      border: TableBorder(
+        bottom: BorderSide(
           width: 1,
-          color: Colors.grey,
+          color: global.theme.dividerBorderColor,
           style: BorderStyle.solid,
         ),
       ),
@@ -849,10 +850,10 @@ class _ReceiveListState extends State<ReceiveList> {
 
   Widget _tableDetail() {
     return Table(
-      border: const TableBorder(
-        horizontalInside: const BorderSide(
+      border: TableBorder(
+        horizontalInside: BorderSide(
           width: 1,
-          color: Colors.grey,
+          color: global.theme.dividerBorderColor,
           style: BorderStyle.solid,
         ),
       ),
@@ -3069,7 +3070,7 @@ class _ReceiveListState extends State<ReceiveList> {
       child: TextField(
         onSubmitted: (text) {},
         controller: txtSearch,
-        style: TextStyle(color: Colors.black, fontSize: 16.0),
+        style: TextStyle(color: global.theme.textColor, fontSize: 16.0),
         decoration: InputDecoration(
           border: const OutlineInputBorder(
             borderRadius: const BorderRadius.all(const Radius.circular(8.0)),
@@ -3079,10 +3080,10 @@ class _ReceiveListState extends State<ReceiveList> {
             color: Colors.lightBlue.shade500,
             onPressed: () {},
           ),
-          fillColor: Colors.white,
+          fillColor: global.theme.formFillColor,
           filled: true,
           hintText: global.language('receivelist_search'),
-          hintStyle: const TextStyle(color: Colors.grey),
+          hintStyle: TextStyle(color: global.theme.formHintColor),
         ),
       ),
     );

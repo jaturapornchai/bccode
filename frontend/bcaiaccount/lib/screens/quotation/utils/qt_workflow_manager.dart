@@ -177,7 +177,7 @@ class QTWorkflowManager {
         return AlertDialog(
           title: Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 28),
+              Icon(Icons.warning_amber_rounded, color: global.theme.warningHighlightTextColor, size: 28),
               SizedBox(width: 8),
               Text(global.language('duplicate_document_number')),
             ],
@@ -202,8 +202,8 @@ class QTWorkflowManager {
                 onRegenerateDocNoAndSave();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
+                backgroundColor: global.theme.infoHighlightTextColor,
+                foregroundColor: global.theme.onPrimaryColor,
               ),
               child: Text(global.language('generate_new_docno_and_save')),
             ),

@@ -1459,7 +1459,7 @@ class _PrintHistoryDialog extends StatefulWidget {
   State<_PrintHistoryDialog> createState() => _PrintHistoryDialogState();
 }
 
-class _PrintHistoryDialogState extends State<_PrintHistoryDialog> {
+class _PrintHistoryDialogState extends State<_PrintHistoryDialog> with global.ThemeRefreshMixin {
   List<PdfPrintHistoryItem> _historyItems = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -1554,7 +1554,7 @@ class _PrintHistoryDialogState extends State<_PrintHistoryDialog> {
                     Text(titleText, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                     Text(
                       global.dateTimeBuddhist(item.printedAt, format: global.DateTimeFormatEnum.dateTime),
-                      style: TextStyle(fontSize: 11, color: Colors.grey[600], fontWeight: FontWeight.normal),
+                      style: TextStyle(fontSize: 11, color: global.theme.iconSecondaryColor, fontWeight: FontWeight.normal),
                     ),
                   ],
                 ),
@@ -1662,7 +1662,7 @@ class _PrintHistoryDialogState extends State<_PrintHistoryDialog> {
               padding: EdgeInsets.symmetric(horizontal: 24),
               child: Text(
                 global.language('print_history_coming_soon'),
-                style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                style: TextStyle(color: global.theme.iconSecondaryColor, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -1691,9 +1691,9 @@ class _PrintHistoryDialogState extends State<_PrintHistoryDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.print_disabled, size: 48, color: Colors.grey[400]),
+            Icon(Icons.print_disabled, size: 48, color: global.theme.iconSecondaryColor),
             SizedBox(height: 16),
-            Text(global.language('no_print_history'), style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+            Text(global.language('no_print_history'), style: TextStyle(color: global.theme.iconSecondaryColor, fontSize: 16)),
           ],
         ),
       );
@@ -1743,11 +1743,11 @@ class _PrintHistoryDialogState extends State<_PrintHistoryDialog> {
                             style: TextStyle(fontSize: 12, color: Colors.blue[700], fontWeight: FontWeight.w500),
                           ),
                           const SizedBox(width: 12),
-                          Icon(Icons.access_time, size: 12, color: Colors.grey[500]),
+                          Icon(Icons.access_time, size: 12, color: global.theme.iconSecondaryColor),
                           const SizedBox(width: 4),
                           Text(
                             global.dateTimeBuddhist(item.printedAt, format: global.DateTimeFormatEnum.dateTime),
-                            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                            style: TextStyle(fontSize: 11, color: global.theme.iconSecondaryColor),
                           ),
                         ],
                       ),
@@ -1756,12 +1756,12 @@ class _PrintHistoryDialogState extends State<_PrintHistoryDialog> {
                       Row(
                         children: [
                           if (item.contactName.isNotEmpty) ...[
-                            Icon(Icons.person_outline, size: 14, color: Colors.grey[600]),
+                            Icon(Icons.person_outline, size: 14, color: global.theme.iconSecondaryColor),
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
                                 item.contactName,
-                                style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                                style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -1782,11 +1782,11 @@ class _PrintHistoryDialogState extends State<_PrintHistoryDialog> {
                       if (item.docDate != null) ...[
                         Row(
                           children: [
-                            Icon(Icons.calendar_today, size: 12, color: Colors.grey[500]),
+                            Icon(Icons.calendar_today, size: 12, color: global.theme.iconSecondaryColor),
                             SizedBox(width: 4),
                             Text(
                               '${global.language("doc_date")}: ${global.dateTimeBuddhist(item.docDate!, format: global.DateTimeFormatEnum.date)}',
-                              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                              style: TextStyle(fontSize: 11, color: global.theme.iconSecondaryColor),
                             ),
                           ],
                         ),
@@ -1824,13 +1824,13 @@ class _PrintHistoryDialogState extends State<_PrintHistoryDialog> {
   Widget _buildChip(String label, IconData icon) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(4)),
+      decoration: BoxDecoration(color: global.theme.dividerBorderColor, borderRadius: BorderRadius.circular(4)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: Colors.grey[600]),
+          Icon(icon, size: 12, color: global.theme.iconSecondaryColor),
           const SizedBox(width: 2),
-          Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[700])),
+          Text(label, style: TextStyle(fontSize: 10, color: global.theme.textSecondaryColor)),
         ],
       ),
     );
@@ -1851,7 +1851,7 @@ class PrintHistoryIconButton extends StatefulWidget {
   State<PrintHistoryIconButton> createState() => _PrintHistoryIconButtonState();
 }
 
-class _PrintHistoryIconButtonState extends State<PrintHistoryIconButton> {
+class _PrintHistoryIconButtonState extends State<PrintHistoryIconButton> with global.ThemeRefreshMixin {
   int _printCount = 0;
   bool _isLoading = true;
   final PdfService _pdfService = PdfService();
@@ -1916,12 +1916,12 @@ class _PrintHistoryIconButtonState extends State<PrintHistoryIconButton> {
                 decoration: BoxDecoration(
                   color: Colors.red,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
+                  border: Border.all(color: global.theme.cardColor, width: 1.5),
                 ),
                 constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
                 child: Text(
                   _printCount > 99 ? '99+' : _printCount.toString(),
-                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: global.theme.onPrimaryColor, fontSize: 10, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -1954,7 +1954,7 @@ class PrintHistoryActionButton extends StatefulWidget {
   State<PrintHistoryActionButton> createState() => _PrintHistoryActionButtonState();
 }
 
-class _PrintHistoryActionButtonState extends State<PrintHistoryActionButton> {
+class _PrintHistoryActionButtonState extends State<PrintHistoryActionButton> with global.ThemeRefreshMixin {
   int _printCount = 0;
   bool _isLoading = true;
   final PdfService _pdfService = PdfService();
@@ -2011,7 +2011,7 @@ class _PrintHistoryActionButtonState extends State<PrintHistoryActionButton> {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                Icon(Icons.print, size: widget.iconSize, color: Colors.white),
+                Icon(Icons.print, size: widget.iconSize, color: global.theme.onPrimaryColor),
                 if (!_isLoading && _printCount > 0)
                   Positioned(
                     right: -6,
@@ -2021,12 +2021,12 @@ class _PrintHistoryActionButtonState extends State<PrintHistoryActionButton> {
                       decoration: BoxDecoration(
                         color: Colors.red,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
+                        border: Border.all(color: global.theme.cardColor, width: 1.5),
                       ),
                       constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                       child: Text(
                         _printCount > 99 ? '99+' : _printCount.toString(),
-                        style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: global.theme.onPrimaryColor, fontSize: 8, fontWeight: FontWeight.bold),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -2036,7 +2036,7 @@ class _PrintHistoryActionButtonState extends State<PrintHistoryActionButton> {
             const SizedBox(height: 2),
             Text(
               widget.label,
-              style: const TextStyle(fontSize: 9, color: Colors.white70),
+              style: TextStyle(fontSize: 9, color: global.theme.onPrimaryColor.withValues(alpha: 0.7)),
               overflow: TextOverflow.ellipsis,
             ),
           ],
@@ -2080,7 +2080,7 @@ class _PdfViewerDialog extends StatefulWidget {
   State<_PdfViewerDialog> createState() => _PdfViewerDialogState();
 }
 
-class _PdfViewerDialogState extends State<_PdfViewerDialog> {
+class _PdfViewerDialogState extends State<_PdfViewerDialog> with global.ThemeRefreshMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late String _pageSize;
   late String _orientation;
@@ -2250,11 +2250,11 @@ class _PdfViewerDialogState extends State<_PdfViewerDialog> {
     // Create printing overlay
     final printingOverlay = OverlayEntry(
       builder: (context) => Material(
-        color: Colors.black26,
+        color: global.theme.dividerBorderColor,
         child: Center(
           child: Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: global.theme.cardColor, borderRadius: BorderRadius.circular(10)),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -2306,7 +2306,7 @@ class _PdfViewerDialogState extends State<_PdfViewerDialog> {
           Expanded(
             flex: 7,
             child: Container(
-              color: Colors.grey[200],
+              color: global.theme.dividerBorderColor,
               child: Stack(
                 children: [
                   if (_pdfBytes != null)
@@ -2317,11 +2317,11 @@ class _PdfViewerDialogState extends State<_PdfViewerDialog> {
                     ),
                   if (_isGenerating && _pdfBytes != null)
                     Container(
-                      color: Colors.black45,
+                      color: global.theme.textSecondaryColor,
                       child: Center(
                         child: Container(
                           padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+                          decoration: BoxDecoration(color: global.theme.cardColor, borderRadius: BorderRadius.circular(10)),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -2341,7 +2341,7 @@ class _PdfViewerDialogState extends State<_PdfViewerDialog> {
           Container(
             width: 320,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(-2, 0))],
             ),
             child: _SettingsPanel(
@@ -2490,7 +2490,7 @@ class _SettingsPanel extends StatefulWidget {
   State<_SettingsPanel> createState() => _SettingsPanelState();
 }
 
-class _SettingsPanelState extends State<_SettingsPanel> {
+class _SettingsPanelState extends State<_SettingsPanel> with global.ThemeRefreshMixin {
   late PdfFontSizes _tempFontSizes;
 
   @override
@@ -2571,7 +2571,7 @@ class _SettingsPanelState extends State<_SettingsPanel> {
             onChangeEnd();
           },
           selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
-          backgroundColor: Colors.grey[200],
+          backgroundColor: global.theme.dividerBorderColor,
         );
       }),
     );
@@ -2586,11 +2586,11 @@ class _SettingsPanelState extends State<_SettingsPanel> {
           color: global.theme.appBarColor,
           child: Row(
             children: [
-              const Icon(Icons.tune, color: Colors.white, size: 28),
+              Icon(Icons.tune, color: global.theme.onPrimaryColor, size: 28),
               SizedBox(width: 12),
               Text(
                 global.language("pdf_settings"),
-                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                style: TextStyle(color: global.theme.onPrimaryColor, fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -2605,7 +2605,7 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                 child: ElevatedButton.icon(
                   icon: Icon(Icons.print, size: 20),
                   label: Text(global.language("print_document"), style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(backgroundColor: global.theme.appBarColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12), elevation: 2),
+                  style: ElevatedButton.styleFrom(backgroundColor: global.theme.appBarColor, foregroundColor: global.theme.onPrimaryColor, padding: EdgeInsets.symmetric(vertical: 12), elevation: 2),
                   onPressed: widget.pdfBytes != null ? widget.onPrint : null,
                 ),
               ),
@@ -2624,7 +2624,7 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     selected: isSelected,
                     onSelected: (_) => widget.onPageSizeChanged(size),
                     selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
-                    backgroundColor: Colors.grey[200],
+                    backgroundColor: global.theme.dividerBorderColor,
                   );
                 }).toList(),
               ),
@@ -2641,14 +2641,14 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     selected: widget.orientation == 'P',
                     onSelected: (_) => widget.onOrientationChanged('P'),
                     selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
-                    backgroundColor: Colors.grey[200],
+                    backgroundColor: global.theme.dividerBorderColor,
                   ),
                   ChoiceChip(
                     label: Row(mainAxisSize: MainAxisSize.min, children: [ Icon(Icons.landscape, size: 18), SizedBox(width: 4), Text(global.language("landscape"))]),
                     selected: widget.orientation == 'L',
                     onSelected: (_) => widget.onOrientationChanged('L'),
                     selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
-                    backgroundColor: Colors.grey[200],
+                    backgroundColor: global.theme.dividerBorderColor,
                   ),
                 ],
               ),
@@ -2679,7 +2679,7 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     selected: isSelected,
                     onSelected: (_) => widget.onFontFamilyChanged(font),
                     selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
-                    backgroundColor: Colors.grey[200],
+                    backgroundColor: global.theme.dividerBorderColor,
                   );
                 }).toList(),
               ),
@@ -2762,14 +2762,14 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     selected: widget.colorMode,
                     onSelected: (_) => widget.onColorModeChanged(true),
                     selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
-                    backgroundColor: Colors.grey[200],
+                    backgroundColor: global.theme.dividerBorderColor,
                   ),
                   ChoiceChip(
                     label: Row(mainAxisSize: MainAxisSize.min, children: [ Icon(Icons.invert_colors, size: 18), SizedBox(width: 4), Text(global.language("black_and_white"))]),
                     selected: !widget.colorMode,
                     onSelected: (_) => widget.onColorModeChanged(false),
                     selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
-                    backgroundColor: Colors.grey[200],
+                    backgroundColor: global.theme.dividerBorderColor,
                   ),
                 ],
               ),
@@ -2783,22 +2783,22 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                 children: [
                   ChoiceChip(
                     label: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(Icons.currency_exchange, size: 18, color: widget.isMultiCurrency ? null : Colors.grey[600]),
+                      Icon(Icons.currency_exchange, size: 18, color: widget.isMultiCurrency ? null : global.theme.textSecondaryColor),
                       const SizedBox(width: 4),
-                      Text(global.language("dual_currency"), style: TextStyle(color: widget.isMultiCurrency ? null : Colors.grey[600])),
+                      Text(global.language("dual_currency"), style: TextStyle(color: widget.isMultiCurrency ? null : global.theme.textSecondaryColor)),
                     ]),
                     selected: widget.showDualCurrency && widget.isMultiCurrency,
                     onSelected: widget.isMultiCurrency ? (_) => widget.onShowDualCurrencyChanged(true) : null,
                     selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
-                    backgroundColor: Colors.grey[200],
-                    disabledColor: Colors.grey[100],
+                    backgroundColor: global.theme.dividerBorderColor,
+                    disabledColor: global.theme.cardColor,
                   ),
                   ChoiceChip(
                     label: Row(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.attach_money, size: 18), const SizedBox(width: 4), Text(global.language("single_currency"))]),
                     selected: !widget.showDualCurrency || !widget.isMultiCurrency,
                     onSelected: widget.isMultiCurrency ? (_) => widget.onShowDualCurrencyChanged(false) : null,
                     selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
-                    backgroundColor: Colors.grey[200],
+                    backgroundColor: global.theme.dividerBorderColor,
                   ),
                 ],
               ),
@@ -2821,14 +2821,14 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                       decoration: BoxDecoration(
                         color: previewColor,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1),
+                        border: Border.all(color: global.theme.cardColor, width: 1),
                       ),
                     ),
                     label: Text(displayName),
                     selected: isSelected,
                     onSelected: (_) => widget.onThemeChanged(theme.name),
                     selectedColor: previewColor.withValues(alpha: 0.3),
-                    backgroundColor: Colors.grey[200],
+                    backgroundColor: global.theme.dividerBorderColor,
                   );
                 }).toList(),
               ),
@@ -2847,9 +2847,9 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       decoration: BoxDecoration(
-                        color: isSelected ? global.theme.appBarColor.withValues(alpha: 0.15) : Colors.grey[100],
+                        color: isSelected ? global.theme.appBarColor.withValues(alpha: 0.15) : global.theme.cardColor,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: isSelected ? global.theme.appBarColor : Colors.grey[300]!, width: isSelected ? 2 : 1),
+                        border: Border.all(color: isSelected ? global.theme.appBarColor : global.theme.dividerBorderColor, width: isSelected ? 2 : 1),
                       ),
                       child: Row(
                         children: [
@@ -2857,7 +2857,7 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                           Container(
                             width: 32,
                             height: 32,
-                            decoration: BoxDecoration(color: isSelected ? global.theme.appBarColor : Colors.grey[400], borderRadius: BorderRadius.circular(4)),
+                            decoration: BoxDecoration(color: isSelected ? global.theme.appBarColor : global.theme.iconSecondaryColor, borderRadius: BorderRadius.circular(4)),
                             child: Icon(_getTemplateIcon(template.id), color: Colors.white, size: 18),
                           ),
                           const SizedBox(width: 10),
@@ -2868,9 +2868,9 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                               children: [
                                 Text(
                                   template.name,
-                                  style: TextStyle(fontSize: 13, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500, color: isSelected ? global.theme.appBarColor : Colors.black87),
+                                  style: TextStyle(fontSize: 13, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500, color: isSelected ? global.theme.appBarColor : global.theme.textColor),
                                 ),
-                                Text(template.description, style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+                                Text(template.description, style: TextStyle(fontSize: 10, color: global.theme.iconSecondaryColor)),
                               ],
                             ),
                           ),
@@ -2897,7 +2897,7 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     selected: widget.dateSettings.yearFormat == PdfYearFormat.buddhist,
                     onSelected: (_) => widget.onDateSettingsChanged(widget.dateSettings.copyWith(yearFormat: PdfYearFormat.buddhist)),
                     selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
-                    backgroundColor: Colors.grey[200],
+                    backgroundColor: global.theme.dividerBorderColor,
                   ),
                   SizedBox(width: 8),
                   ChoiceChip(
@@ -2905,7 +2905,7 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     selected: widget.dateSettings.yearFormat == PdfYearFormat.christian,
                     onSelected: (_) => widget.onDateSettingsChanged(widget.dateSettings.copyWith(yearFormat: PdfYearFormat.christian)),
                     selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
-                    backgroundColor: Colors.grey[200],
+                    backgroundColor: global.theme.dividerBorderColor,
                   ),
                 ],
               ),
@@ -2922,7 +2922,7 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     selected: isSelected,
                     onSelected: (_) => widget.onDateSettingsChanged(widget.dateSettings.copyWith(dateFormat: format)),
                     selectedColor: global.theme.appBarColor.withValues(alpha: 0.3),
-                    backgroundColor: Colors.grey[200],
+                    backgroundColor: global.theme.dividerBorderColor,
                   );
                 }).toList(),
               ),
@@ -2948,9 +2948,9 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: isSelected ? global.theme.appBarColor.withValues(alpha: 0.2) : Colors.grey[100],
+                        color: isSelected ? global.theme.appBarColor.withValues(alpha: 0.2) : global.theme.cardColor,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: isSelected ? global.theme.appBarColor : Colors.grey[300]!, width: isSelected ? 2 : 1),
+                        border: Border.all(color: isSelected ? global.theme.appBarColor : global.theme.dividerBorderColor, width: isSelected ? 2 : 1),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -2964,14 +2964,14 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                           // ชื่อภาษา
                           Text(
                             name,
-                            style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? global.theme.appBarColor : Colors.black87),
+                            style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? global.theme.appBarColor : global.theme.textColor),
                           ),
                           // แสดง AI badge สำหรับภาษาที่ต้องแปล
                           if (isAiTranslate) ...[
                             const SizedBox(width: 4),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                              decoration: BoxDecoration(color: Colors.orange[100], borderRadius: BorderRadius.circular(4)),
+                              decoration: BoxDecoration(color: global.theme.rowSelectedColor, borderRadius: BorderRadius.circular(4)),
                               child: const Text(
                                 'AI',
                                 style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.orange),
@@ -3009,7 +3009,7 @@ class _SettingsPanelState extends State<_SettingsPanel> {
                 child: ElevatedButton.icon(
                   icon: Icon(Icons.print, size: 20),
                   label: Text(global.language("print_document"), style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(backgroundColor: global.theme.appBarColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12), elevation: 2),
+                  style: ElevatedButton.styleFrom(backgroundColor: global.theme.appBarColor, foregroundColor: global.theme.onPrimaryColor, padding: EdgeInsets.symmetric(vertical: 12), elevation: 2),
                   onPressed: widget.pdfBytes != null ? widget.onPrint : null,
                 ),
               ),
@@ -3046,7 +3046,7 @@ class _PdfViewerBody extends StatefulWidget {
   }
 }
 
-class _PdfViewerBodyState extends State<_PdfViewerBody> {
+class _PdfViewerBodyState extends State<_PdfViewerBody> with global.ThemeRefreshMixin {
   double _zoomLevel = -1; // default เต็มความสูง (fit height)
   final TransformationController _transformController = TransformationController();
 
@@ -3106,9 +3106,9 @@ class _PdfViewerBodyState extends State<_PdfViewerBody> {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red),
             ),
             SizedBox(height: 8),
-            Text('${global.language("file_size")}: ${widget.pdfBytes.length} bytes', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+            Text('${global.language("file_size")}: ${widget.pdfBytes.length} bytes', style: TextStyle(fontSize: 14, color: global.theme.iconSecondaryColor)),
             SizedBox(height: 4),
-            Text(global.language("try_change_settings"), style: TextStyle(fontSize: 13, color: Colors.grey[500])),
+            Text(global.language("try_change_settings"), style: TextStyle(fontSize: 13, color: global.theme.iconSecondaryColor)),
           ],
         ),
       );
@@ -3147,7 +3147,7 @@ class _PdfViewerBodyState extends State<_PdfViewerBody> {
           bottom: 16,
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               borderRadius: BorderRadius.circular(8),
               boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8, offset: const Offset(0, 2))],
             ),
@@ -3224,7 +3224,7 @@ class _SafePdfPreview extends StatefulWidget {
   State<_SafePdfPreview> createState() => _SafePdfPreviewState();
 }
 
-class _SafePdfPreviewState extends State<_SafePdfPreview> {
+class _SafePdfPreviewState extends State<_SafePdfPreview> with global.ThemeRefreshMixin {
   bool _hasError = false;
   String _errorMessage = '';
 
@@ -3259,7 +3259,7 @@ class _SafePdfPreviewState extends State<_SafePdfPreview> {
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Text(
                 _errorMessage,
-                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 13, color: global.theme.iconSecondaryColor),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -3304,7 +3304,7 @@ class _SafePdfPreviewState extends State<_SafePdfPreview> {
         previewPageMargin: const EdgeInsets.all(4),
         maxPageWidth: widget.maxWidth,
         pdfPreviewPageDecoration: BoxDecoration(
-          color: Colors.white,
+          color: global.theme.cardColor,
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4, offset: const Offset(0, 2))],
         ),
         onError: (context, error) {
@@ -3318,7 +3318,7 @@ class _SafePdfPreviewState extends State<_SafePdfPreview> {
                 SizedBox(height: 12),
                 Text(global.language("cannot_display_pdf"), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
                 SizedBox(height: 8),
-                Text(global.language("try_change_settings"), style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                Text(global.language("try_change_settings"), style: TextStyle(fontSize: 13, color: global.theme.iconSecondaryColor)),
               ],
             ),
           );
@@ -3339,7 +3339,7 @@ class _ErrorBoundary extends StatefulWidget {
   State<_ErrorBoundary> createState() => _ErrorBoundaryState();
 }
 
-class _ErrorBoundaryState extends State<_ErrorBoundary> {
+class _ErrorBoundaryState extends State<_ErrorBoundary> with global.ThemeRefreshMixin {
   @override
   Widget build(BuildContext context) {
     // ใช้ FlutterError.onError override แบบ local ไม่ได้

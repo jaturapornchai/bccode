@@ -194,7 +194,7 @@ class ProductComparison {
       case 2:
         return Colors.orange;
       default:
-        return Colors.grey;
+        return global.theme.iconSecondaryColor;
     }
   }
 }

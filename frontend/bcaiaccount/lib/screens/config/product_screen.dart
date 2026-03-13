@@ -10,6 +10,7 @@ import 'package:smlaicloud/model/product_group_model.dart';
 import 'package:smlaicloud/screen_search/product_group_search_screen.dart';
 import 'package:smlaicloud/screen_search/supplier_search_screen.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -30,7 +31,7 @@ class ProductScreen extends StatefulWidget {
 }
 
 class ProductScreenState extends State<ProductScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final translator = GoogleTranslator();
 
   ScrollController editScrollController = ScrollController();
@@ -667,7 +668,7 @@ class ProductScreenState extends State<ProductScreen>
 
   Color _getContainerColor(String itemGuid, int index) {
     if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
-      return (screenEvent == global.ScreenEventEnum.edit)
+      return isEditMode
           ? global.theme.rowEditColor
           : global.theme.rowSelectedColor;
     }
@@ -1033,7 +1034,7 @@ class ProductScreenState extends State<ProductScreen>
 
   Widget editScreen() {
     return Scaffold(
-      backgroundColor: (screenEvent == global.ScreenEventEnum.edit || screenEvent == global.ScreenEventEnum.add) ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
+      backgroundColor: global.theme.cardColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor:
@@ -1044,6 +1045,8 @@ class ProductScreenState extends State<ProductScreen>
         automaticallyImplyLeading: false,
         title: Text(headerEdit + global.language("product")),
         actions: <Widget>[
+          EditFontSizeControl(onChanged: () => setState(() {})),
+          const SizedBox(width: 8),
           if (selectGuid.isNotEmpty)
             Padding(
               padding: EdgeInsets.only(right: 20.0),
@@ -1162,9 +1165,28 @@ class ProductScreenState extends State<ProductScreen>
             }
           }
         },
-        child: SingleChildScrollView(
-          controller: editScrollController,
-          child: Container(
+        child: Builder(
+          builder: (context) {
+            final scale = global.editFontScaleFactor;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(scale),
+              ),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                    contentPadding: EdgeInsets.fromLTRB(
+                      12 * scale, 20 * scale, 12 * scale, 12 * scale,
+                    ),
+                  ),
+                ),
+                child: IconTheme(
+                  data: IconTheme.of(context).copyWith(
+                    size: 24.0 * scale,
+                  ),
+                  child: SingleChildScrollView(
+                    controller: editScrollController,
+                    child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(10),
             child: Column(
@@ -1243,7 +1265,7 @@ class ProductScreenState extends State<ProductScreen>
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.black12),
+                    border: Border.all(color: global.theme.dividerBorderColor.withValues(alpha: 0.12)),
                     borderRadius: BorderRadius.circular(5),
                   ),
                   child: Table(
@@ -1253,7 +1275,7 @@ class ProductScreenState extends State<ProductScreen>
                       2: FlexColumnWidth(1),
                       3: FlexColumnWidth(2),
                     },
-                    border: TableBorder.all(color: Colors.black26),
+                    border: TableBorder.all(color: global.theme.dividerBorderColor),
                     children: [
                       // 🔹 Header Row
                       TableRow(
@@ -1312,7 +1334,7 @@ class ProductScreenState extends State<ProductScreen>
                                       : FontWeight.normal,
                                   color: barcode.ismainbarcode
                                       ? Colors.blue
-                                      : Colors.black,
+                                      : global.theme.textColor,
                                 ),
                               ),
                             ),
@@ -1327,7 +1349,7 @@ class ProductScreenState extends State<ProductScreen>
                                       : FontWeight.normal,
                                   color: barcode.ismainbarcode
                                       ? Colors.blue
-                                      : Colors.black,
+                                      : global.theme.textColor,
                                 ),
                               ),
                             ),
@@ -1353,7 +1375,7 @@ class ProductScreenState extends State<ProductScreen>
                                       : FontWeight.normal,
                                   color: barcode.ismainbarcode
                                       ? Colors.blue
-                                      : Colors.black,
+                                      : global.theme.textColor,
                                 ),
                               ),
                             ),
@@ -1369,7 +1391,7 @@ class ProductScreenState extends State<ProductScreen>
                                       : FontWeight.normal,
                                   color: barcode.ismainbarcode
                                       ? Colors.blue
-                                      : Colors.black,
+                                      : global.theme.textColor,
                                 ),
                               ),
                             ),
@@ -1395,6 +1417,11 @@ class ProductScreenState extends State<ProductScreen>
               ],
             ),
           ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

@@ -114,18 +114,18 @@ class ProductLabelPrintShelf {
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(
+                SizedBox(
                   width: 50,
                   height: 50,
                   child: CircularProgressIndicator(
                     strokeWidth: 4,
-                    backgroundColor: Colors.grey,
+                    backgroundColor: global.theme.dividerBorderColor,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -305,7 +305,7 @@ class ProductLabelPrintShelf {
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Column(

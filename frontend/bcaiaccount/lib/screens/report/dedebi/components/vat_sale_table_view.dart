@@ -22,20 +22,20 @@ class VatSaleTableView extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.info_outline, size: 64, color: Colors.grey.shade400),
+              Icon(Icons.info_outline, size: 64, color: global.theme.iconSecondaryColor),
               SizedBox(height: 16),
               Text(
                 global.language('no_report_data'),
                 style: TextStyle(
                   fontSize: 18,
-                  color: Colors.grey.shade600,
+                  color: global.theme.textSecondaryColor,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               SizedBox(height: 8),
               Text(
                 global.language('please_adjust_search_criteria'),
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
               ),
             ],
           ),
@@ -49,9 +49,9 @@ class VatSaleTableView extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: global.theme.surfaceColor,
             border: Border(
-              bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+              bottom: BorderSide(color: global.theme.dividerBorderColor, width: 1),
             ),
           ),
           child: _buildHeaderRow(),
@@ -107,11 +107,11 @@ class VatSaleTableView extends StatelessWidget {
 
   Widget _buildDataRow(VatSaleModel item, int index) {
     final isEven = index % 2 == 0;
-    final backgroundColor = isEven ? Colors.white : Colors.grey.shade50;
+    final backgroundColor = isEven ? global.theme.cardColor : global.theme.backgroundColor;
 
     return InkWell(
       onTap: () => onRowTap?.call(item),
-      hoverColor: Colors.indigo.shade50,
+      hoverColor: global.theme.rowHoverColor,
       highlightColor: Colors.indigo.shade100,
       splashColor: Colors.indigo.shade200,
       child: Container(
@@ -119,7 +119,7 @@ class VatSaleTableView extends StatelessWidget {
         decoration: BoxDecoration(
           color: backgroundColor,
           border: Border(
-            bottom: BorderSide(color: Colors.grey.shade200, width: 0.5),
+            bottom: BorderSide(color: global.theme.dividerBorderColor, width: 0.5),
           ),
         ),
         child: Row(
@@ -150,7 +150,7 @@ class VatSaleTableView extends StatelessWidget {
               child: _buildDataCell(
                 ReportUtils.formatCurrency(item.totalvatvalue),
                 textAlign: TextAlign.right,
-                color: Colors.blue.shade700,
+                color: global.theme.infoHighlightTextColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -159,7 +159,7 @@ class VatSaleTableView extends StatelessWidget {
               child: _buildDataCell(
                 ReportUtils.formatCurrency(item.totalexceptvat),
                 textAlign: TextAlign.right,
-                color: Colors.orange.shade700,
+                color: global.theme.warningHighlightTextColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -169,14 +169,14 @@ class VatSaleTableView extends StatelessWidget {
                 ReportUtils.formatCurrency(item.totalamount),
                 textAlign: TextAlign.right,
                 fontWeight: FontWeight.bold,
-                color: Colors.green.shade700,
+                color: global.theme.positiveHighlightTextColor,
               ),
             ),
             Expanded(
               flex: 1,
               child: _buildDataCell(
                 item.status.isEmpty ? '-' : item.status,
-                color: item.status.isEmpty ? Colors.grey : Colors.red.shade700,
+                color: item.status.isEmpty ? global.theme.textSecondaryColor : global.theme.negativeHighlightTextColor,
               ),
             ),
           ],

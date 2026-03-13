@@ -23,7 +23,8 @@ class AiAnalysisScreen extends StatefulWidget {
   State<AiAnalysisScreen> createState() => _AiAnalysisScreenState();
 }
 
-class _AiAnalysisScreenState extends State<AiAnalysisScreen> {
+class _AiAnalysisScreenState extends State<AiAnalysisScreen>
+    with global.ThemeRefreshMixin {
   @override
   Widget build(BuildContext context) {
     final hasDocument = widget.documentData != null &&
@@ -35,7 +36,7 @@ class _AiAnalysisScreenState extends State<AiAnalysisScreen> {
         automaticallyImplyLeading: false, // ไม่แสดงปุ่ม back เพราะปิดจาก tab แทน
         title: Row(
           children: [
-            const Icon(Icons.auto_awesome, color: Colors.amber),
+            Icon(Icons.auto_awesome, color: Colors.amber),
             SizedBox(width: 8),
             Text('AI ${global.language("analyze_document")}'),
           ],
@@ -60,28 +61,28 @@ class _AiAnalysisScreenState extends State<AiAnalysisScreen> {
               // มีข้อมูลเอกสาร - แสดงรายละเอียด
               Text(
                 '${global.language('document')}: ${widget.documentData!.docno}',
-                style: const TextStyle(fontSize: 16),
+                style: TextStyle(fontSize: 16),
               ),
               Text(
                 '${global.language('items_count')}: ${widget.documentData!.details?.length ?? 0}',
-                style: const TextStyle(fontSize: 16),
+                style: TextStyle(fontSize: 16),
               ),
             ] else ...[
               // ไม่มีข้อมูลเอกสาร - แสดงข้อความแนะนำ
               Text(
                 global.language('welcome_ai_analysis'),
-                style: const TextStyle(fontSize: 16),
+                style: TextStyle(fontSize: 16),
               ),
               SizedBox(height: 8),
               Text(
                 global.language('ai_analysis_open_from_document'),
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
               ),
             ],
             SizedBox(height: 32),
             Text(
               '${global.language('developing')}...',
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
+              style: TextStyle(fontSize: 14, color: global.theme.iconSecondaryColor),
             ),
           ],
         ),

@@ -22,7 +22,7 @@ class ModernAttachmentButton extends StatefulWidget {
 }
 
 class _ModernAttachmentButtonState extends State<ModernAttachmentButton>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   int _attachmentCount = 0;
   bool _isLoading = true;
   bool _isHovered = false;
@@ -103,7 +103,7 @@ class _ModernAttachmentButtonState extends State<ModernAttachmentButton>
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
     final isTablet = screenWidth >= 600 && screenWidth < 1200;
-    final primaryColor = Colors.blue.shade600;
+    final primaryColor = global.theme.infoHighlightTextColor;
 
     return MouseRegion(
       onEnter: (_) => _onHover(true),
@@ -156,7 +156,7 @@ class _ModernAttachmentButtonState extends State<ModernAttachmentButton>
                 border: Border.all(
                   color: _isHovered
                       ? primaryColor.withValues(alpha: 0.5)
-                      : Colors.grey.withValues(alpha: 0.2),
+                      : global.theme.dividerBorderColor.withValues(alpha: 0.3),
                   width: 1.5,
                 ),
               ),
@@ -235,8 +235,8 @@ class _ModernAttachmentButtonState extends State<ModernAttachmentButton>
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.blue.shade400,
-                      Colors.blue.shade600,
+                      global.theme.infoHighlightTextColor,
+                      global.theme.infoHighlightTextColor,
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -244,7 +244,7 @@ class _ModernAttachmentButtonState extends State<ModernAttachmentButton>
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.blue.withValues(alpha: 0.4),
+                      color: global.theme.infoHighlightTextColor.withValues(alpha: 0.4),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -253,8 +253,8 @@ class _ModernAttachmentButtonState extends State<ModernAttachmentButton>
                 constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
                 child: Text(
                   _attachmentCount > 99 ? '99+' : _attachmentCount.toString(),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: global.theme.onPrimaryColor,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -279,7 +279,7 @@ class _ModernAttachmentButtonState extends State<ModernAttachmentButton>
             width: 8,
             height: 8,
             decoration: BoxDecoration(
-              color: Colors.grey.shade400,
+              color: global.theme.iconSecondaryColor,
               shape: BoxShape.circle,
             ),
           ),

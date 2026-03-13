@@ -24,20 +24,20 @@ class GrossProfitByProductTableView extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.info_outline, size: 64, color: Colors.grey.shade400),
+              Icon(Icons.info_outline, size: 64, color: global.theme.iconSecondaryColor),
               SizedBox(height: 16),
               Text(
                 global.language('no_report_data'),
                 style: TextStyle(
                   fontSize: 18,
-                  color: Colors.grey.shade600,
+                  color: global.theme.textSecondaryColor,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               SizedBox(height: 8),
               Text(
                 global.language('please_adjust_search_criteria'),
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                style: TextStyle(fontSize: 14, color: global.theme.textSecondaryColor),
               ),
             ],
           ),
@@ -51,9 +51,9 @@ class GrossProfitByProductTableView extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: global.theme.surfaceColor,
             border: Border(
-              bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+              bottom: BorderSide(color: global.theme.dividerBorderColor, width: 1),
             ),
           ),
           child: _buildHeaderRow(),
@@ -114,11 +114,11 @@ class GrossProfitByProductTableView extends StatelessWidget {
 
   Widget _buildDataRow(GrossProfitByProductModel item, int index) {
     final isEven = index % 2 == 0;
-    final backgroundColor = isEven ? Colors.white : Colors.grey.shade50;
+    final backgroundColor = isEven ? global.theme.columnAlternateEvenColor : global.theme.columnAlternateOddColor;
 
     return InkWell(
       onTap: () => onRowTap?.call(item),
-      hoverColor: Colors.indigo.shade50,
+      hoverColor: global.theme.rowHoverColor,
       highlightColor: Colors.indigo.shade100,
       splashColor: Colors.indigo.shade200,
       child: Container(
@@ -126,7 +126,7 @@ class GrossProfitByProductTableView extends StatelessWidget {
         decoration: BoxDecoration(
           color: backgroundColor,
           border: Border(
-            bottom: BorderSide(color: Colors.grey.shade200, width: 0.5),
+            bottom: BorderSide(color: global.theme.dividerBorderColor, width: 0.5),
           ),
         ),
         child: Row(
@@ -164,7 +164,7 @@ class GrossProfitByProductTableView extends StatelessWidget {
               child: _buildDataCell(
                 ReportUtils.formatCurrency(item.totalcost!),
                 textAlign: TextAlign.right,
-                color: Colors.red.shade700,
+                color: global.theme.negativeHighlightTextColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -175,8 +175,8 @@ class GrossProfitByProductTableView extends StatelessWidget {
                 textAlign: TextAlign.right,
                 fontWeight: FontWeight.bold,
                 color: item.pal! >= 0
-                    ? Colors.green.shade700
-                    : Colors.red.shade700,
+                    ? global.theme.positiveHighlightTextColor
+                    : global.theme.negativeHighlightTextColor,
               ),
             ),
             Expanded(
@@ -186,8 +186,8 @@ class GrossProfitByProductTableView extends StatelessWidget {
                 textAlign: TextAlign.right,
                 fontWeight: FontWeight.bold,
                 color: item.perPal! >= 0
-                    ? Colors.green.shade700
-                    : Colors.red.shade700,
+                    ? global.theme.positiveHighlightTextColor
+                    : global.theme.negativeHighlightTextColor,
               ),
             ),
           ],

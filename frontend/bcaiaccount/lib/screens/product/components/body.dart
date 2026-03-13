@@ -16,7 +16,7 @@ class Body extends StatefulWidget {
   State<Body> createState() => _BodyState();
 }
 
-class _BodyState extends State<Body> {
+class _BodyState extends State<Body> with global.ThemeRefreshMixin {
   final ScrollController _scrollController = ScrollController();
   double currentScroll = 0.0;
 
@@ -38,7 +38,6 @@ class _BodyState extends State<Body> {
   }
 
   void _searchText(String enteredKeyword) {
-    List<Map<String, dynamic>> results = [];
   }
 
   void _onScroll() {
@@ -77,8 +76,6 @@ class _BodyState extends State<Body> {
 
   @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery.of(context).size;
-
     return MultiBlocListener(
       listeners: [
         BlocListener<InventoryBloc, InventoryState>(
@@ -141,7 +138,7 @@ class _BodyState extends State<Body> {
                                     Icon(
                                       Icons.error_outline,
                                       size: 64,
-                                      color: Colors.red,
+                                      color: global.theme.negativeHighlightTextColor,
                                     ),
                                     SizedBox(height: 16),
                                     Text(
@@ -156,7 +153,7 @@ class _BodyState extends State<Body> {
                                       state.message,
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: Colors.grey,
+                                        color: global.theme.textSecondaryColor,
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
@@ -249,7 +246,7 @@ class _BodyState extends State<Body> {
                                                           TextOverflow.ellipsis,
                                                       style: TextStyle(
                                                         fontSize: 18,
-                                                        color: Colors.black,
+                                                        color: global.theme.textColor,
                                                         fontWeight:
                                                             FontWeight.bold,
                                                       ),
@@ -265,7 +262,7 @@ class _BodyState extends State<Body> {
                                                       overflow:
                                                           TextOverflow.ellipsis,
                                                       style: TextStyle(
-                                                        color: Colors.grey,
+                                                        color: global.theme.textSecondaryColor,
                                                       ),
                                                     ),
                                                   ),
@@ -278,7 +275,7 @@ class _BodyState extends State<Body> {
                                                           .price
                                                           .toString(),
                                                       style: TextStyle(
-                                                        color: Colors.orange,
+                                                        color: global.theme.warningHighlightTextColor,
                                                         fontSize: 24,
                                                         fontWeight:
                                                             FontWeight.bold,

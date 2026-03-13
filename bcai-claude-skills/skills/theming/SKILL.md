@@ -55,9 +55,9 @@ user toggle → saveThemeSettings() ──┘
 |----------|-------|------|--------|
 | `backgroundColor` | grey[50] | #1A1A2E | Scaffold background |
 | `appBarColor` | #012A4A | #0D1B2A | AppBar |
-| `primaryColor` | #2A6F97 | (ไม่เปลี่ยน) | ปุ่ม, accent |
+| `primaryColor` | #2A6F97 | (ไม่เปลี่ยน) | ปุ่ม, accent, info icon/text |
 | `primaryLightColor` | #89C2D9 | (ไม่เปลี่ยน) | hover, light accent |
-| `secondaryColor` | white | #2D2D2D | secondary surfaces |
+| `secondaryColor` | white | #A9D6E5 | secondary surfaces, purple/accent marker |
 | `headTitleColor` | white | white | AppBar title |
 | `columnHeaderColor` | #89C2D9 | #2D3A4A | header แถว data list |
 | `columnHeaderTextColor` | black | #E0E0E0 | ตัวอักษร header |
@@ -66,6 +66,7 @@ user toggle → saveThemeSettings() ──┘
 | `inputTextBoxForceColor` | #8A1606 | #FF6B6B | label บังคับ |
 | `inputTextBoxColor` | black | #E0E0E0 | label ไม่บังคับ |
 | `toolBarEditModeColor` | #2A6F97 | #1B3A5C | toolbar ตอน edit |
+| `buttonDangerColor` | #DC2626 | #EF4444 | ปุ่ม delete/danger (ElevatedButton bg) |
 
 ### UI Colors (เพิ่มใหม่)
 | Property | Light | Dark | ใช้กับ |
@@ -118,22 +119,45 @@ user toggle → saveThemeSettings() ──┘
 
 ## 2. กฎสำคัญ (MUST follow)
 
-### ห้าม hardcode สี
+### ห้าม hardcode สี (ครอบคลุมทุกรูปแบบ)
 ```dart
-// BAD
+// BAD — ทุกแบบห้ามหมด
 color: Colors.white,
 color: Colors.black,
 color: Colors.grey[600],
+color: Color.fromARGB(255, 148, 160, 194),   // ← ห้าม!
+color: Color.fromRGBO(148, 160, 194, 1.0),   // ← ห้าม!
+color: Color(0xFF94A0C2),                     // ← ห้าม!
 fillColor: Colors.white,
 hintStyle: TextStyle(color: Colors.grey[400]),
 
-// GOOD
+// GOOD — ใช้ global.theme.* เท่านั้น
 color: global.theme.cardColor,
 color: global.theme.textColor,
 color: global.theme.textSecondaryColor,
 fillColor: global.theme.formFillColor,
 hintStyle: TextStyle(color: global.theme.formHintColor),
 ```
+
+### ตาราง Color.fromARGB ที่พบบ่อย → แก้เป็น theme
+| Color.fromARGB เดิม | สี | ใช้แทน |
+|---------------------|-----|--------|
+| `(255, 123, 235, 157)` | เขียวอ่อน (button) | `positiveHighlightTextColor` |
+| `(255, 78, 141, 66)` / `(255, 67, 206, 74)` | เขียวเข้ม (button) | `positiveHighlightTextColor` |
+| `(255, 164, 232, 162)` / `(255, 148, 194, 168)` | เขียวอ่อน (card bg) | `positiveHighlightColor` |
+| `(255, 241, 112, 112)` / `(255, 246, 137, 129)` | แดง/salmon (button) | `buttonDangerColor` |
+| `(255, 238, 86, 144)` | ชมพู (delete icon) | `negativeHighlightTextColor` |
+| `(255, 235, 147, 123)` | ส้ม (warning button) | `warningHighlightTextColor` |
+| `(255, 224, 159, 67)` | ส้ม (card bg) | `warningHighlightColor` |
+| `(255, 148, 160, 194)` / `(255, 197, 212, 255)` | ฟ้า/ม่วงอ่อน (card bg) | `surfaceColor` หรือ `infoHighlightColor` |
+| `(255, 99, 120, 183)` / `(255, 29, 43, 84)` | น้ำเงินเข้ม (button) | `primaryColor` |
+| `(255, 168, 171, 136)` | มะกอก (selector button) | `primaryLightColor` / `surfaceColor` |
+| `(255, 208, 42, 158)` | ม่วง/magenta | `secondaryColor` |
+| `(255, 0, 0, 0)` | ดำ (text/icon) | `textColor` / `iconColor` |
+| `(255, 255, 255, 255)` | ขาว (บนพื้นเข้ม) | `onPrimaryColor` |
+| `(255, 75, 75, 75)` / `(255, 65, 66, 74)` | เทาเข้ม (button) | `primaryColor` |
+| `(255, 152, 152, 152)` | เทากลาง | `textSecondaryColor` |
+| `(255, 231, 206, 209)` | ชมพูอ่อน (card bg) | `surfaceColor` |
 
 ### เลือกสีถูกประเภท
 | ต้องการ | ใช้ |
@@ -185,9 +209,9 @@ final accentColor = global.isDarkMode()
 | เดิม (hardcode) | ใช้แทน | ใช้กับ |
 |-----------------|--------|--------|
 | `Colors.white` | `global.theme.cardColor` | พื้น Card/Container ทั่วไป |
-| `Colors.white` (form fill) | `global.theme.formFillColor` | พื้น input field |
+| `Colors.white` (form fill / fillColor) | `global.theme.formFillColor` | พื้น input field |
 | `Colors.white` (dialog) | `global.theme.dialogColor` | พื้น Dialog |
-| `Colors.white` บนพื้นเข้ม | `global.theme.onPrimaryColor` | text/icon บน AppBar, header |
+| `Colors.white` บนพื้นเข้ม | `global.theme.onPrimaryColor` | text/icon บน AppBar, colored button |
 | `Colors.black` | `global.theme.textColor` | ตัวอักษรหลัก |
 | `Colors.black87` | `global.theme.textColor` | ตัวอักษรหลัก |
 | `Colors.black54` | `global.theme.textSecondaryColor` | ตัวอักษรรอง |
@@ -202,6 +226,16 @@ final accentColor = global.isDarkMode()
 | `Colors.grey[100]` | `global.theme.surfaceColor` | พื้น section card / description box |
 | `Colors.grey[50]` | `global.theme.surfaceColor` | พื้น section card อ่อน |
 | `Color(0xFFF8FAFC)` | `global.theme.surfaceColor` | custom light grey |
+| `Colors.red` (button bg) | `global.theme.buttonDangerColor` | ElevatedButton ลบ/danger |
+| `Colors.red` (icon/text) | `global.theme.negativeHighlightTextColor` | icon ลบ, ตัวอักษร error |
+| `Colors.blue` (button bg) | `global.theme.primaryColor` | ElevatedButton primary |
+| `Colors.blue` (icon/text/accent) | `global.theme.primaryColor` | icon info, accent |
+| `Colors.blue[50]` (bg) | `global.theme.infoHighlightColor` | section bg info |
+| `Colors.blue[200]` (border) | `global.theme.infoHighlightTextColor.withValues(alpha:0.3)` | section border info |
+| `Colors.blue[700/800]` | `global.theme.primaryColor` | text accent |
+| `Colors.green` (icon/text) | `global.theme.positiveHighlightTextColor` | icon สำเร็จ, active |
+| `Colors.orange` (icon/text/bg) | `global.theme.warningHighlightTextColor` | warning icon/snackbar |
+| `Colors.deepPurple` / `Colors.purple` | `global.theme.secondaryColor` | decoration, category marker |
 
 ### Section Card Pattern (สำคัญมาก — วนซ้ำบ่อย)
 
@@ -289,18 +323,16 @@ text: TextStyle(color: global.theme.positiveHighlightTextColor),
 - `Colors.white.withValues(alpha: 0.7)` บน header → `global.theme.onPrimaryColor.withValues(alpha: 0.7)`
 - `const Icon(..., color: Colors.white)` → `Icon(..., color: global.theme.onPrimaryColor)` (ลบ const!)
 
-**Semantic colors ยกเว้น** (ใช้ได้ตรงๆ):
-- `Colors.red` / `Colors.red[xxx]` — error, delete, required
-- `Colors.green` / `Colors.green[xxx]` — success, active, approve
-- `Colors.orange` / `Colors.amber` — warning, pending
-- `Colors.blue` / `Colors.cyan` — info (แต่ `[50]` เป็น bg → ระวัง dark mode)
-- `Colors.purple` — category/tag markers
+**ไม่มีข้อยกเว้น — ทุก color ต้องผ่าน global.theme เสมอ**
 
-**หมายเหตุ dark mode สำหรับ semantic bg:**
-`Colors.blue[50]`, `Colors.green[50]` เป็น background สว่างมาก → dark mode ควรใช้:
-```dart
-color: global.isDarkMode() ? Colors.blue.withValues(alpha: 0.15) : Colors.blue[50],
-```
+| เดิม (hardcode) | ใช้แทน | ใช้กับ |
+|-----------------|--------|--------|
+| `Colors.red` (ปุ่มลบ/danger bg) | `global.theme.negativeHighlightTextColor` | ปุ่ม delete, error button bg |
+| `Colors.red` (icon/text) | `global.theme.negativeHighlightTextColor` | icon ลบ, ตัวอักษร error |
+| `Colors.green` (สถานะ active) | `global.theme.positiveHighlightTextColor` | icon สำเร็จ, active status |
+| `Colors.blue` (info/primary) | `global.theme.primaryColor` | ปุ่ม primary, accent |
+| `Colors.orange` (warning) | `global.theme.warningHighlightTextColor` | icon คำเตือน |
+| `Colors.deepPurple` / `Colors.purple` | `global.theme.secondaryColor` | category, tag |
 
 ### ถ้าจำเป็นต้องใช้สีต่างกันตาม theme
 ```dart
@@ -355,6 +387,34 @@ global.theme.primaryColor       // ใช้สีหลักตรงๆ
 global.theme.primaryLightColor  // ใช้สีอ่อน
 ```
 
+### onPrimaryColor ห้ามใช้เป็น fillColor/background (Pitfall สำคัญมาก)
+
+`onPrimaryColor` = white ทั้ง dark/light mode — เป็นสีสำหรับ text/icon บนพื้นเข้มเท่านั้น
+ถ้าเอาไปใส่เป็น fillColor ของ form field → dark mode จะได้ช่อง input สีขาว!
+
+```dart
+// BAD — onPrimaryColor = white ทั้ง 2 mode → form field ขาวจ้าใน dark mode
+fillColor: readOnly ? global.theme.surfaceColor : global.theme.onPrimaryColor,
+
+// GOOD — formFillColor = white (light) / #2D2D2D (dark)
+fillColor: readOnly ? global.theme.surfaceColor : global.theme.formFillColor,
+```
+
+**ตารางเลือกให้ถูก:**
+| ต้องการ | ใช้ | ห้ามใช้ |
+|---------|-----|---------|
+| พื้น form field | `formFillColor` | `onPrimaryColor` |
+| พื้น Card/Container | `cardColor` | `onPrimaryColor` |
+| พื้น Dialog | `dialogColor` | `onPrimaryColor` |
+| text/icon บน AppBar | `onPrimaryColor` | ✅ ถูกแล้ว |
+| text/icon บนปุ่มสี | `onPrimaryColor` | ✅ ถูกแล้ว |
+| icon ใน SnackBar | `Colors.white` ได้ | SnackBar มีพื้นสีเข้มเสมอ |
+
+### Colors.white ใน SnackBar / Notification (ไม่ต้องแก้)
+
+Icon ใน SnackBar เช่น `Icon(Icons.check, color: Colors.white)` **ไม่ต้องแก้**
+เพราะ SnackBar มี backgroundColor เข้มเสมอ (ทั้ง dark/light) → white icon ถูกต้อง
+
 ### floatingLabelStyle backgroundColor (Pitfall สำคัญ — Dark Mode)
 
 `floatingLabelStyle` ใน `TextFormField` มี `backgroundColor` เพื่อสร้างช่องว่างบน border
@@ -374,14 +434,144 @@ floatingLabelStyle: TextStyle(backgroundColor: global.theme.cardColor)
 
 ---
 
+## 2.5 Common Dark Mode Pitfalls (พบบ่อย — ต้อง scan ทุกครั้ง)
+
+### listObject() textStyle ไม่มี color (พบบ่อยมาก)
+ไฟล์ใน `screens/config/` และ `screen_search/` มักมี `listObject()` ที่สร้าง textStyle โดยไม่ใส่ color → dark mode มองไม่เห็น
+
+```dart
+// BAD — ไม่มี color → ใช้ default black → มองไม่เห็นใน dark mode
+TextStyle textStyle = TextStyle(
+  fontWeight: (selected) ? FontWeight.bold : FontWeight.normal,
+  fontSize: global.deviceConfig.listDataFontSize,
+);
+
+// GOOD — ต้องมี color เสมอ
+TextStyle textStyle = TextStyle(
+  fontWeight: (selected) ? FontWeight.bold : FontWeight.normal,
+  fontSize: global.deviceConfig.listDataFontSize,
+  color: (selected) ? global.theme.textColor : global.theme.textSecondaryColor,
+);
+```
+
+**ไฟล์ที่ต้องตรวจ:** ทุกไฟล์ใน `screens/config/` และ `screen_search/` ที่มี `listObject()` function
+
+### Text widget ใน list ไม่มี style (พบบ่อยใน screen_search)
+```dart
+// BAD — Text ไม่มี style → มองไม่เห็นใน dark mode
+Text(value.code ?? "")
+Text(global.packName(value.names!))
+
+// GOOD — ใส่ style ที่มี color
+Text(value.code ?? "", style: textStyle)
+Text(global.packName(value.names!), style: textStyle)
+```
+
+### Drag-and-drop / Selection hardcoded colors
+หน้าจอที่มี drag-and-drop tree (เช่น product_category_screen) มักใช้สีแบบนี้:
+
+```dart
+// BAD — hardcode สี state ต่างๆ
+Color color = Colors.white;                    // default row
+if (isDragTarget) color = Colors.green;        // drag target
+if (isSelected) color = Colors.blue;           // selected
+if (isInvalidDrag) color = Colors.red;         // invalid drag
+
+// GOOD — ใช้ theme highlight colors
+Color color = global.theme.cardColor;                      // default
+if (isDragTarget) color = global.theme.positiveHighlightColor;   // drag target
+if (isSelected) color = global.theme.infoHighlightColor;         // selected
+if (isInvalidDrag) color = global.theme.negativeHighlightColor;  // invalid
+```
+
+### Processing/Utility Screen (rebuild, audit, GL process)
+หน้าจอประมวลผล มักมี pattern เฉพาะที่ต้องแก้:
+
+```dart
+// BAD — Action card สี hardcode
+Container(
+  color: Colors.orange[50],
+  child: Column(children: [
+    Icon(Icons.build, color: Colors.orange[700]),
+    Text('ประมวลผล', style: TextStyle(color: Colors.orange[800])),
+  ]),
+)
+
+// GOOD — ใช้ warning highlight
+Container(
+  color: global.theme.warningHighlightColor,
+  child: Column(children: [
+    Icon(Icons.build, color: global.theme.warningHighlightTextColor),
+    Text('ประมวลผล', style: TextStyle(color: global.theme.warningHighlightTextColor)),
+  ]),
+)
+```
+
+**Pattern ที่พบบ่อยใน processing screens:**
+
+| Pattern | เดิม | ใช้แทน |
+|---------|------|--------|
+| Action card icon | `Colors.orange[700]` | `warningHighlightTextColor` |
+| Action card bg | `Colors.orange[50]` | `warningHighlightColor` |
+| Success status icon | `Colors.green` | `positiveHighlightTextColor` |
+| Error status icon/text | `Colors.red` / `Colors.red[700]` | `negativeHighlightTextColor` |
+| Info card bg | `Colors.blue[50]` | `infoHighlightColor` |
+| Progress indicator | `Colors.orange[700]` | `warningHighlightTextColor` |
+| Error dialog bg | `Colors.red[50]` | `negativeHighlightColor` |
+| Error dialog border | `Colors.red[200]` | `negativeHighlightTextColor.withValues(alpha:0.3)` |
+| Log error text | `Colors.red[700]` | `negativeHighlightTextColor` |
+| AppBar deepOrange/custom | `Colors.deepOrange` | `global.theme.appBarColor` |
+
+### Scaffold backgroundColor (พบบ่อย — ลืมตั้ง)
+หลายจอไม่ set backgroundColor ให้ Scaffold → dark mode ยังเป็นพื้นขาว
+
+```dart
+// BAD — ไม่ตั้ง backgroundColor
+Scaffold(
+  appBar: AppBar(...),
+  body: ...
+)
+
+// GOOD — ตั้ง backgroundColor เสมอ
+Scaffold(
+  backgroundColor: global.theme.backgroundColor,
+  appBar: AppBar(backgroundColor: global.theme.appBarColor),
+  body: ...
+)
+```
+
+### วิธี scan หา pattern เหล่านี้
+```bash
+# หา listObject ที่ textStyle ไม่มี color
+grep -n "TextStyle textStyle" lib/screens/config/*.dart lib/screen_search/*.dart
+# แล้วตรวจว่าแต่ละตัวมี color: หรือไม่
+
+# หา Text widget ที่ไม่มี style ใน listObject
+grep -n "Text(" lib/screen_search/*.dart | grep -v "style:"
+
+# หา Scaffold ที่ไม่มี backgroundColor
+grep -n "Scaffold(" lib/screens/**/*.dart
+# แล้วตรวจว่ามี backgroundColor: หรือไม่
+
+# หา processing screens ที่ยังมี hardcode
+grep -rn "Colors\.\(orange\|deepOrange\|red\|green\|blue\)" lib/screens/config/rebuild*.dart lib/screens/audit*.dart lib/screens/gl/*.dart
+```
+
+---
+
 ## 3. _getContainerColor มาตรฐาน (Data List)
 
-ทุก data list screen ต้องใช้ pattern นี้:
+ทุก data list screen ต้องใช้ pattern นี้ — **ตรวจว่า screen ใช้ตัวแปรไหน**:
+
 ```dart
 Color? _getContainerColor(String itemGuid, int index) {
   // แถวที่เลือก — แยก edit กับ view
   if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
-    return (screenEvent == global.ScreenEventEnum.edit)
+    // ⚠️ ใช้ตัวแปรที่ screen นั้นมีจริง:
+    // - ถ้ามี bool isEditMode → ใช้ isEditMode
+    // - ถ้าไม่มี isEditMode แต่มี isSaveAllow → ใช้ isSaveAllow
+    // - ห้ามใช้ screenEvent == edit (screenEvent ไม่ถูก set เป็น edit ใน switchToEdit)
+    return isEditMode  // หรือ isSaveAllow
         ? global.theme.rowEditColor      // ส้ม = กำลังแก้ไข
         : global.theme.rowSelectedColor; // ฟ้า = เลือกดู
   }
@@ -395,6 +585,8 @@ Color? _getContainerColor(String itemGuid, int index) {
       : global.theme.columnAlternateOddColor;
 }
 ```
+
+**⚠️ Pitfall สำคัญ:** `screenEvent == global.ScreenEventEnum.edit` ใน `_getContainerColor` จะ **ไม่ทำงาน** เพราะ `switchToEdit()` ไม่ set `screenEvent = edit` — ใช้ `isEditMode` หรือ `isSaveAllow` แทนเสมอ
 
 ---
 
@@ -511,12 +703,19 @@ SingleChildScrollView(
 
 ## 7. Checklist ตรวจจอใหม่
 
+### Scaffold & AppBar
+- [ ] `Scaffold` มี `backgroundColor: global.theme.backgroundColor`
+- [ ] `AppBar` มี `backgroundColor: global.theme.appBarColor` (ไม่ใช่ Colors.deepOrange หรือสี custom)
+- [ ] AppBar title ใช้ `headTitleColor` / `onPrimaryColor`
+
 ### Background & Surface
 - [ ] ไม่มี `Colors.white` เป็น background (ใช้ `cardColor`/`surfaceColor`)
 - [ ] ไม่มี `Colors.grey.shade50/100` เป็น section card bg (ใช้ `surfaceColor`)
 - [ ] ไม่มี `Colors.grey.shade300` เป็น section border (ใช้ `dividerBorderColor`)
 - [ ] ไม่มี `Colors.green.shade50` เป็น section bg (ใช้ `positiveHighlightColor`)
 - [ ] ไม่มี `Colors.blue.shade50` เป็น section bg (ใช้ `infoHighlightColor`)
+- [ ] ไม่มี `Colors.orange.shade50` เป็น section bg (ใช้ `warningHighlightColor`)
+- [ ] ไม่มี `Colors.red.shade50` เป็น section bg (ใช้ `negativeHighlightColor`)
 - [ ] Search bar ใช้ `searchBarColor` (ไม่ใช่ surfaceColor)
 - [ ] Edit form body ใช้ `cardColor`
 - [ ] Dialog ใช้ `dialogColor`
@@ -538,6 +737,13 @@ SingleChildScrollView(
 ### Form
 - [ ] Form fields ใช้ `formFillColor`/`formBorderColor`/`formHintColor`
 - [ ] `enabledBorder` ไม่ใช่ const (ถ้าใช้ global.theme)
+
+### Processing/Utility Screens (rebuild, audit, GL)
+- [ ] Action card icon/text ไม่ใช้ `Colors.orange[700]` (ใช้ `warningHighlightTextColor`)
+- [ ] Progress indicator ไม่ใช้ `Colors.orange` (ใช้ `warningHighlightTextColor`)
+- [ ] Status icon สำเร็จ/ผิดพลาด ใช้ highlight colors (ไม่ใช่ `Colors.green`/`Colors.red`)
+- [ ] Error dialog/box ใช้ `negativeHighlightColor`/`negativeHighlightTextColor`
+- [ ] Log text ใช้ `textColor` / `negativeHighlightTextColor` (ไม่ใช่ `Colors.red[700]`)
 
 ### Compile & Test
 - [ ] ไม่มี `const` ครอบ widget ที่ใช้ global.theme
@@ -563,11 +769,13 @@ grep -r "Colors\." --include="*.dart" lib/screens/ | grep -v "pdfgen\|usersystem
 
 ### Step 3: แก้เป็น batch (ใช้ subagent แยกตาม folder)
 ```
-screens/config/      → agent 1 (28+ files)
+screens/config/      → agent 1 (28+ files, รวม rebuild*, product_category)
 screens/master/      → agent 2 (11 files)
 screens/transaction/ → agent 3 (18 files)
 screens/report/      → agent 4
-screens/other/       → agent 5 (chatbot, coupon, form, etc.)
+screens/gl/          → agent 5 (gl_process_screen)
+screens/other/       → agent 6 (chatbot, coupon, form, etc.)
+screen_search/       → agent 7 (listObject text color)
 utils/               → manual fix (shared components)
 ```
 

@@ -22,8 +22,9 @@ class CreditTermsSectionWidget extends StatefulWidget {
   State<CreditTermsSectionWidget> createState() => _CreditTermsSectionWidgetState();
 }
 
-class _CreditTermsSectionWidgetState extends State<CreditTermsSectionWidget> {
-  static const Color _primaryColor = Color(0xFF667eea);
+class _CreditTermsSectionWidgetState extends State<CreditTermsSectionWidget>
+    with global.ThemeRefreshMixin {
+  static Color get _primaryColor => global.theme.primaryColor;
   late TextEditingController _creditDaysController;
 
   TransactionModel get screenData => widget.screenData;
@@ -59,9 +60,9 @@ class _CreditTermsSectionWidgetState extends State<CreditTermsSectionWidget> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -74,8 +75,8 @@ class _CreditTermsSectionWidgetState extends State<CreditTermsSectionWidget> {
               const SizedBox(width: 8),
               Text(
                 _getLabel("credit_terms"),
-                style: const TextStyle(
-                  color: Colors.black87,
+                style: TextStyle(
+                  color: global.theme.textColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
@@ -96,7 +97,7 @@ class _CreditTermsSectionWidgetState extends State<CreditTermsSectionWidget> {
                   decoration: InputDecoration(
                     labelText: _getLabel("credit_days"),
                     hintText: '0',
-                    prefixIcon: const Icon(Icons.timer_outlined, size: 20),
+                    prefixIcon: Icon(Icons.timer_outlined, size: 20),
                     suffixText: _getLabel("days"),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -135,8 +136,8 @@ class _CreditTermsSectionWidgetState extends State<CreditTermsSectionWidget> {
                   child: InputDecorator(
                     decoration: InputDecoration(
                       labelText: _getLabel("due_date"),
-                      prefixIcon: const Icon(Icons.event_outlined, size: 20),
-                      suffixIcon: Icon(Icons.edit_calendar, size: 18, color: Colors.grey.shade600),
+                      prefixIcon: Icon(Icons.event_outlined, size: 20),
+                      suffixIcon: Icon(Icons.edit_calendar, size: 18, color: global.theme.iconSecondaryColor),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -147,8 +148,8 @@ class _CreditTermsSectionWidgetState extends State<CreditTermsSectionWidget> {
                       style: TextStyle(
                         fontSize: 14,
                         color: (screenData.duedate ?? '').isNotEmpty
-                            ? Colors.black87
-                            : Colors.grey.shade500,
+                            ? global.theme.textColor
+                            : global.theme.textSecondaryColor,
                       ),
                     ),
                   ),

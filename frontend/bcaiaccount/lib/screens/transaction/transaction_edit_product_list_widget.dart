@@ -30,7 +30,7 @@ class TransactionEditProductListWidget extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.blue[700]!, Colors.blue[500]!],
+          colors: [global.theme.infoHighlightTextColor, global.theme.infoHighlightTextColor],
         ),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(12),
@@ -39,29 +39,29 @@ class TransactionEditProductListWidget extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.list_alt, color: Colors.white, size: 20),
+          Icon(Icons.list_alt, color: global.theme.onPrimaryColor, size: 20),
           SizedBox(width: 8),
           Text(
             global.language('product_list'),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: global.theme.onPrimaryColor,
             ),
           ),
           Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white54,
+              color: global.theme.cardColor.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               '${screenData.details!.length} ${global.language('items')}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: global.theme.onPrimaryColor,
               ),
             ),
           ),
@@ -114,7 +114,7 @@ class TransactionEditProductListWidget extends StatelessWidget {
     return TableRow(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.purple[600]!, Colors.deepPurple[400]!],
+          colors: [global.theme.primaryColor, global.theme.primaryColor.withValues(alpha: 0.7)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -144,8 +144,8 @@ class TransactionEditProductListWidget extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       child: Text(
         text,
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: global.theme.onPrimaryColor,
           fontWeight: FontWeight.w600,
           fontSize: 11,
         ),
@@ -179,8 +179,8 @@ class TransactionEditProductListWidget extends StatelessWidget {
 
     return TableRow(
       decoration: BoxDecoration(
-        color: isEven ? Colors.grey[50] : Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey[200]!, width: 1)),
+        color: isEven ? global.theme.surfaceColor : global.theme.onPrimaryColor,
+        border: Border(bottom: BorderSide(color: global.theme.dividerBorderColor, width: 1)),
       ),
       children: [
         _dataCell(index + 1, alignment: TextAlign.right),
@@ -203,13 +203,13 @@ class TransactionEditProductListWidget extends StatelessWidget {
         _dataCell(
           discount,
           alignment: TextAlign.right,
-          color: discount != '-' ? Colors.red[600] : null,
+          color: discount != '-' ? global.theme.negativeHighlightTextColor : null,
           fontWeight: discount != '-' ? FontWeight.w500 : null,
         ),
         _dataCell(
           discountAmount,
           alignment: TextAlign.right,
-          color: discountAmount != '-' ? Colors.red[600] : null,
+          color: discountAmount != '-' ? global.theme.negativeHighlightTextColor : null,
         ),
         // ยอดรวม — แสดง 2 สกุลเงิน ถ้า multi-currency
         isMulti
@@ -218,7 +218,7 @@ class TransactionEditProductListWidget extends StatelessWidget {
                 global.formatNumber(item.sumamount),
                 alignment: TextAlign.right,
                 fontWeight: FontWeight.w600,
-                color: Colors.green[700],
+                color: global.theme.positiveHighlightTextColor,
               ),
       ],
     );
@@ -238,7 +238,7 @@ class TransactionEditProductListWidget extends StatelessWidget {
             style: TextStyle(
               fontSize: 11,
               fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
-              color: Colors.blue[700],
+              color: global.theme.infoHighlightTextColor,
             ),
             textAlign: TextAlign.right,
           ),
@@ -247,7 +247,7 @@ class TransactionEditProductListWidget extends StatelessWidget {
             '${_getBaseCurrencySymbol()} ${fmt(baseValue)}',
             style: TextStyle(
               fontSize: 9,
-              color: Colors.grey[500],
+              color: global.theme.textSecondaryColor,
               fontStyle: FontStyle.italic,
             ),
             textAlign: TextAlign.right,
@@ -269,7 +269,7 @@ class TransactionEditProductListWidget extends StatelessWidget {
           Text(
             itemName,
             style: TextStyle(
-              color: Colors.grey[800],
+              color: global.theme.textColor,
               fontWeight: FontWeight.w500,
               fontSize: 11,
             ),
@@ -283,7 +283,7 @@ class TransactionEditProductListWidget extends StatelessWidget {
               child: Text(
                 '📋 $remark',
                 style: TextStyle(
-                  color: Colors.blue[700],
+                  color: global.theme.infoHighlightTextColor,
                   fontSize: 10,
                   fontStyle: FontStyle.italic,
                 ),
@@ -310,7 +310,7 @@ class TransactionEditProductListWidget extends StatelessWidget {
           : Text(
               content.toString(),
               style: TextStyle(
-                color: color ?? Colors.grey[800],
+                color: color ?? global.theme.textColor,
                 fontWeight: fontWeight,
                 fontSize: fontSize ?? 11,
               ),
@@ -375,7 +375,7 @@ class TransactionEditProductListWidget extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.teal[600]!, Colors.teal[500]!],
+          colors: [global.theme.infoHighlightTextColor, global.theme.infoHighlightTextColor.withValues(alpha: 0.8)],
         ),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(12),
@@ -383,7 +383,7 @@ class TransactionEditProductListWidget extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.teal.withValues(alpha: 0.3),
+            color: global.theme.infoHighlightTextColor.withValues(alpha: 0.3),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -392,14 +392,14 @@ class TransactionEditProductListWidget extends StatelessWidget {
       child: Row(
         children: [
           // จำนวนรายการ
-          const Icon(Icons.inventory_2, color: Colors.white, size: 18),
+          Icon(Icons.inventory_2, color: global.theme.onPrimaryColor, size: 18),
           SizedBox(width: 6),
           Text(
             '${global.language('total')} ${screenData.details!.length} ${global.language('items')}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: global.theme.onPrimaryColor,
             ),
           ),
           const Spacer(),
@@ -407,15 +407,15 @@ class TransactionEditProductListWidget extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: global.theme.cardColor.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               '${global.language("qty")}: ${global.formatNumber(totalQty)}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: global.theme.onPrimaryColor,
               ),
             ),
           ),
@@ -425,15 +425,15 @@ class TransactionEditProductListWidget extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.red[400],
+                color: global.theme.negativeHighlightTextColor,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 '${global.language("discount")}: ${global.formatNumber(totalDiscountAmount)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: global.theme.onPrimaryColor,
                 ),
               ),
             ),
@@ -443,7 +443,7 @@ class TransactionEditProductListWidget extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               borderRadius: BorderRadius.circular(8),
             ),
             child: isMulti
@@ -456,7 +456,7 @@ class TransactionEditProductListWidget extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: Colors.blue[700],
+                          color: global.theme.infoHighlightTextColor,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -465,7 +465,7 @@ class TransactionEditProductListWidget extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: Colors.teal[800],
+                          color: global.theme.infoHighlightTextColor,
                         ),
                       ),
                     ],
@@ -475,7 +475,7 @@ class TransactionEditProductListWidget extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: Colors.teal[800],
+                      color: global.theme.infoHighlightTextColor,
                     ),
                   ),
           ),

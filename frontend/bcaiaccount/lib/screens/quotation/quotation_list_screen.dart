@@ -37,7 +37,7 @@ class QuotationListScreen extends StatefulWidget {
   State<QuotationListScreen> createState() => QuotationListScreenState();
 }
 
-class QuotationListScreenState extends State<QuotationListScreen> {
+class QuotationListScreenState extends State<QuotationListScreen> with global.ThemeRefreshMixin {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _searchFocusNode = FocusNode(skipTraversal: true);
@@ -480,10 +480,10 @@ class QuotationListScreenState extends State<QuotationListScreen> {
         children: [
           Text(
             headerText,
-            style: TextStyle(fontSize: _fontSize, color: Colors.grey[600]),
+            style: TextStyle(fontSize: _fontSize, color: global.theme.iconSecondaryColor),
           ),
           if (widget.isEmbedded && widget.onClose != null)
-            IconButton(icon: const Icon(Icons.close), onPressed: widget.onClose),
+            IconButton(icon: Icon(Icons.close), onPressed: widget.onClose),
         ],
       ),
     );
@@ -506,12 +506,11 @@ class QuotationListScreenState extends State<QuotationListScreen> {
               decoration: InputDecoration(
                 isDense: true,
                 hintText: _isLoading ? global.language('searching') : global.language('search'),
-                hintStyle: TextStyle(
-                  color: _isLoading ? Colors.grey.shade600 : Colors.grey.shade500,
+                hintStyle: TextStyle(color: global.theme.formHintColor,
                 ),
                 prefixIcon: Icon(
                   Icons.search,
-                  color: _isLoading ? Colors.grey.shade400 : Colors.grey.shade600,
+                  color: _isLoading ? global.theme.dividerBorderColor : global.theme.iconSecondaryColor,
                 ),
                 suffixIcon: isSearchingOrLoading
                     ? const Padding(
@@ -524,7 +523,7 @@ class QuotationListScreenState extends State<QuotationListScreen> {
                       )
                     : _searchController.text.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
+                            icon: Icon(Icons.clear, size: 18),
                             onPressed: _isLoading
                                 ? null
                                 : () {
@@ -552,7 +551,7 @@ class QuotationListScreenState extends State<QuotationListScreen> {
                   borderSide: BorderSide(color: Colors.teal.shade600, width: 2),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: global.theme.formFillColor,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
             ),
@@ -560,10 +559,10 @@ class QuotationListScreenState extends State<QuotationListScreen> {
           SizedBox(width: 8),
           Container(
             decoration: BoxDecoration(
-              color: _showAdvancedFilter ? Colors.teal.shade50 : Colors.white,
+              color: _showAdvancedFilter ? Colors.teal.shade50 : global.theme.cardColor,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: _hasActiveFilters ? Colors.teal : Colors.grey.shade300,
+                color: _hasActiveFilters ? Colors.teal : global.theme.dividerBorderColor,
                 width: 1,
               ),
             ),
@@ -576,7 +575,7 @@ class QuotationListScreenState extends State<QuotationListScreen> {
               },
               icon: Icon(
                 _hasActiveFilters ? Icons.filter_alt : Icons.tune,
-                color: _hasActiveFilters ? Colors.teal : Colors.grey.shade600,
+                color: _hasActiveFilters ? Colors.teal : global.theme.iconSecondaryColor,
                 size: 20,
               ),
               tooltip: global.language('advanced_filter'),
@@ -585,9 +584,9 @@ class QuotationListScreenState extends State<QuotationListScreen> {
           SizedBox(width: 4),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade300, width: 1),
+              border: Border.all(color: global.theme.dividerBorderColor, width: 1),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -599,13 +598,13 @@ class QuotationListScreenState extends State<QuotationListScreen> {
                   icon: Icon(
                     Icons.text_decrease,
                     size: 16,
-                    color: _fontSize > _minFontSize ? Colors.grey.shade700 : Colors.grey.shade400,
+                    color: _fontSize > _minFontSize ? global.theme.textColor : global.theme.dividerBorderColor,
                   ),
                   tooltip: global.language('decrease_font_size'),
                 ),
                 Text(
                   '${_fontSize.toInt()}',
-                  style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 10, color: global.theme.iconSecondaryColor),
                 ),
                 IconButton(
                   constraints: const BoxConstraints(minWidth: 32, minHeight: 40),
@@ -614,7 +613,7 @@ class QuotationListScreenState extends State<QuotationListScreen> {
                   icon: Icon(
                     Icons.text_increase,
                     size: 16,
-                    color: _fontSize < _maxFontSize ? Colors.grey.shade700 : Colors.grey.shade400,
+                    color: _fontSize < _maxFontSize ? global.theme.textColor : global.theme.dividerBorderColor,
                   ),
                   tooltip: global.language('increase_font_size'),
                 ),
@@ -633,7 +632,7 @@ class QuotationListScreenState extends State<QuotationListScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.teal.shade50, Colors.green.shade50],
+          colors: [Colors.teal.shade50, global.theme.positiveHighlightColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -673,7 +672,7 @@ class QuotationListScreenState extends State<QuotationListScreen> {
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: Icon(Icons.arrow_forward, size: 14, color: Colors.grey.shade500),
+                  child: Icon(Icons.arrow_forward, size: 14, color: global.theme.iconSecondaryColor),
                 ),
                 Expanded(
                   child: _buildDateButton(
@@ -692,10 +691,10 @@ class QuotationListScreenState extends State<QuotationListScreen> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade100,
+                    color: global.theme.positiveHighlightColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(Icons.attach_money, size: 16, color: Colors.green.shade700),
+                  child: Icon(Icons.attach_money, size: 16, color: global.theme.positiveHighlightTextColor),
                 ),
                 SizedBox(width: 8),
                 Expanded(
@@ -713,7 +712,7 @@ class QuotationListScreenState extends State<QuotationListScreen> {
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: Icon(Icons.arrow_forward, size: 14, color: Colors.grey.shade500),
+                  child: Icon(Icons.arrow_forward, size: 14, color: global.theme.iconSecondaryColor),
                 ),
                 Expanded(
                   child: _buildAmountField(
@@ -731,14 +730,14 @@ class QuotationListScreenState extends State<QuotationListScreen> {
                 const SizedBox(width: 8),
                 if (_hasActiveFilters)
                   Material(
-                    color: Colors.red.shade50,
+                    color: global.theme.negativeHighlightColor,
                     borderRadius: BorderRadius.circular(8),
                     child: InkWell(
                       onTap: _clearAllFilters,
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
                         padding: const EdgeInsets.all(6),
-                        child: Icon(Icons.clear_all, size: 18, color: Colors.red.shade600),
+                        child: Icon(Icons.clear_all, size: 18, color: global.theme.negativeHighlightTextColor),
                       ),
                     ),
                   ),
@@ -763,7 +762,7 @@ class QuotationListScreenState extends State<QuotationListScreen> {
     return Builder(
       builder: (buttonContext) {
         return Material(
-          color: hasDate ? color.withValues(alpha: 0.1) : Colors.white,
+          color: hasDate ? color.withValues(alpha: 0.1) : global.theme.cardColor,
           borderRadius: BorderRadius.circular(8),
           child: InkWell(
             onTap: () => _selectDate(isFromDate, buttonContext),
@@ -773,7 +772,7 @@ class QuotationListScreenState extends State<QuotationListScreen> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: hasDate ? color : Colors.grey.shade300,
+                  color: hasDate ? color : global.theme.dividerBorderColor,
                   width: hasDate ? 1.5 : 1,
                 ),
               ),
@@ -783,7 +782,7 @@ class QuotationListScreenState extends State<QuotationListScreen> {
                   Icon(
                     Icons.calendar_today,
                     size: 12,
-                    color: hasDate ? color : Colors.grey.shade500,
+                    color: hasDate ? color : global.theme.iconSecondaryColor,
                   ),
                   const SizedBox(width: 6),
                   Flexible(
@@ -793,7 +792,7 @@ class QuotationListScreenState extends State<QuotationListScreen> {
                           : label,
                       style: TextStyle(
                         fontSize: _fontSize,
-                        color: hasDate ? Colors.teal.shade700 : Colors.grey.shade500,
+                        color: hasDate ? Colors.teal.shade700 : global.theme.iconSecondaryColor,
                         fontWeight: hasDate ? FontWeight.w600 : FontWeight.normal,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -869,10 +868,10 @@ class QuotationListScreenState extends State<QuotationListScreen> {
             height: 36,
             padding: const EdgeInsets.symmetric(horizontal: 8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: hasValue ? Colors.green.shade400 : Colors.grey.shade300,
+                color: hasValue ? global.theme.positiveHighlightTextColor : global.theme.dividerBorderColor,
                 width: hasValue ? 1.5 : 1,
               ),
             ),
@@ -883,7 +882,7 @@ class QuotationListScreenState extends State<QuotationListScreen> {
                     hasValue ? controller.text : hint,
                     style: TextStyle(
                       fontSize: _fontSize,
-                      color: hasValue ? Colors.green.shade700 : Colors.grey.shade400,
+                      color: hasValue ? global.theme.positiveHighlightTextColor : global.theme.dividerBorderColor,
                       fontWeight: hasValue ? FontWeight.w600 : FontWeight.normal,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -895,7 +894,7 @@ class QuotationListScreenState extends State<QuotationListScreen> {
                       controller.clear();
                       onChanged('');
                     },
-                    child: Icon(Icons.clear, size: 14, color: Colors.grey.shade500),
+                    child: Icon(Icons.clear, size: 14, color: global.theme.iconSecondaryColor),
                   ),
               ],
             ),
@@ -917,10 +916,10 @@ class QuotationListScreenState extends State<QuotationListScreen> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade100,
+                    color: global.theme.infoHighlightColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(Icons.person, size: 16, color: Colors.orange.shade700),
+                  child: Icon(Icons.person, size: 16, color: global.theme.warningHighlightTextColor),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -953,23 +952,23 @@ class QuotationListScreenState extends State<QuotationListScreen> {
           height: 36,
           child: TextField(
             controller: _debtorSearchController,
-            style: TextStyle(fontSize: _fontSize, fontWeight: FontWeight.w500),
+            style: TextStyle(fontSize: _fontSize, fontWeight: FontWeight.w500, color: global.theme.textColor),
             decoration: InputDecoration(
               hintText: state.isLoading ? global.language('searching') : global.language('search_debtor_hint'),
-              hintStyle: TextStyle(fontSize: _fontSize, color: Colors.grey.shade400),
+              hintStyle: TextStyle(fontSize: _fontSize, color: global.theme.formHintColor),
               prefixIcon: state.isLoading
                   ? SizedBox(
                       width: 16,
                       height: 16,
                       child: Padding(
                         padding: const EdgeInsets.all(10),
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.orange.shade400),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: global.theme.warningHighlightTextColor),
                       ),
                     )
-                  : Icon(Icons.search, size: 16, color: Colors.orange.shade400),
+                  : Icon(Icons.search, size: 16, color: global.theme.warningHighlightTextColor),
               suffixIcon: hasSearchText
                   ? IconButton(
-                      icon: Icon(Icons.clear, size: 14, color: Colors.grey.shade500),
+                      icon: Icon(Icons.clear, size: 14, color: global.theme.iconSecondaryColor),
                       onPressed: () {
                         _debtorSearchController.clear();
                         _debtorFilterCubit.searchDebtors("");
@@ -981,18 +980,18 @@ class QuotationListScreenState extends State<QuotationListScreen> {
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: global.theme.formFillColor,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey.shade300),
+                borderSide: BorderSide(color: global.theme.formBorderColor),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey.shade300),
+                borderSide: BorderSide(color: global.theme.formBorderColor),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.orange.shade400, width: 1.5),
+                borderSide: BorderSide(color: global.theme.warningHighlightTextColor, width: 1.5),
               ),
             ),
             onChanged: (value) {
@@ -1008,9 +1007,9 @@ class QuotationListScreenState extends State<QuotationListScreen> {
             margin: const EdgeInsets.only(top: 4),
             constraints: const BoxConstraints(maxHeight: 150),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.orange.shade200),
+              border: Border.all(color: global.theme.warningHighlightColor),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.1),
@@ -1036,12 +1035,12 @@ class QuotationListScreenState extends State<QuotationListScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
                       border: index < (availableDebtors.length > 10 ? 9 : availableDebtors.length - 1)
-                          ? Border(bottom: BorderSide(color: Colors.grey.shade200))
+                          ? Border(bottom: BorderSide(color: global.theme.dividerBorderColor))
                           : null,
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.person, size: 14, color: Colors.orange.shade400),
+                        Icon(Icons.person, size: 14, color: global.theme.warningHighlightTextColor),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Column(
@@ -1059,13 +1058,13 @@ class QuotationListScreenState extends State<QuotationListScreen> {
                                 '${global.language("code")}: ${debtor.code}',
                                 style: TextStyle(
                                   fontSize: _fontSize - 1,
-                                  color: Colors.grey.shade600,
+                                  color: global.theme.iconSecondaryColor,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        Icon(Icons.add_circle_outline, size: 16, color: Colors.green.shade400),
+                        Icon(Icons.add_circle_outline, size: 16, color: global.theme.positiveHighlightTextColor),
                       ],
                     ),
                   ),
@@ -1078,16 +1077,16 @@ class QuotationListScreenState extends State<QuotationListScreen> {
             margin: const EdgeInsets.only(top: 4),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: global.theme.surfaceColor,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline, size: 14, color: Colors.grey.shade500),
+                Icon(Icons.info_outline, size: 14, color: global.theme.iconSecondaryColor),
                 const SizedBox(width: 6),
                 Text(
                   '${global.language("debtor_not_found")} "$searchText"',
-                  style: TextStyle(fontSize: _fontSize - 1, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: _fontSize - 1, color: global.theme.iconSecondaryColor),
                 ),
               ],
             ),
@@ -1101,9 +1100,9 @@ class QuotationListScreenState extends State<QuotationListScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: Colors.orange.shade50,
+        color: global.theme.warningHighlightColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.orange.shade200),
+        border: Border.all(color: global.theme.warningHighlightColor),
       ),
       child: Wrap(
         spacing: 6,
@@ -1122,9 +1121,9 @@ class QuotationListScreenState extends State<QuotationListScreen> {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.orange.shade300),
+              border: Border.all(color: global.theme.warningHighlightTextColor),
               boxShadow: [
                 BoxShadow(
                   color: Colors.orange.withValues(alpha: 0.1),
@@ -1136,13 +1135,13 @@ class QuotationListScreenState extends State<QuotationListScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.person, size: 12, color: Colors.orange.shade600),
+                Icon(Icons.person, size: 12, color: global.theme.warningHighlightTextColor),
                 const SizedBox(width: 4),
                 Text(
                   name.length > 15 ? '${name.substring(0, 15)}...' : name,
                   style: TextStyle(
                     fontSize: _fontSize - 1,
-                    color: Colors.orange.shade800,
+                    color: global.theme.warningHighlightTextColor,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1152,10 +1151,10 @@ class QuotationListScreenState extends State<QuotationListScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade100,
+                      color: global.theme.negativeHighlightColor,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.close, size: 12, color: Colors.red.shade600),
+                    child: Icon(Icons.close, size: 12, color: global.theme.negativeHighlightTextColor),
                   ),
                 ),
               ],
@@ -1176,11 +1175,11 @@ class QuotationListScreenState extends State<QuotationListScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inbox_outlined, size: 64, color: Colors.grey[400]),
+            Icon(Icons.inbox_outlined, size: 64, color: global.theme.dividerBorderColor),
             SizedBox(height: 16),
             Text(
               _hasActiveFilters ? global.language('no_data_matching_criteria') : global.language('no_data'),
-              style: TextStyle(fontSize: _fontSize + 2, color: Colors.grey[600]),
+              style: TextStyle(fontSize: _fontSize + 2, color: global.theme.iconSecondaryColor),
             ),
             if (_hasActiveFilters) ...[
               SizedBox(height: 8),

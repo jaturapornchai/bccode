@@ -43,7 +43,7 @@ class LabelTextField extends StatelessWidget {
             if (prefix != null) ...[prefix!, const SizedBox(width: 8)],
             Text(
               label,
-              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
             ),
             if (isRequired) ...[
               const SizedBox(width: 4),
@@ -118,7 +118,7 @@ class LanguageItem extends StatelessWidget {
           width: 28,
           child: Text(
             (index + 1).toString(),
-            style: const TextStyle(fontWeight: FontWeight.w500),
+            style: TextStyle(fontWeight: FontWeight.w500),
           ),
         ),
         Expanded(
@@ -225,7 +225,7 @@ class SectionContainer extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
@@ -265,7 +265,7 @@ class ApiKeyField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'BC API KEY',
           style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
         ),
@@ -289,7 +289,7 @@ class ApiKeyField extends StatelessWidget {
                   isDense: true,
                   suffixIcon: controller.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.copy, size: 20),
+                          icon: Icon(Icons.copy, size: 20),
                           onPressed: () {
                             Clipboard.setData(
                               ClipboardData(text: controller.text),
@@ -318,13 +318,13 @@ class ApiKeyField extends StatelessWidget {
                     : Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.vpn_key, size: 16),
+                          Icon(Icons.vpn_key, size: 16),
                           SizedBox(width: 4),
                           Text(
                             controller.text.isEmpty
                                 ? global.language("get")
                                 : global.language("refresh"),
-                            style: const TextStyle(fontSize: 13),
+                            style: TextStyle(fontSize: 13),
                           ),
                         ],
                       ),
@@ -354,14 +354,14 @@ Future<String?> showLanguageSelectionSheet(
               children: [
                 Text(
                   global.language('select_language'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: Icon(Icons.close),
                   onPressed: () => Navigator.pop(context),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(

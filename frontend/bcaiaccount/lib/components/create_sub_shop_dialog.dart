@@ -14,9 +14,9 @@ class CreateSubShopDialog {
     final formKey = GlobalKey<FormState>();
 
     // สีตามธีมของแอป
-    const Color primaryColor = Color(0xFF1A73E8);
-    const Color primaryDarkColor = Color(0xFF0D47A1);
-    const Color primaryLightColor = Color(0xFF90CAF9);
+    final Color primaryColor = global.theme.primaryColor;
+    final Color primaryDarkColor = global.theme.primaryColor;
+    final Color primaryLightColor = global.theme.primaryLightColor;
 
     return showDialog<void>(
       context: context,
@@ -31,7 +31,7 @@ class CreateSubShopDialog {
                 barrierDismissible: false,
                 builder: (BuildContext loadingContext) {
                   return Dialog(
-                    backgroundColor: Colors.white,
+                    backgroundColor: global.theme.dialogColor,
                     child: Padding(
                       padding: const EdgeInsets.all(20.0),
                       child: Column(
@@ -58,9 +58,9 @@ class CreateSubShopDialog {
               // แสดงผลสำเร็จ
               global.showSnackBar(
                 dialogContext,
-                const Icon(Icons.check_circle, color: Colors.white),
+                Icon(Icons.check_circle, color: global.theme.onPrimaryColor),
                 'สร้างร้านย่อย "${shopNameController.text.trim()}" สำเร็จ',
-                const Color(0xFF107E3E), // successColor
+                global.theme.positiveHighlightTextColor, // successColor
               );
 
               // TODO: อัพเดทข้อมูลหรือ refresh หน้าตามต้องการ
@@ -71,9 +71,9 @@ class CreateSubShopDialog {
               // แสดงข้อผิดพลาด
               global.showSnackBar(
                 dialogContext,
-                const Icon(Icons.error, color: Colors.white),
+                Icon(Icons.error, color: global.theme.onPrimaryColor),
                 '${global.language("error_occurred")}: ${state.message}',
-                const Color(0xFFB00020), // errorColor
+                global.theme.negativeHighlightTextColor, // errorColor
               );
             }
           },
@@ -176,7 +176,7 @@ class CreateSubShopDialog {
                 },
                 child: Text(
                   global.language('cancel'),
-                  style: TextStyle(color: Colors.grey[600]),
+                  style: TextStyle(color: global.theme.iconSecondaryColor),
                 ),
               ),
               ElevatedButton(
@@ -251,7 +251,7 @@ class CreateSubShopDialog {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
+                  foregroundColor: global.theme.onPrimaryColor,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),

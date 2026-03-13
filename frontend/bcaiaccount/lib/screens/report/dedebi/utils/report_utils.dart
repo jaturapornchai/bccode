@@ -29,22 +29,22 @@ class ReportUtils {
   static Color getStatusColor(String inquiryType) {
     switch (inquiryType) {
       case '0':
-        return Colors.green.shade100;
+        return global.theme.positiveHighlightColor;
       case '1':
-        return Colors.red.shade100;
+        return global.theme.negativeHighlightColor;
       default:
-        return Colors.grey.shade100;
+        return global.theme.surfaceColor;
     }
   }
 
   static Color getStatusTextColor(String inquiryType) {
     switch (inquiryType) {
       case '0':
-        return Colors.green.shade800;
+        return global.theme.positiveHighlightTextColor;
       case '1':
-        return Colors.red.shade800;
+        return global.theme.negativeHighlightTextColor;
       default:
-        return Colors.grey.shade700;
+        return global.theme.iconColor;
     }
   }
 

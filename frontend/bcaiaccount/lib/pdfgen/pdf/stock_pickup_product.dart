@@ -128,8 +128,6 @@ class OptimizedStockTransfer {
 
     // คำนวณค่าต่างๆ เพียงครั้งเดียว
     final headerWidget = _buildHeader(logoBytes);
-    final footerWidget = _buildFooter();
-
     // แบ่งรายการสินค้าเป็นหน้าๆ (แต่ละหน้าประมาณ 25-30 รายการ)
     final itemsPerPage = 25;
     List<List<dynamic>> pages = [];
@@ -350,86 +348,6 @@ class OptimizedStockTransfer {
                 ),
               ],
             ),
-          ),
-        ],
-      );
-    };
-  }
-
-  pw.Widget Function(pw.Context) _buildFooter() {
-    return (pw.Context context) {
-      return pw.Column(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.center,
-                  children: [
-                    pw.Text(
-                      '${global.language("pdf_requester")}................................................................',
-                      style: const pw.TextStyle(
-                        fontSize: 14,
-                        color: PdfColors.black,
-                      ),
-                    ),
-                    pw.Text(
-                      global.language('pdf_date_sign_short'),
-                      style: const pw.TextStyle(
-                        fontSize: 14,
-                        color: PdfColors.black,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              pw.SizedBox(width: 10),
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.center,
-                  children: [
-                    pw.Text(
-                      '${global.language("pdf_recorder")}...............................................................',
-                      style: const pw.TextStyle(
-                        fontSize: 14,
-                        color: PdfColors.black,
-                      ),
-                    ),
-                    pw.Text(
-                      global.language('pdf_date_sign_medium'),
-                      style: const pw.TextStyle(
-                        fontSize: 14,
-                        color: PdfColors.black,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              pw.SizedBox(width: 10),
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.center,
-                  children: [
-                    pw.Text(
-                      global.language('pdf_approver_sign_long'),
-                      style: const pw.TextStyle(
-                        fontSize: 14,
-                        color: PdfColors.black,
-                      ),
-                    ),
-                    pw.Text(
-                      global.language('pdf_date_sign_short'),
-                      style: const pw.TextStyle(
-                        fontSize: 14,
-                        color: PdfColors.black,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ),
         ],
       );

@@ -2,6 +2,7 @@
 import 'package:smlaicloud/widgets/manual_button.dart';
 import 'package:smlaicloud/bloc/business_type/business_type_bloc.dart';
 import 'package:smlaicloud/model/business_type_model.dart';
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -596,7 +597,7 @@ class BusinessTypeScreenState extends State<BusinessTypeScreen>
 
   Color _getContainerColor(String itemGuid, int index) {
     if (selectGuid.isNotEmpty && selectGuid == itemGuid) {
-      return (screenEvent == global.ScreenEventEnum.edit)
+      return isSaveAllow
           ? global.theme.rowEditColor
           : global.theme.rowSelectedColor;
     }
@@ -712,7 +713,7 @@ class BusinessTypeScreenState extends State<BusinessTypeScreen>
 
   Widget editScreen({mobileScreen}) {
     return Scaffold(
-      backgroundColor: (screenEvent == global.ScreenEventEnum.edit || screenEvent == global.ScreenEventEnum.add) ? global.theme.toolBarEditModeColor.withValues(alpha: 0.05) : global.theme.backgroundColor,
+      backgroundColor: global.theme.cardColor,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor:
@@ -740,6 +741,8 @@ class BusinessTypeScreenState extends State<BusinessTypeScreen>
             : null,
         title: Text(headerEdit + global.language("business_type")),
         actions: <Widget>[
+          EditFontSizeControl(onChanged: () => setState(() {})),
+          const SizedBox(width: 8),
           if (selectGuid.isNotEmpty)
             Padding(
               padding: EdgeInsets.only(right: 20.0),
@@ -827,50 +830,69 @@ class BusinessTypeScreenState extends State<BusinessTypeScreen>
                 }
               }
             },
-            child: SingleChildScrollView(
-              controller: editScrollController,
-              child: Container(
-                color: global.theme.cardColor,
-                width: double.infinity,
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 10),
-                    TextFormField(
-                      readOnly: fieldFocusNodes[0].isReadOnly,
-                      onFieldSubmitted: (value) {
-                        findFocusNext(0);
-                      },
-                      textInputAction: TextInputAction.next,
-                      focusNode: fieldFocusNodes[0].focusNode,
-                      textAlign: TextAlign.left,
-                      controller: fieldTextController[0],
-                      textCapitalization: TextCapitalization.characters,
-                      onChanged: (value) {
-                        isChange = true;
-                        fieldTextController[0].value = TextEditingValue(
-                          text: value.toUpperCase(),
-                          selection: fieldTextController[0].selection,
-                        );
-                      },
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.only(
-                          left: 10,
-                          top: 0,
-                          bottom: 0,
-                          right: 10,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
-                        ),
-                        floatingLabelBehavior: FloatingLabelBehavior.always,
-                        labelText: global.language("business_code"),
-                        labelStyle: TextStyle(
-                          color: global.theme.inputTextBoxForceColor,
+            child: Builder(
+              builder: (context) {
+                final scale = global.editFontScaleFactor;
+                return MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    textScaler: TextScaler.linear(scale),
+                  ),
+                  child: Theme(
+                    data: Theme.of(context).copyWith(
+                      inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                        contentPadding: EdgeInsets.fromLTRB(
+                          12 * scale, 20 * scale, 12 * scale, 12 * scale,
                         ),
                       ),
                     ),
+                    child: IconTheme(
+                      data: IconTheme.of(context).copyWith(
+                        size: 24.0 * scale,
+                      ),
+                      child: SingleChildScrollView(
+                        controller: editScrollController,
+                        child: Container(
+                          color: global.theme.cardColor,
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(10),
+                          child: Column(
+                            children: [
+                              const SizedBox(height: 10),
+                              TextFormField(
+                                readOnly: fieldFocusNodes[0].isReadOnly,
+                                onFieldSubmitted: (value) {
+                                  findFocusNext(0);
+                                },
+                                textInputAction: TextInputAction.next,
+                                focusNode: fieldFocusNodes[0].focusNode,
+                                textAlign: TextAlign.left,
+                                controller: fieldTextController[0],
+                                textCapitalization: TextCapitalization.characters,
+                                onChanged: (value) {
+                                  isChange = true;
+                                  fieldTextController[0].value = TextEditingValue(
+                                    text: value.toUpperCase(),
+                                    selection: fieldTextController[0].selection,
+                                  );
+                                },
+                                decoration: InputDecoration(
+                                  border: OutlineInputBorder(),
+                                  contentPadding: EdgeInsets.only(
+                                    left: 10,
+                                    top: 0,
+                                    bottom: 0,
+                                    right: 10,
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(color: global.theme.dividerBorderColor, width: 0.0),
+                                  ),
+                                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                                  labelText: global.language("business_code"),
+                                  labelStyle: TextStyle(
+                                    color: global.theme.inputTextBoxForceColor,
+                                  ),
+                                ),
+                              ),
                     const SizedBox(height: 15),
                     for (int i = 0; i < languageList.length; i++)
                       Padding(
@@ -936,6 +958,11 @@ class BusinessTypeScreenState extends State<BusinessTypeScreen>
                   ],
                 ),
               ),
+            ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],

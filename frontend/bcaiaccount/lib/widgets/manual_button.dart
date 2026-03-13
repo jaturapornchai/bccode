@@ -13,7 +13,7 @@ class ManualButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       focusNode: FocusNode(skipTraversal: true),
-      icon: const Icon(Icons.menu_book, size: 26.0),
+      icon: Icon(Icons.menu_book, size: 26.0),
       tooltip: global.language('manual'),
       onPressed: () {
         final url = path != null ? '$_manualBaseUrl/$path' : _manualBaseUrl;

@@ -26,7 +26,7 @@ class MultiBranchSearchScreen extends StatefulWidget {
 }
 
 class _MultiBranchSearchScreenState extends State<MultiBranchSearchScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   TextEditingController searchController = TextEditingController();
   FocusNode searchFocusNode = FocusNode(skipTraversal: true);
   ScrollController listScrollController = ScrollController();
@@ -152,7 +152,7 @@ class _MultiBranchSearchScreenState extends State<MultiBranchSearchScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: global.theme.cardColor,
       body: Focus(
         focusNode: FocusNode(skipTraversal: true, canRequestFocus: true),
         onKey: (node, event) {
@@ -202,11 +202,11 @@ class _MultiBranchSearchScreenState extends State<MultiBranchSearchScreen>
               // Simple AppBar
               AppBar(
                 title: Text('เลือกสาขา (${selectedBranchGuids.length})'),
-                backgroundColor: Colors.indigo.shade600,
-                foregroundColor: Colors.white,
+                backgroundColor: global.theme.primaryColor,
+                foregroundColor: global.theme.onPrimaryColor,
                 elevation: 1,
                 leading: IconButton(
-                  icon: const Icon(Icons.arrow_back),
+                  icon: Icon(Icons.arrow_back),
                   onPressed: () {
                     Navigator.pop(context, BranchSelectionModel.cancelled());
                   },
@@ -214,18 +214,18 @@ class _MultiBranchSearchScreenState extends State<MultiBranchSearchScreen>
                 actions: [
                   // Select All
                   IconButton(
-                    icon: const Icon(Icons.select_all),
+                    icon: Icon(Icons.select_all),
                     onPressed: selectAllVisible,
                     tooltip: global.language('select_all'),
                   ),
                   // Clear All
                   IconButton(
-                    icon: const Icon(Icons.clear_all),
+                    icon: Icon(Icons.clear_all),
                     onPressed: clearAllSelection,
                     tooltip: global.language('clear_all'),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.check),
+                    icon: Icon(Icons.check),
                     onPressed: () {
                       Navigator.pop(
                         context,
@@ -244,12 +244,12 @@ class _MultiBranchSearchScreenState extends State<MultiBranchSearchScreen>
                 margin: const EdgeInsets.all(8),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: global.theme.dividerBorderColor,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.search, color: Colors.grey.shade600),
+                    Icon(Icons.search, color: global.theme.textSecondaryColor),
                     SizedBox(width: 8),
                     Expanded(
                       child: TextFormField(
@@ -272,16 +272,19 @@ class _MultiBranchSearchScreenState extends State<MultiBranchSearchScreen>
                         autofocus: true,
                         focusNode: searchFocusNode,
                         controller: searchController,
+                        style: TextStyle(color: global.theme.textColor),
                         decoration: InputDecoration(
+                          filled: false,
                           border: InputBorder.none,
                           hintText: global.language('search_branch_placeholder'),
+                          hintStyle: TextStyle(color: global.theme.formHintColor),
                           contentPadding: EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
                     ),
                     if (searchController.text.isNotEmpty)
                       IconButton(
-                        icon: Icon(Icons.clear, color: Colors.grey.shade600),
+                        icon: Icon(Icons.clear, color: global.theme.textSecondaryColor),
                         onPressed: () {
                           searchController.clear();
                           setState(() {
@@ -340,11 +343,11 @@ class _MultiBranchSearchScreenState extends State<MultiBranchSearchScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
+          Icon(Icons.search_off, size: 64, color: global.theme.iconSecondaryColor),
           const SizedBox(height: 16),
           Text(
             searchText.isEmpty ? 'ไม่พบข้อมูลสาขา' : 'ไม่พบสาขาที่ค้นหา',
-            style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 18, color: global.theme.textSecondaryColor),
           ),
           if (searchText.isNotEmpty) ...[
             SizedBox(height: 16),
@@ -375,7 +378,7 @@ class _MultiBranchSearchScreenState extends State<MultiBranchSearchScreen>
       leading: Checkbox(
         value: isSelected,
         onChanged: (_) => toggleBranchSelection(value),
-        activeColor: Colors.indigo.shade600,
+        activeColor: global.theme.primaryColor,
       ),
       title: Text(
         branchName,
@@ -385,9 +388,9 @@ class _MultiBranchSearchScreenState extends State<MultiBranchSearchScreen>
       ),
       subtitle: Text('รหัส: ${value.code}'),
       onTap: () => toggleBranchSelection(value),
-      tileColor: isSelected ? Colors.indigo.shade50 : null,
+      tileColor: isSelected ? global.theme.primaryColor.withValues(alpha: 0.1) : null,
       trailing: isSelected
-          ? Icon(Icons.check_circle, color: Colors.indigo.shade600)
+          ? Icon(Icons.check_circle, color: global.theme.primaryColor)
           : null,
     );
   }

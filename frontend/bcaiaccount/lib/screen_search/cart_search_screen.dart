@@ -21,7 +21,8 @@ class CartListSearchScreen extends StatefulWidget {
   _CartListSearchScreenState createState() => _CartListSearchScreenState();
 }
 
-class _CartListSearchScreenState extends State<CartListSearchScreen> {
+class _CartListSearchScreenState extends State<CartListSearchScreen>
+    with global.ThemeRefreshMixin {
   // ใช้บริการ WebSocket แทนการสร้างใหม่
   final CartWebSocketService _cartService = CartWebSocketService();
 
@@ -31,6 +32,7 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
   final _debouncer = global.Debouncer(800);
   String searchText = "";
   bool isSearching = false;
+  int _hoverIndex = -1;
 
   List<CartModel> carts = [];
   List<CartModel> filteredCarts = []; // เก็บข้อมูลที่ผ่านการค้นหาแล้ว
@@ -217,7 +219,7 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
     _cartService.requestCartList(global.getShopId());
   }
 
-  Widget _buildCartItem(CartModel cart) {
+  Widget _buildCartItem(CartModel cart, [int index = 0]) {
     final totalQuantity = cart.statistics!.totalQuantity;
     final uniqueItems = cart.statistics!.uniqueItems;
     final cartTransFlag = cart.cartTransFlag;
@@ -225,7 +227,11 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
     final createAt =
         DateFormat('dd/MM/yyyy').format(DateTime.parse(cart.createdAt!));
 
-    return GestureDetector(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoverIndex = index),
+      onExit: (_) => setState(() => _hoverIndex = -1),
+      child: GestureDetector(
       onTap: () async {
         if (widget.onCartSelected != null) {
           _cartService.requestCartDetails(cart.cartId!, global.getShopId());
@@ -233,8 +239,8 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
       },
       child: Container(
         decoration: BoxDecoration(
-          border: const Border(
-            bottom: BorderSide(width: 1.0, color: Colors.grey),
+          border: Border(
+                bottom: BorderSide(width: 1.0, color: global.theme.dividerBorderColor),
           ),
         ),
         padding: const EdgeInsets.only(top: 8, left: 10, right: 10),
@@ -250,7 +256,7 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
                   flex: 5,
                   child: Text(
                     cartName!,
-                    style: const TextStyle(fontWeight: FontWeight.w500),
+                    style: TextStyle(fontWeight: FontWeight.w500, color: global.theme.textColor),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -275,7 +281,7 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
                   flex: 7,
                   child: Text(
                     '${global.language("warehouse")}: ${global.activeLangName(cart.warehouse?.names ?? [])}',
-                    style: const TextStyle(fontSize: 13),
+                    style: TextStyle(fontSize: 13, color: global.theme.textColor),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -289,12 +295,12 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
                           '${global.language("warehouse")}: ${global.activeLangName(cart.destWarehouse?.names ?? [])}',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.blue[700],
+                            color: global.theme.primaryColor,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         )
-                      : const SizedBox(),
+                      : SizedBox(),
                 ),
 
                 // Quantity Column
@@ -304,7 +310,7 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
                     '$uniqueItems รายการ',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[600],
+                      color: global.theme.iconSecondaryColor,
                     ),
                     maxLines: 1,
                   ),
@@ -325,7 +331,7 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
                       createAt,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: global.theme.iconSecondaryColor,
                       ),
                     ),
                   ),
@@ -337,7 +343,7 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
                       cart.cartId!,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: global.theme.iconSecondaryColor,
                       ),
                       maxLines: 1,
                     ),
@@ -349,11 +355,11 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
                     child: cart.location?.names != null
                         ? Text(
                             '${global.language("location")}: ${global.activeLangName(cart.location?.names ?? [])}',
-                            style: const TextStyle(fontSize: 12),
+                            style: TextStyle(fontSize: 12, color: global.theme.textColor),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           )
-                        : const SizedBox(),
+                        : SizedBox(),
                   ),
 
                   // Destination Location Detail
@@ -365,12 +371,12 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
                             '${global.language("location")}: ${global.activeLangName(cart.destLocation?.names ?? [])}',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.blue[700],
+                              color: global.theme.primaryColor,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           )
-                        : const SizedBox(),
+                        : SizedBox(),
                   ),
 
                   // Total Pieces Column
@@ -380,7 +386,7 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
                       '$totalQuantity ${global.language("pieces")}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: global.theme.iconSecondaryColor,
                       ),
                       maxLines: 1,
                     ),
@@ -391,39 +397,41 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 
   Color _getTransFlagColor(int cartTransFlag) {
     switch (cartTransFlag) {
       case 56:
-        return Colors.orange;
+        return global.theme.warningHighlightTextColor;
       case 58:
-        return Colors.purple;
+        return global.theme.primaryColor;
       case 66:
-        return Colors.green;
+        return global.theme.positiveHighlightTextColor;
       case 72:
-        return Colors.blue;
+        return global.theme.infoHighlightTextColor;
       default:
-        return Colors.grey;
+        return global.theme.textSecondaryColor;
     }
   }
 
   Widget _buildDisconnectedScreen() {
     return Scaffold(
+      backgroundColor: global.theme.backgroundColor,
       appBar: AppBar(
         backgroundColor: global.theme.appBarColor,
         title: Text(global.language("cart_system"),
-            style: const TextStyle(fontWeight: FontWeight.bold)),
+            style: TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error, size: 48, color: Colors.red),
+            Icon(Icons.error, size: 48, color: global.theme.negativeHighlightTextColor),
             SizedBox(height: 16),
             Text(global.language("cannot_connect_websocket"),
-                style: const TextStyle(fontSize: 18)),
+                style: TextStyle(fontSize: 18, color: global.theme.textColor)),
             SizedBox(height: 16),
             ElevatedButton(
               onPressed: _connectToServer,
@@ -516,18 +524,19 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
         }
       },
       child: Scaffold(
+        backgroundColor: global.theme.backgroundColor,
         appBar: AppBar(
           backgroundColor: global.theme.appBarColor,
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(global.language("shopping_cart"),
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
+                  style: TextStyle(fontWeight: FontWeight.bold)),
             ],
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.refresh),
+              icon: Icon(Icons.refresh),
               onPressed: _requestCartList,
               tooltip: global.language("refresh_data"),
             ),
@@ -543,18 +552,18 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: global.theme.cardColor,
                   borderRadius: BorderRadius.circular(8),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withValues(alpha: 0.3),
+                      color: global.theme.dividerBorderColor.withValues(alpha: 0.3),
                       spreadRadius: 1,
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
                   ],
                   border: Border.all(
-                    color: Colors.grey.withValues(alpha: 0.3),
+                    color: global.theme.dividerBorderColor.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -599,20 +608,20 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
                             borderSide: BorderSide.none,
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: global.theme.formFillColor,
                           hintText:
                               global.language("search_cart_hint"),
                           hintStyle: TextStyle(
-                            color: Colors.grey.shade500,
+                            color: global.theme.iconSecondaryColor,
                             fontSize: 14,
                           ),
                           prefixIcon: Icon(
                             Icons.search,
-                            color: Colors.grey.shade600,
+                            color: global.theme.textSecondaryColor,
                             size: 20,
                           ),
                           suffixIcon: isSearching
-                              ? const Padding(
+                              ? Padding(
                                   padding: EdgeInsets.all(8.0),
                                   child: SizedBox(
                                     width: 20,
@@ -624,7 +633,7 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
                                 )
                               : searchController.text.isNotEmpty
                                   ? IconButton(
-                                      icon: const Icon(Icons.clear, size: 18),
+                                      icon: Icon(Icons.clear, size: 18),
                                       onPressed: _clearSearch,
                                     )
                                   : null,
@@ -642,8 +651,8 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
                   const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
               decoration: BoxDecoration(
                   color: global.theme.columnHeaderColor,
-                  border: const Border(
-                    bottom: BorderSide(width: 1.0, color: Colors.grey),
+                  border: Border(
+                bottom: BorderSide(width: 1.0, color: global.theme.dividerBorderColor),
                   )),
               child: Row(
                 children: [
@@ -651,40 +660,40 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
                     flex: 5,
                     child: Text(
                       global.language("cart_name"),
-                      style: const TextStyle(
-                          color: Colors.black, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                      color: global.theme.columnHeaderTextColor, fontWeight: FontWeight.bold),
                     ),
                   ),
                   Expanded(
                     flex: 4,
                     child: Text(
                       global.language("type"),
-                      style: const TextStyle(
-                          color: Colors.black, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                      color: global.theme.columnHeaderTextColor, fontWeight: FontWeight.bold),
                     ),
                   ),
                   Expanded(
                     flex: 7,
                     child: Text(
                       global.language("origin"),
-                      style: const TextStyle(
-                          color: Colors.black, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                      color: global.theme.columnHeaderTextColor, fontWeight: FontWeight.bold),
                     ),
                   ),
                   Expanded(
                     flex: 7,
                     child: Text(
                       global.language("destination"),
-                      style: const TextStyle(
-                          color: Colors.black, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                      color: global.theme.columnHeaderTextColor, fontWeight: FontWeight.bold),
                     ),
                   ),
                   Expanded(
                     flex: 3,
                     child: Text(
                       global.language("quantity"),
-                      style: const TextStyle(
-                          color: Colors.black, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                      color: global.theme.columnHeaderTextColor, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -698,8 +707,8 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
                       child: CircularProgressIndicator(),
                     )
                   : RefreshIndicator(
-                      color: Colors.blue,
-                      backgroundColor: Colors.white,
+                      color: global.theme.primaryColor,
+                      backgroundColor: global.theme.cardColor,
                       strokeWidth: 3.0,
                       onRefresh: () async {
                         _requestCartList();
@@ -711,7 +720,7 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
                               itemCount: filteredCarts.length,
                               controller: listScrollController,
                               itemBuilder: (context, index) {
-                                return _buildCartItem(filteredCarts[index]);
+                                return _buildCartItem(filteredCarts[index], index);
                               },
                             ),
                     ),
@@ -738,7 +747,7 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
                       ? Icons.search_off
                       : Icons.shopping_cart_outlined,
                   size: 48,
-                  color: Colors.grey[400],
+                  color: global.theme.iconSecondaryColor,
                 ),
                 SizedBox(height: 16),
                 Text(
@@ -748,54 +757,54 @@ class _CartListSearchScreenState extends State<CartListSearchScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey[600],
+                    color: global.theme.iconSecondaryColor,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 if (hasSearchText && hasOriginalData) ...[
                   Text(
                     global.language("try_different_search"),
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[500],
+                      color: global.theme.iconSecondaryColor,
                     ),
                   ),
                   SizedBox(height: 16),
                   OutlinedButton.icon(
                     onPressed: _clearSearch,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.clear,
-                      color: Colors.orange,
+                      color: global.theme.warningHighlightTextColor,
                       size: 16,
                     ),
                     label: Text(
                       global.language("clear_search"),
-                      style: const TextStyle(
-                        color: Colors.orange,
+                      style: TextStyle(
+                        color: global.theme.warningHighlightTextColor,
                         fontSize: 14,
                       ),
                     ),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.orange),
+                      side: BorderSide(color: global.theme.warningHighlightTextColor),
                     ),
                   ),
                 ] else ...[
                   OutlinedButton.icon(
                     onPressed: _requestCartList,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.refresh,
-                      color: Colors.blue,
+                      color: global.theme.primaryColor,
                       size: 16,
                     ),
                     label: Text(
                       global.language("refresh_data"),
-                      style: const TextStyle(
-                        color: Colors.blue,
+                      style: TextStyle(
+                        color: global.theme.primaryColor,
                         fontSize: 14,
                       ),
                     ),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.blue),
+                      side: BorderSide(color: global.theme.primaryColor),
                     ),
                   ),
                 ],

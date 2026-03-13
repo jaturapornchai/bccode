@@ -12,7 +12,7 @@ class RegisterUsernameScreen extends StatefulWidget {
   State<RegisterUsernameScreen> createState() => _RegisterUsernameScreenState();
 }
 
-class _RegisterUsernameScreenState extends State<RegisterUsernameScreen> {
+class _RegisterUsernameScreenState extends State<RegisterUsernameScreen> with global.ThemeRefreshMixin {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -362,7 +362,7 @@ class _RegisterUsernameScreenState extends State<RegisterUsernameScreen> {
           Container(
             padding: EdgeInsets.all(cardPadding),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: global.theme.cardColor,
               borderRadius: BorderRadius.circular(24),
               boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 30, offset: const Offset(0, 15))],
             ),
@@ -483,7 +483,7 @@ class _RegisterUsernameScreenState extends State<RegisterUsernameScreen> {
                                   const SizedBox(width: 10),
                                   Text(
                                     _text('registering'),
-                                    style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w600, color: Colors.grey[600]),
+                                    style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w600, color: global.theme.iconSecondaryColor),
                                   ),
                                 ],
                               )
@@ -542,9 +542,9 @@ class _RegisterUsernameScreenState extends State<RegisterUsernameScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: global.theme.surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: TextField(
         controller: controller,
@@ -555,7 +555,7 @@ class _RegisterUsernameScreenState extends State<RegisterUsernameScreen> {
         style: TextStyle(fontSize: fontSize),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: TextStyle(color: Colors.grey[600], fontSize: fontSize),
+          labelStyle: TextStyle(color: global.theme.iconSecondaryColor, fontSize: fontSize),
           border: InputBorder.none,
           prefixIcon: Container(
             margin: EdgeInsets.all(iconMargin),

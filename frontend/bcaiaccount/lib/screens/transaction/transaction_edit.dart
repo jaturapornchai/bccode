@@ -57,6 +57,7 @@ import 'package:smlaicloud/model/currency_model.dart';
 import 'package:smlaicloud/services/currency_api_service.dart';
 import 'package:smlaicloud/screens/transaction/utils/transaction_currency_utils.dart';
 import 'package:smlaicloud/screens/transaction/utils/transaction_ui_utils.dart';
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 
 enum TransactionEditScreenModule { header, detail, footer }
 
@@ -1180,7 +1181,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
         return AlertDialog(
           title: Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 28),
+              Icon(Icons.warning_amber_rounded, color: global.theme.warningHighlightTextColor, size: 28),
               SizedBox(width: 8),
               Text(global.language('duplicate_docno')),
             ],
@@ -1207,8 +1208,8 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                 _regenerateDocNoAndSave();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
+                backgroundColor: global.theme.infoHighlightTextColor,
+                foregroundColor: global.theme.onPrimaryColor,
               ),
               child: Text(global.language('create_new_docno_and_save')),
             ),
@@ -2009,8 +2010,8 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.grey.shade200,
-          border: Border(bottom: BorderSide(color: Colors.grey.shade400, width: 1)),
+          color: global.theme.dividerBorderColor,
+          border: Border(bottom: BorderSide(color: global.theme.dividerBorderColor, width: 1)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -2018,12 +2019,12 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.block, size: 20, color: Colors.grey.shade700),
+                Icon(Icons.block, size: 20, color: global.theme.iconSecondaryColor),
                 SizedBox(width: 8),
                 Text(
                   '${global.language('status')}: ${global.language('cancelled')}',
                   style: TextStyle(
-                    color: Colors.grey.shade700,
+                    color: global.theme.textColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -2036,7 +2037,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
               Text(
                 '${global.language('cancel_reason')}: ${screenData.cancelreason}',
                 style: TextStyle(
-                  color: Colors.grey.shade600,
+                  color: global.theme.textSecondaryColor,
                   fontSize: 12,
                 ),
                 textAlign: TextAlign.center,
@@ -2048,7 +2049,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
               Text(
                 '${global.language('by')}: ${(screenData.cancelusername ?? '').isNotEmpty ? screenData.cancelusername : screenData.cancelusercode}',
                 style: TextStyle(
-                  color: Colors.grey.shade500,
+                  color: global.theme.textSecondaryColor,
                   fontSize: 11,
                 ),
               ),
@@ -2062,7 +2063,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        color: Colors.grey.shade100,
+        color: global.theme.surfaceColor,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -2091,37 +2092,37 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
 
     switch (status) {
       case POApprovalStatus.pending:
-        bgColor = Colors.orange.shade50;
-        textColor = Colors.orange.shade800;
-        borderColor = Colors.orange.shade300;
+        bgColor = global.theme.warningHighlightColor;
+        textColor = global.theme.warningHighlightTextColor;
+        borderColor = global.theme.warningHighlightTextColor;
         statusText = global.language('pending_approval');
         icon = Icons.hourglass_empty;
         break;
       case POApprovalStatus.approved:
-        bgColor = Colors.green.shade50;
-        textColor = Colors.green.shade800;
-        borderColor = Colors.green.shade300;
+        bgColor = global.theme.positiveHighlightColor;
+        textColor = global.theme.positiveHighlightTextColor;
+        borderColor = global.theme.positiveHighlightTextColor;
         statusText = global.language('approved');
         icon = Icons.check_circle;
         break;
       case POApprovalStatus.rejected:
-        bgColor = Colors.red.shade50;
-        textColor = Colors.red.shade800;
-        borderColor = Colors.red.shade300;
+        bgColor = global.theme.negativeHighlightColor;
+        textColor = global.theme.negativeHighlightTextColor;
+        borderColor = global.theme.negativeHighlightTextColor;
         statusText = global.language('rejected');
         icon = Icons.cancel;
         break;
       case POApprovalStatus.autoApproved:
-        bgColor = Colors.blue.shade50;
-        textColor = Colors.blue.shade800;
-        borderColor = Colors.blue.shade300;
+        bgColor = global.theme.infoHighlightColor;
+        textColor = global.theme.infoHighlightTextColor;
+        borderColor = global.theme.infoHighlightTextColor;
         statusText = global.language('auto_approved');
         icon = Icons.verified;
         break;
       default:
-        bgColor = Colors.grey.shade50;
-        textColor = Colors.grey.shade800;
-        borderColor = Colors.grey.shade300;
+        bgColor = global.theme.surfaceColor;
+        textColor = global.theme.textColor;
+        borderColor = global.theme.dividerBorderColor;
         statusText = global.language('unknown_status');
         icon = Icons.help_outline;
     }
@@ -2219,7 +2220,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                           children: [
                             Icon(
                               isSuccess ? Icons.check_circle : Icons.error,
-                              color: isSuccess ? Colors.green : Colors.red,
+                              color: isSuccess ? global.theme.positiveHighlightTextColor : global.theme.negativeHighlightTextColor,
                             ),
                             SizedBox(width: 8),
                             Text(isSuccess ? global.language('send_success') : global.language('send_failed')),
@@ -2232,8 +2233,8 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                             Text(result.message ?? result.errorMessage ?? (isSuccess ? global.language('send_notification_success') : global.language('send_notification_failed'))),
                             if (isSuccess) ...[
                               SizedBox(height: 8),
-                              Text('Email: ${result.emailSent} ${global.language('times')}', style: TextStyle(fontSize: 14, color: Colors.grey)),
-                              Text('LINE: ${result.lineSent} ${global.language('times')}', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                              Text('Email: ${result.emailSent} ${global.language('times')}', style: TextStyle(fontSize: 14, color: global.theme.iconSecondaryColor)),
+                              Text('LINE: ${result.lineSent} ${global.language('times')}', style: TextStyle(fontSize: 14, color: global.theme.iconSecondaryColor)),
                             ],
                           ],
                         ),
@@ -2259,7 +2260,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                       builder: (ctx) => AlertDialog(
                         title: Row(
                           children: [
-                            const Icon(Icons.error, color: Colors.red),
+                            Icon(Icons.error, color: global.theme.negativeHighlightTextColor),
                             SizedBox(width: 8),
                             Text(global.language('error_occurred')),
                           ],
@@ -2280,19 +2281,19 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
+                  color: global.theme.infoHighlightColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.blue.shade300),
+                  border: Border.all(color: global.theme.infoHighlightTextColor),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.notifications_active, size: 16, color: Colors.blue.shade700),
+                    Icon(Icons.notifications_active, size: 16, color: global.theme.infoHighlightTextColor),
                     SizedBox(width: 4),
                     Text(
                       global.language('send_reminder'),
                       style: TextStyle(
-                        color: Colors.blue.shade700,
+                        color: global.theme.infoHighlightTextColor,
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -2526,7 +2527,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
       height: 100,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
@@ -2594,9 +2595,9 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                   (widget.type != global.TransactionTypeEnum.stockreceiveproduct)
                       ? Row(
                           children: [
-                            Text(screenData.details![index].docref!, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                            Text(screenData.details![index].docref!, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                             const SizedBox(width: 10),
-                            Text(DateFormat('dd/MM/yyyy').format(_safeParseDatetime(tolocaldateTime)), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                            Text(DateFormat('dd/MM/yyyy').format(_safeParseDatetime(tolocaldateTime)), style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                           ],
                         )
                       : Row(
@@ -2668,7 +2669,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                 onPressed: () {
                   deleteItemDetail(index);
                 },
-                icon: const Icon(Icons.delete, color: Colors.red),
+                icon: Icon(Icons.delete, color: global.theme.negativeHighlightTextColor),
               ),
             ),
           );
@@ -2685,14 +2686,14 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.all(2),
                   alignment: headers[loop].alignment,
-                  foregroundColor: Colors.black,
-                  backgroundColor: Colors.white,
+                  foregroundColor: global.theme.textColor,
+                  backgroundColor: global.theme.cardColor,
                   shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(0))),
                 ),
                 onPressed: () {
                   showDialogCommand(headers[loop].code, index, screenData.details![index]);
                 },
-                child: Text(dataText, textAlign: headers[loop].textAlign, style: const TextStyle(fontSize: 12)),
+                child: Text(dataText, textAlign: headers[loop].textAlign, style: TextStyle(fontSize: 12)),
               ),
             ),
           );
@@ -2910,7 +2911,28 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
         },
         child: Focus(
           skipTraversal: true,
-          child: TabBarView(controller: editTabController, physics: const NeverScrollableScrollPhysics(), children: childrenList),
+          child: Builder(
+            builder: (context) {
+              final scaleFactor = global.editFontScaleFactor;
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(scaleFactor),
+                ),
+                child: Theme(
+                  data: Theme.of(context).copyWith(
+                    inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12 * scaleFactor,
+                        vertical: 10 * scaleFactor,
+                      ),
+                    ),
+                    iconTheme: IconThemeData(size: 24 * scaleFactor),
+                  ),
+                  child: TabBarView(controller: editTabController, physics: const NeverScrollableScrollPhysics(), children: childrenList),
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -3120,18 +3142,18 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                   // Header
                   Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF2A6F97),
-                      borderRadius: BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
+                    decoration: BoxDecoration(
+                      color: global.theme.primaryColor,
+                      borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.edit_note, color: Colors.white, size: 24),
+                        Icon(Icons.edit_note, color: global.theme.onPrimaryColor, size: 24),
                         SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             global.language("edit_product_info"),
-                            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: global.theme.onPrimaryColor, fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ],
@@ -3148,13 +3170,13 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                           children: [
                             Container(
                               padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(color: const Color(0xFF2A6F97).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                              child: const Icon(Icons.inventory_2_outlined, color: Color(0xFF2A6F97), size: 18),
+                              decoration: BoxDecoration(color: global.theme.primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                              child: Icon(Icons.inventory_2_outlined, color: global.theme.primaryColor, size: 18),
                             ),
                             SizedBox(width: 8),
                             Text(
                               global.language("product_name"),
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2A6F97)),
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: global.theme.primaryColor),
                             ),
                           ],
                         ),
@@ -3163,11 +3185,11 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                           controller: productNameController,
                           decoration: InputDecoration(
                             hintText: global.language("enter_product_name"),
-                            hintStyle: TextStyle(color: Colors.grey[400]),
+                            hintStyle: TextStyle(color: global.theme.formHintColor),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(color: Color(0xFF2A6F97), width: 2),
+                              borderSide: BorderSide(color: global.theme.primaryColor, width: 2),
                             ),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                           ),
@@ -3179,13 +3201,13 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                           children: [
                             Container(
                               padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(color: const Color(0xFF2A6F97).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                              child: const Icon(Icons.description_outlined, color: Color(0xFF2A6F97), size: 18),
+                              decoration: BoxDecoration(color: global.theme.primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                              child: Icon(Icons.description_outlined, color: global.theme.primaryColor, size: 18),
                             ),
                             SizedBox(width: 8),
                             Text(
                               global.language("description"),
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2A6F97)),
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: global.theme.primaryColor),
                             ),
                           ],
                         ),
@@ -3194,11 +3216,11 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                           controller: descriptionController,
                           decoration: InputDecoration(
                             hintText: global.language("enter_description"),
-                            hintStyle: TextStyle(color: Colors.grey[400]),
+                            hintStyle: TextStyle(color: global.theme.formHintColor),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(color: Color(0xFF2A6F97), width: 2),
+                              borderSide: BorderSide(color: global.theme.primaryColor, width: 2),
                             ),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                           ),
@@ -3211,7 +3233,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      border: Border(top: BorderSide(color: Colors.grey[300]!)),
+                      border: Border(top: BorderSide(color: global.theme.dividerBorderColor)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -3219,7 +3241,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                         TextButton(
                           onPressed: () => Navigator.of(dialogContext).pop(),
                           style: TextButton.styleFrom(padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
-                          child: Text(global.language("cancel"), style: TextStyle(color: Colors.grey[600])),
+                          child: Text(global.language("cancel"), style: TextStyle(color: global.theme.textSecondaryColor)),
                         ),
                         SizedBox(width: 8),
                         ElevatedButton(
@@ -3239,8 +3261,8 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                             setState(() {});
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2A6F97),
-                            foregroundColor: Colors.white,
+                            backgroundColor: global.theme.primaryColor,
+                            foregroundColor: global.theme.onPrimaryColor,
                             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ),
@@ -3459,7 +3481,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                                   title: Text(global.activeLangName(option.itemnames!)),
                                   subtitle: Text('${global.language("price_colon")}: ${global.formatNumber(option.price!)} | ${global.language("amount")}: ${global.formatNumber(option.qty!)}'),
                                   trailing: IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    icon: Icon(Icons.delete, color: global.theme.negativeHighlightTextColor),
                                     onPressed: () {
                                       setState(() {
                                         screenData.details![index].extrajsonlist!.removeAt(optionIndex);
@@ -3696,7 +3718,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
               controller: splitViewController,
               gripSize: 8,
               gripColor: global.theme.appBarColor,
-              gripColorActive: Colors.blue,
+              gripColorActive: global.theme.infoHighlightTextColor,
               viewMode: SplitViewMode.Horizontal,
               indicator: const SplitIndicator(viewMode: SplitViewMode.Horizontal),
               activeIndicator: const SplitIndicator(viewMode: SplitViewMode.Horizontal, isActive: true),
@@ -3752,7 +3774,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                   child: Container(
                     width: 4,
                     height: 40,
-                    decoration: BoxDecoration(color: Colors.grey[400], borderRadius: BorderRadius.circular(2)),
+                    decoration: BoxDecoration(color: global.theme.iconSecondaryColor, borderRadius: BorderRadius.circular(2)),
                   ),
                 ),
               ),
@@ -3810,7 +3832,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
       appBar: AppBar(
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
             global.gotoMainMenu(context);
           },
@@ -3818,6 +3840,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
         backgroundColor: global.theme.appBarColor,
         title: Text(global.transactionName(widget.type)),
         actions: <Widget>[
+          EditFontSizeControl(onChanged: () => setState(() {})),
           // Loading indicator บน AppBar - แสดงเมื่อกำลังโหลด/บันทึก/ลบข้อมูล
           if (_isLoading)
             Padding(
@@ -3828,302 +3851,259 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: AlwaysStoppedAnimation<Color>(global.theme.onPrimaryColor),
                   ),
                 ),
               ),
             ),
           /// ออกใบกำกับแบบเต็ม
           (screenData.ispos == true && screenData.iscancel == false)
-              ? Padding(
-                  padding: const EdgeInsets.only(right: 20.0),
-                  child: IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    onPressed: () async {
-                      /// ยืนยันการ ออกใบกำกับเต็ม
-                      final result = await showAlertConfirmFullInvoiceDialog(context, screenData.docno);
-                      if (result != null && result) {
-                        saveOrUpdateData(taxInvoice: true);
-                      }
-                    },
-                    icon: const Icon(Icons.receipt_long_outlined, size: 26.0),
-                  ),
-                )
+              ? IconButton(
+                focusNode: FocusNode(skipTraversal: true),
+                onPressed: () async {
+                  /// ยืนยันการ ออกใบกำกับเต็ม
+                  final result = await showAlertConfirmFullInvoiceDialog(context, screenData.docno);
+                  if (result != null && result) {
+                    saveOrUpdateData(taxInvoice: true);
+                  }
+                },
+                icon: Icon(Icons.receipt_long_outlined, size: 26.0),
+              )
               : Container(),
           (screenData.slipurl != '')
-              ? Padding(
-                  padding: const EdgeInsets.only(right: 20.0),
-                  child: IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    onPressed: () async {
-                      /// show dialog preview image
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(content: Image.network(screenData.slipurl!));
-                        },
-                      );
+              ? IconButton(
+                focusNode: FocusNode(skipTraversal: true),
+                onPressed: () async {
+                  /// show dialog preview image
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(content: Image.network(screenData.slipurl!));
                     },
-                    icon: const Icon(Icons.image_outlined, size: 26.0),
-                  ),
-                )
+                  );
+                },
+                icon: Icon(Icons.image_outlined, size: 26.0),
+              )
               : Container(),
 
           /// export csv
           (transactionType == global.TransactionTypeEnum.sale && (screenData.guidfixed?.isNotEmpty ?? false))
-              ? Padding(
-                  padding: EdgeInsets.only(right: 20.0),
-                  child: IconButton(
-                    onPressed: () {
-                      /// dialog select language code
-                      showDialog<String>(
-                        context: context,
-                        builder: (BuildContext context) {
-                          // Initialize the selected language outside of StatefulBuilder
-                          LanguageModel? selectedLanguage = global.config.languages[0];
-
-                          return AlertDialog(
-                            title: Text(global.language('select_language')),
-                            content: StatefulBuilder(
-                              builder: (BuildContext context, StateSetter setState) {
-                                return InputDecorator(
-                                  decoration: const InputDecoration(border: OutlineInputBorder()),
-                                  child: DropdownButtonHideUnderline(
-                                    child: DropdownButton<LanguageModel>(
-                                      value: selectedLanguage,
-                                      icon: const Icon(Icons.arrow_drop_down),
-                                      style: const TextStyle(color: Colors.deepPurple),
-                                      underline: Container(color: Colors.deepPurpleAccent),
-                                      onChanged: (LanguageModel? value) {
-                                        setState(() {
-                                          selectedLanguage = value!;
-                                        });
-                                      },
-                                      isDense: true,
-                                      isExpanded: true,
-                                      items: global.config.languages.map<DropdownMenuItem<LanguageModel>>((LanguageModel value) {
-                                        return DropdownMenuItem<LanguageModel>(
-                                          value: value,
-                                          child: Row(
-                                            children: <Widget>[
-                                              Image.asset(
-                                                'assets/flags/${value.code}.png', // Ensure the image path is correct
-                                                width: 30,
-                                                height: 30,
-                                                errorBuilder: (context, error, stackTrace) {
-                                                  return const Icon(Icons.error); // Error icon if the image fails to load
-                                                },
-                                              ),
-                                              const SizedBox(width: 10), // Spacing between the image and text
-                                              Text(value.name!),
-                                            ],
+              ? IconButton(
+                onPressed: () {
+                  /// dialog select language code
+                  showDialog<String>(
+                    context: context,
+                    builder: (BuildContext context) {
+                      // Initialize the selected language outside of StatefulBuilder
+                      LanguageModel? selectedLanguage = global.config.languages[0];
+                      return AlertDialog(
+                        title: Text(global.language('select_language')),
+                        content: StatefulBuilder(
+                          builder: (BuildContext context, StateSetter setState) {
+                            return InputDecorator(
+                              decoration: const InputDecoration(border: OutlineInputBorder()),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<LanguageModel>(
+                                  value: selectedLanguage,
+                                  icon: Icon(Icons.arrow_drop_down),
+                                  style: TextStyle(color: Colors.deepPurple),
+                                  underline: Container(color: Colors.deepPurpleAccent),
+                                  onChanged: (LanguageModel? value) {
+                                    setState(() {
+                                      selectedLanguage = value!;
+                                    });
+                                  },
+                                  isDense: true,
+                                  isExpanded: true,
+                                  items: global.config.languages.map<DropdownMenuItem<LanguageModel>>((LanguageModel value) {
+                                    return DropdownMenuItem<LanguageModel>(
+                                      value: value,
+                                      child: Row(
+                                        children: <Widget>[
+                                          Image.asset(
+                                            'assets/flags/${value.code}.png', // Ensure the image path is correct
+                                            width: 30,
+                                            height: 30,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Icon(Icons.error); // Error icon if the image fails to load
+                                            },
                                           ),
-                                        );
-                                      }).toList(),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                            actions: <Widget>[
-                              // Text button cancel
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                },
-                                child: Text(global.language('cancel')),
+                                          const SizedBox(width: 10), // Spacing between the image and text
+                                          Text(value.name!),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
                               ),
-
-                              // Export button
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                                onPressed: () {
-                                  context.read<ExportCsvBloc>().add(SaleInvoiceExport(languageCode: selectedLanguage!.code!));
-                                  Navigator.pop(context);
-                                },
-                                child: Text(global.language('export')),
-                              ),
-                            ],
-                          );
-                        },
+                            );
+                          },
+                        ),
+                        actions: <Widget>[
+                          // Text button cancel
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: Text(global.language('cancel')),
+                          ),
+                          // Export button
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: global.theme.infoHighlightTextColor),
+                            onPressed: () {
+                              context.read<ExportCsvBloc>().add(SaleInvoiceExport(languageCode: selectedLanguage!.code!));
+                              Navigator.pop(context);
+                            },
+                            child: Text(global.language('export')),
+                          ),
+                        ],
                       );
                     },
-                    icon: const Icon(Icons.download),
-                  ),
-                )
+                  );
+                },
+                icon: Icon(Icons.download),
+              )
               : Container(),
           ((screenData.guidfixed?.isNotEmpty ?? false) && screenData.iscancel == false)
-              ? Padding(
-                  padding: const EdgeInsets.only(right: 20.0),
-                  child: IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    onPressed: () async {
-                      final result = await showAlertConfirmDeleteDialog(context, screenData.docno);
-                      if (result != null && result) {
-                        deleteDoc();
-                      }
-                    },
-                    icon: const Icon(Icons.delete, size: 26.0),
-                  ),
-                )
+              ? IconButton(
+                focusNode: FocusNode(skipTraversal: true),
+                onPressed: () async {
+                  final result = await showAlertConfirmDeleteDialog(context, screenData.docno);
+                  if (result != null && result) {
+                    deleteDoc();
+                  }
+                },
+                icon: Icon(Icons.delete, size: 26.0),
+              )
               : Container(),
 
           (!screenData.iscancel && (screenData.guidfixed?.isNotEmpty ?? false))
-              ? Padding(
-                  padding: const EdgeInsets.only(right: 20.0),
-                  child: IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    onPressed: () async {
-                      if (screenData.details!.isNotEmpty) {
-                        final result = await showAlertConfirmCancelDialog(context);
-                        if (result != null && result.isNotEmpty) {
-                          screenData.iscancel = true;
-                          screenData.cancelreason = result;
-                          screenData.cancelusercode = global.profileData.username;
-                          screenData.cancelusername = global.profileData.name;
-                          screenData.canceldatetime = DateTime.now().toLocal().toIso8601String();
-                          screenData.canceltime = DateTime.now().toLocal().toIso8601String();
-
-                          screenDataTemp.iscancel = true;
-                          screenDataTemp.cancelreason = result;
-                          screenDataTemp.cancelusercode = global.profileData.username;
-                          screenDataTemp.cancelusername = global.profileData.name;
-                          screenDataTemp.canceldatetime = DateTime.now().toLocal().toIso8601String();
-                          screenDataTemp.canceltime = DateTime.now().toLocal().toIso8601String();
-
-                          saveOrUpdateData(taxInvoice: false);
-                        }
-                      }
-                    },
-                    icon: const Icon(Icons.cancel_rounded, size: 26.0),
-                  ),
-                )
+              ? IconButton(
+                focusNode: FocusNode(skipTraversal: true),
+                onPressed: () async {
+                  if (screenData.details!.isNotEmpty) {
+                    final result = await showAlertConfirmCancelDialog(context);
+                    if (result != null && result.isNotEmpty) {
+                      screenData.iscancel = true;
+                      screenData.cancelreason = result;
+                      screenData.cancelusercode = global.profileData.username;
+                      screenData.cancelusername = global.profileData.name;
+                      screenData.canceldatetime = DateTime.now().toLocal().toIso8601String();
+                      screenData.canceltime = DateTime.now().toLocal().toIso8601String();
+                      screenDataTemp.iscancel = true;
+                      screenDataTemp.cancelreason = result;
+                      screenDataTemp.cancelusercode = global.profileData.username;
+                      screenDataTemp.cancelusername = global.profileData.name;
+                      screenDataTemp.canceldatetime = DateTime.now().toLocal().toIso8601String();
+                      screenDataTemp.canceltime = DateTime.now().toLocal().toIso8601String();
+                      saveOrUpdateData(taxInvoice: false);
+                    }
+                  }
+                },
+                icon: Icon(Icons.cancel_rounded, size: 26.0),
+              )
               : Container(),
 
           /// ปุ่มดูประวัติการพิมพ์ - แสดงเมื่อเอกสารถูกบันทึกแล้ว
           /// ใช้ PrintHistoryIconButton เพื่อแสดง badge จำนวนครั้งที่พิมพ์
           ((screenData.guidfixed?.isNotEmpty ?? false) && screenData.ispos == false)
-              ? Padding(
-                  padding: const EdgeInsets.only(right: 20.0),
-                  child: PrintHistoryIconButton(collection: _getCollectionNameForType(widget.type), docNo: screenData.docno, title: _getDocumentTitle(widget.type), iconSize: 26.0),
-                )
+              ? PrintHistoryIconButton(collection: _getCollectionNameForType(widget.type), docNo: screenData.docno, title: _getDocumentTitle(widget.type), iconSize: 26.0)
               : Container(),
 
           /// ปุ่มดูประวัติการแก้ไข - แสดงเฉพาะใบสั่งซื้อ (PO) เมื่อเอกสารถูกบันทึกแล้ว (guidfixed ต้องมีค่าจริงๆ)
           (widget.type == global.TransactionTypeEnum.purchaseorder && (screenData.guidfixed?.isNotEmpty ?? false) && screenData.docno.isNotEmpty)
-              ? Padding(
-                  padding: EdgeInsets.only(right: 20.0),
-                  child: IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    onPressed: () {
-                      showDataHistoryDialog(
-                        context,
-                        docNo: screenData.docno,
-                        title: global.language('edit_history'),
-                        // ส่งข้อมูลผู้สร้างจาก screenData (modifier อยู่ใน datahistory)
-                        creatorCode: screenData.creatorcode,
-                        creatorName: screenData.creatorname,
-                        createdAt: screenData.createdat,
-                      );
-                    },
-                    icon: Icon(Icons.history, size: 26.0),
-                    tooltip: global.language('view_edit_history'),
-                  ),
-                )
+              ? IconButton(
+                focusNode: FocusNode(skipTraversal: true),
+                onPressed: () {
+                  showDataHistoryDialog(
+                    context,
+                    docNo: screenData.docno,
+                    title: global.language('edit_history'),
+                    // ส่งข้อมูลผู้สร้างจาก screenData (modifier อยู่ใน datahistory)
+                    creatorCode: screenData.creatorcode,
+                    creatorName: screenData.creatorname,
+                    createdAt: screenData.createdat,
+                  );
+                },
+                icon: Icon(Icons.history, size: 26.0),
+                tooltip: global.language('view_edit_history'),
+              )
               : Container(),
 
-          Padding(
-            padding: const EdgeInsets.only(right: 20.0),
-            child: IconButton(
-              focusNode: FocusNode(skipTraversal: true),
-              onPressed: () async {
-                clearScreenData();
-              },
-              icon: const Icon(Icons.add, size: 26.0),
-            ),
+          IconButton(
+            focusNode: FocusNode(skipTraversal: true),
+            onPressed: () async {
+              clearScreenData();
+            },
+            icon: Icon(Icons.add, size: 26.0),
           ),
           // ปุ่ม Toggle Preview
-          Padding(
-            padding: EdgeInsets.only(right: 20.0),
-            child: IconButton(
-              focusNode: FocusNode(skipTraversal: true),
-              onPressed: () {
-                togglePreview();
-              },
-              icon: Icon(_showPreview ? Icons.visibility_off : Icons.visibility, size: 26.0),
-              tooltip: _showPreview ? global.language('hide_preview') : global.language('show_preview'),
-            ),
+          IconButton(
+            focusNode: FocusNode(skipTraversal: true),
+            onPressed: () {
+              togglePreview();
+            },
+            icon: Icon(_showPreview ? Icons.visibility_off : Icons.visibility, size: 26.0),
+            tooltip: _showPreview ? global.language('hide_preview') : global.language('show_preview'),
           ),
 
-          Padding(
-            padding: const EdgeInsets.only(right: 20.0),
-            child: IconButton(
-              focusNode: FocusNode(skipTraversal: true),
-              onPressed: () async {
-                _searchHandlers.searchTrans();
-              },
-              icon: const Icon(Icons.list_alt, size: 26.0),
-            ),
+          IconButton(
+            focusNode: FocusNode(skipTraversal: true),
+            onPressed: () async {
+              _searchHandlers.searchTrans();
+            },
+            icon: Icon(Icons.list_alt, size: 26.0),
           ),
           (MediaQuery.of(context).size.width < 800 && _showPreview)
               ? (tabController.index == 0)
-                    ? Padding(
-                        padding: const EdgeInsets.only(right: 20.0),
-                        child: IconButton(
-                          focusNode: FocusNode(skipTraversal: true),
-                          onPressed: () {
-                            setState(() {
-                              tabController.animateTo(1);
-                            });
-                          },
-                          icon: const Icon(Icons.file_open, size: 26.0),
-                        ),
-                      )
-                    : Padding(
-                        padding: const EdgeInsets.only(right: 20.0),
-                        child: IconButton(
-                          focusNode: FocusNode(skipTraversal: true),
-                          onPressed: () {
-                            setState(() {
-                              tabController.animateTo(0);
-                            });
-                          },
-                          icon: const Icon(Icons.text_fields, size: 26.0),
-                        ),
-                      )
+                    ? IconButton(
+                      focusNode: FocusNode(skipTraversal: true),
+                      onPressed: () {
+                        setState(() {
+                          tabController.animateTo(1);
+                        });
+                      },
+                      icon: Icon(Icons.file_open, size: 26.0),
+                    )
+                    : IconButton(
+                      focusNode: FocusNode(skipTraversal: true),
+                      onPressed: () {
+                        setState(() {
+                          tabController.animateTo(0);
+                        });
+                      },
+                      icon: Icon(Icons.text_fields, size: 26.0),
+                    )
               : Container(),
           (screenData.posid.isEmpty && screenData.iscancel == false)
-              ? Padding(
-                  padding: const EdgeInsets.only(right: 20.0),
-                  child: IconButton(
-                    focusNode: FocusNode(skipTraversal: true),
-                    onPressed: () async {
-                      if (screenData.details!.isNotEmpty) {
-                        // ตรวจสอบว่า PO สามารถแก้ไขได้หรือไม่
-                        if (!_canEditPO()) {
-                          context.ui.showWarning(_getPOEditDisabledReason());
-                          return;
-                        }
-                        // ใช้ dialog แบบใหม่พร้อม checkbox เลือกพิมพ์
-                        // ซ่อนตัวเลือกพิมพ์ถ้า PO ยังไม่ผ่านการอนุมัติ
-                        final result = await showEnhancedSaveConfirmDialog(
-                          context,
-                          screenData.guidfixed ?? '',
-                          showPrintOption: _canPrintPO(),
-                        );
-                        if (result != null && result.confirmed) {
-                          // บันทึก flag ลง SharedPreferences (ป้องกัน Hot Reload reset)
-                          final prefs = await SharedPreferences.getInstance();
-                          await prefs.setBool(_printAfterSaveKey, result.printAfterSave);
-                          AppLogger.debug('🖨️ [Save Button] printAfterSave saved to prefs: ${result.printAfterSave}');
-                          saveOrUpdateData(taxInvoice: false);
-                        }
-                      }
-                    },
-                    icon: const Icon(Icons.save, size: 26.0),
-                  ),
-                )
+              ? IconButton(
+                focusNode: FocusNode(skipTraversal: true),
+                onPressed: () async {
+                  if (screenData.details!.isNotEmpty) {
+                    // ตรวจสอบว่า PO สามารถแก้ไขได้หรือไม่
+                    if (!_canEditPO()) {
+                      context.ui.showWarning(_getPOEditDisabledReason());
+                      return;
+                    }
+                    // ใช้ dialog แบบใหม่พร้อม checkbox เลือกพิมพ์
+                    // ซ่อนตัวเลือกพิมพ์ถ้า PO ยังไม่ผ่านการอนุมัติ
+                    final result = await showEnhancedSaveConfirmDialog(
+                      context,
+                      screenData.guidfixed ?? '',
+                      showPrintOption: _canPrintPO(),
+                    );
+                    if (result != null && result.confirmed) {
+                      // บันทึก flag ลง SharedPreferences (ป้องกัน Hot Reload reset)
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool(_printAfterSaveKey, result.printAfterSave);
+                      AppLogger.debug('🖨️ [Save Button] printAfterSave saved to prefs: ${result.printAfterSave}');
+                      saveOrUpdateData(taxInvoice: false);
+                    }
+                  }
+                },
+                icon: Icon(Icons.save, size: 26.0),
+              )
               : Container(),
         ],
       ),
@@ -4403,10 +4383,10 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
                       if (state is SaleInvoiceExportInProgress) {
                         // Show a loading indicator if desired
                       } else if (state is SaleInvoiceExportSuccess) {
-                        global.showSnackBar(context, Icon(Icons.save, color: Colors.white), global.language("export_success"), Colors.blue);
+                        global.showSnackBar(context, Icon(Icons.save, color: global.theme.onPrimaryColor), global.language("export_success"), global.theme.infoHighlightTextColor);
                       } else if (state is SaleInvoiceExportFailed) {
                         // Show an error message
-                        global.showSnackBar(context, Icon(Icons.save, color: Colors.white), "${global.language("not_export_success")} : ${state.message}", Colors.red);
+                        global.showSnackBar(context, Icon(Icons.save, color: global.theme.onPrimaryColor), "${global.language("not_export_success")} : ${state.message}", global.theme.negativeHighlightTextColor);
                       }
                     },
                   ),

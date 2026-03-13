@@ -18,7 +18,7 @@
 //   State<ReportScreen> createState() => _PurchaseReportState();
 // }
 
-// class _PurchaseReportState extends State<ReportScreen> {
+// class _PurchaseReportState extends State<ReportScreen> with global.ThemeRefreshMixin {
 //   final TextEditingController search = TextEditingController();
 //   final TextEditingController fromDate = TextEditingController();
 //   final TextEditingController toDate = TextEditingController();
@@ -152,7 +152,7 @@
 //                     children: [
 //                       IconButton(
 //                         focusNode: FocusNode(skipTraversal: true),
-//                         icon: const Icon(Icons.calendar_month),
+//                         icon: Icon(Icons.calendar_month),
 //                         onPressed: () {
 //                           viewType = const Uuid().v4().split("-")[3];
 //                           // ignore: undefined_prefixed_name
@@ -183,7 +183,7 @@
 //                     children: [
 //                       IconButton(
 //                         focusNode: FocusNode(skipTraversal: true),
-//                         icon: const Icon(Icons.calendar_month),
+//                         icon: Icon(Icons.calendar_month),
 //                         onPressed: () {
 //                           viewType = const Uuid().v4().split("-")[3];
 //                           // ignore: undefined_prefixed_name
@@ -359,7 +359,7 @@
 //       appBar: AppBar(
 //         leading: IconButton(
 //           focusNode: FocusNode(skipTraversal: true),
-//           icon: const Icon(Icons.arrow_back),
+//           icon: Icon(Icons.arrow_back),
 //           onPressed: () {
 //             Navigator.pushNamed(context, '/menu');
 //           },
@@ -386,7 +386,7 @@
 //                 onPressed: () {
 //                   getReport();
 //                 },
-//                 child: const Text("process")),
+//                 child: Text("process")),
 //           ),
 //           const Divider(
 //             height: 3,

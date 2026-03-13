@@ -26,7 +26,8 @@ class POApprovalHistoryDialog extends StatefulWidget {
   State<POApprovalHistoryDialog> createState() => _POApprovalHistoryDialogState();
 }
 
-class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
+class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog>
+    with global.ThemeRefreshMixin {
   bool _isLoading = true;
   POApprovalStatusModel? _status;
   List<ApprovalTimelineItem> _timeline = [];
@@ -150,15 +151,15 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
   Color _getStatusColor(POApprovalStatus status) {
     switch (status) {
       case POApprovalStatus.pending:
-        return Colors.orange;
+        return global.theme.warningHighlightTextColor;
       case POApprovalStatus.approved:
-        return Colors.green;
+        return global.theme.positiveHighlightTextColor;
       case POApprovalStatus.rejected:
-        return Colors.red;
+        return global.theme.negativeHighlightTextColor;
       case POApprovalStatus.autoApproved:
-        return Colors.blue;
+        return global.theme.infoHighlightTextColor;
       case POApprovalStatus.draft:
-        return Colors.grey;
+        return global.theme.iconSecondaryColor;
     }
   }
 
@@ -193,13 +194,13 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
   Color _getActionColor(String action) {
     switch (action) {
       case 'submit':
-        return Colors.blue;
+        return global.theme.infoHighlightTextColor;
       case 'approve':
-        return Colors.green;
+        return global.theme.positiveHighlightTextColor;
       case 'reject':
-        return Colors.red;
+        return global.theme.negativeHighlightTextColor;
       default:
-        return Colors.grey;
+        return global.theme.iconSecondaryColor;
     }
   }
 
@@ -230,7 +231,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.blue.shade600,
+                color: global.theme.infoHighlightTextColor,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(16),
                   topRight: Radius.circular(16),
@@ -238,7 +239,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.history, color: Colors.white),
+                  Icon(Icons.history, color: global.theme.onPrimaryColor),
                   SizedBox(width: 8),
                   Expanded(
                     child: Column(
@@ -247,7 +248,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
                         Text(
                           global.language("approval_history"),
                           style: TextStyle(
-                            color: Colors.white,
+                            color: global.theme.onPrimaryColor,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -255,7 +256,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
                         Text(
                           'เลขที่: ${widget.docNo}',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
+                            color: global.theme.onPrimaryColor.withValues(alpha: 0.9),
                             fontSize: 14,
                           ),
                         ),
@@ -263,7 +264,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
+                    icon: Icon(Icons.close, color: global.theme.onPrimaryColor),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -286,12 +287,12 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.info_outline, size: 48, color: Colors.grey.shade400),
+                                Icon(Icons.info_outline, size: 48, color: global.theme.iconSecondaryColor),
                                 const SizedBox(height: 16),
                                 Text(
                                   _errorMessage!,
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.grey.shade600),
+                                  style: TextStyle(color: global.theme.textSecondaryColor),
                                 ),
                               ],
                             ),
@@ -373,14 +374,14 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.orange.shade50,
+        color: global.theme.warningHighlightColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange.shade200),
+        border: Border.all(color: global.theme.warningHighlightColor),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.comment, color: Colors.orange.shade600, size: 20),
+          Icon(Icons.comment, color: global.theme.warningHighlightTextColor, size: 20),
           SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -390,7 +391,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
                   global.language("latest_remark"),
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.orange.shade700,
+                    color: global.theme.warningHighlightTextColor,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -398,7 +399,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
                 Text(
                   comment,
                   style: TextStyle(
-                    color: Colors.grey.shade800,
+                    color: global.theme.textColor,
                   ),
                 ),
               ],
@@ -431,7 +432,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
             ),
             child: Icon(
               _getStatusIconFromString(statusStr),
-              color: Colors.white,
+              color: global.theme.onPrimaryColor,
               size: 24,
             ),
           ),
@@ -444,7 +445,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
                   global.language("current_status"),
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey.shade600,
+                    color: global.theme.textSecondaryColor,
                   ),
                 ),
                 Text(
@@ -475,7 +476,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -504,15 +505,15 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
   Color _getStatusColorFromString(String status) {
     switch (status) {
       case 'pending':
-        return Colors.orange;
+        return global.theme.warningHighlightTextColor;
       case 'approved':
-        return Colors.green;
+        return global.theme.positiveHighlightTextColor;
       case 'rejected':
-        return Colors.red;
+        return global.theme.negativeHighlightTextColor;
       case 'auto_approved':
-        return Colors.blue;
+        return global.theme.infoHighlightTextColor;
       default:
-        return Colors.grey;
+        return global.theme.iconSecondaryColor;
     }
   }
 
@@ -572,7 +573,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
                   : status == POApprovalStatus.rejected
                       ? Icons.close
                       : Icons.hourglass_empty,
-              color: Colors.white,
+              color: global.theme.onPrimaryColor,
               size: 24,
             ),
           ),
@@ -585,7 +586,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
                   global.language("current_status"),
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey.shade600,
+                    color: global.theme.textSecondaryColor,
                   ),
                 ),
                 Text(
@@ -608,7 +609,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -632,13 +633,13 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
         Text(
           label,
           style: TextStyle(
-            color: Colors.grey.shade600,
+            color: global.theme.textSecondaryColor,
             fontSize: 14,
           ),
         ),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w500,
             fontSize: 14,
           ),
@@ -673,7 +674,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
                     ),
                     child: Icon(
                       _getActionIcon(item.action),
-                      color: Colors.white,
+                      color: global.theme.onPrimaryColor,
                       size: 16,
                     ),
                   ),
@@ -681,7 +682,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
                     Expanded(
                       child: Container(
                         width: 2,
-                        color: Colors.grey.shade300,
+                        color: global.theme.dividerBorderColor,
                       ),
                     ),
                 ],
@@ -693,9 +694,9 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
                   margin: EdgeInsets.only(bottom: isLast ? 0 : 16),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: global.theme.cardColor,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade200),
+                    border: Border.all(color: global.theme.dividerBorderColor),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -714,7 +715,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
                             _formatDateTime(item.actionAt),
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey.shade500,
+                              color: global.theme.iconSecondaryColor,
                             ),
                           ),
                         ],
@@ -724,7 +725,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
                         '${global.language("by")}: ${item.actionByName}',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.grey.shade700,
+                          color: global.theme.textColor,
                         ),
                       ),
                       if (item.comment != null && item.comment!.isNotEmpty) ...[
@@ -733,7 +734,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
                           '${global.language("remark")}: ${item.comment}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade600,
+                            color: global.theme.textSecondaryColor,
                             fontStyle: FontStyle.italic,
                           ),
                         ),
@@ -756,9 +757,9 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: global.theme.surfaceColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Column(
         children: items.asMap().entries.map((entry) {
@@ -774,7 +775,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
               border: isLast
                   ? null
                   : Border(
-                      bottom: BorderSide(color: Colors.grey.shade200, width: 1),
+                      bottom: BorderSide(color: global.theme.dividerBorderColor, width: 1),
                     ),
             ),
             child: Padding(
@@ -799,7 +800,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
                     child: Center(
                       child: Text(
                         emoji,
-                        style: const TextStyle(fontSize: 16),
+                        style: TextStyle(fontSize: 16),
                       ),
                     ),
                   ),
@@ -816,7 +817,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
                               _getStepDisplayText(item),
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: Colors.grey.shade800,
+                                color: global.theme.textColor,
                                 fontSize: 14,
                               ),
                             ),
@@ -833,7 +834,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
                           _getStepSubText(item),
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade600,
+                            color: global.theme.textSecondaryColor,
                           ),
                         ),
                       ],
@@ -844,7 +845,7 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
                     _formatDateTime(item.actionAt),
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.grey.shade500,
+                      color: global.theme.iconSecondaryColor,
                     ),
                   ),
                 ],
@@ -926,20 +927,20 @@ class _POApprovalHistoryDialogState extends State<POApprovalHistoryDialog> {
   Color _getTimelineActionColor(String action) {
     switch (action) {
       case 'submit':
-        return Colors.blue;
+        return global.theme.infoHighlightTextColor;
       case 'modify':
-        return Colors.orange;
+        return global.theme.warningHighlightTextColor;
       case 'approve':
       case 'auto_approve':
-        return Colors.green;
+        return global.theme.positiveHighlightTextColor;
       case 'reject':
-        return Colors.red;
+        return global.theme.negativeHighlightTextColor;
       case 'notification_sent':
-        return Colors.purple;
+        return global.theme.primaryColor;
       case 'notification_opened':
-        return Colors.teal;
+        return global.theme.infoHighlightTextColor;
       default:
-        return Colors.grey;
+        return global.theme.iconSecondaryColor;
     }
   }
 

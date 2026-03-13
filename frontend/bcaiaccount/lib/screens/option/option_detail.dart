@@ -2,6 +2,7 @@ import 'package:smlaicloud/components/appbar.dart';
 import 'package:smlaicloud/components/textfield_input.dart';
 import 'package:smlaicloud/model/choice_model.dart';
 import 'package:smlaicloud/global.dart' as global;
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 
 import 'package:flutter/material.dart';
 
@@ -14,7 +15,7 @@ class OptionDetailScreen extends StatefulWidget {
   _OptionDetailScreenState createState() => _OptionDetailScreenState();
 }
 
-class _OptionDetailScreenState extends State<OptionDetailScreen> {
+class _OptionDetailScreenState extends State<OptionDetailScreen> with global.ThemeRefreshMixin {
   bool createMode = true;
   // from
   final _formKey = GlobalKey<FormState>();
@@ -123,17 +124,35 @@ class _OptionDetailScreenState extends State<OptionDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery.of(context).size;
     return Scaffold(
-      backgroundColor: Colors.blue[10],
+      backgroundColor: global.theme.infoHighlightColor,
       appBar: BaseAppBar(
         title: (createMode)
             ? Text(global.language("option_detail.add_sub_option"))
             : Text(global.language("option_detail.edit_sub_option")),
         appBar: AppBar(),
-        widgets: const <Widget>[],
+        widgets: <Widget>[
+          EditFontSizeControl(onChanged: () => setState(() {})),
+        ],
       ),
-      body: Container(
+      body: Builder(
+        builder: (context) {
+          final scaleFactor = global.editFontScaleFactor;
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(scaleFactor),
+            ),
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12 * scaleFactor,
+                    vertical: 10 * scaleFactor,
+                  ),
+                ),
+                iconTheme: IconThemeData(size: 24 * scaleFactor),
+              ),
+              child: Container(
         margin: EdgeInsets.all(10.0),
         child: SingleChildScrollView(
           scrollDirection: Axis.vertical,
@@ -200,10 +219,10 @@ class _OptionDetailScreenState extends State<OptionDetailScreen> {
                             child: IconButton(
                               padding: EdgeInsets.zero,
                               iconSize: 30.0,
-                              icon: const Icon(Icons.add_circle_outline),
+                              icon: Icon(Icons.add_circle_outline),
                               color: _displayNewTextFieldName2 == true
-                                  ? Colors.grey
-                                  : Colors.blue,
+                                  ? global.theme.iconSecondaryColor
+                                  : global.theme.infoHighlightTextColor,
                               onPressed: () {
                                 _displayNewTextFieldName2 != true
                                     ? setState(() {
@@ -244,10 +263,10 @@ class _OptionDetailScreenState extends State<OptionDetailScreen> {
                                   child: IconButton(
                                     padding: EdgeInsets.zero,
                                     iconSize: 30.0,
-                                    icon: const Icon(Icons.add_circle_outline),
+                                    icon: Icon(Icons.add_circle_outline),
                                     color: _displayNewTextFieldName3 == true
-                                        ? Colors.grey
-                                        : Colors.blue,
+                                        ? global.theme.iconSecondaryColor
+                                        : global.theme.infoHighlightTextColor,
                                     onPressed: () {
                                       _displayNewTextFieldName3 != true
                                           ? setState(() {
@@ -263,10 +282,10 @@ class _OptionDetailScreenState extends State<OptionDetailScreen> {
                                   child: IconButton(
                                     padding: EdgeInsets.zero,
                                     iconSize: 30.0,
-                                    icon: const Icon(
+                                    icon: Icon(
                                       Icons.remove_circle_outline,
                                     ),
-                                    color: Colors.red,
+                                    color: global.theme.negativeHighlightTextColor,
                                     onPressed: () {
                                       setState(() {
                                         _name2.clear();
@@ -309,10 +328,10 @@ class _OptionDetailScreenState extends State<OptionDetailScreen> {
                                   child: IconButton(
                                     padding: EdgeInsets.zero,
                                     iconSize: 30.0,
-                                    icon: const Icon(Icons.add_circle_outline),
+                                    icon: Icon(Icons.add_circle_outline),
                                     color: _displayNewTextFieldName4 == true
-                                        ? Colors.grey
-                                        : Colors.blue,
+                                        ? global.theme.iconSecondaryColor
+                                        : global.theme.infoHighlightTextColor,
                                     onPressed: () {
                                       _displayNewTextFieldName4 != true
                                           ? setState(() {
@@ -328,10 +347,10 @@ class _OptionDetailScreenState extends State<OptionDetailScreen> {
                                   child: IconButton(
                                     padding: EdgeInsets.zero,
                                     iconSize: 30.0,
-                                    icon: const Icon(
+                                    icon: Icon(
                                       Icons.remove_circle_outline,
                                     ),
-                                    color: Colors.red,
+                                    color: global.theme.negativeHighlightTextColor,
                                     onPressed: () {
                                       setState(() {
                                         _name3.clear();
@@ -374,10 +393,10 @@ class _OptionDetailScreenState extends State<OptionDetailScreen> {
                                   child: IconButton(
                                     padding: EdgeInsets.zero,
                                     iconSize: 30.0,
-                                    icon: const Icon(Icons.add_circle_outline),
+                                    icon: Icon(Icons.add_circle_outline),
                                     color: _displayNewTextFieldName5 == true
-                                        ? Colors.grey
-                                        : Colors.blue,
+                                        ? global.theme.iconSecondaryColor
+                                        : global.theme.infoHighlightTextColor,
                                     onPressed: () {
                                       _displayNewTextFieldName5 != true
                                           ? setState(() {
@@ -393,10 +412,10 @@ class _OptionDetailScreenState extends State<OptionDetailScreen> {
                                   child: IconButton(
                                     padding: EdgeInsets.zero,
                                     iconSize: 30.0,
-                                    icon: const Icon(
+                                    icon: Icon(
                                       Icons.remove_circle_outline,
                                     ),
-                                    color: Colors.red,
+                                    color: global.theme.negativeHighlightTextColor,
                                     onPressed: () {
                                       setState(() {
                                         _name4.clear();
@@ -435,8 +454,8 @@ class _OptionDetailScreenState extends State<OptionDetailScreen> {
                               child: IconButton(
                                 padding: EdgeInsets.zero,
                                 iconSize: 30.0,
-                                icon: const Icon(Icons.remove_circle_outline),
-                                color: Colors.red,
+                                icon: Icon(Icons.remove_circle_outline),
+                                color: global.theme.negativeHighlightTextColor,
                                 onPressed: () {
                                   setState(() {
                                     _name5.clear();
@@ -547,7 +566,7 @@ class _OptionDetailScreenState extends State<OptionDetailScreen> {
                               Radius.circular(5.0),
                             ),
                           ),
-                          checkColor: Colors.white,
+                          checkColor: global.theme.onPrimaryColor,
                           value: _selected,
                           onChanged: (bool? value) {
                             setState(() {
@@ -567,7 +586,7 @@ class _OptionDetailScreenState extends State<OptionDetailScreen> {
                         shape: const RoundedRectangleBorder(
                           borderRadius: BorderRadius.all(Radius.circular(5.0)),
                         ),
-                        checkColor: Colors.white,
+                        checkColor: global.theme.onPrimaryColor,
                         value: _default,
                         onChanged: (bool? value) {
                           setState(() {
@@ -583,6 +602,10 @@ class _OptionDetailScreenState extends State<OptionDetailScreen> {
             ),
           ),
         ),
+            ),
+          ),
+        );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -590,8 +613,8 @@ class _OptionDetailScreenState extends State<OptionDetailScreen> {
             _saveData();
           }
         },
-        backgroundColor: Colors.green,
-        child: const Icon(Icons.save),
+        backgroundColor: global.theme.positiveHighlightTextColor,
+        child: Icon(Icons.save),
       ),
     );
   }

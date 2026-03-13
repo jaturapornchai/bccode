@@ -23,7 +23,8 @@ class ImportProductScreen extends StatefulWidget {
   State<ImportProductScreen> createState() => _ImportProductScreenState();
 }
 
-class _ImportProductScreenState extends State<ImportProductScreen> {
+class _ImportProductScreenState extends State<ImportProductScreen>
+    with global.ThemeRefreshMixin {
   final ProductBarcodeRepository _productBarcodeRepository =
       ProductBarcodeRepository();
   String fileImportName = '';
@@ -156,15 +157,15 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
   Color _getStatusColor(String status) {
     switch (status.toUpperCase()) {
       case 'NEW':
-        return Colors.green;
+        return global.theme.positiveHighlightTextColor;
       case 'EXISTING':
-        return Colors.blue;
+        return global.theme.infoHighlightTextColor;
       case 'UPDATED':
-        return Colors.orange;
+        return global.theme.warningHighlightTextColor;
       case 'CONFLICT':
-        return Colors.red;
+        return global.theme.negativeHighlightTextColor;
       default:
-        return Colors.grey;
+        return global.theme.iconSecondaryColor;
     }
   }
 
@@ -213,7 +214,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                       TextSpan(
                         text:
                             '${global.language('file_size_label')} : $filesize MB',
-                        style: const TextStyle(color: Colors.red),
+                        style: TextStyle(color: global.theme.negativeHighlightTextColor),
                       ),
                     ],
                   ),
@@ -291,7 +292,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                           labelText: '',
                           border: const OutlineInputBorder(),
                           suffixIcon: IconButton(
-                            icon: const Icon(Icons.clear),
+                            icon: Icon(Icons.clear),
                             onPressed: () {
                               barcode.text = '';
                               name.text = '';
@@ -407,7 +408,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                                 }
                               });
                             },
-                            icon: const Icon(Icons.search),
+                            icon: Icon(Icons.search),
                           ),
                         ),
                       ),
@@ -476,7 +477,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                         },
                       ),
                     ),
-                    // const SizedBox(
+                    // SizedBox(
                     //   width: 10,
                     // ),
                     // Expanded(
@@ -572,9 +573,9 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                     },
               style: ElevatedButton.styleFrom(
                 backgroundColor: isLoadingTable
-                    ? Colors.grey
+                    ? global.theme.iconSecondaryColor
                     : global.theme.appBarColor,
-                foregroundColor: Colors.white,
+                foregroundColor: global.theme.onPrimaryColor,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,
@@ -585,22 +586,22 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                 elevation: isLoadingTable ? 0 : 2,
               ),
               child: isLoadingTable
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(global.theme.onPrimaryColor),
                       ),
                     )
                   : Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.save, size: 18),
+                        Icon(Icons.save, size: 18),
                         SizedBox(width: 8),
                         Text(
                           global.language('save'),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -634,13 +635,13 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                         children: [
                           /// frist page
                           IconButton(
-                            icon: const Icon(Icons.first_page),
+                            icon: Icon(Icons.first_page),
                             onPressed: pagination.page > 1
                                 ? () => fetchData(1, limit, q)
                                 : null,
                           ),
                           IconButton(
-                            icon: const Icon(Icons.chevron_left),
+                            icon: Icon(Icons.chevron_left),
                             onPressed: pagination.page > 1
                                 ? () => fetchData(pagination.page - 1, limit, q)
                                 : null,
@@ -649,7 +650,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                             'Page ${pagination.page} of ${pagination.totalPage}',
                           ),
                           IconButton(
-                            icon: const Icon(Icons.chevron_right),
+                            icon: Icon(Icons.chevron_right),
                             onPressed: pagination.page < pagination.totalPage
                                 ? () => fetchData(pagination.page + 1, limit, q)
                                 : null,
@@ -657,7 +658,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
 
                           /// last page
                           IconButton(
-                            icon: const Icon(Icons.last_page),
+                            icon: Icon(Icons.last_page),
                             onPressed: pagination.page < pagination.totalPage
                                 ? () =>
                                       fetchData(pagination.totalPage, limit, q)
@@ -665,7 +666,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                           ),
 
                           /// size box width 10
-                          const SizedBox(width: 10),
+                          SizedBox(width: 10),
                           DropdownButton<int>(
                             value: limit,
                             items: _limitOptions.map<DropdownMenuItem<int>>((
@@ -704,8 +705,8 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<LanguageModel>(
                               value: languangeImport,
-                              icon: const Icon(Icons.arrow_drop_down),
-                              style: const TextStyle(color: Colors.deepPurple),
+                              icon: Icon(Icons.arrow_drop_down),
+                              style: TextStyle(color: Colors.deepPurple),
                               underline: Container(
                                 color: Colors.deepPurpleAccent,
                               ),
@@ -730,12 +731,12 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                                             height: 30,
                                             errorBuilder:
                                                 (context, error, stackTrace) {
-                                                  return const Icon(
+                                                  return Icon(
                                                     Icons.error,
                                                   ); // Error icon if the image fails to load
                                                 },
                                           ),
-                                          const SizedBox(
+                                          SizedBox(
                                             width: 10,
                                           ), // Spacing between the image and text
                                           Text(value.name!),
@@ -756,12 +757,12 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                         decoration: InputDecoration(
                           labelText: global.language('search'),
                           suffixIcon: isLoadingText
-                              ? const Padding(
+                              ? Padding(
                                   padding: EdgeInsets.all(8.0),
                                   child: CircularProgressIndicator(),
                                 )
                               : null, // Loading indicator
-                          prefixIcon: const Icon(Icons.search),
+                          prefixIcon: Icon(Icons.search),
                         ),
                         onChanged: (value) {
                           setState(() {
@@ -853,12 +854,12 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                                                                     .importData
                                                                     ?.isunitnotexist ==
                                                                 true)
-                                                        ? const TextStyle(
+                                                        ? TextStyle(
                                                             fontWeight:
                                                                 FontWeight.bold,
-                                                            color: Colors.red,
+                                                            color: global.theme.negativeHighlightTextColor,
                                                           )
-                                                        : const TextStyle(
+                                                        : TextStyle(
                                                             fontWeight:
                                                                 FontWeight
                                                                     .normal,
@@ -881,12 +882,12 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                                                                     .importData
                                                                     ?.isunitnotexist ==
                                                                 true)
-                                                        ? const TextStyle(
+                                                        ? TextStyle(
                                                             fontWeight:
                                                                 FontWeight.bold,
-                                                            color: Colors.red,
+                                                            color: global.theme.negativeHighlightTextColor,
                                                           )
-                                                        : const TextStyle(
+                                                        : TextStyle(
                                                             fontWeight:
                                                                 FontWeight
                                                                     .normal,
@@ -910,12 +911,12 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                                                                     .importData
                                                                     ?.isunitnotexist ==
                                                                 true)
-                                                        ? const TextStyle(
+                                                        ? TextStyle(
                                                             fontWeight:
                                                                 FontWeight.bold,
-                                                            color: Colors.red,
+                                                            color: global.theme.negativeHighlightTextColor,
                                                           )
-                                                        : const TextStyle(
+                                                        : TextStyle(
                                                             fontWeight:
                                                                 FontWeight
                                                                     .normal,
@@ -943,13 +944,13 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                                                                       .importData
                                                                       ?.isunitnotexist ==
                                                                   true)
-                                                          ? const TextStyle(
+                                                          ? TextStyle(
                                                               fontWeight:
                                                                   FontWeight
                                                                       .bold,
-                                                              color: Colors.red,
+                                                              color: global.theme.negativeHighlightTextColor,
                                                             )
-                                                          : const TextStyle(
+                                                          : TextStyle(
                                                               fontWeight:
                                                                   FontWeight
                                                                       .normal,
@@ -980,13 +981,13 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                                                                       .importData
                                                                       ?.isunitnotexist ==
                                                                   true)
-                                                          ? const TextStyle(
+                                                          ? TextStyle(
                                                               fontWeight:
                                                                   FontWeight
                                                                       .bold,
-                                                              color: Colors.red,
+                                                              color: global.theme.negativeHighlightTextColor,
                                                             )
-                                                          : const TextStyle(
+                                                          : TextStyle(
                                                               fontWeight:
                                                                   FontWeight
                                                                       .normal,
@@ -1000,11 +1001,11 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                                                 //     child: Text(
                                                 //       item.pricedelivery!.toString(),
                                                 //       style: (item.isexist! || item.isduplicate! || item.isunitnotexist!)
-                                                //           ? const TextStyle(
+                                                //           ? TextStyle(
                                                 //               fontWeight: FontWeight.bold,
-                                                //               color: Colors.red,
+                                                //               color: global.theme.negativeHighlightTextColor,
                                                 //             )
-                                                //           : const TextStyle(
+                                                //           : TextStyle(
                                                 //               fontWeight: FontWeight.normal,
                                                 //             ),
                                                 //     ),
@@ -1026,14 +1027,14 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                                                                     .importData
                                                                     ?.isunitnotexist ==
                                                                 false)
-                                                        ? const Icon(
+                                                        ? Icon(
                                                             Icons.check,
-                                                            color: Colors.green,
+                                                            color: global.theme.positiveHighlightTextColor,
                                                           )
                                                         : ElevatedButton(
                                                             style: ElevatedButton.styleFrom(
                                                               foregroundColor:
-                                                                  Colors.white,
+                                                                  global.theme.onPrimaryColor,
                                                               backgroundColor:
                                                                   Colors
                                                                       .red, // Text color
@@ -1048,7 +1049,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                                                                       context,
                                                                     ) {
                                                                       return AlertDialog(
-                                                                        title: const Text(
+                                                                        title: Text(
                                                                           'Error',
                                                                         ),
                                                                         content: Text(
@@ -1064,7 +1065,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                                                                                 onPressed: () => Navigator.of(
                                                                                   context,
                                                                                 ).pop(),
-                                                                                child: const Text(
+                                                                                child: Text(
                                                                                   'Close',
                                                                                 ),
                                                                               ),
@@ -1073,10 +1074,10 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                                                                     },
                                                               );
                                                             },
-                                                            child: const Icon(
+                                                            child: Icon(
                                                               Icons.error,
                                                               color:
-                                                                  Colors.white,
+                                                                  global.theme.onPrimaryColor,
                                                             ), // Icon color
                                                           ),
                                                   ),
@@ -1101,8 +1102,8 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                                                       ),
                                                       child: Text(
                                                         item.status ?? '',
-                                                        style: const TextStyle(
-                                                          color: Colors.white,
+                                                        style: TextStyle(
+                                                          color: global.theme.onPrimaryColor,
                                                           fontWeight:
                                                               FontWeight.bold,
                                                         ),
@@ -1113,7 +1114,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                                                 // DataCell(Align(
                                                 //   alignment: Alignment.center,
                                                 //   child: IconButton(
-                                                //     icon: const Icon(Icons.edit),
+                                                //     icon: Icon(Icons.edit),
                                                 //     onPressed: () {
                                                 //       _showBarcodeDialog(
                                                 //           context, item);
@@ -1124,7 +1125,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                                                 //   Align(
                                                 //     alignment: Alignment.center,
                                                 //     child: IconButton(
-                                                //       icon: const Icon(
+                                                //       icon: Icon(
                                                 //           Icons.delete),
                                                 //       onPressed: () {
                                                 //         /// show dialog confirm delete
@@ -1154,7 +1155,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                                                 //                   style: ElevatedButton
                                                 //                       .styleFrom(
                                                 //                           backgroundColor:
-                                                //                               Colors.red),
+                                                //                               global.theme.negativeHighlightTextColor),
                                                 //                   onPressed: () {
                                                 //                     Navigator.pop(
                                                 //                         context);
@@ -1215,8 +1216,8 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                     : ElevatedButton.icon(
                         /// button red
                         style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          backgroundColor: Colors.red,
+                          foregroundColor: global.theme.onPrimaryColor,
+                          backgroundColor: global.theme.negativeHighlightTextColor,
                         ),
 
                         onPressed: () {
@@ -1239,7 +1240,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                             },
                           );
                         },
-                        icon: const Icon(Icons.clear),
+                        icon: Icon(Icons.clear),
                         label: Text(fileImportName),
                       ),
               ),
@@ -1261,12 +1262,12 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
           ),
           actions: <Widget>[
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              style: ElevatedButton.styleFrom(backgroundColor: global.theme.negativeHighlightTextColor),
               onPressed: () => Navigator.pop(context),
               child: Text(global.language('no')),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+              style: ElevatedButton.styleFrom(backgroundColor: global.theme.infoHighlightTextColor),
               onPressed: () {
                 Navigator.pop(context);
                 callBack();
@@ -1332,7 +1333,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
         title: Text(global.language('import_product')),
         leading: IconButton(
           focusNode: FocusNode(skipTraversal: true),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: isLoadingSaveTaskid
               ? null
               : () {
@@ -1366,7 +1367,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                             ),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
+                                backgroundColor: global.theme.infoHighlightTextColor,
                               ),
                               onPressed: () => Navigator.of(context).pop(true),
                               child: Text(global.language('save')),
@@ -1484,9 +1485,9 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
 
                   global.showSnackBar(
                     context,
-                    const Icon(Icons.error, color: Colors.white),
+                    Icon(Icons.error, color: global.theme.onPrimaryColor),
                     state.message,
-                    Colors.red,
+                    global.theme.negativeHighlightTextColor,
                   );
                 });
               }
@@ -1512,9 +1513,9 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
 
                   global.showSnackBar(
                     context,
-                    const Icon(Icons.error, color: Colors.white),
+                    Icon(Icons.error, color: global.theme.onPrimaryColor),
                     state.message,
-                    Colors.red,
+                    global.theme.negativeHighlightTextColor,
                   );
                 });
               }
@@ -1534,9 +1535,9 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                 fetchData(page, limit, q);
                 global.showSnackBar(
                   context,
-                  Icon(Icons.save, color: Colors.white),
+                  Icon(Icons.save, color: global.theme.onPrimaryColor),
                   global.language('update_success'),
-                  Colors.blue,
+                  global.theme.infoHighlightTextColor,
                 );
               }
 
@@ -1548,9 +1549,9 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                 fetchData(page, limit, q);
                 global.showSnackBar(
                   context,
-                  Icon(Icons.save, color: Colors.white),
+                  Icon(Icons.save, color: global.theme.onPrimaryColor),
                   global.language('save_success'),
-                  Colors.blue,
+                  global.theme.infoHighlightTextColor,
                 );
               }
 
@@ -1559,12 +1560,12 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
               //   // Just show initial success message
               //   global.showSnackBar(
               //     context,
-              //     const Icon(
+              //     Icon(
               //       Icons.info,
-              //       color: Colors.white,
+              //       color: global.theme.onPrimaryColor,
               //     ),
               //     'เริ่มดำเนินการแล้ว',
-              //     Colors.blue,
+              //     global.theme.infoHighlightTextColor,
               //   );
               // }
 
@@ -1572,9 +1573,9 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                 // Show initial success message
                 global.showSnackBar(
                   context,
-                  Icon(Icons.info, color: Colors.white),
+                  Icon(Icons.info, color: global.theme.onPrimaryColor),
                   global.language('operation_started'),
-                  Colors.blue,
+                  global.theme.infoHighlightTextColor,
                 );
               }
 
@@ -1587,9 +1588,9 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                 stopStatusChecking();
                 global.showSnackBar(
                   context,
-                  Icon(Icons.error, color: Colors.white),
+                  Icon(Icons.error, color: global.theme.onPrimaryColor),
                   '${global.language('save_failed')} : ${state.message}',
-                  Colors.red,
+                  global.theme.negativeHighlightTextColor,
                 );
               }
 
@@ -1602,9 +1603,9 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                 stopStatusChecking();
                 global.showSnackBar(
                   context,
-                  Icon(Icons.error, color: Colors.white),
+                  Icon(Icons.error, color: global.theme.onPrimaryColor),
                   '${global.language('save_failed')} : ${state.message}',
-                  Colors.red,
+                  global.theme.negativeHighlightTextColor,
                 );
               }
 
@@ -1615,9 +1616,9 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                 });
                 global.showSnackBar(
                   context,
-                  Icon(Icons.error, color: Colors.white),
+                  Icon(Icons.error, color: global.theme.onPrimaryColor),
                   '${global.language('update_failed')} : ${state.message}',
-                  Colors.red,
+                  global.theme.negativeHighlightTextColor,
                 );
               }
 
@@ -1627,9 +1628,9 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                 });
                 global.showSnackBar(
                   context,
-                  Icon(Icons.error, color: Colors.white),
+                  Icon(Icons.error, color: global.theme.onPrimaryColor),
                   '${global.language('save_failed')} : ${state.message}',
-                  Colors.red,
+                  global.theme.negativeHighlightTextColor,
                 );
               }
 
@@ -1639,9 +1640,9 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                 });
                 global.showSnackBar(
                   context,
-                  Icon(Icons.error, color: Colors.white),
+                  Icon(Icons.error, color: global.theme.onPrimaryColor),
                   '${global.language('delete_failed')} : ${state.message}',
-                  Colors.red,
+                  global.theme.negativeHighlightTextColor,
                 );
               }
 
@@ -1651,9 +1652,9 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                 });
                 global.showSnackBar(
                   context,
-                  Icon(Icons.error, color: Colors.white),
+                  Icon(Icons.error, color: global.theme.onPrimaryColor),
                   '${global.language('verify_failed')} : ${state.message}',
-                  Colors.red,
+                  global.theme.negativeHighlightTextColor,
                 );
               }
 
@@ -1688,9 +1689,9 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                       return AlertDialog(
                         title: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.check_circle,
-                              color: Colors.green,
+                              color: global.theme.positiveHighlightTextColor,
                               size: 32,
                             ),
                             SizedBox(width: 12),
@@ -1703,12 +1704,12 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                           children: [
                             Text(
                               global.language('product_import_completed'),
-                              style: const TextStyle(fontSize: 16),
+                              style: TextStyle(fontSize: 16),
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
                             Text(
                               'Progress: ${state.data.progress}%',
-                              style: TextStyle(color: Colors.grey.shade600),
+                              style: TextStyle(color: global.theme.textSecondaryColor),
                             ),
                           ],
                         ),
@@ -1716,7 +1717,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: global.theme.appBarColor,
-                              foregroundColor: Colors.white,
+                              foregroundColor: global.theme.onPrimaryColor,
                             ),
                             onPressed: () {
                               Navigator.pop(dialogContext);
@@ -1748,9 +1749,9 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                               // Show ready for new import message
                               global.showSnackBar(
                                 context,
-                                Icon(Icons.info, color: Colors.white),
+                                Icon(Icons.info, color: global.theme.onPrimaryColor),
                                 global.language('ready_for_new_import'),
-                                Colors.blue,
+                                global.theme.infoHighlightTextColor,
                               );
                             },
                             child: Text(global.language('ok')),
@@ -1793,9 +1794,9 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
 
                   global.showSnackBar(
                     context,
-                    Icon(Icons.check_circle, color: Colors.white),
+                    Icon(Icons.check_circle, color: global.theme.onPrimaryColor),
                     global.language('save_success'),
-                    Colors.blue,
+                    global.theme.infoHighlightTextColor,
                   );
                 }
               }
@@ -1806,7 +1807,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
           child: Stack(
             children: [
               (isLoading)
-                  ? const Center(
+                  ? Center(
                       child: SizedBox(
                         width: 100, // Set the desired width
                         height: 100, // Set the desired height
@@ -1814,7 +1815,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                           strokeWidth:
                               4, // Optional: Set the thickness of the indicator
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.blue,
+                            global.theme.infoHighlightTextColor,
                           ), // Optional: Set the color
                         ),
                       ),
@@ -1828,18 +1829,18 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                               children: [
                                 IconButton(
                                   iconSize: 150,
-                                  color: Colors.grey,
+                                  color: global.theme.textSecondaryColor,
                                   tooltip: global.language('import_product'),
-                                  icon: const Icon(Icons.upload_file),
+                                  icon: Icon(Icons.upload_file),
                                   onPressed: () {
                                     uploadFileExcel();
                                   },
                                 ),
                                 Text(
                                   global.language('import_product_from_excel'),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 20,
-                                    color: Colors.grey,
+                                    color: global.theme.textSecondaryColor,
                                   ),
                                 ),
 
@@ -1885,7 +1886,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                                   },
                                   child: Text(
                                     global.language('download_sample_excel'),
-                                    style: const TextStyle(fontSize: 20),
+                                    style: TextStyle(fontSize: 20),
                                   ),
                                 ),
                               ],
@@ -1906,13 +1907,13 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                 Container(
                   width: double.infinity,
                   height: double.infinity,
-                  color: Colors.white.withValues(alpha: 0.95),
+                  color: global.theme.cardColor.withValues(alpha: 0.95),
                   child: Center(
                     child: Container(
                       padding: const EdgeInsets.all(40),
                       margin: const EdgeInsets.symmetric(horizontal: 40),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: global.theme.cardColor,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
@@ -1938,7 +1939,7 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                                   valueColor: AlwaysStoppedAnimation<Color>(
                                     global.theme.appBarColor,
                                   ),
-                                  backgroundColor: Colors.grey.shade200,
+                                  backgroundColor: global.theme.dividerBorderColor,
                                 ),
                               ),
                               Text(
@@ -1951,17 +1952,17 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 24),
+                          SizedBox(height: 24),
                           // Main message
                           Text(
                             global.language('saving_data'),
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
-                              color: Colors.grey.shade800,
+                              color: global.theme.textColor,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           // Status message
                           Text(
                             currentStatus != null
@@ -1969,17 +1970,17 @@ class _ImportProductScreenState extends State<ImportProductScreen> {
                                 : global.language('please_wait'),
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey.shade600,
+                              color: global.theme.textSecondaryColor,
                             ),
                           ),
                           if (currentStatus != null) ...[
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
                             // Progress bar
                             Container(
                               width: 200,
                               height: 8,
                               decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
+                                color: global.theme.dividerBorderColor,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: FractionallySizedBox(

@@ -1,0 +1,683 @@
+{
+  "id": "receipt",
+  "name": "ใบเสร็จรับเงิน",
+  "description": "ใบเสร็จรับเงิน / RECEIPT",
+  "documentType": "receipt",
+  "paperSize": "A4",
+  "marginTop": 20,
+  "marginBottom": 15,
+  "marginLeft": 20,
+  "marginRight": 20,
+  "orientation": "portrait",
+  "printMode": "color",
+  "multiPageEnabled": true,
+  "detailRowsPerPage": 20,
+  "createdAt": "2026-03-13T00:00:00.000",
+  "updatedAt": "2026-03-13T00:00:00.000",
+  "header": {
+    "id": "header",
+    "type": "header",
+    "height": 160,
+    "rows": [
+      {
+        "id": "h_row1",
+        "cells": [
+          {
+            "id": "logo",
+            "type": "dataField",
+            "fixedWidth": 50,
+            "dataBindingKey": "company_logo",
+            "fontSize": 7,
+            "textColor": 4278190080,
+            "minHeight": 40
+          },
+          {
+            "id": "company_name",
+            "type": "dataField",
+            "flex": 2,
+            "dataBindingKey": "company_name",
+            "fontSize": 10,
+            "fontBold": true,
+            "textColor": 4278190080
+          },
+          {
+            "id": "title",
+            "type": "text",
+            "flex": 1.5,
+            "text": "ใบเสร็จรับเงิน / RECEIPT",
+            "fontSize": 12,
+            "fontBold": true,
+            "textAlign": 1,
+            "textColor": 4278190080
+          }
+        ],
+        "gap": 4
+      },
+      {
+        "id": "h_row2",
+        "cells": [
+          {
+            "id": "addr_label",
+            "type": "text",
+            "fixedWidth": 24,
+            "text": "ที่อยู่:",
+            "fontSize": 7,
+            "textColor": 4278190080
+          },
+          {
+            "id": "company_address",
+            "type": "dataField",
+            "flex": 2,
+            "dataBindingKey": "company_address",
+            "fontSize": 7,
+            "textColor": 4278190080
+          },
+          {
+            "id": "copy_label",
+            "type": "text",
+            "flex": 0.8,
+            "text": "(ต้นฉบับ)",
+            "fontSize": 7,
+            "textAlign": 1,
+            "textColor": 4278190080
+          }
+        ],
+        "gap": 4
+      },
+      {
+        "id": "h_row3",
+        "cells": [
+          {
+            "id": "phone_label",
+            "type": "text",
+            "fixedWidth": 18,
+            "text": "โทร:",
+            "fontSize": 7,
+            "textColor": 4278190080
+          },
+          {
+            "id": "company_phone",
+            "type": "dataField",
+            "flex": 1,
+            "dataBindingKey": "company_phone",
+            "fontSize": 7,
+            "textColor": 4278190080
+          },
+          {
+            "id": "email_label",
+            "type": "text",
+            "fixedWidth": 26,
+            "text": "Email:",
+            "fontSize": 7,
+            "textColor": 4278190080
+          },
+          {
+            "id": "company_email",
+            "type": "dataField",
+            "flex": 1,
+            "dataBindingKey": "company_email",
+            "fontSize": 7,
+            "textColor": 4278190080
+          }
+        ],
+        "gap": 4
+      },
+      {
+        "id": "h_row4",
+        "cells": [
+          {
+            "id": "taxid_label",
+            "type": "text",
+            "fixedWidth": 90,
+            "text": "เลขประจำตัวผู้เสียภาษี:",
+            "fontSize": 7,
+            "textColor": 4278190080
+          },
+          {
+            "id": "company_taxid",
+            "type": "dataField",
+            "flex": 1,
+            "dataBindingKey": "company_tax_id",
+            "fontSize": 7,
+            "textColor": 4278190080
+          }
+        ],
+        "gap": 4
+      },
+      {
+        "id": "h_sep",
+        "cells": [
+          {
+            "id": "sep1",
+            "type": "separator",
+            "flex": 1,
+            "borderColor": 4278190080,
+            "borderWidth": 0.5,
+            "lineStyle": "solid"
+          }
+        ],
+        "paddingTop": 4,
+        "paddingBottom": 4
+      },
+      {
+        "id": "h_row6",
+        "cells": [
+          {
+            "id": "buyer_label",
+            "type": "text",
+            "fixedWidth": 40,
+            "text": "ชื่อผู้ซื้อ:",
+            "fontSize": 7,
+            "textColor": 4278190080
+          },
+          {
+            "id": "contact_name",
+            "type": "dataField",
+            "flex": 2,
+            "dataBindingKey": "contact_name",
+            "fontSize": 7,
+            "textColor": 4278190080
+          },
+          {
+            "id": "docno_label",
+            "type": "text",
+            "fixedWidth": 27,
+            "text": "เลขที่:",
+            "fontSize": 7,
+            "textColor": 4278190080
+          },
+          {
+            "id": "doc_number",
+            "type": "dataField",
+            "flex": 1,
+            "dataBindingKey": "doc_number",
+            "fontSize": 8,
+            "fontBold": true,
+            "textColor": 4278190080,
+            "textAlign": 2
+          }
+        ],
+        "gap": 4
+      },
+      {
+        "id": "h_row7",
+        "cells": [
+          {
+            "id": "ctaxid_label",
+            "type": "text",
+            "fixedWidth": 60,
+            "text": "เลขผู้เสียภาษี:",
+            "fontSize": 7,
+            "textColor": 4278190080
+          },
+          {
+            "id": "contact_taxid",
+            "type": "dataField",
+            "flex": 1.5,
+            "dataBindingKey": "contact_tax_id",
+            "fontSize": 7,
+            "textColor": 4278190080
+          },
+          {
+            "id": "date_label",
+            "type": "text",
+            "fixedWidth": 27,
+            "text": "วันที่:",
+            "fontSize": 7,
+            "textColor": 4278190080
+          },
+          {
+            "id": "doc_date",
+            "type": "dataField",
+            "flex": 1,
+            "dataBindingKey": "doc_date",
+            "fontSize": 7,
+            "textColor": 4278190080
+          }
+        ],
+        "gap": 4
+      },
+      {
+        "id": "h_row8",
+        "cells": [
+          {
+            "id": "caddr_label",
+            "type": "text",
+            "fixedWidth": 24,
+            "text": "ที่อยู่:",
+            "fontSize": 7,
+            "textColor": 4278190080
+          },
+          {
+            "id": "contact_address",
+            "type": "dataField",
+            "flex": 2,
+            "dataBindingKey": "contact_address",
+            "fontSize": 7,
+            "textColor": 4278190080
+          },
+          {
+            "id": "ref_label",
+            "type": "text",
+            "fixedWidth": 30,
+            "text": "อ้างอิง:",
+            "fontSize": 7,
+            "textColor": 4278190080
+          },
+          {
+            "id": "ref_number",
+            "type": "dataField",
+            "flex": 1,
+            "dataBindingKey": "ref_number",
+            "fontSize": 7,
+            "textColor": 4278190080
+          }
+        ],
+        "gap": 4
+      },
+      {
+        "id": "h_row9",
+        "cells": [
+          {
+            "id": "branch_label",
+            "type": "text",
+            "fixedWidth": 24,
+            "text": "สาขา:",
+            "fontSize": 7,
+            "textColor": 4278190080
+          },
+          {
+            "id": "contact_branch",
+            "type": "dataField",
+            "flex": 1.5,
+            "dataBindingKey": "contact_branch",
+            "fontSize": 7,
+            "textColor": 4278190080
+          },
+          {
+            "id": "credit_label",
+            "type": "text",
+            "fixedWidth": 50,
+            "text": "เครดิต (วัน):",
+            "fontSize": 7,
+            "textColor": 4278190080
+          },
+          {
+            "id": "credit_days",
+            "type": "dataField",
+            "flex": 0.5,
+            "dataBindingKey": "credit_days",
+            "fontSize": 7,
+            "textColor": 4278190080,
+            "textAlign": 2
+          }
+        ],
+        "gap": 4
+      },
+      {
+        "id": "h_row10",
+        "cells": [
+          {
+            "id": "due_label",
+            "type": "text",
+            "fixedWidth": 40,
+            "text": "ครบกำหนด:",
+            "fontSize": 7,
+            "textColor": 4278190080
+          },
+          {
+            "id": "due_date",
+            "type": "dataField",
+            "flex": 1,
+            "dataBindingKey": "due_date",
+            "fontSize": 7,
+            "textColor": 4278190080
+          }
+        ],
+        "gap": 4
+      }
+    ]
+  },
+  "detail": {
+    "id": "detail",
+    "type": "detail",
+    "height": 200,
+    "rows": [
+      {
+        "id": "d_table",
+        "cells": [
+          {
+            "id": "items_table",
+            "type": "table",
+            "flex": 1,
+            "fontSize": 7,
+            "textColor": 4278190080,
+            "borderColor": 4278190080,
+            "borderWidth": 0.5,
+            "rows": 2,
+            "columns": 8,
+            "tableData": [
+              [
+                "ลำดับ",
+                "รหัสสินค้า",
+                "รายการ",
+                "จำนวน",
+                "หน่วย",
+                "ราคา/หน่วย",
+                "ส่วนลด",
+                "จำนวนเงิน"
+              ],
+              [
+                "line_number",
+                "item_code",
+                "item_name",
+                "item_qty",
+                "item_unit",
+                "item_price",
+                "item_discount",
+                "item_amount"
+              ]
+            ],
+            "tableHasHeader": true,
+            "columnAligns": [
+              1,
+              0,
+              0,
+              2,
+              0,
+              2,
+              2,
+              2
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "id": "footer",
+    "type": "footer",
+    "height": 120,
+    "rows": [
+      {
+        "id": "f_total_text",
+        "cells": [
+          {
+            "id": "total_text_label",
+            "type": "text",
+            "fixedWidth": 80,
+            "text": "จำนวนเงิน (ตัวอักษร):",
+            "fontSize": 7,
+            "textColor": 4278190080
+          },
+          {
+            "id": "total_text",
+            "type": "dataField",
+            "flex": 2,
+            "dataBindingKey": "total_text",
+            "fontSize": 7,
+            "fontBold": true,
+            "textColor": 4278190080,
+            "textAlign": 2
+          },
+          {
+            "id": "subtotal_label",
+            "type": "text",
+            "fixedWidth": 50,
+            "text": "รวมเงิน",
+            "fontSize": 7,
+            "textAlign": 2,
+            "textColor": 4278190080
+          },
+          {
+            "id": "subtotal",
+            "type": "dataField",
+            "flex": 1,
+            "dataBindingKey": "subtotal",
+            "fontSize": 7,
+            "textAlign": 2,
+            "textColor": 4278190080
+          }
+        ]
+      },
+      {
+        "id": "f_discount",
+        "cells": [
+          {
+            "id": "spacer_d",
+            "type": "text",
+            "flex": 2,
+            "text": "",
+            "fontSize": 4
+          },
+          {
+            "id": "discount_label",
+            "type": "text",
+            "fixedWidth": 50,
+            "text": "ส่วนลด",
+            "fontSize": 7,
+            "textAlign": 2,
+            "textColor": 4278190080
+          },
+          {
+            "id": "discount_total",
+            "type": "dataField",
+            "flex": 1,
+            "dataBindingKey": "discount_total",
+            "fontSize": 7,
+            "textAlign": 2,
+            "textColor": 4278190080
+          }
+        ],
+        "paddingTop": 1
+      },
+      {
+        "id": "f_before_vat",
+        "cells": [
+          {
+            "id": "spacer_bv",
+            "type": "text",
+            "flex": 2,
+            "text": "",
+            "fontSize": 4
+          },
+          {
+            "id": "bvat_label",
+            "type": "text",
+            "fixedWidth": 70,
+            "text": "ราคาก่อน VAT",
+            "fontSize": 7,
+            "textAlign": 2,
+            "textColor": 4278190080
+          },
+          {
+            "id": "amount_before_vat",
+            "type": "dataField",
+            "flex": 1,
+            "dataBindingKey": "amount_before_vat",
+            "fontSize": 7,
+            "textAlign": 2,
+            "textColor": 4278190080
+          }
+        ],
+        "paddingTop": 1
+      },
+      {
+        "id": "f_vat",
+        "cells": [
+          {
+            "id": "spacer_v",
+            "type": "text",
+            "flex": 2,
+            "text": "",
+            "fontSize": 4
+          },
+          {
+            "id": "vat_label",
+            "type": "text",
+            "fixedWidth": 80,
+            "text": "ภาษีมูลค่าเพิ่ม 7%",
+            "fontSize": 7,
+            "textAlign": 2,
+            "textColor": 4278190080
+          },
+          {
+            "id": "vat_amount",
+            "type": "dataField",
+            "flex": 1,
+            "dataBindingKey": "vat_amount",
+            "fontSize": 7,
+            "textAlign": 2,
+            "textColor": 4278190080
+          }
+        ],
+        "paddingTop": 1
+      },
+      {
+        "id": "f_sep",
+        "cells": [
+          {
+            "id": "sep_total",
+            "type": "separator",
+            "flex": 1,
+            "borderColor": 4278190080,
+            "borderWidth": 0.5,
+            "lineStyle": "solid"
+          }
+        ],
+        "paddingTop": 3
+      },
+      {
+        "id": "f_grand",
+        "cells": [
+          {
+            "id": "spacer_g",
+            "type": "text",
+            "flex": 2,
+            "text": "",
+            "fontSize": 4
+          },
+          {
+            "id": "grand_label",
+            "type": "text",
+            "fixedWidth": 80,
+            "text": "จำนวนเงินทั้งสิ้น",
+            "fontSize": 8,
+            "fontBold": true,
+            "textAlign": 2,
+            "textColor": 4278190080
+          },
+          {
+            "id": "grand_total",
+            "type": "dataField",
+            "flex": 1,
+            "dataBindingKey": "total_amount",
+            "fontSize": 8,
+            "fontBold": true,
+            "textAlign": 2,
+            "textColor": 4278190080
+          }
+        ]
+      },
+      {
+        "id": "f_gap",
+        "cells": [
+          {
+            "id": "spacer_gap",
+            "type": "text",
+            "flex": 1,
+            "text": "",
+            "fontSize": 4
+          }
+        ],
+        "paddingTop": 10
+      },
+      {
+        "id": "f_page",
+        "cells": [
+          {
+            "id": "spacer_p",
+            "type": "text",
+            "flex": 1,
+            "text": "",
+            "fontSize": 4
+          },
+          {
+            "id": "page_num",
+            "type": "pageNumber",
+            "fixedWidth": 60,
+            "text": "Page {page}/{pages}",
+            "fontSize": 7,
+            "textAlign": 2,
+            "textColor": 4288585374
+          }
+        ]
+      },
+      {
+        "id": "f_sign_sep",
+        "cells": [
+          {
+            "id": "sign_sep1",
+            "type": "separator",
+            "flex": 1,
+            "borderColor": 4278190080,
+            "borderWidth": 0.3,
+            "lineStyle": "dotted"
+          },
+          {
+            "id": "sign_sep2",
+            "type": "separator",
+            "flex": 1,
+            "borderColor": 4278190080,
+            "borderWidth": 0.3,
+            "lineStyle": "dotted"
+          },
+          {
+            "id": "sign_sep3",
+            "type": "separator",
+            "flex": 1,
+            "borderColor": 4278190080,
+            "borderWidth": 0.3,
+            "lineStyle": "dotted"
+          }
+        ],
+        "gap": 30,
+        "paddingTop": 3
+      },
+      {
+        "id": "f_sign_label",
+        "cells": [
+          {
+            "id": "sign1",
+            "type": "text",
+            "flex": 1,
+            "text": "ผู้รับเงิน",
+            "fontSize": 7,
+            "textAlign": 1,
+            "textColor": 4278190080
+          },
+          {
+            "id": "sign2",
+            "type": "text",
+            "flex": 1,
+            "text": "ผู้จ่ายเงิน",
+            "fontSize": 7,
+            "textAlign": 1,
+            "textColor": 4278190080
+          },
+          {
+            "id": "sign3",
+            "type": "text",
+            "flex": 1,
+            "text": "ผู้อนุมัติ",
+            "fontSize": 7,
+            "textAlign": 1,
+            "textColor": 4278190080
+          }
+        ],
+        "gap": 30,
+        "paddingTop": 2
+      }
+    ]
+  }
+}

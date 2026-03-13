@@ -9,7 +9,7 @@ class CreateShop extends StatefulWidget {
   State<CreateShop> createState() => _CreateShopState();
 }
 
-class _CreateShopState extends State<CreateShop> {
+class _CreateShopState extends State<CreateShop> with global.ThemeRefreshMixin {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _shopname = TextEditingController();
   final TextEditingController _tel = TextEditingController();

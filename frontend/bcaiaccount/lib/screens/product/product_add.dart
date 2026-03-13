@@ -18,6 +18,7 @@ import 'package:smlaicloud/components/textfield_input.dart';
 import 'package:smlaicloud/model/inventory_model.dart';
 import 'package:smlaicloud/utils/util.dart';
 import 'package:smlaicloud/utils/logger/app_logger.dart';
+import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 
 class ProductAdd extends StatefulWidget {
   final String? guidfixed;
@@ -28,7 +29,7 @@ class ProductAdd extends StatefulWidget {
   State<ProductAdd> createState() => _ProductAddState();
 }
 
-class _ProductAddState extends State<ProductAdd> {
+class _ProductAddState extends State<ProductAdd> with global.ThemeRefreshMixin {
   // ignore: unused_field
   final List<String> _values = [];
   final List<OptionModel> _option = [];
@@ -299,21 +300,42 @@ class _ProductAddState extends State<ProductAdd> {
               ? Text(global.language("product_add"))
               : Text(global.language("product_edit")),
           leading: IconButton(
-            color: Colors.black,
-            icon: const Icon(Icons.arrow_back),
+            color: global.theme.textColor,
+            icon: Icon(Icons.arrow_back),
             onPressed: () {
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(builder: (_) => ProductScreen()),
               );
             },
           ),
-          widgets: <Widget>[],
+          widgets: <Widget>[
+            EditFontSizeControl(
+              onChanged: () => setState(() {}),
+            ),
+          ],
           appBar: AppBar(),
         ),
-        body: LoaderOverlay(
-          overlayColor: Colors.black,
-          child: BackgroundMain(
-            child: (Util.isLandscape(context))
+        body: Builder(
+          builder: (context) {
+            final scaleFactor = global.editFontScaleFactor;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(scaleFactor),
+              ),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12 * scaleFactor,
+                      vertical: 10 * scaleFactor,
+                    ),
+                  ),
+                  iconTheme: IconThemeData(size: 24 * scaleFactor),
+                ),
+                child: LoaderOverlay(
+                  overlayColor: global.theme.textColor,
+                  child: BackgroundMain(
+                    child: (Util.isLandscape(context))
                 ? Row(
                     children: [
                       Expanded(
@@ -337,16 +359,16 @@ class _ProductAddState extends State<ProductAdd> {
                               width: double.infinity,
                               margin: EdgeInsets.all(8.0),
                               child: ElevatedButton.icon(
-                                icon: const Icon(
+                                icon: Icon(
                                   Icons.delete,
-                                  color: Colors.white,
+                                  color: global.theme.onPrimaryColor,
                                   size: 24.0,
                                 ),
                                 label: Text(
                                   global.language('product_delete_data'),
                                 ),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red,
+                                  backgroundColor: global.theme.negativeHighlightTextColor,
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 50,
                                     vertical: 20,
@@ -376,16 +398,16 @@ class _ProductAddState extends State<ProductAdd> {
                                         width: double.infinity,
                                         margin: EdgeInsets.all(8.0),
                                         child: ElevatedButton.icon(
-                                          icon: const Icon(
+                                          icon: Icon(
                                             Icons.delete,
-                                            color: Colors.white,
+                                            color: global.theme.onPrimaryColor,
                                             size: 24.0,
                                           ),
                                           label: Text(
                                             global.language('product_delete'),
                                           ),
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.red,
+                                            backgroundColor: global.theme.negativeHighlightTextColor,
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 50,
                                               vertical: 20,
@@ -418,14 +440,18 @@ class _ProductAddState extends State<ProductAdd> {
                           return (state is InventoryFormSaveFailure)
                               ? Text(
                                   state.message,
-                                  style: const TextStyle(color: Colors.red),
+                                  style: TextStyle(color: global.theme.negativeHighlightTextColor),
                                 )
                               : Container();
                         },
                       ),
                     ],
                   ),
-          ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
@@ -478,8 +504,8 @@ class _ProductAddState extends State<ProductAdd> {
               );
             }
           },
-          backgroundColor: Colors.green,
-          child: const Icon(Icons.save),
+          backgroundColor: global.theme.positiveHighlightTextColor,
+          child: Icon(Icons.save),
         ),
       ),
     );
@@ -630,8 +656,8 @@ class _ProductAddState extends State<ProductAdd> {
                         iconSize: 30.0,
                         icon: Icon(Icons.add_circle_outline),
                         color: _displayNewTextFieldName2 == true
-                            ? Colors.grey
-                            : Colors.blue,
+                            ? global.theme.iconSecondaryColor
+                            : global.theme.infoHighlightTextColor,
                         onPressed: () {
                           _displayNewTextFieldName2 != true
                               ? setState(() {
@@ -681,8 +707,8 @@ class _ProductAddState extends State<ProductAdd> {
                               iconSize: 30.0,
                               icon: Icon(Icons.add_circle_outline),
                               color: _displayNewTextFieldName3 == true
-                                  ? Colors.grey
-                                  : Colors.blue,
+                                  ? global.theme.iconSecondaryColor
+                                  : global.theme.infoHighlightTextColor,
                               onPressed: () {
                                 _displayNewTextFieldName3 != true
                                     ? setState(() {
@@ -698,7 +724,7 @@ class _ProductAddState extends State<ProductAdd> {
                               padding: EdgeInsets.zero,
                               iconSize: 30.0,
                               icon: Icon(Icons.remove_circle_outline),
-                              color: Colors.red,
+                              color: global.theme.negativeHighlightTextColor,
                               onPressed: () {
                                 setState(() {
                                   _name2.clear();
@@ -750,8 +776,8 @@ class _ProductAddState extends State<ProductAdd> {
                               iconSize: 30.0,
                               icon: Icon(Icons.add_circle_outline),
                               color: _displayNewTextFieldName4 == true
-                                  ? Colors.grey
-                                  : Colors.blue,
+                                  ? global.theme.iconSecondaryColor
+                                  : global.theme.infoHighlightTextColor,
                               onPressed: () {
                                 _displayNewTextFieldName4 != true
                                     ? setState(() {
@@ -767,7 +793,7 @@ class _ProductAddState extends State<ProductAdd> {
                               padding: EdgeInsets.zero,
                               iconSize: 30.0,
                               icon: Icon(Icons.remove_circle_outline),
-                              color: Colors.red,
+                              color: global.theme.negativeHighlightTextColor,
                               onPressed: () {
                                 setState(() {
                                   _name3.clear();
@@ -819,8 +845,8 @@ class _ProductAddState extends State<ProductAdd> {
                               iconSize: 30.0,
                               icon: Icon(Icons.add_circle_outline),
                               color: _displayNewTextFieldName5 == true
-                                  ? Colors.grey
-                                  : Colors.blue,
+                                  ? global.theme.iconSecondaryColor
+                                  : global.theme.infoHighlightTextColor,
                               onPressed: () {
                                 _displayNewTextFieldName5 != true
                                     ? setState(() {
@@ -836,7 +862,7 @@ class _ProductAddState extends State<ProductAdd> {
                               padding: EdgeInsets.zero,
                               iconSize: 30.0,
                               icon: Icon(Icons.remove_circle_outline),
-                              color: Colors.red,
+                              color: global.theme.negativeHighlightTextColor,
                               onPressed: () {
                                 setState(() {
                                   _name4.clear();
@@ -884,7 +910,7 @@ class _ProductAddState extends State<ProductAdd> {
                           padding: EdgeInsets.zero,
                           iconSize: 30.0,
                           icon: Icon(Icons.remove_circle_outline),
-                          color: Colors.red,
+                          color: global.theme.negativeHighlightTextColor,
                           onPressed: () {
                             setState(() {
                               _name5.clear();
@@ -926,8 +952,8 @@ class _ProductAddState extends State<ProductAdd> {
                         iconSize: 30.0,
                         icon: Icon(Icons.add_circle_outline),
                         color: _displayNewTextFielddescription2 == true
-                            ? Colors.grey
-                            : Colors.blue,
+                            ? global.theme.iconSecondaryColor
+                            : global.theme.infoHighlightTextColor,
                         onPressed: () {
                           _displayNewTextFielddescription2 != true
                               ? setState(() {
@@ -977,8 +1003,8 @@ class _ProductAddState extends State<ProductAdd> {
                               iconSize: 30.0,
                               icon: Icon(Icons.add_circle_outline),
                               color: _displayNewTextFielddescription3 == true
-                                  ? Colors.grey
-                                  : Colors.blue,
+                                  ? global.theme.iconSecondaryColor
+                                  : global.theme.infoHighlightTextColor,
                               onPressed: () {
                                 _displayNewTextFielddescription3 != true
                                     ? setState(() {
@@ -994,7 +1020,7 @@ class _ProductAddState extends State<ProductAdd> {
                               padding: EdgeInsets.zero,
                               iconSize: 30.0,
                               icon: Icon(Icons.remove_circle_outline),
-                              color: Colors.red,
+                              color: global.theme.negativeHighlightTextColor,
                               onPressed: () {
                                 setState(() {
                                   _description2.clear();
@@ -1046,8 +1072,8 @@ class _ProductAddState extends State<ProductAdd> {
                               iconSize: 30.0,
                               icon: Icon(Icons.add_circle_outline),
                               color: _displayNewTextFielddescription4 == true
-                                  ? Colors.grey
-                                  : Colors.blue,
+                                  ? global.theme.iconSecondaryColor
+                                  : global.theme.infoHighlightTextColor,
                               onPressed: () {
                                 _displayNewTextFielddescription4 != true
                                     ? setState(() {
@@ -1063,7 +1089,7 @@ class _ProductAddState extends State<ProductAdd> {
                               padding: EdgeInsets.zero,
                               iconSize: 30.0,
                               icon: Icon(Icons.remove_circle_outline),
-                              color: Colors.red,
+                              color: global.theme.negativeHighlightTextColor,
                               onPressed: () {
                                 setState(() {
                                   _description3.clear();
@@ -1115,8 +1141,8 @@ class _ProductAddState extends State<ProductAdd> {
                               iconSize: 30.0,
                               icon: Icon(Icons.add_circle_outline),
                               color: _displayNewTextFielddescription5 == true
-                                  ? Colors.grey
-                                  : Colors.blue,
+                                  ? global.theme.iconSecondaryColor
+                                  : global.theme.infoHighlightTextColor,
                               onPressed: () {
                                 _displayNewTextFielddescription5 != true
                                     ? setState(() {
@@ -1132,7 +1158,7 @@ class _ProductAddState extends State<ProductAdd> {
                               padding: EdgeInsets.zero,
                               iconSize: 30.0,
                               icon: Icon(Icons.remove_circle_outline),
-                              color: Colors.red,
+                              color: global.theme.negativeHighlightTextColor,
                               onPressed: () {
                                 setState(() {
                                   _description4.clear();
@@ -1180,7 +1206,7 @@ class _ProductAddState extends State<ProductAdd> {
                           padding: EdgeInsets.zero,
                           iconSize: 30.0,
                           icon: Icon(Icons.remove_circle_outline),
-                          color: Colors.red,
+                          color: global.theme.negativeHighlightTextColor,
                           onPressed: () {
                             setState(() {
                               _description5.clear();
@@ -1312,8 +1338,8 @@ class _ProductAddState extends State<ProductAdd> {
                         iconSize: 30.0,
                         icon: Icon(Icons.add_circle_outline),
                         color: _displayNewUnitCode2 == true
-                            ? Colors.grey
-                            : Colors.blue,
+                            ? global.theme.iconSecondaryColor
+                            : global.theme.infoHighlightTextColor,
                         onPressed: () {
                           _displayNewUnitCode2 != true
                               ? setState(() {
@@ -1363,8 +1389,8 @@ class _ProductAddState extends State<ProductAdd> {
                               iconSize: 30.0,
                               icon: Icon(Icons.add_circle_outline),
                               color: _displayNewUnitCode3 == true
-                                  ? Colors.grey
-                                  : Colors.blue,
+                                  ? global.theme.iconSecondaryColor
+                                  : global.theme.infoHighlightTextColor,
                               onPressed: () {
                                 _displayNewUnitCode3 != true
                                     ? setState(() {
@@ -1380,7 +1406,7 @@ class _ProductAddState extends State<ProductAdd> {
                               padding: EdgeInsets.zero,
                               iconSize: 30.0,
                               icon: Icon(Icons.remove_circle_outline),
-                              color: Colors.red,
+                              color: global.theme.negativeHighlightTextColor,
                               onPressed: () {
                                 setState(() {
                                   _unitname2.clear();
@@ -1432,8 +1458,8 @@ class _ProductAddState extends State<ProductAdd> {
                               iconSize: 30.0,
                               icon: Icon(Icons.add_circle_outline),
                               color: _displayNewUnitCode4 == true
-                                  ? Colors.grey
-                                  : Colors.blue,
+                                  ? global.theme.iconSecondaryColor
+                                  : global.theme.infoHighlightTextColor,
                               onPressed: () {
                                 _displayNewUnitCode4 != true
                                     ? setState(() {
@@ -1449,7 +1475,7 @@ class _ProductAddState extends State<ProductAdd> {
                               padding: EdgeInsets.zero,
                               iconSize: 30.0,
                               icon: Icon(Icons.remove_circle_outline),
-                              color: Colors.red,
+                              color: global.theme.negativeHighlightTextColor,
                               onPressed: () {
                                 setState(() {
                                   _unitname3.clear();
@@ -1501,8 +1527,8 @@ class _ProductAddState extends State<ProductAdd> {
                               iconSize: 30.0,
                               icon: Icon(Icons.add_circle_outline),
                               color: _displayNewUnitCode5 == true
-                                  ? Colors.grey
-                                  : Colors.blue,
+                                  ? global.theme.iconSecondaryColor
+                                  : global.theme.infoHighlightTextColor,
                               onPressed: () {
                                 _displayNewUnitCode5 != true
                                     ? setState(() {
@@ -1518,7 +1544,7 @@ class _ProductAddState extends State<ProductAdd> {
                               padding: EdgeInsets.zero,
                               iconSize: 30.0,
                               icon: Icon(Icons.remove_circle_outline),
-                              color: Colors.red,
+                              color: global.theme.negativeHighlightTextColor,
                               onPressed: () {
                                 setState(() {
                                   _unitname4.clear();
@@ -1566,7 +1592,7 @@ class _ProductAddState extends State<ProductAdd> {
                           padding: EdgeInsets.zero,
                           iconSize: 30.0,
                           icon: Icon(Icons.remove_circle_outline),
-                          color: Colors.red,
+                          color: global.theme.negativeHighlightTextColor,
                           onPressed: () {
                             setState(() {
                               _unitname5.clear();
@@ -1620,7 +1646,7 @@ class _ProductAddState extends State<ProductAdd> {
                       hasAddButton: true,
                       resetTextOnSubmitted: true,
                       // This is set to grey just to illustrate the `textStyle` prop
-                      textStyle: const TextStyle(color: Colors.black),
+                      textStyle: TextStyle(color: global.theme.textColor),
                       onSubmitted: (outstandingValue) {
                         setState(() {
                           _values.add(outstandingValue);
@@ -1654,7 +1680,7 @@ class _ProductAddState extends State<ProductAdd> {
               children: [
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    primary: Color(0xFFF88975),
+                    backgroundColor: global.theme.primaryColor,
                   ),
                   onPressed: () {
                     var _text = 'สินค้าแนะนำ';
@@ -1668,7 +1694,7 @@ class _ProductAddState extends State<ProductAdd> {
                       ),
                     );
                   },
-                  child: const Text('# สินค้าแนะนำ'),
+                  child: Text('# สินค้าแนะนำ'),
                 ),
                 SizedBox(width: 5.0),
                 ElevatedButton(
@@ -1684,7 +1710,7 @@ class _ProductAddState extends State<ProductAdd> {
                       ),
                     );
                   },
-                  child: const Text('# สินค้าขายดี'),
+                  child: Text('# สินค้าขายดี'),
                 ),
               ],
             ),
@@ -1710,7 +1736,7 @@ class _ProductAddState extends State<ProductAdd> {
                 alignment: Alignment.topLeft,
                 child: ElevatedButton(
                   style: TextButton.styleFrom(
-                    textStyle: const TextStyle(fontSize: 20),
+                    textStyle: TextStyle(fontSize: 20),
                   ),
                   onPressed: () {
                     showDialog(
@@ -1748,16 +1774,16 @@ class _ProductAddState extends State<ProductAdd> {
                           Padding(
                             padding: EdgeInsets.all(8.0),
                             child: ElevatedButton.icon(
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.delete,
-                                color: Colors.white,
+                                color: global.theme.onPrimaryColor,
                                 size: 24.0,
                               ),
                               label: Text(
                                 global.language('delete_addon_option'),
                               ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
+                                backgroundColor: global.theme.negativeHighlightTextColor,
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 5,
                                   horizontal: 15,
@@ -1837,9 +1863,9 @@ class _ProductAddState extends State<ProductAdd> {
                         title: Text(_option[index].name1.toString()),
                         subtitle: Text(
                           '${global.language('sub_options')}${_option[index].choices.length}',
-                          style: const TextStyle(color: Colors.black),
+                          style: TextStyle(color: global.theme.textColor),
                         ),
-                        trailing: const Icon(Icons.keyboard_arrow_right_sharp),
+                        trailing: Icon(Icons.keyboard_arrow_right_sharp),
                       ),
                     );
                   },
@@ -1847,7 +1873,7 @@ class _ProductAddState extends State<ProductAdd> {
               : (state is OptionLoadSelectFailure)
               ? Text(
                   global.language('no_data_found'),
-                  style: const TextStyle(fontSize: 24),
+                  style: TextStyle(fontSize: 24),
                 )
               : Container();
         },
@@ -1918,10 +1944,10 @@ class _ProductAddState extends State<ProductAdd> {
                                   alignment: Alignment.topRight,
                                   child: CircleAvatar(
                                     radius: 18.0,
-                                    backgroundColor: Colors.red,
+                                    backgroundColor: global.theme.negativeHighlightTextColor,
                                     child: Icon(
                                       Icons.close,
-                                      color: Colors.white,
+                                      color: global.theme.onPrimaryColor,
                                     ),
                                   ),
                                 ),
@@ -1992,7 +2018,7 @@ class _ProductAddState extends State<ProductAdd> {
       },
       child: Column(
         children: <Widget>[
-          Icon(icon, size: 50.0, color: Colors.blue[300]),
+          Icon(icon, size: 50.0, color: global.theme.infoHighlightTextColor),
           Text(title),
         ],
       ),
@@ -2008,7 +2034,7 @@ class _ProductAddState extends State<ProductAdd> {
         children: [
           Text(
             global.language("select_image"),
-            style: const TextStyle(fontSize: 20.0),
+            style: TextStyle(fontSize: 20.0),
           ),
           SizedBox(height: 20),
           Row(
@@ -2076,10 +2102,10 @@ class CChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Chip(
       labelPadding: const EdgeInsets.only(left: 8.0),
-      label: Text(label, style: TextStyle(color: Colors.black)),
+      label: Text(label, style: TextStyle(color: global.theme.textColor)),
       elevation: 1.0,
       // backgroundColor: Color(0xFFF88975),
-      deleteIcon: const Icon(Icons.cancel, size: 18, color: Colors.black),
+      deleteIcon: Icon(Icons.cancel, size: 18, color: global.theme.textColor),
       onDeleted: () {
         onDeleted(index);
       },

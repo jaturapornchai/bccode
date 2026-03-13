@@ -18,18 +18,18 @@ class VatConfigWidget extends StatelessWidget {
       padding: EdgeInsets.only(left: 10, right: 10),
       child: Container(
         margin: const EdgeInsets.only(top: 10, bottom: 10),
-        padding: const EdgeInsets.all(10),
+        padding: EdgeInsets.all(10),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.blue),
+          border: Border.all(color: global.theme.primaryColor),
           borderRadius: BorderRadius.circular(5),
-          color: Colors.white,
+          color: global.theme.cardColor,
         ),
         child: Column(
           children: [
             // VAT Rate
             Text(
               global.language("vat_rate"),
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),
             TextFormField(
@@ -136,7 +136,7 @@ class VatConfigWidget extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 10),
         Row(
@@ -174,7 +174,7 @@ class VatConfigWidget extends StatelessWidget {
                   Radio(
                     value: 2,
                     groupValue: groupValue,
-                    activeColor: Colors.blue,
+                    activeColor: global.theme.infoHighlightTextColor,
                     onChanged: onChanged,
                   ),
                   Expanded(
@@ -192,7 +192,7 @@ class VatConfigWidget extends StatelessWidget {
                   Radio(
                     value: 3,
                     groupValue: groupValue,
-                    activeColor: Colors.blue,
+                    activeColor: global.theme.infoHighlightTextColor,
                     onChanged: onChanged,
                   ),
                   Expanded(
@@ -219,7 +219,7 @@ class VatConfigWidget extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 10),
         Row(

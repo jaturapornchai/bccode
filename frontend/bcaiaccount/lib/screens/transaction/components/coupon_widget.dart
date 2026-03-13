@@ -20,7 +20,8 @@ class CouponWidget extends StatefulWidget {
   State<CouponWidget> createState() => _CouponWidgetState();
 }
 
-class _CouponWidgetState extends State<CouponWidget> {
+class _CouponWidgetState extends State<CouponWidget>
+    with global.ThemeRefreshMixin {
   // Helper function to get appropriate label for coupon amount field
   String _getCouponAmountLabel(String couponType) {
     switch (couponType) {
@@ -39,13 +40,13 @@ class _CouponWidgetState extends State<CouponWidget> {
   Color _getCouponTypeColor(String couponType) {
     switch (couponType) {
       case "0":
-        return Colors.blue;
+        return global.theme.infoHighlightTextColor;
       case "1":
-        return Colors.orange;
+        return global.theme.warningHighlightTextColor;
       case "2":
-        return Colors.green;
+        return global.theme.positiveHighlightTextColor;
       default:
-        return Colors.grey;
+        return global.theme.iconSecondaryColor;
     }
   }
 
@@ -122,7 +123,7 @@ class _CouponWidgetState extends State<CouponWidget> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: Colors.grey.shade600,
+              color: global.theme.textSecondaryColor,
             ),
           ),
         ),
@@ -132,10 +133,10 @@ class _CouponWidgetState extends State<CouponWidget> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: isAmount ? Colors.red.shade50 : Colors.white,
+              color: isAmount ? global.theme.negativeHighlightColor : global.theme.cardColor,
               borderRadius: BorderRadius.circular(4),
               border: Border.all(
-                color: isAmount ? Colors.red.shade200 : Colors.grey.shade300,
+                color: isAmount ? global.theme.negativeHighlightColor : global.theme.dividerBorderColor,
               ),
             ),
             child: Text(
@@ -143,7 +144,7 @@ class _CouponWidgetState extends State<CouponWidget> {
               style: TextStyle(
                 fontSize: isAmount ? 13 : 12,
                 fontWeight: isAmount ? FontWeight.bold : FontWeight.normal,
-                color: isAmount ? Colors.red.shade700 : Colors.black87,
+                color: isAmount ? global.theme.negativeHighlightTextColor : global.theme.textColor,
               ),
               maxLines: isDescription ? 2 : 1,
               overflow: TextOverflow.ellipsis,
@@ -195,7 +196,7 @@ class _CouponWidgetState extends State<CouponWidget> {
                     children: [
                       Text(
                         coupon.couponno ?? '-',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -212,9 +213,9 @@ class _CouponWidgetState extends State<CouponWidget> {
                         ),
                         child: Text(
                           _getCouponTypeText(coupon.coupontype ?? "0"),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Colors.white,
+                            color: global.theme.onPrimaryColor,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -228,7 +229,7 @@ class _CouponWidgetState extends State<CouponWidget> {
                       coupon.coupondescription!,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey.shade600,
+                        color: global.theme.textSecondaryColor,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -243,16 +244,16 @@ class _CouponWidgetState extends State<CouponWidget> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.green.shade50,
+                color: global.theme.positiveHighlightColor,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green.shade200),
+                border: Border.all(color: global.theme.positiveHighlightColor),
               ),
               child: Text(
                 _formatCouponAmount(coupon),
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
-                  color: Colors.green.shade700,
+                  color: global.theme.positiveHighlightTextColor,
                 ),
               ),
             ),

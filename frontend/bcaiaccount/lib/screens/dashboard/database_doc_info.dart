@@ -12,7 +12,7 @@ class DashBoardDatabaseDocInfo extends StatefulWidget {
       _DashBoardDatabaseDocInfoState();
 }
 
-class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
+class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> with global.ThemeRefreshMixin {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -27,7 +27,7 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
               children: [
                 Text(
                   global.language('daily_data'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
@@ -36,9 +36,9 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
                   children: [
                     // Cart System Icon
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.shopping_cart,
-                        color: Colors.orange,
+                        color: global.theme.warningHighlightTextColor,
                       ),
                       onPressed: () {
                         Navigator.push(
@@ -52,7 +52,7 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
                     ),
                     // AI Chat Assistant Icon
                     IconButton(
-                      icon: const Icon(Icons.chat, color: Colors.blue),
+                      icon: Icon(Icons.chat, color: global.theme.infoHighlightTextColor),
                       onPressed: () {
                         Navigator.pushNamed(context, '/ai-chat');
                       },
@@ -62,7 +62,7 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
                     BlocBuilder<DatabaseInfoCubit, DatabaseInfoState>(
                       builder: (context, state) {
                         return IconButton(
-                          icon: const Icon(Icons.refresh),
+                          icon: Icon(Icons.refresh),
                           onPressed: () {
                             context.read<DatabaseInfoCubit>().refresh();
                           },
@@ -89,7 +89,7 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
                 if (state is DatabaseInfoError) {
                   return Card(
                     child: ListTile(
-                      leading: const Icon(Icons.error, color: Colors.red),
+                      leading: Icon(Icons.error, color: global.theme.negativeHighlightTextColor),
                       title: Text(global.language('error')),
                       subtitle: Text(state.message),
                     ),
@@ -100,7 +100,7 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
                   return SizedBox(
                     width: double.infinity,
                     child: Table(
-                      border: TableBorder.all(color: Colors.grey[300]!),
+                      border: TableBorder.all(color: global.theme.dividerBorderColor),
                       columnWidths: const {
                         0: FlexColumnWidth(0.5),
                         1: FlexColumnWidth(2),
@@ -112,7 +112,7 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
                       children: [
                         // Header Row
                         TableRow(
-                          decoration: BoxDecoration(color: Colors.blue[100]),
+                          decoration: BoxDecoration(color: global.theme.columnHeaderColor),
                           children: [
                             const Padding(
                               padding: EdgeInsets.all(4.0),
@@ -129,7 +129,7 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
                               padding: EdgeInsets.all(4.0),
                               child: Text(
                                 global.language('doc_type'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                 ),
@@ -139,7 +139,7 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
                               padding: EdgeInsets.all(4.0),
                               child: Text(
                                 global.language('quantity'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                 ),
@@ -150,7 +150,7 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
                               padding: EdgeInsets.all(4.0),
                               child: Text(
                                 global.language('latest_number'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                 ),
@@ -161,7 +161,7 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
                               padding: EdgeInsets.all(4.0),
                               child: Text(
                                 global.language('latest_date'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                 ),
@@ -172,7 +172,7 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
                               padding: EdgeInsets.all(4.0),
                               child: Text(
                                 global.language('document_value'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                 ),
@@ -207,8 +207,8 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
                           return TableRow(
                             decoration: BoxDecoration(
                               color: index % 2 == 0
-                                  ? Colors.white
-                                  : Colors.grey[50],
+                                  ? global.theme.columnAlternateEvenColor
+                                  : global.theme.columnAlternateOddColor,
                             ),
                             children: [
                               Padding(
@@ -216,7 +216,7 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
                                 child: Text(
                                   '${index + 1}',
                                   style: TextStyle(
-                                    color: Colors.grey[600],
+                                    color: global.theme.iconSecondaryColor,
                                     fontSize: 11,
                                   ),
                                   textAlign: TextAlign.center,
@@ -226,7 +226,7 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
                                 padding: const EdgeInsets.all(4.0),
                                 child: Text(
                                   "${global.getTransFlagText(transFlag)} ($transFlag)",
-                                  style: const TextStyle(fontSize: 11),
+                                  style: TextStyle(fontSize: 11),
                                 ),
                               ),
                               Padding(
@@ -238,7 +238,7 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.blue[100],
+                                      color: global.theme.columnHeaderColor.withValues(alpha: 0.5),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
@@ -246,7 +246,7 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
                                         item['xcount']?.toDouble() ?? 0.0,
                                       ),
                                       style: TextStyle(
-                                        color: Colors.blue[900],
+                                        color: global.theme.columnHeaderTextColor,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 11,
                                       ),
@@ -258,7 +258,7 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
                                 padding: const EdgeInsets.all(4.0),
                                 child: Text(
                                   lastDocNo ?? '-',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
                                     fontFamily: 'monospace',
                                   ),
@@ -269,7 +269,7 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
                                 padding: const EdgeInsets.all(4.0),
                                 child: Text(
                                   formattedDate,
-                                  style: const TextStyle(fontSize: 11),
+                                  style: TextStyle(fontSize: 11),
                                   textAlign: TextAlign.center,
                                 ),
                               ),
@@ -281,8 +281,8 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
                                     color: totalAmount > 0
-                                        ? Colors.green[700]
-                                        : Colors.grey[600],
+                                        ? (global.isDarkMode() ? global.theme.positiveHighlightTextColor : Colors.green[700])
+                                        : global.theme.textSecondaryColor,
                                   ),
                                   textAlign: TextAlign.right,
                                 ),
@@ -296,7 +296,7 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> {
                 } else {
                   return Card(
                     child: ListTile(
-                      leading: const Icon(Icons.info, color: Colors.blue),
+                      leading: Icon(Icons.info, color: global.theme.infoHighlightTextColor),
                       title: Text(global.language('no_data_available')),
                     ),
                   );

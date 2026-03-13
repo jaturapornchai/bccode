@@ -21,7 +21,7 @@ class ImportProductFromFileScreen extends StatefulWidget {
 
 class _ImportProductFromFileScreenState
     extends State<ImportProductFromFileScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   // Upload state
   bool isUploading = false;
   bool uploadComplete = false;
@@ -247,9 +247,9 @@ class _ImportProductFromFileScreenState
           // แสดง snackbar แทน dialog (ไม่รีเซ็ต animation)
           global.showSnackBar(
             context,
-            Icon(Icons.check_circle, color: Colors.white),
+            Icon(Icons.check_circle, color: global.theme.onPrimaryColor),
             '${global.language("upload_file_success")}: ${uploadResult.fileName}',
-            Colors.green,
+            global.theme.positiveHighlightTextColor,
           );
         }
       }
@@ -317,7 +317,7 @@ class _ImportProductFromFileScreenState
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green[700],
-              foregroundColor: Colors.white,
+              foregroundColor: global.theme.onPrimaryColor,
             ),
             child: Text(global.language('import_product_file_confirm')),
           ),
@@ -412,25 +412,25 @@ class _ImportProductFromFileScreenState
               // Status 3 = มี duplicate barcodes
               global.showSnackBar(
                 context,
-                Icon(Icons.warning, color: Colors.white),
+                Icon(Icons.warning, color: global.theme.onPrimaryColor),
                 '${global.language("found_duplicate_barcode")} ${result.duplicateBarcodes?.length ?? 0} ${global.language("items")}',
-                Colors.orange,
+                global.theme.warningHighlightTextColor,
               );
             } else if (result.status == 2) {
               // Status 2 = สำเร็จปกติ
               global.showSnackBar(
                 context,
-                Icon(Icons.check_circle, color: Colors.white),
+                Icon(Icons.check_circle, color: global.theme.onPrimaryColor),
                 '${global.language("import_data_success")}: ${result.successCount} ${global.language("items")}',
-                Colors.green,
+                global.theme.positiveHighlightTextColor,
               );
             } else {
               // Status อื่นๆ
               global.showSnackBar(
                 context,
-                Icon(Icons.warning, color: Colors.white),
+                Icon(Icons.warning, color: global.theme.onPrimaryColor),
                 result.errorMessage ?? '${global.language("unknown_status")}: ${result.status}',
-                Colors.orange,
+                global.theme.warningHighlightTextColor,
               );
             }
           } else {
@@ -447,9 +447,9 @@ class _ImportProductFromFileScreenState
 
             global.showSnackBar(
               context,
-              Icon(Icons.error, color: Colors.white),
+              Icon(Icons.error, color: global.theme.onPrimaryColor),
               '${global.language("error_occurred")}: $errorMsg',
-              Colors.red,
+              global.theme.negativeHighlightTextColor,
             );
           }
         }
@@ -461,9 +461,9 @@ class _ImportProductFromFileScreenState
         Navigator.pop(context); // Close loading
         global.showSnackBar(
           context,
-          Icon(Icons.error, color: Colors.white),
+          Icon(Icons.error, color: global.theme.onPrimaryColor),
           '${global.language("error_occurred")}: $e',
-          Colors.red,
+          global.theme.negativeHighlightTextColor,
         );
       }
 
@@ -588,8 +588,7 @@ class _ImportProductFromFileScreenState
                       headingRowColor: WidgetStateProperty.all(
                         Colors.orange[50],
                       ),
-                      border: TableBorder.all(
-                        color: Colors.grey[300]!,
+                      border: TableBorder.all(color: global.theme.dividerBorderColor,
                         width: 1,
                       ),
                       columnSpacing: 20,
@@ -611,13 +610,13 @@ class _ImportProductFromFileScreenState
                             global.language(
                               'import_product_file_duplicate_count',
                             ),
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                         DataColumn(
                           label: Text(
                             global.language('import_product_file_row_found'),
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                       ],
@@ -628,13 +627,13 @@ class _ImportProductFromFileScreenState
                         final dup = entry.value;
                         return DataRow(
                           color: WidgetStateProperty.all(
-                            index % 2 == 0 ? Colors.white : Colors.orange[25],
+                            index % 2 == 0 ? global.theme.cardColor : global.theme.warningHighlightColor,
                           ),
                           cells: [
                             DataCell(
                               Text(
                                 '${index + 1}',
-                                style: TextStyle(color: Colors.grey[600]),
+                                style: TextStyle(color: global.theme.iconSecondaryColor),
                               ),
                             ),
                             DataCell(
@@ -649,7 +648,7 @@ class _ImportProductFromFileScreenState
                                   const SizedBox(width: 6),
                                   Text(
                                     dup.barcode,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -663,7 +662,7 @@ class _ImportProductFromFileScreenState
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.orange[100],
+                                  color: global.theme.rowSelectedColor,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
@@ -680,7 +679,7 @@ class _ImportProductFromFileScreenState
                               Text(
                                 dup.rowNumbers.join(', '),
                                 style: TextStyle(
-                                  color: Colors.grey[700],
+                                  color: global.theme.textColor,
                                   fontSize: 13,
                                 ),
                               ),
@@ -696,7 +695,7 @@ class _ImportProductFromFileScreenState
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue[50],
+                  color: global.theme.infoHighlightColor,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -733,7 +732,7 @@ class _ImportProductFromFileScreenState
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 14)),
+          Text(label, style: TextStyle(fontSize: 14)),
           Text(
             value,
             style: TextStyle(
@@ -761,7 +760,7 @@ class _ImportProductFromFileScreenState
     return Scaffold(
       appBar: AppBar(
         title: Text(global.language('import_product_file_title')),
-        backgroundColor: const Color(0xFF0A3880),
+        backgroundColor: global.theme.appBarColor,
         actions: [
           IconButton(
             icon: Icon(Icons.exit_to_app),
@@ -785,8 +784,8 @@ class _ImportProductFromFileScreenState
                 label: Text(global.language('import_product_file_select_file')),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.all(20),
-                  backgroundColor: const Color(0xFF0A3880),
-                  foregroundColor: Colors.white,
+                  backgroundColor: global.theme.appBarColor,
+                  foregroundColor: global.theme.onPrimaryColor,
                 ),
               ),
               const SizedBox(height: 20),
@@ -794,7 +793,7 @@ class _ImportProductFromFileScreenState
 
             // Info Card
             Card(
-              color: Colors.blue[50],
+              color: global.theme.infoHighlightColor,
               child: Padding(
                 padding: EdgeInsets.all(16),
                 child: Column(
@@ -817,7 +816,7 @@ class _ImportProductFromFileScreenState
                     SizedBox(height: 10),
                     Text(
                       global.language('import_product_file_max_size'),
-                      style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                      style: TextStyle(fontSize: 12, color: global.theme.textColor),
                     ),
                   ],
                 ),
@@ -924,13 +923,13 @@ class _ImportProductFromFileScreenState
                             uploadComplete
                                 ? Icons.check_circle
                                 : Icons.cloud_upload,
-                            color: uploadComplete ? Colors.green : Colors.blue,
+                            color: uploadComplete ? global.theme.positiveHighlightTextColor : global.theme.infoHighlightTextColor,
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               selectedFileName ?? 'Uploading...',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -946,7 +945,7 @@ class _ImportProductFromFileScreenState
                           '${global.language('import_product_file_size')}: ${_formatFileSize(fileSize!)}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: global.theme.iconSecondaryColor,
                           ),
                         ),
                       ],
@@ -968,9 +967,9 @@ class _ImportProductFromFileScreenState
                                 child: CircularProgressIndicator(
                                   value: uploadProgress,
                                   strokeWidth: 8,
-                                  backgroundColor: Colors.grey[200],
+                                  backgroundColor: global.theme.dividerBorderColor,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                    uploadComplete ? Colors.green : Colors.blue,
+                                    uploadComplete ? global.theme.positiveHighlightTextColor : global.theme.infoHighlightTextColor,
                                   ),
                                 ),
                               ),
@@ -993,7 +992,7 @@ class _ImportProductFromFileScreenState
                                       child: Icon(
                                         Icons.check_circle,
                                         size: 80,
-                                        color: Colors.green[600],
+                                        color: global.theme.positiveHighlightTextColor,
                                       ),
                                     );
                                   },
@@ -1009,9 +1008,9 @@ class _ImportProductFromFileScreenState
                       LinearProgressIndicator(
                         value: uploadProgress,
                         minHeight: 6,
-                        backgroundColor: Colors.grey[200],
+                        backgroundColor: global.theme.dividerBorderColor,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          uploadComplete ? Colors.green : Colors.blue[700]!,
+                          uploadComplete ? global.theme.positiveHighlightTextColor : Colors.blue[700]!,
                         ),
                       ),
 
@@ -1040,7 +1039,7 @@ class _ImportProductFromFileScreenState
                               'Chunk $uploadedChunks/$totalChunks',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey[600],
+                                color: global.theme.iconSecondaryColor,
                               ),
                             ),
                         ],
@@ -1057,7 +1056,7 @@ class _ImportProductFromFileScreenState
                               global.language('import_product_file_cancel'),
                             ),
                             style: TextButton.styleFrom(
-                              foregroundColor: Colors.red,
+                              foregroundColor: global.theme.negativeHighlightTextColor,
                             ),
                           ),
                         ),
@@ -1079,8 +1078,8 @@ class _ImportProductFromFileScreenState
                               global.language('import_product_file_close'),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.grey[700],
-                              foregroundColor: Colors.white,
+                              backgroundColor: global.theme.textColor,
+                              foregroundColor: global.theme.onPrimaryColor,
                             ),
                           ),
                         ),
@@ -1107,7 +1106,7 @@ class _ImportProductFromFileScreenState
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.all(20),
                       backgroundColor: Colors.green[700],
-                      foregroundColor: Colors.white,
+                      foregroundColor: global.theme.onPrimaryColor,
                     ),
                   ),
                 ],
@@ -1145,7 +1144,7 @@ class _ImportProductFromFileScreenState
                                 : global.language(
                                     'import_product_file_import_result',
                                   ),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -1234,7 +1233,7 @@ class _ImportProductFromFileScreenState
                                   '${global.language("found_duplicate_barcode")} ${importResult!.duplicateBarcodes!.length} ${global.language("items")}',
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.grey[700],
+                                    color: global.theme.textColor,
                                   ),
                                 ),
                                 SizedBox(height: 16),
@@ -1251,7 +1250,7 @@ class _ImportProductFromFileScreenState
                                   style: ElevatedButton.styleFrom(
                                     padding: const EdgeInsets.all(16),
                                     backgroundColor: Colors.orange[700],
-                                    foregroundColor: Colors.white,
+                                    foregroundColor: global.theme.onPrimaryColor,
                                   ),
                                 ),
                               ],
@@ -1277,17 +1276,17 @@ class _ImportProductFromFileScreenState
                         _buildSummaryRow(
                           global.language('import_product_file_new_products'),
                           '${importResult!.comparison!.newProductCount} ${global.language("items")}',
-                          color: Colors.green,
+                          color: global.theme.positiveHighlightTextColor,
                         ),
                         _buildSummaryRow(
                           global.language('import_product_file_updated'),
                           '${importResult!.comparison!.updatedProductCount} ${global.language("items")}',
-                          color: Colors.orange,
+                          color: global.theme.warningHighlightTextColor,
                         ),
                         _buildSummaryRow(
                           global.language('import_product_file_unchanged'),
                           '${importResult!.comparison!.unchangedCount} ${global.language("items")}',
-                          color: Colors.grey,
+                          color: global.theme.iconSecondaryColor,
                         ),
                         const Divider(height: 20),
                       ],
@@ -1295,14 +1294,14 @@ class _ImportProductFromFileScreenState
                       _buildSummaryRow(
                         global.language('import_product_file_success'),
                         '${importResult!.successCount}/${importResult!.totalRows} ${global.language("items")}',
-                        color: Colors.green,
+                        color: global.theme.positiveHighlightTextColor,
                       ),
                       _buildSummaryRow(
                         global.language('import_product_file_error'),
                         '${importResult!.errorCount} ${global.language("items")}',
                         color: importResult!.errorCount > 0
-                            ? Colors.red
-                            : Colors.grey,
+                            ? global.theme.negativeHighlightTextColor
+                            : global.theme.iconSecondaryColor,
                       ),
                     ],
                   ),
@@ -1342,7 +1341,7 @@ class _ImportProductFromFileScreenState
                           '${global.language("total_items")}: ${importResult!.comparison!.products.length} ${global.language("items")}',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey[700],
+                            color: global.theme.textColor,
                           ),
                         ),
                         SizedBox(height: 20),
@@ -1366,7 +1365,7 @@ class _ImportProductFromFileScreenState
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.all(16),
                             backgroundColor: Colors.blue[700],
-                            foregroundColor: Colors.white,
+                            foregroundColor: global.theme.onPrimaryColor,
                           ),
                         ),
                       ],

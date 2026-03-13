@@ -43,7 +43,7 @@ class POResponsiveLayout extends StatefulWidget {
   State<POResponsiveLayout> createState() => _POResponsiveLayoutState();
 }
 
-class _POResponsiveLayoutState extends State<POResponsiveLayout> {
+class _POResponsiveLayoutState extends State<POResponsiveLayout> with global.ThemeRefreshMixin {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -64,7 +64,7 @@ class _POResponsiveLayoutState extends State<POResponsiveLayout> {
               controller: widget.splitViewController,
               gripSize: 8,
               gripColor: global.theme.appBarColor,
-              gripColorActive: Colors.blue,
+              gripColorActive: global.theme.infoHighlightTextColor,
               viewMode: SplitViewMode.Horizontal,
               indicator: const SplitIndicator(viewMode: SplitViewMode.Horizontal),
               activeIndicator: const SplitIndicator(viewMode: SplitViewMode.Horizontal, isActive: true),
@@ -127,7 +127,7 @@ class _POResponsiveLayoutState extends State<POResponsiveLayout> {
               width: 4,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.grey[400],
+                color: global.theme.dividerBorderColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),

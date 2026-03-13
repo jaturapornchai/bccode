@@ -10,7 +10,8 @@ import 'package:smlaicloud/model/profile_model.dart';
 import 'package:smlaicloud/model/shop_model.dart';
 import 'dart:async';
 import 'dart:convert';
-import 'package:smlaicloud/model/theme_model.dart';
+import 'package:smlaicloud/theme/app_theme.dart';
+export 'package:smlaicloud/theme/app_theme.dart';
 import 'package:smlaicloud/model/timezones_model.dart';
 import 'package:smlaicloud/model/transaction_model.dart';
 import 'package:smlaicloud/model/user_login_model.dart';
@@ -28,7 +29,6 @@ import 'package:smlaicloud/model/price_model.dart';
 import 'package:smlaicloud/model/public_color_model.dart';
 import 'package:smlaicloud/model/public_name_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:google_fonts/google_fonts.dart';
 export 'components/numpad.dart';
 import 'package:translator/translator.dart';
 import 'dart:math' as math;
@@ -218,31 +218,19 @@ AppConfigClass myAppConfig = AppConfigClass();
 
 List<int> groupNumber = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 
-ThemeModel theme = ThemeModel();
 List<BankModel> bankTempListDatas = [];
 
-// ================== Display Settings (เก็บในเครื่อง) ==================
-/// การตั้งค่าการแสดงผล - เก็บในเครื่องแต่ละเครื่อง
+/// โหลดโหมดธีมจาก SharedPreferences
+void loadThemeSettings() {
+  displayThemeMode = appConfig.getString('display_theme_mode') ?? 'light';
+}
 
-/// Font Family ที่ใช้ทั้งระบบ
-String displayFontFamily = 'Sarabun';
-
-/// ระดับ Zoom (50% - 300%, default 100%)
-double displayZoomLevel = 100.0;
-
-/// รายการ Font Family ที่รองรับ (10 Popular Thai fonts from Google Fonts)
-List<String> availableFontFamilies = [
-  'Sarabun', // คลาสสิก เป็นทางการ - ยอดนิยมอันดับ 1
-  'Kanit', // เรขาคณิต ทันสมัย
-  'Prompt', // สะอาด โปรเฟสชันแนล
-  'Noto Sans Thai', // มาตรฐาน Unicode
-  'IBM Plex Sans Thai', // เทคโนโลยี
-  'Mitr', // เป็นมิตร อ่านง่าย
-  'K2D', // ทันสมัย มินิมอล
-  'Bai Jamjuree', // สดใส มีชีวิตชีวา
-  'Pridi', // คลาสสิก Serif-like
-  'Sriracha', // ลายมือ สนุกสนาน
-];
+/// บันทึกโหมดธีมลง SharedPreferences
+Future<void> saveThemeSettings() async {
+  await appConfig.setString('display_theme_mode', displayThemeMode);
+  applyThemeMode();
+  displaySettingsNotifier.value++;
+}
 
 /// โหลดการตั้งค่าการแสดงผลจาก SharedPreferences
 Future<void> loadDisplaySettings() async {
@@ -252,11 +240,10 @@ Future<void> loadDisplaySettings() async {
   // ตรวจสอบค่า zoom ให้อยู่ในช่วงที่กำหนด
   if (displayZoomLevel < 50.0) displayZoomLevel = 50.0;
   if (displayZoomLevel > 300.0) displayZoomLevel = 300.0;
-}
 
-/// Notifier สำหรับแจ้งเตือนเมื่อ display settings เปลี่ยน
-/// ใช้เพื่อ rebuild UI ทุกจอเมื่อตั้งค่าเปลี่ยน
-final displaySettingsNotifier = ValueNotifier<int>(0);
+  // โหลดโหมดธีม
+  loadThemeSettings();
+}
 
 /// บันทึกการตั้งค่าการแสดงผลลง SharedPreferences
 Future<void> saveDisplaySettings() async {
@@ -265,60 +252,6 @@ Future<void> saveDisplaySettings() async {
 
   // แจ้งเตือนทุกจอให้ rebuild
   displaySettingsNotifier.value++;
-}
-
-/// คำนวณ font size ตาม zoom level
-double scaledFontSize(double baseSize) {
-  return baseSize * (displayZoomLevel / 100.0);
-}
-
-// ================== PDF Settings (เก็บในเครื่อง) ==================
-/// การตั้งค่าสำหรับพิมพ์ PDF - เก็บในเครื่องแต่ละเครื่อง
-
-/// รายการ Font Family ที่รองรับสำหรับ PDF (fonts ที่มีจริงใน backend)
-/// หมายเหตุ: รายการนี้ต่างจาก availableFontFamilies (สำหรับหน้าจอ) เพราะ PDF ใช้ font files ที่ต่างกัน
-List<String> availablePdfFontFamilies = [
-  'Sarabun', // Google Thai - คลาสสิก (Default)
-  'Kanit', // Google Thai - เรขาคณิต ทันสมัย
-  'Prompt', // Google Thai - สะอาด โปรเฟสชันแนล
-  'Mitr', // Google Thai - เป็นมิตร อ่านง่าย
-  'GoNotoCurrent', // Universal - รองรับทุกภาษา
-  'NotoSansThai', // Noto Thai - ปกติ
-];
-
-/// คำนวณขนาดอื่นๆ ตาม zoom level (เช่น icon size, padding)
-double scaledSize(double baseSize) {
-  return baseSize * (displayZoomLevel / 100.0);
-}
-
-/// ดึง TextTheme จาก Google Fonts ตาม font family ที่เลือก
-/// ใช้สำหรับ ThemeData ใน MaterialApp
-TextTheme getDisplayTextTheme([TextTheme? baseTextTheme]) {
-  final base = baseTextTheme ?? const TextTheme();
-  switch (displayFontFamily) {
-    case 'Sarabun':
-      return GoogleFonts.sarabunTextTheme(base);
-    case 'Kanit':
-      return GoogleFonts.kanitTextTheme(base);
-    case 'Prompt':
-      return GoogleFonts.promptTextTheme(base);
-    case 'Noto Sans Thai':
-      return GoogleFonts.notoSansThaiTextTheme(base);
-    case 'IBM Plex Sans Thai':
-      return GoogleFonts.ibmPlexSansThaiTextTheme(base);
-    case 'Mitr':
-      return GoogleFonts.mitrTextTheme(base);
-    case 'K2D':
-      return GoogleFonts.k2dTextTheme(base);
-    case 'Bai Jamjuree':
-      return GoogleFonts.baiJamjureeTextTheme(base);
-    case 'Pridi':
-      return GoogleFonts.pridiTextTheme(base);
-    case 'Sriracha':
-      return GoogleFonts.srirachaTextTheme(base);
-    default:
-      return GoogleFonts.sarabunTextTheme(base);
-  }
 }
 
 /// รายการโปรโมชั่น
@@ -606,52 +539,6 @@ TimeOfDay getTimeOfDayFromString(String timeString) {
   TimeOfDay time = TimeOfDay(hour: hours, minute: minutes);
 
   return time;
-}
-
-void themeSelect(int mode) {
-  switch (mode) {
-    case 0:
-      theme.primaryColor = colorFromHex("2A6F97");
-      theme.primaryLightColor = colorFromHex("89C2D9");
-      theme.secondaryColor = colorFromHex("FFFFFF");
-
-      theme.backgroundColor = Colors.grey[50]!;
-      theme.appBarColor = colorFromHex("012A4A");
-      theme.headTitleColor = Colors.white;
-      theme.inputTextBoxForceColor = colorFromHex("8A1606");
-      theme.inputTextBoxColor = Colors.black;
-      theme.columnHeaderColor = colorFromHex("89C2D9");
-      theme.columnHeaderTextColor = Colors.black;
-      theme.columnAlternateEvenColor = colorFromHex("F3F7FA");
-      theme.columnAlternateOddColor = Colors.white;
-      theme.buttonIconBackgroundColor = Colors.white;
-      theme.buttonColor = colorFromHex("2A6F97");
-      theme.buttonYesColor = colorFromHex("2A6F97");
-      theme.buttonNoColor = colorFromHex("A9D6E5");
-      theme.toolBarEditModeColor = colorFromHex("2A6F97");
-      break;
-    case 1:
-
-      /// color for dohome
-      theme.primaryColor = colorFromHex("235396");
-      theme.primaryLightColor = colorFromHex("4283C2");
-      theme.secondaryColor = colorFromHex("FFFFFF");
-
-      theme.backgroundColor = Colors.grey[50]!;
-      theme.appBarColor = colorFromHex("012A4A");
-      theme.headTitleColor = Colors.white;
-      theme.inputTextBoxForceColor = colorFromHex("8A1606");
-      theme.inputTextBoxColor = Colors.black;
-      theme.columnHeaderColor = colorFromHex("89C2D9");
-      theme.columnHeaderTextColor = Colors.black;
-      theme.columnAlternateEvenColor = colorFromHex("F3F7FA");
-      theme.columnAlternateOddColor = Colors.white;
-      theme.buttonIconBackgroundColor = Colors.white;
-      theme.buttonColor = colorFromHex("2A6F97");
-      theme.buttonYesColor = colorFromHex("2A6F97");
-      theme.buttonNoColor = colorFromHex("A9D6E5");
-      theme.toolBarEditModeColor = colorFromHex("2A6F97");
-  }
 }
 
 // randomDocNo ถูกลบออกแล้ว - mainapi จะสร้าง docno เองโดยใช้ DocDateLocal จาก frontend
@@ -1177,11 +1064,6 @@ Future<String> readFileFromGithub(String url) async {
   }
 }
 
-Color colorFromHex(String hexColor) {
-  final hexCode = hexColor.replaceAll('#', '');
-  return Color(int.parse('FF$hexCode', radix: 16));
-}
-
 void showSnackBar(BuildContext context, Icon icon, String message, Color color) {
   ScaffoldMessenger.of(context).clearSnackBars();
   ScaffoldMessenger.of(context).showSnackBar(
@@ -1346,6 +1228,41 @@ void listDataFontSizeChange() {
   }
   deviceConfigSaveJson();
 }
+
+/// ลดขนาด font ใน data list 1 px (min 8)
+void listDataFontSizeDecrease() {
+  if (deviceConfig.listDataFontSize > 8) {
+    deviceConfig.listDataFontSize -= 1;
+    deviceConfigSaveJson();
+  }
+}
+
+/// เพิ่มขนาด font ใน data list 1 px (max 24)
+void listDataFontSizeIncrease() {
+  if (deviceConfig.listDataFontSize < 24) {
+    deviceConfig.listDataFontSize += 1;
+    deviceConfigSaveJson();
+  }
+}
+
+/// ลด font scale หน้าจอ edit 5% (min 50%)
+void editFontScaleDecrease() {
+  if (deviceConfig.editFontScale > 50) {
+    deviceConfig.editFontScale -= 5;
+    deviceConfigSaveJson();
+  }
+}
+
+/// เพิ่ม font scale หน้าจอ edit 5% (max 300%)
+void editFontScaleIncrease() {
+  if (deviceConfig.editFontScale < 300) {
+    deviceConfig.editFontScale += 5;
+    deviceConfigSaveJson();
+  }
+}
+
+/// คืนค่า scale factor (เช่น 100 → 1.0, 80 → 0.8)
+double get editFontScaleFactor => deviceConfig.editFontScale / 100;
 
 void listDataLineSpaceChange() {
   // ขนาดช่องว่างข้อมูล
@@ -2841,50 +2758,6 @@ Future<Object> getApiServiceVersion() async {
     return {"status": "error", "code": 500, "message": "${language("error_connecting")}: $e"};
   } finally {
     httpClient.close();
-  }
-}
-
-Future<Object> getApiDataInfo(String functionName, int mode) async {
-  if (kDebugMode) {
-    AppLogger.debug("getApiDataInfo functionName: $functionName, mode: $mode");
-  }
-
-  // ใช้ goApiPost ที่ทำงานได้บน Web แล้ว
-  var url = goApiUrlPath("datainfo");
-
-  var payLoad = {"shopid": getShopId(), "function": functionName, "mode": mode, "timestamp": DateTime.now().millisecondsSinceEpoch};
-
-  if (kDebugMode) {
-    AppLogger.debug("POST URL: $url");
-    AppLogger.debug("Request payload: $payLoad");
-  }
-
-  try {
-    var result = await goApiPost(url, payLoad);
-
-    // ถ้าเป็น Map และมี status error ให้ return เลย
-    if (result is Map && result['status'] == 'error') {
-      return result;
-    }
-
-    // ถ้าเป็น Map และมี htmlContent หรือ data
-    if (result is Map) {
-      if (result.containsKey('htmlContent')) {
-        return result['htmlContent'].toString();
-      } else if (result.containsKey('data')) {
-        return result['data'].toString();
-      }
-      // ถ้าไม่มีทั้ง 2 ให้ return ทั้ง Map
-      return jsonEncode(result);
-    }
-
-    // ถ้าเป็น String ให้ return ตรงๆ
-    return result.toString();
-  } catch (e) {
-    if (kDebugMode) {
-      AppLogger.error("Exception: $e");
-    }
-    return {"status": "error", "code": 500, "message": "${language("error_connecting")}: $e"};
   }
 }
 

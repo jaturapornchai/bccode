@@ -82,8 +82,8 @@ class _SimpleAttachmentButtonState extends State<SimpleAttachmentButton> {
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.color ?? Colors.white.withValues(alpha: 0.9);
-    final hoverColor = widget.color ?? Colors.white;
+    final color = widget.color ?? global.theme.onPrimaryColor.withValues(alpha: 0.9);
+    final hoverColor = widget.color ?? global.theme.onPrimaryColor;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -155,7 +155,7 @@ class _SimpleAttachmentButtonState extends State<SimpleAttachmentButton> {
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.blue.shade500,
+                color: global.theme.infoHighlightTextColor,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
@@ -168,8 +168,8 @@ class _SimpleAttachmentButtonState extends State<SimpleAttachmentButton> {
               constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
               child: Text(
                 _attachmentCount > 99 ? '99+' : _attachmentCount.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: global.theme.onPrimaryColor,
                   fontSize: 9,
                   fontWeight: FontWeight.bold,
                   height: 1,

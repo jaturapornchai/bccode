@@ -27,7 +27,8 @@ class PayAdvancePaymentWidget extends StatefulWidget {
       _PayAdvancePaymentWidgetState();
 }
 
-class _PayAdvancePaymentWidgetState extends State<PayAdvancePaymentWidget> {
+class _PayAdvancePaymentWidgetState extends State<PayAdvancePaymentWidget>
+    with global.ThemeRefreshMixin {
   late List<AdvancePaymentDocModel> _advancePaymentDocs;
   double _sumAdvancePayment = 0.0;
   Timer? _debounceTimer;
@@ -349,9 +350,9 @@ class _PayAdvancePaymentWidgetState extends State<PayAdvancePaymentWidget> {
                       label: Text(global.language('add')),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: (widget.inquirytype != 0)
-                            ? Colors.green[600]
-                            : Colors.grey[400],
-                        foregroundColor: Colors.white,
+                            ? global.theme.positiveHighlightTextColor
+                            : global.theme.iconSecondaryColor,
+                        foregroundColor: global.theme.onPrimaryColor,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 8,
@@ -396,9 +397,9 @@ class _PayAdvancePaymentWidgetState extends State<PayAdvancePaymentWidget> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: global.theme.dividerBorderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -408,7 +409,7 @@ class _PayAdvancePaymentWidgetState extends State<PayAdvancePaymentWidget> {
             children: [
               Text(
                 '${global.language('advance_payment')} #${index + 1}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -418,7 +419,7 @@ class _PayAdvancePaymentWidgetState extends State<PayAdvancePaymentWidget> {
                 cursor: SystemMouseCursors.click,
                 child: GestureDetector(
                   onTap: () => _removeAdvancePaymentDoc(index),
-                  child: Icon(Icons.close, size: 20, color: Colors.grey[600]),
+                  child: Icon(Icons.close, size: 20, color: global.theme.iconSecondaryColor),
                 ),
               ),
             ],
@@ -452,7 +453,7 @@ class _PayAdvancePaymentWidgetState extends State<PayAdvancePaymentWidget> {
                           ),
                         ),
                       ),
-                      Icon(Icons.edit, size: 16, color: Colors.green[600]),
+                      Icon(Icons.edit, size: 16, color: global.theme.positiveHighlightTextColor),
                     ],
                   ),
                 ),
@@ -470,9 +471,9 @@ class _PayAdvancePaymentWidgetState extends State<PayAdvancePaymentWidget> {
                     horizontal: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: global.theme.surfaceColor,
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.grey[300]!),
+                    border: Border.all(color: global.theme.dividerBorderColor),
                   ),
                   child: Row(
                     children: [
@@ -481,11 +482,11 @@ class _PayAdvancePaymentWidgetState extends State<PayAdvancePaymentWidget> {
                           global.language('tap_to_select_document'),
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey[600],
+                            color: global.theme.textSecondaryColor,
                           ),
                         ),
                       ),
-                      Icon(Icons.search, size: 16, color: Colors.grey[600]),
+                      Icon(Icons.search, size: 16, color: global.theme.iconSecondaryColor),
                     ],
                   ),
                 ),
@@ -504,7 +505,7 @@ class _PayAdvancePaymentWidgetState extends State<PayAdvancePaymentWidget> {
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.blue[50],
+                    color: global.theme.infoHighlightColor,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.blue[200]!),
                   ),
@@ -528,15 +529,15 @@ class _PayAdvancePaymentWidgetState extends State<PayAdvancePaymentWidget> {
                             '${global.language("advance_payment_amount")}:',
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.grey[700],
+                              color: global.theme.textColor,
                             ),
                           ),
                           Text(
                             _formatAmount(advancePaymentDoc.totalamount),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: Colors.black, // เปลี่ยนเป็นสีดำ
+                              color: global.theme.textColor, // เปลี่ยนเป็นสีดำ
                             ),
                           ),
                         ],
@@ -550,7 +551,7 @@ class _PayAdvancePaymentWidgetState extends State<PayAdvancePaymentWidget> {
                             '${global.language("remaining_balance")}:',
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.grey[700],
+                              color: global.theme.textColor,
                             ),
                           ),
                           Text(
@@ -580,12 +581,12 @@ class _PayAdvancePaymentWidgetState extends State<PayAdvancePaymentWidget> {
                   decoration: BoxDecoration(
                     color: _errorStates[index] == true
                         ? Colors.red[50]
-                        : Colors.grey[50],
+                        : global.theme.surfaceColor,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: _errorStates[index] == true
                           ? Colors.red[200]!
-                          : Colors.grey[300]!,
+                          : global.theme.dividerBorderColor,
                     ),
                   ),
                   child: Column(
@@ -598,7 +599,7 @@ class _PayAdvancePaymentWidgetState extends State<PayAdvancePaymentWidget> {
                           fontWeight: FontWeight.w500,
                           color: _errorStates[index] == true
                               ? Colors.red[800]
-                              : Colors.grey[700],
+                              : global.theme.textColor,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -622,18 +623,18 @@ class _PayAdvancePaymentWidgetState extends State<PayAdvancePaymentWidget> {
                         ),
                         decoration: InputDecoration(
                           hintText: '0.00',
-                          hintStyle: TextStyle(color: Colors.grey[400]),
+                          hintStyle: TextStyle(color: global.theme.formHintColor),
                           suffixText: global.language("baht"),
                           suffixStyle: TextStyle(
-                            color: Colors.grey[600],
+                            color: global.theme.textSecondaryColor,
                             fontWeight: FontWeight.w500,
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
                               color: _errorStates[index] == true
-                                  ? Colors.red[400]!
-                                  : Colors.grey[300]!,
+                                  ? global.theme.negativeHighlightTextColor
+                                  : global.theme.dividerBorderColor,
                               width: _errorStates[index] == true ? 2 : 1,
                             ),
                           ),
@@ -641,8 +642,8 @@ class _PayAdvancePaymentWidgetState extends State<PayAdvancePaymentWidget> {
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
                               color: _errorStates[index] == true
-                                  ? Colors.red[400]!
-                                  : Colors.grey[300]!,
+                                  ? global.theme.negativeHighlightTextColor
+                                  : global.theme.dividerBorderColor,
                               width: _errorStates[index] == true ? 2 : 1,
                             ),
                           ),
@@ -650,7 +651,7 @@ class _PayAdvancePaymentWidgetState extends State<PayAdvancePaymentWidget> {
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
                               color: _errorStates[index] == true
-                                  ? Colors.red[400]!
+                                  ? global.theme.negativeHighlightTextColor
                                   : Colors.purple[400]!,
                               width: 2,
                             ),
@@ -662,7 +663,7 @@ class _PayAdvancePaymentWidgetState extends State<PayAdvancePaymentWidget> {
                           filled: true,
                           fillColor: _errorStates[index] == true
                               ? Colors.red[50]
-                              : Colors.white,
+                              : global.theme.onPrimaryColor,
                         ),
                         onChanged: (value) {
                           // ยกเลิก timer เก่า (ถ้ามี)
@@ -699,7 +700,7 @@ class _PayAdvancePaymentWidgetState extends State<PayAdvancePaymentWidget> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Colors.grey[700],
+                  color: global.theme.textColor,
                 ),
               ),
               SizedBox(height: 8),
@@ -712,18 +713,18 @@ class _PayAdvancePaymentWidgetState extends State<PayAdvancePaymentWidget> {
                   hintText: global.language('add_remark'),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
+                    borderSide: BorderSide(color: global.theme.dividerBorderColor),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.green[400]!, width: 2),
+                    borderSide: BorderSide(color: global.theme.positiveHighlightTextColor, width: 2),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 12,
                   ),
                   filled: true,
-                  fillColor: Colors.grey[50],
+                  fillColor: global.theme.formFillColor,
                 ),
                 onChanged: (value) {
                   _updateAdvancePaymentDoc(

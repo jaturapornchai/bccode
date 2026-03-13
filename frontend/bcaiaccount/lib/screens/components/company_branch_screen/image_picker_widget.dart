@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:smlaicloud/global.dart' as global;
 
 class ImagePickerWidget extends StatelessWidget {
   final String title;
@@ -31,7 +32,7 @@ class ImagePickerWidget extends StatelessWidget {
         Center(
           child: Text(
             title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
         GridView.builder(
@@ -56,7 +57,7 @@ class ImagePickerWidget extends StatelessWidget {
                             imageFiles[index] = File('');
                             imageWeb[index] = Uint8List(0);
                           },
-                          icon: const Icon(Icons.delete),
+                          icon: Icon(Icons.delete),
                         ),
                       ),
                       const SizedBox(width: 5),
@@ -76,7 +77,7 @@ class ImagePickerWidget extends StatelessWidget {
                               onUpload();
                             }
                           },
-                          icon: const Icon(Icons.folder),
+                          icon: Icon(Icons.folder),
                         ),
                       ),
                       const SizedBox(width: 5),
@@ -98,18 +99,18 @@ class ImagePickerWidget extends StatelessWidget {
                                 onUpload();
                               }
                             },
-                            icon: const Icon(Icons.camera_alt),
+                            icon: Icon(Icons.camera_alt),
                           ),
                         ),
                     ],
                   ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.all(10.0),
+                    padding: EdgeInsets.all(10.0),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: Colors.black),
+                        color: global.theme.cardColor,
+                        border: Border.all(color: global.theme.textColor),
                         borderRadius: BorderRadius.circular(5),
                         image: (imageFiles[index].path != '')
                             ? DecorationImage(

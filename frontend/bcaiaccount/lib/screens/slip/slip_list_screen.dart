@@ -38,7 +38,8 @@ class _SlipListContent extends StatefulWidget {
   State<_SlipListContent> createState() => _SlipListContentState();
 }
 
-class _SlipListContentState extends State<_SlipListContent> {
+class _SlipListContentState extends State<_SlipListContent>
+    with global.ThemeRefreshMixin {
   final ImagePicker _imagePicker = ImagePicker();
 
   DateTime _fromDate = DateTime.now().subtract(const Duration(days: 30));
@@ -55,8 +56,8 @@ class _SlipListContentState extends State<_SlipListContent> {
   final Set<String> _deletingFilenames = {};
 
   // สีหลัก
-  static const Color _primaryColor = Color(0xFF667eea);
-  static const Color _accentColor = Color(0xFF764ba2);
+  static Color get _primaryColor => global.theme.primaryColor;
+  static Color get _accentColor => global.theme.primaryLightColor;
 
   @override
   void initState() {
@@ -220,7 +221,7 @@ class _SlipListContentState extends State<_SlipListContent> {
                 label: Text(global.language("close")),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
+                  foregroundColor: global.theme.onPrimaryColor,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
@@ -267,7 +268,7 @@ class _SlipListContentState extends State<_SlipListContent> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: global.theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -330,7 +331,7 @@ class _SlipListContentState extends State<_SlipListContent> {
               '$label:',
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey.shade600,
+                color: global.theme.textSecondaryColor,
               ),
             ),
           ),
@@ -340,7 +341,7 @@ class _SlipListContentState extends State<_SlipListContent> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-                color: isBold ? _primaryColor : Colors.black87,
+                color: isBold ? _primaryColor : global.theme.textColor,
               ),
             ),
           ),
@@ -369,7 +370,7 @@ class _SlipListContentState extends State<_SlipListContent> {
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
           return Container(
-            color: Colors.grey.shade200,
+            color: global.theme.dividerBorderColor,
             child: Center(
               child: CircularProgressIndicator(
                 strokeWidth: 2,
@@ -420,10 +421,10 @@ class _SlipListContentState extends State<_SlipListContent> {
   /// สร้าง placeholder สำหรับกรณี error
   Widget _buildErrorPlaceholder() {
     return Container(
-      color: Colors.grey.shade200,
-      child: const Icon(
+      color: global.theme.dividerBorderColor,
+      child: Icon(
         Icons.broken_image,
-        color: Colors.grey,
+        color: global.theme.textSecondaryColor,
         size: 32,
       ),
     );
@@ -552,7 +553,7 @@ class _SlipListContentState extends State<_SlipListContent> {
             child: Text(
               '$label:',
               style: TextStyle(
-                color: Colors.grey.shade600,
+                color: global.theme.textSecondaryColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -560,7 +561,7 @@ class _SlipListContentState extends State<_SlipListContent> {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: TextStyle(fontWeight: FontWeight.w600, color: global.theme.textColor),
             ),
           ),
         ],
@@ -599,7 +600,7 @@ class _SlipListContentState extends State<_SlipListContent> {
     if (image.verifyStatus == 'not_found' || image.verifyStatus == 'error') {
       return Colors.red;
     }
-    return Colors.grey;
+    return global.theme.iconSecondaryColor;
   }
 
   @override
@@ -649,7 +650,7 @@ class _SlipListContentState extends State<_SlipListContent> {
           appBar: AppBar(
             title: Text(widget.slipType.displayName),
             flexibleSpace: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [_primaryColor, _accentColor],
                   begin: Alignment.topLeft,
@@ -657,7 +658,7 @@ class _SlipListContentState extends State<_SlipListContent> {
                 ),
               ),
             ),
-            foregroundColor: Colors.white,
+            foregroundColor: global.theme.onPrimaryColor,
           ),
           body: Column(
             children: [
@@ -673,13 +674,13 @@ class _SlipListContentState extends State<_SlipListContent> {
           floatingActionButton: FloatingActionButton.extended(
             onPressed: state is SlipImageUploading ? null : _pickAndUploadImage,
             backgroundColor: _primaryColor,
-            foregroundColor: Colors.white,
+            foregroundColor: global.theme.onPrimaryColor,
             icon: state is SlipImageUploading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                      color: Colors.white,
+                      color: global.theme.onPrimaryColor,
                       strokeWidth: 2,
                     ),
                   )
@@ -695,7 +696,7 @@ class _SlipListContentState extends State<_SlipListContent> {
   Widget _buildDateRangeFilter() {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: Colors.grey.shade50,
+      color: global.theme.surfaceColor,
       child: Row(
         children: [
           // จากวันที่
@@ -733,7 +734,7 @@ class _SlipListContentState extends State<_SlipListContent> {
           // ปุ่มค้นหา
           Container(
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 colors: [_primaryColor, _accentColor],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -742,7 +743,7 @@ class _SlipListContentState extends State<_SlipListContent> {
             ),
             child: IconButton(
               onPressed: _loadImages,
-              icon: Icon(Icons.search, color: Colors.white),
+              icon: Icon(Icons.search, color: global.theme.onPrimaryColor),
               tooltip: global.language("search"),
             ),
           ),
@@ -788,14 +789,14 @@ class _SlipListContentState extends State<_SlipListContent> {
             children: [
               Icon(Icons.image_not_supported,
                 size: 64,
-                color: Colors.grey.shade400,
+                color: global.theme.iconSecondaryColor,
               ),
               SizedBox(height: 16),
               Text(
                 global.language("no_slip_images_found"),
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey.shade600,
+                  color: global.theme.textSecondaryColor,
                 ),
               ),
               SizedBox(height: 8),
@@ -803,7 +804,7 @@ class _SlipListContentState extends State<_SlipListContent> {
                 global.language("press_add_slip_to_add_image"),
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey.shade500,
+                  color: global.theme.iconSecondaryColor,
                 ),
               ),
             ],
@@ -868,7 +869,7 @@ class _SlipListContentState extends State<_SlipListContent> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
+                    color: global.theme.cardColor,
                     borderRadius: const BorderRadius.vertical(
                       bottom: Radius.circular(12),
                     ),
@@ -885,7 +886,7 @@ class _SlipListContentState extends State<_SlipListContent> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 10,
-                          color: isPending ? _primaryColor : Colors.grey.shade700,
+                          color: isPending ? _primaryColor : global.theme.textColor,
                           fontWeight: isPending ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
@@ -911,16 +912,16 @@ class _SlipListContentState extends State<_SlipListContent> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const CircularProgressIndicator(
-                        color: Colors.white,
+                      CircularProgressIndicator(
+                        color: global.theme.onPrimaryColor,
                         strokeWidth: 3,
                       ),
                       if (isVerifying) ...[
                         SizedBox(height: 8),
                         Text(
                           global.language("verifying"),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: global.theme.onPrimaryColor,
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                           ),
@@ -942,11 +943,11 @@ class _SlipListContentState extends State<_SlipListContent> {
                 child: InkWell(
                   onTap: () => _confirmDelete(image),
                   borderRadius: BorderRadius.circular(16),
-                  child: const Padding(
-                    padding: EdgeInsets.all(4),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
                     child: Icon(
                       Icons.close,
-                      color: Colors.white,
+                      color: global.theme.onPrimaryColor,
                       size: 16,
                     ),
                   ),
@@ -973,7 +974,7 @@ class _SlipListContentState extends State<_SlipListContent> {
                           : (image.verifyStatus == 'success' || image.verified == true)
                               ? Icons.check_circle
                               : Icons.cancel,
-                      color: Colors.white,
+                      color: global.theme.onPrimaryColor,
                       size: 12,
                     ),
                     SizedBox(width: 2),
@@ -983,8 +984,8 @@ class _SlipListContentState extends State<_SlipListContent> {
                           : (image.verifyStatus == 'success' || image.verified == true)
                               ? global.language("passed")
                               : global.language("failed"),
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: global.theme.onPrimaryColor,
                         fontSize: 9,
                         fontWeight: FontWeight.bold,
                       ),

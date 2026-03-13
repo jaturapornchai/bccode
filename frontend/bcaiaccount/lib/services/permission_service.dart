@@ -20,9 +20,6 @@ class PermissionService {
 
   // Cache
   UserEffectivePermissionModel? _cachedPermissions;
-  List<PermissionDefinitionModel>? _cachedDefinitions;
-  DateTime? _lastRefresh;
-
   // Timer สำหรับ refresh อัตโนมัติ
   Timer? _refreshTimer;
 
@@ -442,8 +439,6 @@ class PermissionService {
         permissions: combinedPermissions,
       );
 
-      _lastRefresh = DateTime.now();
-
       if (kDebugMode) {
         AppLogger.debug('✅ PermissionService: Loaded permissions for $employeeCode');
         AppLogger.debug('   Branches: ${combinedPermissions.keys.toList()}');
@@ -525,8 +520,6 @@ class PermissionService {
   /// Clear cache
   void clearCache() {
     _cachedPermissions = null;
-    _cachedDefinitions = null;
-    _lastRefresh = null;
   }
 
   /// Dispose

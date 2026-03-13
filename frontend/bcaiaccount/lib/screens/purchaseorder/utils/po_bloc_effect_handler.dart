@@ -254,9 +254,9 @@ class POBlocEffectHandler {
   /// จัดการ state จาก ExportCsvBloc
   void handleExportCsvState(BuildContext context, ExportCsvState state) {
     if (state is SaleInvoiceExportSuccess) {
-      global.showSnackBar(context, Icon(Icons.save, color: Colors.white), global.language("export_success"), Colors.blue);
+      global.showSnackBar(context, Icon(Icons.save, color: global.theme.onPrimaryColor), global.language("export_success"), global.theme.infoHighlightTextColor);
     } else if (state is SaleInvoiceExportFailed) {
-      global.showSnackBar(context, Icon(Icons.save, color: Colors.white), "${global.language("not_export_success")} : ${state.message}", Colors.red);
+      global.showSnackBar(context, Icon(Icons.save, color: global.theme.onPrimaryColor), "${global.language("not_export_success")} : ${state.message}", global.theme.negativeHighlightTextColor);
     }
   }
 }

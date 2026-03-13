@@ -14,7 +14,8 @@ class ImportProductImageScreen extends StatefulWidget {
       ImportProductImageScreenState();
 }
 
-class ImportProductImageScreenState extends State<ImportProductImageScreen> {
+class ImportProductImageScreenState extends State<ImportProductImageScreen>
+    with global.ThemeRefreshMixin {
   final ImagePicker imagePicker = ImagePicker();
   List<ImportImageModel> imageUpload = [];
   String selectedStatus = '';
@@ -189,7 +190,7 @@ class ImportProductImageScreenState extends State<ImportProductImageScreen> {
                     onPressed: () {
                       pickImages();
                     },
-                    icon: const Icon(Icons.add),
+                    icon: Icon(Icons.add),
                   ),
                   IconButton(
                     tooltip: global.language("upload_image"),
@@ -197,7 +198,7 @@ class ImportProductImageScreenState extends State<ImportProductImageScreen> {
                       /// funtion upload image
                       uploadImage();
                     },
-                    icon: const Icon(Icons.upload),
+                    icon: Icon(Icons.upload),
                   ),
                 ],
               ),
@@ -242,7 +243,7 @@ class ImportProductImageScreenState extends State<ImportProductImageScreen> {
                                     ),
                                     child: Text(
                                       'Total: ${imageUpload.length}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -255,25 +256,25 @@ class ImportProductImageScreenState extends State<ImportProductImageScreen> {
                               _buildStatusIndicator(
                                 'Waiting',
                                 Icons.hourglass_empty,
-                                Colors.grey,
+                                global.theme.iconSecondaryColor,
                                 'wait',
                               ),
                               _buildStatusIndicator(
                                 'Uploading',
                                 Icons.cloud_upload,
-                                Colors.blue,
+                                global.theme.infoHighlightTextColor,
                                 'uploading',
                               ),
                               _buildStatusIndicator(
                                 'Success',
                                 Icons.check_circle,
-                                Colors.green,
+                                global.theme.positiveHighlightTextColor,
                                 'success',
                               ),
                               _buildStatusIndicator(
                                 'Error',
                                 Icons.error,
-                                Colors.red,
+                                global.theme.negativeHighlightTextColor,
                                 'error',
                               ),
                             ],
@@ -310,7 +311,7 @@ class ImportProductImageScreenState extends State<ImportProductImageScreen> {
                             return Container(
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(10),
-                                color: Colors.grey[300],
+                                color: global.theme.dividerBorderColor,
                                 border: Border.all(
                                   color:
                                       item.status == 'wait' ||
@@ -347,10 +348,10 @@ class ImportProductImageScreenState extends State<ImportProductImageScreen> {
                                               : Icons
                                                     .info, // Default icon for other statuses
                                           color: item.status == 'error'
-                                              ? Colors.red
+                                              ? global.theme.negativeHighlightTextColor
                                               : item.status == 'success'
-                                              ? Colors.green
-                                              : Colors.black,
+                                              ? global.theme.positiveHighlightTextColor
+                                              : global.theme.textColor,
                                         ),
                                         const SizedBox(width: 5),
                                         // Your Text widget
@@ -361,18 +362,18 @@ class ImportProductImageScreenState extends State<ImportProductImageScreen> {
                                               fontSize: 18,
                                               fontWeight: FontWeight.bold,
                                               color: (item.status == 'error')
-                                                  ? Colors.red
+                                                  ? global.theme.negativeHighlightTextColor
                                                   : (item.status == 'success')
-                                                  ? Colors.green
-                                                  : Colors.black,
+                                                  ? global.theme.positiveHighlightTextColor
+                                                  : global.theme.textColor,
                                             ),
                                           ),
                                         ),
 
                                         IconButton(
-                                          icon: const Icon(
+                                          icon: Icon(
                                             Icons.delete,
-                                            color: Colors.red,
+                                            color: global.theme.negativeHighlightTextColor,
                                           ),
                                           onPressed: () {
                                             setState(() {
@@ -387,8 +388,8 @@ class ImportProductImageScreenState extends State<ImportProductImageScreen> {
                                     (item.status == 'error')
                                         ? Text(
                                             "Error: ${global.language("file_name_barcode_not_found")}",
-                                            style: const TextStyle(
-                                              color: Colors.red,
+                                            style: TextStyle(
+                                              color: global.theme.negativeHighlightTextColor,
                                             ),
                                           )
                                         : Container(),
@@ -425,15 +426,15 @@ class ImportProductImageScreenState extends State<ImportProductImageScreen> {
                   children: [
                     IconButton(
                       iconSize: 150,
-                      color: Colors.grey,
-                      icon: const Icon(Icons.add_photo_alternate),
+                      color: global.theme.textSecondaryColor,
+                      icon: Icon(Icons.add_photo_alternate),
                       onPressed: () {
                         pickImages();
                       },
                     ),
                     Text(
                       global.language('import_product_image_file_only_jpg_png'),
-                      style: const TextStyle(fontSize: 20, color: Colors.grey),
+                      style: TextStyle(fontSize: 20, color: global.theme.textSecondaryColor),
                     ),
                   ],
                 ),

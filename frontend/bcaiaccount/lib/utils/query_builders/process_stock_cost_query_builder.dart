@@ -169,11 +169,6 @@ class ProcessStockCostQueryBuilder {
     return date.toUtc().toIso8601String();
   }
 
-  /// Escape string สำหรับป้องกัน SQL injection
-  static String _escapeString(String value) {
-    return value.replaceAll("'", "''");
-  }
-
   /// สร้าง query สำหรับตรวจสอบข้อมูลที่มีอยู่
   static String buildDataCheckQuery({
     required DateTime fromDate,

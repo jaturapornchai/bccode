@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/date_picker.dart';
+import 'package:smlaicloud/global.dart' as global;
 
 /// DatePickerWidget - ส่วนประกอบสำหรับเลือกวันที่ที่ใช้ได้ทั่วไปในระบบ
 /// รองรับการแสดงปี พ.ศ. และมี UI ที่สอดคล้องกับ _buildOptionalField และ _buildRequiredField
@@ -26,7 +27,7 @@ class DatePickerWidget extends StatefulWidget {
   State<DatePickerWidget> createState() => _DatePickerWidgetState();
 }
 
-class _DatePickerWidgetState extends State<DatePickerWidget> {
+class _DatePickerWidgetState extends State<DatePickerWidget> with global.ThemeRefreshMixin {
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -40,14 +41,14 @@ class _DatePickerWidgetState extends State<DatePickerWidget> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: widget.hasError ? Colors.red[700] : Colors.grey[700],
+                color: widget.hasError ? global.theme.negativeHighlightTextColor : global.theme.textColor,
               ),
             ),
             if (widget.isRequired)
               Text(
                 ' *',
                 style: TextStyle(
-                  color: Colors.red[600],
+                  color: global.theme.negativeHighlightTextColor,
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
@@ -73,28 +74,28 @@ class _DatePickerWidgetState extends State<DatePickerWidget> {
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(
-                color: widget.hasError ? Colors.red[400]! : Colors.grey[300]!,
+                color: widget.hasError ? global.theme.negativeHighlightTextColor : global.theme.dividerBorderColor,
                 width: widget.hasError ? 1.5 : 1,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(
-                color: widget.hasError ? Colors.red[400]! : Colors.grey[300]!,
+                color: widget.hasError ? global.theme.negativeHighlightTextColor : global.theme.dividerBorderColor,
                 width: widget.hasError ? 1.5 : 1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(
-                color: widget.hasError ? Colors.red[400]! : Colors.grey[300]!,
+                color: widget.hasError ? global.theme.negativeHighlightTextColor : global.theme.dividerBorderColor,
                 width: widget.hasError ? 1.5 : 1,
               ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(
-                color: Colors.red[400]!,
+                color: global.theme.negativeHighlightTextColor,
                 width: 1.5,
               ),
             ),

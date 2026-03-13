@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smlaicloud/utils/util.dart';
+import 'package:smlaicloud/global.dart' as global;
 
 class BackgroundDashboard extends StatelessWidget {
   final Widget child;
@@ -24,7 +25,7 @@ class BackgroundDashboard extends StatelessWidget {
       height: size.height,
       width: double.infinity,
       child: Container(
-        color: Colors.white,
+        color: global.theme.cardColor,
         child: Stack(
           children: <Widget>[
             Container(

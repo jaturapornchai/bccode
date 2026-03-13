@@ -166,7 +166,7 @@ class SummaryWidgets {
             Checkbox(
               fillColor: WidgetStateProperty.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
-                  return Colors.red;
+                  return global.theme.negativeHighlightTextColor;
                 }
                 return null;
               }),
@@ -183,8 +183,8 @@ class SummaryWidgets {
             Expanded(
               child: Text(
                 global.language("is_manual_amount"),
-                style: const TextStyle(
-                  color: Colors.black,
+                style: TextStyle(
+                  color: global.theme.textColor,
                   fontSize: 16,
                   overflow: TextOverflow.ellipsis,
                 ),

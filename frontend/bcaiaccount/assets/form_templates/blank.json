@@ -1,0 +1,38 @@
+{
+  "id": "blank",
+  "name": "ฟอร์มเปล่า",
+  "description": "เทมเพลตเปล่าสำหรับออกแบบฟอร์มเอง",
+  "paperSize": "A4",
+  "header": {
+    "id": "header",
+    "type": "header",
+    "height": 90.0,
+    "elements": [],
+    "backgroundImagePath": null
+  },
+  "detail": {
+    "id": "detail",
+    "type": "detail",
+    "height": 300.0,
+    "elements": [],
+    "backgroundImagePath": null
+  },
+  "footer": {
+    "id": "footer",
+    "type": "footer",
+    "height": 90.0,
+    "elements": [],
+    "backgroundImagePath": null
+  },
+  "globalBackgroundImagePath": null,
+  "createdAt": "2024-01-01T00:00:00.000",
+  "updatedAt": "2024-01-01T00:00:00.000",
+  "printMode": "color",
+  "multiPageEnabled": false,
+  "detailRowsPerPage": 20,
+  "documentType": "blank",
+  "marginTop": 20.0,
+  "marginBottom": 20.0,
+  "marginLeft": 20.0,
+  "marginRight": 20.0
+}
