@@ -24,15 +24,7 @@ class AdvancePaymentWidget extends StatefulWidget {
 
 class _AdvancePaymentWidgetState extends State<AdvancePaymentWidget>
     with global.ThemeRefreshMixin {
-  @override
-  void initState() {
-    super.initState();
-  }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {

@@ -11,6 +11,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
+import 'package:smlaicloud/utils/date_picker.dart';
+import 'package:smlaicloud/utils/focus_utils.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:image_picker/image_picker.dart';
@@ -282,6 +284,9 @@ class PosMediaScreenState extends State<PosMediaScreen>
       isSaveAllow = true;
       isEditMode = true;
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      focusFirstTextField(context);
+    });
   }
 
   Widget listScreen({bool mobileScreen = false}) {
@@ -397,6 +402,9 @@ class PosMediaScreenState extends State<PosMediaScreen>
                           tabController.animateTo(1);
                         });
                       }
+                    });
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      focusFirstTextField(context);
                     });
                   },
                 );
@@ -723,55 +731,6 @@ class PosMediaScreenState extends State<PosMediaScreen>
     }
   }
 
-  void _selectMediaFromDate(BuildContext context, int mediaIndex) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.parse(
-        (screenData.resources[mediaIndex].fromDate.isNotEmpty)
-            ? screenData.resources[mediaIndex].fromDate.toString()
-            : dateNow.toIso8601String(),
-      ),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (pickedDate != null) {
-      setState(() {
-        screenData.resources[mediaIndex].fromDate = pickedDate
-            .toLocal()
-            .toIso8601String();
-
-        mediaFromDateController[mediaIndex].text = DateFormat(
-          'dd/MM/yyyy',
-        ).format(DateTime.parse(screenData.resources[mediaIndex].fromDate));
-      });
-    }
-  }
-
-  void _selectMediaToDate(BuildContext context, int mediaIndex) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.parse(
-        (screenData.resources[mediaIndex].toDate.isNotEmpty)
-            ? screenData.resources[mediaIndex].toDate.toString()
-            : dateNow.toIso8601String(),
-      ),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (pickedDate != null) {
-      setState(() {
-        screenData.resources[mediaIndex].toDate = pickedDate
-            .toLocal()
-            .toIso8601String();
-
-        mediaToDateController[mediaIndex].text = DateFormat(
-          'dd/MM/yyyy',
-        ).format(DateTime.parse(screenData.resources[mediaIndex].toDate));
-      });
-    }
-  }
 
   void _selectMediaFromTime(BuildContext context, int mediaIndex) async {
     final TimeOfDay? pickedTime = await showTimePicker(
@@ -1329,154 +1288,48 @@ class PosMediaScreenState extends State<PosMediaScreen>
                         child: Row(
                           children: [
                             Expanded(
-                              child: TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  floatingLabelBehavior:
-                                      FloatingLabelBehavior.always,
-                                  border: OutlineInputBorder(),
-                                  labelText: global.language("from_date"),
-                                  suffixIcon: Row(
-                                    mainAxisAlignment: MainAxisAlignment
-                                        .spaceBetween, // added line
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        focusNode: FocusNode(
-                                          skipTraversal: true,
-                                        ),
-                                        icon: const Icon(Icons.calendar_today),
-                                        onPressed: () {
-                                          _selectMediaFromDate(
-                                            context,
-                                            mediaIndex,
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                controller: mediaFromDateController[mediaIndex],
-                                onChanged: (value) {
-                                  setState(() {
-                                    try {
-                                      List<String> valueSplit = value
-                                          .replaceAll(".", "/")
-                                          .split("/");
-                                      if (valueSplit.length == 3) {
-                                        if (valueSplit[2].length == 2) {
-                                          valueSplit[2] = '25${valueSplit[2]}';
-                                        }
-                                        int year =
-                                            int.tryParse(valueSplit[2]) ?? 0;
-                                        year = year - 543;
-                                        int month =
-                                            int.tryParse(valueSplit[1]) ?? 0;
-                                        int day =
-                                            int.tryParse(valueSplit[0]) ?? 0;
-                                        value =
-                                            "$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}";
-                                      }
-
-                                      if (global.isValidDate(value)) {
-                                        screenData
-                                            .resources[mediaIndex]
-                                            .fromDate = DateTime.parse(
-                                          value,
-                                        ).toLocal().toIso8601String();
-                                      }
-                                    } catch (e) {
-                                      // print(e);
-                                    }
-                                  });
+                              child: CustomDatePicker(
+                                labelText: global.language("from_date"),
+                                useIconSelectDate: true,
+                                initialDate: (screenData.resources[mediaIndex].fromDate.isNotEmpty)
+                                    ? DateTime.tryParse(screenData.resources[mediaIndex].fromDate)
+                                    : DateTime.now(),
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime(2100),
+                                onDateSelected: (date) {
+                                  if (date != null) {
+                                    setState(() {
+                                      screenData.resources[mediaIndex].fromDate =
+                                          date.toLocal().toIso8601String();
+                                      mediaFromDateController[mediaIndex].text =
+                                          DateFormat('dd/MM/yyyy').format(date);
+                                    });
+                                  }
                                 },
-                                onSubmitted: (value) => {
-                                  mediaFromDateController[mediaIndex].text =
-                                      DateFormat('dd/MM/yyyy').format(
-                                        DateTime.parse(
-                                          screenData
-                                              .resources[mediaIndex]
-                                              .fromDate
-                                              .toString(),
-                                        ),
-                                      ),
-                                },
+                                decoration: const InputDecoration(),
                               ),
                             ),
                             SizedBox(width: 10),
                             Expanded(
-                              child: TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  floatingLabelBehavior:
-                                      FloatingLabelBehavior.always,
-                                  border: OutlineInputBorder(),
-                                  labelText: global.language("to_date"),
-                                  suffixIcon: Row(
-                                    mainAxisAlignment: MainAxisAlignment
-                                        .spaceBetween, // added line
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        focusNode: FocusNode(
-                                          skipTraversal: true,
-                                        ),
-                                        icon: const Icon(Icons.calendar_today),
-                                        onPressed: () {
-                                          _selectMediaToDate(
-                                            context,
-                                            mediaIndex,
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                controller: mediaToDateController[mediaIndex],
-                                onChanged: (value) {
-                                  setState(() {
-                                    try {
-                                      List<String> valueSplit = value
-                                          .replaceAll(".", "/")
-                                          .split("/");
-                                      if (valueSplit.length == 3) {
-                                        if (valueSplit[2].length == 2) {
-                                          valueSplit[2] = '25${valueSplit[2]}';
-                                        }
-                                        int year =
-                                            int.tryParse(valueSplit[2]) ?? 0;
-                                        year = year - 543;
-                                        int month =
-                                            int.tryParse(valueSplit[1]) ?? 0;
-                                        int day =
-                                            int.tryParse(valueSplit[0]) ?? 0;
-                                        value =
-                                            "$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}";
-                                      }
-
-                                      if (global.isValidDate(value)) {
-                                        screenData
-                                            .resources[mediaIndex]
-                                            .toDate = DateTime.parse(
-                                          value,
-                                        ).toLocal().toIso8601String();
-                                      }
-                                    } catch (e) {
-                                      // print(e);
-                                    }
-                                  });
+                              child: CustomDatePicker(
+                                labelText: global.language("to_date"),
+                                useIconSelectDate: true,
+                                initialDate: (screenData.resources[mediaIndex].toDate.isNotEmpty)
+                                    ? DateTime.tryParse(screenData.resources[mediaIndex].toDate)
+                                    : DateTime.now(),
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime(2100),
+                                onDateSelected: (date) {
+                                  if (date != null) {
+                                    setState(() {
+                                      screenData.resources[mediaIndex].toDate =
+                                          date.toLocal().toIso8601String();
+                                      mediaToDateController[mediaIndex].text =
+                                          DateFormat('dd/MM/yyyy').format(date);
+                                    });
+                                  }
                                 },
-                                onSubmitted: (value) => {
-                                  mediaToDateController[mediaIndex].text =
-                                      DateFormat('dd/MM/yyyy').format(
-                                        DateTime.parse(
-                                          screenData
-                                              .resources[mediaIndex]
-                                              .toDate
-                                              .toString(),
-                                        ),
-                                      ),
-                                },
+                                decoration: const InputDecoration(),
                               ),
                             ),
                           ],
@@ -1818,19 +1671,29 @@ class PosMediaScreenState extends State<PosMediaScreen>
             ),
         ],
       ),
-      body: KeyboardListener(
-        focusNode: FocusNode(),
-        onKeyEvent: (KeyEvent event) {
-          if (event is KeyDownEvent) {
-            // print(event.logicalKey);
-            if (event.logicalKey == LogicalKeyboardKey.f10) {
+      body: Focus(
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) {
               if (_formKey.currentState!.validate()) {
                 saveOrUpdateData();
               }
             }
+            return KeyEventResult.handled;
           }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              FocusManager.instance.primaryFocus?.nextFocus();
+            }
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
         },
-        child: Builder(
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: Builder(
           builder: (context) {
             final scale = global.editFontScaleFactor;
             return MediaQuery(
@@ -1864,6 +1727,7 @@ class PosMediaScreenState extends State<PosMediaScreen>
               ),
             );
           },
+        ),
         ),
       ),
     );

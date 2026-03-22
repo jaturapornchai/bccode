@@ -34,8 +34,8 @@ func InsertDocListToClickHouse(ctx context.Context, shopId string, data []models
 				currency, currency_symbol,
 				doc_currency, doc_currency_symbol,
 				exchange_rate, totalamount_doc,
-				isdelete, approval_status
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				isdelete, approval_status, custcode
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`, TableName("doc")))
 		if err == nil {
 			defer insertBatch.Close()
@@ -53,6 +53,7 @@ func InsertDocListToClickHouse(ctx context.Context, shopId string, data []models
 					item.IsDelete,
 					// สถานะการอนุมัติ
 					item.ApprovalStatus,
+					item.CustCode,
 				)
 			}
 			insertBatch.Send()

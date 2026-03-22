@@ -22,6 +22,7 @@ import 'package:smlaicloud/model/product_model.dart';
 import 'package:split_view/split_view.dart';
 import 'package:translator/translator.dart';
 import 'package:smlaicloud/utils/logger/app_logger.dart';
+import 'package:smlaicloud/utils/focus_utils.dart';
 
 class ProductScreen extends StatefulWidget {
   const ProductScreen({super.key});
@@ -222,16 +223,7 @@ class ProductScreenState extends State<ProductScreen>
     isChange = false;
     focusNodeIndex = 0;
 
-    // 🔹 โฟกัสไปที่ช่องแรก (ตรวจสอบว่ามี FocusNode ก่อน)
-    if (fieldFocusNodes.isNotEmpty) {
-      try {
-        fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
-      } catch (e) {
-        if (kDebugMode) {
-          AppLogger.error("Error focusing on node: $e");
-        }
-      }
-    }
+    // 🔹 ไม่ต้อง focus ที่นี่ — ให้ switchToEdit/add button จัดการเอง
 
     // 🔹 อัปเดต UI
     setState(() {});
@@ -383,8 +375,8 @@ class ProductScreenState extends State<ProductScreen>
                       clearEditData();
                       headerEdit = global.language("append");
                       isSaveAllow = true;
-                      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-                        fieldFocusNodes[0].focusNode.requestFocus();
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        focusFirstTextField(context);
                       });
                     });
                   },
@@ -965,11 +957,7 @@ class ProductScreenState extends State<ProductScreen>
           break;
         }
       } else {
-        fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
-        fieldTextController[focusNodeIndex]
-            .selection = TextSelection.fromPosition(
-          TextPosition(offset: fieldTextController[focusNodeIndex].text.length),
-        );
+        focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex].focusNode);
         break;
       }
     }
@@ -1027,7 +1015,7 @@ class ProductScreenState extends State<ProductScreen>
       }
 
       // ✅ โฟกัสเฉพาะช่องที่พิมพ์ได้
-      fieldFocusNodes[nextIndex].focusNode.requestFocus();
+      focusAndCursorToEnd(fieldFocusNodes[nextIndex].focusNode);
       return;
     }
   }
@@ -1148,24 +1136,25 @@ class ProductScreenState extends State<ProductScreen>
             ),
         ],
       ),
-      body: RawKeyboardListener(
-        focusNode: FocusNode(skipTraversal: true),
-        onKey: (event) {
-          if (kIsWeb ||
-              Platform.isWindows ||
-              Platform.isLinux ||
-              Platform.isMacOS) {
-            if (event is RawKeyUpEvent) {
-              if (event.logicalKey == LogicalKeyboardKey.tab) {
-                // print("Tab");
-              }
-              if (event.logicalKey == LogicalKeyboardKey.f10) {
-                saveOrUpdateData();
-              }
-            }
+      body: Focus(
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) saveOrUpdateData();
+            return KeyEventResult.handled;
           }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              FocusManager.instance.primaryFocus?.nextFocus();
+            }
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
         },
-        child: Builder(
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: Builder(
           builder: (context) {
             final scale = global.editFontScaleFactor;
             return MediaQuery(
@@ -1422,6 +1411,7 @@ class ProductScreenState extends State<ProductScreen>
               ),
             );
           },
+        ),
         ),
       ),
     );
@@ -1850,8 +1840,8 @@ class ProductScreenState extends State<ProductScreen>
                       }
                       getDataToEditScreen(state.productMaster);
                       if (screenEvent == global.ScreenEventEnum.edit) {
-                        setState(() {
-                          findFocusNext(0);
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          focusFirstTextField(context);
                         });
                       }
                     });

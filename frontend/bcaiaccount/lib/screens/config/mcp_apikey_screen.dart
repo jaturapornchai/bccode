@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:smlaicloud/utils/date_picker.dart';
 import 'package:smlaicloud/widgets/manual_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -708,38 +709,29 @@ class _CreateAPIKeyDialogState extends State<_CreateAPIKeyDialog>
                 SizedBox(height: 16),
 
                 // Expiration
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(global.language('expires_at')),
-                  subtitle: Text(
-                    _expiresAt != null
-                      ? DateFormat('dd/MM/yyyy').format(_expiresAt!)
-                      : global.language('no_expiration'),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_expiresAt != null)
-                        IconButton(
-                          icon: Icon(Icons.clear),
-                          onPressed: () => setState(() => _expiresAt = null),
-                        ),
-                      IconButton(
-                        icon: Icon(Icons.calendar_today),
-                        onPressed: () async {
-                          final date = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now().add(const Duration(days: 365)),
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime.now().add(const Duration(days: 3650)),
-                          );
+                Row(
+                  children: [
+                    Expanded(
+                      child: CustomDatePicker(
+                        labelText: global.language('expires_at'),
+                        useIconSelectDate: true,
+                        initialDate: _expiresAt ?? DateTime.now().add(const Duration(days: 365)),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 3650)),
+                        onDateSelected: (date) {
                           if (date != null) {
                             setState(() => _expiresAt = date);
                           }
                         },
+                        decoration: const InputDecoration(),
                       ),
-                    ],
-                  ),
+                    ),
+                    if (_expiresAt != null)
+                      IconButton(
+                        icon: Icon(Icons.clear, color: global.theme.iconSecondaryColor),
+                        onPressed: () => setState(() => _expiresAt = null),
+                      ),
+                  ],
                 ),
                 const Divider(),
 

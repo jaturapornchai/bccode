@@ -29,7 +29,9 @@ import (
 	"smlcloudplatform/internal/ocr"
 	"smlcloudplatform/internal/organization/branch"
 	"smlcloudplatform/internal/organization/businesstype"
+	"smlcloudplatform/internal/organization/costcenter"
 	"smlcloudplatform/internal/organization/department"
+	"smlcloudplatform/internal/organization/jobproject"
 	"smlcloudplatform/internal/payment/bankmaster"
 	"smlcloudplatform/internal/payment/bookbank"
 	"smlcloudplatform/internal/payment/qrpayment"
@@ -87,7 +89,9 @@ import (
 	"smlcloudplatform/internal/transaction/pay"
 	"smlcloudplatform/internal/transaction/purchase"
 	"smlcloudplatform/internal/transaction/purchaseorder"
+	"smlcloudplatform/internal/transaction/purchaserequisition"
 	"smlcloudplatform/internal/transaction/purchasereturn"
+	"smlcloudplatform/internal/transaction/rfq"
 	"smlcloudplatform/internal/transaction/saleinvoice"
 	"smlcloudplatform/internal/transaction/saleinvoicebomprice"
 	"smlcloudplatform/internal/transaction/saleinvoicereturn"
@@ -122,7 +126,8 @@ func main() {
 	cfg := config.NewConfig()
 	ms, err := microservice.NewMicroservice(cfg)
 	if err != nil {
-		panic(err)
+		log.Printf("ERROR: Failed to initialize microservice: %v", err)
+		os.Exit(1)
 	}
 
 	go func() {
@@ -257,6 +262,8 @@ func main() {
 		customergroup.NewCustomerGroupHttp(ms, cfg),
 
 		department.NewDepartmentHttp(ms, cfg),
+		costcenter.NewCostCenterHttp(ms, cfg),
+		jobproject.NewJobProjectHttp(ms, cfg),
 		businesstype.NewBusinessTypeHttp(ms, cfg),
 		branch.NewBranchHttp(ms, cfg),
 
@@ -273,6 +280,8 @@ func main() {
 		stockbalance.NewStockBalanceHttp(ms, cfg),
 		stockbalancedetail.NewStockBalanceDetailHttp(ms, cfg),
 		purchaseorder.NewPurchaseOrderHttp(ms, cfg),
+		purchaserequisition.NewPurchaseRequisitionHttp(ms, cfg),
+		rfq.NewRFQHttp(ms, cfg),
 
 		//product section
 		sectionbranch.NewSectionBranchHttp(ms, cfg),

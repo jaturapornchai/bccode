@@ -1,23 +1,25 @@
 package handlers
 
 import (
-	"encoding/json"
+	"bufio"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/labstack/echo/v4"
 )
 
-// languageCache - cache สำหรับเก็บ languages.json
+// languageCache - cache สำหรับเก็บ languages.tsv
 var (
-	allLanguagesCache map[string]map[string]string
+	allLanguagesCache map[string]map[string]string // key → lang → text
 	languageCacheLock sync.RWMutex
 	languageLoaded    bool
 )
 
-// loadLanguages - โหลด languages.json เข้า cache
+// loadLanguages - โหลด languages.tsv เข้า cache
+// TSV format: key\tth\ten\tcn\tja\tkm\tko\tlo\tmy\tvi
 func loadLanguages() error {
 	languageCacheLock.Lock()
 	defer languageCacheLock.Unlock()
@@ -26,13 +28,41 @@ func loadLanguages() error {
 		return nil
 	}
 
-	filePath := filepath.Join("language", "languages.json")
-	data, err := os.ReadFile(filePath)
+	filePath := filepath.Join("language", "languages.tsv")
+	f, err := os.Open(filePath)
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 
-	if err := json.Unmarshal(data, &allLanguagesCache); err != nil {
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024) // 1MB buffer
+
+	// อ่าน header เพื่อหา column index ของแต่ละภาษา
+	if !scanner.Scan() {
+		return scanner.Err()
+	}
+	headers := strings.Split(scanner.Text(), "\t")
+	// headers[0] = "key", headers[1..] = lang codes
+
+	allLanguagesCache = make(map[string]map[string]string, 5000)
+
+	for scanner.Scan() {
+		cols := strings.Split(scanner.Text(), "\t")
+		if len(cols) < 2 {
+			continue
+		}
+		key := cols[0]
+		langs := make(map[string]string, len(headers)-1)
+		for i := 1; i < len(headers) && i < len(cols); i++ {
+			if cols[i] != "" {
+				langs[headers[i]] = cols[i]
+			}
+		}
+		allLanguagesCache[key] = langs
+	}
+
+	if err := scanner.Err(); err != nil {
 		return err
 	}
 

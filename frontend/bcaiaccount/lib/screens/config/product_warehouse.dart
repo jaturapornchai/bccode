@@ -12,6 +12,7 @@ import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:split_view/split_view.dart';
 import 'package:translator/translator.dart';
+import 'package:smlaicloud/utils/focus_utils.dart';
 
 class ProductWarehouseScreen extends StatefulWidget {
   const ProductWarehouseScreen({super.key});
@@ -153,7 +154,6 @@ class ProductWarehouseScreenState extends State<ProductWarehouseScreen>
     }
     isChange = false;
     focusNodeIndex = 0;
-    fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
   }
 
   void discardData({required Function callBack}) {
@@ -304,9 +304,9 @@ class ProductWarehouseScreenState extends State<ProductWarehouseScreen>
                       clearEditData();
                       headerEdit = global.language("append");
                       isSaveAllow = true;
-                      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
                         tabController.animateTo(1);
-                        fieldFocusNodes[0].focusNode.requestFocus();
+                        focusFirstTextField(context);
                       });
                     });
                   },
@@ -692,11 +692,7 @@ class ProductWarehouseScreenState extends State<ProductWarehouseScreen>
           break;
         }
       } else {
-        fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
-        fieldTextController[focusNodeIndex]
-            .selection = TextSelection.fromPosition(
-          TextPosition(offset: fieldTextController[focusNodeIndex].text.length),
-        );
+        focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex].focusNode);
         break;
       }
     }
@@ -831,24 +827,25 @@ class ProductWarehouseScreenState extends State<ProductWarehouseScreen>
             ),
         ],
       ),
-      body: RawKeyboardListener(
-        focusNode: FocusNode(skipTraversal: true),
-        onKey: (event) {
-          if (kIsWeb ||
-              Platform.isWindows ||
-              Platform.isLinux ||
-              Platform.isMacOS) {
-            if (event is RawKeyUpEvent) {
-              if (event.logicalKey == LogicalKeyboardKey.tab) {
-                // print("Tab");
-              }
-              if (event.logicalKey == LogicalKeyboardKey.f10) {
-                saveOrUpdateData();
-              }
-            }
+      body: Focus(
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) saveOrUpdateData();
+            return KeyEventResult.handled;
           }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              FocusManager.instance.primaryFocus?.nextFocus();
+            }
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
         },
-        child: Builder(
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: Builder(
           builder: (context) {
             final scale = global.editFontScaleFactor;
             return MediaQuery(
@@ -994,6 +991,7 @@ class ProductWarehouseScreenState extends State<ProductWarehouseScreen>
             );
           },
         ),
+        ),
       ),
     );
   }
@@ -1112,11 +1110,9 @@ class ProductWarehouseScreenState extends State<ProductWarehouseScreen>
                 setState(() {
                   getDataToEditScreen(state.warehouse);
                   if (screenEvent == global.ScreenEventEnum.edit) {
-                    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
                       tabController.animateTo(1);
-                    });
-                    setState(() {
-                      findFocusNext(0);
+                      focusFirstTextField(context);
                     });
                   }
                 });

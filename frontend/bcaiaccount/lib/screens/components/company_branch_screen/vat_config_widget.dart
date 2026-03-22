@@ -60,6 +60,7 @@ class VatConfigWidget extends StatelessWidget {
                   child: Row(
                     children: [
                       Switch(
+                        focusNode: FocusNode(skipTraversal: true),
                         value: posData!.isbom!,
                         onChanged: (value) {
                           onDataChanged(true);
@@ -145,7 +146,7 @@ class VatConfigWidget extends StatelessWidget {
             Expanded(
               child: Row(
                 children: [
-                  Radio(value: 0, groupValue: groupValue, onChanged: onChanged),
+                  Radio(focusNode: FocusNode(skipTraversal: true), value: 0, groupValue: groupValue, onChanged: onChanged),
                   Expanded(
                     child: Text(
                       global.language("vat_exclude"),
@@ -158,7 +159,7 @@ class VatConfigWidget extends StatelessWidget {
             Expanded(
               child: Row(
                 children: [
-                  Radio(value: 1, groupValue: groupValue, onChanged: onChanged),
+                  Radio(focusNode: FocusNode(skipTraversal: true), value: 1, groupValue: groupValue, onChanged: onChanged),
                   Expanded(
                     child: Text(
                       global.language("vat_include"),
@@ -172,6 +173,7 @@ class VatConfigWidget extends StatelessWidget {
               child: Row(
                 children: [
                   Radio(
+                    focusNode: FocusNode(skipTraversal: true),
                     value: 2,
                     groupValue: groupValue,
                     activeColor: global.theme.infoHighlightTextColor,
@@ -190,6 +192,7 @@ class VatConfigWidget extends StatelessWidget {
               child: Row(
                 children: [
                   Radio(
+                    focusNode: FocusNode(skipTraversal: true),
                     value: 3,
                     groupValue: groupValue,
                     activeColor: global.theme.infoHighlightTextColor,
@@ -228,7 +231,7 @@ class VatConfigWidget extends StatelessWidget {
             Expanded(
               child: Row(
                 children: [
-                  Radio(value: 0, groupValue: groupValue, onChanged: onChanged),
+                  Radio(focusNode: FocusNode(skipTraversal: true), value: 0, groupValue: groupValue, onChanged: onChanged),
                   Expanded(
                     child: Text(
                       global.language("credit"),
@@ -241,7 +244,7 @@ class VatConfigWidget extends StatelessWidget {
             Expanded(
               child: Row(
                 children: [
-                  Radio(value: 1, groupValue: groupValue, onChanged: onChanged),
+                  Radio(focusNode: FocusNode(skipTraversal: true), value: 1, groupValue: groupValue, onChanged: onChanged),
                   Expanded(
                     child: Text(
                       global.language("cash"),

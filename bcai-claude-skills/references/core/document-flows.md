@@ -8,6 +8,8 @@
 | `PI` | Purchase Invoice | จัดซื้อ |
 | `SO` | Sales Order | ขาย |
 | `SI` | Sales Invoice | ขาย |
+| `PR` | Purchase Requisition (ใบขอซื้อ) | จัดซื้อ |
+| `RFQ` | Request for Quotation (สืบราคา) | จัดซื้อ |
 | `SA` | Stock Adjustment | คลังสินค้า |
 | `TR` | Transfer (โอนย้าย) | คลังสินค้า |
 
@@ -55,12 +57,36 @@ draft/pending/approved ──cancel──► cancelled
 
 ## Flow แยกตาม Module
 
-### Purchase Flow
+### Purchase Flow (Procurement)
 ```
+PR (draft) → PR (approved) → RFQ (สืบราคา vendor 3+ ราย) → RFQ (approved)
+                            ↘ PO (สร้างตรง ไม่ต้องสืบราคา)     ↓
+                                                          PO (สร้างจาก RFQ)
 PO (draft) → PO (approved) → PI (สร้างใหม่อ้างอิง PO) → PI (approved)
 ```
+- **PR (ใบขอซื้อ)**: แผนกส่งคำขอ → หัวหน้าอนุมัติ → ฝ่ายจัดซื้อดำเนินการ (transflag=21)
+- **RFQ (สืบราคา)**: ขอใบเสนอราคาจาก vendor 3+ ราย → เปรียบเทียบ → เลือก vendor (transflag=22)
+- PR สามารถข้าม RFQ ไปสร้าง PO ตรงได้ (กรณีไม่ต้องสืบราคา)
+- PO สามารถอ้างอิง PR หรือ RFQ ก็ได้
 - PI ต้องอ้างอิง PO ที่ approved แล้วเท่านั้น
 - Stock เพิ่มเมื่อ PI `completed`
+
+#### PR-specific fields
+- `requestercode`, `requestername` — ผู้ขอซื้อ
+- `departmentcode`, `departmentnames` — แผนกที่ขอ
+- `purpose` — วัตถุประสงค์/เหตุผล
+- `budgetcode`, `budgetamount` — งบประมาณ
+- `urgency` — 1=ปกติ 2=เร่งด่วน 3=เร่งด่วนมาก
+- `requesteddeliverydate` — วันที่ต้องการรับ
+- `conversionstatus` — สถานะแปลง (none/converted_to_rfq/converted_to_po)
+
+#### RFQ-specific fields
+- `refprdocno`, `refprguidfixed` — อ้างอิง PR
+- `vendorentries` — รายการ vendor (VendorEntry[]) แต่ละรายมี items + ราคา
+- `selectedvendor` — vendor ที่เลือก
+- `selectionreason` — เหตุผลเลือก
+- `submissiondeadline` — กำหนดส่งใบเสนอราคา
+- `minvendors` — จำนวน vendor ขั้นต่ำ
 
 ### Sales Flow
 ```

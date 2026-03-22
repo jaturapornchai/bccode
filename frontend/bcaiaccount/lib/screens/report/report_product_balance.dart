@@ -23,10 +23,6 @@ class _ReportMovementState extends State<ReportProductBalanceScreen> with global
   ReportProductBalanceModel reportProductBalanceFooter =
       ReportProductBalanceModel();
 
-  @override
-  void initState() {
-    super.initState();
-  }
 
   Future<void> getReport() async {
     reportProductBalance = [];

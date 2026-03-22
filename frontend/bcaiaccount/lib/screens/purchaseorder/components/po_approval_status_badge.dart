@@ -12,6 +12,8 @@ class POApprovalStatusBadge extends StatefulWidget {
   final POApprovalStatusModel? approvalStatus;
   final bool isLoading;
   final Future<bool> Function()? onWithdrawApproval;
+  final Future<bool> Function(String comment)? onApprove;
+  final Future<bool> Function(String comment)? onReject;
 
   const POApprovalStatusBadge({
     super.key,
@@ -19,6 +21,8 @@ class POApprovalStatusBadge extends StatefulWidget {
     required this.approvalStatus,
     required this.isLoading,
     this.onWithdrawApproval,
+    this.onApprove,
+    this.onReject,
   });
 
   @override
@@ -27,6 +31,8 @@ class POApprovalStatusBadge extends StatefulWidget {
 
 class _POApprovalStatusBadgeState extends State<POApprovalStatusBadge> with global.ThemeRefreshMixin {
   bool _isWithdrawing = false;
+  bool _isApproving = false;
+  bool _isRejecting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -150,12 +156,34 @@ class _POApprovalStatusBadgeState extends State<POApprovalStatusBadge> with glob
           const SizedBox(width: 12),
           // ปุ่มดูประวัติการอนุมัติ
           _buildHistoryButton(context, style.textColor),
-          // ปุ่มสำหรับสถานะ pending: ถอนการอนุมัติ + ส่งคำเตือน
+          // ปุ่มสำหรับสถานะ pending: อนุมัติ + ปฏิเสธ + ถอน + ส่งคำเตือน
           if (status == POApprovalStatus.pending) ...[
+            if (widget.onApprove != null) ...[
+              const SizedBox(width: 8),
+              _buildApproveButton(context),
+            ],
+            if (widget.onReject != null) ...[
+              const SizedBox(width: 8),
+              _buildRejectButton(context),
+            ],
             const SizedBox(width: 8),
             _buildWithdrawButton(context),
             const SizedBox(width: 8),
             _buildReminderButton(context),
+          ],
+          // แสดงเหตุผลการปฏิเสธ (ถ้ามี)
+          if (status == POApprovalStatus.rejected && (widget.approvalStatus?.lastComment ?? '').isNotEmpty) ...[
+            const SizedBox(width: 12),
+            Flexible(
+              child: Text(
+                '${global.language("reason")}: ${widget.approvalStatus!.lastComment}',
+                style: TextStyle(
+                  color: style.textColor,
+                  fontSize: 12,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ],
       ),
@@ -196,6 +224,199 @@ class _POApprovalStatusBadgeState extends State<POApprovalStatusBadge> with glob
         ),
       ),
     );
+  }
+
+  /// ปุ่มอนุมัติ
+  Widget _buildApproveButton(BuildContext context) {
+    return InkWell(
+      onTap: _isApproving ? null : () => _approveDocument(context),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: global.theme.positiveHighlightColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: global.theme.positiveHighlightTextColor),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_isApproving)
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: global.theme.positiveHighlightTextColor,
+                ),
+              )
+            else
+              Icon(Icons.check_circle, size: 16, color: global.theme.positiveHighlightTextColor),
+            SizedBox(width: 4),
+            Text(
+              _isApproving ? global.language('approving') : global.language('approve'),
+              style: TextStyle(
+                color: global.theme.positiveHighlightTextColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// ปุ่มปฏิเสธ
+  Widget _buildRejectButton(BuildContext context) {
+    return InkWell(
+      onTap: _isRejecting ? null : () => _rejectDocument(context),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: global.theme.negativeHighlightColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: global.theme.negativeHighlightTextColor),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_isRejecting)
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: global.theme.negativeHighlightTextColor,
+                ),
+              )
+            else
+              Icon(Icons.cancel, size: 16, color: global.theme.negativeHighlightTextColor),
+            SizedBox(width: 4),
+            Text(
+              _isRejecting ? global.language('rejecting') : global.language('reject'),
+              style: TextStyle(
+                color: global.theme.negativeHighlightTextColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// อนุมัติเอกสาร
+  Future<void> _approveDocument(BuildContext context) async {
+    if (widget.onApprove == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      useRootNavigator: true,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.check_circle, color: global.theme.positiveHighlightTextColor),
+            const SizedBox(width: 8),
+            Text(global.language('approve')),
+          ],
+        ),
+        content: Text(global.language('confirm_approve_document')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(global.language('cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: global.theme.positiveHighlightTextColor,
+              foregroundColor: global.theme.onPrimaryColor,
+            ),
+            child: Text(global.language('approve')),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isApproving = true);
+
+    try {
+      await widget.onApprove!('');
+    } finally {
+      if (mounted) {
+        setState(() => _isApproving = false);
+      }
+    }
+  }
+
+  /// ปฏิเสธเอกสารพร้อมเหตุผล
+  Future<void> _rejectDocument(BuildContext context) async {
+    if (widget.onReject == null) return;
+
+    final commentController = TextEditingController();
+
+    final comment = await showDialog<String>(
+      context: context,
+      useRootNavigator: true,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.cancel, color: global.theme.negativeHighlightTextColor),
+            const SizedBox(width: 8),
+            Text(global.language('reject')),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(global.language('reject_reason_description')),
+            const SizedBox(height: 12),
+            TextField(
+              controller: commentController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: global.language('reject_reason_hint'),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                contentPadding: const EdgeInsets.all(12),
+              ),
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(null),
+            child: Text(global.language('cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(commentController.text),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: global.theme.negativeHighlightTextColor,
+              foregroundColor: global.theme.onPrimaryColor,
+            ),
+            child: Text(global.language('reject')),
+          ),
+        ],
+      ),
+    );
+
+    if (comment == null) return;
+
+    setState(() => _isRejecting = true);
+
+    try {
+      await widget.onReject!(comment);
+    } finally {
+      if (mounted) {
+        setState(() => _isRejecting = false);
+      }
+    }
   }
 
   /// ปุ่มถอนการส่งอนุมัติ

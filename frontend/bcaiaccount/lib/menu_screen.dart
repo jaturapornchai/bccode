@@ -31,7 +31,9 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin, g
   late TabController mainTabController = TabController(length: 4, vsync: this, initialIndex: global.activeIndexMenu);
   List<Widget> masterMenuList = [];
   List<Widget> masterProductMenuList = [];
+  List<Widget> transactionProcurementMenuList = [];
   List<Widget> transactionPurchaseMenuList = [];
+  List<Widget> transactionPurchasePaymentMenuList = [];
   List<Widget> transactionSaleMenuList = [];
   List<Widget> transactionStockMenuList = [];
   List<Widget> transactionPaidMenuList = [];
@@ -39,9 +41,11 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin, g
   List<Widget> reportMenuProductList = [];
   List<Widget> reportMenuSaleList = []; // เพิ่มรายงานการขาย
   // reportMenuList ถูกเปลี่ยนเป็น getter ด้านล่าง เพื่อให้ rebuild ทุกครั้ง
+  List<Widget> creditorMenuList = [];
   List<Widget> customerMenuList = [];
   List<Widget> newMenuList = [];
   List<Widget> configMenuList = [];
+  List<Widget> masterOrgMenuList = [];
   List<Widget> restaurantMenuList = [];
   List<Widget> glMenuList = [];
   List<Widget> configCompanyMenuList = [];
@@ -198,69 +202,23 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin, g
     return _buildMenuContainer(label, category, icon, onTap: () => effectiveCallback());
   }
 
+  /// Badge เล็กๆ สำหรับ info bar (currency, year type, language, timezone)
+  Widget _infoBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(6)),
+      child: Text(text, style: TextStyle(fontSize: 10, color: global.theme.onPrimaryColor, fontWeight: FontWeight.w600)),
+    );
+  }
+
   /// สร้าง UI container ของปุ่มเมนู (ใช้ร่วมกันทั้ง isAllowed=true และ false)
   Widget _buildMenuContainer(String label, String category, IconData? icon, {VoidCallback? onTap}) {
     List<Color> gradientColors = menuButtonColors[category] ?? [primaryDarkColor, primaryColor];
-
-    Widget textWidget = Center(
-      child: AutoSizeText(
-        label,
-        maxLines: 3,
-        textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: global.theme.onPrimaryColor, letterSpacing: 0.3),
-      ),
-    );
-
-    final isDark = global.isDarkMode();
-    return Container(
-      decoration: BoxDecoration(
-        boxShadow: [BoxShadow(color: gradientColors[0].withValues(alpha: isDark ? 0.15 : 0.35), spreadRadius: 0, blurRadius: isDark ? 8 : 12, offset: const Offset(0, 6))],
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: gradientColors),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            child: Stack(
-              children: [
-                Positioned(
-                  top: -15,
-                  right: -15,
-                  child: Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(shape: BoxShape.circle, color: global.theme.cardColor.withValues(alpha: 0.1)),
-                  ),
-                ),
-                Center(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (icon != null) ...[
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(color: global.theme.cardColor.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
-                            child: Icon(icon, size: 26, color: global.theme.onPrimaryColor),
-                          ),
-                          const SizedBox(height: 10),
-                        ],
-                        textWidget,
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return _AnimatedMenuButton(
+      label: label,
+      icon: icon,
+      gradientColors: gradientColors,
+      onTap: onTap,
     );
   }
 
@@ -351,11 +309,12 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin, g
     configMenuList.add(menuWidget(label: global.language('mcp_token'), category: 'system', icon: Icons.vpn_key, routeName: '/mcp_apikey', isAllowed: isSuperAdmin));
     configMenuList.add(menuWidget(label: global.language("transfer_data"), category: 'system', icon: Icons.cloud_download, routeName: '/copy_uat_to_dev', isAllowed: isSuperAdmin));
 
+    creditorMenuList = [];
     customerMenuList = [];
     // สำหรับ target flavor ให้เช็ค role, สำหรับ flavor อื่น ๆ ให้แสดงปกติ
     if (isUser || isAdmin || isSuperAdmin) {
-      customerMenuList.add(menuWidget(label: global.language("creditor"), category: 'customer', icon: Icons.person_outline, routeName: '/creditor'));
-      customerMenuList.add(menuWidget(label: global.language("creditor_group"), category: 'customer', icon: Icons.groups_outlined, routeName: '/creditorgroup'));
+      creditorMenuList.add(menuWidget(label: global.language("creditor"), category: 'customer', icon: Icons.person_outline, routeName: '/creditor'));
+      creditorMenuList.add(menuWidget(label: global.language("creditor_group"), category: 'customer', icon: Icons.groups_outlined, routeName: '/creditorgroup'));
       customerMenuList.add(menuWidget(label: global.language("debtor"), category: 'customer', icon: Icons.person, routeName: '/debtor'));
       customerMenuList.add(menuWidget(label: global.language("debtor_group"), category: 'customer', icon: Icons.groups, routeName: '/debtorgroup'));
     }
@@ -411,6 +370,14 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin, g
       masterMenuList.add(menuWidget(label: global.language("product_price_edit_history"), category: 'master', icon: Icons.money, routeName: '/price_history'));
     }
 
+    /// ข้อมูลองค์กร (ศูนย์ต้นทุน + งาน/โครงการ — มีการอัปเดตบ่อย)
+    masterOrgMenuList = [];
+    if (isSuperAdmin) {
+      masterOrgMenuList.add(menuWidget(label: global.language("cost_center"), category: 'master', icon: Icons.account_balance_wallet_outlined, routeName: '/costcenter', isAllowed: isSuperAdmin));
+      masterOrgMenuList.add(menuWidget(label: global.language("project"), category: 'master', icon: Icons.account_tree, routeName: '/project', isAllowed: isSuperAdmin));
+      masterOrgMenuList.add(menuWidget(label: global.language("job"), category: 'master', icon: Icons.work_outline, routeName: '/job', isAllowed: isSuperAdmin));
+    }
+
     /// ตั้งค่าสินค้า (แยกจากจัดการสินค้า — ตั้งค่าครั้งเดียว ไม่ค่อยแก้)
     productSettingMenuList = [];
     if (isSuperAdmin) {
@@ -448,26 +415,38 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin, g
       }
 
     }
-    transactionPurchaseMenuList = [];
-    transactionPurchaseMenuList.add(
+    // === Section 1: จัดซื้อ (Procurement) — PR, RFQ, PO ===
+    transactionProcurementMenuList = [];
+    transactionProcurementMenuList.add(
+      menuWidget(label: global.language("purchase_requisition"), category: 'transaction', icon: Icons.assignment_outlined, routeName: '/transaction/purchaserequisition'),
+    );
+    transactionProcurementMenuList.add(
+      menuWidget(label: global.language("request_for_quotation"), category: 'transaction', icon: Icons.compare_arrows_outlined, routeName: '/transaction/rfq'),
+    );
+    transactionProcurementMenuList.add(
       menuWidget(label: global.language("transaction_purchase_order"), category: 'transaction', icon: Icons.shopping_cart_outlined, routeName: '/transaction/purchaseorder'),
     );
-    // จ่ายเงินล่วงหน้า
-    transactionPurchaseMenuList.add(menuWidget(label: global.language("transaction_advance_payment"), category: 'advance_payment', icon: Icons.payments, routeName: '/transaction/advancepayment'));
-    // รับคืนเงินล่วงหน้า
-    transactionPurchaseMenuList.add(
-      menuWidget(label: global.language("receive_back_advance_payment"), category: 'advance_payment', icon: Icons.attach_money, routeName: '/transaction/advancepaymentrefund'),
+    transactionProcurementMenuList.add(
+      menuWidget(label: global.language("procurement_dashboard"), category: 'transaction', icon: Icons.dashboard_outlined, routeName: '/procurement/dashboard'),
     );
-    // จ่ายเงินมัดจำ
-    transactionPurchaseMenuList.add(menuWidget(label: global.language("pay_deposit"), category: 'advance_payment', icon: Icons.attach_money, routeName: '/transaction/deposit'));
-    // รับคืนเงินมัดจำ
-    transactionPurchaseMenuList.add(menuWidget(label: global.language("receive_back_deposit"), category: 'advance_payment', icon: Icons.attach_money, routeName: '/transaction/depositrefund'));
+
+    // === Section 2: ซื้อสินค้า — ซื้อ, คืนซื้อ, ทยอยรับ, ตั้งหนี้ ===
+    transactionPurchaseMenuList = [];
     transactionPurchaseMenuList.add(menuWidget(label: global.language("transaction_purchase"), category: 'transaction', icon: Icons.inventory, routeName: '/transaction/purchase'));
     transactionPurchaseMenuList.add(menuWidget(label: global.language("transaction_purchase_return"), category: 'transaction', icon: Icons.keyboard_return, routeName: '/transaction/purchasereturn'));
     transactionPurchaseMenuList.add(menuWidget(label: global.language("gradual_product_receipt"), category: 'transaction', icon: Icons.add_shopping_cart, routeName: '/transaction/purchasepartial'));
     transactionPurchaseMenuList.add(
       menuWidget(label: global.language("set_debt_from_gradual_receipt"), category: 'transaction', icon: Icons.add_shopping_cart, routeName: '/transaction/accrualreceive'),
     );
+
+    // === Section 3: จ่ายเงิน (ซื้อ) — ล่วงหน้า, มัดจำ ===
+    transactionPurchasePaymentMenuList = [];
+    transactionPurchasePaymentMenuList.add(menuWidget(label: global.language("transaction_advance_payment"), category: 'advance_payment', icon: Icons.payments, routeName: '/transaction/advancepayment'));
+    transactionPurchasePaymentMenuList.add(
+      menuWidget(label: global.language("receive_back_advance_payment"), category: 'advance_payment', icon: Icons.attach_money, routeName: '/transaction/advancepaymentrefund'),
+    );
+    transactionPurchasePaymentMenuList.add(menuWidget(label: global.language("pay_deposit"), category: 'advance_payment', icon: Icons.attach_money, routeName: '/transaction/deposit'));
+    transactionPurchasePaymentMenuList.add(menuWidget(label: global.language("receive_back_deposit"), category: 'advance_payment', icon: Icons.attach_money, routeName: '/transaction/depositrefund'));
 
     transactionSaleMenuList = [];
     // ใบเสนอราคา
@@ -1009,7 +988,8 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin, g
                       padding: const EdgeInsets.only(top: 5, bottom: 5),
                       child: Wrap(
                         crossAxisAlignment: WrapCrossAlignment.center,
-                        runSpacing: 4,
+                        spacing: 8,
+                        runSpacing: 6,
                         children: [
                           // Username + ชื่อ (กดเปลี่ยนชื่อได้ เฉพาะ user/password login)
                           GestureDetector(
@@ -1019,121 +999,59 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin, g
                               children: [
                                 Text(
                                   _getDisplayName(),
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: global.theme.onPrimaryColor,
-                                    fontWeight: FontWeight.bold,
-                                    shadows: const [Shadow(offset: Offset(1.0, 1.0), blurRadius: 3.0, color: Color.fromARGB(128, 0, 0, 0))],
-                                  ),
+                                  style: TextStyle(fontSize: 14, color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold),
                                 ),
-                                const SizedBox(width: 5),
-                                Icon(
-                                  color: global.theme.onPrimaryColor,
-                                  global.loginName.isEmpty ? Icons.edit : Icons.person,
-                                  size: 16,
-                                  shadows: const [Shadow(offset: Offset(1.0, 1.0), blurRadius: 3.0, color: Colors.black54)],
-                                ),
+                                const SizedBox(width: 4),
+                                Icon(global.loginName.isEmpty ? Icons.edit : Icons.person, color: global.theme.onPrimaryColor, size: 14),
                               ],
                             ),
                           ),
-                          const SizedBox(width: 10),
                           // Divider
-                          Container(width: 1, height: 16, color: global.theme.onPrimarySecondaryColor),
-                          const SizedBox(width: 10),
+                          Container(width: 1, height: 14, color: global.theme.onPrimarySecondaryColor),
                           // Branch Code & Name
-                          Icon(Icons.store, color: global.theme.onPrimarySecondaryColor, size: 14),
-                          const SizedBox(width: 4),
-                          Text(
-                            "${global.companyBranchSelectData.code} - ${global.activeLangName(global.companyBranchSelectData.names)}",
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: global.theme.onPrimaryColor,
-                              shadows: const [Shadow(offset: Offset(1.0, 1.0), blurRadius: 3.0, color: Color.fromARGB(128, 0, 0, 0))],
-                            ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.store, color: global.theme.onPrimarySecondaryColor, size: 13),
+                              const SizedBox(width: 4),
+                              Text(
+                                "${global.companyBranchSelectData.code} - ${global.activeLangName(global.companyBranchSelectData.names)}",
+                                style: TextStyle(fontSize: 12, color: global.theme.onPrimaryColor),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 10),
                           // Currency
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(color: Colors.amber.shade700, borderRadius: BorderRadius.circular(4)),
-                            child: Text(
-                              global.companyBranchSelectData.baseCurrency ?? 'THB',
-                              style: TextStyle(fontSize: 10, color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
+                          _infoBadge(global.companyBranchSelectData.baseCurrency ?? 'THB', Colors.amber.shade700),
                           // Year Type (พ.ศ. / ค.ศ.)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: global.companyBranchSelectData.yeartype == 'buddhist' ? Colors.purple.shade600 : Colors.blue.shade600,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              global.companyBranchSelectData.yeartype == 'buddhist' ? global.language("buddhist_era") : global.language("christian_era"),
-                              style: TextStyle(fontSize: 10, color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold),
-                            ),
+                          _infoBadge(
+                            global.companyBranchSelectData.yeartype == 'buddhist' ? global.language("buddhist_era") : global.language("christian_era"),
+                            global.companyBranchSelectData.yeartype == 'buddhist' ? Colors.purple.shade600 : Colors.blue.shade600,
                           ),
-                          const SizedBox(width: 6),
                           // Language
                           Builder(
                             builder: (context) {
                               final languageKey = global.language("languages");
                               final rawLanguage = global.companyBranchSelectData.language;
-
                               if (rawLanguage == null || rawLanguage.isEmpty) {
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(color: Colors.red.shade600, borderRadius: BorderRadius.circular(4)),
-                                  child: Text(
-                                    '$languageKey: ${global.language("not_configured")}',
-                                    style: TextStyle(fontSize: 11, color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold),
-                                  ),
-                                );
+                                return _infoBadge('$languageKey: ${global.language("not_configured")}', Colors.red.shade600);
                               }
-
-                              return Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(color: Colors.green.shade600, borderRadius: BorderRadius.circular(4)),
-                                child: Text(
-                                  '$languageKey: ${rawLanguage.toUpperCase()}',
-                                  style: TextStyle(fontSize: 11, color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold),
-                                ),
-                              );
+                              return _infoBadge('$languageKey: ${rawLanguage.toUpperCase()}', Colors.green.shade600);
                             },
                           ),
-                          const SizedBox(width: 6),
                           // Timezone
                           Builder(
                             builder: (context) {
                               final timezoneKey = global.language("timezone");
-
                               String? timezoneValue;
                               if (global.companyBranchSelectData.timezonelabel != null && global.companyBranchSelectData.timezonelabel!.isNotEmpty) {
                                 timezoneValue = global.companyBranchSelectData.timezonelabel!;
                               } else if (global.companyBranchSelectData.timezone != null && global.companyBranchSelectData.timezone!.isNotEmpty) {
                                 timezoneValue = global.companyBranchSelectData.timezone!;
                               }
-
                               if (timezoneValue == null) {
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(color: Colors.red.shade600, borderRadius: BorderRadius.circular(4)),
-                                  child: Text(
-                                    '$timezoneKey: ไม่ได้ตั้งค่า',
-                                    style: TextStyle(fontSize: 11, color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold),
-                                  ),
-                                );
+                                return _infoBadge('$timezoneKey: ${global.language("not_configured")}', Colors.red.shade600);
                               }
-
-                              return Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(color: Colors.teal.shade600, borderRadius: BorderRadius.circular(4)),
-                                child: Text(
-                                  '$timezoneKey: $timezoneValue',
-                                  style: TextStyle(fontSize: 11, color: global.theme.onPrimaryColor, fontWeight: FontWeight.bold),
-                                ),
-                              );
+                              return _infoBadge('$timezoneKey: $timezoneValue', Colors.teal.shade600);
                             },
                           ),
                           // LINE Profile Badge
@@ -1266,7 +1184,11 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin, g
                         padding: EdgeInsets.all(10),
                         child: Column(
                           children: [
+                            buildMenuCategoryContainer(title: global.language("procurement_list"), menuItems: transactionProcurementMenuList),
+                            SizedBox(height: 15),
                             buildMenuCategoryContainer(title: global.language("purchase_list"), menuItems: transactionPurchaseMenuList),
+                            SizedBox(height: 15),
+                            buildMenuCategoryContainer(title: global.language("purchase_payment_list"), menuItems: transactionPurchasePaymentMenuList),
                             SizedBox(height: 15),
                             buildMenuCategoryContainer(title: global.language("sales_list"), menuItems: transactionSaleMenuList),
                             SizedBox(height: 15),
@@ -1291,7 +1213,11 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin, g
                             SizedBox(height: 15),
                             buildMenuCategoryContainer(title: global.language("manage_database"), menuItems: masterProductMenuList),
                             SizedBox(height: 15),
-                            buildMenuCategoryContainer(title: global.language("manage_customers_creditors"), menuItems: customerMenuList),
+                            buildMenuCategoryContainer(title: global.language("manage_creditors"), menuItems: creditorMenuList),
+                            SizedBox(height: 15),
+                            buildMenuCategoryContainer(title: global.language("manage_debtors"), menuItems: customerMenuList),
+                            SizedBox(height: 15),
+                            buildMenuCategoryContainer(title: global.language("org_master_data"), menuItems: masterOrgMenuList),
                             SizedBox(height: 15),
                             buildMenuCategoryContainer(title: global.language("sales_settings"), menuItems: newMenuList),
                             SizedBox(height: 15),
@@ -1396,3 +1322,116 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin, g
   }
 }
 
+/// ปุ่มเมนูหลัก — hover scale up + press scale down + glow animation
+class _AnimatedMenuButton extends StatefulWidget {
+  final String label;
+  final IconData? icon;
+  final List<Color> gradientColors;
+  final VoidCallback? onTap;
+
+  const _AnimatedMenuButton({required this.label, this.icon, required this.gradientColors, this.onTap});
+
+  @override
+  State<_AnimatedMenuButton> createState() => _AnimatedMenuButtonState();
+}
+
+class _AnimatedMenuButtonState extends State<_AnimatedMenuButton> with SingleTickerProviderStateMixin {
+  bool _isHovered = false;
+  bool _isPressed = false;
+
+  double get _scale {
+    if (_isPressed) return 0.93;
+    if (_isHovered) return 1.05;
+    return 1.0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = global.isDarkMode();
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() { _isHovered = false; _isPressed = false; }),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) { setState(() => _isPressed = false); widget.onTap?.call(); },
+        onTapCancel: () => setState(() => _isPressed = false),
+        child: AnimatedScale(
+          scale: _scale,
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOutCubic,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: _isHovered
+                    ? [Color.lerp(widget.gradientColors[0], Colors.white, 0.12)!, Color.lerp(widget.gradientColors[1], Colors.white, 0.08)!]
+                    : widget.gradientColors,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: widget.gradientColors[0].withValues(alpha: _isHovered ? (isDark ? 0.35 : 0.5) : (isDark ? 0.15 : 0.35)),
+                  blurRadius: _isHovered ? 20 : (isDark ? 8 : 12),
+                  spreadRadius: _isHovered ? 1 : 0,
+                  offset: Offset(0, _isHovered ? 8 : 6),
+                ),
+              ],
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              child: Stack(
+                children: [
+                  // Decorative circle
+                  Positioned(
+                    top: -15,
+                    right: -15,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: _isHovered ? 60 : 50,
+                      height: _isHovered ? 60 : 50,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: global.theme.cardColor.withValues(alpha: _isHovered ? 0.18 : 0.1),
+                      ),
+                    ),
+                  ),
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (widget.icon != null) ...[
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: EdgeInsets.all(_isHovered ? 12 : 10),
+                            decoration: BoxDecoration(
+                              color: global.theme.cardColor.withValues(alpha: _isHovered ? 0.3 : 0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(widget.icon, size: 26, color: global.theme.onPrimaryColor),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        Center(
+                          child: AutoSizeText(
+                            widget.label,
+                            maxLines: 3,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: global.theme.onPrimaryColor, letterSpacing: 0.3),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

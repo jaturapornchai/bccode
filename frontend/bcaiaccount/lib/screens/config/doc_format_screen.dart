@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:smlaicloud/global.dart' as global;
+import 'package:smlaicloud/utils/focus_utils.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:split_view/split_view.dart';
 // ignore: depend_on_referenced_packages
@@ -985,7 +986,7 @@ class DocFormatScreenState extends State<DocFormatScreen>
                   setState(() {
                     screenData.isautoformat = value!;
                     if (value == true) {
-                      docFormatCodeFocusNode.requestFocus();
+                      focusAndCursorToEnd(docFormatCodeFocusNode);
                     } else {
                       exampleValue();
                     }
@@ -1455,9 +1456,29 @@ class DocFormatScreenState extends State<DocFormatScreen>
             ),
         ],
       ),
-      body: RawKeyboardListener(
-        focusNode: FocusNode(),
-        child: Builder(
+      body: Focus(
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) {
+              if (_formKey.currentState!.validate()) {
+                saveOrUpdateData();
+              }
+            }
+            return KeyEventResult.handled;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              FocusManager.instance.primaryFocus?.nextFocus();
+            }
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
+        },
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: Builder(
           builder: (context) {
             final scale = global.editFontScaleFactor;
             return MediaQuery(
@@ -1491,6 +1512,7 @@ class DocFormatScreenState extends State<DocFormatScreen>
               ),
             );
           },
+        ),
         ),
       ),
     );

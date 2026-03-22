@@ -41,7 +41,9 @@ import (
 	order_setting "smlcloudplatform/internal/order/setting"
 	"smlcloudplatform/internal/organization/branch"
 	"smlcloudplatform/internal/organization/businesstype"
+	"smlcloudplatform/internal/organization/costcenter"
 	"smlcloudplatform/internal/organization/department"
+	"smlcloudplatform/internal/organization/jobproject"
 	"smlcloudplatform/internal/payment/bankmaster"
 	"smlcloudplatform/internal/payment/bookbank"
 	"smlcloudplatform/internal/payment/qrpayment"
@@ -125,7 +127,9 @@ import (
 	"smlcloudplatform/internal/transaction/purchase"
 	"smlcloudplatform/internal/transaction/purchaseorder"
 	"smlcloudplatform/internal/transaction/purchasepartial"
+	"smlcloudplatform/internal/transaction/purchaserequisition"
 	"smlcloudplatform/internal/transaction/purchasereturn"
+	"smlcloudplatform/internal/transaction/rfq"
 	"smlcloudplatform/internal/transaction/quotation"
 	"smlcloudplatform/internal/transaction/receivedeposit"
 	"smlcloudplatform/internal/transaction/receivedepositrefund"
@@ -161,6 +165,8 @@ import (
 	purchase_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchase"
 	purchasedebitnote_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchasedebitnote"
 	purchaseorder_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchaseorder"
+	purchaserequisition_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchaserequisition"
+	rfq_consumer "smlcloudplatform/internal/transaction/transactionconsumer/rfq"
 	purchasereceive_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchasereceive"
 	purchasereturn_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchasereturn"
 
@@ -405,6 +411,8 @@ func main() {
 			branch.NewBranchHttp(ms, cfg),
 			department.NewDepartmentHttp(ms, cfg),
 			businesstype.NewBusinessTypeHttp(ms, cfg),
+			costcenter.NewCostCenterHttp(ms, cfg),
+			jobproject.NewJobProjectHttp(ms, cfg),
 
 			//transaction
 			purchase.NewPurchaseHttp(ms, cfg),
@@ -421,6 +429,8 @@ func main() {
 			stockbalance.NewStockBalanceHttp(ms, cfg),
 			stockbalancedetail.NewStockBalanceDetailHttp(ms, cfg),
 			purchaseorder.NewPurchaseOrderHttp(ms, cfg),
+			purchaserequisition.NewPurchaseRequisitionHttp(ms, cfg),
+			rfq.NewRFQHttp(ms, cfg),
 			quotation.NewQuotationHttp(ms, cfg),
 			saleorder.NewSaleOrderHttp(ms, cfg),
 			purchasepartial.NewPurchasepartialHttp(ms, cfg),
@@ -582,6 +592,8 @@ func main() {
 
 		// purchase
 		purchaseorder_consumer.MigrationDatabase(ms, cfg)     // สั่งซื้อสินค้า
+		purchaserequisition_consumer.MigrationDatabase(ms, cfg) // ใบขอซื้อ
+		rfq_consumer.MigrationDatabase(ms, cfg)                 // สืบราคา
 		purchase_consumer.MigrationDatabase(ms, cfg)          // ซื้อสินค้า
 		purchasereturn_consumer.MigrationDatabase(ms, cfg)    // ส่งคืนสินค้า
 		purchasedebitnote_consumer.MigrationDatabase(ms, cfg) // เพิ่มหนี้ซื้อสินค้า
@@ -662,6 +674,8 @@ func main() {
 
 		// purchase
 		ms.RegisterConsumer(purchaseorder_consumer.InitPurchaseOrderTransactionConsumer(ms, cfg))
+		ms.RegisterConsumer(purchaserequisition_consumer.InitPurchaseRequisitionTransactionConsumer(ms, cfg))
+		ms.RegisterConsumer(rfq_consumer.InitRFQTransactionConsumer(ms, cfg))
 		ms.RegisterConsumer(purchase_consumer.InitPurchaseTransactionConsumer(ms, cfg))
 		ms.RegisterConsumer(purchasereturn_consumer.InitPurchaseReturnTransactionConsumer(ms, cfg))
 		ms.RegisterConsumer(purchasereceive_consumer.InitPurchaseReceiveTransactionConsumer(ms, cfg))

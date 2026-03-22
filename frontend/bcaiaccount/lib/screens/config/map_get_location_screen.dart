@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/utils/logger/app_logger.dart';
 
@@ -24,6 +26,13 @@ class _MapGetLocationScreenState extends State<MapGetLocationScreen>
   double longitude = 0.0;
   double zoommap = 0.0;
   bool _isLocating = false;
+  int _mapType = 0; // 0 = OSM, 1 = Google
+
+  // Search
+  final _searchCtrl = TextEditingController();
+  List<Map<String, dynamic>> _searchResults = [];
+  bool _isSearching = false;
+  bool _showSearchResults = false;
 
   LatLng defaultLocation = const LatLng(0.0, 0.0);
 
@@ -46,6 +55,47 @@ class _MapGetLocationScreenState extends State<MapGetLocationScreen>
       zoommap = 15;
       defaultLocation = LatLng(latitude, longitude);
       customMarkers = [buildPin(defaultLocation)];
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  /// ค้นหาสถานที่ด้วย Nominatim (OpenStreetMap geocoding — รองรับภาษาไทย)
+  Future<void> _searchLocation(String query) async {
+    if (query.trim().isEmpty) {
+      setState(() { _searchResults.clear(); _showSearchResults = false; });
+      return;
+    }
+    setState(() => _isSearching = true);
+    try {
+      final uri = Uri.https('nominatim.openstreetmap.org', '/search', {
+        'q': query.trim(),
+        'format': 'json',
+        'accept-language': 'th,en',
+        'countrycodes': 'th',
+        'limit': '8',
+      });
+      final resp = await http.get(uri, headers: {
+        'User-Agent': 'BCAccountApp/1.0 (support@bcaicloud.com)',
+        'Accept-Language': 'th,en;q=0.9',
+        'Accept': 'application/json',
+      });
+      if (resp.statusCode == 200) {
+        final body = utf8.decode(resp.bodyBytes);
+        final list = json.decode(body) as List<dynamic>;
+        setState(() {
+          _searchResults = list.cast<Map<String, dynamic>>();
+          _showSearchResults = true;
+        });
+      }
+    } catch (e) {
+      AppLogger.warning('[Map] ค้นหาสถานที่ไม่สำเร็จ: $e');
+    } finally {
+      if (mounted) setState(() => _isSearching = false);
     }
   }
 
@@ -166,32 +216,127 @@ class _MapGetLocationScreenState extends State<MapGetLocationScreen>
               ),
             ),
           Expanded(
-            child: FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                initialCenter: LatLng(latitude, longitude),
-                initialZoom: zoommap,
-                onTap: (_, point) {
-                  setState(() {
-                    if (customMarkers.isNotEmpty) {
-                      customMarkers[0] = buildPin(point);
-                    } else {
-                      customMarkers.add(buildPin(point));
-                    }
-                    defaultLocation = point;
-                  });
-                },
-                interactionOptions: const InteractionOptions(
-                  flags: ~InteractiveFlag.doubleTapZoom,
-                ),
-              ),
+            child: Stack(
               children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.bcaicloud.bcaiaccount',
+                FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: LatLng(latitude, longitude),
+                    initialZoom: zoommap,
+                    onTap: (_, point) {
+                      setState(() {
+                        if (customMarkers.isNotEmpty) {
+                          customMarkers[0] = buildPin(point);
+                        } else {
+                          customMarkers.add(buildPin(point));
+                        }
+                        defaultLocation = point;
+                        _showSearchResults = false;
+                      });
+                    },
+                    interactionOptions: const InteractionOptions(
+                      flags: ~InteractiveFlag.doubleTapZoom,
+                    ),
+                  ),
+                  children: [
+                    if (_mapType == 0)
+                      TileLayer(
+                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.bcaicloud.bcaiaccount',
+                      )
+                    else
+                      TileLayer(
+                        urlTemplate: 'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+                        subdomains: const ['0', '1', '2', '3'],
+                        userAgentPackageName: 'com.bcaicloud.bcaiaccount',
+                      ),
+                    MarkerLayer(markers: customMarkers),
+                  ],
                 ),
-                MarkerLayer(
-                  markers: customMarkers,
+                // Search bar overlay
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  right: 8,
+                  child: Column(
+                    children: [
+                      Material(
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(8),
+                        color: global.theme.cardColor,
+                        child: TextField(
+                          controller: _searchCtrl,
+                          decoration: InputDecoration(
+                            hintText: global.language('search_location'),
+                            hintStyle: TextStyle(color: global.theme.textSecondaryColor),
+                            prefixIcon: _isSearching
+                                ? const Padding(
+                                    padding: EdgeInsets.all(12),
+                                    child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                                  )
+                                : Icon(Icons.search, color: global.theme.iconColor),
+                            suffixIcon: _searchCtrl.text.isNotEmpty
+                                ? IconButton(
+                                    icon: Icon(Icons.clear, size: 18, color: global.theme.textSecondaryColor),
+                                    onPressed: () => setState(() {
+                                      _searchCtrl.clear();
+                                      _searchResults.clear();
+                                      _showSearchResults = false;
+                                    }),
+                                  )
+                                : null,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                            filled: true,
+                            fillColor: global.theme.cardColor,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          ),
+                          style: TextStyle(color: global.theme.textColor),
+                          onSubmitted: _searchLocation,
+                          onChanged: (v) {
+                            if (v.isEmpty) setState(() { _searchResults.clear(); _showSearchResults = false; });
+                          },
+                        ),
+                      ),
+                      if (_showSearchResults && _searchResults.isNotEmpty)
+                        Material(
+                          elevation: 4,
+                          borderRadius: BorderRadius.circular(8),
+                          color: global.theme.cardColor,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxHeight: 220),
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              padding: EdgeInsets.zero,
+                              itemCount: _searchResults.length,
+                              separatorBuilder: (context, i) => Divider(height: 1, color: global.theme.textSecondaryColor.withValues(alpha: 0.2)),
+                              itemBuilder: (_, i) {
+                                final r = _searchResults[i];
+                                final lat = double.tryParse(r['lat']?.toString() ?? '') ?? 0;
+                                final lng = double.tryParse(r['lon']?.toString() ?? '') ?? 0;
+                                return ListTile(
+                                  dense: true,
+                                  leading: Icon(Icons.place_outlined, size: 18, color: global.theme.iconColor),
+                                  title: Text(
+                                    r['display_name']?.toString() ?? '',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(fontSize: 13, color: global.theme.textColor),
+                                  ),
+                                  onTap: () {
+                                    _updateLocation(lat, lng);
+                                    setState(() {
+                                      _searchCtrl.clear();
+                                      _searchResults.clear();
+                                      _showSearchResults = false;
+                                    });
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -202,6 +347,14 @@ class _MapGetLocationScreenState extends State<MapGetLocationScreen>
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
+          // ปุ่มสลับ map type
+          FloatingActionButton.small(
+            heroTag: 'mapType',
+            onPressed: () => setState(() => _mapType = _mapType == 0 ? 1 : 0),
+            backgroundColor: _mapType == 1 ? global.theme.primaryColor : global.theme.cardColor,
+            child: Icon(Icons.satellite_alt, size: 18, color: _mapType == 1 ? global.theme.cardColor : global.theme.textColor),
+          ),
+          const SizedBox(height: 10),
           // ปุ่มตำแหน่งปัจจุบัน — แสดงเสมอทุก platform
           FloatingActionButton(
             heroTag: 'currentLocation',

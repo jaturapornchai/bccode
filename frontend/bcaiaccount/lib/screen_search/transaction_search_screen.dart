@@ -71,7 +71,7 @@ class TransSearchScreenState extends State<TransSearchScreen> with SingleTickerP
   bool isKeyUp = false;
   bool isKeyDown = false;
   String selectGuid = "";
-  int _hoverIndex = -1;
+  final int _hoverIndex = -1;
   int currentListIndex = 0;
   final _debouncer = global.Debouncer(1000);
   int filterTransaction = 1;

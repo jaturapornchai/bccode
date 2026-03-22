@@ -18,10 +18,6 @@ class GroupNumberSelectScreen extends StatefulWidget {
 
 class GroupNumberSelectScreenState extends State<GroupNumberSelectScreen>
     with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
-  @override
-  void initState() {
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) {

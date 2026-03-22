@@ -1,25 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
+  <base href="/">
 
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
-  <!-- Base href - ใช้ static แทน dynamic -->
-  <base href="$FLUTTER_BASE_HREF">
-  
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="BC AI Cloud">
 
   <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -33,18 +19,21 @@
 
   <title>smlaicloud</title>
   <link rel="manifest" href="manifest.json">
-  
+
   <!-- PDF.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
   <script type="text/javascript">
     pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
   </script>
-  
+
   <!-- Google Maps -->
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAQYY9WaatF31ZsR69rb1zY73bLHWR-KcM&loading=async"></script>
-  
-  <!-- Google Sign-In (ใช้เฉพาะ Firebase Auth จะเรียกเอง) -->
+
+  <!-- Google Sign-In -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <!-- Flutter bootstrap -->
+  <script src="flutter_bootstrap.js" async></script>
 </head>
 <body>
   <!-- Loading indicator -->
@@ -69,7 +58,6 @@
       height: 80px;
       margin-bottom: 30px;
     ">
-      <!-- Outer spinning ring -->
       <div style="
         position: absolute;
         width: 80px;
@@ -80,8 +68,7 @@
         border-radius: 50%;
         animation: spin 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
       "></div>
-      
-      <!-- Inner circle -->
+
       <div style="
         position: absolute;
         top: 50%;
@@ -97,161 +84,58 @@
         justify-content: center;
         animation: pulse 2s ease-in-out infinite;
       ">
-        <!-- Cloud icon -->
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M18 10C19.3 10 20.4 10.4 21.3 11.1C21.7 10.1 22 9 22 8C22 4.7 19.3 2 16 2C13.4 2 11.2 3.6 10.3 5.9C9.9 5.8 9.5 5.7 9 5.7C6.2 5.7 4 7.9 4 10.7C4 11.1 4 11.4 4.1 11.8C2.3 12.5 1 14.2 1 16.2C1 18.9 3.1 21 5.8 21H18C20.2 21 22 19.2 22 17C22 14.8 20.2 13 18 13V10Z" fill="white" opacity="0.9"/>
         </svg>
       </div>
     </div>
-    
+
     <!-- Loading dots -->
-    <div style="
-      display: flex;
-      gap: 8px;
-      margin-top: 10px;
-    ">
-      <div style="
-        width: 8px;
-        height: 8px;
-        background: rgba(255,255,255,0.8);
-        border-radius: 50%;
-        animation: bounce 1.4s ease-in-out 0s infinite;
-      "></div>
-      <div style="
-        width: 8px;
-        height: 8px;
-        background: rgba(255,255,255,0.8);
-        border-radius: 50%;
-        animation: bounce 1.4s ease-in-out 0.2s infinite;
-      "></div>
-      <div style="
-        width: 8px;
-        height: 8px;
-        background: rgba(255,255,255,0.8);
-        border-radius: 50%;
-        animation: bounce 1.4s ease-in-out 0.4s infinite;
-      "></div>
+    <div style="display: flex; gap: 8px; margin-top: 10px;">
+      <div style="width: 8px; height: 8px; background: rgba(255,255,255,0.8); border-radius: 50%; animation: bounce 1.4s ease-in-out 0s infinite;"></div>
+      <div style="width: 8px; height: 8px; background: rgba(255,255,255,0.8); border-radius: 50%; animation: bounce 1.4s ease-in-out 0.2s infinite;"></div>
+      <div style="width: 8px; height: 8px; background: rgba(255,255,255,0.8); border-radius: 50%; animation: bounce 1.4s ease-in-out 0.4s infinite;"></div>
     </div>
   </div>
-  
+
   <style>
     @keyframes spin {
-      0% { 
-        transform: rotate(0deg);
-      }
-      100% { 
-        transform: rotate(360deg);
-      }
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
-    
     @keyframes pulse {
-      0%, 100% {
-        transform: translate(-50%, -50%) scale(1);
-        opacity: 1;
-      }
-      50% {
-        transform: translate(-50%, -50%) scale(1.05);
-        opacity: 0.8;
-      }
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      50% { transform: translate(-50%, -50%) scale(1.05); opacity: 0.8; }
     }
-    
     @keyframes bounce {
-      0%, 80%, 100% {
-        transform: translateY(0);
-        opacity: 0.8;
-      }
-      40% {
-        transform: translateY(-10px);
-        opacity: 1;
-      }
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.8; }
+      40% { transform: translateY(-10px); opacity: 1; }
     }
-    
-    #loading {
-      transition: opacity 0.5s ease-out;
-    }
+    #loading { transition: opacity 0.5s ease-out; }
   </style>
 
-  <!-- This script installs service_worker.js to provide PWA functionality to
-       application. For more information, see:
-       https://developers.google.com/web/fundamentals/primers/service-workers -->
-    <script>
-    var serviceWorkerVersion = '{{flutter_service_worker_version}}';
-    var scriptLoaded = false;
-    
-    function loadMainDartJs() {
-      if (scriptLoaded) {
-        return;
+  <script>
+    // Hide loading screen when Flutter engine starts rendering
+    var _loadingCheckInterval = setInterval(function() {
+      var fltGlassPane = document.querySelector('flt-glass-pane') || document.querySelector('flutter-view');
+      if (fltGlassPane) {
+        clearInterval(_loadingCheckInterval);
+        var loading = document.getElementById('loading');
+        if (loading) {
+          loading.style.opacity = '0';
+          setTimeout(function() { loading.remove(); }, 500);
+        }
       }
-      scriptLoaded = true;
-      var scriptTag = document.createElement('script');
-      scriptTag.src = 'main.dart.js';
-      scriptTag.type = 'application/javascript';
-      scriptTag.onload = function() {
-        // Hide loading screen when Flutter is ready
-        setTimeout(() => {
-          const loading = document.getElementById('loading');
-          if (loading) {
-            loading.style.opacity = '0';
-            setTimeout(() => loading.remove(), 500);
-          }
-        }, 1000);
-      };
-      document.body.append(scriptTag);
-    }
-
-    if ('serviceWorker' in navigator) {
-      // Service workers are supported. Use them.
-      window.addEventListener('load', function () {
-        // Wait for registration to finish before dropping the <script> tag.
-        // Otherwise, the browser will load the script multiple times,
-        // potentially different versions.
-        var serviceWorkerUrl = 'flutter_service_worker.js?v=' + serviceWorkerVersion;
-        navigator.serviceWorker.register(serviceWorkerUrl)
-          .then((reg) => {
-            function waitForActivation(serviceWorker) {
-              serviceWorker.addEventListener('statechange', () => {
-                if (serviceWorker.state == 'activated') {
-                  console.log('Installed new service worker.');
-                  loadMainDartJs();
-                }
-              });
-            }
-            if (!reg.active && (reg.installing || reg.waiting)) {
-              // No active web worker and we have installed or are installing
-              // one for the first time. Simply wait for it to activate.
-              waitForActivation(reg.installing || reg.waiting);
-            } else if (!reg.active.scriptURL.endsWith(serviceWorkerVersion)) {
-              // When the app updates the serviceWorkerVersion changes, so we
-              // need to ask the service worker to update.
-              console.log('New service worker available.');
-              reg.update();
-              waitForActivation(reg.installing);
-            } else {
-              // Existing service worker is still good.
-              console.log('Loading app from service worker.');
-              loadMainDartJs();
-            }
-          })
-          .catch((error) => {
-            console.warn('Service worker registration failed:', error);
-            loadMainDartJs();
-          });
-
-        // If service worker doesn't succeed in a reasonable amount of time,
-        // fallback to plain <script> tag.
-        setTimeout(() => {
-          if (!scriptLoaded) {
-            console.warn(
-              'Failed to load app from service worker. Falling back to plain <script> tag.',
-            );
-            loadMainDartJs();
-          }
-        }, 4000);
-      });
-    } else {
-      // Service workers not supported. Just drop the <script> tag.
-      loadMainDartJs();
-    }
-  </script>  
+    }, 200);
+    // Fallback: hide after 15 seconds no matter what
+    setTimeout(function() {
+      clearInterval(_loadingCheckInterval);
+      var loading = document.getElementById('loading');
+      if (loading) {
+        loading.style.opacity = '0';
+        setTimeout(function() { loading.remove(); }, 500);
+      }
+    }, 15000);
+  </script>
 </body>
 </html>

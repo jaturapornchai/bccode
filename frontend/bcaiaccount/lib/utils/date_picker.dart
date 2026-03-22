@@ -13,6 +13,9 @@ class CustomDatePicker extends StatefulWidget {
   final DateTime? initialDate;
   final DateTime? firstDate;
   final DateTime? lastDate;
+  final bool isDense; // ปรับความสูงให้กระชับ
+  final EdgeInsetsGeometry? contentPadding; // กำหนด padding เองได้
+  final double? borderRadius; // กำหนด borderRadius เองได้
 
   const CustomDatePicker({
     super.key,
@@ -24,6 +27,9 @@ class CustomDatePicker extends StatefulWidget {
     this.initialDate,
     this.firstDate,
     this.lastDate,
+    this.isDense = false,
+    this.contentPadding,
+    this.borderRadius,
     required InputDecoration decoration,
   });
 
@@ -322,7 +328,7 @@ class _CustomDatePickerState extends State<CustomDatePicker> with global.ThemeRe
       ],
       onChanged: _handleInput,
       onSubmitted: (_) => _completeDate(_controller.text),
-      style: TextStyle(fontSize: 14, color: global.theme.formTextColor),
+      style: TextStyle(fontSize: widget.isDense ? 13 : 14, color: global.theme.formTextColor),
       decoration: InputDecoration(
         labelText: widget.labelText,
         floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -332,12 +338,13 @@ class _CustomDatePickerState extends State<CustomDatePicker> with global.ThemeRe
           fontWeight: FontWeight.bold,
           fontSize: 14,
         ),
-        contentPadding: const EdgeInsets.symmetric(
+        isDense: widget.isDense,
+        contentPadding: widget.contentPadding ?? const EdgeInsets.symmetric(
           horizontal: 12,
           vertical: 14,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(widget.borderRadius ?? 10),
           borderSide: BorderSide(color: global.theme.formBorderColor),
         ),
         suffixIcon: (widget.useIconSelectDate == false)
@@ -355,15 +362,15 @@ class _CustomDatePickerState extends State<CustomDatePicker> with global.ThemeRe
         filled: true,
         fillColor: isDateValid ? global.theme.formFillColor : Colors.red.shade50,
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(widget.borderRadius ?? 10),
           borderSide: BorderSide(color: _primaryColor, width: 2.0),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(widget.borderRadius ?? 10),
           borderSide: BorderSide(color: global.theme.formBorderColor),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(widget.borderRadius ?? 10),
           borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
         ),
       ),

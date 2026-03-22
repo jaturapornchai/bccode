@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/public_name_model.dart';
+import 'package:smlaicloud/utils/focus_utils.dart';
 
 class PatternDetailModel {
   String code = "";
@@ -71,7 +72,7 @@ class PatternScreenState extends State<PatternScreen>
           IconButton(
             onPressed: () {
               tabController.index = 1;
-              nameFocusNode[0].requestFocus();
+              focusAndCursorToEnd(nameFocusNode[0]);
             },
             icon: Icon(Icons.add),
           ),
@@ -94,7 +95,7 @@ class PatternScreenState extends State<PatternScreen>
         detail.focus.add(FocusNode());
       }
       details.add(detail);
-      detail.focus[0].requestFocus();
+      focusAndCursorToEnd(detail.focus[0]);
     });
   }
 
@@ -155,7 +156,7 @@ class PatternScreenState extends State<PatternScreen>
                     for (var i = 0; i < details.length; i++)
                       ElevatedButton(
                         onPressed: () {
-                          details[i].focus[0].requestFocus();
+                          focusAndCursorToEnd(details[i].focus[0]);
                         },
                         child: Text(details[i].names[0].name),
                       ),

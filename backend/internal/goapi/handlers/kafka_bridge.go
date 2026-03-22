@@ -341,6 +341,34 @@ func CallPurchaseReturnDeleteConsumer(msg string) error {
 	return kafka.OnConsumeMessagePurchaseReturnDelete(msg)
 }
 
+// CallPurchaseRequisitionConsumer - ประมวลผลใบขอซื้อ (สร้าง/แก้ไข)
+// รับ JSON message จาก Kafka topic: when-purchaserequisition-created, when-purchaserequisition-updated
+// ส่งต่อไปยัง handlers/kafka/purchase_requisition.go
+func CallPurchaseRequisitionConsumer(msg string) error {
+	return kafka.OnConsumeMessagePurchaseRequisitionCreateOrUpdate(msg)
+}
+
+// CallPurchaseRequisitionDeleteConsumer - ประมวลผลการลบใบขอซื้อ
+// รับ JSON message จาก Kafka topic: when-purchaserequisition-deleted
+// ส่งต่อไปยัง handlers/kafka/purchase_requisition.go
+func CallPurchaseRequisitionDeleteConsumer(msg string) error {
+	return kafka.OnConsumeMessagePurchaseRequisitionDelete(msg)
+}
+
+// CallRFQConsumer - ประมวลผลใบขอใบเสนอราคา (สร้าง/แก้ไข)
+// รับ JSON message จาก Kafka topic: when-rfq-created, when-rfq-updated
+// ส่งต่อไปยัง handlers/kafka/rfq.go
+func CallRFQConsumer(msg string) error {
+	return kafka.OnConsumeMessageRFQCreateOrUpdate(msg)
+}
+
+// CallRFQDeleteConsumer - ประมวลผลการลบใบขอใบเสนอราคา
+// รับ JSON message จาก Kafka topic: when-rfq-deleted
+// ส่งต่อไปยัง handlers/kafka/rfq.go
+func CallRFQDeleteConsumer(msg string) error {
+	return kafka.OnConsumeMessageRFQDelete(msg)
+}
+
 // ============================================================================
 // ระบบสต็อก (Stock Management)
 // ============================================================================

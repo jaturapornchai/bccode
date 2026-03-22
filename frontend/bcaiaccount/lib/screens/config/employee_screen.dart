@@ -15,6 +15,7 @@ import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:smlaicloud/global.dart' as global;
+import 'package:smlaicloud/utils/focus_utils.dart';
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:split_view/split_view.dart';
@@ -103,7 +104,6 @@ class EmployeeScreenState extends State<EmployeeScreen>
       fieldFocusNodes[i].focusNode.addListener(() {
         if (fieldFocusNodes[i].focusNode.hasFocus) {
           focusNodeIndex = i;
-          fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
         }
       });
     }
@@ -223,6 +223,10 @@ class EmployeeScreenState extends State<EmployeeScreen>
       isSaveAllow = true;
       isEditMode = true;
     });
+    // Auto-focus: field แรกเป็น code (readOnly เมื่อ edit) → focus ตัวถัดไป
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      findFocusNext(-1);
+    });
   }
 
   Widget listScreen({bool mobileScreen = false}) {
@@ -340,14 +344,12 @@ class EmployeeScreenState extends State<EmployeeScreen>
                       );
                       headerEdit = global.language("append");
                       isSaveAllow = true;
-                      if (mobileScreen) {
-                        WidgetsBinding.instance.addPostFrameCallback((
-                          timeStamp,
-                        ) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mobileScreen) {
                           tabController.animateTo(1);
-                        });
-                      }
-                      fieldFocusNodes[0].focusNode.requestFocus();
+                        }
+                        focusAndCursorToEnd(fieldFocusNodes[0].focusNode);
+                      });
                     });
                   },
                 );
@@ -778,6 +780,19 @@ class EmployeeScreenState extends State<EmployeeScreen>
     }
   }
 
+  void findFocusPrev(int index) {
+    focusNodeIndex = index;
+    do {
+      focusNodeIndex--;
+      if (focusNodeIndex < 0) {
+        focusNodeIndex = focusNodeMax;
+      }
+    } while (fieldFocusNodes[focusNodeIndex].isReadOnly);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex].focusNode);
+    });
+  }
+
   void findFocusNext(int index) {
     focusNodeIndex = index;
     do {
@@ -786,8 +801,9 @@ class EmployeeScreenState extends State<EmployeeScreen>
         focusNodeIndex = 0;
       }
     } while (fieldFocusNodes[focusNodeIndex].isReadOnly);
-    // print("findFocusNext=$focusNodeIndex");
-    refreshFocus = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex].focusNode);
+    });
   }
 
   Color _getContainerColor(String itemGuid, int index) {
@@ -808,11 +824,13 @@ class EmployeeScreenState extends State<EmployeeScreen>
     List<Widget> formWidgets = [];
 
     focusNodeMax = 0;
+    fieldFocusNodes[0].isReadOnly = screenData.code.isNotEmpty;
     formWidgets.add(
       Padding(
         padding: EdgeInsets.only(left: 10, right: 10, bottom: 15),
         child: TextFormField(
           enabled: screenData.code.isEmpty,
+          focusNode: fieldFocusNodes[focusNodeMax].focusNode,
           textAlign: TextAlign.left,
           controller: employeeCode,
           textCapitalization: TextCapitalization.characters,
@@ -992,6 +1010,7 @@ class EmployeeScreenState extends State<EmployeeScreen>
         child: Row(
           children: [
             Checkbox(
+              focusNode: FocusNode(skipTraversal: true),
               value: screenData.isusepos,
               onChanged: (bool? value) {
                 setState(() {
@@ -1018,6 +1037,7 @@ class EmployeeScreenState extends State<EmployeeScreen>
                   children: [
                     Expanded(
                       child: ElevatedButton(
+                        focusNode: FocusNode(skipTraversal: true),
                         style: ButtonStyle(
                           backgroundColor: WidgetStateProperty.all<Color>(
                             global.theme.warningHighlightTextColor,
@@ -1067,6 +1087,7 @@ class EmployeeScreenState extends State<EmployeeScreen>
                     ),
                     const SizedBox(width: 10),
                     IconButton(
+                      focusNode: FocusNode(skipTraversal: true),
                       onPressed: (isEditMode)
                           ? () {
                               setState(() {
@@ -1298,22 +1319,20 @@ class EmployeeScreenState extends State<EmployeeScreen>
           width: double.infinity,
           padding: const EdgeInsets.only(left: 10, right: 10, bottom: 15),
           child: ElevatedButton.icon(
+            focusNode: FocusNode(skipTraversal: true),
             onPressed:
                 _isLoadingSave // Disable the button when loading
                 ? null
                 : () async {
                     if (_formKey.currentState!.validate()) {
                       await saveOrUpdateData(); // Perform the operation
-                      // No need to set _isLoading to false here if it's already set in saveOrUpdateData
                     }
                   },
             icon: _isLoadingSave
                 ? Container(
                     width: 24,
                     height: 24,
-                    margin: const EdgeInsets.only(
-                      right: 8,
-                    ), // Add some spacing between the loader and the label text
+                    margin: const EdgeInsets.only(right: 8),
                     child: const CircularProgressIndicator(
                       strokeWidth: 3,
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -1322,7 +1341,6 @@ class EmployeeScreenState extends State<EmployeeScreen>
                 : Icon(Icons.save),
             label: Text(
               global.language("save") + ((kIsWeb) ? " (F10)" : ""),
-              // Update the text to show "saving" or similar feedback when loading
             ),
           ),
         ),
@@ -1420,6 +1438,7 @@ class EmployeeScreenState extends State<EmployeeScreen>
             Padding(
               padding: const EdgeInsets.only(right: 20.0),
               child: IconButton(
+                focusNode: FocusNode(skipTraversal: true),
                 onPressed:
                     _isLoadingSave // Disable the button when loading
                     ? null
@@ -1447,25 +1466,29 @@ class EmployeeScreenState extends State<EmployeeScreen>
             ),
         ],
       ),
-      body: RawKeyboardListener(
-              focusNode: FocusNode(),
-              onKey: (RawKeyEvent event) {
-                if (event is RawKeyDownEvent) {
-                  if (event.logicalKey == LogicalKeyboardKey.f10) {
+      body: Focus(
+              skipTraversal: true,
+              onKeyEvent: (node, event) {
+                if (event is KeyUpEvent) return KeyEventResult.ignored;
+                if (event.logicalKey == LogicalKeyboardKey.f10) {
+                  if (event is KeyDownEvent) {
                     if (_formKey.currentState!.validate()) {
                       saveOrUpdateData();
                     }
                   }
-                  if (event.logicalKey == LogicalKeyboardKey.tab ||
-                      event.logicalKey == LogicalKeyboardKey.enter) {
-                    if (event.isShiftPressed) {
-                    } else {
-                      findFocusNext(focusNodeIndex);
-                    }
-                  }
+                  return KeyEventResult.handled;
                 }
+                if (event.logicalKey == LogicalKeyboardKey.enter) {
+                  if (event is KeyDownEvent) {
+                    FocusManager.instance.primaryFocus?.nextFocus();
+                  }
+                  return KeyEventResult.handled;
+                }
+                return KeyEventResult.ignored;
               },
-              child: Builder(
+              child: FocusTraversalGroup(
+                policy: TextFieldTraversalPolicy(),
+                child: Builder(
                 builder: (context) {
                   final scale = global.editFontScaleFactor;
                   return MediaQuery(
@@ -1500,6 +1523,7 @@ class EmployeeScreenState extends State<EmployeeScreen>
                   );
                 },
               ),
+            ),
             ),
     );
   }
@@ -1633,12 +1657,8 @@ class EmployeeScreenState extends State<EmployeeScreen>
                       employeeCode.text = screenData.code;
 
                       if (isEditMode) {
-                        WidgetsBinding.instance.addPostFrameCallback((
-                          timeStamp,
-                        ) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
                           tabController.animateTo(1);
-                        });
-                        setState(() {
                           findFocusNext(0);
                         });
                       }

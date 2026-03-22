@@ -77,9 +77,12 @@ class TransDeleteMany extends TransEvent {
 class TransSave extends TransEvent {
   final TransactionModel trans;
   final TransactionTypeEnum type;
+  /// PR/RFQ extra fields ที่ไม่มีใน TransactionModel (departmentcode, jobcode, shiptoaddress ฯลฯ)
+  final Map<String, dynamic>? extraFields;
   const TransSave({
     required this.trans,
     required this.type,
+    this.extraFields,
   });
 
   @override
@@ -90,10 +93,13 @@ class TransUpdate extends TransEvent {
   final String guid;
   final TransactionModel trans;
   final TransactionTypeEnum type;
+  /// PR/RFQ extra fields ที่ไม่มีใน TransactionModel
+  final Map<String, dynamic>? extraFields;
   const TransUpdate({
     required this.guid,
     required this.trans,
     required this.type,
+    this.extraFields,
   });
 
   @override

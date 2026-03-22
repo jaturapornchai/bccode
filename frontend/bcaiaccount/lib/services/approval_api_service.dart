@@ -587,6 +587,114 @@ class ApprovalApiService {
     }
   }
 
+  /// อนุมัติ PO (สำหรับผู้มีสิทธิ์อนุมัติ)
+  static Future<WithdrawApprovalResult> approvePOApproval({
+    required String docNo,
+    required String actionBy,
+    required String actionByName,
+    String comment = '',
+  }) async {
+    final httpClient = http.Client();
+    try {
+      final url = Uri.parse("$_baseUrl/api/approval/po-status/approve");
+
+      final body = {
+        "shop_id": global.getShopId(),
+        "docno": docNo,
+        "action_by": actionBy,
+        "action_by_name": actionByName,
+        "comment": comment,
+      };
+
+      AppLogger.info('[ApprovalAPI] POST $url');
+      AppLogger.debug('[ApprovalAPI] Body: $body');
+
+      final response = await httpClient.post(
+        url,
+        headers: _headers,
+        body: jsonEncode(body),
+      );
+
+      AppLogger.info('[ApprovalAPI] Response: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        if (json['success'] == true) {
+          return WithdrawApprovalResult.fromJson(json);
+        }
+        return WithdrawApprovalResult.error(json['message'] ?? 'Unknown error');
+      }
+
+      if (response.statusCode == 403) {
+        final json = jsonDecode(response.body);
+        return WithdrawApprovalResult.error(json['message'] ?? 'ไม่มีสิทธิ์อนุมัติ');
+      }
+
+      return WithdrawApprovalResult.error(
+        "API call failed: ${response.reasonPhrase}",
+      );
+    } catch (e) {
+      AppLogger.error('[ApprovalAPI] Approve PO error: $e');
+      return WithdrawApprovalResult.error("Connection failed: $e");
+    } finally {
+      httpClient.close();
+    }
+  }
+
+  /// ปฏิเสธ PO พร้อมเหตุผล (สำหรับผู้มีสิทธิ์อนุมัติ)
+  static Future<WithdrawApprovalResult> rejectPOApproval({
+    required String docNo,
+    required String actionBy,
+    required String actionByName,
+    String comment = '',
+  }) async {
+    final httpClient = http.Client();
+    try {
+      final url = Uri.parse("$_baseUrl/api/approval/po-status/reject");
+
+      final body = {
+        "shop_id": global.getShopId(),
+        "docno": docNo,
+        "action_by": actionBy,
+        "action_by_name": actionByName,
+        "comment": comment,
+      };
+
+      AppLogger.info('[ApprovalAPI] POST $url');
+      AppLogger.debug('[ApprovalAPI] Body: $body');
+
+      final response = await httpClient.post(
+        url,
+        headers: _headers,
+        body: jsonEncode(body),
+      );
+
+      AppLogger.info('[ApprovalAPI] Response: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        if (json['success'] == true) {
+          return WithdrawApprovalResult.fromJson(json);
+        }
+        return WithdrawApprovalResult.error(json['message'] ?? 'Unknown error');
+      }
+
+      if (response.statusCode == 403) {
+        final json = jsonDecode(response.body);
+        return WithdrawApprovalResult.error(json['message'] ?? 'ไม่มีสิทธิ์ปฏิเสธ');
+      }
+
+      return WithdrawApprovalResult.error(
+        "API call failed: ${response.reasonPhrase}",
+      );
+    } catch (e) {
+      AppLogger.error('[ApprovalAPI] Reject PO error: $e');
+      return WithdrawApprovalResult.error("Connection failed: $e");
+    } finally {
+      httpClient.close();
+    }
+  }
+
   /// ส่งคำเตือนผู้อนุมัติซ้ำ (สำหรับ PO ที่รออนุมัติอยู่)
   /// จะส่ง notification ใหม่แม้จะเคยส่งไปแล้ว
   static Future<ResendNotificationResult> resendApprovalNotification({

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smlaicloud/model/product_model.dart';
 import 'package:smlaicloud/model/transaction_model.dart';
-import 'package:smlaicloud/screen_search/barcode_search_screen.dart';
 import 'package:smlaicloud/screen_search/cart_search_screen.dart';
 import 'package:smlaicloud/global.dart' as global;
 
@@ -15,6 +14,10 @@ class BottomBarWidget extends StatelessWidget {
   final Function(void Function()) setState;
   final BuildContext context;
 
+  /// ถ้าส่ง callback นี้มา → กดค้นหา/เพิ่ม จะเรียก callback แทน Navigator.push
+  /// ใช้สำหรับ persistent search overlay (ไม่ dispose จอค้นหา)
+  final VoidCallback? onSearchOverride;
+
   const BottomBarWidget({
     super.key,
     required this.transactionType,
@@ -25,6 +28,7 @@ class BottomBarWidget extends StatelessWidget {
     required this.onEmptyProductAdded,
     required this.setState,
     required this.context,
+    this.onSearchOverride,
   });
 
   @override
@@ -80,9 +84,7 @@ class BottomBarWidget extends StatelessWidget {
         if (isPaymentType) ...[
           _buildSimpleButton(icon: Icons.add, label: global.language('add'), onPressed: onEmptyProductAdded),
         ] else ...[
-          // แสดงปุ่มทั้งหมดสำหรับ transaction type อื่นๆ
-          _buildSimpleButton(icon: Icons.search, label: global.language('search'), onPressed: _handleSearchPressed),
-          SizedBox(width: 6),
+          // แสดงปุ่มสแกนและเพิ่มสินค้า
           _buildSimpleButton(icon: Icons.qr_code_scanner, label: global.language('scan'), onPressed: onBarcodePressed),
           SizedBox(width: 6),
           _buildSimpleButton(icon: Icons.add, label: global.language('add'), onPressed: onEmptyProductAdded),
@@ -207,23 +209,6 @@ class BottomBarWidget extends StatelessWidget {
         transactionType == global.TransactionTypeEnum.stockpickupproduct ||
         transactionType == global.TransactionTypeEnum.stockreturnproduct ||
         transactionType == global.TransactionTypeEnum.adjust);
-  }
-
-  void _handleSearchPressed() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            BarcodeSearchScreen(word: '', screen: (transactionType == global.TransactionTypeEnum.sale || transactionType == global.TransactionTypeEnum.salereturn) ? 'not_material' : 'material'),
-      ),
-    ).then((value) {
-      if (value != null) {
-        ProductBarcodeModel result = value;
-        if (result.barcode!.trim().isNotEmpty) {
-          onProductAdded(result);
-        }
-      }
-    });
   }
 
   void _handleCartButtonPressed() {

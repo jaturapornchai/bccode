@@ -1,4 +1,5 @@
-﻿import 'package:smlaicloud/bloc/holiday/holiday_bloc.dart';
+﻿import 'package:smlaicloud/utils/date_picker.dart';
+import 'package:smlaicloud/bloc/holiday/holiday_bloc.dart';
 import 'package:smlaicloud/model/holiday_model.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
@@ -8,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smlaicloud/global.dart' as global;
+import 'package:smlaicloud/utils/focus_utils.dart';
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:split_view/split_view.dart';
@@ -305,7 +307,7 @@ class HolidayScreenState extends State<HolidayScreen>
                       isSaveAllow = true;
                       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
                         tabController.animateTo(1);
-                        fieldFocusNodes[0].requestFocus();
+                        focusFirstTextField(context);
                       });
                     });
                   },
@@ -695,28 +697,9 @@ class HolidayScreenState extends State<HolidayScreen>
     if (focusNodeIndex > fieldFocusNodes.length - 1) {
       focusNodeIndex = 0;
     }
-    fieldFocusNodes[focusNodeIndex].requestFocus();
-    fieldTextController[focusNodeIndex].selection = TextSelection.fromPosition(
-      TextPosition(offset: fieldTextController[focusNodeIndex].text.length),
-    );
+    focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex]);
   }
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: selectedDate,
-      firstDate: DateTime(2022, 8),
-      lastDate: DateTime(2101),
-    );
-    if (picked != null && picked != selectedDate) {
-      setState(() {
-        selectedDate = picked;
-      });
-      fieldTextController[languageList.length].text = picked.toString().split(
-        " ",
-      )[0];
-    }
-  }
 
   Widget editScreen({mobileScreen}) {
     return Scaffold(
@@ -837,21 +820,24 @@ class HolidayScreenState extends State<HolidayScreen>
         ],
       ),
       body: Focus(
-        focusNode: FocusNode(skipTraversal: true),
+        skipTraversal: true,
         onKeyEvent: (node, event) {
-          if (kIsWeb) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) saveOrUpdateData();
+            return KeyEventResult.handled;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
             if (event is KeyDownEvent) {
-              if (event.logicalKey == LogicalKeyboardKey.f2) {
-                searchFocusNode.requestFocus();
-              }
-              if (event.logicalKey == LogicalKeyboardKey.f10) {
-                saveOrUpdateData();
-              }
+              FocusManager.instance.primaryFocus?.nextFocus();
             }
+            return KeyEventResult.handled;
           }
           return KeyEventResult.ignored;
         },
-        child: Builder(
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: Builder(
           builder: (context) {
             final scale = global.editFontScaleFactor;
             return MediaQuery(
@@ -912,24 +898,22 @@ class HolidayScreenState extends State<HolidayScreen>
                       ),
                     ),
                   ),
-                TextFormField(
-                  readOnly: !isEditMode,
-                  controller: fieldTextController[languageList.length],
-                  decoration: InputDecoration(
-                    border: const OutlineInputBorder(),
-                    contentPadding: EdgeInsets.only(
-                      left: 10,
-                      top: 0,
-                      bottom: 0,
-                      right: 10,
-                    ),
-                    floatingLabelBehavior: FloatingLabelBehavior.always,
-                    labelText: global.language("doc_date"),
-                    labelStyle: TextStyle(
-                      color: global.theme.inputTextBoxForceColor,
-                    ),
-                  ),
-                  onTap: () => (isEditMode) ? _selectDate(context) : null,
+                CustomDatePicker(
+                  labelText: global.language("doc_date"),
+                  useIconSelectDate: true,
+                  initialDate: selectedDate,
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                  onDateSelected: (date) {
+                    if (date != null) {
+                      setState(() {
+                        selectedDate = date;
+                        fieldTextController[languageList.length].text =
+                            date.toString().split(" ")[0];
+                      });
+                    }
+                  },
+                  decoration: const InputDecoration(),
                 ),
                 const SizedBox(height: 10),
                 if (isSaveAllow)
@@ -957,6 +941,7 @@ class HolidayScreenState extends State<HolidayScreen>
               ),
             );
           },
+        ),
         ),
       ),
     );
@@ -1088,8 +1073,8 @@ class HolidayScreenState extends State<HolidayScreen>
                       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
                         tabController.animateTo(1);
                       });
-                      setState(() {
-                        findFocusNext(0);
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        focusFirstTextField(context);
                       });
                     }
                   });

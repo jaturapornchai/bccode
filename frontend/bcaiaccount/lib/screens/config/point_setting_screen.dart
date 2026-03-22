@@ -14,6 +14,7 @@ import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:smlaicloud/global.dart' as global;
+import 'package:smlaicloud/utils/focus_utils.dart';
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:split_view/split_view.dart';
@@ -109,7 +110,6 @@ class PointSettingScreenState extends State<PointSettingScreen>
       fieldFocusNodes[i].focusNode.addListener(() {
         if (fieldFocusNodes[i].focusNode.hasFocus) {
           focusNodeIndex = i;
-          fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
         }
       });
     }
@@ -121,7 +121,7 @@ class PointSettingScreenState extends State<PointSettingScreen>
     // แก้ไข: ใช้ milliseconds แทน microseconds
     screenTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
       if (refreshFocus) {
-        fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
+        focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex].focusNode);
         refreshFocus = false;
       }
     });
@@ -199,7 +199,6 @@ class PointSettingScreenState extends State<PointSettingScreen>
 
     isDataChange = false;
     focusNodeIndex = 0;
-    refreshFocus = true;
 
     imageFile = [File('')];
     imageWeb = [Uint8List(0)];
@@ -770,25 +769,25 @@ class PointSettingScreenState extends State<PointSettingScreen>
             ),
         ],
       ),
-      body: KeyboardListener(
-        focusNode: FocusNode(),
-        onKeyEvent: (KeyEvent event) {
-          if (event is KeyDownEvent) {
-            // print(event.logicalKey);
-            if (event.logicalKey == LogicalKeyboardKey.f10) {
-              saveOrUpdateData();
-            }
-            if (event.logicalKey == LogicalKeyboardKey.tab ||
-                event.logicalKey == LogicalKeyboardKey.enter) {
-              if (HardwareKeyboard.instance.isShiftPressed) {
-                //findFocusPrev(focusNodeIndex);
-              } else {
-                findFocusNext(focusNodeIndex);
-              }
-            }
+      body: Focus(
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) saveOrUpdateData();
+            return KeyEventResult.handled;
           }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              FocusManager.instance.primaryFocus?.nextFocus();
+            }
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
         },
-        child: Builder(
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: Builder(
           builder: (context) {
             final scale = global.editFontScaleFactor;
             return MediaQuery(
@@ -819,6 +818,7 @@ class PointSettingScreenState extends State<PointSettingScreen>
               ),
             );
           },
+        ),
         ),
       ),
     );
@@ -894,8 +894,8 @@ class PointSettingScreenState extends State<PointSettingScreen>
                         ) {
                           tabController.animateTo(1);
                         });
-                        setState(() {
-                          findFocusNext(0);
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          focusFirstTextField(context);
                         });
                       }
                     });

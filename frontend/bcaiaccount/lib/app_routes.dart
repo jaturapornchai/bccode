@@ -8,6 +8,8 @@ import 'package:smlaicloud/screens/config/product_group_screen.dart';
 import 'package:smlaicloud/screens/config/product_category_list_screen.dart';
 import 'package:smlaicloud/screens/config/company_branch_screen.dart';
 import 'package:smlaicloud/screens/config/department_screen.dart';
+import 'package:smlaicloud/screens/config/cost_center_screen.dart';
+import 'package:smlaicloud/screens/config/job_project_screen.dart';
 import 'package:smlaicloud/screens/config/employee_screen.dart';
 import 'package:smlaicloud/screens/formdesign/form_design.dart';
 import 'package:smlaicloud/screens/config/user_screen.dart';
@@ -52,7 +54,10 @@ import 'package:smlaicloud/screens/import/import_product_image_screen.dart';
 import 'package:smlaicloud/screens/transaction/transaction_stock_balance.dart';
 import 'package:smlaicloud/screens/transaction/transaction_edit.dart';
 import 'package:smlaicloud/screens/purchaseorder/purchaseorder_edit_screen.dart';
+import 'package:smlaicloud/screens/purchaserequisition/purchaserequisition_edit_screen.dart';
+import 'package:smlaicloud/screens/rfq/rfq_edit_screen.dart';
 import 'package:smlaicloud/screens/purchaseorder/purchaseorder_list_screen.dart';
+import 'package:smlaicloud/screens/procurement_dashboard/procurement_dashboard_screen.dart';
 import 'package:smlaicloud/screens/transaction/transaction_paid.dart';
 import 'package:smlaicloud/screens/gl/gl_process_screen.dart';
 import 'package:smlaicloud/screens/check_daily/daily_info_screen.dart';
@@ -141,6 +146,14 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const BusinessTypeScreen(), settings: settings);
       case '/department':
         return MaterialPageRoute(builder: (_) => const DepartmentScreen(), settings: settings);
+      case '/costcenter':
+        return MaterialPageRoute(builder: (_) => const CostCenterScreen(), settings: settings);
+      case '/jobproject':
+        return MaterialPageRoute(builder: (_) => const JobProjectScreen(), settings: settings);
+      case '/project':
+        return MaterialPageRoute(builder: (_) => const JobProjectScreen(isProjectMode: true), settings: settings);
+      case '/job':
+        return MaterialPageRoute(builder: (_) => const JobProjectScreen(isProjectMode: false), settings: settings);
       case '/employee':
         return MaterialPageRoute(builder: (_) => const EmployeeScreen(), settings: settings);
       case '/formdesign':
@@ -342,6 +355,10 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const AddProductToDepartmentScreen(), settings: settings);
       case '/add_product_to_kitchen_screen':
         return MaterialPageRoute(builder: (_) => const AddProductToKitchenScreen(), settings: settings);
+      case '/transaction/purchaserequisition':
+        return MaterialPageRoute(builder: (_) => const PurchaseRequisitionEditScreen(), settings: settings);
+      case '/transaction/rfq':
+        return MaterialPageRoute(builder: (_) => const RFQEditScreen(), settings: settings);
       case '/transaction/purchaseorder':
         return MaterialPageRoute(
           builder: (_) => const PurchaseOrderEditScreen(),
@@ -350,6 +367,11 @@ class AppRoutes {
       case '/transaction/purchaseorder_list':
         return MaterialPageRoute(
           builder: (_) => const PurchaseOrderListScreen(),
+          settings: settings,
+        );
+      case '/procurement/dashboard':
+        return MaterialPageRoute(
+          builder: (_) => const ProcurementDashboardScreen(),
           settings: settings,
         );
       case '/transaction/advancepayment':

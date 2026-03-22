@@ -1115,6 +1115,9 @@ class PdfService {
           initialOrientation: orientation,
           initialFontSize: fontSize,
           initialColorMode: colorMode,
+          initialFontSizes: PdfFontSizes(),
+          initialTemplateId: '',
+          initialDateSettings: PdfDateSettings(),
           initialThemeName: themeName,
           isMultiCurrency: isMultiCurrency,
         ),
@@ -2069,10 +2072,10 @@ class _PdfViewerDialog extends StatefulWidget {
     required this.initialOrientation,
     required this.initialFontSize,
     required this.initialColorMode,
+    required this.initialFontSizes,
+    required this.initialTemplateId,
+    required this.initialDateSettings,
     this.initialThemeName = 'default',
-    this.initialFontSizes = const PdfFontSizes(),
-    this.initialTemplateId = 'default',
-    this.initialDateSettings = const PdfDateSettings(),
     this.isMultiCurrency = false,
   });
 

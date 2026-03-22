@@ -50,7 +50,11 @@ bcai-claude-skills/
 │   ├── master-data/SKILL.md
 │   ├── data-list/SKILL.md
 │   ├── theming/SKILL.md
-│   └── formdesign/SKILL.md
+│   ├── formdesign/SKILL.md
+│   ├── tab-focus/SKILL.md
+│   ├── date-time-picker/SKILL.md
+│   ├── procurement/SKILL.md      ← PR/RFQ/PO feature tracker + competitive analysis
+│   └── auto-packing/SKILL.md    ← Pick&Pack, BOM, auto packing, shipping label
 ├── references/            ← Domain knowledge + code templates
 │   ├── core/
 │   │   ├── business-rules.md     ← Validation, checklist, common mistakes
@@ -58,7 +62,8 @@ bcai-claude-skills/
 │   │   ├── system-flow.md        ← System overview (Mermaid diagrams)
 │   │   ├── database-schema.md    ← PostgreSQL/MongoDB/ClickHouse tables
 │   │   ├── schema-migration.md   ← กฎเมื่อ DB schema เปลี่ยน
-│   │   └── cross-system-workflow.md ← Frontend ↔ Backend workflow
+│   │   ├── cross-system-workflow.md ← Frontend ↔ Backend workflow
+│   │   └── procurement-flow.md   ← PR → RFQ → PO flow (API, DB, Kafka, Approval)
 │   ├── flutter/
 │   │   ├── bloc-pattern.md       ← BLoC code templates เต็มรูปแบบ
 │   │   ├── api-client.md         ← Dio, ApiResponse, GoAPI URLs
@@ -66,7 +71,8 @@ bcai-claude-skills/
 │   └── go/
 │       ├── handlers.md           ← Handler templates (list/save/approve)
 │       ├── database-queries.md   ← SQL patterns (PG/Mongo/ClickHouse)
-│       └── mcp-tools.md          ← วิธีสร้าง + register MCP tools
+│       ├── mcp-tools.md          ← วิธีสร้าง + register MCP tools
+│       └── inventory-costing.md  ← Inventory Costing System (7 methods)
 └── docs/
     └── mcp-tools-guide.md        ← MCP tools reference (41 tools)
 ```
@@ -109,10 +115,12 @@ bcai-claude-skills/
 |---------|----------------|
 | **ทุกงาน** | `references/core/business-rules.md` — checklist + common mistakes |
 | **งานเอกสาร (PO/SO/Invoice)** | `references/core/document-flows.md` — state transitions |
+| **งานจัดซื้อ (PR/RFQ/PO)** | `references/core/procurement-flow.md` — PR→RFQ→PO API/DB/Kafka |
 | **เชื่อมต่อ frontend-backend** | `references/core/cross-system-workflow.md` — MCP-first, API spec |
 | **DB schema เปลี่ยน** | `references/core/schema-migration.md` — migration checklist |
 | **Flutter frontend** | `references/flutter/bloc-pattern.md`, `api-client.md`, `ui-components.md` |
 | **Go backend** | `references/go/handlers.md`, `database-queries.md`, `mcp-tools.md` |
+| **Inventory Costing** | `references/go/inventory-costing.md` — 7 costing methods, API, DB schema |
 | **ดู DB structure** | `references/core/database-schema.md` — tables + columns |
 | **ดู MCP tools** | `docs/mcp-tools-guide.md` — 41 tools reference |
 
@@ -149,6 +157,8 @@ bcai-claude-skills/
 | สร้าง workflow ใหม่ | สร้าง skill ใหม่ใน `skills/` |
 | Jead บอก "จำไว้" | เขียนลง identity.md หรือ rules/ ทันที |
 | พบ code pattern ใหม่ | เพิ่มใน `references/{domain}/` |
+| **แก้ code PR/RFQ/PO** | **update `skills/procurement/references/feature-matrix.md` ทันที** |
+| **แก้ code packing/BOM** | **update `skills/auto-packing/references/feature-status.md` ทันที** |
 
 **เป้าหมาย:** ยิ่งทำงานกับ Jead มาก → bcai-claude-skills ยิ่งฉลาดขึ้น → AI ตัวใหม่เข้าใจ Jead เร็วขึ้น
 

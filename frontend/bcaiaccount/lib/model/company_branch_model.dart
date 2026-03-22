@@ -79,6 +79,57 @@ class CompanyBranchModel {
   @JsonKey(name: 'is_pharmacy')
   bool? isPharmacy;
 
+  @JsonKey(name: 'is_service')
+  bool? isService;
+
+  @JsonKey(name: 'is_manufacturing')
+  bool? isManufacturing;
+
+  @JsonKey(name: 'is_import_export')
+  bool? isImportExport;
+
+  @JsonKey(name: 'is_contractor')
+  bool? isContractor;
+
+  @JsonKey(name: 'is_rental')
+  bool? isRental;
+
+  @JsonKey(name: 'is_wholesale')
+  bool? isWholesale;
+
+  @JsonKey(name: 'is_ecommerce')
+  bool? isEcommerce;
+
+  @JsonKey(name: 'is_logistics')
+  bool? isLogistics;
+
+  @JsonKey(name: 'is_education')
+  bool? isEducation;
+
+  @JsonKey(name: 'is_hotel')
+  bool? isHotel;
+
+  @JsonKey(name: 'is_beauty')
+  bool? isBeauty;
+
+  @JsonKey(name: 'is_gold_shop')
+  bool? isGoldShop;
+
+  @JsonKey(name: 'is_accounting_firm')
+  bool? isAccountingFirm;
+
+  @JsonKey(name: 'is_retail')
+  bool? isRetail;
+
+  @JsonKey(name: 'is_construction')
+  bool? isConstruction;
+
+  @JsonKey(name: 'is_electronics')
+  bool? isElectronics;
+
+  @JsonKey(name: 'is_mobile_shop')
+  bool? isMobileShop;
+
   CompanyBranchModel({
     required this.guidfixed,
     required this.code,
@@ -109,6 +160,23 @@ class CompanyBranchModel {
     this.isTire,
     this.isAgriculture,
     this.isPharmacy,
+    this.isService,
+    this.isManufacturing,
+    this.isImportExport,
+    this.isContractor,
+    this.isRental,
+    this.isWholesale,
+    this.isEcommerce,
+    this.isLogistics,
+    this.isEducation,
+    this.isHotel,
+    this.isBeauty,
+    this.isGoldShop,
+    this.isAccountingFirm,
+    this.isRetail,
+    this.isConstruction,
+    this.isElectronics,
+    this.isMobileShop,
   }) : names = names ?? <LanguageDataModel>[],
        companynames = companynames ?? <LanguageDataModel>[],
        departments = departments ?? <DepartmentModel>[],

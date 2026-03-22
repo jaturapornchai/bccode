@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
+import 'package:smlaicloud/utils/focus_utils.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -181,6 +182,9 @@ class OrderTypeScreenState extends State<OrderTypeScreen>
       isSaveAllow = true;
       isEditMode = true;
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      focusFirstTextField(context);
+    });
   }
 
   Widget listScreen({bool mobileScreen = false}) {
@@ -296,6 +300,9 @@ class OrderTypeScreenState extends State<OrderTypeScreen>
                           tabController.animateTo(1);
                         });
                       }
+                    });
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      focusFirstTextField(context);
                     });
                   },
                 );
@@ -1001,19 +1008,29 @@ class OrderTypeScreenState extends State<OrderTypeScreen>
             ),
         ],
       ),
-      body: KeyboardListener(
-        focusNode: FocusNode(),
-        onKeyEvent: (KeyEvent event) {
-          if (event is KeyDownEvent) {
-            // print(event.logicalKey);
-            if (event.logicalKey == LogicalKeyboardKey.f10) {
+      body: Focus(
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) {
               if (_formKey.currentState!.validate()) {
                 saveOrUpdateData();
               }
             }
+            return KeyEventResult.handled;
           }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              FocusManager.instance.primaryFocus?.nextFocus();
+            }
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
         },
-        child: Builder(
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: Builder(
           builder: (context) {
             final scale = global.editFontScaleFactor;
             return MediaQuery(
@@ -1048,6 +1065,7 @@ class OrderTypeScreenState extends State<OrderTypeScreen>
             );
           },
         ),
+      ),
       ),
     );
   }

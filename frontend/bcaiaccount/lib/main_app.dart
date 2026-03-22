@@ -72,6 +72,12 @@ import 'package:smlaicloud/screens/config/creditor_group_screen.dart';
 import 'package:smlaicloud/screens/config/creditor_screen.dart';
 import 'package:smlaicloud/screens/config/debtor_group_screen.dart';
 import 'package:smlaicloud/screens/config/debtor_screen.dart';
+import 'package:smlaicloud/bloc/cost_center/cost_center_bloc.dart';
+import 'package:smlaicloud/bloc/inventory_costing/inventory_costing_bloc.dart';
+import 'package:smlaicloud/bloc/job_project/job_project_bloc.dart';
+import 'package:smlaicloud/repositories/cost_center_repository.dart';
+import 'package:smlaicloud/repositories/inventory_costing_repository.dart';
+import 'package:smlaicloud/repositories/job_project_repository.dart';
 import 'package:smlaicloud/screens/config/department_screen.dart';
 import 'package:smlaicloud/screens/config/doc_format_screen.dart';
 import 'package:smlaicloud/screens/config/employee_screen.dart';
@@ -299,6 +305,19 @@ class MyApp extends StatelessWidget {
         BlocProvider<DepartmentBloc>(
           create: (_) =>
               DepartmentBloc(departmentRepository: DepartmentRepository()),
+        ),
+        BlocProvider<CostCenterBloc>(
+          create: (_) =>
+              CostCenterBloc(costCenterRepository: CostCenterRepository()),
+        ),
+        BlocProvider<JobProjectBloc>(
+          create: (_) =>
+              JobProjectBloc(jobProjectRepository: JobProjectRepository()),
+        ),
+        BlocProvider<InventoryCostingBloc>(
+          create: (_) => InventoryCostingBloc(
+            repository: InventoryCostingRepository(),
+          ),
         ),
         BlocProvider<CompanyBranchBloc>(
           create: (_) => CompanyBranchBloc(

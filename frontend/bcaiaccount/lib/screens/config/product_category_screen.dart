@@ -1,5 +1,6 @@
 ﻿import 'dart:async';
 import 'dart:io';
+import 'package:smlaicloud/utils/focus_utils.dart';
 import 'package:smlaicloud/bloc/image/image_upload_bloc.dart';
 import 'package:smlaicloud/widgets/manual_button.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
@@ -19,6 +20,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:intl/intl.dart';
+import 'package:smlaicloud/utils/date_picker.dart';
 import 'package:smlaicloud/utils/logger/app_logger.dart';
 
 class ProductCategoryScreen extends StatefulWidget {
@@ -536,7 +538,9 @@ class ProductCategoryScreenState extends State<ProductCategoryScreen>
                   isDeleteAllow = categorys[index].childCategories.isEmpty;
                   switchToEdit(selectGuid);
                   buildColumnWidget();
-                  fieldFocusNodes[0].requestFocus();
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    focusFirstTextField(context);
+                  });
                 });
               },
             );
@@ -704,7 +708,9 @@ class ProductCategoryScreenState extends State<ProductCategoryScreen>
                           tabController.animateTo(1);
                         });
                       }
-                      fieldFocusNodes[0].requestFocus();
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        focusFirstTextField(context);
+                      });
                     });
                   },
                 );
@@ -838,56 +844,6 @@ class ProductCategoryScreenState extends State<ProductCategoryScreen>
           ),
         );
       }
-    }
-  }
-
-  void _selectMediaFromDate(BuildContext context, int mediaIndex) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.parse(
-        (timeForSales[mediaIndex].fromdate!.isNotEmpty)
-            ? timeForSales[mediaIndex].fromdate.toString()
-            : dateNow.toIso8601String(),
-      ),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (pickedDate != null) {
-      setState(() {
-        timeForSales[mediaIndex].fromdate = pickedDate
-            .toLocal()
-            .toIso8601String();
-
-        mediaFromDateController[mediaIndex].text = DateFormat(
-          'dd/MM/yyyy',
-        ).format(DateTime.parse(timeForSales[mediaIndex].fromdate!));
-      });
-    }
-  }
-
-  void _selectMediaToDate(BuildContext context, int mediaIndex) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.parse(
-        (timeForSales[mediaIndex].todate!.isNotEmpty)
-            ? timeForSales[mediaIndex].todate.toString()
-            : dateNow.toIso8601String(),
-      ),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (pickedDate != null) {
-      setState(() {
-        timeForSales[mediaIndex].todate = pickedDate
-            .toLocal()
-            .toIso8601String();
-
-        mediaToDateController[mediaIndex].text = DateFormat(
-          'dd/MM/yyyy',
-        ).format(DateTime.parse(timeForSales[mediaIndex].todate!));
-      });
     }
   }
 
@@ -1072,7 +1028,9 @@ class ProductCategoryScreenState extends State<ProductCategoryScreen>
                         headerEdit = global.language('append');
                         tabController.index = 1;
                         clearEditData();
-                        fieldFocusNodes[0].requestFocus();
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          focusFirstTextField(context);
+                        });
                       });
                     },
                   );
@@ -1270,162 +1228,44 @@ class ProductCategoryScreenState extends State<ProductCategoryScreen>
                             Row(
                               children: [
                                 Expanded(
-                                  child: TextField(
-                                    readOnly: true,
-                                    decoration: InputDecoration(
-                                      floatingLabelBehavior:
-                                          FloatingLabelBehavior.always,
-                                      border: OutlineInputBorder(),
-                                      labelText: global.language("from_date"),
-                                      suffixIcon: Row(
-                                        mainAxisAlignment: MainAxisAlignment
-                                            .spaceBetween, // added line
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          IconButton(
-                                            focusNode: FocusNode(
-                                              skipTraversal: true,
-                                            ),
-                                            icon: const Icon(
-                                              Icons.calendar_today,
-                                            ),
-                                            onPressed: () {
-                                              _selectMediaFromDate(
-                                                context,
-                                                mediaIndex,
-                                              );
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    controller:
-                                        mediaFromDateController[mediaIndex],
-                                    onChanged: (value) {
-                                      setState(() {
-                                        try {
-                                          List<String> valueSplit = value
-                                              .replaceAll(".", "/")
-                                              .split("/");
-                                          if (valueSplit.length == 3) {
-                                            if (valueSplit[2].length == 2) {
-                                              valueSplit[2] =
-                                                  '25${valueSplit[2]}';
-                                            }
-                                            int year =
-                                                int.tryParse(valueSplit[2]) ??
-                                                0;
-                                            year = year - 543;
-                                            int month =
-                                                int.tryParse(valueSplit[1]) ??
-                                                0;
-                                            int day =
-                                                int.tryParse(valueSplit[0]) ??
-                                                0;
-                                            value =
-                                                "$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}";
-                                          }
-
-                                          if (global.isValidDate(value)) {
-                                            timeForSales[mediaIndex].fromdate =
-                                                DateTime.parse(
-                                                  value,
-                                                ).toLocal().toIso8601String();
-                                          }
-                                        } catch (e) {
-                                          // print(e);
-                                        }
-                                      });
+                                  child: CustomDatePicker(
+                                    labelText: global.language("from_date"),
+                                    useIconSelectDate: true,
+                                    initialDate: (timeForSales[mediaIndex].fromdate != null && timeForSales[mediaIndex].fromdate!.isNotEmpty)
+                                        ? DateTime.tryParse(timeForSales[mediaIndex].fromdate!)
+                                        : dateNow,
+                                    firstDate: DateTime(2000),
+                                    lastDate: DateTime(2100),
+                                    onDateSelected: (date) {
+                                      if (date != null) {
+                                        setState(() {
+                                          timeForSales[mediaIndex].fromdate = date.toLocal().toIso8601String();
+                                          mediaFromDateController[mediaIndex].text = DateFormat('dd/MM/yyyy').format(date);
+                                        });
+                                      }
                                     },
-                                    onSubmitted: (value) => {
-                                      mediaFromDateController[mediaIndex].text =
-                                          DateFormat('dd/MM/yyyy').format(
-                                            DateTime.parse(
-                                              timeForSales[mediaIndex].fromdate
-                                                  .toString(),
-                                            ),
-                                          ),
-                                    },
+                                    decoration: const InputDecoration(),
                                   ),
                                 ),
                                 SizedBox(width: 10),
                                 Expanded(
-                                  child: TextField(
-                                    readOnly: true,
-                                    decoration: InputDecoration(
-                                      floatingLabelBehavior:
-                                          FloatingLabelBehavior.always,
-                                      border: OutlineInputBorder(),
-                                      labelText: global.language("to_date"),
-                                      suffixIcon: Row(
-                                        mainAxisAlignment: MainAxisAlignment
-                                            .spaceBetween, // added line
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          IconButton(
-                                            focusNode: FocusNode(
-                                              skipTraversal: true,
-                                            ),
-                                            icon: const Icon(
-                                              Icons.calendar_today,
-                                            ),
-                                            onPressed: () {
-                                              _selectMediaToDate(
-                                                context,
-                                                mediaIndex,
-                                              );
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    controller:
-                                        mediaToDateController[mediaIndex],
-                                    onChanged: (value) {
-                                      setState(() {
-                                        try {
-                                          List<String> valueSplit = value
-                                              .replaceAll(".", "/")
-                                              .split("/");
-                                          if (valueSplit.length == 3) {
-                                            if (valueSplit[2].length == 2) {
-                                              valueSplit[2] =
-                                                  '25${valueSplit[2]}';
-                                            }
-                                            int year =
-                                                int.tryParse(valueSplit[2]) ??
-                                                0;
-                                            year = year - 543;
-                                            int month =
-                                                int.tryParse(valueSplit[1]) ??
-                                                0;
-                                            int day =
-                                                int.tryParse(valueSplit[0]) ??
-                                                0;
-                                            value =
-                                                "$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}";
-                                          }
-
-                                          if (global.isValidDate(value)) {
-                                            timeForSales[mediaIndex].todate =
-                                                DateTime.parse(
-                                                  value,
-                                                ).toLocal().toIso8601String();
-                                          }
-                                        } catch (e) {
-                                          // print(e);
-                                        }
-                                      });
+                                  child: CustomDatePicker(
+                                    labelText: global.language("to_date"),
+                                    useIconSelectDate: true,
+                                    initialDate: (timeForSales[mediaIndex].todate != null && timeForSales[mediaIndex].todate!.isNotEmpty)
+                                        ? DateTime.tryParse(timeForSales[mediaIndex].todate!)
+                                        : dateNow,
+                                    firstDate: DateTime(2000),
+                                    lastDate: DateTime(2100),
+                                    onDateSelected: (date) {
+                                      if (date != null) {
+                                        setState(() {
+                                          timeForSales[mediaIndex].todate = date.toLocal().toIso8601String();
+                                          mediaToDateController[mediaIndex].text = DateFormat('dd/MM/yyyy').format(date);
+                                        });
+                                      }
                                     },
-                                    onSubmitted: (value) => {
-                                      mediaToDateController[mediaIndex].text =
-                                          DateFormat('dd/MM/yyyy').format(
-                                            DateTime.parse(
-                                              timeForSales[mediaIndex].todate
-                                                  .toString(),
-                                            ),
-                                          ),
-                                    },
+                                    decoration: const InputDecoration(),
                                   ),
                                 ),
                               ],
@@ -1948,7 +1788,6 @@ class ProductCategoryScreenState extends State<ProductCategoryScreen>
     }
     isChange = false;
     focusNodeIndex = 0;
-    fieldFocusNodes[focusNodeIndex].requestFocus();
     groupNumber.text = widget.groupnumber.toString();
     selectGuid = "";
 
@@ -2044,10 +1883,7 @@ class ProductCategoryScreenState extends State<ProductCategoryScreen>
     if (focusNodeIndex > fieldFocusNodes.length - 1) {
       focusNodeIndex = 0;
     }
-    fieldFocusNodes[focusNodeIndex].requestFocus();
-    fieldTextController[focusNodeIndex].selection = TextSelection.fromPosition(
-      TextPosition(offset: fieldTextController[focusNodeIndex].text.length),
-    );
+    focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex]);
   }
 
   @override

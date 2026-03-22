@@ -1,5 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:convert';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:smlaicloud/model/transaction_model.dart';
 import 'package:smlaicloud/model/global_model.dart';
@@ -11,10 +13,10 @@ import 'package:smlaicloud/screens/transaction/components/advance_payment_widget
 import 'package:smlaicloud/screens/transaction/components/bottom_bar_widget.dart';
 import 'package:smlaicloud/screens/transaction/components/table_header_widget.dart';
 import 'package:smlaicloud/screens/transaction/components/document_total_widget.dart';
-import 'package:smlaicloud/screen_search/barcode_search_screen.dart';
+import 'package:smlaicloud/screens/transaction/components/product_search_preview_screen.dart';
 import 'package:smlaicloud/global.dart' as global;
 
-class DocumentProductListWidget extends StatelessWidget {
+class DocumentProductListWidget extends StatefulWidget {
   final TransactionModel screenData;
   final global.TransactionTypeEnum transactionType;
   final List<global.DataTableHeader> headers;
@@ -28,10 +30,11 @@ class DocumentProductListWidget extends StatelessWidget {
   final String defaultToLocation;
   final List<LanguageDataModel> defaultToLocationNames;
   final int calcflag;
+  final bool showLocation;
   final List<String> cartList;
   final List<dynamic> docrefs;
-  final Function(void Function()) setState;
-  final BuildContext context;
+  final Function(void Function()) setParentState;
+  final BuildContext parentContext;
 
   // Callback functions
   final Future<WarehouseModel?> Function(BuildContext, List<WarehouseModel>) showWareHouseDefualtDialog;
@@ -42,6 +45,16 @@ class DocumentProductListWidget extends StatelessWidget {
   final Function(List<PriceDataModel>?) getPrice;
   final Function() showBarcodeDialog;
   final Function(String, List<LanguageDataModel>, String, List<LanguageDataModel>, String, List<LanguageDataModel>, String, List<LanguageDataModel>) onWarehouseChanged;
+  final Function(int oldIndex, int newIndex)? onReorderItem;
+
+  /// เมื่อ true → จอค้นหาจะ hide/show แทน Navigator.push (ไม่ dispose state)
+  final bool persistentSearch;
+
+  /// เมื่อ true → แสดงปุ่ม "ดูประวัติซื้อ" ต่อรายการสินค้า (ใช้ใน PR)
+  final bool canViewPurchaseHistory;
+
+  /// Callback หลังเพิ่มสินค้าลง detail list (ใช้สำหรับ auto-fill ราคา)
+  final Function(TransactionDetailModel detail)? onDetailAdded;
 
   const DocumentProductListWidget({
     super.key,
@@ -58,10 +71,11 @@ class DocumentProductListWidget extends StatelessWidget {
     required this.defaultToLocation,
     required this.defaultToLocationNames,
     required this.calcflag,
+    this.showLocation = true,
     required this.cartList,
     required this.docrefs,
-    required this.setState,
-    required this.context,
+    required Function(void Function()) setState,
+    required BuildContext context,
     required this.showWareHouseDefualtDialog,
     required this.showWareHouseLocationDefualtDialog,
     required this.showDialogCommand,
@@ -70,16 +84,100 @@ class DocumentProductListWidget extends StatelessWidget {
     required this.getPrice,
     required this.showBarcodeDialog,
     required this.onWarehouseChanged,
-  });
+    this.onReorderItem,
+    this.persistentSearch = false,
+    this.canViewPurchaseHistory = false,
+    this.onDetailAdded,
+  })  : setParentState = setState,
+        parentContext = context;
+
+  @override
+  State<DocumentProductListWidget> createState() => _DocumentProductListWidgetState();
+}
+
+class _DocumentProductListWidgetState extends State<DocumentProductListWidget> with SingleTickerProviderStateMixin {
+  /// Index ของ row ที่เพิ่งถูกย้าย (สำหรับ highlight animation)
+  int? _highlightIndex;
+
+  /// Persistent search: ซ่อน/แสดงจอค้นหาโดยไม่ dispose
+  bool _searchOverlayVisible = false;
+  bool _searchScreenCreated = false;
+
+  void _toggleSearchOverlay() {
+    setState(() => _searchOverlayVisible = true);
+    _searchScreenCreated = true;
+  }
+
+  void _hideSearchOverlay() {
+    setState(() => _searchOverlayVisible = false);
+  }
+
+  String get _searchScreenType {
+    return (transactionType == global.TransactionTypeEnum.sale ||
+            transactionType == global.TransactionTypeEnum.saleorder ||
+            transactionType == global.TransactionTypeEnum.salereturn)
+        ? 'not_material'
+        : 'material';
+  }
+
+  /// เรียก reorder พร้อม animation
+  void _handleReorder(int oldIndex, int newIndex) {
+    // เรียก parent's onReorderItem ก่อน (swap data + renumber)
+    widget.onReorderItem?.call(oldIndex, newIndex);
+    // แสดง highlight ที่ตำแหน่งใหม่
+    setState(() {
+      _highlightIndex = newIndex;
+    });
+    // ลบ highlight หลัง animation จบ
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) {
+        setState(() {
+          _highlightIndex = null;
+        });
+      }
+    });
+  }
+
+  // Delegate getters for cleaner access
+  TransactionModel get screenData => widget.screenData;
+  global.TransactionTypeEnum get transactionType => widget.transactionType;
+  List<global.DataTableHeader> get headers => widget.headers;
+  List<WarehouseModel> get warehouseList => widget.warehouseList;
+  String get defaultWarehouse => widget.defaultWarehouse;
+  List<LanguageDataModel> get defaultWarehouseNames => widget.defaultWarehouseNames;
+  String get defaultLocation => widget.defaultLocation;
+  List<LanguageDataModel> get defaultLocationNames => widget.defaultLocationNames;
+  String get defaultToWarehouse => widget.defaultToWarehouse;
+  List<LanguageDataModel> get defaultToWarehouseNames => widget.defaultToWarehouseNames;
+  String get defaultToLocation => widget.defaultToLocation;
+  List<LanguageDataModel> get defaultToLocationNames => widget.defaultToLocationNames;
+  int get calcflag => widget.calcflag;
+  bool get showLocation => widget.showLocation;
+  List<String> get cartList => widget.cartList;
+  List<dynamic> get docrefs => widget.docrefs;
+  Function(void Function()) get setParentState => widget.setParentState;
+  BuildContext get parentContext => widget.parentContext;
+  Future<WarehouseModel?> Function(BuildContext, List<WarehouseModel>) get showWareHouseDefualtDialog => widget.showWareHouseDefualtDialog;
+  Future<LocationModel?> Function(BuildContext, String) get showWareHouseLocationDefualtDialog => widget.showWareHouseLocationDefualtDialog;
+  Function(String cmd, int index, TransactionDetailModel details) get showDialogCommand => widget.showDialogCommand;
+  Function(int index) get deleteItemDetail => widget.deleteItemDetail;
+  Function() get calTotalValue => widget.calTotalValue;
+  Function(List<PriceDataModel>?) get getPrice => widget.getPrice;
+  Function() get showBarcodeDialog => widget.showBarcodeDialog;
+  Function(String, List<LanguageDataModel>, String, List<LanguageDataModel>, String, List<LanguageDataModel>, String, List<LanguageDataModel>) get onWarehouseChanged => widget.onWarehouseChanged;
+  Function(int oldIndex, int newIndex)? get onReorderItem => widget.onReorderItem;
+  bool get persistentSearch => widget.persistentSearch;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.only(top: 5),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return Column(
+    return Stack(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.only(top: 5),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Column(
             children: [
               (transactionType == global.TransactionTypeEnum.paidAdvance ||
                       transactionType == global.TransactionTypeEnum.paidAdvanceRefund ||
@@ -94,8 +192,9 @@ class DocumentProductListWidget extends StatelessWidget {
                 onBarcodePressed: showBarcodeDialog,
                 onProductAdded: _addProductFromBarcode,
                 onEmptyProductAdded: _addEmptyProduct,
-                setState: setState,
-                context: context,
+                setState: setParentState,
+                context: parentContext,
+                onSearchOverride: persistentSearch ? _toggleSearchOverlay : null,
               ),
               TableHeaderWidget(transactionType: transactionType, headers: headers, constraints: constraints),
               Expanded(
@@ -108,23 +207,45 @@ class DocumentProductListWidget extends StatelessWidget {
                         transactionType == global.TransactionTypeEnum.paidAdvanceRefund ||
                         transactionType == global.TransactionTypeEnum.receiveDeposit ||
                         transactionType == global.TransactionTypeEnum.receiveDepositRefund)
-                    ? AdvancePaymentWidget(screenData: screenData, deleteItemDetail: deleteItemDetail, calTotalValue: calTotalValue, setState: setState)
+                    ? AdvancePaymentWidget(screenData: screenData, deleteItemDetail: deleteItemDetail, calTotalValue: calTotalValue, setState: setParentState)
                     : SingleChildScrollView(child: _buildProductListDetail(constraints.maxWidth)),
               ),
-              BottomBarWidget(
-                transactionType: transactionType,
-                screenData: screenData,
-                cartList: cartList,
-                onBarcodePressed: showBarcodeDialog,
-                onProductAdded: _addProductFromBarcode,
-                onEmptyProductAdded: _addEmptyProduct,
-                setState: setState,
-                context: context,
-              ),
+              // แสดง bottom bar เฉพาะเมื่อมีพื้นที่เพียงพอ (ป้องกัน overflow)
+              if (constraints.maxHeight > 300)
+                BottomBarWidget(
+                  transactionType: transactionType,
+                  screenData: screenData,
+                  cartList: cartList,
+                  onBarcodePressed: showBarcodeDialog,
+                  onProductAdded: _addProductFromBarcode,
+                  onEmptyProductAdded: _addEmptyProduct,
+                  setState: setParentState,
+                  context: parentContext,
+                  onSearchOverride: persistentSearch ? _toggleSearchOverlay : null,
+                ),
             ],
           );
         },
       ),
+    ),
+    // === Persistent Search Overlay ===
+    if (persistentSearch && _searchScreenCreated)
+      Offstage(
+        offstage: !_searchOverlayVisible,
+        child: ProductSearchPreviewScreen(
+          key: const ValueKey('persistent_search'),
+          word: '',
+          screen: _searchScreenType,
+          onProductAdded: (product) {
+            if (product.barcode != null && product.barcode!.trim().isNotEmpty) {
+              _addProductFromBarcode(product);
+            }
+            // ไม่ hide ที่นี่ — ProductSearchPreviewScreen จัดการเองตาม continuous mode
+          },
+          onClose: _hideSearchOverlay,
+        ),
+      ),
+    ],
     );
   }
 
@@ -168,25 +289,27 @@ class DocumentProductListWidget extends StatelessWidget {
                 },
               ),
             ),
-            const SizedBox(width: 5),
-            // Location Section
-            Expanded(
-              flex: 2,
-              child: _buildWarehouseSelector(
-                label: global.language("location"),
-                value: global.activeLangName(defaultLocationNames),
-                icon: Icons.location_on,
-                onTap: () async {
-                  if (defaultWarehouse.isNotEmpty) {
-                    LocationModel? result = await showWareHouseLocationDefualtDialog(context, defaultWarehouse) ?? LocationModel(code: '');
-                    if (result.code.isNotEmpty) {
-                      onWarehouseChanged(defaultWarehouse, defaultWarehouseNames, result.code, result.names, defaultToWarehouse, defaultToWarehouseNames, defaultToLocation, defaultToLocationNames);
+            if (showLocation) ...[
+              const SizedBox(width: 5),
+              // Location Section
+              Expanded(
+                flex: 2,
+                child: _buildWarehouseSelector(
+                  label: global.language("location"),
+                  value: global.activeLangName(defaultLocationNames),
+                  icon: Icons.location_on,
+                  onTap: () async {
+                    if (defaultWarehouse.isNotEmpty) {
+                      LocationModel? result = await showWareHouseLocationDefualtDialog(context, defaultWarehouse) ?? LocationModel(code: '');
+                      if (result.code.isNotEmpty) {
+                        onWarehouseChanged(defaultWarehouse, defaultWarehouseNames, result.code, result.names, defaultToWarehouse, defaultToWarehouseNames, defaultToLocation, defaultToLocationNames);
+                      }
                     }
-                  }
-                },
-                enabled: defaultWarehouse.isNotEmpty,
+                  },
+                  enabled: defaultWarehouse.isNotEmpty,
+                ),
               ),
-            ),
+            ],
           ],
         ),
       );
@@ -379,7 +502,7 @@ class DocumentProductListWidget extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 8, vertical: compact ? 4 : 6),
         decoration: BoxDecoration(
-          color: enabled ? global.theme.onPrimaryColor : global.theme.surfaceColor,
+          color: enabled ? global.theme.formFillColor : global.theme.surfaceColor,
           border: Border.all(color: enabled ? global.theme.dividerBorderColor : global.theme.dividerBorderColor),
           borderRadius: BorderRadius.circular(10),
         ),
@@ -450,7 +573,7 @@ class DocumentProductListWidget extends StatelessWidget {
       );
     }
 
-    // ตารางรายการสินค้า
+    // ตารางรายการสินค้า — ใช้ ReorderableListView สำหรับ drag-and-drop
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
@@ -458,10 +581,36 @@ class DocumentProductListWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
       ),
       clipBehavior: Clip.antiAlias,
-      child: ListView.builder(
+      child: ReorderableListView.builder(
         itemCount: itemCount,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
+        buildDefaultDragHandles: false,
+        proxyDecorator: (child, index, animation) {
+          return AnimatedBuilder(
+            animation: animation,
+            builder: (context, child) {
+              final elevation = lerpDouble(0, 8, animation.value)!;
+              final scale = lerpDouble(1.0, 1.02, animation.value)!;
+              return Transform.scale(
+                scale: scale,
+                child: Material(
+                  elevation: elevation,
+                  shadowColor: global.theme.primaryColor.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(4),
+                  color: global.theme.primaryColor.withValues(alpha: 0.08),
+                  child: child,
+                ),
+              );
+            },
+            child: child,
+          );
+        },
+        onReorder: (oldIndex, newIndex) {
+          // ReorderableListView ส่ง newIndex ที่ offset แล้ว (ถ้าย้ายลง)
+          if (newIndex > oldIndex) newIndex--;
+          _handleReorder(oldIndex, newIndex);
+        },
         itemBuilder: (context, index) {
           return _buildOptimizedTableRow(index);
         },
@@ -470,9 +619,11 @@ class DocumentProductListWidget extends StatelessWidget {
   }
 
   Widget _buildOptimizedTableRow(int index) {
-    // Use RepaintBoundary for better performance with enhanced animations
+    // Key ต้อง unique ต่อ item (ไม่ใช่ index) เพื่อให้ ReorderableListView ทำงานถูกต้อง
+    final detail = screenData.details![index];
+    final itemKey = detail.itemguid.isNotEmpty ? '${detail.itemguid}_${detail.linenumber}' : 'row_$index';
     return RepaintBoundary(
-      key: ValueKey('table_row_$index'),
+      key: ValueKey(itemKey),
       child: AnimatedSlide(
         duration: Duration(milliseconds: 300 + (index * 50).clamp(0, 200)),
         offset: Offset.zero,
@@ -488,33 +639,33 @@ class DocumentProductListWidget extends StatelessWidget {
 
   Widget _buildSimpleTableRow(int index) {
     final isEven = index % 2 == 0;
+    final isHighlighted = _highlightIndex == index;
+    final normalColor = isEven ? global.theme.cardColor : global.theme.surfaceColor;
+    final highlightColor = global.theme.primaryColor.withValues(alpha: 0.18);
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
+      duration: Duration(milliseconds: isHighlighted ? 150 : 500),
+      curve: isHighlighted ? Curves.easeOut : Curves.easeInOut,
       decoration: BoxDecoration(
-        color: isEven ? global.theme.cardColor : global.theme.surfaceColor,
+        color: isHighlighted ? highlightColor : normalColor,
         border: Border(bottom: BorderSide(color: global.theme.dividerBorderColor, width: 0.5)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 1, offset: const Offset(0, 0.5))],
+        boxShadow: isHighlighted
+            ? [BoxShadow(color: global.theme.primaryColor.withValues(alpha: 0.15), blurRadius: 6, offset: const Offset(0, 1))]
+            : [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 1, offset: const Offset(0, 0.5))],
       ),
-      child: TweenAnimationBuilder<double>(
-        duration: const Duration(milliseconds: 400),
-        tween: Tween(begin: 0.0, end: 1.0),
+      child: AnimatedSlide(
+        duration: Duration(milliseconds: isHighlighted ? 250 : 0),
+        offset: Offset.zero,
         curve: Curves.easeOutCubic,
-        builder: (context, scale, child) {
-          return Transform.scale(
-            scale: 0.98 + (scale * 0.02),
-            child: Table(
-              columnWidths: {for (int i = 0; i < headers.length; i++) i: headers[i].code == 'line_number' ? const FixedColumnWidth(50.0) : FlexColumnWidth(headers[i].width)},
-              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-              children: [
-                TableRow(
-                  children: headers.map((header) => Container(padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0), child: _buildTableCellContent(header, index))).toList(),
-                ),
-              ],
+        child: Table(
+          columnWidths: {for (int i = 0; i < headers.length; i++) i: (headers[i].code == 'line_number') ? const FixedColumnWidth(50.0) : (headers[i].code == 'reorder') ? const FixedColumnWidth(30.0) : FlexColumnWidth(headers[i].width)},
+          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+          children: [
+            TableRow(
+              children: headers.map((header) => Container(padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0), child: _buildTableCellContent(header, index))).toList(),
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
@@ -537,6 +688,19 @@ class DocumentProductListWidget extends StatelessWidget {
             },
             icon: Icon(Icons.delete_outline, color: global.theme.negativeHighlightTextColor, size: 16),
             tooltip: global.language("delete_item"),
+          ),
+        ),
+      );
+    }
+
+    // Drag handle สำหรับ reorder (กดค้างแล้วลาก)
+    if (header.code == 'reorder') {
+      return ReorderableDragStartListener(
+        index: index,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.grab,
+          child: Center(
+            child: Icon(Icons.drag_indicator, color: global.theme.iconSecondaryColor, size: 18),
           ),
         ),
       );
@@ -651,22 +815,104 @@ class DocumentProductListWidget extends StatelessWidget {
                                 showDialogCommand('description', index, detail);
                               },
                               borderRadius: BorderRadius.circular(4),
-                              hoverColor: Colors.amber[100]?.withValues(alpha: 0.5),
+                              hoverColor: global.theme.warningHighlightColor.withValues(alpha: 0.5),
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 150),
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
-                                  color: _getAccessibleColor(Colors.amber[50]!),
+                                  color: global.theme.warningHighlightColor.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: Colors.amber[200]!.withValues(alpha: 0.6), width: 0.8),
-                                  boxShadow: [BoxShadow(color: Colors.amber.withValues(alpha: 0.08), blurRadius: 2, offset: const Offset(0, 1))],
+                                  border: Border.all(color: global.theme.warningHighlightColor.withValues(alpha: 0.4), width: 0.8),
+                                  boxShadow: [BoxShadow(color: global.theme.warningHighlightColor.withValues(alpha: 0.08), blurRadius: 2, offset: const Offset(0, 1))],
                                 ),
                                 child: Text(
                                   '${global.language("note")}: ${detail.description}',
-                                  style: TextStyle(fontSize: 9, color: Colors.amber[800], fontStyle: FontStyle.italic),
+                                  style: TextStyle(fontSize: 9, color: global.theme.warningHighlightTextColor, fontStyle: FontStyle.italic),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
+                              ),
+                            ),
+                          ),
+                        ],
+
+                        // Add note button (เมื่อยังไม่มี description)
+                        if (detail.description == null || detail.description!.trim().isEmpty) ...[
+                          const SizedBox(height: 4),
+                          InkWell(
+                            onTap: () => showDialogCommand('description', index, detail),
+                            borderRadius: BorderRadius.circular(4),
+                            hoverColor: global.theme.iconSecondaryColor.withValues(alpha: 0.1),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.note_add_outlined, size: 11, color: global.theme.iconSecondaryColor),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    global.language('add_note'),
+                                    style: TextStyle(fontSize: 9, color: global.theme.textSecondaryColor),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+
+                        // Remark field (serial/lot/หมายเหตุอื่น)
+                        if (detail.remark.trim().isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          InkWell(
+                            onTap: () => showDialogCommand('remark', index, detail),
+                            borderRadius: BorderRadius.circular(4),
+                            hoverColor: global.theme.infoHighlightColor.withValues(alpha: 0.5),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: global.theme.infoHighlightColor.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: global.theme.infoHighlightColor.withValues(alpha: 0.4), width: 0.8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.label_outline, size: 10, color: global.theme.infoHighlightTextColor),
+                                  const SizedBox(width: 3),
+                                  Flexible(
+                                    child: Text(
+                                      detail.remark,
+                                      style: TextStyle(fontSize: 9, color: global.theme.infoHighlightTextColor),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+
+                        // Purchase history icon (เฉพาะ context ที่เปิดใช้)
+                        if (widget.canViewPurchaseHistory) ...[
+                          const SizedBox(height: 4),
+                          InkWell(
+                            onTap: () => showDialogCommand('purchase_history', index, detail),
+                            borderRadius: BorderRadius.circular(4),
+                            hoverColor: global.theme.primaryColor.withValues(alpha: 0.1),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.history, size: 11, color: global.theme.primaryColor),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    global.language('purchase_history'),
+                                    style: TextStyle(fontSize: 9, color: global.theme.primaryColor),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -684,22 +930,22 @@ class DocumentProductListWidget extends StatelessWidget {
                                 showDialogCommand('options', index, detail);
                               },
                               borderRadius: BorderRadius.circular(4),
-                              hoverColor: Colors.indigo[100]?.withValues(alpha: 0.5),
+                              hoverColor: global.theme.infoHighlightColor.withValues(alpha: 0.5),
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 150),
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
-                                  color: _getAccessibleColor(Colors.indigo[50]!),
+                                  color: global.theme.infoHighlightColor.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: Colors.indigo[200]!.withValues(alpha: 0.6), width: 0.8),
-                                  boxShadow: [BoxShadow(color: Colors.indigo.withValues(alpha: 0.08), blurRadius: 2, offset: const Offset(0, 1))],
+                                  border: Border.all(color: global.theme.infoHighlightColor.withValues(alpha: 0.4), width: 0.8),
+                                  boxShadow: [BoxShadow(color: global.theme.infoHighlightColor.withValues(alpha: 0.08), blurRadius: 2, offset: const Offset(0, 1))],
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       '${global.language("options")} (${detail.extrajsonlist!.length})',
-                                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: Colors.indigo[700]),
+                                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: global.theme.infoHighlightTextColor),
                                     ),
                                     const SizedBox(height: 2),
                                     Wrap(
@@ -714,11 +960,11 @@ class DocumentProductListWidget extends StatelessWidget {
                                                   decoration: BoxDecoration(
                                                     color: global.theme.cardColor,
                                                     borderRadius: BorderRadius.circular(6),
-                                                    border: Border.all(color: Colors.indigo[300]!),
+                                                    border: Border.all(color: global.theme.infoHighlightColor.withValues(alpha: 0.5)),
                                                   ),
                                                   child: Text(
                                                     '${global.activeLangName(option.itemnames!)} (${global.formatNumber(option.price!)})',
-                                                    style: TextStyle(fontSize: 8, color: Colors.indigo[700], fontWeight: FontWeight.w500),
+                                                    style: TextStyle(fontSize: 8, color: global.theme.infoHighlightTextColor, fontWeight: FontWeight.w500),
                                                   ),
                                                 ),
                                               )
@@ -728,10 +974,10 @@ class DocumentProductListWidget extends StatelessWidget {
                                                   ? [
                                                       Container(
                                                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                                        decoration: BoxDecoration(color: Colors.indigo[100], borderRadius: BorderRadius.circular(6)),
+                                                        decoration: BoxDecoration(color: global.theme.infoHighlightColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
                                                         child: Text(
                                                           '+${detail.extrajsonlist!.length - 2}',
-                                                          style: TextStyle(fontSize: 8, color: Colors.indigo[700], fontWeight: FontWeight.w600),
+                                                          style: TextStyle(fontSize: 8, color: global.theme.infoHighlightTextColor, fontWeight: FontWeight.w600),
                                                         ),
                                                       ),
                                                     ]
@@ -1134,13 +1380,13 @@ class DocumentProductListWidget extends StatelessWidget {
                                   child: Container(
                                     padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
-                                      color: Colors.amber[50],
+                                      color: global.theme.warningHighlightColor.withValues(alpha: 0.15),
                                       borderRadius: BorderRadius.circular(3),
-                                      border: Border.all(color: Colors.amber[200]!.withValues(alpha: 0.5), width: 1),
+                                      border: Border.all(color: global.theme.warningHighlightColor.withValues(alpha: 0.4), width: 1),
                                     ),
                                     child: Text(
                                       '${global.language("note")}: ${detail.description}',
-                                      style: TextStyle(fontSize: 10, color: Colors.amber[800], fontStyle: FontStyle.italic),
+                                      style: TextStyle(fontSize: 10, color: global.theme.warningHighlightTextColor, fontStyle: FontStyle.italic),
                                     ),
                                   ),
                                 ),
@@ -1157,16 +1403,16 @@ class DocumentProductListWidget extends StatelessWidget {
                                   child: Container(
                                     padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
-                                      color: Colors.indigo[50],
+                                      color: global.theme.infoHighlightColor.withValues(alpha: 0.15),
                                       borderRadius: BorderRadius.circular(3),
-                                      border: Border.all(color: Colors.indigo[200]!.withValues(alpha: 0.5), width: 1),
+                                      border: Border.all(color: global.theme.infoHighlightColor.withValues(alpha: 0.4), width: 1),
                                     ),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           '${global.language("additional_options")} (${detail.extrajsonlist!.length} ${global.language("items")})',
-                                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.indigo[700]),
+                                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: global.theme.infoHighlightTextColor),
                                         ),
                                         const SizedBox(height: 4),
                                         Wrap(
@@ -1181,11 +1427,11 @@ class DocumentProductListWidget extends StatelessWidget {
                                                       decoration: BoxDecoration(
                                                         color: global.theme.cardColor,
                                                         borderRadius: BorderRadius.circular(6),
-                                                        border: Border.all(color: Colors.indigo[300]!),
+                                                        border: Border.all(color: global.theme.infoHighlightColor.withValues(alpha: 0.5)),
                                                       ),
                                                       child: Text(
                                                         '${global.activeLangName(option.itemnames!)} (${global.formatNumber(option.price!)})',
-                                                        style: TextStyle(fontSize: 8, color: Colors.indigo[700], fontWeight: FontWeight.w500),
+                                                        style: TextStyle(fontSize: 8, color: global.theme.infoHighlightTextColor, fontWeight: FontWeight.w500),
                                                       ),
                                                     ),
                                                   )
@@ -1195,10 +1441,10 @@ class DocumentProductListWidget extends StatelessWidget {
                                                       ? [
                                                           Container(
                                                             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                                            decoration: BoxDecoration(color: Colors.indigo[100], borderRadius: BorderRadius.circular(6)),
+                                                            decoration: BoxDecoration(color: global.theme.infoHighlightColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
                                                             child: Text(
                                                               '+${detail.extrajsonlist!.length - 2}',
-                                                              style: TextStyle(fontSize: 8, color: Colors.indigo[700], fontWeight: FontWeight.w600),
+                                                              style: TextStyle(fontSize: 8, color: global.theme.infoHighlightTextColor, fontWeight: FontWeight.w600),
                                                             ),
                                                           ),
                                                         ]
@@ -1352,13 +1598,6 @@ class DocumentProductListWidget extends StatelessWidget {
     }
   }
 
-  // High contrast support
-  Color _getAccessibleColor(Color baseColor) {
-    // For high contrast, use slightly darker shades
-    if (baseColor == Colors.amber[50]) return Colors.amber[100]!;
-    if (baseColor == Colors.indigo[50]) return Colors.indigo[100]!;
-    return baseColor;
-  }
 
   bool _shouldShowPriceAmount() {
     return !(transactionType == global.TransactionTypeEnum.stocktransfer ||
@@ -1457,21 +1696,40 @@ class DocumentProductListWidget extends StatelessWidget {
         return global.formatQuantity(detail.qty);
       case "product_price_adjust":
       case "product_price":
+      case "price":
         // ถ้า multi-currency + มี priceDoc → แสดงราคาในสกุลเงินเอกสาร
         if (_isMultiCurrency() && detail.priceDoc != null) {
           return global.formatUnitPrice(detail.priceDoc!);
         }
         return global.formatUnitPrice(detail.price);
       case "product_discount":
+      case "discount":
         return detail.discount;
       case "product_amount":
+      case "sum_amount":
         // ถ้า multi-currency + มี sumAmountDoc → แสดงยอดรวมในสกุลเงินเอกสาร
         if (_isMultiCurrency() && detail.sumAmountDoc != null) {
           return global.formatNumber(detail.sumAmountDoc!);
         }
         return global.formatNumber(detail.sumamount);
+      case "serial_no":
+        return _getExtraJsonField(detail, 'serial_no');
+      case "lot_no":
+        return _getExtraJsonField(detail, 'lot_no');
       default:
         return "";
+    }
+  }
+
+  /// ดึงค่าจาก extrajson field (JSON string)
+  String _getExtraJsonField(TransactionDetailModel detail, String key) {
+    final json = detail.extrajson;
+    if (json == null || json.isEmpty) return '';
+    try {
+      final map = jsonDecode(json) as Map<String, dynamic>;
+      return (map[key] ?? '').toString();
+    } catch (_) {
+      return '';
     }
   }
 
@@ -1539,28 +1797,31 @@ class DocumentProductListWidget extends StatelessWidget {
     }
 
     calTotalValue();
-    setState(() {});
+    setParentState(() {});
+
+    // Callback หลังเพิ่มสินค้า (เช่น auto-fill ราคาจาก purchase history)
+    if (widget.onDetailAdded != null) {
+      widget.onDetailAdded!(screenData.details!.last);
+    }
   }
 
   void _addEmptyProduct() {
-    // เปิดหน้าค้นหาสินค้าแทนการเพิ่มแถวว่าง
+    // เปิดหน้าค้นหาสินค้า — ไม่ปิดจอจนกว่าจะกดปิดเอง
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => BarcodeSearchScreen(
+        builder: (context) => ProductSearchPreviewScreen(
           word: '',
           screen: (transactionType == global.TransactionTypeEnum.sale || transactionType == global.TransactionTypeEnum.saleorder || transactionType == global.TransactionTypeEnum.salereturn)
               ? 'not_material'
               : 'material',
+          onProductAdded: (product) {
+            if (product.barcode != null && product.barcode!.trim().isNotEmpty) {
+              _addProductFromBarcode(product);
+            }
+          },
         ),
       ),
-    ).then((value) {
-      if (value != null) {
-        ProductBarcodeModel result = value;
-        if (result.barcode != null && result.barcode!.trim().isNotEmpty) {
-          _addProductFromBarcode(result);
-        }
-      }
-    });
+    );
   }
 }

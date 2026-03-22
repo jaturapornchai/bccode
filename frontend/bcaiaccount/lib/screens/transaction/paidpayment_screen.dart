@@ -70,10 +70,6 @@ class _PaidPaymentScreenState extends State<PaidPaymentScreen>
     super.initState();
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
 
   void loadPayDetail() {
     payTransfer = [];

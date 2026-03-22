@@ -24,6 +24,7 @@ import 'package:smlaicloud/model/global_model.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:split_view/split_view.dart';
 import 'package:translator/translator.dart';
+import 'package:smlaicloud/utils/focus_utils.dart';
 import 'package:smlaicloud/utils/logger/app_logger.dart';
 
 class ProductLocaltionScreen extends StatefulWidget {
@@ -371,7 +372,9 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
                           tabController.animateTo(1);
                         });
                       }
-                      // removed fieldFocusNodes[0].focusNode.requestFocus();
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        focusFirstTextField(context);
+                      });
                     });
                   },
                 );
@@ -575,6 +578,9 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
       isSaveAllow = true;
       isEditMode = true;
       isAddMode = false;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      focusFirstTextField(context);
     });
   }
 
@@ -2561,33 +2567,34 @@ class ProductLocaltionScreenState extends State<ProductLocaltionScreen>
             ),
         ],
       ),
-      body: RawKeyboardListener(
-        focusNode: FocusNode(),
-        onKey: (RawKeyEvent event) {
-          if (event is RawKeyDownEvent) {
-            // print(event.logicalKey);
-            if (event.logicalKey == LogicalKeyboardKey.f10) {
-              saveOrUpdateData();
-            }
-            if (event.logicalKey == LogicalKeyboardKey.tab ||
-                event.logicalKey == LogicalKeyboardKey.enter) {
-              if (event.isShiftPressed) {
-                //findFocusPrev(focusNodeIndex);
-              } else {
-                // findFocusNext(focusNodeIndex); // removed focus navigation
-              }
-            }
+      body: Focus(
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) saveOrUpdateData();
+            return KeyEventResult.handled;
           }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              FocusManager.instance.primaryFocus?.nextFocus();
+            }
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
         },
-        child: SingleChildScrollView(
-                controller: editScrollController,
-                child: Container(
-                  width: double.infinity,
-                  color: global.theme.cardColor,
-                  padding: const EdgeInsets.only(top: 10, bottom: 10),
-                  child: Form(child: Column(children: formWidgets)),
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: SingleChildScrollView(
+                  controller: editScrollController,
+                  child: Container(
+                    width: double.infinity,
+                    color: global.theme.cardColor,
+                    padding: const EdgeInsets.only(top: 10, bottom: 10),
+                    child: Form(child: Column(children: formWidgets)),
+                  ),
                 ),
-              ),
+        ),
       ),
     );
   }

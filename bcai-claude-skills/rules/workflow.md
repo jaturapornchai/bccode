@@ -42,6 +42,28 @@ Plan → Implement → Build → Deploy → Test → Push
 └─────────────────────────────────────────────────────────┘
 ```
 
+### 0. Data Sync Rule — MongoDB → Kafka → PostgreSQL + ClickHouse (กฏสำคัญมาก)
+
+**ทุก master data + transaction data ต้องไหลครบทุกชั้น:**
+```
+MongoDB (save) → Kafka (publish) → PostgreSQL (consumer upsert) + ClickHouse (consumer upsert)
+```
+
+**กฏ:**
+- ทุก entity ที่ save ลง MongoDB **ต้อง** publish Kafka message (created/updated/deleted/bulk-*)
+- Kafka consumer ต้อง upsert ทั้ง PostgreSQL **และ** ClickHouse
+- ถ้า PG table ยังไม่มี → AI ต้องสร้าง model + migration ทันที
+- ถ้า ClickHouse table ยังไม่มี → AI ต้องสร้าง CREATE TABLE statement ทันที
+- ตรวจสอบ consistency: MongoDB ↔ PG ↔ CH ต้องสัมพันธ์กันเสมอ (fields ตรงกัน)
+
+**Pattern ต้นแบบ:**
+- Master data (org/product): `internal/product/unit/` pattern (config + MQ repo + publish in service)
+- Transaction data (PO/PR): `internal/transaction/transactionconsumer/purchaseorder/` pattern
+- Consumer registration: `cmd/transaction_consumer/main.go`
+
+**Deploy Rule สำหรับ languages.tsv:**
+ทุกครั้งที่แก้ไข `assets/language/languages.tsv` → **AI ต้อง deploy Docker Desktop เองทันที** (ไม่ต้องรอ Jead สั่ง) เพราะ language data อยู่ใน Docker image
+
 ### 1. Deploy Backend — Docker Desktop (ทำประจำ)
 **Auto Deploy Rule (สำคัญมาก — ห้ามลืมเด็ดขาด)**:
 ทุกครั้งที่แก้ไข backend code เสร็จแล้ว → **AI ต้อง deploy Docker Desktop เองทันที โดยไม่ต้องรอ Jead สั่ง**

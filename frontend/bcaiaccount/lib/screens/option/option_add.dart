@@ -59,10 +59,6 @@ class _OptionAddState extends State<OptionAdd> with global.ThemeRefreshMixin {
     }
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {

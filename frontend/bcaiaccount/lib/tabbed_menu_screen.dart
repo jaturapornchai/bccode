@@ -590,7 +590,7 @@ class TabbedMenuScreenState extends State<TabbedMenuScreen>
                             ),
                           );
                         },
-                        tooltip: 'Dashboard',
+                        tooltip: global.language('data_status'),
                       ),
                       // ปุ่มสลับร้าน
                       IconButton(

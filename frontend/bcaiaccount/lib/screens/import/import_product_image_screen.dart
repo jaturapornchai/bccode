@@ -20,10 +20,6 @@ class ImportProductImageScreenState extends State<ImportProductImageScreen>
   List<ImportImageModel> imageUpload = [];
   String selectedStatus = '';
 
-  @override
-  void initState() {
-    super.initState();
-  }
 
   Future<void> pickImages() async {
     final List<XFile> images = await imagePicker.pickMultiImage(

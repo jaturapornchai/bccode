@@ -55,6 +55,8 @@
 | 12 | ใบรับสินค้า/ซื้อ (Purchase Invoice) |
 | 16 | ใบส่งคืน (Purchase Return) |
 | 20 | ใบสั่งซื้อ (Purchase Order) |
+| 21 | ใบขอซื้อ (Purchase Requisition) |
+| 22 | สืบราคา (Request for Quotation) |
 | 30 | ปรับสต็อก (Stock Adjustment) |
 | 31 | โอนสต็อก (Stock Transfer) |
 

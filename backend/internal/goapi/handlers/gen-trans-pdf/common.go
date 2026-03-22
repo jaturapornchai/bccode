@@ -1,7 +1,7 @@
 package gentranspdf
 
 import (
-	"encoding/json"
+	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,7 +14,7 @@ import (
 )
 
 // labelCache - cache สำหรับเก็บ language codes ที่โหลดแล้ว
-// โครงสร้าง languages.json: { "code": {"th": "text", "en": "text", ...} }
+// โครงสร้าง languages.tsv: key\tth\ten\tcn\tja\tkm\tko\tlo\tmy\tvi
 var (
 	allLanguages    map[string]map[string]string         // code -> lang -> text
 	labelCache      = make(map[string]map[string]string) // lang -> code -> text (cache)
@@ -22,7 +22,8 @@ var (
 	languagesLoaded bool
 )
 
-// loadAllLanguages - โหลดไฟล์ languages.json (รวมทุกภาษา)
+// loadAllLanguages - โหลดไฟล์ languages.tsv (รวมทุกภาษา)
+// TSV format: key\tth\ten\tcn\tja\tkm\tko\tlo\tmy\tvi
 func loadAllLanguages() {
 	labelCacheLock.Lock()
 	defer labelCacheLock.Unlock()
@@ -31,14 +32,37 @@ func loadAllLanguages() {
 		return
 	}
 
-	filePath := filepath.Join("language", "languages.json")
-	data, err := os.ReadFile(filePath)
+	filePath := filepath.Join("language", "languages.tsv")
+	f, err := os.Open(filePath)
 	if err != nil {
 		return
 	}
+	defer f.Close()
 
-	if err := json.Unmarshal(data, &allLanguages); err != nil {
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024)
+
+	// อ่าน header
+	if !scanner.Scan() {
 		return
+	}
+	headers := strings.Split(scanner.Text(), "\t")
+
+	allLanguages = make(map[string]map[string]string, 5000)
+
+	for scanner.Scan() {
+		cols := strings.Split(scanner.Text(), "\t")
+		if len(cols) < 2 {
+			continue
+		}
+		key := cols[0]
+		langs := make(map[string]string, len(headers)-1)
+		for i := 1; i < len(headers) && i < len(cols); i++ {
+			if cols[i] != "" {
+				langs[headers[i]] = cols[i]
+			}
+		}
+		allLanguages[key] = langs
 	}
 
 	languagesLoaded = true
@@ -46,7 +70,7 @@ func loadAllLanguages() {
 
 // loadLanguageFile - โหลด language file และแปลงเป็น map[code]text สำหรับภาษาที่ระบุ
 func loadLanguageFile(langCode string) map[string]string {
-	// โหลด languages.json ถ้ายังไม่เคยโหลด
+	// โหลด languages.tsv ถ้ายังไม่เคยโหลด
 	if !languagesLoaded {
 		loadAllLanguages()
 	}

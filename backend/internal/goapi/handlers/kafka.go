@@ -345,6 +345,142 @@ func StartConsumers() {
 		})
 	}()
 
+	// Start Purchase Requisition consumers
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in Purchase Requisition consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-purchaserequisition-created", getVersionedGroupID("goapi-purchaserequisition-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล create purchase requisition")
+			return CallPurchaseRequisitionConsumer(msg)
+		})
+	}()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in Purchase Requisition consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-purchaserequisition-updated", getVersionedGroupID("goapi-purchaserequisition-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล update purchase requisition")
+			return CallPurchaseRequisitionConsumer(msg)
+		})
+	}()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in Purchase Requisition consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-purchaserequisition-deleted", getVersionedGroupID("goapi-purchaserequisition-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล delete purchase requisition")
+			return CallPurchaseRequisitionDeleteConsumer(msg)
+		})
+	}()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in Purchase Requisition Bulk consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-purchaserequisition-bulk-created", getVersionedGroupID("goapi-purchaserequisition-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล bulk create purchase requisition")
+			return CallPurchaseRequisitionConsumer(msg)
+		})
+	}()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in Purchase Requisition Bulk consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-purchaserequisition-bulk-updated", getVersionedGroupID("goapi-purchaserequisition-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล bulk update purchase requisition")
+			return CallPurchaseRequisitionConsumer(msg)
+		})
+	}()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in Purchase Requisition Bulk Delete consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-purchaserequisition-bulk-deleted", getVersionedGroupID("goapi-purchaserequisition-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล bulk delete purchase requisition")
+			return CallPurchaseRequisitionDeleteConsumer(msg)
+		})
+	}()
+
+	// Start RFQ consumers
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in RFQ consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-rfq-created", getVersionedGroupID("goapi-rfq-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล create RFQ")
+			return CallRFQConsumer(msg)
+		})
+	}()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in RFQ consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-rfq-updated", getVersionedGroupID("goapi-rfq-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล update RFQ")
+			return CallRFQConsumer(msg)
+		})
+	}()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in RFQ consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-rfq-deleted", getVersionedGroupID("goapi-rfq-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล delete RFQ")
+			return CallRFQDeleteConsumer(msg)
+		})
+	}()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in RFQ Bulk consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-rfq-bulk-created", getVersionedGroupID("goapi-rfq-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล bulk create RFQ")
+			return CallRFQConsumer(msg)
+		})
+	}()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in RFQ Bulk consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-rfq-bulk-updated", getVersionedGroupID("goapi-rfq-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล bulk update RFQ")
+			return CallRFQConsumer(msg)
+		})
+	}()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in RFQ Bulk Delete consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-rfq-bulk-deleted", getVersionedGroupID("goapi-rfq-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล bulk delete RFQ")
+			return CallRFQDeleteConsumer(msg)
+		})
+	}()
+
 	// Start Purchase Partial consumers
 	go func() {
 		defer func() {
@@ -1009,7 +1145,9 @@ func GetConsumerStatus(c echo.Context) error {
 			"purchase":         "goapi-purchase-consumer",
 			"purchase_order":   "goapi-purchaseorder-consumer",
 			"purchase_partial": "goapi-purchasepartial-consumer",
-			"purchase_return":  "goapi-purchasereturn-consumer",
+			"purchase_return":       "goapi-purchasereturn-consumer",
+			"purchase_requisition": "goapi-purchaserequisition-consumer",
+			"rfq":                  "goapi-rfq-consumer",
 			"creditor":         "goapi-creditor-consumer",
 			"customer":         "goapi-customer-consumer",
 			"employee":         "goapi-employee-consumer",

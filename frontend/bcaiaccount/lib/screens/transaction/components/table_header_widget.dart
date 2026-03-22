@@ -24,7 +24,7 @@ class TableHeaderWidget extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
         ),
         child: Table(
-          columnWidths: {for (int i = 0; i < headers.length; i++) i: headers[i].code == 'line_number' ? const FixedColumnWidth(50.0) : FlexColumnWidth(headers[i].width)},
+          columnWidths: {for (int i = 0; i < headers.length; i++) i: (headers[i].code == 'line_number') ? const FixedColumnWidth(50.0) : (headers[i].code == 'reorder') ? const FixedColumnWidth(30.0) : FlexColumnWidth(headers[i].width)},
           children: [
             TableRow(
               decoration: BoxDecoration(color: global.theme.primaryColor, borderRadius: BorderRadius.circular(10)),

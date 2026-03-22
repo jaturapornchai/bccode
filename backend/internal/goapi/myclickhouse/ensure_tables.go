@@ -130,6 +130,7 @@ func getCreateTableDDLs() []string {
 			` + "`exchange_rate`" + ` Float64 DEFAULT 1,
 			` + "`totalamount_doc`" + ` Float64 DEFAULT 0,
 			` + "`approval_status`" + ` String DEFAULT '',
+			` + "`custcode`" + ` String DEFAULT '',
 			` + "`isclosedmanual`" + ` Bool DEFAULT false,
 			` + "`closedmanual_by_code`" + ` String DEFAULT '',
 			` + "`closedmanual_by_name`" + ` String DEFAULT '',

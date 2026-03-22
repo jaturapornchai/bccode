@@ -60,10 +60,6 @@ class _ImportProductScreenState extends State<ImportProductScreen>
 
   LanguageModel languangeImport = global.config.languages[0];
 
-  @override
-  void initState() {
-    super.initState();
-  }
 
   @override
   void dispose() {

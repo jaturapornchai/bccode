@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:smlaicloud/global.dart' as global;
 
 /// แสดง Dialog เลือกภาษา
-/// Returns: LanguageCode ที่เลือก (en, th, lo, cn, ja, ko, my, km, vi) หรือ null ถ้ายกเลิก
+/// Returns: LanguageCode ที่เลือก (en, th, lo, cn, ja, ko, my, km, vi, ms, id, fil) หรือ null ถ้ายกเลิก
 Future<String?> showLanguageSelectionDialog(BuildContext context) async {
   // ชื่อภาษาแบบ hard-code เป็นภาษานั้นๆ โดยตรง
   final List<String> languageNames = [
@@ -15,6 +15,9 @@ Future<String?> showLanguageSelectionDialog(BuildContext context) async {
     "မြန်မာ",           // พม่า
     "ខ្មែរ",             // เขมร
     "Tiếng Việt",       // เวียดนาม
+    "Bahasa Melayu",    // มาเลย์
+    "Bahasa Indonesia", // อินโดนีเซีย
+    "Wikang Filipino",  // ฟิลิปปินส์
   ];
 
   final List<String> countryCodes = [
@@ -27,6 +30,9 @@ Future<String?> showLanguageSelectionDialog(BuildContext context) async {
     "my",
     "km",
     "vi",
+    "ms",
+    "id",
+    "fil",
   ];
 
   return showDialog<String>(

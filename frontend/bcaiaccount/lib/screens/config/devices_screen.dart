@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
+import 'package:smlaicloud/utils/focus_utils.dart';
 import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 
 import 'package:split_view/split_view.dart';
@@ -275,7 +276,7 @@ class DevicesScreenState extends State<DevicesScreen>
                     isSaveAllow = true;
                     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
                       tabController.animateTo(1);
-                      fieldFocusNodes[0].requestFocus();
+                      focusFirstTextField(context);
                     });
                   });
                 },
@@ -442,6 +443,9 @@ class DevicesScreenState extends State<DevicesScreen>
       isSaveAllow = true;
       isEditMode = true;
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      focusFirstTextField(context);
+    });
   }
 
   Widget listObject(int index, DevicesModel value, bool showCheckBox) {
@@ -581,7 +585,7 @@ class DevicesScreenState extends State<DevicesScreen>
     if (focusNodeIndex > fieldFocusNodes.length - 1) {
       focusNodeIndex = 0;
     }
-    fieldFocusNodes[focusNodeIndex].requestFocus();
+    focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex]);
   }
 
   Widget editScreen({mobileScreen}) {
@@ -835,51 +839,55 @@ class DevicesScreenState extends State<DevicesScreen>
         ],
       ),
       body: Focus(
-        focusNode: FocusNode(skipTraversal: true),
-        onKey: (node, event) {
-          if (kIsWeb) {
-            if (event is RawKeyDownEvent) {
-              if (event.logicalKey == LogicalKeyboardKey.f2) {
-                searchFocusNode.requestFocus();
-              }
-              if (event.logicalKey == LogicalKeyboardKey.f10) {
-                saveOrUpdateData();
-              }
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) saveOrUpdateData();
+            return KeyEventResult.handled;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              FocusManager.instance.primaryFocus?.nextFocus();
             }
+            return KeyEventResult.handled;
           }
           return KeyEventResult.ignored;
         },
-        child: Builder(
-          builder: (context) {
-            final scale = global.editFontScaleFactor;
-            return MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                textScaler: TextScaler.linear(scale),
-              ),
-              child: Theme(
-                data: Theme.of(context).copyWith(
-                  inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
-                    contentPadding: EdgeInsets.fromLTRB(
-                      12 * scale, 20 * scale, 12 * scale, 12 * scale,
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: Builder(
+            builder: (context) {
+              final scale = global.editFontScaleFactor;
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(scale),
+                ),
+                child: Theme(
+                  data: Theme.of(context).copyWith(
+                    inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                      contentPadding: EdgeInsets.fromLTRB(
+                        12 * scale, 20 * scale, 12 * scale, 12 * scale,
+                      ),
+                    ),
+                  ),
+                  child: IconTheme(
+                    data: IconTheme.of(context).copyWith(
+                      size: 24.0 * scale,
+                    ),
+                    child: SingleChildScrollView(
+                      controller: editScrollController,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(10),
+                        child: Column(children: formWidgets),
+                      ),
                     ),
                   ),
                 ),
-                child: IconTheme(
-                  data: IconTheme.of(context).copyWith(
-                    size: 24.0 * scale,
-                  ),
-                  child: SingleChildScrollView(
-                    controller: editScrollController,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(10),
-                      child: Column(children: formWidgets),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -1000,8 +1008,8 @@ class DevicesScreenState extends State<DevicesScreen>
                     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
                       tabController.animateTo(1);
                     });
-                    setState(() {
-                      findFocusNext(0);
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      focusFirstTextField(context);
                     });
                   }
                 });

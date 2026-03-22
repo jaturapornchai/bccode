@@ -18,6 +18,7 @@ import 'package:smlaicloud/model/global_model.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:split_view/split_view.dart';
 import 'package:translator/translator.dart';
+import 'package:smlaicloud/utils/focus_utils.dart';
 import 'package:smlaicloud/utils/logger/app_logger.dart';
 
 class TransportChannelScreen extends StatefulWidget {
@@ -97,7 +98,6 @@ class TransportChannelScreenState extends State<TransportChannelScreen>
       fieldFocusNodes[i].focusNode.addListener(() {
         if (fieldFocusNodes[i].focusNode.hasFocus) {
           focusNodeIndex = i;
-          fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
         }
       });
     }
@@ -106,7 +106,7 @@ class TransportChannelScreenState extends State<TransportChannelScreen>
     // แก้ไข: ใช้ milliseconds แทน microseconds
     screenTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
       if (refreshFocus) {
-        fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
+        focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex].focusNode);
         refreshFocus = false;
       }
     });
@@ -394,14 +394,12 @@ class TransportChannelScreenState extends State<TransportChannelScreen>
                       clearEditData();
                       headerEdit = global.language("append");
                       isSaveAllow = true;
-                      if (mobileScreen) {
-                        WidgetsBinding.instance.addPostFrameCallback((
-                          timeStamp,
-                        ) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mobileScreen) {
                           tabController.animateTo(1);
-                        });
-                      }
-                      fieldFocusNodes[0].focusNode.requestFocus();
+                        }
+                        focusFirstTextField(context);
+                      });
                     });
                   },
                 );
@@ -1090,25 +1088,25 @@ class TransportChannelScreenState extends State<TransportChannelScreen>
             ),
         ],
       ),
-      body: RawKeyboardListener(
-        focusNode: FocusNode(),
-        onKey: (RawKeyEvent event) {
-          if (event is RawKeyDownEvent) {
-            // print(event.logicalKey);
-            if (event.logicalKey == LogicalKeyboardKey.f10) {
-              saveOrUpdateData();
-            }
-            if (event.logicalKey == LogicalKeyboardKey.tab ||
-                event.logicalKey == LogicalKeyboardKey.enter) {
-              if (event.isShiftPressed) {
-                //findFocusPrev(focusNodeIndex);
-              } else {
-                findFocusNext(focusNodeIndex);
-              }
-            }
+      body: Focus(
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) saveOrUpdateData();
+            return KeyEventResult.handled;
           }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              FocusManager.instance.primaryFocus?.nextFocus();
+            }
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
         },
-        child: Builder(
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: Builder(
           builder: (context) {
             final scale = global.editFontScaleFactor;
             return MediaQuery(
@@ -1140,6 +1138,7 @@ class TransportChannelScreenState extends State<TransportChannelScreen>
             );
           },
         ),
+      ),
       ),
     );
   }
@@ -1280,13 +1279,9 @@ class TransportChannelScreenState extends State<TransportChannelScreen>
                       screenData = state.transportchannel;
 
                       if (isEditMode) {
-                        WidgetsBinding.instance.addPostFrameCallback((
-                          timeStamp,
-                        ) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
                           tabController.animateTo(1);
-                        });
-                        setState(() {
-                          findFocusNext(0);
+                          focusFirstTextField(context);
                         });
                       }
                     });

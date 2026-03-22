@@ -23,7 +23,7 @@ class BookBankSelectScreenState extends State<BookBankSelectScreen>
   bool isKeyUp = false;
   bool isKeyDown = false;
   String selectGuid = "";
-  int _hoverIndex = -1;
+  final int _hoverIndex = -1;
   int currentListIndex = 0;
 
   void setSystemLanguageList() async {

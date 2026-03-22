@@ -10,7 +10,7 @@ import 'package:smlaicloud/model/stock_balance_import_model.dart';
 import 'package:smlaicloud/model/transaction_model.dart';
 import 'package:smlaicloud/repositories/employee_repository.dart';
 import 'package:smlaicloud/repositories/product_barcode_repository.dart';
-import 'package:smlaicloud/screen_search/barcode_search_screen.dart';
+import 'package:smlaicloud/screens/transaction/components/product_search_preview_screen.dart';
 import 'package:smlaicloud/screen_search/employee_search_screen.dart';
 import 'package:smlaicloud/screen_search/product_location_search_screen.dart';
 import 'package:smlaicloud/screen_search/product_warehouse_search_screen.dart';
@@ -1562,7 +1562,7 @@ class TransactionStockBalaceScreenState
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
-                                      const BarcodeSearchScreen(
+                                      ProductSearchPreviewScreen(
                                         word: '',
                                         screen: 'not_material',
                                       ),

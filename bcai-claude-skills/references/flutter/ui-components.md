@@ -167,3 +167,63 @@ flutter build windows -t lib/main_bcaidev.dart --release
 - **สื่อสารกับ user:** ภาษาไทยเสมอ (error messages, SnackBar, Dialog)
 - **ห้าม:** hardcode URL, API key, shopid
 - **ห้าม:** Flutter เรียก AI API provider โดยตรง (Groq, OpenAI, Gemini)
+
+## Transaction Detail Table — Reorder Pattern
+
+ทุกหน้า transaction edit (ใบสั่งซื้อ, ใบเสนอราคา, ขาย, คืน, โอนสต๊อก ฯลฯ) ใช้ `DocumentProductListWidget` แสดงตารางรายการสินค้า
+
+### Reorder (ย้ายลำดับรายการขึ้น/ลง)
+
+**Header column:** เพิ่ม `reorder` header หลัง `delete` ทุก headers list:
+
+```dart
+headers = [
+  global.DataTableHeader(code: "delete", label: "", width: 5, ...),
+  global.DataTableHeader(code: "reorder", label: "", width: 4, textAlign: TextAlign.center, alignment: Alignment.center),
+  global.DataTableHeader(code: "line_number", label: ..., width: 10, ...),
+  // ... columns อื่นๆ
+];
+```
+
+**Callback:** ส่ง `onReorderItem` ให้ `DocumentProductListWidget`:
+
+```dart
+DocumentProductListWidget(
+  // ...
+  onReorderItem: (int oldIndex, int newIndex) {
+    setState(() {
+      final item = screenData.details!.removeAt(oldIndex);
+      screenData.details!.insert(newIndex, item);
+      for (int i = 0; i < screenData.details!.length; i++) {
+        screenData.details![i].linenumber = i + 1;
+      }
+    });
+  },
+  // ...
+);
+```
+
+**Column width mapping:** ใน `Table.columnWidths` ต้องเพิ่ม `reorder`:
+
+```dart
+columnWidths: {
+  for (int i = 0; i < headers.length; i++)
+    i: (headers[i].code == 'line_number')
+        ? const FixedColumnWidth(50.0)
+        : (headers[i].code == 'reorder')
+            ? const FixedColumnWidth(30.0)
+            : FlexColumnWidth(headers[i].width)
+},
+```
+
+**ไฟล์ที่ต้องแก้เมื่อเพิ่ม reorder:**
+- `table_header_widget.dart` — columnWidths
+- `document_product_list_widget.dart` — columnWidths + cell render (มีอยู่แล้ว)
+- ทุก `*_edit_screen.dart` — headers list + onReorderItem callback
+
+**จอที่มี reorder แล้ว:**
+- `transaction_edit.dart` — ขาย/ซื้อ/โอนสต๊อก/ปรับสต๊อก
+- `purchaseorder_edit_screen.dart` — ใบสั่งซื้อ
+- `purchaserequisition_edit_screen.dart` — ใบขอซื้อ
+- `rfq_edit_screen.dart` — สืบราคา
+- `quotation_edit_screen.dart` — ใบเสนอราคา

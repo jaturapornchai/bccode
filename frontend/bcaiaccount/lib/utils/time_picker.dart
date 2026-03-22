@@ -11,6 +11,9 @@ class CustomTimePicker extends StatefulWidget {
   final TimeOfDay? initialTime;
   final TextEditingController? controller;
   final String? languageCode; // "th" หรือ "en", ถ้าเป็น null จะอ่านจาก global.getBranchLanguage()
+  final bool isDense; // ปรับความสูงให้กระชับ
+  final EdgeInsetsGeometry? contentPadding; // กำหนด padding เองได้
+  final double? borderRadius; // กำหนด borderRadius เองได้
 
   const CustomTimePicker({
     super.key,
@@ -20,6 +23,9 @@ class CustomTimePicker extends StatefulWidget {
     this.initialTime,
     this.controller,
     this.languageCode, // null = อ่านจาก global.getBranchLanguage()
+    this.isDense = false,
+    this.contentPadding,
+    this.borderRadius,
   });
 
   @override
@@ -207,22 +213,23 @@ class _CustomTimePickerState extends State<CustomTimePicker> with global.ThemeRe
       ],
       onChanged: _handleInput,
       onSubmitted: (_) => _completeTime(_controller.text),
-      style: TextStyle(fontSize: 14, color: global.theme.formTextColor),
+      style: TextStyle(fontSize: widget.isDense ? 13 : 14, color: global.theme.formTextColor),
       decoration: InputDecoration(
         labelText: widget.labelText,
         floatingLabelBehavior: FloatingLabelBehavior.always,
+        isDense: widget.isDense,
         floatingLabelStyle: TextStyle(
           backgroundColor: global.theme.cardColor,
           color: global.theme.formLabelColor,
           fontWeight: FontWeight.bold,
           fontSize: 14,
         ),
-        contentPadding: const EdgeInsets.symmetric(
+        contentPadding: widget.contentPadding ?? const EdgeInsets.symmetric(
           horizontal: 12,
           vertical: 14,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(widget.borderRadius ?? 10),
           borderSide: BorderSide(color: global.theme.formBorderColor),
         ),
         suffixIcon: widget.useIconSelectTime
@@ -240,15 +247,15 @@ class _CustomTimePickerState extends State<CustomTimePicker> with global.ThemeRe
         filled: true,
         fillColor: isTimeValid ? global.theme.formFillColor : global.theme.negativeHighlightColor,
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(widget.borderRadius ?? 10),
           borderSide: BorderSide(color: _primaryColor, width: 2.0),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(widget.borderRadius ?? 10),
           borderSide: BorderSide(color: global.theme.formBorderColor),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(widget.borderRadius ?? 10),
           borderSide: BorderSide(color: global.theme.negativeHighlightTextColor, width: 1.5),
         ),
       ),

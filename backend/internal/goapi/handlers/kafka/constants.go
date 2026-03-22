@@ -93,6 +93,8 @@ const (
 	CONSUMER_GROUP_PURCHASE_ORDER        = "goapi-purchaseorder-consumer"
 	CONSUMER_GROUP_PURCHASE_PARTIAL      = "goapi-purchasepartial-consumer"
 	CONSUMER_GROUP_PURCHASE_RETURN       = "goapi-purchasereturn-consumer"
+	CONSUMER_GROUP_PURCHASE_REQUISITION  = "goapi-purchaserequisition-consumer"
+	CONSUMER_GROUP_RFQ                   = "goapi-rfq-consumer"
 	CONSUMER_GROUP_STOCK_TRANSFER        = "goapi-stocktransfer-consumer"
 	CONSUMER_GROUP_STOCK_RECEIVE_PRODUCT = "goapi-stockreceiveproduct-consumer"
 	CONSUMER_GROUP_STOCK_PICKUP_PRODUCT  = "goapi-stockpickupproduct-consumer"
@@ -110,6 +112,8 @@ const (
 	TRANS_FLAG_PURCHASE_ORDER            = 6
 	TRANS_FLAG_PURCHASE_PARTIAL          = 310
 	TRANS_FLAG_PURCHASE_RETURN           = 16
+	TRANS_FLAG_PURCHASE_REQUISITION      = 21
+	TRANS_FLAG_RFQ                       = 22
 	TRANS_FLAG_STOCK_TRANSFER            = 72
 	TRANS_FLAG_STOCK_RECEIVE_PRODUCT     = 60
 	TRANS_FLAG_STOCK_PICKUP_PRODUCT      = 56

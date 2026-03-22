@@ -94,7 +94,7 @@ type ProductSearchResponse struct {
 	Tokens   []string      `json:"tokens"`
 }
 
-// SearchProducts performs Thai full-text search with stock balance
+// SearchProducts performs smart Thai search with alias expansion + fuzzy fallback
 func SearchProducts(ctx context.Context, shopID, keyword, whcode, locationcode string, limit int, includeBalance bool) (*ProductSearchResponse, error) {
 	if keyword == "" {
 		return nil, fmt.Errorf("keyword is required")
@@ -125,10 +125,19 @@ func SearchProducts(ctx context.Context, shopID, keyword, whcode, locationcode s
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}
 
-	// 3. Search products
-	products, err := searchProducts(db, tokens, limit)
+	// 3. Three-phase search (no manual aliases — RAG handles cross-script)
+	// Phase 1: ILIKE (fast, uses GIN trigram index)
+	products, err := searchProductsILIKE(db, tokens, limit)
 	if err != nil {
 		return nil, fmt.Errorf("search failed: %w", err)
+	}
+
+	// Phase 2: Fuzzy fallback if ILIKE returns few results
+	if len(products) < 3 && len(tokens) > 0 {
+		fuzzyProducts, fuzzyErr := searchProductsFuzzy(db, keyword, limit)
+		if fuzzyErr == nil && len(fuzzyProducts) > len(products) {
+			products = mergeProducts(products, fuzzyProducts, limit)
+		}
 	}
 
 	logger.Info("[MCP SearchProducts] Found %d products", len(products))
@@ -206,11 +215,64 @@ func SearchProducts(ctx context.Context, shopID, keyword, whcode, locationcode s
 	}, nil
 }
 
-// tokenizeKeyword calls Thai NLP service
+// tokenizeKeyword calls Thai NLP service with smart whitespace pre-split
 func tokenizeKeyword(keyword string) ([]string, error) {
+	keyword = strings.TrimSpace(keyword)
+	if keyword == "" {
+		return nil, fmt.Errorf("empty keyword")
+	}
+
+	// Step 1: Pre-split by whitespace to handle mixed Thai+English like "สี TOA"
+	parts := strings.Fields(keyword)
+
+	seen := make(map[string]bool)
+	var allTokens []string
+	addToken := func(t string) {
+		t = strings.TrimSpace(t)
+		lower := strings.ToLower(t)
+		if lower == "" {
+			return
+		}
+		// Filter out single ASCII chars but keep Thai chars (multi-byte)
+		if len(t) == 1 {
+			return
+		}
+		if !seen[lower] {
+			seen[lower] = true
+			allTokens = append(allTokens, t)
+		}
+	}
+
+	// Step 2: For each part, try NLP tokenization for Thai text, keep English as-is
+	for _, part := range parts {
+		if isAsciiOnly(part) {
+			// English/number — use as-is
+			addToken(part)
+		} else {
+			// Thai text — try NLP tokenization
+			nlpTokens, err := callThaiNLP(part)
+			if err != nil || len(nlpTokens) == 0 {
+				addToken(part)
+			} else {
+				for _, t := range nlpTokens {
+					addToken(t)
+				}
+			}
+		}
+	}
+
+	if len(allTokens) == 0 {
+		return []string{keyword}, nil
+	}
+
+	return allTokens, nil
+}
+
+// callThaiNLP calls the Thai NLP tokenizer service for a single text part
+func callThaiNLP(text string) ([]string, error) {
 	thaiNLPURL := getThaiNLPURL()
 
-	requestBody, err := json.Marshal(TokenizeRequest{Text: keyword})
+	requestBody, err := json.Marshal(TokenizeRequest{Text: text})
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +298,7 @@ func tokenizeKeyword(keyword string) ([]string, error) {
 	}
 
 	if tokenResp.Status != "success" || len(tokenResp.Tokens) == 0 {
-		return strings.Fields(keyword), nil
+		return nil, nil
 	}
 
 	var filtered []string
@@ -247,44 +309,137 @@ func tokenizeKeyword(keyword string) ([]string, error) {
 		}
 	}
 
-	if len(filtered) == 0 {
-		return strings.Fields(keyword), nil
-	}
-
 	return filtered, nil
+}
+
+// isAsciiOnly checks if string contains only ASCII characters
+func isAsciiOnly(s string) bool {
+	for _, r := range s {
+		if r > 127 {
+			return false
+		}
+	}
+	return true
 }
 
 func getThaiNLPURL() string {
 	return "http://thai-tokenizer:5000"
 }
 
-// searchProducts searches for products using ILIKE
-func searchProducts(db *sql.DB, tokens []string, limit int) ([]ProductItem, error) {
-	var conditions []string
+// searchFields — columns to search (includes brand, category, group names)
+var searchFields = []string{
+	"itemcode", "barcode", "name0", "unitcode", "unitname",
+	"brandnames", "categorynames", "groupnames",
+}
+
+// mergeProducts combines two product lists, deduplicating by ItemCode
+func mergeProducts(existing, additional []ProductItem, limit int) []ProductItem {
+	seen := make(map[string]bool)
+	for _, p := range existing {
+		seen[p.ItemCode] = true
+	}
+	for _, p := range additional {
+		if !seen[p.ItemCode] {
+			existing = append(existing, p)
+			seen[p.ItemCode] = true
+		}
+	}
+	if len(existing) > limit {
+		existing = existing[:limit]
+	}
+	return existing
+}
+
+// buildTokenCondition builds ILIKE OR condition for one token across all search fields
+func buildTokenCondition(token string) string {
+	token = strings.ReplaceAll(token, "'", "''")
+	var parts []string
+	for _, field := range searchFields {
+		parts = append(parts, fmt.Sprintf("%s ILIKE '%%%s%%'", field, token))
+	}
+	return "(" + strings.Join(parts, " OR ") + ")"
+}
+
+// searchProductsILIKE searches using ILIKE with OR + match count ranking
+func searchProductsILIKE(db *sql.DB, tokens []string, limit int) ([]ProductItem, error) {
+	var orConditions []string
+	var matchCountParts []string
+
 	for _, token := range tokens {
+		orConditions = append(orConditions, buildTokenCondition(token))
+
+		// Count how many tokens match per row for ranking
 		token = strings.ReplaceAll(token, "'", "''")
-		condition := fmt.Sprintf(`(
-			itemcode ILIKE '%%%s%%' OR
-			barcode ILIKE '%%%s%%' OR
-			name0 ILIKE '%%%s%%' OR
-			unitcode ILIKE '%%%s%%' OR
-			unitname ILIKE '%%%s%%'
-		)`, token, token, token, token, token)
-		conditions = append(conditions, condition)
+		var caseParts []string
+		for _, field := range searchFields {
+			caseParts = append(caseParts, fmt.Sprintf("%s ILIKE '%%%s%%'", field, token))
+		}
+		matchPart := fmt.Sprintf("CASE WHEN (%s) THEN 1 ELSE 0 END", strings.Join(caseParts, " OR "))
+		matchCountParts = append(matchCountParts, matchPart)
 	}
 
-	whereClause := strings.Join(conditions, " AND ")
+	whereClause := strings.Join(orConditions, " OR ")
+	matchCountExpr := strings.Join(matchCountParts, " + ")
 
+	// Use subquery to calculate match_count with all columns, then deduplicate
 	query := fmt.Sprintf(`
-		SELECT DISTINCT itemcode, name0
-		FROM productbarcode
-		WHERE %s
-		ORDER BY name0
+		SELECT itemcode, name0 FROM (
+			SELECT itemcode, name0, (%s) as match_count,
+				ROW_NUMBER() OVER (PARTITION BY itemcode ORDER BY (%s) DESC) as rn
+			FROM productbarcode
+			WHERE %s
+		) ranked
+		WHERE rn = 1
+		ORDER BY match_count DESC, name0
 		LIMIT %d
-	`, whereClause, limit)
+	`, matchCountExpr, matchCountExpr, whereClause, limit)
 
 	rows, err := db.Query(query)
 	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var products []ProductItem
+	for rows.Next() {
+		var itemCode, name0 string
+		if err := rows.Scan(&itemCode, &name0); err != nil {
+			continue
+		}
+		products = append(products, ProductItem{
+			ItemCode: itemCode,
+			Name0:    name0,
+			Units:    []ProductUnit{},
+		})
+	}
+
+	return products, rows.Err()
+}
+
+// searchProductsFuzzy uses pg_trgm similarity for fuzzy matching (typo-tolerant)
+func searchProductsFuzzy(db *sql.DB, keyword string, limit int) ([]ProductItem, error) {
+	keyword = strings.ReplaceAll(keyword, "'", "''")
+
+	query := fmt.Sprintf(`
+		SELECT itemcode, name0 FROM (
+			SELECT DISTINCT ON (itemcode) itemcode, name0,
+				similarity(name0, '%s') as sim
+			FROM productbarcode
+			WHERE similarity(name0, '%s') > 0.15
+			   OR similarity(barcode, '%s') > 0.15
+			   OR similarity(itemcode, '%s') > 0.15
+			   OR similarity(brandnames, '%s') > 0.15
+			   OR similarity(groupnames, '%s') > 0.15
+			ORDER BY itemcode
+		) sub
+		ORDER BY sim DESC, name0
+		LIMIT %d
+	`, keyword, keyword, keyword, keyword, keyword, keyword, limit)
+
+	rows, err := db.Query(query)
+	if err != nil {
+		// pg_trgm may not be available — gracefully degrade
+		logger.Error("[MCP SearchProducts] Fuzzy search failed (pg_trgm?): %v", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -610,35 +765,51 @@ func formatBalanceWithPacking(balanceInfo *BalanceInfo, packingUnits []models.Pr
 	}
 }
 
-// calculateScore calculates relevance score
+// calculateScore calculates relevance score with multi-token match bonus
 func calculateScore(product ProductItem, tokens []string) int {
 	score := 0
+	matchCount := 0
 	name0Lower := strings.ToLower(product.Name0)
 	itemCodeLower := strings.ToLower(product.ItemCode)
 
 	for _, token := range tokens {
 		tokenLower := strings.ToLower(token)
+		matched := false
 
 		if itemCodeLower == tokenLower {
 			score += 1000
+			matched = true
 		}
 
 		for _, unit := range product.Units {
 			if strings.ToLower(unit.Barcode) == tokenLower {
 				score += 900
+				matched = true
 				break
 			}
 		}
 
 		if strings.HasPrefix(name0Lower, tokenLower) {
 			score += 250
+			matched = true
 		} else if strings.Contains(name0Lower, tokenLower) {
 			score += 50
+			matched = true
 		}
 
 		if strings.HasPrefix(itemCodeLower, tokenLower) {
 			score += 200
+			matched = true
 		}
+
+		if matched {
+			matchCount++
+		}
+	}
+
+	// Bonus: products matching more tokens rank much higher
+	if len(tokens) > 1 {
+		score += matchCount * 500
 	}
 
 	if len(product.Name0) < 30 {

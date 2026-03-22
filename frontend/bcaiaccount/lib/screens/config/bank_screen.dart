@@ -18,6 +18,7 @@ import 'package:translator/translator.dart';
 
 import 'dart:convert';
 import 'package:smlaicloud/utils/logger/app_logger.dart';
+import 'package:smlaicloud/utils/focus_utils.dart';
 
 class BankScreen extends StatefulWidget {
   const BankScreen({super.key});
@@ -192,7 +193,6 @@ class BankScreenState extends State<BankScreen>
     screenData.logo = "";
     imageFile = File('');
     imageWeb = Uint8List(0);
-    fieldFocusNodes[focusNodeIndex].requestFocus();
     selectedBankTemp = [];
     selectBankTempAll = false;
   }
@@ -372,7 +372,7 @@ class BankScreenState extends State<BankScreen>
                       isSaveAllow = true;
                       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
                         tabController.animateTo(1);
-                        fieldFocusNodes[0].requestFocus();
+                        focusFirstTextField(context);
                       });
                     });
                   },
@@ -767,10 +767,7 @@ class BankScreenState extends State<BankScreen>
     if (focusNodeIndex > fieldFocusNodes.length - 1) {
       focusNodeIndex = 0;
     }
-    fieldFocusNodes[focusNodeIndex].requestFocus();
-    fieldTextController[focusNodeIndex].selection = TextSelection.fromPosition(
-      TextPosition(offset: fieldTextController[focusNodeIndex].text.length),
-    );
+    focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex]);
   }
 
   Widget editScreen({mobileScreen}) {
@@ -896,23 +893,32 @@ class BankScreenState extends State<BankScreen>
         ],
       ),
       body: Focus(
-        focusNode: FocusNode(skipTraversal: true),
-        onKey: (node, event) {
-          if (kIsWeb) {
-            if (event is RawKeyDownEvent) {
-              if (event.logicalKey == LogicalKeyboardKey.f2) {
-                searchFocusNode.requestFocus();
-              }
-              if (event.logicalKey == LogicalKeyboardKey.f10) {
-                if (_formKey.currentState!.validate()) {
-                  saveOrUpdateData();
-                }
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f2) {
+            if (event is KeyDownEvent) searchFocusNode.requestFocus();
+            return KeyEventResult.handled;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) {
+              if (_formKey.currentState!.validate()) {
+                saveOrUpdateData();
               }
             }
+            return KeyEventResult.handled;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              FocusManager.instance.primaryFocus?.nextFocus();
+            }
+            return KeyEventResult.handled;
           }
           return KeyEventResult.ignored;
         },
-        child: Builder(
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: Builder(
           builder: (context) {
             final scale = global.editFontScaleFactor;
             return MediaQuery(
@@ -1330,6 +1336,7 @@ class BankScreenState extends State<BankScreen>
             );
           },
         ),
+        ),
       ),
     );
   }
@@ -1457,9 +1464,7 @@ class BankScreenState extends State<BankScreen>
                   if (isEditMode) {
                     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
                       tabController.animateTo(1);
-                    });
-                    setState(() {
-                      findFocusNext(0);
+                      focusFirstTextField(context);
                     });
                   }
                 });

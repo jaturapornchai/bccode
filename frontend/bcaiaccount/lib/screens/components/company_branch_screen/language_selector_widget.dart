@@ -50,6 +50,7 @@ class LanguageSelectorWidget extends StatelessWidget {
                             ),
                             Expanded(
                               child: ElevatedButton(
+                                focusNode: FocusNode(skipTraversal: true),
                                 onPressed: () {
                                   if (isSaveAllow) {
                                     _showLanguageDialog(context, i);
@@ -89,6 +90,7 @@ class LanguageSelectorWidget extends StatelessWidget {
                         SizedBox(
                           width: 50,
                           child: IconButton(
+                            focusNode: FocusNode(skipTraversal: true),
                             onPressed: () {
                               List<String> newList = List.from(
                                 selectedLanguages,
@@ -108,6 +110,7 @@ class LanguageSelectorWidget extends StatelessWidget {
                 Row(
                   children: [
                     ElevatedButton(
+                      focusNode: FocusNode(skipTraversal: true),
                       onPressed: () {
                         List<String> newList = List.from(selectedLanguages);
                         newList.add("");

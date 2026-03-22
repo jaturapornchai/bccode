@@ -28,6 +28,7 @@ import 'package:excel/excel.dart' as xl;
 import 'package:smlaicloud/screens/report/file_download.dart';
 import 'package:smlaicloud/utils/logger/app_logger.dart';
 import 'package:smlaicloud/widgets/manual_button.dart';
+import 'package:smlaicloud/utils/focus_utils.dart';
 
 class CreditorScreen extends StatefulWidget {
   const CreditorScreen({super.key});
@@ -122,7 +123,6 @@ class CreditorScreenState extends State<CreditorScreen>
       fieldFocusNodes[i].focusNode.addListener(() {
         if (fieldFocusNodes[i].focusNode.hasFocus) {
           focusNodeIndex = i;
-          fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
         }
       });
     }
@@ -134,7 +134,7 @@ class CreditorScreenState extends State<CreditorScreen>
     // แก้ไข: ใช้ milliseconds แทน microseconds
     screenTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
       if (refreshFocus) {
-        fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
+        focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex].focusNode);
         refreshFocus = false;
       }
     });
@@ -262,7 +262,6 @@ class CreditorScreenState extends State<CreditorScreen>
     groupSelected = [];
     isDataChange = false;
     focusNodeIndex = 0;
-    refreshFocus = true;
   }
 
   void discardData({required Function callBack}) {
@@ -591,7 +590,9 @@ class CreditorScreenState extends State<CreditorScreen>
                           tabController.animateTo(1);
                         });
                       }
-                      fieldFocusNodes[0].focusNode.requestFocus();
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        focusFirstTextField(context);
+                      });
                     });
                   },
                 );
@@ -2363,60 +2364,63 @@ class CreditorScreenState extends State<CreditorScreen>
           const ManualButton(path: 'creditor'),
         ],
       ),
-      body: RawKeyboardListener(
-        focusNode: FocusNode(),
-        onKey: (RawKeyEvent event) {
-          if (event is RawKeyDownEvent) {
-            // print(event.logicalKey);
-            if (event.logicalKey == LogicalKeyboardKey.f10) {
+      body: Focus(
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) {
               if (_formKey.currentState!.validate()) {
                 saveOrUpdateData();
               }
             }
-            if (event.logicalKey == LogicalKeyboardKey.tab ||
-                event.logicalKey == LogicalKeyboardKey.enter) {
-              if (event.isShiftPressed) {
-                //findFocusPrev(focusNodeIndex);
-              } else {
-                findFocusNext(focusNodeIndex);
-              }
-            }
+            return KeyEventResult.handled;
           }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              FocusManager.instance.primaryFocus?.nextFocus();
+            }
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
         },
-        child: Builder(
-          builder: (context) {
-            final scale = global.editFontScaleFactor;
-            return MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                textScaler: TextScaler.linear(scale),
-              ),
-              child: Theme(
-                data: Theme.of(context).copyWith(
-                  inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
-                    contentPadding: EdgeInsets.fromLTRB(
-                      12 * scale, 20 * scale, 12 * scale, 12 * scale,
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: Builder(
+            builder: (context) {
+              final scale = global.editFontScaleFactor;
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(scale),
+                ),
+                child: Theme(
+                  data: Theme.of(context).copyWith(
+                    inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                      contentPadding: EdgeInsets.fromLTRB(
+                        12 * scale, 20 * scale, 12 * scale, 12 * scale,
+                      ),
+                    ),
+                  ),
+                  child: IconTheme(
+                    data: IconTheme.of(context).copyWith(
+                      size: 24.0 * scale,
+                    ),
+                    child: SingleChildScrollView(
+                      controller: editScrollController,
+                      child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.only(top: 10, bottom: 15),
+                            child: Form(
+                              key: _formKey,
+                              child: Column(children: formWidgets),
+                            ),
+                          ),
                     ),
                   ),
                 ),
-                child: IconTheme(
-                  data: IconTheme.of(context).copyWith(
-                    size: 24.0 * scale,
-                  ),
-                  child: SingleChildScrollView(
-                    controller: editScrollController,
-                    child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.only(top: 10, bottom: 15),
-                          child: Form(
-                            key: _formKey,
-                            child: Column(children: formWidgets),
-                          ),
-                        ),
-                  ),
-                ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );

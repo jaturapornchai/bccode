@@ -144,6 +144,10 @@ func PgGetDocHandler(c echo.Context) error {
 	switch strings.ToLower(payLoad.System) {
 	case "purchase-order":
 		transflags = []int{6}
+	case "purchase-requisition":
+		transflags = []int{21}
+	case "rfq":
+		transflags = []int{22}
 	default:
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "Unsupported system type",

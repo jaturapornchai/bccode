@@ -382,10 +382,11 @@ class TransactionCalculator {
   /// คำนวณยอดชำระเงินทั้งหมด
   /// ข้าม PO, Quotation, Sale Order เพราะไม่มีการชำระเงิน
   void calPayTotal() {
-    // PO, Quotation, Sale Order ไม่มีการชำระเงิน - skip payment calculation
+    // PO, Quotation, Sale Order, PR ไม่มีการชำระเงิน - skip payment calculation
     if (state.transactionType == global.TransactionTypeEnum.purchaseorder ||
         state.transactionType == global.TransactionTypeEnum.quotation ||
-        state.transactionType == global.TransactionTypeEnum.saleorder) {
+        state.transactionType == global.TransactionTypeEnum.saleorder ||
+        state.transactionType == global.TransactionTypeEnum.purchaserequisition) {
       return;
     }
 
@@ -503,11 +504,13 @@ class TransactionCalculator {
       errorList.add(global.language("please_input_tax_docno"));
     }
 
-    // ถ้าเป็น purchaseorder, saleorder, quotation และไม่มี error จาก custcode ให้ return true ทันที
+    // ถ้าเป็น purchaseorder, saleorder, quotation, purchaserequisition และไม่มี error จาก custcode ให้ return true ทันที
+    // (PR ไม่มี payment — ไม่ต้องตรวจ payTotalBill)
     if (state.transactionType == global.TransactionTypeEnum.purchaseorder ||
         state.transactionType == global.TransactionTypeEnum.saleorder ||
         state.transactionType == global.TransactionTypeEnum.purchasepartial ||
-        state.transactionType == global.TransactionTypeEnum.quotation) {
+        state.transactionType == global.TransactionTypeEnum.quotation ||
+        state.transactionType == global.TransactionTypeEnum.purchaserequisition) {
       if (errorList.isNotEmpty) {
         showDialog(
           context: state.context,

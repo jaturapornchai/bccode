@@ -11,6 +11,7 @@ import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:split_view/split_view.dart';
 import 'package:translator/translator.dart';
+import 'package:smlaicloud/utils/focus_utils.dart';
 import 'package:smlaicloud/widgets/manual_button.dart';
 
 class DebtorGroupScreen extends StatefulWidget {
@@ -151,7 +152,6 @@ class DebtorGroupScreenState extends State<DebtorGroupScreen>
     }
     isChange = false;
     focusNodeIndex = 0;
-    fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
   }
 
   void discardData({required Function callBack}) {
@@ -304,7 +304,7 @@ class DebtorGroupScreenState extends State<DebtorGroupScreen>
                       isSaveAllow = true;
                       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
                         tabController.animateTo(1);
-                        fieldFocusNodes[0].focusNode.requestFocus();
+                        focusFirstTextField(context);
                       });
                     });
                   },
@@ -706,11 +706,7 @@ class DebtorGroupScreenState extends State<DebtorGroupScreen>
           break;
         }
       } else {
-        fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
-        fieldTextController[focusNodeIndex]
-            .selection = TextSelection.fromPosition(
-          TextPosition(offset: fieldTextController[focusNodeIndex].text.length),
-        );
+        focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex].focusNode);
         break;
       }
     }
@@ -817,24 +813,25 @@ class DebtorGroupScreenState extends State<DebtorGroupScreen>
           const ManualButton(path: 'debtor-group'),
         ],
       ),
-      body: RawKeyboardListener(
-        focusNode: FocusNode(skipTraversal: true),
-        onKey: (event) {
-          if (kIsWeb ||
-              Platform.isWindows ||
-              Platform.isLinux ||
-              Platform.isMacOS) {
-            if (event is RawKeyUpEvent) {
-              if (event.logicalKey == LogicalKeyboardKey.tab) {
-                // print("Tab");
-              }
-              if (event.logicalKey == LogicalKeyboardKey.f10) {
-                saveOrUpdateData();
-              }
-            }
+      body: Focus(
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) saveOrUpdateData();
+            return KeyEventResult.handled;
           }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              FocusManager.instance.primaryFocus?.nextFocus();
+            }
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
         },
-        child: Builder(
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: Builder(
           builder: (context) {
             final scale = global.editFontScaleFactor;
             return MediaQuery(
@@ -974,6 +971,7 @@ class DebtorGroupScreenState extends State<DebtorGroupScreen>
           },
         ),
       ),
+      ),
     );
   }
 
@@ -1090,11 +1088,9 @@ class DebtorGroupScreenState extends State<DebtorGroupScreen>
                 setState(() {
                   getDataToEditScreen(state.debtorGroups);
                   if (screenEvent == global.ScreenEventEnum.edit) {
-                    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
                       tabController.animateTo(1);
-                    });
-                    setState(() {
-                      findFocusNext(0);
+                      focusFirstTextField(context);
                     });
                   }
                 });

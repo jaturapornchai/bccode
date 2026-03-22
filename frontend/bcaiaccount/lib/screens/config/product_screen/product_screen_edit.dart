@@ -16,6 +16,7 @@ import 'package:smlaicloud/model/product_model.dart';
 import 'package:smlaicloud/screen_search/unit_search_screen.dart';
 import 'package:translator/translator.dart';
 import 'package:smlaicloud/repositories/unit_repository.dart';
+import 'package:smlaicloud/utils/focus_utils.dart';
 import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 
 class ProductScreenEdit extends StatefulWidget {
@@ -131,7 +132,6 @@ class ProductScreenEditState extends State<ProductScreenEdit>
       fieldFocusNodes[i].focusNode.addListener(() {
         if (fieldFocusNodes[i].focusNode.hasFocus) {
           focusNodeIndex = i;
-          fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
         }
       });
     }
@@ -145,7 +145,7 @@ class ProductScreenEditState extends State<ProductScreenEdit>
     // แก้ไข: ใช้ milliseconds แทน microseconds
     screenTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
       if (refreshFocus) {
-        fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
+        focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex].focusNode);
         refreshFocus = false;
       }
     });
@@ -198,8 +198,9 @@ class ProductScreenEditState extends State<ProductScreenEdit>
       clearEditData();
     }
     refresh();
-    focusNodeIndex = 0;
-    refreshFocus = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      focusFirstTextField(context);
+    });
   }
 
   String getLangName(String? code) {
@@ -333,7 +334,6 @@ class ProductScreenEditState extends State<ProductScreenEdit>
     unitNameCostTextController.text = global.packName(unitCostNames);
     unitNameStandardTextController.text = global.packName(unitStandardNames);
     widget.isDataChangeUpdateValue(false);
-    focusNodeIndex = 0;
   }
 
   void getData(String guid, bool isEdit) {
@@ -350,8 +350,10 @@ class ProductScreenEditState extends State<ProductScreenEdit>
     headerEdit = global.language("edit");
     widget.isSaveAllowSet(true);
     widget.screenEventUpdateValue(global.ScreenEventEnum.edit);
-    findFocusNext(0);
     refresh();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      focusFirstTextField(context);
+    });
   }
 
   bool verifyData() {
@@ -1907,32 +1909,33 @@ class ProductScreenEditState extends State<ProductScreenEdit>
                 data: IconTheme.of(context).copyWith(
                   size: 24.0 * scale,
                 ),
-                child: SingleChildScrollView(
-                  controller: editScrollController,
-                  child: RawKeyboardListener(
-          focusNode: FocusNode(),
-          onKey: (RawKeyEvent event) {
-            if (event is RawKeyDownEvent) {
-              // print(event.logicalKey);
-              if (event.logicalKey == LogicalKeyboardKey.f10) {
-                saveOrUpdateData();
-              }
-              if (event.logicalKey == LogicalKeyboardKey.tab ||
-                  event.logicalKey == LogicalKeyboardKey.enter) {
-                if (event.isShiftPressed) {
-                  findFocusPrev(focusNodeIndex);
-                } else {
-                  findFocusNext(focusNodeIndex);
-                }
-              }
-            }
-          },
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.only(top: 10, bottom: 10),
-            child: Column(children: formWidgets),
-          ),
-        ),
+                child: Focus(
+                  skipTraversal: true,
+                  onKeyEvent: (node, event) {
+                    if (event is KeyUpEvent) return KeyEventResult.ignored;
+                    if (event.logicalKey == LogicalKeyboardKey.f10) {
+                      if (event is KeyDownEvent) saveOrUpdateData();
+                      return KeyEventResult.handled;
+                    }
+                    if (event.logicalKey == LogicalKeyboardKey.enter) {
+                      if (event is KeyDownEvent) {
+                        FocusManager.instance.primaryFocus?.nextFocus();
+                      }
+                      return KeyEventResult.handled;
+                    }
+                    return KeyEventResult.ignored;
+                  },
+                  child: FocusTraversalGroup(
+                    policy: TextFieldTraversalPolicy(),
+                    child: SingleChildScrollView(
+                      controller: editScrollController,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.only(top: 10, bottom: 10),
+                        child: Column(children: formWidgets),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -1970,7 +1973,9 @@ class ProductScreenEditState extends State<ProductScreenEdit>
               );
               widget.loadDataList(true, productCodeController.text);
               clearEditData();
-              findFocusNext(-1);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                focusFirstTextField(context);
+              });
             });
           }
           if (state is ProductSaveFailed) {

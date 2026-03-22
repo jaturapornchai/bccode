@@ -33,6 +33,7 @@ import 'package:smlaicloud/screen_search/supplier_search_screen.dart';
 import 'package:smlaicloud/screens/config/product_bom_widget.dart';
 import 'package:smlaicloud/widgets/unit_flow_widget.dart';
 import 'package:smlaicloud/screens/components/product_preview_screen.dart';
+import 'package:smlaicloud/utils/date_picker.dart';
 import 'package:smlaicloud/utils/image_tooltip.dart';
 import 'package:smlaicloud/utils/util.dart';
 import 'package:dropdown_search/dropdown_search.dart';
@@ -67,6 +68,7 @@ import 'package:translator/translator.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:intl/intl.dart';
+import 'package:smlaicloud/utils/focus_utils.dart';
 
 class ProductBarcodeScreen extends StatefulWidget {
   const ProductBarcodeScreen({super.key});
@@ -255,7 +257,6 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
       fieldFocusNodes[i].focusNode.addListener(() {
         if (fieldFocusNodes[i].focusNode.hasFocus) {
           focusNodeIndex = i;
-          fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
         }
       });
     }
@@ -804,7 +805,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                           tabController.animateTo(1);
                         });
                       }
-                      fieldFocusNodes[0].focusNode.requestFocus();
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        focusFirstTextField(context);
+                      });
                     });
                   },
                 );
@@ -1617,81 +1620,6 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
     }
   }
 
-  void _selectAsDate(BuildContext context, int fiexdCostIndex) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.parse(
-        (fiexdCostList[fiexdCostIndex].effectdate!.isNotEmpty)
-            ? fiexdCostList[fiexdCostIndex].effectdate.toString()
-            : dateNow.toIso8601String(),
-      ),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (pickedDate != null) {
-      setState(() {
-        // Adjust the picked date to the +7 timezone
-        final adjustedDate = pickedDate.add(Duration(hours: 7));
-        fiexdCostList[fiexdCostIndex].effectdate = adjustedDate
-            .toIso8601String();
-
-        asDateController[fiexdCostIndex].text = DateFormat(
-          'dd/MM/yyyy',
-        ).format(adjustedDate);
-      });
-    }
-  }
-
-  void _selectMediaFromDate(BuildContext context, int mediaIndex) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.parse(
-        (timeForSales[mediaIndex].fromdate!.isNotEmpty)
-            ? timeForSales[mediaIndex].fromdate.toString()
-            : dateNow.toIso8601String(),
-      ),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (pickedDate != null) {
-      setState(() {
-        // Adjust the picked date to the +7 timezone
-        final adjustedDate = pickedDate.add(Duration(hours: 7));
-        timeForSales[mediaIndex].fromdate = adjustedDate.toIso8601String();
-
-        mediaFromDateController[mediaIndex].text = DateFormat(
-          'dd/MM/yyyy',
-        ).format(adjustedDate);
-      });
-    }
-  }
-
-  void _selectMediaToDate(BuildContext context, int mediaIndex) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.parse(
-        (timeForSales[mediaIndex].todate!.isNotEmpty)
-            ? timeForSales[mediaIndex].todate.toString()
-            : dateNow.toIso8601String(),
-      ),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (pickedDate != null) {
-      setState(() {
-        // Adjust the picked date to the +7 timezone
-        final adjustedDate = pickedDate.add(Duration(hours: 7));
-        timeForSales[mediaIndex].todate = adjustedDate.toIso8601String();
-
-        mediaToDateController[mediaIndex].text = DateFormat(
-          'dd/MM/yyyy',
-        ).format(adjustedDate);
-      });
-    }
-  }
 
   void _selectMediaFromTime(BuildContext context, int mediaIndex) async {
     final TimeOfDay? pickedTime = await showTimePicker(
@@ -2270,7 +2198,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
   void setFocusNode(FocusNode focus) {
     focus.unfocus();
     Future.delayed(const Duration(milliseconds: 500), () {
-      focus.requestFocus();
+      focusAndCursorToEnd(focus);
     });
   }
 
@@ -3156,8 +3084,8 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
       for (int i = 0; i < screenData.refbarcodes!.length; i++) {
         var data = screenData.refbarcodes![i];
         if (isEditMode && currentBarcodeNode > -1) {
-          barcodesFocusNode[currentBarcodeNode].requestFocus();
-          qtySetFocusNode[currentBarcodeNode].requestFocus();
+          focusAndCursorToEnd(barcodesFocusNode[currentBarcodeNode]);
+          focusAndCursorToEnd(qtySetFocusNode[currentBarcodeNode]);
         }
 
         /// ไม่ใช่สินค้าชุด
@@ -3669,8 +3597,8 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
       for (int i = 0; i < screenData.bom!.length; i++) {
         var data = screenData.bom![i];
         if (isEditMode && bomCurrentBarcodeNode > -1) {
-          bomBarcodesFocusNode[bomCurrentBarcodeNode].requestFocus();
-          bomQtySetFocusNode[bomCurrentBarcodeNode].requestFocus();
+          focusAndCursorToEnd(bomBarcodesFocusNode[bomCurrentBarcodeNode]);
+          focusAndCursorToEnd(bomQtySetFocusNode[bomCurrentBarcodeNode]);
         }
 
         bomBarcodes.add(
@@ -5304,148 +5232,54 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                         Row(
                           children: [
                             Expanded(
-                              child: TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  floatingLabelBehavior:
-                                      FloatingLabelBehavior.always,
-                                  border: OutlineInputBorder(),
-                                  labelText: global.language("from_date"),
-                                  suffixIcon: Row(
-                                    mainAxisAlignment: MainAxisAlignment
-                                        .spaceBetween, // added line
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        focusNode: FocusNode(
-                                          skipTraversal: true,
-                                        ),
-                                        icon: const Icon(Icons.calendar_today),
-                                        onPressed: () {
-                                          _selectMediaFromDate(
-                                            context,
-                                            mediaIndex,
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
+                              child: CustomDatePicker(
+                                labelText: global.language("from_date"),
+                                useIconSelectDate: true,
+                                initialDate: DateTime.tryParse(
+                                  (timeForSales[mediaIndex].fromdate?.isNotEmpty == true)
+                                      ? timeForSales[mediaIndex].fromdate.toString()
+                                      : dateNow.toIso8601String(),
                                 ),
-                                controller: mediaFromDateController[mediaIndex],
-                                onChanged: (value) {
-                                  setState(() {
-                                    try {
-                                      List<String> valueSplit = value
-                                          .replaceAll(".", "/")
-                                          .split("/");
-                                      if (valueSplit.length == 3) {
-                                        if (valueSplit[2].length == 2) {
-                                          valueSplit[2] = '25${valueSplit[2]}';
-                                        }
-                                        int year =
-                                            int.tryParse(valueSplit[2]) ?? 0;
-                                        year = year - 543;
-                                        int month =
-                                            int.tryParse(valueSplit[1]) ?? 0;
-                                        int day =
-                                            int.tryParse(valueSplit[0]) ?? 0;
-                                        value =
-                                            "$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}";
-                                      }
-
-                                      if (global.isValidDate(value)) {
-                                        timeForSales[mediaIndex].fromdate =
-                                            DateTime.parse(
-                                              value,
-                                            ).toLocal().toIso8601String();
-                                      }
-                                    } catch (e) {
-                                      // print(e);
-                                    }
-                                  });
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime(2100),
+                                onDateSelected: (date) {
+                                  if (date != null) {
+                                    setState(() {
+                                      final adjustedDate = date.add(const Duration(hours: 7));
+                                      timeForSales[mediaIndex].fromdate =
+                                          adjustedDate.toIso8601String();
+                                      mediaFromDateController[mediaIndex].text =
+                                          DateFormat('dd/MM/yyyy').format(adjustedDate);
+                                    });
+                                  }
                                 },
-                                onSubmitted: (value) => {
-                                  mediaFromDateController[mediaIndex].text =
-                                      DateFormat('dd/MM/yyyy').format(
-                                        DateTime.parse(
-                                          timeForSales[mediaIndex].fromdate
-                                              .toString(),
-                                        ),
-                                      ),
-                                },
+                                decoration: const InputDecoration(),
                               ),
                             ),
                             SizedBox(width: 10),
                             Expanded(
-                              child: TextField(
-                                readOnly: true,
-                                decoration: InputDecoration(
-                                  floatingLabelBehavior:
-                                      FloatingLabelBehavior.always,
-                                  border: OutlineInputBorder(),
-                                  labelText: global.language("to_date"),
-                                  suffixIcon: Row(
-                                    mainAxisAlignment: MainAxisAlignment
-                                        .spaceBetween, // added line
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        focusNode: FocusNode(
-                                          skipTraversal: true,
-                                        ),
-                                        icon: const Icon(Icons.calendar_today),
-                                        onPressed: () {
-                                          _selectMediaToDate(
-                                            context,
-                                            mediaIndex,
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
+                              child: CustomDatePicker(
+                                labelText: global.language("to_date"),
+                                useIconSelectDate: true,
+                                initialDate: DateTime.tryParse(
+                                  (timeForSales[mediaIndex].todate?.isNotEmpty == true)
+                                      ? timeForSales[mediaIndex].todate.toString()
+                                      : dateNow.toIso8601String(),
                                 ),
-                                controller: mediaToDateController[mediaIndex],
-                                onChanged: (value) {
-                                  setState(() {
-                                    try {
-                                      List<String> valueSplit = value
-                                          .replaceAll(".", "/")
-                                          .split("/");
-                                      if (valueSplit.length == 3) {
-                                        if (valueSplit[2].length == 2) {
-                                          valueSplit[2] = '25${valueSplit[2]}';
-                                        }
-                                        int year =
-                                            int.tryParse(valueSplit[2]) ?? 0;
-                                        year = year - 543;
-                                        int month =
-                                            int.tryParse(valueSplit[1]) ?? 0;
-                                        int day =
-                                            int.tryParse(valueSplit[0]) ?? 0;
-                                        value =
-                                            "$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}";
-                                      }
-
-                                      if (global.isValidDate(value)) {
-                                        timeForSales[mediaIndex].todate =
-                                            DateTime.parse(
-                                              value,
-                                            ).toLocal().toIso8601String();
-                                      }
-                                    } catch (e) {
-                                      // print(e);
-                                    }
-                                  });
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime(2100),
+                                onDateSelected: (date) {
+                                  if (date != null) {
+                                    setState(() {
+                                      final adjustedDate = date.add(const Duration(hours: 7));
+                                      timeForSales[mediaIndex].todate =
+                                          adjustedDate.toIso8601String();
+                                      mediaToDateController[mediaIndex].text =
+                                          DateFormat('dd/MM/yyyy').format(adjustedDate);
+                                    });
+                                  }
                                 },
-                                onSubmitted: (value) => {
-                                  mediaToDateController[mediaIndex].text =
-                                      DateFormat('dd/MM/yyyy').format(
-                                        DateTime.parse(
-                                          timeForSales[mediaIndex].todate
-                                              .toString(),
-                                        ),
-                                      ),
-                                },
+                                decoration: const InputDecoration(),
                               ),
                             ),
                           ],
@@ -6614,65 +6448,28 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                       ],
                     ),
                     SizedBox(height: 10),
-                    TextField(
-                      readOnly: true,
-                      decoration: InputDecoration(
-                        floatingLabelBehavior: FloatingLabelBehavior.always,
-                        border: OutlineInputBorder(),
-                        labelText: global.language("as_date"),
-                        suffixIcon: Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween, // added line
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              focusNode: FocusNode(skipTraversal: true),
-                              icon: const Icon(Icons.calendar_today),
-                              onPressed: () {
-                                _selectAsDate(context, fiexdCostIndex);
-                              },
-                            ),
-                          ],
-                        ),
+                    CustomDatePicker(
+                      labelText: global.language("as_date"),
+                      useIconSelectDate: true,
+                      initialDate: DateTime.tryParse(
+                        (fiexdCostList[fiexdCostIndex].effectdate?.isNotEmpty == true)
+                            ? fiexdCostList[fiexdCostIndex].effectdate.toString()
+                            : dateNow.toIso8601String(),
                       ),
-                      controller: asDateController[fiexdCostIndex],
-                      onChanged: (value) {
-                        setState(() {
-                          try {
-                            List<String> valueSplit = value
-                                .replaceAll(".", "/")
-                                .split("/");
-                            if (valueSplit.length == 3) {
-                              if (valueSplit[2].length == 2) {
-                                valueSplit[2] = '25${valueSplit[2]}';
-                              }
-                              int year = int.tryParse(valueSplit[2]) ?? 0;
-                              year = year - 543;
-                              int month = int.tryParse(valueSplit[1]) ?? 0;
-                              int day = int.tryParse(valueSplit[0]) ?? 0;
-                              value =
-                                  "$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}";
-                            }
-
-                            if (global.isValidDate(value)) {
-                              fiexdCostList[fiexdCostIndex].effectdate =
-                                  DateTime.parse(
-                                    value,
-                                  ).toLocal().toIso8601String();
-                            }
-                          } catch (e) {
-                            // print(e);
-                          }
-                        });
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                      onDateSelected: (date) {
+                        if (date != null) {
+                          setState(() {
+                            final adjustedDate = date.add(const Duration(hours: 7));
+                            fiexdCostList[fiexdCostIndex].effectdate =
+                                adjustedDate.toIso8601String();
+                            asDateController[fiexdCostIndex].text =
+                                DateFormat('dd/MM/yyyy').format(adjustedDate);
+                          });
+                        }
                       },
-                      onSubmitted: (value) => {
-                        asDateController[fiexdCostIndex]
-                            .text = DateFormat('dd/MM/yyyy').format(
-                          DateTime.parse(
-                            fiexdCostList[fiexdCostIndex].effectdate.toString(),
-                          ),
-                        ),
-                      },
+                      decoration: const InputDecoration(),
                     ),
                     const SizedBox(height: 10),
 
@@ -7137,7 +6934,9 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                                           tabController.animateTo(1);
                                         });
                                   }
-                                  fieldFocusNodes[0].focusNode.requestFocus();
+                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                    focusFirstTextField(context);
+                                  });
                                 });
                               },
                             );
@@ -7254,25 +7053,29 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
       ),
       body: LoaderOverlay(
         overlayColor: Colors.black.withValues(alpha: 0.8),
-        child: RawKeyboardListener(
-          focusNode: FocusNode(),
-          onKey: (RawKeyEvent event) {
-            if (event is RawKeyDownEvent) {
-              if (event.logicalKey == LogicalKeyboardKey.f10) {
+        child: Focus(
+          skipTraversal: true,
+          onKeyEvent: (node, event) {
+            if (event is KeyUpEvent) return KeyEventResult.ignored;
+            if (event.logicalKey == LogicalKeyboardKey.f10) {
+              if (event is KeyDownEvent) {
                 if (_formKey.currentState!.validate()) {
                   saveOrUpdateData();
                 }
               }
-              // if (event.logicalKey == LogicalKeyboardKey.tab) {
-              //   if (event.isShiftPressed) {
-              //     //findFocusPrev(focusNodeIndex);
-              //   } else {
-              //     findFocusNext(focusNodeIndex);
-              //   }
-              // }
+              return KeyEventResult.handled;
             }
+            if (event.logicalKey == LogicalKeyboardKey.enter) {
+              if (event is KeyDownEvent) {
+                FocusManager.instance.primaryFocus?.nextFocus();
+              }
+              return KeyEventResult.handled;
+            }
+            return KeyEventResult.ignored;
           },
-          child: Builder(
+          child: FocusTraversalGroup(
+            policy: TextFieldTraversalPolicy(),
+            child: Builder(
             builder: (context) {
               final scale = global.editFontScaleFactor;
               // เพิ่ม spacing ระหว่าง formWidgets ตาม scale
@@ -7337,6 +7140,7 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                 ),
               );
             },
+          ),
           ),
   ),
 ),
@@ -7931,8 +7735,8 @@ class ProductBarcodeScreenState extends State<ProductBarcodeScreen>
                         ) {
                           tabController.animateTo(1);
                         });
-                        setState(() {
-                          findFocusNext(0);
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          focusFirstTextField(context);
                         });
                       }
                     });

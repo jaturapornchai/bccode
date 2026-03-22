@@ -301,6 +301,84 @@ class POApprovalHandler {
     }
   }
 
+  /// อนุมัติเอกสาร (สำหรับผู้มีสิทธิ์อนุมัติ)
+  Future<bool> approveApproval({
+    required String docNo,
+    String comment = '',
+  }) async {
+    try {
+      final userCode = global.appConfig.getString("user") ?? '';
+      final userName = userCode;
+
+      AppLogger.info('[PO] approveApproval เริ่มอนุมัติ - docNo: $docNo');
+
+      final result = await ApprovalApiService.approvePOApproval(
+        docNo: docNo,
+        actionBy: userCode,
+        actionByName: userName,
+        comment: comment,
+      );
+
+      if (result.isSuccess) {
+        _poApprovalStatus = result.data;
+        onStateChanged();
+
+        final message = result.message ?? 'อนุมัติเอกสารสำเร็จ';
+        onShowSuccess(message);
+
+        AppLogger.info('[PO] approveApproval สำเร็จ — status: ${result.data?.status}');
+        return true;
+      } else {
+        AppLogger.warning('[PO] approveApproval ไม่สำเร็จ: ${result.errorMessage}');
+        onShowError('อนุมัติไม่สำเร็จ: ${result.errorMessage}');
+        return false;
+      }
+    } catch (e) {
+      AppLogger.error('[PO] อนุมัติผิดพลาด: $e');
+      onShowError('อนุมัติผิดพลาด: $e');
+      return false;
+    }
+  }
+
+  /// ปฏิเสธเอกสารพร้อมเหตุผล (สำหรับผู้มีสิทธิ์อนุมัติ)
+  Future<bool> rejectApproval({
+    required String docNo,
+    String comment = '',
+  }) async {
+    try {
+      final userCode = global.appConfig.getString("user") ?? '';
+      final userName = userCode;
+
+      AppLogger.info('[PO] rejectApproval เริ่มปฏิเสธ - docNo: $docNo, comment: $comment');
+
+      final result = await ApprovalApiService.rejectPOApproval(
+        docNo: docNo,
+        actionBy: userCode,
+        actionByName: userName,
+        comment: comment,
+      );
+
+      if (result.isSuccess) {
+        _poApprovalStatus = result.data;
+        onStateChanged();
+
+        final message = result.message ?? 'ปฏิเสธเอกสารแล้ว';
+        onShowSuccess(message);
+
+        AppLogger.info('[PO] rejectApproval สำเร็จ — status: ${result.data?.status}');
+        return true;
+      } else {
+        AppLogger.warning('[PO] rejectApproval ไม่สำเร็จ: ${result.errorMessage}');
+        onShowError('ปฏิเสธไม่สำเร็จ: ${result.errorMessage}');
+        return false;
+      }
+    } catch (e) {
+      AppLogger.error('[PO] ปฏิเสธผิดพลาด: $e');
+      onShowError('ปฏิเสธผิดพลาด: $e');
+      return false;
+    }
+  }
+
   /// รีเซ็ตสถานะการอนุมัติ (สำหรับเอกสารใหม่)
   void resetApprovalStatus() {
     _poApprovalStatus = null;

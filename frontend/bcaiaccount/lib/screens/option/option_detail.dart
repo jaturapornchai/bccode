@@ -86,10 +86,6 @@ class _OptionDetailScreenState extends State<OptionDetailScreen> with global.The
     super.initState();
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
 
   Future _saveData() async {
     double price = double.parse(_priceController.text.toString());

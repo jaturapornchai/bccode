@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smlaicloud/screens/dashboard/cubit/database_info_cubit.dart';
-import 'package:smlaicloud/modules/cart-system/cartsystem.dart';
 import 'package:smlaicloud/global.dart' as global;
 
 class DashBoardDatabaseDocInfo extends StatefulWidget {
@@ -32,45 +31,16 @@ class _DashBoardDatabaseDocInfoState extends State<DashBoardDatabaseDocInfo> wit
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Row(
-                  children: [
-                    // Cart System Icon
-                    IconButton(
-                      icon: Icon(
-                        Icons.shopping_cart,
-                        color: global.theme.warningHighlightTextColor,
-                      ),
+                BlocBuilder<DatabaseInfoCubit, DatabaseInfoState>(
+                  builder: (context, state) {
+                    return IconButton(
+                      icon: Icon(Icons.refresh, color: global.theme.iconColor),
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CartSystemScreen(),
-                          ),
-                        );
+                        context.read<DatabaseInfoCubit>().refresh();
                       },
-                      tooltip: global.language('shopping_cart_system'),
-                    ),
-                    // AI Chat Assistant Icon
-                    IconButton(
-                      icon: Icon(Icons.chat, color: global.theme.infoHighlightTextColor),
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/ai-chat');
-                      },
-                      tooltip: global.language('ai_chat_assistant'),
-                    ),
-                    // Refresh Icon
-                    BlocBuilder<DatabaseInfoCubit, DatabaseInfoState>(
-                      builder: (context, state) {
-                        return IconButton(
-                          icon: Icon(Icons.refresh),
-                          onPressed: () {
-                            context.read<DatabaseInfoCubit>().refresh();
-                          },
-                          tooltip: global.language('refresh'),
-                        );
-                      },
-                    ),
-                  ],
+                      tooltip: global.language('refresh'),
+                    );
+                  },
                 ),
               ],
             ),

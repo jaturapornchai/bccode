@@ -408,8 +408,9 @@ GoAPI รวมเข้า MainAPI แล้ว — port เดียว (9090)
 - ห้าม hardcode ภาษาไทยใน UI code (ยกเว้น login flow ที่ยัง load language ไม่ได้)
 - ใช้ `global.language("key")` สำหรับ screens, components, widgets
 - ใช้ `global.language("key")` สำหรับ PDF generation (`pdfgen/`)
-- Language keys อยู่ใน `D:\bcdev\backend\assets\language\languages.json` (shared กับ backend)
-- ถ้าต้องการ key ใหม่ → เพิ่มใน `languages.json` พร้อม 9 ภาษา (th, en, cn, ja, km, ko, lo, my, vi)
+- Language keys อยู่ใน `D:\bcdev\backend\assets\language\languages.tsv` (shared กับ backend)
+- Format: TSV (Tab-separated) — 1 key ต่อ 1 บรรทัด: `key\tth\ten\tcn\tja\tkm\tko\tlo\tmy\tvi`
+- ถ้าต้องการ key ใหม่ → เพิ่ม 1 บรรทัดใน `languages.tsv` (เรียง alphabetical)
 - Login flow files ที่ยกเว้น: `login_password_screen.dart`, `login_screen.dart`, `registration.dart`, `select_language_screen.dart`, `login_line_screen.dart`, `select_shop.dart`, `server_config_screen.dart`
 
 **ข้อยกเว้นที่ไม่ต้อง localize:**

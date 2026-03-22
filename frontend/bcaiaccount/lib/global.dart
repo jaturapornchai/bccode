@@ -98,6 +98,10 @@ enum TransactionTypeEnum {
   saleorder,
   quotation,
   purchaseorder,
+  // ใบขอซื้อ (Purchase Requisition)
+  purchaserequisition,
+  // สืบราคา (Request for Quotation)
+  rfq,
   //ทยอยรับ
   purchasepartial,
   //ตั้งหนี้จากการทยอยรับ
@@ -397,6 +401,10 @@ String transactionName(TransactionTypeEnum transactionType) {
       return language("transaction_quotation");
     case TransactionTypeEnum.purchaseorder:
       return language("transaction_purchase_order");
+    case TransactionTypeEnum.purchaserequisition:
+      return language("purchase_requisition");
+    case TransactionTypeEnum.rfq:
+      return language("request_for_quotation");
     case TransactionTypeEnum.purchasepartial:
       return language("transaction_purchase_partial");
     case TransactionTypeEnum.accrualreceive:

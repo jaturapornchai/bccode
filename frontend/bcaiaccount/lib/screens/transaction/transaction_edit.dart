@@ -15,7 +15,7 @@ import 'package:smlaicloud/model/transaction_model.dart';
 import 'package:smlaicloud/model/warehouse_model.dart';
 import 'package:smlaicloud/pdfgen/pdfpreview.dart';
 import 'package:smlaicloud/repositories/product_barcode_repository.dart';
-import 'package:smlaicloud/screen_search/barcode_search_screen.dart';
+import 'package:smlaicloud/screens/transaction/components/product_search_preview_screen.dart';
 import 'package:smlaicloud/screen_search/bookbank_select_screen.dart';
 import 'package:smlaicloud/screen_search/transaction_search_screen.dart';
 
@@ -213,6 +213,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
 
   List<global.DataTableHeader> headers = [
     global.DataTableHeader(code: "delete", label: "", width: 5, textAlign: TextAlign.center, alignment: Alignment.center),
+    global.DataTableHeader(code: "reorder", label: "", width: 4, textAlign: TextAlign.center, alignment: Alignment.center),
     global.DataTableHeader(code: "line_number", label: global.language('line_number'), width: 10, textAlign: TextAlign.center, alignment: Alignment.center),
     global.DataTableHeader(code: "barcode", label: global.language('barcode'), width: 20),
     global.DataTableHeader(code: "product_name", label: global.language('product_name'), width: 40),
@@ -610,6 +611,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
     if (widget.type == global.TransactionTypeEnum.stocktransfer) {
       headers = [
         global.DataTableHeader(code: "delete", label: "", width: 5, textAlign: TextAlign.center, alignment: Alignment.center),
+        global.DataTableHeader(code: "reorder", label: "", width: 4, textAlign: TextAlign.center, alignment: Alignment.center),
         global.DataTableHeader(code: "line_number", label: global.language('line_number'), width: 10, textAlign: TextAlign.center, alignment: Alignment.center),
         global.DataTableHeader(code: "barcode", label: global.language('barcode'), width: 20),
         global.DataTableHeader(code: "item_code", label: global.language('item_code'), width: 15), // เพิ่มคอลัมน์ itemcode
@@ -626,6 +628,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
     } else if (widget.type == global.TransactionTypeEnum.stockreceiveproduct) {
       headers = [
         global.DataTableHeader(code: "delete", label: "", width: 5, textAlign: TextAlign.center, alignment: Alignment.center),
+        global.DataTableHeader(code: "reorder", label: "", width: 4, textAlign: TextAlign.center, alignment: Alignment.center),
         global.DataTableHeader(code: "line_number", label: global.language('line_number'), width: 10, textAlign: TextAlign.center, alignment: Alignment.center),
         global.DataTableHeader(code: "barcode", label: global.language('barcode'), width: 20),
         global.DataTableHeader(code: "item_code", label: global.language('item_code'), width: 15), // เพิ่มคอลัมน์ itemcode
@@ -643,6 +646,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
     } else if (widget.type == global.TransactionTypeEnum.stockpickupproduct || widget.type == global.TransactionTypeEnum.stockreturnproduct || widget.type == global.TransactionTypeEnum.adjust) {
       headers = [
         global.DataTableHeader(code: "delete", label: "", width: 5, textAlign: TextAlign.center, alignment: Alignment.center),
+        global.DataTableHeader(code: "reorder", label: "", width: 4, textAlign: TextAlign.center, alignment: Alignment.center),
         global.DataTableHeader(code: "line_number", label: global.language('line_number'), width: 10, textAlign: TextAlign.center, alignment: Alignment.center),
         global.DataTableHeader(code: "barcode", label: global.language('barcode'), width: 20),
         global.DataTableHeader(code: "item_code", label: global.language('item_code'), width: 15), // เพิ่มคอลัมน์ itemcode
@@ -669,6 +673,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
         widget.type == global.TransactionTypeEnum.salereturn) {
       headers = [
         global.DataTableHeader(code: "delete", label: "", width: 5, textAlign: TextAlign.center, alignment: Alignment.center),
+        global.DataTableHeader(code: "reorder", label: "", width: 4, textAlign: TextAlign.center, alignment: Alignment.center),
         global.DataTableHeader(code: "line_number", label: global.language('line_number'), width: 10, textAlign: TextAlign.center, alignment: Alignment.center),
         global.DataTableHeader(code: "barcode", label: global.language('barcode'), width: 15),
         global.DataTableHeader(code: "item_code", label: global.language('item_code'), width: 12), // เพิ่มคอลัมน์ itemcode
@@ -690,6 +695,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
     } else {
       headers = [
         global.DataTableHeader(code: "delete", label: "", width: 5, textAlign: TextAlign.center, alignment: Alignment.center),
+        global.DataTableHeader(code: "reorder", label: "", width: 4, textAlign: TextAlign.center, alignment: Alignment.center),
         global.DataTableHeader(code: "line_number", label: global.language('line_number'), width: 10, textAlign: TextAlign.center, alignment: Alignment.center),
         global.DataTableHeader(code: "barcode", label: global.language('barcode'), width: 20),
         global.DataTableHeader(code: "item_code", label: global.language('item_code'), width: 15), // เพิ่มคอลัมน์ itemcode
@@ -2758,6 +2764,16 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
       calTotalValue: _transactionCalculator.calTotalValue,
       getPrice: getPrice,
       showBarcodeDialog: () => _transactionDialogs.showBarcodeDialog(context),
+      onReorderItem: (int oldIndex, int newIndex) {
+        setState(() {
+          final item = screenData.details!.removeAt(oldIndex);
+          screenData.details!.insert(newIndex, item);
+          // อัปเดต linenumber
+          for (int i = 0; i < screenData.details!.length; i++) {
+            screenData.details![i].linenumber = i + 1;
+          }
+        });
+      },
       onWarehouseChanged:
           (
             String newDefualtwarehouse,
@@ -3040,7 +3056,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => BarcodeSearchScreen(
+          builder: (context) => ProductSearchPreviewScreen(
             word: details.barcode,
             screen: (widget.type == global.TransactionTypeEnum.sale || widget.type == global.TransactionTypeEnum.saleorder || widget.type == global.TransactionTypeEnum.salereturn)
                 ? 'not_material'
@@ -3083,7 +3099,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => BarcodeSearchScreen(
+          builder: (context) => ProductSearchPreviewScreen(
             word: details.itemcode, // ส่ง itemcode แทน barcode
             screen: (widget.type == global.TransactionTypeEnum.sale || widget.type == global.TransactionTypeEnum.saleorder || widget.type == global.TransactionTypeEnum.salereturn)
                 ? 'not_material'
@@ -3514,7 +3530,7 @@ class TransactionEditScreenState extends State<TransactionEditScreen> with Ticke
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => BarcodeSearchScreen(
+          builder: (context) => ProductSearchPreviewScreen(
             word: details.barcode,
             screen: (widget.type == global.TransactionTypeEnum.sale || widget.type == global.TransactionTypeEnum.saleorder || widget.type == global.TransactionTypeEnum.salereturn)
                 ? 'not_material'

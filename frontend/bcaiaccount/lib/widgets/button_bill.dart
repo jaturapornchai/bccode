@@ -6,7 +6,7 @@ class ButtonBill extends StatelessWidget {
   final Function()? onPressed;
   final Color color;
 
-  ButtonBill({
+  const ButtonBill({
     super.key,
     required this.label,
     required this.onPressed,

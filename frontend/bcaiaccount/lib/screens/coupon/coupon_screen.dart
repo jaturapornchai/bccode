@@ -74,7 +74,7 @@ class CouponScreenState extends State<CouponScreen>
   List<GlobalKey> listKeys = [];
   String searchText = "";
   String selectGuid = "";
-  int _hoverIndex = -1;
+  final int _hoverIndex = -1;
   bool isChange = false;
   bool isSaveAllow = false;
   late CouponState blocCouponState;

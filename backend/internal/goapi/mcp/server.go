@@ -831,6 +831,67 @@ var AvailableTools = []map[string]interface{}{
 		"description": "Get the data structure/schema of purchase order (ใบสั่งซื้อ) documents with examples.",
 		"parameters":  map[string]interface{}{},
 	},
+	// Purchase Requisition Tools (ใบขอซื้อ PR)
+	{
+		"name":        "list_purchase_requisitions",
+		"description": "List/search purchase requisitions (ใบขอซื้อ PR). Returns docno, requester, department, urgency, status.",
+		"parameters": map[string]interface{}{
+			"keyword": "string (optional) — Search by docno, requester code/name, department, purpose",
+			"limit":   "number (optional) — Max results (default: 50, max: 200)",
+		},
+	},
+	{
+		"name":        "create_purchase_requisition",
+		"description": "Create a new purchase requisition (ใบขอซื้อ PR). AI ใช้สร้าง PR อัตโนมัติได้. Requires docno, requester_code, department_code, purpose.",
+		"parameters": map[string]interface{}{
+			"docno":                   "string (required) — Document number e.g. 'PR20260314-00001'",
+			"requester_code":          "string (required) — Employee code of requester",
+			"requester_name":          "string (optional) — Name of requester",
+			"department_code":         "string (required) — Department code e.g. 'IT', 'ACC'",
+			"department_names":        "string (optional) — JSON array [{\"code\":\"th\",\"name\":\"ฝ่ายไอที\"}]",
+			"purpose":                 "string (required) — Purpose/reason for purchase",
+			"budget_code":             "string (optional) — Budget code",
+			"budget_amount":           "number (optional) — Budget amount",
+			"urgency":                 "number (optional) — 1=Normal, 2=Urgent, 3=Critical (default: 1)",
+			"requested_delivery_date": "string (optional) — Requested delivery date (YYYY-MM-DD)",
+			"details":                 "string (optional) — JSON array of items [{\"barcode\":\"123\",\"itemcode\":\"SKU1\",\"qty\":10,\"price\":100,\"sumamount\":1000}]",
+			"description":             "string (optional) — Description/remark",
+			"totalamount":             "number (optional) — Total amount",
+		},
+	},
+	{
+		"name":        "update_purchase_requisition",
+		"description": "Update an existing purchase requisition by guidfixed.",
+		"parameters": map[string]interface{}{
+			"guidfixed":               "string (required) — GuidFixed of the PR to update",
+			"requester_code":          "string (optional) — New requester code",
+			"requester_name":          "string (optional) — New requester name",
+			"department_code":         "string (optional) — New department code",
+			"department_names":        "string (optional) — JSON array of department names",
+			"purpose":                 "string (optional) — New purpose",
+			"budget_code":             "string (optional) — New budget code",
+			"budget_amount":           "number (optional) — New budget amount",
+			"urgency":                 "number (optional) — 1=Normal, 2=Urgent, 3=Critical",
+			"requested_delivery_date": "string (optional) — New delivery date",
+			"details":                 "string (optional) — JSON array of items",
+			"description":             "string (optional) — New description",
+			"totalamount":             "number (optional) — New total amount",
+			"status":                  "number (optional) — New status (0=draft, 1=pending, 2=approved, 3=rejected)",
+			"conversion_status":       "string (optional) — none/converted_to_rfq/converted_to_po",
+		},
+	},
+	{
+		"name":        "delete_purchase_requisition",
+		"description": "Delete a purchase requisition by guidfixed (soft delete).",
+		"parameters": map[string]interface{}{
+			"guidfixed": "string (required) — GuidFixed of the PR to delete",
+		},
+	},
+	{
+		"name":        "get_purchase_requisition_schema",
+		"description": "Get the data structure/schema of purchase requisition (ใบขอซื้อ PR) documents with examples.",
+		"parameters":  map[string]interface{}{},
+	},
 	// Model Schema Tool
 	{
 		"name":        "get_model_schema",
@@ -1228,6 +1289,17 @@ func (s *MCPServer) InvokeTool(c echo.Context) error {
 		result, err = s.invokeDeletePurchaseOrder(ctx, req.Params)
 	case "get_purchase_order_schema":
 		result, err = s.invokeGetPurchaseOrderSchema(ctx, req.Params)
+	// Purchase Requisition Tools (ใบขอซื้อ PR)
+	case "list_purchase_requisitions":
+		result, err = s.invokeListPurchaseRequisitions(ctx, req.Params)
+	case "create_purchase_requisition":
+		result, err = s.invokeCreatePurchaseRequisition(ctx, req.Params)
+	case "update_purchase_requisition":
+		result, err = s.invokeUpdatePurchaseRequisition(ctx, req.Params)
+	case "delete_purchase_requisition":
+		result, err = s.invokeDeletePurchaseRequisition(ctx, req.Params)
+	case "get_purchase_requisition_schema":
+		result, err = s.invokeGetPurchaseRequisitionSchema(ctx, req.Params)
 	// API Catalog & Frontend Dev Tools
 	case "list_api_endpoints":
 		result, err = s.invokeListAPIEndpoints(ctx, req.Params)
@@ -2224,6 +2296,63 @@ func (s *MCPServer) invokeDeletePurchaseOrder(ctx context.Context, params map[st
 
 func (s *MCPServer) invokeGetPurchaseOrderSchema(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	return tools.GetPurchaseOrderSchema(), nil
+}
+
+// ==================== Purchase Requisition Invokers ====================
+
+func (s *MCPServer) invokeListPurchaseRequisitions(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	shopID := getStringParam(params, "shop_id")
+	keyword := getStringParam(params, "keyword")
+	limit := getIntParam(params, "limit")
+	return tools.ListPurchaseRequisitions(ctx, shopID, keyword, limit)
+}
+
+func (s *MCPServer) invokeCreatePurchaseRequisition(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	shopID := getStringParam(params, "shop_id")
+	docno := getStringParam(params, "docno")
+	requesterCode := getStringParam(params, "requester_code")
+	requesterName := getStringParam(params, "requester_name")
+	departmentCode := getStringParam(params, "department_code")
+	departmentNames := getStringParam(params, "department_names")
+	purpose := getStringParam(params, "purpose")
+	budgetCode := getStringParam(params, "budget_code")
+	budgetAmount := getFloatParam(params, "budget_amount")
+	urgency := int8(getIntParam(params, "urgency"))
+	requestedDeliveryDate := getStringParam(params, "requested_delivery_date")
+	details := getStringParam(params, "details")
+	description := getStringParam(params, "description")
+	totalamount := getFloatParam(params, "totalamount")
+	return tools.CreatePurchaseRequisition(ctx, shopID, docno, requesterCode, requesterName, departmentCode, departmentNames, purpose, budgetCode, budgetAmount, urgency, requestedDeliveryDate, details, description, totalamount)
+}
+
+func (s *MCPServer) invokeUpdatePurchaseRequisition(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	shopID := getStringParam(params, "shop_id")
+	guidfixed := getStringParam(params, "guidfixed")
+	requesterCode := getStringParam(params, "requester_code")
+	requesterName := getStringParam(params, "requester_name")
+	departmentCode := getStringParam(params, "department_code")
+	departmentNames := getStringParam(params, "department_names")
+	purpose := getStringParam(params, "purpose")
+	budgetCode := getStringParam(params, "budget_code")
+	budgetAmount := getFloatParam(params, "budget_amount")
+	urgency := int8(getIntParam(params, "urgency"))
+	requestedDeliveryDate := getStringParam(params, "requested_delivery_date")
+	details := getStringParam(params, "details")
+	description := getStringParam(params, "description")
+	totalamount := getFloatParam(params, "totalamount")
+	status := int8(getIntParam(params, "status"))
+	conversionStatus := getStringParam(params, "conversion_status")
+	return tools.UpdatePurchaseRequisition(ctx, shopID, guidfixed, requesterCode, requesterName, departmentCode, departmentNames, purpose, budgetCode, budgetAmount, urgency, requestedDeliveryDate, details, description, totalamount, status, conversionStatus)
+}
+
+func (s *MCPServer) invokeDeletePurchaseRequisition(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	shopID := getStringParam(params, "shop_id")
+	guidfixed := getStringParam(params, "guidfixed")
+	return tools.DeletePurchaseRequisition(ctx, shopID, guidfixed)
+}
+
+func (s *MCPServer) invokeGetPurchaseRequisitionSchema(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	return tools.GetPurchaseRequisitionSchema(), nil
 }
 
 // RegisterRoutesOnGroup registers MCP routes on an Echo Group (for embedded mode)

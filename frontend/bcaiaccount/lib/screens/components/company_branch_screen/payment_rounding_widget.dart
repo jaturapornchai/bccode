@@ -94,6 +94,7 @@ class _PaymentRoundingWidgetState extends State<PaymentRoundingWidget>
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             Switch(
+              focusNode: FocusNode(skipTraversal: true),
               value: isEnabled,
               onChanged: (value) {
                 setState(() {
@@ -249,6 +250,7 @@ class _PaymentRoundingWidgetState extends State<PaymentRoundingWidget>
           Expanded(
             flex: 1,
             child: IconButton(
+              focusNode: FocusNode(skipTraversal: true),
               icon: Icon(Icons.delete, color: global.theme.negativeHighlightTextColor),
               onPressed: () => widget.onRemoveRule(method, index),
             ),

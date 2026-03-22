@@ -15,7 +15,7 @@ class _DashBoardScreenState extends State<DashBoardScreen> with global.ThemeRefr
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Dashboard'),
+        title: Text(global.language('data_status')),
         backgroundColor: global.theme.appBarColor,
       ),
       body: SingleChildScrollView(

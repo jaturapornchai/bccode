@@ -1530,6 +1530,265 @@ class TransRepository {
     }
   }
 
+  // ==================== Purchase Requisition (ใบขอซื้อ) ====================
+
+  /// getPurchaseRequisitionList — ดึงรายการใบขอซื้อผ่าน goapi getdoc
+  Future<GoApiQueryManyResultResponse> getPurchaseRequisitionList({
+    required int limit,
+    required int offset,
+    required String search,
+    required String custcode,
+    required int dateorder,
+    String? fromDate,
+    String? toDate,
+    double? minAmount,
+    double? maxAmount,
+    List<String>? custCodes,
+  }) async {
+    try {
+      DocPayLoadModel docPayLoad = DocPayLoadModel(
+        shopid: global.getShopId(),
+        system: "purchase-requisition",
+        limit: limit,
+        offset: offset,
+        search: search,
+        custcode: custcode,
+        dateorder: dateorder,
+        fromdate: fromDate,
+        todate: toDate,
+        minamount: minAmount,
+        maxamount: maxAmount,
+        custcodes: custCodes,
+      );
+      final payloadJson = docPayLoad.toJson();
+      final response = await global.goApiPost(global.goApiUrlPath("getdoc"), payloadJson);
+      try {
+        final rawData = json.encoder.convert(response);
+        return GoApiQueryManyResultResponse.fromMap(json.decode(rawData));
+      } catch (ex) {
+        throw Exception(ex);
+      }
+    } on DioException catch (ex) {
+      String errorMessage = ex.response.toString();
+      throw Exception(errorMessage);
+    }
+  }
+
+  /// savePurchaseRequisition
+  Future<ApiResponse> savePurchaseRequisition(TransactionModel postData, {Map<String, dynamic>? extraFields}) async {
+    Dio client = Client().init();
+    final data = postData.toJson();
+
+    // เพิ่ม PR-specific fields ที่ backend ต้องการ
+    data['requestercode'] = global.profileData.username ?? '';
+    data['requestername'] = global.profileData.name ?? global.profileData.username ?? '';
+    data['purpose'] = (postData.description != null && postData.description!.isNotEmpty)
+        ? postData.description!
+        : '-';
+    data['urgency'] = postData.inquirytype > 0 ? postData.inquirytype : 1;
+    data['requesteddeliverydate'] = postData.docrefdate;
+    if (postData.creditdays != null && postData.creditdays! > 0) {
+      data['creditdays'] = postData.creditdays;
+    }
+    // Merge extraFields จาก PR form (departmentcode, jobcode, shiptoaddress ฯลฯ)
+    if (extraFields != null) {
+      data.addAll(extraFields);
+    }
+    // fallback departmentcode
+    data['departmentcode'] = data['departmentcode'] ?? 'DEFAULT';
+
+    try {
+      AppLogger.info('[savePurchaseRequisition] POST /transaction/purchase-requisition');
+      AppLogger.debug('[savePurchaseRequisition] PR fields: requestercode=${data['requestercode']}, purpose=${data['purpose']}, urgency=${data['urgency']}');
+      final response = await client.post('/transaction/purchase-requisition', data: data);
+      AppLogger.info('[savePurchaseRequisition] response: ${response.data}');
+      try {
+        final apiResponse = ApiResponse.fromMap(response.data);
+        if (apiResponse.data == null && response.data is Map && response.data['docno'] != null) {
+          return ApiResponse(
+            success: apiResponse.success,
+            data: response.data['docno'],
+            message: apiResponse.message,
+          );
+        }
+        return apiResponse;
+      } catch (ex) {
+        throw Exception(ex);
+      }
+    } on DioException catch (ex) {
+      AppLogger.error('[savePurchaseRequisition] DioException: ${ex.response?.statusCode} ${ex.response?.data}');
+      String errorMessage = ex.response?.data?.toString() ?? ex.message ?? 'Unknown error';
+      throw Exception(errorMessage);
+    }
+  }
+
+  /// updatePurchaseRequisition
+  Future<ApiResponse> updatePurchaseRequisition(String guid, TransactionModel postData, {Map<String, dynamic>? extraFields}) async {
+    Dio client = Client().init();
+    final data = postData.toJson();
+
+    // เพิ่ม PR-specific fields (เหมือน save)
+    data['requestercode'] = global.profileData.username ?? '';
+    data['requestername'] = global.profileData.name ?? global.profileData.username ?? '';
+    data['purpose'] = (postData.description != null && postData.description!.isNotEmpty)
+        ? postData.description!
+        : '-';
+    data['urgency'] = postData.inquirytype > 0 ? postData.inquirytype : 1;
+    data['requesteddeliverydate'] = postData.docrefdate;
+    if (postData.creditdays != null && postData.creditdays! > 0) {
+      data['creditdays'] = postData.creditdays;
+    }
+    // Merge extraFields จาก PR form
+    if (extraFields != null) {
+      data.addAll(extraFields);
+    }
+    // fallback departmentcode
+    data['departmentcode'] = data['departmentcode'] ?? 'DEFAULT';
+
+    try {
+      final response = await client.put('/transaction/purchase-requisition/$guid', data: data);
+      try {
+        return ApiResponse.fromMap(response.data);
+      } catch (ex) {
+        throw Exception(ex);
+      }
+    } on DioException catch (ex) {
+      String errorMessage = ex.response.toString();
+      throw Exception(errorMessage);
+    }
+  }
+
+  /// deletePurchaseRequisition
+  Future<ApiResponse> deletePurchaseRequisition(String guid) async {
+    Dio client = Client().init();
+    try {
+      final response = await client.delete('/transaction/purchase-requisition/$guid');
+      try {
+        return ApiResponse.fromMap(response.data);
+      } catch (ex) {
+        throw Exception(ex);
+      }
+    } on DioException catch (ex) {
+      String errorMessage = ex.response.toString();
+      throw Exception(errorMessage);
+    }
+  }
+
+  /// getRFQList — ดึงรายการสืบราคาผ่าน goapi getdoc
+  Future<GoApiQueryManyResultResponse> getRFQList({
+    required int limit,
+    required int offset,
+    required String search,
+    required String custcode,
+    required int dateorder,
+    String? fromDate,
+    String? toDate,
+    double? minAmount,
+    double? maxAmount,
+    List<String>? custCodes,
+  }) async {
+    try {
+      DocPayLoadModel docPayLoad = DocPayLoadModel(
+        shopid: global.getShopId(),
+        system: "rfq",
+        limit: limit,
+        offset: offset,
+        search: search,
+        custcode: custcode,
+        dateorder: dateorder,
+        fromdate: fromDate,
+        todate: toDate,
+        minamount: minAmount,
+        maxamount: maxAmount,
+        custcodes: custCodes,
+      );
+      final payloadJson = docPayLoad.toJson();
+      final response = await global.goApiPost(global.goApiUrlPath("getdoc"), payloadJson);
+      try {
+        final rawData = json.encoder.convert(response);
+        return GoApiQueryManyResultResponse.fromMap(json.decode(rawData));
+      } catch (ex) {
+        throw Exception(ex);
+      }
+    } on DioException catch (ex) {
+      String errorMessage = ex.response.toString();
+      throw Exception(errorMessage);
+    }
+  }
+
+  /// saveRFQ
+  Future<ApiResponse> saveRFQ(TransactionModel postData, {List<Map<String, dynamic>>? vendorEntries}) async {
+    Dio client = Client().init();
+    final data = postData.toJson();
+
+    // RFQ-specific fields
+    if (vendorEntries != null) {
+      data['vendorentries'] = vendorEntries;
+    }
+
+    try {
+      AppLogger.info('[saveRFQ] POST /transaction/rfq');
+      final response = await client.post('/transaction/rfq', data: data);
+      AppLogger.info('[saveRFQ] response: ${response.data}');
+      try {
+        final apiResponse = ApiResponse.fromMap(response.data);
+        if (apiResponse.data == null && response.data is Map && response.data['docno'] != null) {
+          return ApiResponse(
+            success: apiResponse.success,
+            data: response.data['docno'],
+            message: apiResponse.message,
+          );
+        }
+        return apiResponse;
+      } catch (ex) {
+        throw Exception(ex);
+      }
+    } on DioException catch (ex) {
+      AppLogger.error('[saveRFQ] DioException: ${ex.response?.statusCode} ${ex.response?.data}');
+      String errorMessage = ex.response?.data?.toString() ?? ex.message ?? 'Unknown error';
+      throw Exception(errorMessage);
+    }
+  }
+
+  /// updateRFQ
+  Future<ApiResponse> updateRFQ(String guid, TransactionModel postData, {List<Map<String, dynamic>>? vendorEntries}) async {
+    Dio client = Client().init();
+    final data = postData.toJson();
+
+    // RFQ-specific fields
+    if (vendorEntries != null) {
+      data['vendorentries'] = vendorEntries;
+    }
+
+    try {
+      final response = await client.put('/transaction/rfq/$guid', data: data);
+      try {
+        return ApiResponse.fromMap(response.data);
+      } catch (ex) {
+        throw Exception(ex);
+      }
+    } on DioException catch (ex) {
+      String errorMessage = ex.response.toString();
+      throw Exception(errorMessage);
+    }
+  }
+
+  /// deleteRFQ
+  Future<ApiResponse> deleteRFQ(String guid) async {
+    Dio client = Client().init();
+    try {
+      final response = await client.delete('/transaction/rfq/$guid');
+      try {
+        return ApiResponse.fromMap(response.data);
+      } catch (ex) {
+        throw Exception(ex);
+      }
+    } on DioException catch (ex) {
+      String errorMessage = ex.response.toString();
+      throw Exception(errorMessage);
+    }
+  }
+
   /// ใบเสนอราคา
   Future<ApiResponse> getQuotationList({int limit = 0, int offset = 0, String search = "", String custcode = ""}) async {
     Dio client = Client().init();

@@ -357,6 +357,49 @@ class TransactionModel {
   /// สถานะลบแบบ Soft Delete (true = ถูกลบแล้ว)
   bool? isdelete;
 
+  // === PR-specific transient fields (ไม่ serialize — ใช้ extraFields pattern ตอน save) ===
+  // ไม่ต้อง build_runner เพราะ .g.dart ไม่รู้จัก fields เหล่านี้
+  String? prDepartmentCode;
+  String? prDepartmentName;
+  String? prJobCode;
+  String? prJobName;
+  String? prShipToAddress;
+  String? prShipToName;
+  String? prShipToLat;
+  String? prShipToLng;
+  String? prCostCenterCode;
+  String? prCostCenterName;
+  String? prPaymentCondition;
+  int? prUrgency;
+
+  // Estimated Landed Cost
+  String? prEstimatedUnitCost;
+  String? prEstimatedFreight;
+  String? prEstimatedDuty;
+  String? prEstimatedLandedCost;
+
+  // Vendor Preferences
+  String? prPreferredVendor;
+  String? prAlternativeVendor;
+  String? prReasonPreferred;
+
+  // Approval Enhancement
+  String? prApprovalDeadline;
+
+  // PR เพิ่มเติม (session 6)
+  String? prInternalNote;
+  String? prPurchasingGroup;
+  double? prOverDeliveryTolerance;
+  double? prUnderDeliveryTolerance;
+  String? prBudgetCode;
+  double? prBudgetAmount;
+  String? prVendorNote;
+
+  // Tracking (read-only from backend)
+  String? prConversionStatus;
+  String? prRefRfqDocNo;
+  String? prRefPoDocNo;
+
   TransactionModel({
     String? shopid,
     required this.guidref,

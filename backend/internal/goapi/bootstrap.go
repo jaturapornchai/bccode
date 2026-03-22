@@ -16,6 +16,7 @@ import (
 	"smlcloudplatform/internal/goapi/handlers/kafka"
 	"smlcloudplatform/internal/goapi/handlers/lineoa"
 	"smlcloudplatform/internal/goapi/handlers/unified"
+	"smlcloudplatform/internal/goapi/inventory"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/mcp"
 	"smlcloudplatform/internal/goapi/myclickhouse"
@@ -275,6 +276,10 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 	g.POST("/genpdf/history", handlers.PdfHistoryListHandler)
 	g.GET("/genpdf/reprint/:id", handlers.PdfReprintHandler)
 
+	// Inventory Costing
+	inventoryGroup := g.Group("/api")
+	inventory.RegisterRoutes(inventoryGroup)
+
 	// Stock
 	g.POST("/processstockcalccost", handlers.ProcessStockCalcCostHandler)
 	g.POST("/api/stockcost/query", handlers.ProcessStockCostHandler)
@@ -353,6 +358,36 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 	g.GET("/api/approval/token-info", approval.GetApprovalTokenInfoHandler)
 	g.POST("/api/approval/po-details", approval.GetPODetailsForLIFFHandler)
 	g.POST("/api/approval/liff-approve", approval.LiffApproveHandler)
+
+	// PR Approval System (ใบขอซื้อ) — ใช้ approval engine เดียวกับ PO
+	// Frontend ส่ง purchase_type_code = "PR" เพื่อแยกจาก PO
+	g.POST("/api/approval/pr-settings", approval.GetPOApprovalSettingsHandler)
+	g.POST("/api/approval/pr-setting", approval.GetPOApprovalSettingHandler)
+	g.POST("/api/approval/pr-setting/save", approval.SavePOApprovalSettingHandler)
+	g.POST("/api/approval/pr-setting/delete", approval.DeletePOApprovalSettingHandler)
+	g.POST("/api/approval/pr-status/get", approval.GetPOApprovalStatusHandler)
+	g.POST("/api/approval/pr-status/batch", approval.GetBatchPOApprovalStatusHandler)
+	g.POST("/api/approval/pr-status/submit", approval.SubmitPOApprovalHandler)
+	g.POST("/api/approval/pr-status/approve", approval.ApprovePOHandler)
+	g.POST("/api/approval/pr-status/reject", approval.RejectPOHandler)
+	g.POST("/api/approval/pr-status/withdraw", approval.WithdrawPOHandler)
+	g.POST("/api/approval/pr-status/pending", approval.GetPendingApprovalsHandler)
+	g.POST("/api/approval/pr-status/rejected", approval.GetRejectedPOListHandler)
+
+	// RFQ Approval System (สืบราคา) — ใช้ approval engine เดียวกับ PO
+	// Frontend ส่ง purchase_type_code = "RFQ" เพื่อแยกจาก PO
+	g.POST("/api/approval/rfq-settings", approval.GetPOApprovalSettingsHandler)
+	g.POST("/api/approval/rfq-setting", approval.GetPOApprovalSettingHandler)
+	g.POST("/api/approval/rfq-setting/save", approval.SavePOApprovalSettingHandler)
+	g.POST("/api/approval/rfq-setting/delete", approval.DeletePOApprovalSettingHandler)
+	g.POST("/api/approval/rfq-status/get", approval.GetPOApprovalStatusHandler)
+	g.POST("/api/approval/rfq-status/batch", approval.GetBatchPOApprovalStatusHandler)
+	g.POST("/api/approval/rfq-status/submit", approval.SubmitPOApprovalHandler)
+	g.POST("/api/approval/rfq-status/approve", approval.ApprovePOHandler)
+	g.POST("/api/approval/rfq-status/reject", approval.RejectPOHandler)
+	g.POST("/api/approval/rfq-status/withdraw", approval.WithdrawPOHandler)
+	g.POST("/api/approval/rfq-status/pending", approval.GetPendingApprovalsHandler)
+	g.POST("/api/approval/rfq-status/rejected", approval.GetRejectedPOListHandler)
 
 	// Data History
 	g.GET("/api/datahistory", datahistory.GetHistoryHandler)

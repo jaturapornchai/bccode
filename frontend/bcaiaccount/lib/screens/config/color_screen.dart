@@ -12,6 +12,7 @@ import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:invert_colors/invert_colors.dart';
 import 'package:icon_decoration/icon_decoration.dart';
 import 'package:translator/translator.dart';
+import 'package:smlaicloud/utils/focus_utils.dart';
 
 class ColorScreen extends StatefulWidget {
   const ColorScreen({super.key});
@@ -143,7 +144,7 @@ class ColorScreenState extends State<ColorScreen>
     }
     isChange = false;
     focusNodeIndex = 0;
-    fieldFocusNodes[focusNodeIndex].requestFocus();
+    focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex]);
     setState(() {
       publicColorSelectedCode = "white";
       publicColorSelected = Colors.white;
@@ -289,7 +290,7 @@ class ColorScreenState extends State<ColorScreen>
                       isSaveAllow = true;
                       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
                         tabController.animateTo(1);
-                        fieldFocusNodes[0].requestFocus();
+                        focusFirstTextField(context);
                       });
                     });
                   },
@@ -689,10 +690,7 @@ class ColorScreenState extends State<ColorScreen>
     if (focusNodeIndex > fieldFocusNodes.length - 1) {
       focusNodeIndex = 0;
     }
-    fieldFocusNodes[focusNodeIndex].requestFocus();
-    fieldTextController[focusNodeIndex].selection = TextSelection.fromPosition(
-      TextPosition(offset: fieldTextController[focusNodeIndex].text.length),
-    );
+    focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex]);
   }
 
   Widget editScreen({mobileScreen}) {
@@ -814,21 +812,28 @@ class ColorScreenState extends State<ColorScreen>
         ],
       ),
       body: Focus(
-        focusNode: FocusNode(skipTraversal: true),
-        onKey: (node, event) {
-          if (kIsWeb) {
-            if (event is RawKeyDownEvent) {
-              if (event.logicalKey == LogicalKeyboardKey.f2) {
-                searchFocusNode.requestFocus();
-              }
-              if (event.logicalKey == LogicalKeyboardKey.f10) {
-                saveOrUpdateData();
-              }
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f2) {
+            if (event is KeyDownEvent) searchFocusNode.requestFocus();
+            return KeyEventResult.handled;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) saveOrUpdateData();
+            return KeyEventResult.handled;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              FocusManager.instance.primaryFocus?.nextFocus();
             }
+            return KeyEventResult.handled;
           }
           return KeyEventResult.ignored;
         },
-        child: Builder(
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: Builder(
           builder: (context) {
             final scale = global.editFontScaleFactor;
             return MediaQuery(
@@ -1124,6 +1129,7 @@ class ColorScreenState extends State<ColorScreen>
               ),
             );
           },
+        ),
         ),
       ),
     );

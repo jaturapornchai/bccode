@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smlaicloud/global.dart' as global;
+import 'package:smlaicloud/utils/focus_utils.dart';
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:split_view/split_view.dart';
 import 'package:translator/translator.dart';
@@ -166,7 +167,6 @@ class DepartmentScreenState extends State<DepartmentScreen>
     }
     isChange = false;
     focusNodeIndex = 0;
-    fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
   }
 
   void discardData({required Function callBack}) {
@@ -317,7 +317,7 @@ class DepartmentScreenState extends State<DepartmentScreen>
                             timeStamp,
                           ) {
                             tabController.animateTo(1);
-                            fieldFocusNodes[0].focusNode.requestFocus();
+                            focusFirstTextField(context);
                           });
                         });
                       },
@@ -553,9 +553,7 @@ class DepartmentScreenState extends State<DepartmentScreen>
       if (screenEvent == global.ScreenEventEnum.edit) {
         WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
           tabController.animateTo(1);
-        });
-        setState(() {
-          findFocusNext(0);
+          focusFirstTextField(context);
         });
       }
     });
@@ -813,11 +811,7 @@ class DepartmentScreenState extends State<DepartmentScreen>
           break;
         }
       } else {
-        fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
-        fieldTextController[focusNodeIndex]
-            .selection = TextSelection.fromPosition(
-          TextPosition(offset: fieldTextController[focusNodeIndex].text.length),
-        );
+        focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex].focusNode);
         break;
       }
     }
@@ -914,23 +908,25 @@ class DepartmentScreenState extends State<DepartmentScreen>
             ),
         ],
       ),
-      body: RawKeyboardListener(
-            focusNode: FocusNode(skipTraversal: true),
-            onKey: (event) {
-              if (kIsWeb ||
-                  Platform.isWindows ||
-                  Platform.isLinux ||
-                  Platform.isMacOS) {
-                if (event is RawKeyUpEvent) {
-                  if (event.logicalKey == LogicalKeyboardKey.tab) {
-                  }
-                  if (event.logicalKey == LogicalKeyboardKey.f10) {
-                    saveOrUpdateData();
-                  }
-                }
+      body: Focus(
+            skipTraversal: true,
+            onKeyEvent: (node, event) {
+              if (event is KeyUpEvent) return KeyEventResult.ignored;
+              if (event.logicalKey == LogicalKeyboardKey.f10) {
+                if (event is KeyDownEvent) saveOrUpdateData();
+                return KeyEventResult.handled;
               }
+              if (event.logicalKey == LogicalKeyboardKey.enter) {
+                if (event is KeyDownEvent) {
+                  FocusManager.instance.primaryFocus?.nextFocus();
+                }
+                return KeyEventResult.handled;
+              }
+              return KeyEventResult.ignored;
             },
-            child: Builder(
+            child: FocusTraversalGroup(
+              policy: TextFieldTraversalPolicy(),
+              child: Builder(
               builder: (context) {
                 final scale = global.editFontScaleFactor;
                 return MediaQuery(
@@ -1069,6 +1065,7 @@ class DepartmentScreenState extends State<DepartmentScreen>
                 );
               },
             ),
+          ),
           ),
     );
   }

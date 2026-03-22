@@ -267,6 +267,7 @@ class PurchaseOrderEditScreenState extends State<PurchaseOrderEditScreen> with T
 
   List<global.DataTableHeader> headers = [
     global.DataTableHeader(code: "delete", label: "", width: 5, textAlign: TextAlign.center, alignment: Alignment.center),
+    global.DataTableHeader(code: "reorder", label: "", width: 4, textAlign: TextAlign.center, alignment: Alignment.center),
     global.DataTableHeader(code: "line_number", label: global.language('line_number'), width: 10, textAlign: TextAlign.center, alignment: Alignment.center),
     global.DataTableHeader(code: "barcode", label: global.language('barcode'), width: 20),
     global.DataTableHeader(code: "product_name", label: global.language('product_name'), width: 40),
@@ -356,24 +357,33 @@ class PurchaseOrderEditScreenState extends State<PurchaseOrderEditScreen> with T
   }
 
   bool _hasProcessedCartTransfer = false;
+  bool _hasProcessedConversion = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    // ตรวจสอบและประมวลผล CartTransferModel (เพียงครั้งเดียว)
+    final args = ModalRoute.of(context)?.settings.arguments;
+
+    // 1. ตรวจสอบ PR/RFQ → PO conversion (Map arguments)
+    if (!_hasProcessedConversion && args is Map<String, dynamic> && args.containsKey('source')) {
+      _hasProcessedConversion = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _populateFromConversion(args);
+      });
+      return;
+    }
+
+    // 2. ตรวจสอบและประมวลผล CartTransferModel (เพียงครั้งเดียว)
     if (!_hasProcessedCartTransfer) {
       CartTransferModel? cartTransfer;
 
-      // 1. ตรวจสอบจาก CartTransferProvider (สำหรับ tab ใหม่)
+      // 2a. ตรวจสอบจาก CartTransferProvider (สำหรับ tab ใหม่)
       cartTransfer = CartTransferProvider.of(context);
 
-      // 2. ถ้าไม่มี ลองตรวจสอบจาก route arguments (สำหรับ Navigator.pushNamed)
-      if (cartTransfer == null) {
-        final args = ModalRoute.of(context)?.settings.arguments;
-        if (args is CartTransferModel) {
-          cartTransfer = args;
-        }
+      // 2b. ถ้าไม่มี ลองตรวจสอบจาก route arguments (สำหรับ Navigator.pushNamed)
+      if (cartTransfer == null && args is CartTransferModel) {
+        cartTransfer = args;
       }
 
       // ถ้าพบข้อมูล ให้โหลดเข้าระบบ
@@ -382,6 +392,59 @@ class PurchaseOrderEditScreenState extends State<PurchaseOrderEditScreen> with T
         _populateFromCartTransfer(cartTransfer);
         _hasProcessedCartTransfer = true;
       }
+    }
+  }
+
+  /// Pre-fill PO จาก PR หรือ RFQ ที่อนุมัติแล้ว
+  void _populateFromConversion(Map<String, dynamic> args) {
+    try {
+      final source = args['source'] as String;
+      final sourceDocNo = args['sourceDocNo'] as String? ?? '';
+      final custcode = args['custcode'] as String? ?? '';
+      final custnames = args['custnames'];
+      final description = args['description'] as String? ?? '';
+      final creditdays = args['creditdays'];
+      final detailsJson = args['details'] as List?;
+
+      // ตั้งค่า supplier
+      screenData.custcode = custcode;
+      if (custnames is List) {
+        screenData.custnames = custnames.cast<LanguageDataModel>();
+      }
+      _formController.custCodeController.text = custcode;
+      _formController.custnamesController.text = global.activeLangName(screenData.custnames ?? []);
+
+      // ตั้งค่า description + docrefno (อ้างอิง PR/RFQ)
+      screenData.description = description;
+      screenData.docrefno = sourceDocNo;
+      _formController.descriptionController.text = description;
+      _formController.docRefNumberController.text = sourceDocNo;
+
+      // ตั้งค่า credit days
+      if (creditdays is int && creditdays > 0) {
+        screenData.creditdays = creditdays;
+      }
+
+      // โหลด details (รายการสินค้า)
+      if (detailsJson != null && detailsJson.isNotEmpty) {
+        screenData.details = detailsJson
+            .map((d) => TransactionDetailModel.fromJson(d as Map<String, dynamic>))
+            .toList();
+        // รีเซ็ต line numbers
+        for (int i = 0; i < screenData.details!.length; i++) {
+          screenData.details![i].linenumber = i + 1;
+          screenData.details![i].docref = ''; // ล้าง docref เดิม
+        }
+      }
+
+      setState(() {
+        loadDataToScreen();
+        _transactionCalculator.calTotalValue();
+      });
+
+      AppLogger.info('[PO] Pre-fill จาก $source: $sourceDocNo (${screenData.details?.length ?? 0} รายการ)');
+    } catch (e, stackTrace) {
+      AppLogger.error('[PO] Error populating from conversion: $e\n$stackTrace');
     }
   }
 
@@ -425,6 +488,7 @@ class PurchaseOrderEditScreenState extends State<PurchaseOrderEditScreen> with T
     // PO screen - ใช้ headers สำหรับเอกสารจัดซื้อ
     headers = [
       global.DataTableHeader(code: "delete", label: "", width: 5, textAlign: TextAlign.center, alignment: Alignment.center),
+      global.DataTableHeader(code: "reorder", label: "", width: 4, textAlign: TextAlign.center, alignment: Alignment.center),
       global.DataTableHeader(code: "line_number", label: global.language('line_number'), width: 10, textAlign: TextAlign.center, alignment: Alignment.center),
       global.DataTableHeader(code: "barcode", label: global.language('barcode'), width: 20),
       global.DataTableHeader(code: "item_code", label: global.language('item_code'), width: 15),
@@ -651,6 +715,20 @@ class PurchaseOrderEditScreenState extends State<PurchaseOrderEditScreen> with T
     );
   }
 
+  Future<bool> _approvePO(String comment) async {
+    return await _approvalHandler.approveApproval(
+      docNo: screenData.docno,
+      comment: comment,
+    );
+  }
+
+  Future<bool> _rejectPO(String comment) async {
+    return await _approvalHandler.rejectApproval(
+      docNo: screenData.docno,
+      comment: comment,
+    );
+  }
+
   // =====================================================
   // Helper methods สำหรับตรวจสอบสิทธิ์พิมพ์/แก้ไข PO ตามสถานะการอนุมัติ
   // =====================================================
@@ -809,6 +887,15 @@ class PurchaseOrderEditScreenState extends State<PurchaseOrderEditScreen> with T
       calTotalValue: _transactionCalculator.calTotalValue,
       getPrice: getPrice,
       showBarcodeDialog: () => _transactionDialogs.showBarcodeDialog(context),
+      onReorderItem: (int oldIndex, int newIndex) {
+        setState(() {
+          final item = screenData.details!.removeAt(oldIndex);
+          screenData.details!.insert(newIndex, item);
+          for (int i = 0; i < screenData.details!.length; i++) {
+            screenData.details![i].linenumber = i + 1;
+          }
+        });
+      },
       onWarehouseChanged:
           (
             String newDefualtwarehouse,
@@ -896,6 +983,8 @@ class PurchaseOrderEditScreenState extends State<PurchaseOrderEditScreen> with T
           approvalStatus: _poApprovalStatus,
           isLoading: _isLoadingApprovalStatus,
           onWithdrawApproval: _withdrawPOApproval,
+          onApprove: _approvePO,
+          onReject: _rejectPO,
         ),
       ],
     );

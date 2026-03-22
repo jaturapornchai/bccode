@@ -13,10 +13,6 @@ class AuditScreen extends StatefulWidget {
 class _AuditScreenState extends State<AuditScreen> with global.ThemeRefreshMixin {
   Container bottomPanel = Container();
 
-  @override
-  void initState() {
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -760,10 +756,6 @@ class _AuditScreenState extends State<AuditScreen> with global.ThemeRefreshMixin
     setState(() {});
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
 }
 
 class _ProcessStockComparisonRow {

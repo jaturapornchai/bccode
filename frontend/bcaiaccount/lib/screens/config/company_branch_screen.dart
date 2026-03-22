@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
+import 'package:smlaicloud/utils/focus_utils.dart';
 import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:image_picker/image_picker.dart';
@@ -52,7 +53,6 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
   final translator = GoogleTranslator();
   late TabController tabController;
   ScrollController editScrollController = ScrollController();
-  bool refreshFocus = false;
   TextEditingController searchController = TextEditingController();
   TextEditingController groupController = TextEditingController();
   int focusNodeMax = 0;
@@ -230,7 +230,6 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
       fieldFocusNodes[i].focusNode.addListener(() {
         if (fieldFocusNodes[i].focusNode.hasFocus) {
           focusNodeIndex = i;
-          fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
         }
       });
     }
@@ -239,13 +238,7 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
     );
     listScrollController.addListener(onScrollList);
 
-    // แก้ไข: ใช้ milliseconds แทน microseconds
-    screenTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
-      if (refreshFocus) {
-        fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
-        refreshFocus = false;
-      }
-    });
+    screenTimer = Timer(Duration.zero, () {}); // dummy timer for dispose
 
     // Initialize payment rounding controllers
     initPaymentRoundingControllers();
@@ -333,7 +326,6 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
 
     isDataChange = false;
     focusNodeIndex = 0;
-    refreshFocus = true;
 
     imageFile = [File('')];
     imageWeb = [Uint8List(0)];
@@ -495,7 +487,9 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
                           tabController.animateTo(1);
                         });
                       }
-                      fieldFocusNodes[0].focusNode.requestFocus();
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        focusFirstTextField(context);
+                      });
                     });
                   },
                 );
@@ -507,9 +501,9 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
       ),
       body: Focus(
         focusNode: FocusNode(skipTraversal: true, canRequestFocus: true),
-        onKey: (node, event) {
+        onKeyEvent: (node, event) {
           if (kIsWeb) {
-            if (event is RawKeyDownEvent) {
+            if (event is KeyDownEvent) {
               if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
                 isKeyDown = false;
                 int index = listData.indexOf(
@@ -685,6 +679,9 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
       headerEdit = global.language("edit");
       isSaveAllow = true;
       isEditMode = true;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      focusFirstTextField(context);
     });
   }
 
@@ -867,8 +864,22 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
         focusNodeIndex = 0;
       }
     } while (fieldFocusNodes[focusNodeIndex].isReadOnly);
-    // print("findFocusNext=$focusNodeIndex");
-    refreshFocus = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex].focusNode);
+    });
+  }
+
+  void findFocusPrev(int index) {
+    focusNodeIndex = index;
+    do {
+      focusNodeIndex--;
+      if (focusNodeIndex < 0) {
+        focusNodeIndex = focusNodeMax;
+      }
+    } while (fieldFocusNodes[focusNodeIndex].isReadOnly);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex].focusNode);
+    });
   }
 
   void getDataToEditScreen(CompanyBranchModel companyBranch) {
@@ -2512,25 +2523,51 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
       ),
     );
 
-    // คุณสมบัติธุรกิจ
+    // คุณสมบัติธุรกิจ (8 ประเภท)
     formWidgets.add(
       BusinessPropertyWidget(
         isRestaurant: screenData.isRestaurant ?? false,
         isTire: screenData.isTire ?? false,
         isAgriculture: screenData.isAgriculture ?? false,
         isPharmacy: screenData.isPharmacy ?? false,
-        onRestaurantChanged: (v) {
-          setState(() { isDataChange = true; screenData.isRestaurant = v; });
-        },
-        onTireChanged: (v) {
-          setState(() { isDataChange = true; screenData.isTire = v; });
-        },
-        onAgricultureChanged: (v) {
-          setState(() { isDataChange = true; screenData.isAgriculture = v; });
-        },
-        onPharmacyChanged: (v) {
-          setState(() { isDataChange = true; screenData.isPharmacy = v; });
-        },
+        isService: screenData.isService ?? false,
+        isManufacturing: screenData.isManufacturing ?? false,
+        isImportExport: screenData.isImportExport ?? false,
+        isContractor: screenData.isContractor ?? false,
+        isRental: screenData.isRental ?? false,
+        isWholesale: screenData.isWholesale ?? false,
+        isEcommerce: screenData.isEcommerce ?? false,
+        isLogistics: screenData.isLogistics ?? false,
+        isEducation: screenData.isEducation ?? false,
+        isHotel: screenData.isHotel ?? false,
+        isBeauty: screenData.isBeauty ?? false,
+        isGoldShop: screenData.isGoldShop ?? false,
+        isAccountingFirm: screenData.isAccountingFirm ?? false,
+        isRetail: screenData.isRetail ?? false,
+        isConstruction: screenData.isConstruction ?? false,
+        isElectronics: screenData.isElectronics ?? false,
+        isMobileShop: screenData.isMobileShop ?? false,
+        onRestaurantChanged: (v) { setState(() { isDataChange = true; screenData.isRestaurant = v; }); },
+        onTireChanged: (v) { setState(() { isDataChange = true; screenData.isTire = v; }); },
+        onAgricultureChanged: (v) { setState(() { isDataChange = true; screenData.isAgriculture = v; }); },
+        onPharmacyChanged: (v) { setState(() { isDataChange = true; screenData.isPharmacy = v; }); },
+        onServiceChanged: (v) { setState(() { isDataChange = true; screenData.isService = v; }); },
+        onManufacturingChanged: (v) { setState(() { isDataChange = true; screenData.isManufacturing = v; }); },
+        onImportExportChanged: (v) { setState(() { isDataChange = true; screenData.isImportExport = v; }); },
+        onContractorChanged: (v) { setState(() { isDataChange = true; screenData.isContractor = v; }); },
+        onRentalChanged: (v) { setState(() { isDataChange = true; screenData.isRental = v; }); },
+        onWholesaleChanged: (v) { setState(() { isDataChange = true; screenData.isWholesale = v; }); },
+        onEcommerceChanged: (v) { setState(() { isDataChange = true; screenData.isEcommerce = v; }); },
+        onLogisticsChanged: (v) { setState(() { isDataChange = true; screenData.isLogistics = v; }); },
+        onEducationChanged: (v) { setState(() { isDataChange = true; screenData.isEducation = v; }); },
+        onHotelChanged: (v) { setState(() { isDataChange = true; screenData.isHotel = v; }); },
+        onBeautyChanged: (v) { setState(() { isDataChange = true; screenData.isBeauty = v; }); },
+        onGoldShopChanged: (v) { setState(() { isDataChange = true; screenData.isGoldShop = v; }); },
+        onAccountingFirmChanged: (v) { setState(() { isDataChange = true; screenData.isAccountingFirm = v; }); },
+        onRetailChanged: (v) { setState(() { isDataChange = true; screenData.isRetail = v; }); },
+        onConstructionChanged: (v) { setState(() { isDataChange = true; screenData.isConstruction = v; }); },
+        onElectronicsChanged: (v) { setState(() { isDataChange = true; screenData.isElectronics = v; }); },
+        onMobileShopChanged: (v) { setState(() { isDataChange = true; screenData.isMobileShop = v; }); },
       ),
     );
 
@@ -2776,24 +2813,26 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
             ),
         ],
       ),
-      body: RawKeyboardListener(
-        focusNode: FocusNode(),
-        onKey: (RawKeyEvent event) {
-          if (event is RawKeyDownEvent) {
-            // print(event.logicalKey);
-            if (event.logicalKey == LogicalKeyboardKey.f10) {
-              saveOrUpdateData();
-            }
-            if (event.logicalKey == LogicalKeyboardKey.tab ||
-                event.logicalKey == LogicalKeyboardKey.enter) {
-              if (event.isShiftPressed) {
-                //findFocusPrev(focusNodeIndex);
-              } else {
-                findFocusNext(focusNodeIndex);
-              }
-            }
+      body: Focus(
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          // F10 = save
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) saveOrUpdateData();
+            return KeyEventResult.handled;
           }
+          // Enter = next field
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              FocusManager.instance.primaryFocus?.nextFocus();
+            }
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
         },
+        child: FocusTraversalGroup(
+        policy: TextFieldTraversalPolicy(),
         child: Builder(
           builder: (context) {
             final scale = global.editFontScaleFactor;
@@ -2882,6 +2921,7 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
             );
           },
         ),
+      ),
       ),
     );
   }
@@ -3015,8 +3055,8 @@ class CompanyBranchScreenState extends State<CompanyBranchScreen>
                         ) {
                           tabController.animateTo(1);
                         });
-                        setState(() {
-                          findFocusNext(0);
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          focusFirstTextField(context);
                         });
                       }
                     });

@@ -34,6 +34,7 @@ import 'package:smlaicloud/bloc/point_transaction/point_transaction_bloc.dart';
 import 'package:smlaicloud/repositories/point_transaction_repository.dart';
 import 'package:smlaicloud/utils/logger/app_logger.dart';
 import 'package:smlaicloud/components/loading_overlay.dart';
+import 'package:smlaicloud/utils/focus_utils.dart';
 import 'package:smlaicloud/widgets/manual_button.dart';
 
 class DebtorScreen extends StatefulWidget {
@@ -125,7 +126,6 @@ class DebtorScreenState extends State<DebtorScreen>
       fieldFocusNodes[i].focusNode.addListener(() {
         if (fieldFocusNodes[i].focusNode.hasFocus) {
           focusNodeIndex = i;
-          fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
         }
       });
     }
@@ -137,7 +137,7 @@ class DebtorScreenState extends State<DebtorScreen>
     // แก้ไข: ใช้ milliseconds แทน microseconds (เปลี่ยนจาก 2000 ครั้ง/วินาที → 2 ครั้ง/วินาที)
     screenTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
       if (refreshFocus) {
-        fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
+        focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex].focusNode);
         refreshFocus = false;
       }
     });
@@ -1093,7 +1093,7 @@ class DebtorScreenState extends State<DebtorScreen>
                           tabController.animateTo(1);
                         });
                       }
-                      fieldFocusNodes[0].focusNode.requestFocus();
+                      focusFirstTextField(context);
                     });
                   },
                 );
@@ -3062,27 +3062,29 @@ class DebtorScreenState extends State<DebtorScreen>
           const ManualButton(path: 'debtor'),
         ],
       ),
-      body: RawKeyboardListener(
-        focusNode: FocusNode(),
-        onKey: (RawKeyEvent event) {
-          if (event is RawKeyDownEvent) {
-            // print(event.logicalKey);
-            if (event.logicalKey == LogicalKeyboardKey.f10) {
+      body: Focus(
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) {
               if (_formKey.currentState!.validate()) {
                 saveOrUpdateData();
               }
             }
-            if (event.logicalKey == LogicalKeyboardKey.tab ||
-                event.logicalKey == LogicalKeyboardKey.enter) {
-              if (event.isShiftPressed) {
-                //findFocusPrev(focusNodeIndex);
-              } else {
-                findFocusNext(focusNodeIndex);
-              }
-            }
+            return KeyEventResult.handled;
           }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              FocusManager.instance.primaryFocus?.nextFocus();
+            }
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
         },
-        child: Builder(
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: Builder(
           builder: (context) {
             final scale = global.editFontScaleFactor;
             return MediaQuery(
@@ -3117,6 +3119,7 @@ class DebtorScreenState extends State<DebtorScreen>
             );
           },
         ),
+      ),
       ),
     );
   }
@@ -3342,10 +3345,9 @@ class DebtorScreenState extends State<DebtorScreen>
                     });
                     // ย้าย side effects ออกมาจาก setState
                     if (isEditMode) {
-                      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
                         tabController.animateTo(1);
-                        // เรียก findFocusNext หลังจาก animate เสร็จ
-                        findFocusNext(0);
+                        focusFirstTextField(context);
                       });
                     }
                     if (currentListIndex >= 0) {

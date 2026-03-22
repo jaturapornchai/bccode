@@ -33,7 +33,7 @@ class LoginPasswordScreen extends StatefulWidget {
   State<LoginPasswordScreen> createState() => LoginPasswordScreenState();
 }
 
-class LoginPasswordScreenState extends State<LoginPasswordScreen> with global.ThemeRefreshMixin {
+class LoginPasswordScreenState extends State<LoginPasswordScreen> with SingleTickerProviderStateMixin, global.ThemeRefreshMixin {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _backendUrlController = TextEditingController();
@@ -50,6 +50,13 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> with global.Th
   bool _isGoogleLoggingIn = false;
   bool _rememberPassword = false;
   late FirebaseAuth _auth;
+
+  // === Animation: entrance เท่านั้น (เล่นครั้งเดียว ไม่กิน resource) ===
+  late final AnimationController _entranceController;
+  late final Animation<double> _logoEntrance;
+  late final Animation<double> _urlBarEntrance;
+  late final Animation<double> _cardEntrance;
+  late final Animation<double> _bottomEntrance;
 
   // แยกการ handle successful sign-in ออกมาเป็น method แยก
   Future<void> _handleSuccessfulSignIn(User user) async {
@@ -163,6 +170,14 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> with global.Th
     _loadSavedCredentials();
     // โหลด Backend URL จาก SharedPreferences
     _loadBackendUrl();
+
+    // === Entrance animation เท่านั้น (เล่นครั้งเดียว → dispose ทิ้ง ไม่กิน resource) ===
+    _entranceController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000))..forward();
+
+    _logoEntrance = CurvedAnimation(parent: _entranceController, curve: const Interval(0.0, 0.4, curve: Curves.easeOutBack));
+    _urlBarEntrance = CurvedAnimation(parent: _entranceController, curve: const Interval(0.15, 0.5, curve: Curves.easeOutCubic));
+    _cardEntrance = CurvedAnimation(parent: _entranceController, curve: const Interval(0.3, 0.7, curve: Curves.easeOutCubic));
+    _bottomEntrance = CurvedAnimation(parent: _entranceController, curve: const Interval(0.5, 0.85, curve: Curves.easeOutCubic));
   }
 
   /// โหลดรหัสล่าสุดที่บันทึกไว้ (แยกตามเครื่องผ่าน SharedPreferences)
@@ -200,6 +215,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> with global.Th
     disposeFocusNodes(_loginFocusNodes);
     _stopLineLoginPolling(); // หยุด polling timer ถ้ายังทำงานอยู่
     _stopGoogleLoginPolling(); // หยุด Google polling timer ถ้ายังทำงานอยู่
+    _entranceController.dispose();
     super.dispose();
   }
 
@@ -224,138 +240,42 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> with global.Th
   /// Multi-language text สำหรับหน้า Login — hardcode ไม่ต้อง load จาก backend
   /// เพราะตอนเปิด app ครั้งแรกอาจยังไม่มี URL ของ backend
   // 9 ภาษา: en, th, lo, zh, ja, ko, my, km, vi
+  // 12 ภาษา: en, th, lo, cn, ja, ko, my, km, vi, ms, id, fil
   static const Map<String, Map<String, String>> _loginTexts = {
-    'select_server': {
-      'en': 'Select Server',
-      'th': 'เลือกเซิร์ฟเวอร์',
-      'lo': 'ເລືອກເຊີບເວີ',
-      'zh': '选择服务器',
-      'ja': 'サーバーを選択',
-      'ko': '서버 선택',
-      'my': 'ဆာဗာရွေးပါ',
-      'km': 'ជ្រើសរើorg​សឺវើ',
-      'vi': 'Chọn máy chủ',
-    },
-    'add_server': {'en': 'Add Server', 'th': 'เพิ่มเซิร์ฟเวอร์', 'lo': 'ເພີ່ມເຊີບເວີ', 'zh': '添加服务器', 'ja': 'サーバーを追加', 'ko': '서버 추가', 'my': 'ဆာဗာထည့်ပါ', 'km': 'បន្ថែមសឺវើ', 'vi': 'Thêm máy chủ'},
-    'server_url': {'en': 'Server URL', 'th': 'URL เซิร์ฟเวอร์', 'lo': 'URL ເຊີບເວີ', 'zh': '服务器地址', 'ja': 'サーバーURL', 'ko': '서버 URL', 'my': 'ဆာဗာ URL', 'km': 'URL សឺវើ', 'vi': 'URL máy chủ'},
-    'cancel': {'en': 'Cancel', 'th': 'ยกเลิก', 'lo': 'ຍົກເລີກ', 'zh': '取消', 'ja': 'キャンセル', 'ko': '취소', 'my': 'ပယ်ဖျက်', 'km': 'បោះបង់', 'vi': 'Hủy'},
-    'save': {'en': 'Save', 'th': 'บันทึก', 'lo': 'ບັນທຶກ', 'zh': '保存', 'ja': '保存', 'ko': '저장', 'my': 'သိမ်းဆည်း', 'km': 'រក្សាទុក', 'vi': 'Lưu'},
-    'welcome': {'en': 'Welcome', 'th': 'ยินดีต้อนรับ', 'lo': 'ຍິນດີຕ້ອນຮັບ', 'zh': '欢迎', 'ja': 'ようこそ', 'ko': '환영합니다', 'my': 'ကြိုဆိုပါသည်', 'km': 'សូមស្វាគមន៍', 'vi': 'Chào mừng'},
-    'login': {'en': 'Login', 'th': 'เข้าสู่ระบบ', 'lo': 'ເຂົ້າສູ່ລະບົບ', 'zh': '登录', 'ja': 'ログイン', 'ko': '로그인', 'my': 'ဝင်ရောက်', 'km': 'ចូលប្រើ', 'vi': 'Đăng nhập'},
-    'logout': {'en': 'Logout', 'th': 'ออกจากระบบ', 'lo': 'ອອກຈາກລະບົບ', 'zh': '退出', 'ja': 'ログアウト', 'ko': '로그아웃', 'my': 'ထွက်ရန်', 'km': 'ចាកចេញ', 'vi': 'Đăng xuất'},
-    'username': {'en': 'Username', 'th': 'ชื่อผู้ใช้', 'lo': 'ຊື່ຜູ້ໃຊ້', 'zh': '用户名', 'ja': 'ユーザー名', 'ko': '사용자명', 'my': 'အသုံးပြုသူအမည်', 'km': 'ឈ្មោះអ្នកប្រើ', 'vi': 'Tên đăng nhập'},
-    'password': {'en': 'Password', 'th': 'รหัสผ่าน', 'lo': 'ລະຫັດຜ່ານ', 'zh': '密码', 'ja': 'パスワード', 'ko': '비밀번호', 'my': 'စကားဝှက်', 'km': 'ពាក្យសម្ងាត់', 'vi': 'Mật khẩu'},
-    'please_enter_username': {
-      'en': 'Please enter username',
-      'th': 'กรุณากรอกชื่อผู้ใช้',
-      'lo': 'ກະລຸນາປ້ອນຊື່ຜູ້ໃຊ້',
-      'zh': '请输入用户名',
-      'ja': 'ユーザー名を入力してください',
-      'ko': '사용자명을 입력하세요',
-      'my': 'အသုံးပြုသူအမည်ထည့်ပါ',
-      'km': 'សូមបញ្ចូលឈ្មោះអ្នកប្រើ',
-      'vi': 'Vui lòng nhập tên đăng nhập',
-    },
-    'please_enter_password': {
-      'en': 'Please enter password',
-      'th': 'กรุณากรอกรหัสผ่าน',
-      'lo': 'ກະລຸນາປ້ອນລະຫັດຜ່ານ',
-      'zh': '请输入密码',
-      'ja': 'パスワードを入力してください',
-      'ko': '비밀번호를 입력하세요',
-      'my': 'စကားဝှက်ထည့်ပါ',
-      'km': 'សូមបញ្ចូលពាក្យសម្ងាត់',
-      'vi': 'Vui lòng nhập mật khẩu',
-    },
-    'you_have_accepted': {
-      'en': 'You have accepted',
-      'th': 'คุณยอมรับ',
-      'lo': 'ທ່ານຍອมຮັບ',
-      'zh': '您已接受',
-      'ja': '同意済み',
-      'ko': '동의하셨습니다',
-      'my': 'သင်လက်ခံပြီး',
-      'km': 'អ្នកបានទទួលយក',
-      'vi': 'Bạn đã chấp nhận',
-    },
-    'terms_of_use': {
-      'en': 'Terms of Use',
-      'th': 'เงื่อนไขการใช้งาน',
-      'lo': 'ເງື່ອນໄຂການນໍາໃຊ້',
-      'zh': '使用条款',
-      'ja': '利用規約',
-      'ko': '이용약관',
-      'my': 'အသုံးပြုမှုစည်းမျဉ်း',
-      'km': 'លក្ខខណ្ឌប្រើប្រាស់',
-      'vi': 'Điều khoản sử dụng',
-    },
-    'read': {'en': 'Read', 'th': 'อ่าน', 'lo': 'ອ່ານ', 'zh': '阅读', 'ja': '読む', 'ko': '읽기', 'my': 'ဖတ်ရန်', 'km': 'អាន', 'vi': 'Đọc'},
-    'privacy_policy': {
-      'en': 'Privacy Policy',
-      'th': 'นโยบายความเป็นส่วนตัว',
-      'lo': 'ນະໂຍບາຍຄວາມເປັນສ່ວນຕົວ',
-      'zh': '隐私政策',
-      'ja': 'プライバシーポリシー',
-      'ko': '개인정보처리방침',
-      'my': 'ကိုယ်ရေးအချက်အလက်မူဝါဒ',
-      'km': 'គោលការណ៍ភាពឯកជន',
-      'vi': 'Chính sách bảo mật',
-    },
-    'test_connection': {
-      'en': 'Test Connection',
-      'th': 'ทดสอบเชื่อมต่อ',
-      'lo': 'ທົດສອບເຊື່ອມຕໍ່',
-      'zh': '测试连接',
-      'ja': '接続テスト',
-      'ko': '연결 테스트',
-      'my': 'ချိတ်ဆက်မှုစမ်းသပ်',
-      'km': 'សាកល្បងការតភ្ជាប់',
-      'vi': 'Kiểm tra kết nối',
-    },
-    'testing': {
-      'en': 'Testing...',
-      'th': 'กำลังทดสอบ...',
-      'lo': 'ກຳລັງທົດສອບ...',
-      'zh': '测试中...',
-      'ja': 'テスト中...',
-      'ko': '테스트 중...',
-      'my': 'စမ်းသပ်နေသည်...',
-      'km': 'កំពុងសាកល្បង...',
-      'vi': 'Đang kiểm tra...',
-    },
-    'connected': {'en': 'Connected', 'th': 'เชื่อมต่อสำเร็จ', 'lo': 'ເຊື່ອມຕໍ່ສຳເລັດ', 'zh': '连接成功', 'ja': '接続成功', 'ko': '연결 성공', 'my': 'ချိတ်ဆက်ပြီး', 'km': 'បានតភ្ជាប់', 'vi': 'Kết nối thành công'},
-    'connection_failed': {
-      'en': 'Connection failed',
-      'th': 'เชื่อมต่อไม่สำเร็จ',
-      'lo': 'ເຊື່ອມຕໍ່ບໍ່ສຳເລັດ',
-      'zh': '连接失败',
-      'ja': '接続失敗',
-      'ko': '연결 실패',
-      'my': 'ချိတ်ဆက်မှုမအောင်မြင်',
-      'km': 'ការតភ្ជាប់បរាជ័យ',
-      'vi': 'Kết nối thất bại',
-    },
-    'remember_password': {
-      'en': 'Remember password',
-      'th': 'บันทึกรหัสผ่าน',
-      'lo': 'ບັນທຶກລະຫັດຜ່ານ',
-      'zh': '记住密码',
-      'ja': 'パスワードを記憶',
-      'ko': '비밀번호 저장',
-      'my': 'စကားဝှက်မှတ်ထား',
-      'km': 'ចងចាំពាក្យសម្ងាត់',
-      'vi': 'Nhớ mật khẩu',
-    },
-    'register': {'en': 'Register', 'th': 'สมัครผู้ใช้งาน', 'lo': 'ລົງທະບຽນ', 'zh': '注册', 'ja': '登録', 'ko': '회원가입', 'my': 'စာရင်းသွင်း', 'km': 'ចុះឈ្មោះ', 'vi': 'Đăng ký'},
-    'manual': {'en': 'Manual', 'th': 'คู่มือ', 'lo': 'ຄູ່ມື', 'zh': '使用手册', 'ja': 'マニュアル', 'ko': '매뉴얼', 'my': 'လမ်းညွှန်', 'km': 'សៀវភៅណែនាំ', 'vi': 'Hướng dẫn'},
-    'setup': {'en': 'Setup', 'th': 'ตั้งค่า', 'lo': 'ຕັ້ງຄ່າ', 'zh': '设置', 'ja': '設定', 'ko': '설정', 'my': 'ပြင်ဆင်', 'km': 'ការកំណត់', 'vi': 'Cài đặt'},
-    'theme_auto': {'en': 'Auto', 'th': 'อัตโนมัติ', 'lo': 'ອັດຕະໂນມັດ', 'zh': '自动', 'ja': '自動', 'ko': '자동', 'my': 'အလိုအလျောက်', 'km': 'ស្វ័យប្រវត្តិ', 'vi': 'Tự động'},
-    'theme_light': {'en': 'Light', 'th': 'สว่าง', 'lo': 'ແສງ', 'zh': '浅色', 'ja': 'ライト', 'ko': '밝게', 'my': 'အလင်း', 'km': 'ភ្លឺ', 'vi': 'Sáng'},
-    'theme_dark': {'en': 'Dark', 'th': 'มืด', 'lo': 'ມືດ', 'zh': '深色', 'ja': 'ダーク', 'ko': '어둡게', 'my': 'မှောင်', 'km': 'ងងឹត', 'vi': 'Tối'},
+    'select_server': {'en': 'Select Server', 'th': 'เลือกเซิร์ฟเวอร์', 'lo': 'ເລືອກເຊີບເວີ', 'cn': '选择服务器', 'ja': 'サーバーを選択', 'ko': '서버 선택', 'my': 'ဆာဗာရွေးပါ', 'km': 'ជ្រើសរើorg​សឺវើ', 'vi': 'Chọn máy chủ', 'ms': 'Pilih Pelayan', 'id': 'Pilih Server', 'fil': 'Pumili ng Server'},
+    'add_server': {'en': 'Add Server', 'th': 'เพิ่มเซิร์ฟเวอร์', 'lo': 'ເພີ່ມເຊີບເວີ', 'cn': '添加服务器', 'ja': 'サーバーを追加', 'ko': '서버 추가', 'my': 'ဆာဗာထည့်ပါ', 'km': 'បន្ថែមសឺវើ', 'vi': 'Thêm máy chủ', 'ms': 'Tambah Pelayan', 'id': 'Tambah Server', 'fil': 'Magdagdag ng Server'},
+    'server_url': {'en': 'Server URL', 'th': 'URL เซิร์ฟเวอร์', 'lo': 'URL ເຊີບເວີ', 'cn': '服务器地址', 'ja': 'サーバーURL', 'ko': '서버 URL', 'my': 'ဆာဗာ URL', 'km': 'URL សឺវើ', 'vi': 'URL máy chủ', 'ms': 'URL Pelayan', 'id': 'URL Server', 'fil': 'URL ng Server'},
+    'cancel': {'en': 'Cancel', 'th': 'ยกเลิก', 'lo': 'ຍົກເລີກ', 'cn': '取消', 'ja': 'キャンセル', 'ko': '취소', 'my': 'ပယ်ဖျက်', 'km': 'បោះបង់', 'vi': 'Hủy', 'ms': 'Batal', 'id': 'Batal', 'fil': 'Kanselahin'},
+    'save': {'en': 'Save', 'th': 'บันทึก', 'lo': 'ບັນທຶກ', 'cn': '保存', 'ja': '保存', 'ko': '저장', 'my': 'သိမ်းဆည်း', 'km': 'រក្សាទុក', 'vi': 'Lưu', 'ms': 'Simpan', 'id': 'Simpan', 'fil': 'I-save'},
+    'welcome': {'en': 'Welcome', 'th': 'ยินดีต้อนรับ', 'lo': 'ຍິນດີຕ້ອນຮັບ', 'cn': '欢迎', 'ja': 'ようこそ', 'ko': '환영합니다', 'my': 'ကြိုဆိုပါသည်', 'km': 'សូមស្វាគមន៍', 'vi': 'Chào mừng', 'ms': 'Selamat datang', 'id': 'Selamat datang', 'fil': 'Maligayang pagdating'},
+    'login': {'en': 'Login', 'th': 'เข้าสู่ระบบ', 'lo': 'ເຂົ້າສູ່ລະບົບ', 'cn': '登录', 'ja': 'ログイン', 'ko': '로그인', 'my': 'ဝင်ရောက်', 'km': 'ចូលប្រើ', 'vi': 'Đăng nhập', 'ms': 'Log masuk', 'id': 'Masuk', 'fil': 'Mag-login'},
+    'logout': {'en': 'Logout', 'th': 'ออกจากระบบ', 'lo': 'ອອກຈາກລະບົບ', 'cn': '退出', 'ja': 'ログアウト', 'ko': '로그아웃', 'my': 'ထွက်ရန်', 'km': 'ចាកចេញ', 'vi': 'Đăng xuất', 'ms': 'Log keluar', 'id': 'Keluar', 'fil': 'Mag-logout'},
+    'username': {'en': 'Username', 'th': 'ชื่อผู้ใช้', 'lo': 'ຊື່ຜູ້ໃຊ້', 'cn': '用户名', 'ja': 'ユーザー名', 'ko': '사용자명', 'my': 'အသုံးပြုသူအမည်', 'km': 'ឈ្មោះអ្នកប្រើ', 'vi': 'Tên đăng nhập', 'ms': 'Nama pengguna', 'id': 'Nama pengguna', 'fil': 'Username'},
+    'password': {'en': 'Password', 'th': 'รหัสผ่าน', 'lo': 'ລະຫັດຜ່ານ', 'cn': '密码', 'ja': 'パスワード', 'ko': '비밀번호', 'my': 'စကားဝှက်', 'km': 'ពាក្យសម្ងាត់', 'vi': 'Mật khẩu', 'ms': 'Kata laluan', 'id': 'Kata sandi', 'fil': 'Password'},
+    'please_enter_username': {'en': 'Please enter username', 'th': 'กรุณากรอกชื่อผู้ใช้', 'lo': 'ກະລຸນາປ້ອນຊື່ຜູ້ໃຊ້', 'cn': '请输入用户名', 'ja': 'ユーザー名を入力してください', 'ko': '사용자명을 입력하세요', 'my': 'အသုံးပြုသူအမည်ထည့်ပါ', 'km': 'សូមបញ្ចូលឈ្មោះអ្នកប្រើ', 'vi': 'Vui lòng nhập tên đăng nhập', 'ms': 'Sila masukkan nama pengguna', 'id': 'Silakan masukkan nama pengguna', 'fil': 'Mangyaring ilagay ang username'},
+    'please_enter_password': {'en': 'Please enter password', 'th': 'กรุณากรอกรหัสผ่าน', 'lo': 'ກະລຸນາປ້ອນລະຫັດຜ່ານ', 'cn': '请输入密码', 'ja': 'パスワードを入力してください', 'ko': '비밀번호를 입력하세요', 'my': 'စကားဝှက်ထည့်ပါ', 'km': 'សូមបញ្ចូលពាក្យសម្ងាត់', 'vi': 'Vui lòng nhập mật khẩu', 'ms': 'Sila masukkan kata laluan', 'id': 'Silakan masukkan kata sandi', 'fil': 'Mangyaring ilagay ang password'},
+    'you_have_accepted': {'en': 'You have accepted', 'th': 'คุณยอมรับ', 'lo': 'ທ່ານຍອมຮັບ', 'cn': '您已接受', 'ja': '同意済み', 'ko': '동의하셨습니다', 'my': 'သင်လက်ခံပြီး', 'km': 'អ្នកបានទទួលយក', 'vi': 'Bạn đã chấp nhận', 'ms': 'Anda telah menerima', 'id': 'Anda telah menerima', 'fil': 'Tinanggap mo ang'},
+    'terms_of_use': {'en': 'Terms of Use', 'th': 'เงื่อนไขการใช้งาน', 'lo': 'ເງື່ອນໄຂການນໍາໃຊ້', 'cn': '使用条款', 'ja': '利用規約', 'ko': '이용약관', 'my': 'အသုံးပြုမှုစည်းမျဉ်း', 'km': 'លក្ខខណ្ឌប្រើប្រាស់', 'vi': 'Điều khoản sử dụng', 'ms': 'Syarat Penggunaan', 'id': 'Syarat Penggunaan', 'fil': 'Mga Tuntunin ng Paggamit'},
+    'read': {'en': 'Read', 'th': 'อ่าน', 'lo': 'ອ່ານ', 'cn': '阅读', 'ja': '読む', 'ko': '읽기', 'my': 'ဖတ်ရန်', 'km': 'អាន', 'vi': 'Đọc', 'ms': 'Baca', 'id': 'Baca', 'fil': 'Basahin'},
+    'privacy_policy': {'en': 'Privacy Policy', 'th': 'นโยบายความเป็นส่วนตัว', 'lo': 'ນະໂຍບາຍຄວາມເປັນສ່ວນຕົວ', 'cn': '隐私政策', 'ja': 'プライバシーポリシー', 'ko': '개인정보처리방침', 'my': 'ကိုယ်ရေးအချက်အလက်မူဝါဒ', 'km': 'គោលការណ៍ភាពឯកជន', 'vi': 'Chính sách bảo mật', 'ms': 'Dasar Privasi', 'id': 'Kebijakan Privasi', 'fil': 'Patakaran sa Privacy'},
+    'test_connection': {'en': 'Test Connection', 'th': 'ทดสอบเชื่อมต่อ', 'lo': 'ທົດສອບເຊື່ອມຕໍ່', 'cn': '测试连接', 'ja': '接続テスト', 'ko': '연결 테스트', 'my': 'ချိတ်ဆက်မှုစမ်းသပ်', 'km': 'សាកល្បងការតភ្ជាប់', 'vi': 'Kiểm tra kết nối', 'ms': 'Uji Sambungan', 'id': 'Tes Koneksi', 'fil': 'Subukan ang Koneksyon'},
+    'testing': {'en': 'Testing...', 'th': 'กำลังทดสอบ...', 'lo': 'ກຳລັງທົດສອບ...', 'cn': '测试中...', 'ja': 'テスト中...', 'ko': '테스트 중...', 'my': 'စမ်းသပ်နေသည်...', 'km': 'កំពុងសាកល្បង...', 'vi': 'Đang kiểm tra...', 'ms': 'Menguji...', 'id': 'Menguji...', 'fil': 'Sinusubukan...'},
+    'connected': {'en': 'Connected', 'th': 'เชื่อมต่อสำเร็จ', 'lo': 'ເຊື່ອມຕໍ່ສຳເລັດ', 'cn': '连接成功', 'ja': '接続成功', 'ko': '연결 성공', 'my': 'ချိတ်ဆက်ပြီး', 'km': 'បានតភ្ជាប់', 'vi': 'Kết nối thành công', 'ms': 'Berjaya disambung', 'id': 'Terhubung', 'fil': 'Nakakonekta'},
+    'connection_failed': {'en': 'Connection failed', 'th': 'เชื่อมต่อไม่สำเร็จ', 'lo': 'ເຊື່ອມຕໍ່ບໍ່ສຳເລັດ', 'cn': '连接失败', 'ja': '接続失敗', 'ko': '연결 실패', 'my': 'ချိတ်ဆက်မှုမအောင်မြင်', 'km': 'ការតភ្ជាប់បរាជ័យ', 'vi': 'Kết nối thất bại', 'ms': 'Sambungan gagal', 'id': 'Koneksi gagal', 'fil': 'Nabigo ang koneksyon'},
+    'remember_password': {'en': 'Remember password', 'th': 'บันทึกรหัสผ่าน', 'lo': 'ບັນທຶກລະຫັດຜ່ານ', 'cn': '记住密码', 'ja': 'パスワードを記憶', 'ko': '비밀번호 저장', 'my': 'စကားဝှက်မှတ်ထား', 'km': 'ចorg org org orgorg orgorgorgorg org org orgorg org orgorg orgorgorgorg', 'vi': 'Nhớ mật khẩu', 'ms': 'Ingat kata laluan', 'id': 'Ingat kata sandi', 'fil': 'Tandaan ang password'},
+    'register': {'en': 'Register', 'th': 'สมัครผู้ใช้งาน', 'lo': 'ລົງທະບຽນ', 'cn': '注册', 'ja': '登録', 'ko': '회원가입', 'my': 'စာရင်းသွင်း', 'km': 'ចុះឈ្មោះ', 'vi': 'Đăng ký', 'ms': 'Daftar', 'id': 'Daftar', 'fil': 'Mag-rehistro'},
+    'or': {'en': 'OR', 'th': 'หรือ', 'lo': 'ຫຼື', 'cn': '或', 'ja': 'または', 'ko': '또는', 'my': 'သို့မဟုတ်', 'km': 'ឬ', 'vi': 'Hoặc', 'ms': 'Atau', 'id': 'Atau', 'fil': 'O'},
+    'sign_in_google': {'en': 'Sign in with Google', 'th': 'เข้าสู่ระบบด้วย Google', 'lo': 'ເຂົ້າສູ່ລະບົບດ້ວຍ Google', 'cn': '使用 Google 登录', 'ja': 'Google でログイン', 'ko': 'Google로 로그인', 'my': 'Google ဖြင့်ဝင်ရောက်', 'km': 'ចូលដោយ Google', 'vi': 'Đăng nhập bằng Google', 'ms': 'Log masuk dengan Google', 'id': 'Masuk dengan Google', 'fil': 'Mag-sign in gamit ang Google'},
+    'sign_in_line': {'en': 'Log in with LINE', 'th': 'เข้าสู่ระบบด้วย LINE', 'lo': 'ເຂົ້າສູ່ລະບົບດ້ວຍ LINE', 'cn': '使用 LINE 登录', 'ja': 'LINE でログイン', 'ko': 'LINE으로 로그인', 'my': 'LINE ဖြင့်ဝင်ရောက်', 'km': 'ចូលដោយ LINE', 'vi': 'Đăng nhập bằng LINE', 'ms': 'Log masuk dengan LINE', 'id': 'Masuk dengan LINE', 'fil': 'Mag-login gamit ang LINE'},
+    'manual': {'en': 'Manual', 'th': 'คู่มือ', 'lo': 'ຄູ່ມື', 'cn': '使用手册', 'ja': 'マニュアル', 'ko': '매뉴얼', 'my': 'လမ်းညွှန်', 'km': 'សៀវភៅណែនាំ', 'vi': 'Hướng dẫn', 'ms': 'Manual', 'id': 'Manual', 'fil': 'Manual'},
+    'setup': {'en': 'Setup', 'th': 'ตั้งค่า', 'lo': 'ຕັ້ງຄ່າ', 'cn': '设置', 'ja': '設定', 'ko': '설정', 'my': 'ပြင်ဆင်', 'km': 'ការកំណត់', 'vi': 'Cài đặt', 'ms': 'Tetapan', 'id': 'Pengaturan', 'fil': 'Setup'},
+    'theme_auto': {'en': 'Auto', 'th': 'อัตโนมัติ', 'lo': 'ອັດຕະໂນມັດ', 'cn': '自动', 'ja': '自動', 'ko': '자동', 'my': 'အလိုအလျောက်', 'km': 'ស្វ័យប្រវត្តិ', 'vi': 'Tự động', 'ms': 'Auto', 'id': 'Otomatis', 'fil': 'Auto'},
+    'theme_light': {'en': 'Light', 'th': 'สว่าง', 'lo': 'ແສງ', 'cn': '浅色', 'ja': 'ライト', 'ko': '밝게', 'my': 'အလင်း', 'km': 'ភ្លឺ', 'vi': 'Sáng', 'ms': 'Cerah', 'id': 'Terang', 'fil': 'Maliwanag'},
+    'theme_dark': {'en': 'Dark', 'th': 'มืด', 'lo': 'ມືດ', 'cn': '深色', 'ja': 'ダーク', 'ko': '어둡게', 'my': 'မှောင်', 'km': 'ងងឹត', 'vi': 'Tối', 'ms': 'Gelap', 'id': 'Gelap', 'fil': 'Madilim'},
   };
 
   String _loginText(String key) {
-    final lang = global.userLanguage; // en, th, lo, zh, ja, ko, my, km, vi
+    final lang = global.userLanguage; // en, th, lo, cn, ja, ko, my, km, vi
     return _loginTexts[key]?[lang] ?? _loginTexts[key]?['en'] ?? key;
   }
 
@@ -409,31 +329,6 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> with global.Th
 
   /// Get Line Login text based on current language
   /// แสดงข้อความปุ่ม Line Login ตามภาษาปัจจุบัน
-  String _getLineLoginText() {
-    switch (global.userLanguage) {
-      case 'en':
-        return 'Login with LINE';
-      case 'th':
-        return 'เข้าสู่ระบบด้วย LINE';
-      case 'lo':
-        return 'ເຂົ້າສູ່ລະບົບດ້ວຍ LINE';
-      case 'cn':
-        return '使用LINE登录';
-      case 'ja':
-        return 'LINEでログイン';
-      case 'ko':
-        return 'LINE으로 로그인';
-      case 'my':
-        return 'LINE ဖြင့်ဝင်ရောက်ပါ';
-      case 'km':
-        return 'ចូលដោយ LINE';
-      case 'vi':
-        return 'Đăng nhập bằng LINE';
-      default:
-        return 'Login with LINE';
-    }
-  }
-
   /// Get language selection text based on current language
   String _getLanguageText() {
     switch (global.userLanguage) {
@@ -455,6 +350,12 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> with global.Th
         return 'ជ្រើសរើសភាសា ខ្មែរ';
       case 'vi':
         return 'Chọn ngôn ngữ Tiếng Việt';
+      case 'ms':
+        return 'Pilih bahasa Melayu';
+      case 'id':
+        return 'Pilih bahasa Indonesia';
+      case 'fil':
+        return 'Pumili ng wika Filipino';
       default:
         return 'Select language English';
     }
@@ -575,7 +476,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> with global.Th
           child: SafeArea(
             child: Stack(
               children: [
-                // Decorative circles
+                // Static decorative circles (ไม่กิน resource)
                 Positioned(
                   top: -100,
                   right: -100,
@@ -606,7 +507,7 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> with global.Th
                 // Main content
                 Center(
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 24 : 40, vertical: 20),
+                    padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 16 : 32, vertical: 12),
                     child: buildLoginForm(),
                   ),
                 ),
@@ -615,6 +516,24 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> with global.Th
           ),
         ),
       ),
+    );
+  }
+
+  /// Entrance animation — slide up + fade in
+  Widget _buildEntranceSlide({required Animation<double> animation, required Widget child}) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) {
+        final v = animation.value;
+        return Opacity(
+          opacity: v.clamp(0.0, 1.0),
+          child: Transform.translate(
+            offset: Offset(0, 30 * (1 - v)),
+            child: child,
+          ),
+        );
+      },
+      child: child,
     );
   }
 
@@ -638,156 +557,190 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> with global.Th
 
     // ตรวจสอบความสูงหน้าจอเพื่อปรับ UI ให้พอดี
     final screenHeight = MediaQuery.of(context).size.height;
-    final isCompactScreen = screenHeight < 800; // จอเล็กกว่า 800px
-    final cardPadding = isCompactScreen ? 20.0 : 32.0;
-    final sectionSpacing = isCompactScreen ? 16.0 : 32.0;
-    final smallSpacing = isCompactScreen ? 12.0 : 24.0;
+    final isCompactScreen = screenHeight < 960;
+    final cardPadding = isCompactScreen ? 16.0 : 28.0;
 
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 420),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Logo section
-          _buildLogoSection(isCompact: isCompactScreen),
-          SizedBox(height: isCompactScreen ? 8 : 16),
+          // Logo section — animated entrance + breathe
+          _buildEntranceSlide(
+            animation: _logoEntrance,
+            child: _buildLogoSection(isCompact: isCompactScreen),
+          ),
+          SizedBox(height: isCompactScreen ? 8 : 12),
 
           // Backend URL selector — ซ่อนบน Web (URL มาจาก config.json)
-          if (!kIsWeb) ...[_buildBackendUrlSelector(), SizedBox(height: isCompactScreen ? 8 : 16)],
-
-          // Main login card
-          Container(
-            padding: EdgeInsets.all(cardPadding),
-            decoration: BoxDecoration(
-              color: global.theme.cardColor,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 30, offset: const Offset(0, 15))],
+          if (!kIsWeb) ...[
+            _buildEntranceSlide(
+              animation: _urlBarEntrance,
+              child: _buildBackendUrlSelector(),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Welcome text
-                if (global.userLoginData.token.isEmpty) ...[
-                  Text(
-                    _loginText("welcome"),
-                    style: TextStyle(fontSize: isCompactScreen ? 22 : 28, fontWeight: FontWeight.bold, color: global.isDarkMode() ? global.theme.primaryLightColor : const Color(0xFF1A237E)),
-                  ),
-                  SizedBox(height: isCompactScreen ? 4 : 8),
-                  Text(
-                    _loginText("login"),
-                    style: TextStyle(fontSize: isCompactScreen ? 14 : 16, color: global.theme.iconSecondaryColor),
-                  ),
-                  SizedBox(height: sectionSpacing),
-                  _buildUsernamePasswordLogin(isCompact: isCompactScreen),
+            SizedBox(height: isCompactScreen ? 6 : 10),
+          ],
+
+          // Main login card — animated entrance
+          _buildEntranceSlide(
+            animation: _cardEntrance,
+            child: Container(
+              padding: EdgeInsets.all(cardPadding),
+              decoration: BoxDecoration(
+                color: global.theme.cardColor,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 20, offset: const Offset(0, 10))],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (global.userLoginData.token.isEmpty) ...[
+                    _buildUsernamePasswordLogin(isCompact: isCompactScreen),
+                  ],
+                  userLoginWidget,
                 ],
-                userLoginWidget,
-              ],
+              ),
             ),
           ),
 
-          SizedBox(height: smallSpacing),
+          SizedBox(height: isCompactScreen ? 6 : 12),
 
-          // Terms and Privacy
-          _buildTermsAndPrivacyPolicy(isCompact: isCompactScreen),
-
-          SizedBox(height: isCompactScreen ? 4 : 8),
-
-          // ปุ่ม คู่มือ + ธีม + ตั้งค่า
-          Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextButton.icon(
-                  onPressed: () {
-                    launchUrl(Uri.parse('https://bcaicloud.com/manual/loginscreen'), mode: LaunchMode.externalApplication);
-                  },
-                  icon: Icon(Icons.menu_book_rounded, size: 14, color: Colors.white.withValues(alpha: 0.6)),
-                  label: Text(_loginText('manual'), style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12)),
-                ),
-                const SizedBox(width: 4),
-                // ปุ่มเปลี่ยนธีม (light ↔ dark)
-                TextButton.icon(
-                  onPressed: () async {
-                    global.displayThemeMode =
-                        global.isDarkMode() ? 'light' : 'dark';
-                    await global.saveThemeSettings();
-                    setState(() {});
-                  },
-                  icon: Icon(
-                    _getThemeModeIcon(),
-                    size: 14,
-                    color: _getThemeModeIconColor(),
-                  ),
-                  label: Text(
-                    _getThemeModeLabel(),
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                TextButton.icon(
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SetupScreen()));
-                  },
-                  icon: Icon(Icons.settings, size: 14, color: Colors.white.withValues(alpha: 0.6)),
-                  label: Text(_loginText('setup'), style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12)),
-                ),
-              ],
-            ),
+          // Bottom bar — animated entrance
+          _buildEntranceSlide(
+            animation: _bottomEntrance,
+            child: _buildBottomBar(isCompact: isCompactScreen),
           ),
-
           SizedBox(height: isCompactScreen ? 4 : 8),
         ],
       ),
     );
   }
 
-  Widget _buildLogoSection({bool isCompact = false}) {
-    final logoSize = isCompact ? 60.0 : 80.0;
-    final logoPadding = isCompact ? 14.0 : 20.0;
-    final appNameSize = isCompact ? 20.0 : 24.0;
+  /// Bottom bar รวม Terms + ปุ่ม manual/theme/setup ในที่เดียว
+  Widget _buildBottomBar({bool isCompact = false}) {
+    final textStyle = TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 11);
+    final linkStyle = TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 11, decoration: TextDecoration.underline);
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // Logo with gradient background - ใช้ design เดียวกันทุก flavor
+        // Terms & Privacy — compact single line
+        RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
+            style: textStyle,
+            children: [
+              TextSpan(text: '${_loginText('you_have_accepted')} '),
+              TextSpan(
+                text: _loginText('terms_of_use'),
+                style: linkStyle,
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () {
+                    // ignore: deprecated_member_use
+                    launch('https://www.dohome.co.th/terms');
+                  },
+              ),
+              const TextSpan(text: '  ·  '),
+              TextSpan(
+                text: _loginText('privacy_policy'),
+                style: linkStyle,
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () {
+                    // ignore: deprecated_member_use
+                    launch('https://www.dohome.co.th/privacy');
+                  },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 2),
+        // Manual + Theme + Setup
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextButton.icon(
+              style: TextButton.styleFrom(minimumSize: Size.zero, padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+              onPressed: () => launchUrl(Uri.parse('https://bcaicloud.com/manual/loginscreen'), mode: LaunchMode.externalApplication),
+              icon: Icon(Icons.menu_book_rounded, size: 13, color: Colors.white.withValues(alpha: 0.55)),
+              label: Text(_loginText('manual'), style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 11)),
+            ),
+            TextButton.icon(
+              style: TextButton.styleFrom(minimumSize: Size.zero, padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+              onPressed: () async {
+                global.displayThemeMode = global.isDarkMode() ? 'light' : 'dark';
+                await global.saveThemeSettings();
+                setState(() {});
+              },
+              icon: Icon(_getThemeModeIcon(), size: 13, color: _getThemeModeIconColor()),
+              label: Text(_getThemeModeLabel(), style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 11)),
+            ),
+            TextButton.icon(
+              style: TextButton.styleFrom(minimumSize: Size.zero, padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SetupScreen())),
+              icon: Icon(Icons.settings, size: 13, color: Colors.white.withValues(alpha: 0.55)),
+              label: Text(_loginText('setup'), style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 11)),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLogoSection({bool isCompact = false}) {
+    final logoSize = isCompact ? 56.0 : 72.0;
+    final logoPadding = isCompact ? 12.0 : 16.0;
+    final appNameSize = isCompact ? 20.0 : 26.0;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Logo icon
         Container(
           padding: EdgeInsets.all(logoPadding),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 10))],
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 12, offset: const Offset(0, 6))],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             child: Image.asset(
               F.logoPath,
               width: logoSize,
               height: logoSize,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) {
-                // Fallback icon ถ้าไม่มีรูป
                 return Icon(Icons.cloud_outlined, size: logoSize * 0.75, color: Colors.white);
               },
             ),
           ),
         ),
-        SizedBox(height: isCompact ? 10 : 16),
-        // ชื่อ App
-        Text(
-          F.appName,
-          style: TextStyle(fontSize: appNameSize, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1.2),
-        ),
-        // Environment badge - แสดงเฉพาะ DEV และ UAT
-        if (!F.isProd) ...[
-          SizedBox(height: isCompact ? 4 : 8),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: isCompact ? 10 : 12, vertical: isCompact ? 2 : 4),
-            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
-            child: Text(
-              _getEnvironmentBadgeText(),
-              style: TextStyle(fontSize: isCompact ? 10 : 12, color: Colors.white, fontWeight: FontWeight.bold),
+        SizedBox(width: isCompact ? 14 : 18),
+        // ชื่อ App + env badge
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              F.appName,
+              style: TextStyle(fontSize: appNameSize, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.8),
             ),
-          ),
-        ],
+            if (!F.isProd) ...[
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
+                child: Text(
+                  _getEnvironmentBadgeText(),
+                  style: TextStyle(fontSize: isCompact ? 10 : 11, color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ],
+        ),
       ],
     );
   }
@@ -1116,159 +1069,182 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> with global.Th
   }
 
   Widget _buildUsernamePasswordLogin({bool isCompact = false}) {
-    final fieldSpacing = isCompact ? 10.0 : 16.0;
-    final sectionSpacing = isCompact ? 16.0 : 28.0;
-    final buttonHeight = isCompact ? 46.0 : 56.0;
+    final fieldSpacing = isCompact ? 8.0 : 12.0;
+    final buttonHeight = isCompact ? 44.0 : 52.0;
     final fontSize = isCompact ? 14.0 : 16.0;
-    final iconSize = isCompact ? 18.0 : 22.0;
-    final iconMargin = isCompact ? 8.0 : 12.0;
-    final iconPadding = isCompact ? 6.0 : 8.0;
-    final contentPaddingV = isCompact ? 12.0 : 18.0;
-
+    final iconSize = isCompact ? 18.0 : 20.0;
+    final iconMargin = isCompact ? 8.0 : 10.0;
+    final iconPadding = isCompact ? 5.0 : 7.0;
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Header: เข้าสู่ระบบ (compact)
+        Text(
+          _loginText("login"),
+          style: TextStyle(fontSize: isCompact ? 18.0 : 22.0, fontWeight: FontWeight.bold, color: global.isDarkMode() ? global.theme.primaryLightColor : const Color(0xFF1A237E)),
+        ),
+        SizedBox(height: fieldSpacing),
+
         // Tab วนกลับ: ชื่อผู้ใช้ ↔ รหัสผ่าน
         FocusTraversalGroup(
           child: Column(
             children: [
-        // Username field with modern styling
-        Container(
-          decoration: BoxDecoration(
-            color: global.theme.surfaceColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: global.theme.dividerBorderColor),
-          ),
-          child: TextField(
-            controller: _usernameController,
-            focusNode: _usernameFocus,
-            autofocus: true,
-            textInputAction: TextInputAction.next,
-            onSubmitted: (_) => _passwordFocus.requestFocus(),
-            style: TextStyle(fontSize: fontSize),
-            decoration: InputDecoration(
-              labelText: _loginText('username'),
-              labelStyle: TextStyle(color: global.theme.iconSecondaryColor, fontSize: fontSize),
-              border: InputBorder.none,
-              prefixIcon: Container(
-                margin: EdgeInsets.all(iconMargin),
-                padding: EdgeInsets.all(iconPadding),
-                decoration: BoxDecoration(color: const Color(0xFF3949AB).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-                child: Icon(Icons.person_outline_rounded, color: const Color(0xFF3949AB), size: iconSize),
-              ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: contentPaddingV),
-            ),
-            enabled: !_isLoggingIn,
-          ),
-        ),
-        SizedBox(height: fieldSpacing),
-
-        // Password field with modern styling
-        Container(
-          decoration: BoxDecoration(
-            color: global.theme.surfaceColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: global.theme.dividerBorderColor),
-          ),
-          child: TextField(
-            controller: _passwordController,
-            focusNode: _passwordFocus,
-            obscureText: !_showPassword,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _login(),
-            style: TextStyle(fontSize: fontSize),
-            decoration: InputDecoration(
-              labelText: _loginText('password'),
-              labelStyle: TextStyle(color: global.theme.iconSecondaryColor, fontSize: fontSize),
-              border: InputBorder.none,
-              prefixIcon: Container(
-                margin: EdgeInsets.all(iconMargin),
-                padding: EdgeInsets.all(iconPadding),
-                decoration: BoxDecoration(color: const Color(0xFF3949AB).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-                child: Icon(Icons.lock_outline_rounded, color: const Color(0xFF3949AB), size: iconSize),
-              ),
-              suffixIcon: ExcludeFocus(
-                child: IconButton(
-                  icon: Icon(_showPassword ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: Colors.grey[500], size: iconSize),
-                  onPressed: () {
-                    setState(() {
-                      _showPassword = !_showPassword;
-                    });
-                  },
+              // Username field — animated focus glow
+              _FocusGlowField(
+                focusNode: _usernameFocus,
+                child: TextField(
+                  controller: _usernameController,
+                  focusNode: _usernameFocus,
+                  autofocus: true,
+                  textInputAction: TextInputAction.next,
+                  onSubmitted: (_) => _passwordFocus.requestFocus(),
+                  textAlignVertical: TextAlignVertical.center,
+                  style: TextStyle(fontSize: fontSize),
+                  decoration: InputDecoration(
+                    hintText: _loginText('username'),
+                    hintStyle: TextStyle(color: global.theme.iconSecondaryColor, fontSize: fontSize),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                    prefixIcon: Container(
+                      margin: EdgeInsets.all(iconMargin),
+                      padding: EdgeInsets.all(iconPadding),
+                      decoration: BoxDecoration(color: const Color(0xFF3949AB).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(9)),
+                      child: Icon(Icons.person_outline_rounded, color: const Color(0xFF3949AB), size: iconSize),
+                    ),
+                  ),
+                  enabled: !_isLoggingIn,
                 ),
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: contentPaddingV),
-            ),
-            enabled: !_isLoggingIn,
-          ),
-        ),
+              SizedBox(height: fieldSpacing),
+
+              // Password field — animated focus glow
+              _FocusGlowField(
+                focusNode: _passwordFocus,
+                child: TextField(
+                  controller: _passwordController,
+                  focusNode: _passwordFocus,
+                  obscureText: !_showPassword,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _login(),
+                  textAlignVertical: TextAlignVertical.center,
+                  style: TextStyle(fontSize: fontSize),
+                  decoration: InputDecoration(
+                    hintText: _loginText('password'),
+                    hintStyle: TextStyle(color: global.theme.iconSecondaryColor, fontSize: fontSize),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                    prefixIcon: Container(
+                      margin: EdgeInsets.all(iconMargin),
+                      padding: EdgeInsets.all(iconPadding),
+                      decoration: BoxDecoration(color: const Color(0xFF3949AB).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(9)),
+                      child: Icon(Icons.lock_outline_rounded, color: const Color(0xFF3949AB), size: iconSize),
+                    ),
+                    suffixIcon: ExcludeFocus(
+                      child: IconButton(
+                        icon: Icon(_showPassword ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: Colors.grey[500], size: iconSize),
+                        onPressed: () => setState(() => _showPassword = !_showPassword),
+                      ),
+                    ),
+                  ),
+                  enabled: !_isLoggingIn,
+                ),
+              ),
             ],
           ),
         ),
         SizedBox(height: fieldSpacing),
 
-        // Checkbox บันทึกรหัสผ่าน
+        // Remember password + Language selector — same row
         Row(
           children: [
+            // Remember checkbox
             SizedBox(
-              width: 24,
-              height: 24,
+              width: 22,
+              height: 22,
               child: Checkbox(
                 focusNode: FocusNode(canRequestFocus: false),
                 value: _rememberPassword,
-                onChanged: (value) {
-                  setState(() {
-                    _rememberPassword = value ?? false;
-                  });
-                },
+                onChanged: (value) => setState(() => _rememberPassword = value ?? false),
                 activeColor: const Color(0xFF3949AB),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             GestureDetector(
-              onTap: () {
-                setState(() {
-                  _rememberPassword = !_rememberPassword;
-                });
+              onTap: () => setState(() => _rememberPassword = !_rememberPassword),
+              child: Text(_loginText('remember_password'), style: TextStyle(fontSize: isCompact ? 12.0 : 14.0, color: global.theme.iconSecondaryColor)),
+            ),
+            const Spacer(),
+            // Language selector — compact button
+            InkWell(
+              focusNode: FocusNode(canRequestFocus: false),
+              onTap: () async {
+                final value = await showLanguageSelectionDialog(context);
+                if (value != null) {
+                  global.userLanguage = value;
+                  global.appConfig.setString('language', global.userLanguage);
+                  setState(() {});
+                }
               },
-              child: Text(
-                _loginText('remember_password'),
-                style: TextStyle(fontSize: fontSize, color: global.theme.iconSecondaryColor),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: global.theme.surfaceColor,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: global.theme.dividerBorderColor),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: Image(image: AssetImage("assets/flags/${global.userLanguage}.png"), width: 20, height: 14, fit: BoxFit.cover),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(_getLanguageText(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: global.theme.textSecondaryColor)),
+                    const SizedBox(width: 4),
+                    Icon(Icons.keyboard_arrow_down_rounded, color: global.theme.iconSecondaryColor, size: 14),
+                  ],
+                ),
               ),
             ),
           ],
         ),
-        SizedBox(height: sectionSpacing),
+        SizedBox(height: isCompact ? 12.0 : 18.0),
 
-        // Login button with gradient
+        // Login button — with shimmer effect
         SizedBox(
           width: double.infinity,
           height: buttonHeight,
           child: Container(
             decoration: BoxDecoration(
-              gradient: _isLoggingIn ? null : LinearGradient(colors: [const Color(0xFF3949AB), const Color(0xFF5C6BC0)]),
+              gradient: _isLoggingIn ? null : const LinearGradient(colors: [Color(0xFF3949AB), Color(0xFF5C6BC0)]),
               color: _isLoggingIn ? Colors.grey[300] : null,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: _isLoggingIn ? null : [BoxShadow(color: const Color(0xFF3949AB).withValues(alpha: 0.4), blurRadius: 15, offset: const Offset(0, 8))],
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: _isLoggingIn ? null : [BoxShadow(color: const Color(0xFF3949AB).withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 6))],
             ),
             child: ElevatedButton(
               focusNode: FocusNode(canRequestFocus: false),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
                 shadowColor: Colors.transparent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
               onPressed: _isLoggingIn ? null : () => _login(),
               child: _isLoggingIn
                   ? Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)),
+                        SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)),
                         const SizedBox(width: 10),
-                        Text(
-                          'กำลังเข้าสู่ระบบ...',
-                          style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w600, color: global.theme.iconSecondaryColor),
-                        ),
+                        Text('กำลังเข้าสู่ระบบ...', style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w600, color: global.theme.iconSecondaryColor)),
                       ],
                     )
                   : Row(
@@ -1276,286 +1252,130 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> with global.Th
                       children: [
                         Icon(Icons.login_rounded, color: Colors.white, size: iconSize),
                         const SizedBox(width: 8),
-                        Text(
-                          _loginText("login"),
-                          style: TextStyle(fontSize: fontSize + 1, fontWeight: FontWeight.w600, color: Colors.white, letterSpacing: 0.5),
-                        ),
+                        Text(_loginText("login"), style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w600, color: Colors.white, letterSpacing: 0.5)),
                       ],
                     ),
             ),
           ),
         ),
 
-        SizedBox(height: isCompact ? 8 : 14),
+        SizedBox(height: isCompact ? 4.0 : 8.0),
 
         // ปุ่มสมัครสมาชิก
-        TextButton(
-          focusNode: FocusNode(canRequestFocus: false),
-          onPressed: _isLoggingIn
-              ? null
-              : () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterUsernameScreen()));
-                },
-          child: Text(
-            _loginText('register'),
-            style: TextStyle(color: global.isDarkMode() ? global.theme.primaryLightColor : const Color(0xFF3949AB), fontSize: isCompact ? 13 : 15, fontWeight: FontWeight.w500),
-          ),
-        ),
-
-        SizedBox(height: isCompact ? 4 : 8),
-
-        // Language selector with modern style
-        InkWell(
-          focusNode: FocusNode(canRequestFocus: false),
-          onTap: () async {
-            final value = await showLanguageSelectionDialog(context);
-            if (value != null) {
-              global.userLanguage = value;
-              global.appConfig.setString('language', global.userLanguage);
-              // ไม่ load จาก API ตอนหน้า login — ใช้ hardcode _loginText() แทน
-              // จะ load จาก API หลัง login สำเร็จใน _navigateToShopScreen()
-              setState(() {});
-            }
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: isCompact ? 14 : 20, vertical: isCompact ? 10 : 14),
-            decoration: BoxDecoration(
-              color: global.theme.surfaceColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: global.theme.dividerBorderColor),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: Image(image: AssetImage("assets/flags/${global.userLanguage}.png"), width: isCompact ? 22 : 28, height: isCompact ? 16 : 20, fit: BoxFit.cover),
-                ),
-                SizedBox(width: isCompact ? 8 : 12),
-                Text(
-                  _getLanguageText(),
-                  style: TextStyle(fontSize: isCompact ? 12 : 14, fontWeight: FontWeight.w500, color: global.theme.textSecondaryColor),
-                ),
-                SizedBox(width: isCompact ? 4 : 8),
-                Icon(Icons.keyboard_arrow_down_rounded, color: global.theme.iconSecondaryColor, size: isCompact ? 16 : 20),
-              ],
+        Center(
+          child: TextButton(
+            focusNode: FocusNode(canRequestFocus: false),
+            style: TextButton.styleFrom(minimumSize: Size.zero, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+            onPressed: _isLoggingIn ? null : () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterUsernameScreen())),
+            child: Text(
+              _loginText('register'),
+              style: TextStyle(color: global.isDarkMode() ? global.theme.primaryLightColor : const Color(0xFF3949AB), fontSize: isCompact ? 12.0 : 14.0, fontWeight: FontWeight.w500),
             ),
           ),
         ),
 
-        SizedBox(height: sectionSpacing),
+        SizedBox(height: isCompact ? 8.0 : 14.0),
 
         // Divider with "OR" text
         ExcludeFocus(
           child: Row(
             children: [
-              Expanded(
-                child: Container(
-                  height: 1,
-                  decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.transparent, global.theme.dividerBorderColor])),
-                ),
-              ),
+              Expanded(child: Container(height: 1, decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.transparent, global.theme.dividerBorderColor])))),
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: isCompact ? 12 : 20),
-                child: Text(
-                  "OR",
-                  style: TextStyle(color: global.theme.textSecondaryColor, fontWeight: FontWeight.w500, fontSize: isCompact ? 11 : 13),
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Text(_loginText('or'), style: TextStyle(color: global.theme.textSecondaryColor, fontWeight: FontWeight.w500, fontSize: isCompact ? 11.0 : 12.0)),
               ),
-              Expanded(
-                child: Container(
-                  height: 1,
-                  decoration: BoxDecoration(gradient: LinearGradient(colors: [global.theme.dividerBorderColor, Colors.transparent])),
-                ),
-              ),
+              Expanded(child: Container(height: 1, decoration: BoxDecoration(gradient: LinearGradient(colors: [global.theme.dividerBorderColor, Colors.transparent])))),
             ],
           ),
         ),
 
-        SizedBox(height: sectionSpacing),
+        SizedBox(height: isCompact ? 8.0 : 14.0),
 
-        // Google Sign-In button
+        // Google + LINE buttons — stacked full width
         _buildGoogleSignInButton(isCompact: isCompact),
-
-        SizedBox(height: isCompact ? 8 : 16),
-
-        // Line Login button
+        SizedBox(height: isCompact ? 8.0 : 10.0),
         _buildLineLoginButton(isCompact: isCompact),
       ],
     );
   }
 
   Widget _buildGoogleSignInButton({bool isCompact = false}) {
-    final buttonHeight = isCompact ? 44.0 : 54.0;
+    final buttonHeight = isCompact ? 46.0 : 52.0;
+    final bool isLoading = kIsWeb ? _isSigningIn : _isGoogleLoggingIn;
 
-    return Column(
-      children: [
-        // สำหรับ Web - ใช้ Firebase popup
-        if (kIsWeb) ...[
-          SizedBox(
-            width: double.infinity,
-            height: buttonHeight,
-            child: OutlinedButton(
-              focusNode: FocusNode(canRequestFocus: false),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.grey[800],
-                backgroundColor: Colors.white,
-                side: BorderSide(color: Colors.grey.shade300, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 0,
-              ),
-              onPressed: _isSigningIn
-                  ? null
-                  : () async {
-                      if (_isSigningIn) return;
-
-                      setState(() {
-                        _isSigningIn = true;
-                      });
-
-                      try {
-                        await Future.delayed(Duration(milliseconds: 100));
-
-                        if (kDebugMode) {
-                          AppLogger.debug('🚀 Starting Google Sign-In...');
-                        }
-
-                        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
-                        googleProvider.addScope('email');
-                        googleProvider.addScope('profile');
-                        googleProvider.setCustomParameters({'prompt': 'select_account', 'access_type': 'online'});
-
-                        if (kDebugMode) {
-                          AppLogger.debug('📱 Opening Google Sign-In popup...');
-                        }
-
-                        UserCredential? userCredential;
-                        try {
-                          userCredential = await _auth.signInWithPopup(googleProvider);
-                        } catch (popupError) {
-                          if (kDebugMode) {
-                            AppLogger.error('❌ Popup error: $popupError');
-                          }
-                          if (popupError.toString().contains('popup_blocked') || popupError.toString().contains('popup_closed')) {
-                            if (kDebugMode) {
-                              AppLogger.debug('🔄 Trying redirect method...');
-                            }
-                            await _auth.signInWithRedirect(googleProvider);
-                            return;
-                          }
-                          rethrow;
-                        }
-
-                        if (userCredential.user != null) {
-                          if (kDebugMode) {
-                            AppLogger.debug('✅ Google Sign-In successful: ${userCredential.user!.email}');
-                          }
-                          await _handleSuccessfulSignIn(userCredential.user!);
-                        } else {
-                          throw Exception('ไม่สามารถรับข้อมูลผู้ใช้ได้');
-                        }
-                      } catch (e) {
-                        if (kDebugMode) {
-                          AppLogger.error('❌ Google Sign-In Error: $e');
-                        }
-
-                        String errorMessage = 'Google Sign-In Error';
-                        if (e.toString().contains('popup_blocked')) {
-                          errorMessage = 'กรุณาอนุญาต popup ในเบราว์เซอร์';
-                        } else if (e.toString().contains('popup_closed')) {
-                          errorMessage = 'ผู้ใช้ปิด popup ก่อนเสร็จสิ้นการเข้าสู่ระบบ';
-                        } else if (e.toString().contains('network')) {
-                          errorMessage = 'ปัญหาการเชื่อมต่อเครือข่าย กรุณาลองใหม่';
-                        } else {
-                          errorMessage = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย Google';
-                        }
-
-                        if (mounted) {
-                          global.showSnackBar(context, const Icon(Icons.error, color: Colors.white), errorMessage, Colors.red);
-                        }
-                      } finally {
-                        if (mounted) {
-                          setState(() {
-                            _isSigningIn = false;
-                          });
-                        }
+    return SizedBox(
+      width: double.infinity,
+      height: buttonHeight,
+      child: OutlinedButton(
+        focusNode: FocusNode(canRequestFocus: false),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: global.isDarkMode() ? Colors.white : Colors.grey[800],
+          backgroundColor: global.isDarkMode() ? Colors.white.withValues(alpha: 0.08) : Colors.white,
+          side: BorderSide(color: global.isDarkMode() ? Colors.white24 : Colors.grey.shade300, width: 1),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+        ),
+        onPressed: isLoading
+            ? null
+            : () async {
+                if (kIsWeb) {
+                  if (_isSigningIn) return;
+                  setState(() => _isSigningIn = true);
+                  try {
+                    await Future.delayed(const Duration(milliseconds: 100));
+                    final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+                    googleProvider.addScope('email');
+                    googleProvider.addScope('profile');
+                    googleProvider.setCustomParameters({'prompt': 'select_account', 'access_type': 'online'});
+                    UserCredential? userCredential;
+                    try {
+                      userCredential = await _auth.signInWithPopup(googleProvider);
+                    } catch (popupError) {
+                      if (popupError.toString().contains('popup_blocked') || popupError.toString().contains('popup_closed')) {
+                        await _auth.signInWithRedirect(googleProvider);
+                        return;
                       }
-                    },
-              child: Row(
+                      rethrow;
+                    }
+                    if (userCredential.user != null) {
+                      await _handleSuccessfulSignIn(userCredential.user!);
+                    } else {
+                      throw Exception('ไม่สามารถรับข้อมูลผู้ใช้ได้');
+                    }
+                  } catch (e) {
+                    String errorMessage = 'Google Sign-In Error';
+                    if (e.toString().contains('popup_blocked')) {
+                      errorMessage = 'กรุณาอนุญาต popup ในเบราว์เซอร์';
+                    } else if (e.toString().contains('popup_closed')) {
+                      errorMessage = 'ผู้ใช้ปิด popup ก่อนเสร็จสิ้น';
+                    } else if (e.toString().contains('network')) {
+                      errorMessage = 'ปัญหาการเชื่อมต่อเครือข่าย';
+                    }
+                    if (mounted) { global.showSnackBar(context, const Icon(Icons.error, color: Colors.white), errorMessage, Colors.red); }
+                  } finally {
+                    if (mounted) setState(() => _isSigningIn = false);
+                  }
+                } else {
+                  if (Platform.isWindows || Platform.isMacOS) {
+                    await _handleGoogleSignInWithHelper();
+                  } else {
+                    _startGoogleLogin();
+                  }
+                }
+              },
+        child: isLoading
+            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey))
+            : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Image(width: 24, height: 24, image: AssetImage("assets/img/google_logo.png")),
-                  const SizedBox(width: 14),
-                  Text(_isSigningIn ? 'Signing in...' : 'Sign in with Google', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                  if (_isSigningIn) ...[SizedBox(width: 12), SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: global.theme.iconSecondaryColor))],
+                  Image(width: 22, height: 22, image: const AssetImage("assets/img/google_logo.png")),
+                  const SizedBox(width: 12),
+                  Text(_loginText('sign_in_google'), style: TextStyle(fontSize: isCompact ? 14.0 : 15.0, fontWeight: FontWeight.w500, letterSpacing: 0.2)),
                 ],
               ),
-            ),
-          ),
-          const SizedBox(height: 10),
-        ] else ...[
-          // สำหรับ Desktop (Windows/macOS/Linux)
-          // Windows ใช้ GoogleAuthHelper กับ localhost redirect
-          // อื่นๆ ใช้ Browser OAuth + Polling ผ่าน Vercel
-          SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: OutlinedButton(
-              focusNode: FocusNode(canRequestFocus: false),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.grey[800],
-                backgroundColor: Colors.white,
-                side: BorderSide(color: Colors.grey.shade300, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 0,
-              ),
-              onPressed: _isGoogleLoggingIn
-                  ? null
-                  : () async {
-                      // สำหรับ Windows ใช้ GoogleAuthHelper กับ localhost redirect
-                      if (Platform.isWindows || Platform.isMacOS) {
-                        await _handleGoogleSignInWithHelper();
-                      } else {
-                        // สำหรับ Linux หรือ platform อื่น ใช้ Vercel backend
-                        _startGoogleLogin();
-                      }
-                    },
-              // ใช้ Flexible สำหรับ Text เพื่อป้องกัน overflow เมื่อ zoom สูง
-              child: _isGoogleLoggingIn
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey)),
-                        const SizedBox(width: 12),
-                        Flexible(
-                          child: Text(
-                            _getGoogleLoggingInText(),
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image(width: 24, height: 24, image: AssetImage("assets/img/google_logo.png")),
-                        const SizedBox(width: 14),
-                        Flexible(
-                          child: Text(
-                            _getGoogleLoginText(),
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-            ),
-          ),
-          const SizedBox(height: 10),
-        ],
-      ],
+      ),
     );
   }
 
@@ -1593,9 +1413,10 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> with global.Th
     });
   }
 
-  /// สร้างปุ่ม Line Login
+  /// สร้างปุ่ม Line Login — ตาม LINE Brand Guidelines
+  /// สีเขียว #06C755 พื้นหลัง, icon chat bubble สีขาว + ข้อความ "Log in with LINE"
   Widget _buildLineLoginButton({bool isCompact = false}) {
-    final buttonHeight = isCompact ? 44.0 : 54.0;
+    final buttonHeight = isCompact ? 46.0 : 52.0;
 
     return SizedBox(
       width: double.infinity,
@@ -1604,26 +1425,30 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> with global.Th
         focusNode: FocusNode(canRequestFocus: false),
         style: ElevatedButton.styleFrom(
           foregroundColor: Colors.white,
-          backgroundColor: const Color(0xFF00B900), // LINE Green color
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          elevation: 2,
+          backgroundColor: const Color(0xFF06C755),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
         ),
         onPressed: _isLineLoggingIn ? null : _startLineLogin,
         child: _isLineLoggingIn
-            ? const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
-                  SizedBox(width: 12),
-                  Text('กำลังเข้าสู่ระบบ...', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                ],
-              )
+            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Image.asset('assets/img/line_logo.png', width: 28, height: 28),
+                  // LINE icon — logo ในกรอบขาวมน
+                  Container(
+                    width: 28,
+                    height: 28,
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Image.asset('assets/img/line_logo.png', fit: BoxFit.contain),
+                  ),
                   const SizedBox(width: 12),
-                  Text(_getLineLoginText(), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  Text(_loginText('sign_in_line'), style: TextStyle(fontSize: isCompact ? 14.0 : 15.0, fontWeight: FontWeight.w600, color: Colors.white, letterSpacing: 0.2)),
                 ],
               ),
       ),
@@ -1695,32 +1520,6 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> with global.Th
     }
   }
 
-  /// Get Google Login text based on current language
-  String _getGoogleLoginText() {
-    switch (global.userLanguage) {
-      case 'en':
-        return 'Sign in with Google';
-      case 'th':
-        return 'เข้าสู่ระบบด้วย Google';
-      case 'lo':
-        return 'ເຂົ້າສູ່ລະບົບດ້ວຍ Google';
-      case 'cn':
-        return '使用Google登录';
-      case 'ja':
-        return 'Googleでログイン';
-      case 'ko':
-        return 'Google로 로그인';
-      case 'my':
-        return 'Google ဖြင့်ဝင်ရောက်ပါ';
-      case 'km':
-        return 'ចូលដោយ Google';
-      case 'vi':
-        return 'Đăng nhập bằng Google';
-      default:
-        return 'Sign in with Google';
-    }
-  }
-
   /// Google Sign-In สำหรับ Windows/macOS ใช้ GoogleAuthHelper กับ localhost redirect
   Future<void> _handleGoogleSignInWithHelper() async {
     if (_isGoogleLoggingIn) return;
@@ -1777,16 +1576,6 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> with global.Th
           _isGoogleLoggingIn = false;
         });
       }
-    }
-  }
-
-  /// Get Google logging in text based on current language
-  String _getGoogleLoggingInText() {
-    switch (global.userLanguage) {
-      case 'th':
-        return 'กำลังเข้าสู่ระบบ...';
-      default:
-        return 'Signing in...';
     }
   }
 
@@ -2191,53 +1980,74 @@ class LoginPasswordScreenState extends State<LoginPasswordScreen> with global.Th
     }
   }
 
-  Widget _buildTermsAndPrivacyPolicy({bool isCompact = false}) {
-    final fontSize = isCompact ? 11.0 : 13.0;
-    final padding = isCompact ? 8.0 : 12.0;
+}
 
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: padding),
-      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        children: [
-          RichText(
-            textAlign: TextAlign.center,
-            text: TextSpan(
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: fontSize, height: 1.5),
-              children: <TextSpan>[
-                TextSpan(text: _loginText('you_have_accepted')),
-                TextSpan(
-                  text: ' ${_loginText('terms_of_use')}',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, decoration: TextDecoration.underline),
-                  recognizer: TapGestureRecognizer()
-                    ..onTap = () {
-                      // ignore: deprecated_member_use
-                      launch('https://www.dohome.co.th/terms');
-                    },
-                ),
+/// Widget ที่แสดง glow effect รอบ input field เมื่อ focused
+class _FocusGlowField extends StatefulWidget {
+  final FocusNode focusNode;
+  final Widget child;
+
+  const _FocusGlowField({required this.focusNode, required this.child});
+
+  @override
+  State<_FocusGlowField> createState() => _FocusGlowFieldState();
+}
+
+class _FocusGlowFieldState extends State<_FocusGlowField> {
+  bool _isFocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.focusNode.addListener(_onFocusChanged);
+    _isFocused = widget.focusNode.hasFocus;
+  }
+
+  @override
+  void didUpdateWidget(_FocusGlowField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.focusNode != widget.focusNode) {
+      oldWidget.focusNode.removeListener(_onFocusChanged);
+      widget.focusNode.addListener(_onFocusChanged);
+      _isFocused = widget.focusNode.hasFocus;
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.focusNode.removeListener(_onFocusChanged);
+    super.dispose();
+  }
+
+  void _onFocusChanged() {
+    setState(() => _isFocused = widget.focusNode.hasFocus);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accentColor = const Color(0xFF3949AB);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      decoration: BoxDecoration(
+        color: _isFocused ? global.theme.cardColor : global.theme.surfaceColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: _isFocused ? accentColor : Colors.transparent,
+          width: 1.5,
+        ),
+        boxShadow: _isFocused
+            ? [
+                BoxShadow(color: accentColor.withValues(alpha: 0.15), blurRadius: 16, spreadRadius: 0, offset: const Offset(0, 2)),
+                BoxShadow(color: accentColor.withValues(alpha: 0.08), blurRadius: 4, spreadRadius: 0),
+              ]
+            : [
+                BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 4, spreadRadius: 0, offset: const Offset(0, 1)),
               ],
-            ),
-          ),
-          SizedBox(height: isCompact ? 2 : 4),
-          RichText(
-            textAlign: TextAlign.center,
-            text: TextSpan(
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: fontSize),
-              children: <TextSpan>[
-                TextSpan(text: _loginText('read')),
-                TextSpan(
-                  text: ' ${_loginText('privacy_policy')}',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, decoration: TextDecoration.underline),
-                  recognizer: TapGestureRecognizer()
-                    ..onTap = () {
-                      // ignore: deprecated_member_use
-                      launch('https://www.dohome.co.th/privacy');
-                    },
-                ),
-              ],
-            ),
-          ),
-        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(13),
+        child: widget.child,
       ),
     );
   }

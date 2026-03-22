@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/model/currency_model.dart';
 import 'package:smlaicloud/services/currency_api_service.dart';
 import 'package:smlaicloud/utils/logger/app_logger.dart';
+import 'package:smlaicloud/utils/focus_utils.dart';
 
 class CurrencyFormScreen extends StatefulWidget {
   final CurrencyModel? currency;
@@ -23,6 +25,11 @@ class _CurrencyFormScreenState extends State<CurrencyFormScreen> with global.The
   late TextEditingController _symbolController;
   bool _isDisabled = false;
   bool _isSaving = false;
+
+  // Tab focus cycling
+  int focusNodeMax = 0;
+  List<global.FieldFocusModel> fieldFocusNodes = [];
+  int focusNodeIndex = 0;
 
   bool get _isEditMode => widget.currency != null;
 
@@ -67,14 +74,64 @@ class _CurrencyFormScreenState extends State<CurrencyFormScreen> with global.The
     {'symbol': '₼', 'name': 'Azerbaijani Manat (AZN)'},
   ];
 
+  // Map focusNode index → TextEditingController (for cursor positioning)
+  final Map<int, TextEditingController> _focusControllers = {};
+
+  void _focusAndMoveCursorToEnd(int idx) {
+    focusAndCursorToEnd(fieldFocusNodes[idx].focusNode);
+  }
+
+  void findFocusNext(int index) {
+    focusNodeIndex = index;
+    do {
+      focusNodeIndex++;
+      if (focusNodeIndex > focusNodeMax) focusNodeIndex = 0;
+    } while (fieldFocusNodes[focusNodeIndex].isReadOnly);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusAndMoveCursorToEnd(focusNodeIndex);
+    });
+  }
+
+  void findFocusPrev(int index) {
+    focusNodeIndex = index;
+    do {
+      focusNodeIndex--;
+      if (focusNodeIndex < 0) focusNodeIndex = focusNodeMax;
+    } while (fieldFocusNodes[focusNodeIndex].isReadOnly);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusAndMoveCursorToEnd(focusNodeIndex);
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     _codeController = TextEditingController(text: widget.currency?.code ?? "");
     _nameController = TextEditingController(text: widget.currency?.name ?? "");
-    // ถ้าเป็นการเพิ่มใหม่ (ไม่ใช่แก้ไข) ให้ตั้งค่าเริ่มต้นเป็น Thai Baht
     _symbolController = TextEditingController(text: widget.currency?.symbol ?? "฿");
     _isDisabled = widget.currency?.isdisabled ?? false;
+
+    for (int i = 0; i < 100; i++) {
+      fieldFocusNodes.add(global.FieldFocusModel(focusNode: FocusNode()));
+      fieldFocusNodes[i].focusNode.addListener(() {
+        if (fieldFocusNodes[i].focusNode.hasFocus) {
+          focusNodeIndex = i;
+        }
+      });
+    }
+
+    // Register controllers สำหรับ cursor positioning
+    _focusControllers[0] = _codeController;
+    _focusControllers[1] = _nameController;
+
+    // Auto-focus: ถ้า field แรก readonly ให้ focus ตัวถัดไป
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_isEditMode && fieldFocusNodes[0].isReadOnly) {
+        findFocusNext(-1);
+      } else {
+        _focusAndMoveCursorToEnd(0);
+      }
+    });
   }
 
   @override
@@ -156,13 +213,37 @@ class _CurrencyFormScreenState extends State<CurrencyFormScreen> with global.The
             )
           else
             IconButton(
+              focusNode: FocusNode(skipTraversal: true),
               icon: Icon(Icons.save),
               onPressed: _saveCurrency,
               tooltip: global.language("save"),
             ),
         ],
       ),
-      body: Builder(
+      body: Focus(
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) {
+              if (_formKey.currentState!.validate()) _saveCurrency();
+            }
+            return KeyEventResult.handled;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.tab ||
+              event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              if (HardwareKeyboard.instance.isShiftPressed) {
+                findFocusPrev(focusNodeIndex);
+              } else {
+                findFocusNext(focusNodeIndex);
+              }
+            }
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
+        },
+        child: Builder(
         builder: (context) {
           final scaleFactor = global.editFontScaleFactor;
           return MediaQuery(
@@ -181,11 +262,15 @@ class _CurrencyFormScreenState extends State<CurrencyFormScreen> with global.The
               ),
               child: Form(
         key: _formKey,
-        child: ListView(
+        child: Builder(builder: (context) {
+          focusNodeMax = 0;
+          fieldFocusNodes[0].isReadOnly = _isEditMode;
+          return ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
             // Currency Code
             TextFormField(
+              focusNode: fieldFocusNodes[focusNodeMax].focusNode,
               controller: _codeController,
               decoration: InputDecoration(
                 labelText: '${global.language("currency_code")} *',
@@ -209,6 +294,7 @@ class _CurrencyFormScreenState extends State<CurrencyFormScreen> with global.The
 
             // Currency Name
             TextFormField(
+              focusNode: fieldFocusNodes[++focusNodeMax].focusNode,
               controller: _nameController,
               decoration: InputDecoration(
                 labelText: '${global.language("currency_name")} *',
@@ -254,7 +340,7 @@ class _CurrencyFormScreenState extends State<CurrencyFormScreen> with global.The
                     },
                     child: Container(
                       width: 100,
-                      height: 80,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: isSelected ? global.theme.appBarColor : global.theme.dividerBorderColor,
@@ -313,6 +399,7 @@ class _CurrencyFormScreenState extends State<CurrencyFormScreen> with global.The
 
             // Save button
             ElevatedButton.icon(
+              focusNode: FocusNode(skipTraversal: true),
               onPressed: _isSaving ? null : _saveCurrency,
               icon: _isSaving
                   ? const SizedBox(
@@ -329,11 +416,13 @@ class _CurrencyFormScreenState extends State<CurrencyFormScreen> with global.The
               ),
             ),
           ],
-        ),
+        );
+        }),
       ),
             ),
           );
         },
+      ),
       ),
     );
   }

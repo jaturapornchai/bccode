@@ -10,13 +10,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:smlaicloud/global.dart' as global;
+import 'package:smlaicloud/utils/focus_utils.dart';
+import 'package:smlaicloud/utils/date_picker.dart';
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:split_view/split_view.dart';
 import 'package:translator/translator.dart';
 
-// ignore: depend_on_referenced_packages
-import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 class PromotionScreen extends StatefulWidget {
@@ -62,8 +62,6 @@ class PromotionScreenState extends State<PromotionScreen>
   TextEditingController indexController = TextEditingController();
   TextEditingController nameController = TextEditingController();
   TextEditingController discountTextController = TextEditingController();
-  TextEditingController fromDateController = TextEditingController();
-  TextEditingController toDateController = TextEditingController();
   TextEditingController qtyLimitController = TextEditingController();
   TextEditingController promotionQtyController = TextEditingController();
   TextEditingController limitAmountController = TextEditingController();
@@ -78,8 +76,6 @@ class PromotionScreenState extends State<PromotionScreen>
   FocusNode qtyLimitControllerFocus = FocusNode();
   FocusNode promotionQtyControllerFocus = FocusNode();
   FocusNode limitAmountControllerFocus = FocusNode();
-  FocusNode fromDateControllerFocus = FocusNode();
-  FocusNode toDateControllerFocus = FocusNode();
   List<FocusNode> qtyMinmunControllerFocus = [];
   List<FocusNode> discountControllerFocus = [];
 
@@ -154,8 +150,6 @@ class PromotionScreenState extends State<PromotionScreen>
 
     codeController.dispose();
     nameController.dispose();
-    fromDateController.dispose();
-    toDateController.dispose();
     for (int i = 0; i < qtyMinmunController.length; i++) {
       qtyMinmunController[i].dispose();
     }
@@ -165,8 +159,6 @@ class PromotionScreenState extends State<PromotionScreen>
 
     codeControllerFocus.dispose();
     nameControllerFocus.dispose();
-    fromDateControllerFocus.dispose();
-    toDateControllerFocus.dispose();
     for (int i = 0; i < qtyMinmunControllerFocus.length; i++) {
       qtyMinmunControllerFocus[i].dispose();
     }
@@ -206,8 +198,6 @@ class PromotionScreenState extends State<PromotionScreen>
     indexController.text = "";
     nameController.text = "";
     discountTextController.text = "";
-    fromDateController.text = "";
-    toDateController.text = "";
     qtyLimitController.text = "";
     promotionQtyController.text = "";
     limitAmountController.text = "";
@@ -222,13 +212,9 @@ class PromotionScreenState extends State<PromotionScreen>
   }
 
   void loadDataToScreen() {
-    DateTime fromDateFormat = DateTime.parse(
-      screenData.fromDate.toIso8601String(),
-    );
-    DateTime toDateFormat = DateTime.parse(screenData.toDate.toIso8601String());
     if (screenData.datebegin.isNotEmpty) {
-      fromDateFormat = DateTime.parse(screenData.datebegin);
-      toDateFormat = DateTime.parse(screenData.dateend);
+      screenData.fromDate = DateTime.parse(screenData.datebegin).toLocal();
+      screenData.toDate = DateTime.parse(screenData.dateend).toLocal();
     }
 
     codeController.text = screenData.code;
@@ -238,12 +224,6 @@ class PromotionScreenState extends State<PromotionScreen>
     qtyLimitController.text = screenData.limitqty.toString();
     promotionQtyController.text = screenData.promotionqty.toString();
     limitAmountController.text = screenData.limitamount.toString();
-    fromDateController.text = DateFormat(
-      'dd/MM/yyyy',
-    ).format(fromDateFormat.toLocal());
-    toDateController.text = DateFormat(
-      'dd/MM/yyyy',
-    ).format(toDateFormat.toLocal());
   }
 
   String getLangName(String? code) {
@@ -253,44 +233,6 @@ class PromotionScreenState extends State<PromotionScreen>
           LanguageModel(code: '', codeTranslator: '', name: '', isuse: false),
     );
     return name.name!;
-  }
-
-  void formDateSelect(BuildContext context) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.parse(screenData.fromDate.toIso8601String()),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (pickedDate != null && pickedDate != dateNow) {
-      setState(() {
-        screenData.fromDate = pickedDate.toLocal();
-
-        fromDateController.text = DateFormat(
-          'dd/MM/yyyy',
-        ).format(screenData.fromDate);
-      });
-    }
-  }
-
-  void toDateSelect(BuildContext context) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.parse(screenData.toDate.toIso8601String()),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (pickedDate != null && pickedDate != dateNow) {
-      setState(() {
-        screenData.toDate = pickedDate.toLocal();
-
-        toDateController.text = DateFormat(
-          'dd/MM/yyyy',
-        ).format(DateTime.parse(screenData.toDate.toIso8601String()));
-      });
-    }
   }
 
   void discardData({required Function callBack}) {
@@ -796,7 +738,7 @@ class PromotionScreenState extends State<PromotionScreen>
               onChanged: (int? value) {
                 setState(() {
                   screenData.promotiontype = value!;
-                  indexControllerFocus.requestFocus();
+                  focusAndCursorToEnd(indexControllerFocus);
                 });
               },
               isDense: true,
@@ -846,7 +788,7 @@ class PromotionScreenState extends State<PromotionScreen>
             return null;
           },
           onEditingComplete: () {
-            codeControllerFocus.requestFocus();
+            focusAndCursorToEnd(codeControllerFocus);
           },
         ),
       ),
@@ -883,7 +825,7 @@ class PromotionScreenState extends State<PromotionScreen>
             return null;
           },
           onEditingComplete: () {
-            nameControllerFocus.requestFocus();
+            focusAndCursorToEnd(nameControllerFocus);
           },
         ),
       ),
@@ -950,113 +892,40 @@ class PromotionScreenState extends State<PromotionScreen>
         child: Row(
           children: [
             Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: global.language("from_date"),
-                  suffixIcon: Row(
-                    mainAxisAlignment:
-                        MainAxisAlignment.spaceBetween, // added line
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        focusNode: FocusNode(skipTraversal: true),
-                        icon: const Icon(Icons.calendar_today),
-                        onPressed: () {
-                          formDateSelect(context);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                controller: fromDateController,
-                onChanged: (value) {
-                  setState(() {
-                    try {
-                      List<String> valueSplit = value
-                          .replaceAll(".", "/")
-                          .split("/");
-                      if (valueSplit.length == 3) {
-                        if (valueSplit[2].length == 2) {
-                          valueSplit[2] = '25${valueSplit[2]}';
-                        }
-                        int year = int.tryParse(valueSplit[2]) ?? 0;
-                        year = year - 543;
-                        int month = int.tryParse(valueSplit[1]) ?? 0;
-                        int day = int.tryParse(valueSplit[0]) ?? 0;
-                        value =
-                            "$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}";
-                      }
-
-                      if (global.isValidDate(value)) {
-                        screenData.fromDate = DateTime.parse(value).toLocal();
-                      }
-                    } catch (e) {
-                      // print(e);
-                    }
-                  });
+              child: CustomDatePicker(
+                labelText: global.language('from_date'),
+                useIconSelectDate: true,
+                initialDate: screenData.fromDate,
+                firstDate: DateTime(2000),
+                lastDate: DateTime(2100),
+                onDateSelected: (date) {
+                  if (date != null) {
+                    setState(() {
+                      screenData.fromDate = date.toLocal();
+                      isDataChange = true;
+                    });
+                  }
                 },
-                onSubmitted: (value) => {
-                  fromDateController.text = DateFormat(
-                    'dd/MM/yyyy',
-                  ).format(DateTime.parse(screenData.fromDate.toString())),
-                },
+                decoration: const InputDecoration(),
               ),
             ),
             Text(" - "),
             Expanded(
-              child: TextField(
-                focusNode: toDateControllerFocus,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: global.language("to_date"),
-                  suffixIcon: Row(
-                    mainAxisAlignment:
-                        MainAxisAlignment.spaceBetween, // added line
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        focusNode: FocusNode(skipTraversal: true),
-                        icon: const Icon(Icons.calendar_today),
-                        onPressed: () {
-                          toDateSelect(context);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                controller: toDateController,
-                onChanged: (value) {
-                  setState(() {
-                    try {
-                      List<String> valueSplit = value
-                          .replaceAll(".", "/")
-                          .split("/");
-                      if (valueSplit.length == 3) {
-                        if (valueSplit[2].length == 2) {
-                          valueSplit[2] = '25${valueSplit[2]}';
-                        }
-                        int year = int.tryParse(valueSplit[2]) ?? 0;
-                        year = year - 543;
-                        int month = int.tryParse(valueSplit[1]) ?? 0;
-                        int day = int.tryParse(valueSplit[0]) ?? 0;
-                        value =
-                            "$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}";
-                      }
-
-                      if (global.isValidDate(value)) {
-                        screenData.toDate = DateTime.parse(value).toLocal();
-                      }
-                    } catch (e) {
-                      // print(e);
-                    }
-                  });
+              child: CustomDatePicker(
+                labelText: global.language('to_date'),
+                useIconSelectDate: true,
+                initialDate: screenData.toDate,
+                firstDate: DateTime(2000),
+                lastDate: DateTime(2100),
+                onDateSelected: (date) {
+                  if (date != null) {
+                    setState(() {
+                      screenData.toDate = date.toLocal();
+                      isDataChange = true;
+                    });
+                  }
                 },
-                onSubmitted: (value) => {
-                  toDateController.text = DateFormat(
-                    'dd/MM/yyyy',
-                  ).format(DateTime.parse(screenData.toDate.toString())),
-                },
+                decoration: const InputDecoration(),
               ),
             ),
           ],
@@ -1084,7 +953,7 @@ class PromotionScreenState extends State<PromotionScreen>
               return null;
             },
             onEditingComplete: () {
-              qtyLimitControllerFocus.requestFocus();
+              focusAndCursorToEnd(qtyLimitControllerFocus);
             },
           ),
         ),
@@ -1116,7 +985,7 @@ class PromotionScreenState extends State<PromotionScreen>
               return null;
             },
             onEditingComplete: () {
-              promotionQtyControllerFocus.requestFocus();
+              focusAndCursorToEnd(promotionQtyControllerFocus);
             },
           ),
         ),
@@ -1151,7 +1020,7 @@ class PromotionScreenState extends State<PromotionScreen>
               return null;
             },
             onEditingComplete: () {
-              limitAmountControllerFocus.requestFocus();
+              focusAndCursorToEnd(limitAmountControllerFocus);
             },
           ),
         ),
@@ -1729,52 +1598,63 @@ class PromotionScreenState extends State<PromotionScreen>
             ),
         ],
       ),
-      body: RawKeyboardListener(
-        focusNode: FocusNode(),
-        onKey: (RawKeyEvent event) {
-          if (event is RawKeyDownEvent) {
-            // print(event.logicalKey);
-            if (event.logicalKey == LogicalKeyboardKey.f10) {
+      body: Focus(
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) {
               if (_formKey.currentState!.validate()) {
                 saveOrUpdateData();
               }
             }
+            return KeyEventResult.handled;
           }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              FocusManager.instance.primaryFocus?.nextFocus();
+            }
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
         },
-        child: Builder(
-          builder: (context) {
-            final scale = global.editFontScaleFactor;
-            return MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                textScaler: TextScaler.linear(scale),
-              ),
-              child: Theme(
-                data: Theme.of(context).copyWith(
-                  inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
-                    contentPadding: EdgeInsets.fromLTRB(
-                      12 * scale, 20 * scale, 12 * scale, 12 * scale,
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: Builder(
+            builder: (context) {
+              final scale = global.editFontScaleFactor;
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(scale),
+                ),
+                child: Theme(
+                  data: Theme.of(context).copyWith(
+                    inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                      contentPadding: EdgeInsets.fromLTRB(
+                        12 * scale, 20 * scale, 12 * scale, 12 * scale,
+                      ),
+                    ),
+                  ),
+                  child: IconTheme(
+                    data: IconTheme.of(context).copyWith(
+                      size: 24.0 * scale,
+                    ),
+                    child: SingleChildScrollView(
+                      controller: editScrollController,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.only(top: 10, bottom: 15),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(children: formWidgets),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-                child: IconTheme(
-                  data: IconTheme.of(context).copyWith(
-                    size: 24.0 * scale,
-                  ),
-                  child: SingleChildScrollView(
-                    controller: editScrollController,
-                    child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.only(top: 10, bottom: 15),
-            child: Form(
-              key: _formKey,
-              child: Column(children: formWidgets),
-            ),
+              );
+            },
           ),
-                  ),
-                ),
-              ),
-            );
-          },
         ),
       ),
     );

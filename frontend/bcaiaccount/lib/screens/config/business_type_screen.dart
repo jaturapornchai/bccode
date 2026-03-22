@@ -1,4 +1,5 @@
 ﻿import 'dart:io';
+import 'package:smlaicloud/utils/focus_utils.dart';
 import 'package:smlaicloud/widgets/manual_button.dart';
 import 'package:smlaicloud/bloc/business_type/business_type_bloc.dart';
 import 'package:smlaicloud/model/business_type_model.dart';
@@ -10,7 +11,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:smlaicloud/model/global_model.dart';
-import 'package:smlaicloud/utils/focus_utils.dart';
 import 'package:split_view/split_view.dart';
 import 'package:translator/translator.dart';
 
@@ -78,9 +78,12 @@ class BusinessTypeScreenState extends State<BusinessTypeScreen>
 
     for (int i = 0; i < languageList.length; i++) {
       fieldTextController.add(TextEditingController());
+      final fieldIndex = i + 1; // field 0 = code, language fields start at 1
       FocusNode focusNode = FocusNode();
       focusNode.addListener(() {
-        focusNodeIndex = i;
+        if (focusNode.hasFocus) {
+          focusNodeIndex = fieldIndex;
+        }
       });
       fieldFocusNodes.add(global.FieldFocusModel(focusNode: focusNode));
     }
@@ -102,13 +105,13 @@ class BusinessTypeScreenState extends State<BusinessTypeScreen>
     // Focus รหัส
     FocusNode focusNode = FocusNode();
     focusNode.addListener(() {
-      focusNodeIndex = 0;
+      if (focusNode.hasFocus) {
+        focusNodeIndex = 0;
+      }
     });
     fieldFocusNodes.add(global.FieldFocusModel(focusNode: focusNode));
     fieldTextController.add(TextEditingController());
     setSystemLanguageList();
-    // Tab วนลูปเฉพาะ fields ในฟอร์ม
-    applyTabCycle(fieldFocusNodes.map((f) => f.focusNode).toList());
     listScrollController.addListener(onScrollList);
 
     super.initState();
@@ -154,7 +157,6 @@ class BusinessTypeScreenState extends State<BusinessTypeScreen>
     }
     isChange = false;
     focusNodeIndex = 0;
-    fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
   }
 
   void discardData({required Function callBack}) {
@@ -305,9 +307,9 @@ class BusinessTypeScreenState extends State<BusinessTypeScreen>
                       clearEditData();
                       headerEdit = global.language("append");
                       isSaveAllow = true;
-                      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
                         tabController.animateTo(1);
-                        fieldFocusNodes[0].focusNode.requestFocus();
+                        focusFirstTextField(context);
                       });
                     });
                   },
@@ -485,6 +487,10 @@ class BusinessTypeScreenState extends State<BusinessTypeScreen>
       headerEdit = global.language("edit");
       isSaveAllow = true;
       changeScreenEvent(global.ScreenEventEnum.edit);
+    });
+    // Auto-focus: field 0 (code) is readonly in edit → focus next
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      findFocusNext(-1);
     });
   }
 
@@ -688,27 +694,42 @@ class BusinessTypeScreenState extends State<BusinessTypeScreen>
     }
   }
 
+  void _focusAndMoveCursorToEnd(int idx) {
+    focusAndCursorToEnd(fieldFocusNodes[idx].focusNode);
+  }
+
   void findFocusNext(int index) {
-    // print("findFocusNext($index)");
     focusNodeIndex = index + 1;
     if (focusNodeIndex > fieldFocusNodes.length - 1) {
       focusNodeIndex = 0;
     }
-    while (true) {
-      if (fieldFocusNodes[focusNodeIndex].isReadOnly == true) {
-        focusNodeIndex++;
-        if (focusNodeIndex > fieldFocusNodes.length - 1) {
-          break;
-        }
-      } else {
-        fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
-        fieldTextController[focusNodeIndex]
-            .selection = TextSelection.fromPosition(
-          TextPosition(offset: fieldTextController[focusNodeIndex].text.length),
-        );
+    while (fieldFocusNodes[focusNodeIndex].isReadOnly == true) {
+      focusNodeIndex++;
+      if (focusNodeIndex > fieldFocusNodes.length - 1) {
+        focusNodeIndex = 0;
         break;
       }
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusAndMoveCursorToEnd(focusNodeIndex);
+    });
+  }
+
+  void findFocusPrev(int index) {
+    focusNodeIndex = index - 1;
+    if (focusNodeIndex < 0) {
+      focusNodeIndex = fieldFocusNodes.length - 1;
+    }
+    while (fieldFocusNodes[focusNodeIndex].isReadOnly == true) {
+      focusNodeIndex--;
+      if (focusNodeIndex < 0) {
+        focusNodeIndex = fieldFocusNodes.length - 1;
+        break;
+      }
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusAndMoveCursorToEnd(focusNodeIndex);
+    });
   }
 
   Widget editScreen({mobileScreen}) {
@@ -813,24 +834,25 @@ class BusinessTypeScreenState extends State<BusinessTypeScreen>
       ),
       body: Column(
         children: [
-          RawKeyboardListener(
-            focusNode: FocusNode(skipTraversal: true),
-            onKey: (event) {
-              if (kIsWeb ||
-                  Platform.isWindows ||
-                  Platform.isLinux ||
-                  Platform.isMacOS) {
-                if (event is RawKeyUpEvent) {
-                  if (event.logicalKey == LogicalKeyboardKey.tab) {
-                    // print("Tab");
-                  }
-                  if (event.logicalKey == LogicalKeyboardKey.f10) {
-                    saveOrUpdateData();
-                  }
-                }
+          Focus(
+            skipTraversal: true,
+            onKeyEvent: (node, event) {
+              if (event is KeyUpEvent) return KeyEventResult.ignored;
+              if (event.logicalKey == LogicalKeyboardKey.f10) {
+                if (event is KeyDownEvent) saveOrUpdateData();
+                return KeyEventResult.handled;
               }
+              if (event.logicalKey == LogicalKeyboardKey.enter) {
+                if (event is KeyDownEvent) {
+                  FocusManager.instance.primaryFocus?.nextFocus();
+                }
+                return KeyEventResult.handled;
+              }
+              return KeyEventResult.ignored;
             },
-            child: Builder(
+            child: FocusTraversalGroup(
+              policy: TextFieldTraversalPolicy(),
+              child: Builder(
               builder: (context) {
                 final scale = global.editFontScaleFactor;
                 return MediaQuery(
@@ -964,6 +986,7 @@ class BusinessTypeScreenState extends State<BusinessTypeScreen>
                 );
               },
             ),
+            ),
           ),
         ],
       ),
@@ -1083,11 +1106,9 @@ class BusinessTypeScreenState extends State<BusinessTypeScreen>
                 setState(() {
                   getDataToEditScreen(state.businessType);
                   if (screenEvent == global.ScreenEventEnum.edit) {
-                    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
                       tabController.animateTo(1);
-                    });
-                    setState(() {
-                      findFocusNext(0);
+                      focusFirstTextField(context);
                     });
                   }
                 });

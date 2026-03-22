@@ -18,6 +18,7 @@ import 'package:smlaicloud/model/shop_model.dart';
 import 'package:smlaicloud/select_language_screen.dart';
 import 'package:smlaicloud/usersystem/otp/telephone_screen.dart';
 import 'package:smlaicloud/usersystem/utils.dart';
+import 'package:smlaicloud/usersystem/business_type_selector.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -80,18 +81,18 @@ class LoginShopScreenState extends State<LoginShopScreen> {
   String _searchQuery = '';
   List<ShopListModel> filteredShopList = [];
 
-  // Gradient colors for shop cards - Dark Mode iPhone style
-  final List<List<Color>> gradients = [
-    [const Color(0xFF5E5CE6), const Color(0xFF7D7AFF)], // Indigo vibrant
-    [const Color(0xFFFF375F), const Color(0xFFFF6482)], // Pink vibrant
-    [const Color(0xFF32ADE6), const Color(0xFF64D2FF)], // Cyan vibrant
-    [const Color(0xFF30D158), const Color(0xFF66FF91)], // Green vibrant
-    [const Color(0xFFFF9F0A), const Color(0xFFFFB340)], // Orange vibrant
-    [const Color(0xFFBF5AF2), const Color(0xFFDA8FFF)], // Purple vibrant
-    [const Color(0xFF0A84FF), const Color(0xFF409CFF)], // Blue vibrant
-    [const Color(0xFFFF453A), const Color(0xFFFF6961)], // Red vibrant
-    [const Color(0xFFFFD60A), const Color(0xFFFFE135)], // Yellow vibrant
-    [const Color(0xFF40C8E0), const Color(0xFF64D2F0)], // Teal vibrant
+  // Accent colors for shop cards — muted, professional tones
+  final List<Color> _shopAccentColors = [
+    const Color(0xFF3949AB), // Indigo
+    const Color(0xFF00897B), // Teal
+    const Color(0xFF5C6BC0), // Light indigo
+    const Color(0xFF43A047), // Green
+    const Color(0xFFEF6C00), // Orange
+    const Color(0xFF7B1FA2), // Purple
+    const Color(0xFF1565C0), // Blue
+    const Color(0xFFC62828), // Red
+    const Color(0xFF00838F), // Cyan
+    const Color(0xFF4E342E), // Brown
   ];
 
   Future<UserCredential?> googleSignIn() async {
@@ -503,48 +504,17 @@ class LoginShopScreenState extends State<LoginShopScreen> {
                                       ),
                                       onPressed: () async {
                                         await getTemplateBusinessType();
+                                        if (!mounted) return;
 
-                                        if (mounted) {
-                                          showDialog(
-                                            context: context,
-                                            builder: (BuildContext context) {
-                                              return AlertDialog(
-                                                title: Text(global.language('select_business_type')),
-                                                content: SizedBox(
-                                                  width: 300,
-                                                  height: 400,
-                                                  child: ListView.builder(
-                                                    itemCount: businessTypeList.length,
-                                                    itemBuilder: (context, index) {
-                                                      return ListTile(
-                                                        title: Text(
-                                                          global.activeLangName(businessTypeList[index].names!),
-                                                          maxLines: 2, // Set the maxLines here
-                                                          overflow: TextOverflow.ellipsis, // Optional: Use this to show ellipsis at the end if text overflows
-                                                        ),
-                                                        tileColor: createShopData.businesstype!.code == businessTypeList[index].code!
-                                                            ? const Color(0xFFD5E9F7) // SAP Selection
-                                                            : null, // Highlight if selected
-                                                        onTap: createShopData.businesstype!.code != businessTypeList[index].code!
-                                                            ? () {
-                                                                setState(() {
-                                                                  Navigator.of(context).pop(businessTypeList[index]);
-                                                                });
-                                                              }
-                                                            : null,
-                                                      );
-                                                    },
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          ).then((value) {
-                                            if (value != null) {
-                                              setState(() {
-                                                createShopData.businesstype!.code = value.code;
-                                                createShopData.businesstype!.names = value.names;
-                                              });
-                                            }
+                                        final result = await showBusinessTypeSelector(
+                                          context: context,
+                                          businessTypes: businessTypeList,
+                                          selected: createShopData.businesstype,
+                                        );
+                                        if (result != null) {
+                                          setState(() {
+                                            createShopData.businesstype!.code = result.code;
+                                            createShopData.businesstype!.names = result.names;
                                           });
                                         }
                                       },
@@ -671,66 +641,64 @@ class LoginShopScreenState extends State<LoginShopScreen> {
 
   // Modern App Bar Widget
   Widget _buildModernAppBar() {
+    final userName = global.userLoginData.name.isNotEmpty ? global.userLoginData.name : global.userLoginData.email;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Row(
         children: [
-          // User Avatar & Name - แสดงรูปโปรไฟล์ LINE ถ้ามี
+          // User Avatar
           Container(
-            padding: const EdgeInsets.all(3),
+            padding: const EdgeInsets.all(2),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1.5),
             ),
             child: CircleAvatar(
-              radius: 22,
+              radius: 19,
               backgroundColor: Colors.white.withValues(alpha: 0.2),
-              // ถ้ามี photourl (จาก LINE Login) ให้แสดงรูป ถ้าไม่มีให้แสดงตัวอักษรตัวแรกของชื่อ
-              backgroundImage: global.userLoginData.photourl.isNotEmpty
-                  ? NetworkImage(global.userLoginData.photourl)
-                  : null,
+              backgroundImage: global.userLoginData.photourl.isNotEmpty ? NetworkImage(global.userLoginData.photourl) : null,
               child: global.userLoginData.photourl.isEmpty
                   ? Text(
-                      global.userLoginData.name.isNotEmpty ? global.userLoginData.name[0].toUpperCase() : 'U',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                      userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
                     )
                   : null,
             ),
           ),
-          SizedBox(width: 12),
+          const SizedBox(width: 10),
+          // Title + user name (single line each)
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   global.language('select_shop'),
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
-                // แสดงชื่อผู้ใช้ (จาก LINE display_name หรือ Google name)
                 Text(
-                  global.userLoginData.name.isNotEmpty
-                      ? global.userLoginData.name
-                      : global.userLoginData.email,
-                  style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.w500),
+                  userName,
+                  style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.8)),
                   overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
-                // แสดง email ถ้ามีและต่างจากชื่อ
-                if (global.userLoginData.email.isNotEmpty &&
-                    global.userLoginData.email != global.userLoginData.name)
-                  Text(
-                    global.userLoginData.email,
-                    style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.7)),
-                    overflow: TextOverflow.ellipsis,
-                  ),
               ],
             ),
           ),
-          // Language Button
+          // Action buttons
+          if (global.currentLoginMethod != global.LoginEnum.password) ...[
+            _buildAppBarButton(
+              icon: Icons.add_business_rounded,
+              onPressed: () => setState(() { stateScreen = 2; clearDataCreateShop(); }),
+              tooltip: global.language('create_shop'),
+            ),
+            const SizedBox(width: 6),
+          ],
           _buildAppBarButton(
             icon: null,
             customWidget: ClipRRect(
               borderRadius: BorderRadius.circular(4),
-              child: Image.asset('assets/flags/${global.userLanguage}.png', width: 22, height: 16, fit: BoxFit.cover),
+              child: Image.asset('assets/flags/${global.userLanguage}.png', width: 20, height: 14, fit: BoxFit.cover),
             ),
             onPressed: () async {
               final value = await showLanguageSelectionDialog(context);
@@ -743,36 +711,16 @@ class LoginShopScreenState extends State<LoginShopScreen> {
             },
             tooltip: _getLanguageText(),
           ),
-          // Create Shop Button — เฉพาะ Google login เท่านั้นที่สร้างร้านค้าได้
-          if (global.currentLoginMethod != global.LoginEnum.password) ...[
-            SizedBox(width: 8),
-            _buildAppBarButton(
-              icon: Icons.add_business_rounded,
-              onPressed: () {
-                setState(() {
-                  stateScreen = 2;
-                  clearDataCreateShop();
-                });
-              },
-              tooltip: global.language('create_shop'),
-            ),
-          ],
-          const SizedBox(width: 8),
-          // Manual Button
+          const SizedBox(width: 6),
           _buildAppBarButton(
             icon: Icons.menu_book_rounded,
-            onPressed: () {
-              launchUrl(Uri.parse('https://bcaicloud.com/manual/loginscreen'), mode: LaunchMode.externalApplication);
-            },
+            onPressed: () => launchUrl(Uri.parse('https://bcaicloud.com/manual/loginscreen'), mode: LaunchMode.externalApplication),
             tooltip: global.language('manual'),
           ),
-          const SizedBox(width: 8),
-          // Logout Button
+          const SizedBox(width: 6),
           _buildAppBarButton(
             icon: Icons.logout_rounded,
-            onPressed: () {
-              context.read<LoginBloc>().add(const Logout());
-            },
+            onPressed: () => context.read<LoginBloc>().add(const Logout()),
             tooltip: global.language('logout'),
             isDestructive: true,
           ),
@@ -1005,25 +953,16 @@ class LoginShopScreenState extends State<LoginShopScreen> {
               Expanded(
                 child: filteredShopList.isEmpty
                     ? _buildEmptyState()
-                    : LayoutBuilder(
-                        builder: (BuildContext context, BoxConstraints constraints) {
-                          const spacing = 16.0;
-                          double maxWidth = constraints.maxWidth;
-                          int crossAxisCount = (maxWidth / 200).floor();
-                          if (crossAxisCount < 1) crossAxisCount = 1;
-
-                          return CustomScrollView(
-                            slivers: [
-                              SliverPadding(
-                                padding: const EdgeInsets.all(spacing),
-                                sliver: SliverGrid(
-                                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: crossAxisCount, crossAxisSpacing: spacing, mainAxisSpacing: spacing, childAspectRatio: 1.2),
-                                  delegate: SliverChildBuilderDelegate((context, index) => cardItem(filteredShopList[index], index), childCount: filteredShopList.length),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
+                    : SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                        child: Center(
+                          child: Wrap(
+                            spacing: 16,
+                            runSpacing: 16,
+                            alignment: WrapAlignment.center,
+                            children: List.generate(filteredShopList.length, (index) => cardItem(filteredShopList[index], index)),
+                          ),
+                        ),
                       ),
               ),
             ],
@@ -1035,119 +974,121 @@ class LoginShopScreenState extends State<LoginShopScreen> {
   }
 
   Widget cardItem(ShopListModel data, int index) {
-    final gradient = gradients[index % gradients.length];
+    final accent = _shopAccentColors[index % _shopAccentColors.length];
     final isOwner = appConfig.getString("user") == (data.createdby ?? '');
     final isSelected = data.shopid == global.getShopId();
     final shopName = (data.name.isEmpty) ? global.packName(data.names!) : data.name;
     final shopIcon = _getShopIcon(shopName);
+    final roleText = data.role == 0 ? global.language("owner") : global.language("staff");
 
-    return Tooltip(
-      message: shopName,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [BoxShadow(color: gradient[0].withValues(alpha: 0.35), blurRadius: 16, offset: const Offset(0, 8), spreadRadius: 0)],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(24),
-            onTap: () {
-              context.read<ShopSelectBloc>().add(ShopSelect(shop: data));
-            },
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              child: Stack(
-                children: [
-                  // Decorative circle
-                  Positioned(
-                    top: -20,
-                    right: -20,
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.1)),
-                    ),
+    return SizedBox(
+      width: 220,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () => context.read<ShopSelectBloc>().add(ShopSelect(shop: data)),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: isSelected ? accent.withValues(alpha: 0.06) : global.theme.cardColor,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: isSelected ? accent : global.theme.dividerBorderColor, width: isSelected ? 2 : 1),
+              boxShadow: [
+                BoxShadow(color: accent.withValues(alpha: isSelected ? 0.15 : 0.05), blurRadius: isSelected ? 16 : 8, offset: const Offset(0, 4)),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [accent, accent.withValues(alpha: 0.7)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [BoxShadow(color: accent.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 3))],
                   ),
-                  // Main content - แสดง icon และชื่อร้าน
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(16)),
-                        child: Icon(shopIcon, size: 36, color: Colors.white),
+                  child: Icon(shopIcon, size: 28, color: Colors.white),
+                ),
+                const SizedBox(height: 14),
+                // Shop name
+                Text(
+                  shopName,
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: global.theme.textColor, height: 1.3),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 6),
+                // Shop ID
+                Text(
+                  'ID: ${data.shopid.length > 8 ? '${data.shopid.substring(0, 8)}...' : data.shopid}',
+                  style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor),
+                ),
+                const SizedBox(height: 10),
+                // Badges row
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    // Role badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: isOwner ? Colors.amber.withValues(alpha: 0.15) : global.theme.surfaceColor,
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      const SizedBox(height: 10),
-                      // ชื่อร้าน - แสดง 2-3 บรรทัด ตัวหนังสือใหญ่ขึ้น
-                      Flexible(
-                        child: Text(
-                          shopName,
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white, letterSpacing: 0.3, height: 1.2),
-                          textAlign: TextAlign.center,
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 3,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(isOwner ? Icons.star_rounded : Icons.person_rounded, size: 11, color: isOwner ? Colors.amber.shade700 : global.theme.iconSecondaryColor),
+                          const SizedBox(width: 3),
+                          Text(roleText, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: isOwner ? Colors.amber.shade800 : global.theme.textSecondaryColor)),
+                        ],
+                      ),
+                    ),
+                    // Active badge
+                    if (isSelected)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(color: accent.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle_rounded, size: 11, color: accent),
+                            const SizedBox(width: 3),
+                            Text(global.language("in_use"), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: accent)),
+                          ],
                         ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Enter button
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected ? accent : accent.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(isSelected ? Icons.login_rounded : Icons.arrow_forward_rounded, size: 14, color: isSelected ? Colors.white : accent),
+                      const SizedBox(width: 4),
+                      Text(
+                        isSelected ? global.language("enter") : global.language("select"),
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isSelected ? Colors.white : accent),
                       ),
                     ],
                   ),
-                  // Badges
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        if (isOwner)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: Colors.amber,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [BoxShadow(color: Colors.amber.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 2))],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.star_rounded, size: 12, color: Colors.white),
-                                SizedBox(width: 3),
-                                Text(
-                                  global.language("owner"),
-                                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-                        if (isSelected)
-                          Container(
-                            margin: const EdgeInsets.only(top: 6),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: global.theme.cardColor,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 2))],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.check_circle_rounded, size: 12, color: gradient[0]),
-                                SizedBox(width: 3),
-                                Text(
-                                  global.language("in_use"),
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: gradient[0]),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -1262,109 +1203,77 @@ class LoginShopScreenState extends State<LoginShopScreen> {
   }
 
   Widget cardItemBranch(CompanyBranchModel data, int index) {
-    final gradient = gradients[index % gradients.length];
+    final accent = _shopAccentColors[index % _shopAccentColors.length];
     final isSelected = appConfig.getString("branch_guidfixed") == data.guidfixed;
     final branchName = global.packName(data.names);
     final branchIcon = _getBranchIcon(branchName);
 
-    return Tooltip(
-      message: branchName,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [BoxShadow(color: gradient[0].withValues(alpha: 0.35), blurRadius: 16, offset: const Offset(0, 8), spreadRadius: 0)],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(24),
-            onTap: () async {
-              global.companyBranchSelectData = data;
-              appConfig.setString("branch_guidfixed", data.guidfixed);
-              appConfig.setInt("branch_total", companyBranchListData.length);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () async {
+          global.companyBranchSelectData = data;
+          appConfig.setString("branch_guidfixed", data.guidfixed);
+          appConfig.setInt("branch_total", companyBranchListData.length);
 
-              // ตั้งค่าเริ่มต้นร้านค้า (ชื่อ, ภาษา, สกุลเงิน) ถ้ายังไม่มี
-              if (!mounted) return;
-              await autoSetupShopDefaults();
+          if (!mounted) return;
+          await autoSetupShopDefaults();
 
-              // ตรวจสอบสกุลเงิน — ถ้าไม่มีให้บังคับเลือกก่อนเข้า main menu
-              if (!mounted) return;
-              await checkAndSetupCurrency(context);
+          if (!mounted) return;
+          await checkAndSetupCurrency(context);
 
-              if (!mounted) return;
-              Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => TabbedMenuScreen(key: TabbedMenuScreen.globalKey)), (route) => false);
-            },
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              child: Stack(
-                children: [
-                  // Decorative circle
-                  Positioned(
-                    top: -20,
-                    right: -20,
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.1)),
+          if (!mounted) return;
+          Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => TabbedMenuScreen(key: TabbedMenuScreen.globalKey)), (route) => false);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: isSelected ? accent.withValues(alpha: 0.08) : global.theme.cardColor,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: isSelected ? accent.withValues(alpha: 0.3) : Colors.transparent, width: 1.5),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2))],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(color: accent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(14)),
+                child: Icon(branchIcon, size: 24, color: accent),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      branchName,
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: global.theme.textColor, height: 1.3),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                     ),
-                  ),
-                  // Main content - ใช้ FittedBox เพื่อ scale down เมื่อ content ใหญ่เกินไป (รองรับ zoom)
-                  Center(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(16)),
-                            child: Icon(branchIcon, size: 36, color: Colors.white),
-                          ),
-                          const SizedBox(height: 14),
-                          Text(
-                            branchName,
-                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white, letterSpacing: 0.3),
-                            textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Badge
-                  if (isSelected)
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: global.theme.cardColor,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 2))],
-                        ),
+                    if (isSelected) ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(color: accent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.check_circle_rounded, size: 12, color: gradient[0]),
-                            SizedBox(width: 3),
-                            Text(
-                              global.language("in_use"),
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: gradient[0]),
-                            ),
+                            Icon(Icons.check_circle_rounded, size: 10, color: accent),
+                            const SizedBox(width: 3),
+                            Text(global.language("in_use"), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: accent)),
                           ],
                         ),
                       ),
-                    ),
-                ],
+                    ],
+                  ],
+                ),
               ),
-            ),
+              Icon(Icons.chevron_right_rounded, color: global.theme.iconSecondaryColor, size: 22),
+            ],
           ),
         ),
       ),
@@ -1502,25 +1411,11 @@ class LoginShopScreenState extends State<LoginShopScreen> {
         Expanded(
           child: filteredBranchList.isEmpty
               ? _buildBranchEmptyState()
-              : LayoutBuilder(
-                  builder: (BuildContext context, BoxConstraints constraints) {
-                    const spacing = 16.0;
-                    double maxWidth = constraints.maxWidth;
-                    int crossAxisCount = (maxWidth / 200).floor();
-                    if (crossAxisCount < 1) crossAxisCount = 1;
-
-                    return CustomScrollView(
-                      slivers: [
-                        SliverPadding(
-                          padding: const EdgeInsets.all(spacing),
-                          sliver: SliverGrid(
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: crossAxisCount, crossAxisSpacing: spacing, mainAxisSpacing: spacing, childAspectRatio: 1.2),
-                            delegate: SliverChildBuilderDelegate((context, index) => cardItemBranch(filteredBranchList[index], index), childCount: filteredBranchList.length),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  itemCount: filteredBranchList.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) => cardItemBranch(filteredBranchList[index], index),
                 ),
         ),
       ],

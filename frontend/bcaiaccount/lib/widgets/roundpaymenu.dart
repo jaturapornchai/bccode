@@ -8,7 +8,7 @@ class RoundPayMenu extends StatelessWidget {
 
   final int actived;
   final String img;
-  RoundPayMenu({
+  const RoundPayMenu({
     super.key,
     required this.label,
     this.onPressed,

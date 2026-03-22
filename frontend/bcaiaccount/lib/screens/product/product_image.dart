@@ -32,13 +32,6 @@ class _ProductEditImageState extends State<ProductEditImageScreen> with global.T
     _openImage();
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-    /*_file?.delete();
-    _sample?.delete();
-    _lastCropped?.delete();*/
-  }
 
   @override
   Widget build(BuildContext context) {

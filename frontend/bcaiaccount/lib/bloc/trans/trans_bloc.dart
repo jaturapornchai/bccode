@@ -72,6 +72,20 @@ class TransBloc extends Bloc<TransEvent, TransState> {
           maxAmount: event.maxAmount,
           custCodes: event.custCodes,
         );
+      } else if (event.type == global.TransactionTypeEnum.purchaserequisition) {
+        apiMode = 1;
+        goApiQueryResult = await _transRepository.getPurchaseRequisitionList(
+          limit: event.limit,
+          offset: event.offset,
+          search: event.search,
+          custcode: event.custcode,
+          dateorder: event.dateorder,
+          fromDate: event.fromDate,
+          toDate: event.toDate,
+          minAmount: event.minAmount,
+          maxAmount: event.maxAmount,
+          custCodes: event.custCodes,
+        );
       } else if (event.type == global.TransactionTypeEnum.quotation) {
         results = await _transRepository.getQuotationList(limit: event.limit, offset: event.offset, search: event.search, custcode: event.custcode);
       } else if (event.type == global.TransactionTypeEnum.purchasepartial) {
@@ -230,6 +244,38 @@ class TransBloc extends Bloc<TransEvent, TransState> {
           dataTrans.closedmanualByName = data['closedmanual_by_name']?.toString();
           dataTrans.closedmanualAt = data['closedmanual_at']?.toString();
           dataTrans.closedmanualReason = data['closedmanual_reason']?.toString();
+          // PR-specific transient fields (transflag=21)
+          if (dataTrans.transflag == 21) {
+            dataTrans.prDepartmentCode = data['departmentcode']?.toString();
+            dataTrans.prDepartmentName = data['departmentname']?.toString();
+            dataTrans.prJobCode = data['jobcode']?.toString();
+            dataTrans.prJobName = data['jobname']?.toString();
+            dataTrans.prShipToAddress = data['shiptoaddress']?.toString();
+            dataTrans.prShipToName = data['shiptoname']?.toString();
+            dataTrans.prCostCenterCode = data['costcentercode']?.toString();
+            dataTrans.prCostCenterName = data['costcentername']?.toString();
+            dataTrans.prPaymentCondition = data['paymentcondition']?.toString();
+            dataTrans.prUrgency = global.safeToInt(data['urgency']);
+            dataTrans.inquirytype = dataTrans.prUrgency ?? 0;
+            dataTrans.description = data['purpose']?.toString();
+            dataTrans.creditdays = global.safeToInt(data['creditdays']);
+            dataTrans.docrefno = data['docsrefno']?.toString() ?? '';
+            // Estimated Landed Cost
+            dataTrans.prEstimatedUnitCost = data['estimatedunitcost']?.toString();
+            dataTrans.prEstimatedFreight = data['estimatedfreight']?.toString();
+            dataTrans.prEstimatedDuty = data['estimatedduty']?.toString();
+            dataTrans.prEstimatedLandedCost = data['estimatedlandedcost']?.toString();
+            // Vendor Preferences
+            dataTrans.prPreferredVendor = data['preferredvendor']?.toString();
+            dataTrans.prAlternativeVendor = data['alternativevendor']?.toString();
+            dataTrans.prReasonPreferred = data['reasonpreferred']?.toString();
+            // Approval Enhancement
+            dataTrans.prApprovalDeadline = data['approvaldeadline']?.toString();
+            // Tracking
+            dataTrans.prConversionStatus = data['conversionstatus']?.toString();
+            dataTrans.prRefRfqDocNo = data['refrfqdocno']?.toString();
+            dataTrans.prRefPoDocNo = data['refpodocno']?.toString();
+          }
           trans.add(dataTrans);
         }
 
@@ -349,6 +395,8 @@ class TransBloc extends Bloc<TransEvent, TransState> {
         AppLogger.info('🟢 [TransBloc] Calling savePurchaseOrder...');
         results = await _transRepository.savePurchaseOrder(event.trans);
         AppLogger.info('🟢 [TransBloc] savePurchaseOrder result: success=${results.success}, data=${results.data}, message=${results.message}');
+      } else if (event.type == global.TransactionTypeEnum.purchaserequisition) {
+        results = await _transRepository.savePurchaseRequisition(event.trans, extraFields: event.extraFields);
       } else if (event.type == global.TransactionTypeEnum.purchasepartial) {
         results = await _transRepository.savePurchasePartial(event.trans);
       } else if (event.type == global.TransactionTypeEnum.accrualreceive) {
@@ -420,6 +468,9 @@ class TransBloc extends Bloc<TransEvent, TransState> {
         emit(TransDeleteSuccess());
       } else if (event.type == global.TransactionTypeEnum.purchaseorder) {
         await _transRepository.deletePurchaseOrder(event.guid);
+        emit(TransDeleteSuccess());
+      } else if (event.type == global.TransactionTypeEnum.purchaserequisition) {
+        await _transRepository.deletePurchaseRequisition(event.guid);
         emit(TransDeleteSuccess());
       } else if (event.type == global.TransactionTypeEnum.quotation) {
         await _transRepository.deleteQuotation(event.guid);
@@ -559,6 +610,9 @@ class TransBloc extends Bloc<TransEvent, TransState> {
         emit(TransUpdateSuccess());
       } else if (event.type == global.TransactionTypeEnum.purchaseorder) {
         await _transRepository.updatePurchaseOrder(event.guid, event.trans);
+        emit(TransUpdateSuccess());
+      } else if (event.type == global.TransactionTypeEnum.purchaserequisition) {
+        await _transRepository.updatePurchaseRequisition(event.guid, event.trans, extraFields: event.extraFields);
         emit(TransUpdateSuccess());
       } else if (event.type == global.TransactionTypeEnum.purchasepartial) {
         await _transRepository.updatePurchasePartial(event.guid, event.trans);

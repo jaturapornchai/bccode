@@ -18,6 +18,7 @@ import 'package:translator/translator.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:smlaicloud/screens/report/file_download.dart';
 import 'package:smlaicloud/utils/logger/app_logger.dart';
+import 'package:smlaicloud/utils/focus_utils.dart';
 
 class ProductUnitScreen extends StatefulWidget {
   const ProductUnitScreen({super.key});
@@ -267,7 +268,6 @@ class ProductUnitScreenState extends State<ProductUnitScreen>
     }
     isChange = false;
     focusNodeIndex = 0;
-    fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
   }
 
   Future<void> getTemplate() async {
@@ -545,7 +545,7 @@ class ProductUnitScreenState extends State<ProductUnitScreen>
                       isSaveAllow = true;
                       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
                         tabController.animateTo(1);
-                        fieldFocusNodes[0].focusNode.requestFocus();
+                        focusFirstTextField(context);
                       });
                     });
                   },
@@ -944,11 +944,7 @@ class ProductUnitScreenState extends State<ProductUnitScreen>
           break;
         }
       } else {
-        fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
-        fieldTextController[focusNodeIndex]
-            .selection = TextSelection.fromPosition(
-          TextPosition(offset: fieldTextController[focusNodeIndex].text.length),
-        );
+        focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex].focusNode);
         break;
       }
     }
@@ -1087,24 +1083,25 @@ class ProductUnitScreenState extends State<ProductUnitScreen>
             ),
         ],
       ),
-      body: RawKeyboardListener(
-        focusNode: FocusNode(skipTraversal: true),
-        onKey: (event) {
-          if (kIsWeb ||
-              Platform.isWindows ||
-              Platform.isLinux ||
-              Platform.isMacOS) {
-            if (event is RawKeyUpEvent) {
-              if (event.logicalKey == LogicalKeyboardKey.tab) {
-                // print("Tab");
-              }
-              if (event.logicalKey == LogicalKeyboardKey.f10) {
-                saveOrUpdateData();
-              }
-            }
+      body: Focus(
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) saveOrUpdateData();
+            return KeyEventResult.handled;
           }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              FocusManager.instance.primaryFocus?.nextFocus();
+            }
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
         },
-        child: Builder(
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: Builder(
           builder: (context) {
             final scale = global.editFontScaleFactor;
             return MediaQuery(
@@ -1249,6 +1246,7 @@ class ProductUnitScreenState extends State<ProductUnitScreen>
               ),
             );
           },
+        ),
         ),
       ),
     );
@@ -1436,9 +1434,7 @@ class ProductUnitScreenState extends State<ProductUnitScreen>
                   if (screenEvent == global.ScreenEventEnum.edit) {
                     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
                       tabController.animateTo(1);
-                    });
-                    setState(() {
-                      findFocusNext(0);
+                      focusFirstTextField(context);
                     });
                   }
                 });

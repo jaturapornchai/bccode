@@ -1101,15 +1101,13 @@ class _LogEntry {
   final String message;
   final DateTime startedAt;
   LogStatus status;
-  String detail; // รายละเอียดย่อย เช่น "150/500 รายการ"
-  String duration; // ระยะเวลาที่ใช้ เช่น "3s", "1m 20s"
+  String detail = ''; // รายละเอียดย่อย เช่น "150/500 รายการ"
+  String duration = ''; // ระยะเวลาที่ใช้ เช่น "3s", "1m 20s"
 
   _LogEntry({
     required this.time,
     required this.message,
     required this.status,
     required this.startedAt,
-    this.detail = '',
-    this.duration = '',
   });
 }

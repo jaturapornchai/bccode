@@ -13,6 +13,7 @@ import 'package:split_view/split_view.dart';
 import 'package:translator/translator.dart';
 import 'package:smlaicloud/utils/logger/app_logger.dart';
 import 'package:smlaicloud/widgets/manual_button.dart';
+import 'package:smlaicloud/utils/focus_utils.dart';
 
 class CreditorGroupScreen extends StatefulWidget {
   const CreditorGroupScreen({super.key});
@@ -157,7 +158,6 @@ class CreditorGroupScreenState extends State<CreditorGroupScreen>
     }
     isChange = false;
     focusNodeIndex = 0;
-    fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
   }
 
   void discardData({required Function callBack}) {
@@ -307,9 +307,9 @@ class CreditorGroupScreenState extends State<CreditorGroupScreen>
                       clearEditData();
                       headerEdit = global.language("append");
                       isSaveAllow = true;
-                      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
                         tabController.animateTo(1);
-                        fieldFocusNodes[0].focusNode.requestFocus();
+                        focusFirstTextField(context);
                       });
                     });
                   },
@@ -714,11 +714,7 @@ class CreditorGroupScreenState extends State<CreditorGroupScreen>
           break;
         }
       } else {
-        fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
-        fieldTextController[focusNodeIndex]
-            .selection = TextSelection.fromPosition(
-          TextPosition(offset: fieldTextController[focusNodeIndex].text.length),
-        );
+        focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex].focusNode);
         break;
       }
     }
@@ -858,49 +854,50 @@ class CreditorGroupScreenState extends State<CreditorGroupScreen>
           const ManualButton(path: 'creditor-group'),
         ],
       ),
-      body: RawKeyboardListener(
-        focusNode: FocusNode(skipTraversal: true),
-        onKey: (event) {
-          if (kIsWeb ||
-              Platform.isWindows ||
-              Platform.isLinux ||
-              Platform.isMacOS) {
-            if (event is RawKeyUpEvent) {
-              if (event.logicalKey == LogicalKeyboardKey.tab) {
-                // print("Tab");
-              }
-              if (event.logicalKey == LogicalKeyboardKey.f10) {
-                saveOrUpdateData();
-              }
-            }
+      body: Focus(
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) saveOrUpdateData();
+            return KeyEventResult.handled;
           }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              FocusManager.instance.primaryFocus?.nextFocus();
+            }
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
         },
-        child: Builder(
-          builder: (context) {
-            final scale = global.editFontScaleFactor;
-            return MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                textScaler: TextScaler.linear(scale),
-              ),
-              child: Theme(
-                data: Theme.of(context).copyWith(
-                  inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
-                    contentPadding: EdgeInsets.fromLTRB(
-                      12 * scale, 20 * scale, 12 * scale, 12 * scale,
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: Builder(
+            builder: (context) {
+              final scale = global.editFontScaleFactor;
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(scale),
+                ),
+                child: Theme(
+                  data: Theme.of(context).copyWith(
+                    inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                      contentPadding: EdgeInsets.fromLTRB(
+                        12 * scale, 20 * scale, 12 * scale, 12 * scale,
+                      ),
                     ),
                   ),
-                ),
-                child: IconTheme(
-                  data: IconTheme.of(context).copyWith(
-                    size: 24.0 * scale,
-                  ),
-                  child: SingleChildScrollView(
-                    controller: editScrollController,
-                    child: Container(
-                          color: global.theme.cardColor,
-                width: double.infinity,
-                padding: const EdgeInsets.all(10),
-                child: Column(
+                  child: IconTheme(
+                    data: IconTheme.of(context).copyWith(
+                      size: 24.0 * scale,
+                    ),
+                    child: SingleChildScrollView(
+                      controller: editScrollController,
+                      child: Container(
+                            color: global.theme.cardColor,
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
                   children: [
                     const SizedBox(height: 10),
                     TextFormField(
@@ -1025,6 +1022,7 @@ class CreditorGroupScreenState extends State<CreditorGroupScreen>
               ),
             );
           },
+        ),
         ),
       ),
     );

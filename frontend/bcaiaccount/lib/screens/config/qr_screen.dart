@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smlaicloud/global.dart' as global;
+import 'package:smlaicloud/utils/focus_utils.dart';
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:split_view/split_view.dart';
@@ -247,7 +248,6 @@ class QrscreenState extends State<QrScreen>
       closeqr: 0,
     );
 
-    fieldFocusNodes[focusNodeIndex].requestFocus();
     selectedQrTemp = [];
     selectQrTempAll = false;
 
@@ -432,7 +432,7 @@ class QrscreenState extends State<QrScreen>
                       isSaveAllow = true;
                       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
                         tabController.animateTo(1);
-                        fieldFocusNodes[0].requestFocus();
+                        focusFirstTextField(context);
                       });
                     });
                   },
@@ -831,10 +831,7 @@ class QrscreenState extends State<QrScreen>
     if (focusNodeIndex > fieldFocusNodes.length - 1) {
       focusNodeIndex = 0;
     }
-    fieldFocusNodes[focusNodeIndex].requestFocus();
-    fieldTextController[focusNodeIndex].selection = TextSelection.fromPosition(
-      TextPosition(offset: fieldTextController[focusNodeIndex].text.length),
-    );
+    focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex]);
   }
 
   Widget editScreen({mobileScreen}) {
@@ -960,23 +957,28 @@ class QrscreenState extends State<QrScreen>
         ],
       ),
       body: Focus(
-        focusNode: FocusNode(skipTraversal: true),
-        onKey: (node, event) {
-          if (kIsWeb) {
-            if (event is RawKeyDownEvent) {
-              if (event.logicalKey == LogicalKeyboardKey.f2) {
-                searchFocusNode.requestFocus();
-              }
-              if (event.logicalKey == LogicalKeyboardKey.f10) {
-                if (_formKey.currentState!.validate()) {
-                  saveOrUpdateData();
-                }
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) {
+              if (_formKey.currentState!.validate()) {
+                saveOrUpdateData();
               }
             }
+            return KeyEventResult.handled;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              FocusManager.instance.primaryFocus?.nextFocus();
+            }
+            return KeyEventResult.handled;
           }
           return KeyEventResult.ignored;
         },
-        child: Builder(
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: Builder(
           builder: (context) {
             final scale = global.editFontScaleFactor;
             return MediaQuery(
@@ -1522,6 +1524,7 @@ class QrscreenState extends State<QrScreen>
           },
         ),
       ),
+      ),
     );
   }
 
@@ -1652,8 +1655,8 @@ class QrscreenState extends State<QrScreen>
                     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
                       tabController.animateTo(1);
                     });
-                    setState(() {
-                      findFocusNext(0);
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      focusFirstTextField(context);
                     });
                   }
                 });

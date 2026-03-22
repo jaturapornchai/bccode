@@ -1,7 +1,7 @@
 # Jead — Identity & Style
 
 ## ข้อมูลพื้นฐาน
-- **ชื่อเล่น**: บอสจืด (Jead)
+- **ชื่อเล่น**: บักจืด (Jead) — เดิมเรียก "บอสจืด" แต่เปลี่ยนเป็น "บักจืด" แล้ว (2026-03-19)
 - **ชื่อจริง**: จตุรพรชัย รัตนปัญญา (Jaturapornchai Ratanapanya)
 - **บทบาท**: Founder & Developer ของ BC AI Cloud
 - **Platform**: BC AI Cloud — ระบบ ERP/Accounting บน Cloud
@@ -20,7 +20,7 @@
 ## สไตล์การทำงาน
 
 ### การสื่อสาร
-- **ชื่อ AI**: น้องจาง — เรียกบอสจืดว่า "บอส" หรือ "บอสจืด"
+- **ชื่อ AI**: น้องจาง — เรียก Jead ว่า "บักจืด" (เปลี่ยนจาก "บอส/บอสจืด" เมื่อ 2026-03-19)
 - **โทน**: คุยตลกๆ สบายๆ ไม่เครียด เหมือนเพื่อนร่วมงานที่สนิทกัน
 - **บอสจืดป่วยซึมเศร้า**: ให้กำลังใจ แทรกมุขตลกเบาๆ ทำให้บรรยากาศสดใส ไม่กดดัน
 - ชอบให้ AI **ตอบภาษาไทย** เป็นหลัก
@@ -109,6 +109,21 @@
 - เพิ่ม field = ปลอดภัย / ลบ-เปลี่ยนชื่อ field = อันตราย (Frontend พัง)
 - ดู `rules/erp-conventions.md` → Backend-Frontend Coordination
 
+### PR/RFQ (Procurement) Pitfalls
+1. **Docker build ใช้ root `main.go`** — ไม่ใช่ `cmd/app/main.go` ← ต้อง register handlers ทั้ง 2 ไฟล์
+2. **TransactionModel ไม่มี PR-specific fields** — ต้อง inject fields (requestercode, departmentcode, purpose, urgency) เข้า JSON ก่อน POST ใน repository layer
+3. **PR ไม่มีระบบจ่ายเงิน** — `TransactionCalculator.calPayTotal()` + `verifyPayment()` ต้อง early return สำหรับ PR
+4. **GoAPI `getdoc.go` switch** — ต้องเพิ่ม case `purchase-requisition` (transflag=21) และ `rfq` (transflag=22) ใน system type switch
+5. **Kafka consumer ต้องมี 2 ชั้น** — (1) `transactionconsumer/` → PG sync + (2) `goapi/handlers/kafka/` → ClickHouse sync — ถ้าขาดอันไหน data ไม่ครบ
+6. **PR/RFQ ใช้ approval system เดียวกับ PO** — reuse `po_approval_helper.dart`, `po_approval_handler.dart` ได้ แยกด้วย `purchase_type_code`
+7. **Job/Project 2-step selection pattern** — `PRHeaderWidget` ใช้ repo โดยตรง (ไม่ผ่าน BLoC) เพื่อโหลด master, cache ไว้ใน state (`_cachedJobProjects`, `_cachedCostCenters`), dialog ใช้ `StatefulBuilder`, filter parentcode='' → โครงการ, parentcode=code → งาน, แสดงชื่อ (jobNameController) แทน code ใน field
+8. **costCenterNameController** — ต้องเพิ่มใน `clearAll()` และ `dispose()` ของ PRFormController (pre-existing bug ที่ถูก fix)
+9. **Vendor Preferences dynamic list** — เก็บเป็น JSON array ใน transient field, auto-sync ไป screenData ผ่าน TextEditingController.addListener, serialize/deserialize ด้วย json.encode/decode
+10. **ห้ามใช้ showDatePicker** — ต้องใช้ CustomDatePicker เสมอเพราะรองรับ พ.ศ. ตาม yeartype
+11. **Preview sync pattern** — PR fields อยู่ใน form controllers ไม่ใช่ screenData → ต้อง sync ก่อน preview ด้วย addPostFrameCallback (ไม่ sync ระหว่าง build เพราะ setState during build)
+12. **Multi-Currency ใน PR** — copy pattern จาก PO (transaction_edit.dart) → state vars + _loadCurrencies + _onCurrencyChanged + pass ไป header widget, CurrencyModel มี `name` (string) ไม่ใช่ `names` (LanguageDataModel)
+13. **Department dialog** — ใช้ DepartmentRepository.getDepartmentList() + searchable StatefulBuilder dialog เหมือน CostCenter pattern
+
 ## Update Log
 - 2026-03-03: สร้าง identity แรก จาก context การทำงานร่วมกัน
 - 2026-03-03: เพิ่ม AI chatbot agent, providers info, สร้าง rules+skills ครบ
@@ -120,3 +135,9 @@
 - 2026-03-10: ปรับปรุง skills ทั้ง 8 ตัว — แก้ MCP tool names, port, hardcoded colors, frontmatter, descriptions, เพิ่ม ThemeRefreshMixin + pitfalls ใน theming
 - 2026-03-10: แก้ hardcoded colors ทั้ง project bcaiaccount (~1,000 จุด, 120+ files) — dark mode รองรับแล้ว
 - 2026-03-10: อัปเดต theming skill — เพิ่มตารางเทียบสีครบ shade, exempt patterns, batch fix workflow, bclms note
+- 2026-03-14: เพิ่ม PR/RFQ Lessons Learned — Docker dual main.go, TransactionModel field injection, GoAPI Kafka 2-layer consumer, approval reuse pattern
+- 2026-03-14: อัปเดต CLAUDE.md — เพิ่ม procurement-flow.md reference, อัปเดต directory structure
+- 2026-03-15: Login screen redesign — horizontal logo row, language+remember same row, Google+LINE side-by-side, compact bottom bar
+- 2026-03-15: Job/Project 2-step dialog + Cost Center searchable dialog ใน PRHeaderWidget — direct repo, cache, StatefulBuilder
+- 2026-03-15: Login shop screen compact header (1-line user info, tighter padding, optimized grid)
+- 2026-03-16: PR massive upgrade — Copy Doc, Serial/Lot, Estimated Cost, Vendor Preferences (dynamic list), Approval Deadline, Tracking, Section Cards (7 sections), Department searchable, Summary tab, Multi-Currency, Preview sync, Continuous Add checkbox, warehouse dark mode fix, ลบปุ่มค้นหา, กฏ CustomDatePicker

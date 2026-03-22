@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:smlaicloud/global.dart' as global;
+import 'package:smlaicloud/utils/focus_utils.dart';
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 
@@ -154,7 +155,6 @@ class WalletScreenState extends State<WalletScreen>
     }
     isChange = false;
     focusNodeIndex = 0;
-    fieldFocusNodes[0].requestFocus();
     screenData = WalletModel(apikey: '', code: '', guidfixed: '');
     selectGuid = "";
   }
@@ -311,7 +311,7 @@ class WalletScreenState extends State<WalletScreen>
                       isSaveAllow = true;
                       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
                         tabController.animateTo(1);
-                        fieldFocusNodes[0].requestFocus();
+                        focusFirstTextField(context);
                       });
                     });
                   },
@@ -693,10 +693,7 @@ class WalletScreenState extends State<WalletScreen>
     if (focusNodeIndex > fieldFocusNodes.length - 1) {
       focusNodeIndex = 0;
     }
-    fieldFocusNodes[focusNodeIndex].requestFocus();
-    fieldTextController[focusNodeIndex].selection = TextSelection.fromPosition(
-      TextPosition(offset: fieldTextController[focusNodeIndex].text.length),
-    );
+    focusAndCursorToEnd(fieldFocusNodes[focusNodeIndex]);
   }
 
   Widget editScreen({mobileScreen}) {
@@ -818,21 +815,24 @@ class WalletScreenState extends State<WalletScreen>
         ],
       ),
       body: Focus(
-        focusNode: FocusNode(skipTraversal: true),
+        skipTraversal: true,
         onKeyEvent: (node, event) {
-          if (kIsWeb) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) saveOrUpdateData();
+            return KeyEventResult.handled;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
             if (event is KeyDownEvent) {
-              if (event.logicalKey == LogicalKeyboardKey.f2) {
-                searchFocusNode.requestFocus();
-              }
-              if (event.logicalKey == LogicalKeyboardKey.f10) {
-                saveOrUpdateData();
-              }
+              FocusManager.instance.primaryFocus?.nextFocus();
             }
+            return KeyEventResult.handled;
           }
           return KeyEventResult.ignored;
         },
-        child: Builder(
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: Builder(
           builder: (context) {
             final scale = global.editFontScaleFactor;
             return MediaQuery(
@@ -992,6 +992,7 @@ class WalletScreenState extends State<WalletScreen>
             );
           },
         ),
+        ),
       ),
     );
   }
@@ -1106,11 +1107,9 @@ class WalletScreenState extends State<WalletScreen>
                 setState(() {
                   getDataToEditScreen(state.walletPays);
                   if (isEditMode) {
-                    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
                       tabController.animateTo(1);
-                    });
-                    setState(() {
-                      findFocusNext(0);
+                      focusFirstTextField(context);
                     });
                   }
                 });

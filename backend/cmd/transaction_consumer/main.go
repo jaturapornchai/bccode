@@ -8,12 +8,19 @@ import (
 
 	"smlcloudplatform/pkg/microservice"
 
+	costcenter_consumer "smlcloudplatform/internal/transaction/transactionconsumer/costcenter"
+	jobproject_consumer "smlcloudplatform/internal/transaction/transactionconsumer/jobproject"
 	purchaseorder_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchaseorder"
+	purchaserequisition_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchaserequisition"
+	rfq_consumer "smlcloudplatform/internal/transaction/transactionconsumer/rfq"
 	purchasereceive_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchasereceive"
 
 	"github.com/joho/godotenv"
 )
 
+// init loads .env files for local development.
+// NOTE: This is a legacy consumer that still uses godotenv (not bootstrap.json).
+// Keep godotenv for backward compatibility until migrated to bootstrap.json config.
 func init() {
 	env := os.Getenv("MODE")
 	if env == "" {
@@ -26,7 +33,7 @@ func init() {
 		godotenv.Load(".env.local")
 	}
 	godotenv.Load(".env." + env)
-	godotenv.Load() //
+	godotenv.Load()
 }
 
 // @title           SML Cloud Platform API
@@ -54,7 +61,8 @@ func main() {
 	cfg := config.NewConfig()
 	ms, err := microservice.NewMicroservice(cfg)
 	if err != nil {
-		panic(err)
+		fmt.Printf("ERROR: Failed to initialize microservice: %v\n", err)
+		os.Exit(1)
 	}
 
 	ms.HttpUsePrometheus()
@@ -63,8 +71,14 @@ func main() {
 
 		ms.RegisterLivenessProbeEndpoint("/healthz")
 
+		// organization master data
+		ms.RegisterConsumer(costcenter_consumer.InitCostCenterConsumer(ms, cfg))
+		ms.RegisterConsumer(jobproject_consumer.InitJobProjectConsumer(ms, cfg))
+
 		// purchase
 		ms.RegisterConsumer(purchaseorder_consumer.InitPurchaseOrderTransactionConsumer(ms, cfg))
+		ms.RegisterConsumer(purchaserequisition_consumer.InitPurchaseRequisitionTransactionConsumer(ms, cfg))
+		ms.RegisterConsumer(rfq_consumer.InitRFQTransactionConsumer(ms, cfg))
 		ms.RegisterConsumer(purchasereceive_consumer.InitPurchaseReceiveTransactionConsumer(ms, cfg))
 
 	}

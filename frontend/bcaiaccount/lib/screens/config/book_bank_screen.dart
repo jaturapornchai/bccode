@@ -13,6 +13,7 @@ import 'package:smlaicloud/widgets/list_font_size_control.dart';
 import 'package:smlaicloud/widgets/edit_font_size_control.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:smlaicloud/global.dart' as global;
+import 'package:smlaicloud/utils/focus_utils.dart';
 import 'package:smlaicloud/model/global_model.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:split_view/split_view.dart';
@@ -97,7 +98,6 @@ class BookBankScreenState extends State<BookBankScreen>
       fieldFocusNodes[i].focusNode.addListener(() {
         if (fieldFocusNodes[i].focusNode.hasFocus) {
           focusNodeIndex = i;
-          fieldFocusNodes[focusNodeIndex].focusNode.requestFocus();
         }
       });
     }
@@ -320,7 +320,7 @@ class BookBankScreenState extends State<BookBankScreen>
                           tabController.animateTo(1);
                         });
                       }
-                      fieldFocusNodes[0].focusNode.requestFocus();
+                      focusFirstTextField(context);
                     });
                   },
                 );
@@ -1164,12 +1164,12 @@ class BookBankScreenState extends State<BookBankScreen>
                           color: global.theme.cardColor,
                           border: Border.all(color: global.theme.textColor),
                           borderRadius: BorderRadius.circular(5),
-                          boxShadow: const [
+                          boxShadow: [
                             BoxShadow(
-                              offset: Offset(0, 4),
-                              color: Colors.cyan, //edited
+                              offset: const Offset(0, 4),
+                              color: global.theme.textColor.withValues(alpha: 0.15),
                               spreadRadius: 4,
-                              blurRadius: 10, //edited
+                              blurRadius: 10,
                             ),
                           ],
                           image: (imageWeb[imageIndex].isNotEmpty)
@@ -1362,27 +1362,29 @@ class BookBankScreenState extends State<BookBankScreen>
             ),
         ],
       ),
-      body: RawKeyboardListener(
-        focusNode: FocusNode(),
-        onKey: (RawKeyEvent event) {
-          if (event is RawKeyDownEvent) {
-            // print(event.logicalKey);
-            if (event.logicalKey == LogicalKeyboardKey.f10) {
+      body: Focus(
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyUpEvent) return KeyEventResult.ignored;
+          if (event.logicalKey == LogicalKeyboardKey.f10) {
+            if (event is KeyDownEvent) {
               if (_formKey.currentState!.validate()) {
                 saveOrUpdateData();
               }
             }
-            if (event.logicalKey == LogicalKeyboardKey.tab ||
-                event.logicalKey == LogicalKeyboardKey.enter) {
-              if (event.isShiftPressed) {
-                //findFocusPrev(focusNodeIndex);
-              } else {
-                findFocusNext(focusNodeIndex);
-              }
-            }
+            return KeyEventResult.handled;
           }
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            if (event is KeyDownEvent) {
+              FocusManager.instance.primaryFocus?.nextFocus();
+            }
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
         },
-        child: Builder(
+        child: FocusTraversalGroup(
+          policy: TextFieldTraversalPolicy(),
+          child: Builder(
           builder: (context) {
             final scale = global.editFontScaleFactor;
             return MediaQuery(
@@ -1419,6 +1421,7 @@ class BookBankScreenState extends State<BookBankScreen>
             );
           },
         ),
+      ),
       ),
     );
   }
@@ -1549,8 +1552,8 @@ class BookBankScreenState extends State<BookBankScreen>
                         ) {
                           tabController.animateTo(1);
                         });
-                        setState(() {
-                          findFocusNext(0);
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          focusFirstTextField(context);
                         });
                       }
                     });

@@ -190,7 +190,39 @@ TransactionModel _$TransactionModelFromJson(Map<String, dynamic> json) =>
       ..whtEntries = (json['wht_entries'] as List<dynamic>?)
           ?.map((e) => WHTEntryModel.fromJson(e as Map<String, dynamic>))
           .toList()
-      ..isdelete = json['isdelete'] as bool?;
+      ..isdelete = json['isdelete'] as bool?
+      ..prDepartmentCode = json['prDepartmentCode'] as String?
+      ..prDepartmentName = json['prDepartmentName'] as String?
+      ..prJobCode = json['prJobCode'] as String?
+      ..prJobName = json['prJobName'] as String?
+      ..prShipToAddress = json['prShipToAddress'] as String?
+      ..prShipToName = json['prShipToName'] as String?
+      ..prShipToLat = json['prShipToLat'] as String?
+      ..prShipToLng = json['prShipToLng'] as String?
+      ..prCostCenterCode = json['prCostCenterCode'] as String?
+      ..prCostCenterName = json['prCostCenterName'] as String?
+      ..prPaymentCondition = json['prPaymentCondition'] as String?
+      ..prUrgency = (json['prUrgency'] as num?)?.toInt()
+      ..prEstimatedUnitCost = json['prEstimatedUnitCost'] as String?
+      ..prEstimatedFreight = json['prEstimatedFreight'] as String?
+      ..prEstimatedDuty = json['prEstimatedDuty'] as String?
+      ..prEstimatedLandedCost = json['prEstimatedLandedCost'] as String?
+      ..prPreferredVendor = json['prPreferredVendor'] as String?
+      ..prAlternativeVendor = json['prAlternativeVendor'] as String?
+      ..prReasonPreferred = json['prReasonPreferred'] as String?
+      ..prApprovalDeadline = json['prApprovalDeadline'] as String?
+      ..prInternalNote = json['prInternalNote'] as String?
+      ..prPurchasingGroup = json['prPurchasingGroup'] as String?
+      ..prOverDeliveryTolerance = (json['prOverDeliveryTolerance'] as num?)
+          ?.toDouble()
+      ..prUnderDeliveryTolerance = (json['prUnderDeliveryTolerance'] as num?)
+          ?.toDouble()
+      ..prBudgetCode = json['prBudgetCode'] as String?
+      ..prBudgetAmount = (json['prBudgetAmount'] as num?)?.toDouble()
+      ..prVendorNote = json['prVendorNote'] as String?
+      ..prConversionStatus = json['prConversionStatus'] as String?
+      ..prRefRfqDocNo = json['prRefRfqDocNo'] as String?
+      ..prRefPoDocNo = json['prRefPoDocNo'] as String?;
 
 Map<String, dynamic> _$TransactionModelToJson(
   TransactionModel instance,
@@ -346,6 +378,36 @@ Map<String, dynamic> _$TransactionModelToJson(
   'creditdays': instance.creditdays,
   'duedate': instance.duedate,
   'isdelete': instance.isdelete,
+  'prDepartmentCode': instance.prDepartmentCode,
+  'prDepartmentName': instance.prDepartmentName,
+  'prJobCode': instance.prJobCode,
+  'prJobName': instance.prJobName,
+  'prShipToAddress': instance.prShipToAddress,
+  'prShipToName': instance.prShipToName,
+  'prShipToLat': instance.prShipToLat,
+  'prShipToLng': instance.prShipToLng,
+  'prCostCenterCode': instance.prCostCenterCode,
+  'prCostCenterName': instance.prCostCenterName,
+  'prPaymentCondition': instance.prPaymentCondition,
+  'prUrgency': instance.prUrgency,
+  'prEstimatedUnitCost': instance.prEstimatedUnitCost,
+  'prEstimatedFreight': instance.prEstimatedFreight,
+  'prEstimatedDuty': instance.prEstimatedDuty,
+  'prEstimatedLandedCost': instance.prEstimatedLandedCost,
+  'prPreferredVendor': instance.prPreferredVendor,
+  'prAlternativeVendor': instance.prAlternativeVendor,
+  'prReasonPreferred': instance.prReasonPreferred,
+  'prApprovalDeadline': instance.prApprovalDeadline,
+  'prInternalNote': instance.prInternalNote,
+  'prPurchasingGroup': instance.prPurchasingGroup,
+  'prOverDeliveryTolerance': instance.prOverDeliveryTolerance,
+  'prUnderDeliveryTolerance': instance.prUnderDeliveryTolerance,
+  'prBudgetCode': instance.prBudgetCode,
+  'prBudgetAmount': instance.prBudgetAmount,
+  'prVendorNote': instance.prVendorNote,
+  'prConversionStatus': instance.prConversionStatus,
+  'prRefRfqDocNo': instance.prRefRfqDocNo,
+  'prRefPoDocNo': instance.prRefPoDocNo,
 };
 
 TransactionDetailModel _$TransactionDetailModelFromJson(

@@ -17,6 +17,7 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:split_view/split_view.dart';
 import 'package:translator/translator.dart';
 import 'package:smlaicloud/widgets/line_link_qr_dialog.dart';
+import 'package:smlaicloud/utils/focus_utils.dart';
 
 class UserScreen extends StatefulWidget {
   const UserScreen({super.key});
@@ -267,6 +268,9 @@ class UserScreenState extends State<UserScreen>
       isSaveAllow = true;
       isEditMode = true;
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      focusFirstTextField(context);
+    });
   }
 
   Widget listScreen({bool mobileScreen = false}) {
@@ -323,6 +327,9 @@ class UserScreenState extends State<UserScreen>
                           tabController.animateTo(1);
                         });
                       }
+                    });
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      focusFirstTextField(context);
                     });
                   },
                 );
@@ -1651,18 +1658,29 @@ class UserScreenState extends State<UserScreen>
             ),
         ],
       ),
-      body: KeyboardListener(
-              focusNode: FocusNode(),
-              onKeyEvent: (KeyEvent event) {
-                if (event is KeyDownEvent) {
-                  if (event.logicalKey == LogicalKeyboardKey.f10) {
+      body: Focus(
+              skipTraversal: true,
+              onKeyEvent: (node, event) {
+                if (event is KeyUpEvent) return KeyEventResult.ignored;
+                if (event.logicalKey == LogicalKeyboardKey.f10) {
+                  if (event is KeyDownEvent) {
                     if (_formKey.currentState!.validate()) {
                       saveOrUpdateData();
                     }
                   }
+                  return KeyEventResult.handled;
                 }
+                if (event.logicalKey == LogicalKeyboardKey.enter) {
+                  if (event is KeyDownEvent) {
+                    FocusManager.instance.primaryFocus?.nextFocus();
+                  }
+                  return KeyEventResult.handled;
+                }
+                return KeyEventResult.ignored;
               },
-              child: Builder(
+              child: FocusTraversalGroup(
+                policy: TextFieldTraversalPolicy(),
+                child: Builder(
           builder: (context) {
             final scale = global.editFontScaleFactor;
             return MediaQuery(
@@ -1697,6 +1715,7 @@ class UserScreenState extends State<UserScreen>
             );
           },
         ),
+              ),
             ),
     );
   }

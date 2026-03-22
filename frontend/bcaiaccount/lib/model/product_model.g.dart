@@ -454,6 +454,10 @@ ProductBarcodeModel _$ProductBarcodeModelFromJson(
       [],
   shelfCode: json['shelfCode'] as String?,
   shelfName: json['shelfName'] as String?,
+  unitCount: (json['unit_count'] as num?)?.toInt() ?? 0,
+  allUnitNames: json['all_unit_names'] as String? ?? '',
+  balanceQty: (json['balance_qty'] as num?)?.toDouble() ?? 0.0,
+  balanceFormatted: json['balance_formatted'] as String? ?? '',
 );
 
 Map<String, dynamic> _$ProductBarcodeModelToJson(
@@ -555,6 +559,10 @@ Map<String, dynamic> _$ProductBarcodeModelToJson(
   'patternnames': instance.patternnames?.map((e) => e.toJson()).toList(),
   'shelfCode': instance.shelfCode,
   'shelfName': instance.shelfName,
+  'unit_count': instance.unitCount,
+  'all_unit_names': instance.allUnitNames,
+  'balance_qty': instance.balanceQty,
+  'balance_formatted': instance.balanceFormatted,
 };
 
 BarCodeSubModel _$BarCodeSubModelFromJson(Map<String, dynamic> json) =>

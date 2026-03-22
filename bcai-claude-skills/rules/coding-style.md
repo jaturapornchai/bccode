@@ -32,7 +32,7 @@
 - **ห้าม hardcode**: ค่าต่างๆ ต้องมาจาก config, API, หรือ language file
 - **ห้าม fallback ซ่อน error**: ไม่สร้าง fallback logic ที่ซ่อนปัญหา — ถ้า fail ให้แจ้ง user ตรงๆ
 - **ห้าม mock data**: ใช้ข้อมูลจริงจาก API เท่านั้น ห้ามใส่ข้อมูลจำลองเพื่อทดสอบ (รวม bcdashboard — ถ้า API ยังไม่พร้อมให้แจ้ง error ตรงๆ ไม่ต้อง fallback mock)
-- **รองรับหลายภาษา**: ทุก UI text ใช้ `global.language('key')` ห้าม hardcode ข้อความ เมื่อเพิ่ม key ใหม่ต้อง update `languages.json` ครบ 9 ภาษาเสมอ
+- **รองรับหลายภาษา**: ทุก UI text ใช้ `global.language('key')` ห้าม hardcode ข้อความ เมื่อเพิ่ม key ใหม่ต้อง update `languages.tsv` ครบ 9 ภาษาเสมอ (1 key = 1 บรรทัด, Tab-separated: `key\tth\ten\tcn\tja\tkm\tko\tlo\tmy\tvi`)
 - **ขอยืนยันก่อนแก้ data model**: ถ้าจะแก้ model, schema, หรือ database structure → ต้องถามบอสจืดก่อนเสมอ
 - **UX/UI สวยทันสมัย**: ออกแบบ UI ให้ดูดี ใช้ง่าย เหมาะกับ user คนไทย ใช้ Material Design 3
 
@@ -43,6 +43,26 @@
 - **Export types**: ต้อง uppercase ชื่อ type ที่ใช้ข้าม package (เช่น `OAIMessage` ไม่ใช่ `oaiMessage`)
 - **Handler pattern**: function `func Handler(c echo.Context) error` → register ใน `bootstrap.go`
 - **JSON tags**: ใช้ `json:"field_name"` + `omitempty` สำหรับ optional fields
+
+## ห้ามใช้ showDatePicker — ใช้ CustomDatePicker เท่านั้น
+- **ห้ามใช้** `showDatePicker()` ของ Flutter โดยตรง — เพราะไม่รองรับ พ.ศ. (Buddhist year)
+- **ต้องใช้** `CustomDatePicker` widget แทนเสมอ — รองรับทั้ง พ.ศ./ค.ศ. ตาม `global.profileData.yeartype`
+- Pattern:
+```dart
+CustomDatePicker(
+  labelText: global.language('field_name'),
+  useIconSelectDate: true,
+  initialDate: DateTime.now(),
+  firstDate: DateTime(2020),
+  lastDate: DateTime.now().add(const Duration(days: 365)),
+  onDateSelected: (date) {
+    if (date != null) {
+      setState(() { controller.text = date.toIso8601String(); });
+    }
+  },
+  decoration: const InputDecoration(),
+)
+```
 
 ## Flutter Patterns (เรียนรู้จาก session จริง)
 - **const removal**: ถ้าเปลี่ยนจาก hardcoded → runtime function → ต้องเปลี่ยน `const` เป็น `final`

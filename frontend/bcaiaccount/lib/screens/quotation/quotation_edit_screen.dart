@@ -264,6 +264,7 @@ class QuotationEditScreenState extends State<QuotationEditScreen> with TickerPro
 
   List<global.DataTableHeader> headers = [
     global.DataTableHeader(code: "delete", label: "", width: 5, textAlign: TextAlign.center, alignment: Alignment.center),
+    global.DataTableHeader(code: "reorder", label: "", width: 4, textAlign: TextAlign.center, alignment: Alignment.center),
     global.DataTableHeader(code: "line_number", label: global.language('line_number'), width: 10, textAlign: TextAlign.center, alignment: Alignment.center),
     global.DataTableHeader(code: "barcode", label: global.language('barcode'), width: 20),
     global.DataTableHeader(code: "product_name", label: global.language('product_name'), width: 40),
@@ -401,6 +402,7 @@ class QuotationEditScreenState extends State<QuotationEditScreen> with TickerPro
   void headerTableDetail() {
     headers = [
       global.DataTableHeader(code: "delete", label: "", width: 5, textAlign: TextAlign.center, alignment: Alignment.center),
+      global.DataTableHeader(code: "reorder", label: "", width: 4, textAlign: TextAlign.center, alignment: Alignment.center),
       global.DataTableHeader(code: "line_number", label: global.language('line_number'), width: 10, textAlign: TextAlign.center, alignment: Alignment.center),
       global.DataTableHeader(code: "barcode", label: global.language('barcode'), width: 20),
       global.DataTableHeader(code: "item_code", label: global.language('item_code'), width: 15),
@@ -740,6 +742,15 @@ class QuotationEditScreenState extends State<QuotationEditScreen> with TickerPro
       calTotalValue: _transactionCalculator.calTotalValue,
       getPrice: getPrice,
       showBarcodeDialog: () => _transactionDialogs.showBarcodeDialog(context),
+      onReorderItem: (int oldIndex, int newIndex) {
+        setState(() {
+          final item = screenData.details!.removeAt(oldIndex);
+          screenData.details!.insert(newIndex, item);
+          for (int i = 0; i < screenData.details!.length; i++) {
+            screenData.details![i].linenumber = i + 1;
+          }
+        });
+      },
       onWarehouseChanged:
           (
             String newDefualtwarehouse,

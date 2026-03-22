@@ -77,7 +77,7 @@ class ProductPreviewScreen extends StatelessWidget {
           _buildSettingsSection(),
           // === Reference Barcodes ===
           if (screenData.isusesubbarcodes == true &&
-              screenData.refbarcodes!.isNotEmpty) ...[
+              screenData.refbarcodes?.isNotEmpty == true) ...[
             _divider(),
             _buildRefBarcodeSection(),
           ],
@@ -119,12 +119,12 @@ class ProductPreviewScreen extends StatelessWidget {
             _buildTimeForSaleSection(),
           ],
           // === Order Types ===
-          if (screenData.ordertypes!.isNotEmpty) ...[
+          if (screenData.ordertypes?.isNotEmpty == true) ...[
             _divider(),
             _buildOrderTypesSection(),
           ],
           // === Options ===
-          if (screenData.options!.isNotEmpty) ...[
+          if (screenData.options?.isNotEmpty == true) ...[
             _divider(),
             _buildOptionsSection(),
           ],
@@ -151,29 +151,7 @@ class ProductPreviewScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Thumbnail
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: (screenData.useimageorcolor ?? true) == false
-                  ? _parseColor()
-                  : global.theme.surfaceColor,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: global.theme.dividerBorderColor),
-              image: (screenData.useimageorcolor ?? true) != false
-                  ? DecorationImage(
-                      image: (imageWeb != null)
-                          ? MemoryImage(imageWeb!) as ImageProvider
-                          : (screenData.imageuri != null &&
-                                  screenData.imageuri!.isNotEmpty)
-                              ? NetworkImage(global.resolveFileUrl(screenData.imageuri!))
-                                  as ImageProvider
-                              : const AssetImage('assets/img/noimage.png'),
-                      fit: BoxFit.contain,
-                    )
-                  : null,
-            ),
-          ),
+          _buildThumbnail(),
           const SizedBox(width: 10),
           // Basic Info
           Expanded(
@@ -412,14 +390,18 @@ class ProductPreviewScreen extends StatelessWidget {
                   Expanded(
                     child: _priceItem(
                       priceList[i].names[0].name ?? "",
-                      screenData.prices![i].price,
+                      (screenData.prices != null && i < screenData.prices!.length)
+                          ? screenData.prices![i].price
+                          : 0,
                     ),
                   ),
                   if (i + 1 < priceList.length)
                     Expanded(
                       child: _priceItem(
                         priceList[i + 1].names[0].name ?? "",
-                        screenData.prices![i + 1].price,
+                        (screenData.prices != null && i + 1 < screenData.prices!.length)
+                            ? screenData.prices![i + 1].price
+                            : 0,
                       ),
                     )
                   else
@@ -813,7 +795,7 @@ class ProductPreviewScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionHeader(Icons.access_time,
-              global.language("show_time_for_sale"), global.theme.infoHighlightTextColor!),
+              global.language("show_time_for_sale"), global.theme.infoHighlightTextColor),
           const SizedBox(height: 2),
           ...screenData.timeforsales!.asMap().entries.map((entry) {
             final i = entry.key;
@@ -1123,6 +1105,61 @@ class ProductPreviewScreen extends StatelessWidget {
   }
 
   /// Parse color from screenData
+  Widget _buildThumbnail() {
+    final bool useColor = (screenData.useimageorcolor ?? true) == false;
+    final bool hasImage = !useColor &&
+        ((imageWeb != null) ||
+            (screenData.imageuri != null && screenData.imageuri!.isNotEmpty));
+
+    // กรณีใช้สี แทนรูป
+    if (useColor) {
+      return Container(
+        width: 80,
+        height: 80,
+        decoration: BoxDecoration(
+          color: _parseColor(),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: global.theme.dividerBorderColor),
+        ),
+      );
+    }
+
+    // กรณีมีรูปสินค้า
+    if (hasImage) {
+      return Container(
+        width: 80,
+        height: 80,
+        decoration: BoxDecoration(
+          color: global.theme.surfaceColor,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: global.theme.dividerBorderColor),
+          image: DecorationImage(
+            image: (imageWeb != null)
+                ? MemoryImage(imageWeb!) as ImageProvider
+                : NetworkImage(global.resolveFileUrl(screenData.imageuri!)),
+            fit: BoxFit.contain,
+          ),
+        ),
+      );
+    }
+
+    // กรณีไม่มีรูป — แสดง icon แบบ theme-aware (ไม่ใช้ noimage.png ที่พื้นเข้มตายตัว)
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        color: global.theme.surfaceColor,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: global.theme.dividerBorderColor),
+      ),
+      child: Icon(
+        Icons.image_outlined,
+        size: 32,
+        color: global.theme.iconSecondaryColor,
+      ),
+    );
+  }
+
   Color _parseColor() {
     if (screenData.colorselect != null &&
         screenData.colorselect!.isNotEmpty) {

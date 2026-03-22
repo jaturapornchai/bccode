@@ -326,6 +326,60 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget>
       addField("Slip URL", "มีรูปสลิป", Icons.image);
     }
 
+    // 10. PR-specific fields (transflag=21)
+    if (data.transflag == 21) {
+      // ผู้ขอซื้อ
+      addField(global.language('requester_name'), data.creatorname ?? '', Icons.person_outline, color: global.theme.infoHighlightTextColor);
+      // แผนก
+      addField(global.language('department'), data.prDepartmentName ?? '', Icons.domain, color: global.theme.infoHighlightTextColor);
+      // ความเร่งด่วน
+      if (data.prUrgency != null && data.prUrgency! > 0) {
+        final urgencyNames = ['', global.language('normal'), global.language('urgent'), global.language('critical')];
+        final urgencyColors = [null, global.theme.positiveHighlightTextColor, global.theme.warningHighlightTextColor, global.theme.negativeHighlightTextColor];
+        final idx = data.prUrgency!.clamp(0, 3);
+        addField(global.language('urgency'), urgencyNames[idx], Icons.priority_high, color: urgencyColors[idx]);
+      }
+      // วันที่ต้องการรับ
+      if (data.docrefdate.isNotEmpty) {
+        try {
+          addField(global.language('requested_delivery_date'), global.dateTimeBuddhist(DateTime.parse(data.docrefdate), format: global.DateTimeFormatEnum.dateDay), Icons.event_available, color: global.theme.warningHighlightTextColor);
+        } catch (_) {}
+      }
+      // เครดิต
+      if (data.creditdays != null && data.creditdays! > 0) {
+        addField(global.language('credit_days'), '${data.creditdays} ${global.language("day")}', Icons.access_time);
+      }
+      // โครงการ/งาน
+      addField(global.language('project'), data.prJobName ?? '', Icons.account_tree_outlined);
+      // ศูนย์ต้นทุน
+      addField(global.language('cost_center'), data.prCostCenterName ?? '', Icons.account_balance_outlined);
+      // ที่อยู่จัดส่ง
+      addField(global.language('ship_to_address'), data.prShipToAddress ?? '', Icons.location_on_outlined);
+      // ประมาณการต้นทุน
+      addField(global.language('estimated_unit_cost'), data.prEstimatedUnitCost ?? '', Icons.calculate_outlined);
+      addField(global.language('estimated_freight'), data.prEstimatedFreight ?? '', Icons.local_shipping_outlined);
+      addField(global.language('estimated_duty'), data.prEstimatedDuty ?? '', Icons.account_balance_outlined);
+      // ร้านที่ต้องการ
+      addField(global.language('preferred_vendor'), data.prPreferredVendor ?? '', Icons.star_outline);
+      addField(global.language('alternative_vendor'), data.prAlternativeVendor ?? '', Icons.store_outlined);
+      addField(global.language('reason_preferred'), data.prReasonPreferred ?? '', Icons.info_outline);
+      // กำหนดวันอนุมัติ
+      if (data.prApprovalDeadline != null && data.prApprovalDeadline!.isNotEmpty) {
+        try {
+          addField(global.language('approval_deadline'), global.dateTimeBuddhist(DateTime.parse(data.prApprovalDeadline!), format: global.DateTimeFormatEnum.dateDay), Icons.event_outlined, color: global.theme.warningHighlightTextColor);
+        } catch (_) {
+          addField(global.language('approval_deadline'), data.prApprovalDeadline!, Icons.event_outlined);
+        }
+      }
+      // สถานะแปลง
+      if (data.prConversionStatus != null && data.prConversionStatus!.isNotEmpty && data.prConversionStatus != 'none') {
+        addField(global.language('conversion_status'), data.prConversionStatus!, Icons.sync_alt, color: global.theme.positiveHighlightTextColor);
+      }
+      addField(global.language('ref_rfq_docno'), data.prRefRfqDocNo ?? '', Icons.request_quote_outlined);
+      addField(global.language('ref_po_docno'), data.prRefPoDocNo ?? '', Icons.shopping_cart_outlined);
+      // วัตถุประสงค์ (description แสดงแล้วด้านบนเป็น "หมายเหตุ")
+    }
+
     return fields;
   }
 

@@ -43,8 +43,12 @@ var (
 	ProcessPurchasePartialDeleteMessage = OnConsumeMessagePurchasePartialDelete
 	ProcessPurchaseReturnMessage        = OnConsumeMessagePurchaseReturnCreateOrUpdate
 	ProcessPurchaseReturnDeleteMessage  = OnConsumeMessagePurchaseReturnDelete
-	ProcessStockTransferMessage         = OnConsumeMessageStockTransferCreateOrUpdate
-	ProcessStockTransferDeleteMessage   = OnConsumeMessageStockTransferDelete
+	ProcessStockTransferMessage                = OnConsumeMessageStockTransferCreateOrUpdate
+	ProcessStockTransferDeleteMessage          = OnConsumeMessageStockTransferDelete
+	ProcessPurchaseRequisitionMessage           = OnConsumeMessagePurchaseRequisitionCreateOrUpdate
+	ProcessPurchaseRequisitionDeleteMessage     = OnConsumeMessagePurchaseRequisitionDelete
+	ProcessRFQMessage                          = OnConsumeMessageRFQCreateOrUpdate
+	ProcessRFQDeleteMessage                    = OnConsumeMessageRFQDelete
 )
 
 // Re-export utility functions
