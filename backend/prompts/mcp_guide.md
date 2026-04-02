@@ -252,7 +252,7 @@ MCP tools เรียกผ่าน curl/HTTP ได้โดยตรง แ�
 ### Shared Skills Repo
 
 ```
-c:\bcdev\bcai-claude-skills\
+c:\bcdev\clone-skills\
 ├── skills/
 │   ├── api-search/SKILL.md   # /api-search — ค้นหา API endpoints
 │   ├── api-spec/SKILL.md     # /api-spec — ดู API specification
@@ -285,24 +285,24 @@ GitHub: `https://github.com/jaturapornchai/bcaicloudskill`
 
 ```bash
 # Windows (Run as Administrator)
-mklink /D "C:\bcdev\bcaiaccount\.claude\skills" "C:\bcdev\bcai-claude-skills\skills"
-mklink /D "C:\bcdev\bcaiaccount\.claude\rules" "C:\bcdev\bcai-claude-skills\rules"
+mklink /D "C:\bcdev\bcaiaccount\.claude\skills" "C:\bcdev\clone-skills\skills"
+mklink /D "C:\bcdev\bcaiaccount\.claude\rules" "C:\bcdev\clone-skills\rules"
 
 # macOS / Linux
-ln -s /path/to/bcai-claude-skills/skills /path/to/myproject/.claude/skills
-ln -s /path/to/bcai-claude-skills/rules /path/to/myproject/.claude/rules
+ln -s /path/to/clone-skills/skills /path/to/myproject/.claude/skills
+ln -s /path/to/clone-skills/rules /path/to/myproject/.claude/rules
 ```
 
 #### วิธีที่ 2: User-Level (ใช้ได้ทุก project)
 
 ```bash
 # Windows
-xcopy /E /I "C:\bcdev\bcai-claude-skills\skills" "%USERPROFILE%\.claude\skills"
-xcopy /E /I "C:\bcdev\bcai-claude-skills\rules" "%USERPROFILE%\.claude\rules"
+xcopy /E /I "C:\bcdev\clone-skills\skills" "%USERPROFILE%\.claude\skills"
+xcopy /E /I "C:\bcdev\clone-skills\rules" "%USERPROFILE%\.claude\rules"
 
 # macOS / Linux
-cp -r bcai-claude-skills/skills ~/.claude/skills
-cp -r bcai-claude-skills/rules ~/.claude/rules
+cp -r clone-skills/skills ~/.claude/skills
+cp -r clone-skills/rules ~/.claude/rules
 ```
 
 ### ตัวอย่างการใช้ Skills
@@ -362,5 +362,5 @@ cp -r bcai-claude-skills/rules ~/.claude/rules
 - Database query tools อนุญาตเฉพาะ `SELECT` / `SHOW`
 - Data isolation: ทุก query filter by `shop_id` จาก API key อัตโนมัติ
 - Rate limit: ยังไม่มี (อนาคตจะเพิ่ม)
-- Skills repo อยู่ที่ `c:\bcdev\bcai-claude-skills\` (local) หรือ GitHub
-- Skills update: `cd bcai-claude-skills && git pull`
+- Skills repo อยู่ที่ `c:\bcdev\clone-skills\` (local) หรือ GitHub
+- Skills update: `cd clone-skills && git pull`

@@ -63,7 +63,7 @@ Flutter multi-platform app (Web, Windows, Android, iOS) for BC AI Cloud accounti
 
 **ทุกสีที่แสดงบน UI ต้องมาจาก `global.theme.*` — ห้าม hardcode `Colors.*` หรือ `Color(0xFF...)` โดยตรง**
 - ระบบรองรับ Dark Mode / Light Mode — hardcode สีจะเปลี่ยนธีมไม่ได้
-- ดูกฏเต็มและ mapping สีใน `D:\bcdev\bcai-claude-skills\rules\coding-style.md` → หัวข้อ "ห้าม Hardcode สี"
+- ดูกฏเต็มและ mapping สีใน `D:\bcdev\clone-skills\rules\coding-style.md` → หัวข้อ "ห้าม Hardcode สี"
 - ทุก `StatefulWidget` ต้องใช้ `global.ThemeRefreshMixin` เพื่อ rebuild เมื่อเปลี่ยนธีม
 - ข้อยกเว้น: text สีขาวบน AppBar/ปุ่มสี, QR code bg, brand colors, semantic status colors, login screens
 
@@ -93,7 +93,7 @@ Flutter multi-platform app (Web, Windows, Android, iOS) for BC AI Cloud accounti
 
 **AI สามารถอ่านและแก้ไข source code ได้ทั้ง 2 project:**
 - **Backend** `D:\bcdev\backend` — อ่าน+แก้ได้
-- **Frontend** `D:\bcdev\bcaiaccount` — อ่าน+แก้ได้
+- **Frontend** `D:\bcdev\frontend\bcaiaccount` — อ่าน+แก้ได้
 - ตรวจ code ข้ามไปมาได้เสมอ เช่น ตรวจ Backend response แล้วแก้ Frontend model ให้ตรงกัน
 
 **ลำดับความสำคัญ:**
@@ -450,37 +450,14 @@ flutter build windows -t lib/main_bcaidev.dart --release
 flutter run -t lib/main_bcaidev.dart
 ```
 
-## BC AI Skills (Project-Specific AI Skills)
+## Jead Skill Library (Global Rules)
 
-**อ่านและปฏิบัติตาม skills ใน `D:\bcdev\bcaiskill\bcaiskill\`:**
+**Read `D:\bcdev\clone-skills\` every session:**
+- `identity.md` — Jead's identity, style, lessons learned
+- `rules/*.md` — All working rules (coding, workflow, security, MCP)
+- `references/core/` — Business rules, document flows, DB schema
+- `references/flutter/` — BLoC pattern, API client, UI components
+- `references/go/` — Handlers, SQL patterns, MCP tools
+- `skills/*/SKILL.md` — Available slash commands
 
-| Skill | คำอธิบาย | อ่านเมื่อ |
-|-------|---------|----------|
-| `bcai-core` | Business rules, document flows, DB schema (PM-owned) | ทุกครั้งก่อนเริ่มงาน |
-| `bcai-flutter-frontend` | Flutter patterns (BLoC, Dio, widgets) | ทำงานฝั่ง Flutter |
-| `bcai-go-backend` | Go backend patterns (Echo, PostgreSQL, MCP tools) | ทำงานฝั่ง Backend |
-
-**บังคับอ่านก่อนเริ่มงาน:**
-1. `bcai-core/SKILL.md` + `bcai-core/references/business-rules.md` — กฏ + checklist
-2. ถ้าทำ Flutter → อ่าน `bcai-flutter-frontend/SKILL.md`
-3. ถ้าทำ Backend → อ่าน `bcai-go-backend/SKILL.md`
-4. ถ้าทำ MCP tools → อ่าน `bcai-go-backend/references/mcp-tools.md`
-
-**References ที่สำคัญ:**
-- `bcai-core/references/document-flows.md` — State machine ของทุก document type
-- `bcai-core/references/cross-system-workflow.md` — MCP-first, API spec format
-- `bcai-core/references/schema-migration.md` — กฎเมื่อ DB schema เปลี่ยน
-- `bcai-core/references/database-schema.md` — โครงสร้าง tables ทั้งหมด
-- `bcai-flutter-frontend/references/bloc-pattern.md` — BLoC code templates
-- `bcai-go-backend/references/mcp-tools.md` — วิธีสร้าง MCP tool (35+ tools)
-
-## Jead Skill (Global AI Rules)
-
-**อ่านและปฏิบัติตาม rules ทั้งหมดใน `D:\bcdev\jead-skill\`:**
-
-- `CLAUDE.md` — global rules สำหรับ AI ทุกตัว
-- `identity.md` — ตัวตนและสไตล์ของ Jead (ต้องปฏิบัติตามเสมอ)
-- `rules/*.md` — กฏการทำงาน (coding-style, mcp-first, erp-conventions, security)
-- `skills/*/SKILL.md` — slash commands ที่ใช้ได้ (/api-search, /api-spec, /model-gen, /enum-list, /mcp-check, /master-data)
-
-**Auto-Update Rule:** เมื่อเรียนรู้สิ่งใหม่จาก Jead (กฏใหม่, preferences, patterns) → ต้อง update ไฟล์ใน `D:\bcdev\jead-skill\` ทันที
+**Auto-update:** When learning new patterns/rules from Jead → update clone-skills immediately

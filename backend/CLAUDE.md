@@ -185,15 +185,11 @@ MCP เป็น bridge ให้ AI tools ฝั่ง frontend เข้าถ
 - `internal/goapi/handlers/genpdf_handler.go:439` — `fmt.Sprintf("%,.2f", amount)` uses invalid Go format verb `%,`
 - mainapi Dockerfile requires CGO + librdkafka (confluent-kafka-go)
 
-## Jead Skill (Global Rules — ต้องใช้เสมอ)
-**ทุก session ต้องอ่าน `D:\bcdev\jead-skill\` เพื่อเข้าใจ Jead:**
-- `identity.md` — ตัวตน, สไตล์, lessons learned ของ Jead (ต้องปฏิบัติตามเสมอ)
-- `rules/*.md` — กฏการทำงานทั้งหมด (coding, workflow, security, MCP)
-- `skills/*/SKILL.md` — slash commands ที่ใช้ได้
-- `docs/` — reference documents (MCP tools guide)
+## Jead Skill Library (Global Rules)
+**Read `D:\bcdev\clone-skills\` every session:**
+- `identity.md` — Jead's identity, style, lessons learned
+- `rules/*.md` — All working rules (coding, workflow, security, MCP)
+- `skills/*/SKILL.md` — Available slash commands
+- `references/` — Domain knowledge (core, flutter, go)
 
-**Auto-update (สำคัญมาก):**
-- เมื่อเรียนรู้สิ่งใหม่จาก Jead → update jead-skill ทันที
-- เมื่อพบ pattern/pitfall ใหม่ → เพิ่มใน identity.md หรือ rules/
-- เมื่อจบ session → ตรวจสอบว่ามีอะไรควร update
-- เป้าหมาย: **ยิ่งทำงานด้วยกัน skill ยิ่งฉลาดขึ้น**
+**Auto-update:** When learning new patterns/rules from Jead → update clone-skills immediately

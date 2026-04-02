@@ -585,14 +585,13 @@ class _TabNavigatorObserver extends NavigatorObserver {
 class _HomeTab {
   final int id;
   String title;
-  IconData icon;
+  IconData icon = Icons.grid_view_rounded;
   final bool isClosable;
   final Widget? customContent;
 
   _HomeTab({
     required this.id,
     required this.title,
-    this.icon = Icons.tab,
     required this.isClosable,
     this.customContent,
   });
