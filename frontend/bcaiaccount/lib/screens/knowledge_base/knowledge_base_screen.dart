@@ -8,7 +8,6 @@ import 'package:smlaicloud/bloc/company_branch/company_branch_bloc.dart';
 import 'package:smlaicloud/bloc/knowledge_base/knowledge_base_cubit.dart';
 import 'package:smlaicloud/model/company_branch_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:smlaicloud/widgets/chatbot_panel.dart';
 import 'package:smlaicloud/utils/date_picker.dart';
 import 'package:smlaicloud/utils/logger/app_logger.dart';
 import 'package:smlaicloud/utils/time_picker.dart';
@@ -44,22 +43,52 @@ class _KnowledgeBaseScreenContentState
   String? _selectedBranchId;
   bool _showAllBranches = true;
 
-  // Split view
-  double _leftPanelWidth = 0.5; // 0.0 to 1.0 (50% default)
-  bool _isDragging = false;
-
   // Colors
   Color get primaryColor => global.theme.primaryColor;
 
-  // API Base URLs
-  final String apiBaseUrl = kDebugMode
-      ? 'http://localhost:9999/api/documents'
-      : 'https://bcaicallcenter.dedetouch.com/api/documents';
+  // KB endpoints live on goapi (RAGFlow-backed) at /api/v1/kb/*
+  String get apiBaseUrl => global.goApiUrlPath('api/v1/kb');
+
+  // RAGFlow health state — shown as a banner above the doc list
+  // null = unchecked, true = ok, false = not configured / unreachable
+  bool? _ragflowHealthy;
+  String _ragflowHealthMessage = '';
 
   @override
   void initState() {
     super.initState();
     _loadBranches();
+    _checkRagflowHealth();
+  }
+
+  Future<void> _checkRagflowHealth() async {
+    try {
+      final response = await http
+          .get(Uri.parse('$apiBaseUrl/health'))
+          .timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final status = data['status']?.toString() ?? '';
+        if (mounted) {
+          setState(() {
+            _ragflowHealthy = status == 'ok';
+            _ragflowHealthMessage = (data['message'] ?? '').toString();
+          });
+        }
+      } else if (mounted) {
+        setState(() {
+          _ragflowHealthy = false;
+          _ragflowHealthMessage = 'KB health check failed (HTTP ${response.statusCode})';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _ragflowHealthy = false;
+          _ragflowHealthMessage = 'KB health check error: $e';
+        });
+      }
+    }
   }
 
   @override
@@ -1040,78 +1069,80 @@ class _KnowledgeBaseScreenContentState
             _branches = state.companyBranch;
           }
         },
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final leftWidth = constraints.maxWidth * _leftPanelWidth;
-            final rightWidth = constraints.maxWidth * (1 - _leftPanelWidth);
-
-            return Row(
-              children: [
-                // Left Panel - Document Management
-                SizedBox(
-                  width: leftWidth,
-                  child: Container(
-                    color: global.theme.cardColor,
-                    child: Column(
-                      children: [
-                        _buildDocumentHeader(),
-                        _buildBranchSelector(),
-                        _buildActionButtons(),
-                        Expanded(child: _buildDocumentList()),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Divider/Resizer
-                GestureDetector(
-                  onHorizontalDragStart: (_) {
-                    setState(() => _isDragging = true);
-                  },
-                  onHorizontalDragUpdate: (details) {
-                    setState(() {
-                      final newWidth =
-                          _leftPanelWidth +
-                          (details.delta.dx / constraints.maxWidth);
-                      _leftPanelWidth = newWidth.clamp(0.2, 0.8);
-                    });
-                  },
-                  onHorizontalDragEnd: (_) {
-                    setState(() => _isDragging = false);
-                  },
-                  child: MouseRegion(
-                    cursor: SystemMouseCursors.resizeColumn,
-                    child: Container(
-                      width: 8,
-                      color: _isDragging
-                          ? primaryColor.withValues(alpha: 0.3)
-                          : global.theme.dividerBorderColor,
-                      child: Center(
-                        child: Container(
-                          width: 2,
-                          color: _isDragging ? primaryColor : global.theme.iconSecondaryColor,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Right Panel - Chatbot
-                SizedBox(
-                  width: rightWidth - 8,
-                  child: ChatbotPanel(
-                    welcomeMessage: global.language('kb_chatbot_welcome'),
-                  ),
-                ),
-              ],
-            );
-          },
+        // Knowledge Base = document management only.
+        // Q&A is handled by the global น้องกุ้ง chatbot overlay (Opus-powered),
+        // so we don't need a smaller in-screen chatbot here.
+        child: Container(
+          color: global.theme.cardColor,
+          child: Column(
+            children: [
+              _buildDocumentHeader(),
+              _buildRagflowHealthBanner(),
+              _buildBranchSelector(),
+              _buildActionButtons(),
+              Expanded(child: _buildDocumentList()),
+            ],
+          ),
         ),
       ),
     );
   }
 
   // Document Header
+  // RAGFlow health banner — แสดงเฉพาะตอน health check ไม่ผ่าน (configured=false หรือ unreachable)
+  // ตอน healthy → return SizedBox.shrink()
+  Widget _buildRagflowHealthBanner() {
+    if (_ragflowHealthy == null || _ragflowHealthy == true) {
+      return const SizedBox.shrink();
+    }
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.12),
+        border: Border(
+          bottom: BorderSide(color: Colors.orange.withValues(alpha: 0.5), width: 1),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Knowledge Base ยังใช้งานไม่ได้',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: global.theme.textColor,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _ragflowHealthMessage.isEmpty
+                      ? 'RAGFlow service ยังไม่พร้อม — กรุณาติดต่อ admin ตั้งค่า RAGFLOW_API_KEY'
+                      : _ragflowHealthMessage,
+                  style: TextStyle(
+                    color: global.theme.textSecondaryColor,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh, size: 20),
+            tooltip: 'ตรวจสอบใหม่',
+            onPressed: _checkRagflowHealth,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDocumentHeader() {
     return Container(
       padding: const EdgeInsets.all(16),

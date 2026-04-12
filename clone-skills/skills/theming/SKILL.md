@@ -2,8 +2,8 @@
 name: theming
 description: >
   Dark/Light theme standards for Flutter ERP screens. Color properties, hardcode scanning,
-  ThemeRefreshMixin, data list row colors, form styling.
-  Triggers: "theme", "dark mode", "color", "backgroundColor", "textColor", "hardcoded colors".
+  ThemeRefreshMixin, data list row colors, form styling. Use when the user mentions dark
+  mode issues, color fixing, or building new screens.
 user-invocable: true
 ---
 
@@ -13,6 +13,29 @@ user-invocable: true
 - `/theming` — Check and fix colors to match theme standards
 - `/theming <screen-name>` — Check specific screen
 - `/theming check` — Scan entire project for hardcoded colors
+
+## When to Use
+
+- Building a new screen — use `global.theme.*` from the start, don't fix later
+- Screen renders correctly in light mode but breaks in dark mode
+- Reviewing a screen before PR — scan for hardcoded Colors.*
+- Adding a new color property that doesn't exist in the theme model
+- Migrating a screen from bclms system to BC Account (different AppTheme)
+
+## Anti-Patterns
+
+- Do NOT hardcode `Colors.white` — use `global.theme.cardColor` or `global.theme.onPrimaryColor`
+- Do NOT hardcode `Colors.black` or `Colors.grey[600-800]` as text — use `global.theme.textColor`
+- Do NOT put `const` before widgets that use `global.theme.*` — compile error
+- Do NOT use `global.theme.*[shade]` — not a MaterialColor, no subscript operator
+- Do NOT forget `ThemeRefreshMixin` on every StatefulWidget — screen won't rebuild without it
+- Do NOT use `appBarColor` as accent in dark mode — too dark (#0D1B2A), use `primaryLightColor` instead
+
+## Related Skills
+
+- `/data-list` — row colors + SplitView specific theming
+- `/tab-focus` — not directly related, but form in edit screen shares theming
+- `/date-time-picker` — form input decoration colors use `formBorderColor`, `formFillColor`
 
 ## Architecture
 

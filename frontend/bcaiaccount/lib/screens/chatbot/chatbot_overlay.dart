@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:smlaicloud/global.dart' as global;
 import 'package:uuid/uuid.dart';
 import 'package:smlaicloud/utils/logger/app_logger.dart';
@@ -25,11 +26,22 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
+  final List<Uint8List> _attachedImages = [];
+  final FocusNode _inputFocusNode = FocusNode();
   bool _isLoading = false;
   bool _isMinimized = false;
+  bool _searchDatabase = true;
+  bool _searchKnowledgeBase = true;
+  bool _searchInternet = false;
+  String _statusText = ''; // สถานะ SSE (กำลังดึงข้อมูล...)
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late String _sessionId; // Session ID สำหรับแยก conversation
+
+  // Question history navigation
+  List<String> _questionHistory = []; // history of user questions
+  int _historyIndex = -1; // -1 means no history selected
+  String _savedInput = ''; // save current input when navigating
 
   // ขนาดและตำแหน่งหน้าต่างที่ปรับได้ (left-based)
   double _width = 400;
@@ -58,6 +70,26 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
       AppLogger.debug('💬 New Chatbot Session: $_sessionId');
     }
 
+    // Load question history from backend
+    _loadQuestionHistory();
+
+    // Handle arrow up/down for history navigation
+    _inputFocusNode.onKeyEvent = (node, event) {
+      if (event is KeyDownEvent) {
+        if (event.logicalKey == LogicalKeyboardKey.arrowUp &&
+            _messageController.text.split('\n').length <= 1) {
+          _navigateHistory(1); // older
+          return KeyEventResult.handled;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.arrowDown &&
+            _messageController.text.split('\n').length <= 1) {
+          _navigateHistory(-1); // newer
+          return KeyEventResult.handled;
+        }
+      }
+      return KeyEventResult.ignored;
+    };
+
     // Animation setup
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -72,18 +104,11 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
     // ข้อความต้อนรับ + ตัวอย่างคำถาม
     _messages.add(
       ChatMessage(
-        text: global.language('chatbot_welcome_message'),
+        text: 'สวัสดีค่ะ! น้องกุ้งพร้อมช่วยแล้วค่ะ\n'
+            'ถามเรื่องยอดขาย สต็อก ลูกค้า การเงิน ได้เลยนะคะ\n'
+            'น้องกุ้งจะวิเคราะห์และดึงข้อมูลให้อัตโนมัติค่ะ',
         isUser: false,
         timestamp: DateTime.now(),
-        suggestedQuestions: [
-          global.language('chatbot_q_today_sales'),
-          global.language('chatbot_q_top_selling'),
-          global.language('chatbot_q_low_stock'),
-          global.language('chatbot_q_compare_sales'),
-          global.language('chatbot_q_top_customers'),
-          global.language('chatbot_q_profit'),
-          global.language('chatbot_q_business_health'),
-        ],
       ),
     );
   }
@@ -93,6 +118,7 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
     _messageController.dispose();
     _scrollController.dispose();
     _animationController.dispose();
+    _inputFocusNode.dispose();
     super.dispose();
   }
 
@@ -105,13 +131,32 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
   }
 
   Future<void> _sendMessage() async {
-    final message = _messageController.text.trim();
-    if (message.isEmpty) return;
+    final rawText = _messageController.text.trim();
+    final hasImages = _attachedImages.isNotEmpty;
+    if (rawText.isEmpty && !hasImages) return;
+
+    final message = rawText.isEmpty ? 'ดูรูปนี้' : rawText;
+    _questionHistory.insert(0, message);
+    _historyIndex = -1;
+
+    // Save to question history
+    _questionHistory.insert(0, message);
+    _historyIndex = -1;
+
+    // Snapshot images before clearing
+    final imageBytes = List<Uint8List>.from(_attachedImages);
+    final images = imageBytes.map((b) => base64Encode(b)).toList();
 
     setState(() {
       _messages.add(
-        ChatMessage(text: message, isUser: true, timestamp: DateTime.now()),
+        ChatMessage(
+          text: message,
+          isUser: true,
+          timestamp: DateTime.now(),
+          images: imageBytes.isNotEmpty ? imageBytes : null,
+        ),
       );
+      _attachedImages.clear();
       _isLoading = true;
     });
 
@@ -119,7 +164,7 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
     _scrollToBottom();
 
     try {
-      final result = await _callChatAPI(message);
+      final result = await _callChatAPI(message, images: images.isNotEmpty ? images : null);
 
       setState(() {
         _messages.add(
@@ -127,11 +172,17 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
             text: result['text'],
             isUser: false,
             timestamp: DateTime.now(),
-            isHtml: false,
+            isHtml: _containsHtml(result['text'] as String),
             tokenUsage: result['token_usage'],
             suggestedQuestions: result['suggested_questions'],
             cached: result['cached'],
             toolsUsed: result['tools_used'] as List<Map<String, dynamic>>?,
+            citations: result['citations'] as List<Map<String, dynamic>>?,
+            thinking: result['thinking'] as String?,
+            iterations: result['iterations'] as int?,
+            model: (result['token_usage'] as Map<String, dynamic>?)?['model']?.toString(),
+            totalElapsedMs: result['total_elapsed_ms'] as int?,
+            rawResponse: result['raw_response'] as Map<String, dynamic>?,
           ),
         );
         _isLoading = false;
@@ -181,11 +232,17 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
             text: result['text'],
             isUser: false,
             timestamp: DateTime.now(),
-            isHtml: false,
+            isHtml: _containsHtml(result['text'] as String),
             tokenUsage: result['token_usage'],
             suggestedQuestions: result['suggested_questions'],
             cached: result['cached'],
             toolsUsed: result['tools_used'] as List<Map<String, dynamic>>?,
+            citations: result['citations'] as List<Map<String, dynamic>>?,
+            thinking: result['thinking'] as String?,
+            iterations: result['iterations'] as int?,
+            model: (result['token_usage'] as Map<String, dynamic>?)?['model']?.toString(),
+            totalElapsedMs: result['total_elapsed_ms'] as int?,
+            rawResponse: result['raw_response'] as Map<String, dynamic>?,
           ),
         );
         _isLoading = false;
@@ -250,11 +307,17 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
             text: result['text'],
             isUser: false,
             timestamp: DateTime.now(),
-            isHtml: false,
+            isHtml: _containsHtml(result['text'] as String),
             tokenUsage: result['token_usage'],
             suggestedQuestions: result['suggested_questions'],
             cached: result['cached'],
             toolsUsed: result['tools_used'] as List<Map<String, dynamic>>?,
+            citations: result['citations'] as List<Map<String, dynamic>>?,
+            thinking: result['thinking'] as String?,
+            iterations: result['iterations'] as int?,
+            model: (result['token_usage'] as Map<String, dynamic>?)?['model']?.toString(),
+            totalElapsedMs: result['total_elapsed_ms'] as int?,
+            rawResponse: result['raw_response'] as Map<String, dynamic>?,
           ),
         );
         _isLoading = false;
@@ -313,167 +376,302 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
     return error;
   }
 
-  Future<Map<String, dynamic>> _callChatAPI(String message) async {
+  Future<void> _loadQuestionHistory() async {
+    try {
+      final url = Uri.parse(global.goApiUrlPath('api/v1/ai-provider/question-history'));
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'shop_id': global.getShopId(),
+          'user_id': '',
+          'limit': 50,
+        }),
+      ).timeout(const Duration(seconds: 10));
+      final body = jsonDecode(response.body);
+      final questions = body['questions'] as List<dynamic>?;
+      if (questions != null) {
+        setState(() {
+          _questionHistory = questions.map((e) => e.toString()).toList();
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) AppLogger.debug('Load history error: $e');
+    }
+  }
+
+  void _navigateHistory(int direction) {
+    if (_questionHistory.isEmpty) return;
+
+    if (_historyIndex == -1 && direction > 0) {
+      // Save current input before navigating
+      _savedInput = _messageController.text;
+      _historyIndex = 0;
+    } else {
+      _historyIndex += direction;
+    }
+
+    if (_historyIndex < 0) {
+      // Back to current input
+      _historyIndex = -1;
+      _messageController.text = _savedInput;
+      _messageController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _messageController.text.length),
+      );
+      return;
+    }
+
+    if (_historyIndex >= _questionHistory.length) {
+      _historyIndex = _questionHistory.length - 1;
+      return;
+    }
+
+    _messageController.text = _questionHistory[_historyIndex];
+    _messageController.selection = TextSelection.fromPosition(
+      TextPosition(offset: _messageController.text.length),
+    );
+  }
+
+  Future<Map<String, dynamic>> _callChatAPI(String message, {List<String>? images}) async {
     final shopId = global.getShopId();
 
-    // ใช้ Agent AI endpoint (chat-agent — ReAct pattern เรียก MCP tools อัตโนมัติ)
-    final apiUrl = global.goApiUrlPath('api/v1/chatbot/chat-agent');
+    // น้องกุ้ง v2 — SSE streaming endpoint
+    final apiUrl = global.goApiUrlPath('api/v1/chatbot/chat-agent-v2');
     final url = Uri.parse(apiUrl);
 
     if (kDebugMode) {
-      AppLogger.debug('Chatbot API URL: ${url.toString()}');
-      AppLogger.debug('Shop ID: $shopId, Session ID: $_sessionId');
+      AppLogger.debug('🦐 น้องกุ้ง API: ${url.toString()}');
+      AppLogger.debug('Shop: $shopId, Session: $_sessionId');
     }
 
     try {
-      // สร้าง request body ตาม chat-agent spec
-      final requestBody = {
+      final request = http.Request('POST', url);
+      request.headers['Content-Type'] = 'application/json; charset=utf-8';
+      request.body = jsonEncode({
         'shop_id': shopId,
+        'session_id': _sessionId,
         'question': message,
-      };
+        if (images != null && images.isNotEmpty) 'images': images,
+        'search_database': _searchDatabase,
+        'search_kb': _searchKnowledgeBase,
+        'search_internet': _searchInternet,
+      });
 
-      final response = await http
-          .post(
-            url,
-            headers: {'Content-Type': 'application/json; charset=utf-8'},
-            body: utf8.encode(jsonEncode(requestBody)),
-          )
-          .timeout(
-            const Duration(seconds: 130), // Agent อาจใช้เวลา 5-30 วินาที (backend timeout 120s)
-            onTimeout: () {
-              throw Exception('ขออภัย ระบบใช้เวลานานเกินไป กรุณาลองใหม่');
-            },
-          );
+      final streamedResponse = await http.Client().send(request).timeout(
+        const Duration(seconds: 200),
+        onTimeout: () {
+          throw Exception('ขออภัย ระบบใช้เวลานานเกินไป กรุณาลองใหม่');
+        },
+      );
 
-      if (kDebugMode) {
-        AppLogger.debug('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        AppLogger.debug('📡 CHAT-AGENT API RESPONSE:');
-        AppLogger.debug('Status: ${response.statusCode}');
-        AppLogger.debug('Raw body length: ${response.body.length} chars');
+      if (streamedResponse.statusCode != 200) {
+        final body = await streamedResponse.stream.bytesToString();
+        try {
+          final errData = jsonDecode(body);
+          if (errData is Map) {
+            final raw = errData['error']?.toString() ?? errData['message']?.toString() ?? '';
+            if (raw.isNotEmpty) throw Exception(_friendlyError(raw));
+          }
+        } catch (_) {}
+        throw Exception('HTTP ${streamedResponse.statusCode}');
       }
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes));
+      // Parse response — รองรับทั้ง SSE stream และ JSON sync
+      // เริ่มจับเวลา total elapsed
+      final requestStart = DateTime.now();
+      String answerText = '';
+      String thinkingText = '';
+      Map<String, dynamic>? tokenUsage;
+      List<String>? suggestedQuestions;
+      List<Map<String, dynamic>>? toolsUsed;
+      List<Map<String, dynamic>>? citations;
+      int? iterationsCount;
+      Map<String, dynamic>? rawResponse;
+      // เก็บ tool_done events real-time — ใช้ดัชนีตามลำดับการเข้ามา
+      final List<Map<String, dynamic>> liveTools = [];
 
-        if (kDebugMode) {
-          AppLogger.debug('📥 Parsed JSON:');
-          AppLogger.debug(const JsonEncoder.withIndent('  ').convert(data));
-          AppLogger.debug('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        }
+      final rawBody = await streamedResponse.stream
+          .transform(utf8.decoder)
+          .join();
 
-        String responseText = '';
+      // ตรวจว่าเป็น SSE (มี "data: ") หรือ JSON ธรรมดา
+      final isSSE = rawBody.trimLeft().startsWith('data: ');
 
-        if (data is Map) {
-          // ตรวจสอบ success status
-          if (data['success'] == false) {
-            final errorMsg = data['error']?.toString() ?? data['message']?.toString() ?? 'Unknown error';
-            throw Exception(_friendlyError(errorMsg));
-          }
-
-          // chat-agent response: {success: true, data: {answer: "...", tools_used: [...]}}
-          if (data.containsKey('data') && data['data'] is Map) {
-            final responseData = data['data'] as Map<String, dynamic>;
-            responseText = responseData['answer']?.toString() ?? '';
-          }
-
-          // fallback: ลองดึงจาก response (compat กับ chat-gemini format เก่า)
-          if (responseText.isEmpty) {
-            responseText = data['response']?.toString() ?? '';
-          }
-
-          // fallback: ลองดึงจาก message
-          if (responseText.isEmpty && data.containsKey('message')) {
-            responseText = data['message'].toString();
-          }
-
-          // เก็บข้อมูลเสริม
-          final cached = data['cached'] ?? false;
-          Map<String, dynamic>? tokenUsage;
-          List<String>? suggestedQuestions;
-          List<Map<String, dynamic>>? toolsUsed;
-
-          if (data.containsKey('token_usage') && data['token_usage'] is Map) {
-            tokenUsage = data['token_usage'] as Map<String, dynamic>;
-          }
-          if (data.containsKey('suggested_questions') && data['suggested_questions'] is List) {
-            suggestedQuestions = (data['suggested_questions'] as List).map((e) => e.toString()).toList();
-          }
-
-          // ดึง tools_used จาก data
-          if (data.containsKey('data') && data['data'] is Map) {
-            final responseData = data['data'] as Map<String, dynamic>;
-            if (responseData.containsKey('tools_used') && responseData['tools_used'] is List) {
-              toolsUsed = (responseData['tools_used'] as List)
+      if (!isSSE) {
+        // Sync JSON response — backend fallback mode
+        try {
+          final json = jsonDecode(rawBody) as Map<String, dynamic>;
+          rawResponse = json;
+          if (json['data'] is Map) {
+            final respData = json['data'] as Map<String, dynamic>;
+            answerText = respData['answer']?.toString() ?? '';
+            thinkingText = respData['thinking']?.toString() ?? '';
+            iterationsCount = (respData['iterations'] as num?)?.toInt();
+            if (respData.containsKey('tools_used') && respData['tools_used'] is List) {
+              toolsUsed = (respData['tools_used'] as List)
                   .map((e) => e is Map ? Map<String, dynamic>.from(e) : <String, dynamic>{})
                   .where((e) => e.isNotEmpty)
                   .toList();
             }
           }
-
-          if (kDebugMode) {
-            AppLogger.debug('📦 Response: ${cached ? "From cache" : "Fresh AI response"}');
-            if (tokenUsage != null) {
-              AppLogger.debug('💰 Token Usage: ${tokenUsage['total_tokens']} tokens');
-            }
-            if (toolsUsed != null) {
-              AppLogger.debug('🔧 Tools used: ${toolsUsed.length}');
-            }
+          if (json.containsKey('token_usage') && json['token_usage'] is Map) {
+            tokenUsage = json['token_usage'] as Map<String, dynamic>;
           }
-
-          if (responseText.isEmpty) {
-            throw Exception(global.language('chatbot_response_empty'));
+          if (json.containsKey('suggested_questions') && json['suggested_questions'] is List) {
+            suggestedQuestions = (json['suggested_questions'] as List).map((e) => e.toString()).toList();
           }
-
-          return {
-            'text': responseText,
-            'cached': cached,
-            'token_usage': tokenUsage,
-            'suggested_questions': suggestedQuestions,
-            'tools_used': toolsUsed,
-          };
-        } else {
-          responseText = response.body;
+          if (json['error'] != null && json['error'].toString().isNotEmpty) {
+            throw Exception(_friendlyError(json['error'].toString()));
+          }
+        } catch (e) {
+          if (e is Exception && e.toString().contains('friendlyError')) rethrow;
+          if (kDebugMode) AppLogger.debug('JSON parse error: $e');
         }
-
-        if (responseText.isEmpty) {
-          throw Exception(global.language('chatbot_response_empty'));
-        }
-
-        return {'text': responseText};
-      } else if (response.statusCode == 402) {
-        throw Exception('Token limit exceeded - กรุณาลองใหม่ภายหลัง');
-      } else if (response.statusCode == 504) {
-        throw Exception('Gateway timeout - กรุณาลองใหม่อีกครั้ง');
       } else {
-        // พยายาม parse JSON error จาก backend
-        String errorMsg = 'HTTP ${response.statusCode}: ${response.reasonPhrase}';
-        try {
-          final errData = jsonDecode(utf8.decode(response.bodyBytes));
-          if (errData is Map) {
-            final raw = errData['error']?.toString() ?? errData['message']?.toString() ?? '';
-            if (raw.isNotEmpty) {
-              errorMsg = _friendlyError(raw);
+        // SSE stream parsing
+        final lines = const LineSplitter().convert(rawBody);
+
+        for (final line in lines) {
+          if (!line.startsWith('data: ')) continue;
+          final jsonStr = line.substring(6).trim();
+          if (jsonStr.isEmpty) continue;
+
+          try {
+            final event = jsonDecode(jsonStr) as Map<String, dynamic>;
+            final type = event['type'] as String? ?? '';
+            final data = event['data'];
+
+            switch (type) {
+              case 'status':
+                if (mounted && data is String) {
+                  setState(() => _statusText = data);
+                }
+                break;
+
+              case 'thinking':
+                // thinking สั้น (status update) → แสดงใน statusText
+                // thinking ยาว (extended thinking content) → เก็บไว้ใน thinkingText
+                if (data is String) {
+                  if (data.length > 200) {
+                    thinkingText = data;
+                  } else if (mounted) {
+                    setState(() => _statusText = data);
+                  }
+                }
+                break;
+
+              case 'tool_start':
+                if (mounted && data is Map) {
+                  final toolName = data['tool']?.toString() ?? '';
+                  setState(() => _statusText = '🔧 กำลังดึงข้อมูล: $toolName');
+                }
+                break;
+
+              case 'tool_done':
+                // เก็บข้อมูล tool ที่จบแล้วเข้า liveTools — รวม params/result_preview/error/duration
+                // ถ้า backend ส่ง tools_used ใน done event อยู่แล้ว → ใช้ตัวนั้นแทน (final source of truth)
+                if (data is Map) {
+                  liveTools.add(Map<String, dynamic>.from(data));
+                  final toolName = data['tool']?.toString() ?? '';
+                  final dur = data['duration_ms'];
+                  final ok = data['success'] == true;
+                  if (mounted) {
+                    setState(() => _statusText = ok
+                        ? '✓ $toolName เสร็จ (${dur}ms)'
+                        : '✗ $toolName ผิดพลาด');
+                  }
+                }
+                break;
+
+              case 'answer':
+                if (data is String) answerText = data;
+                break;
+
+              case 'error':
+                throw Exception(_friendlyError(data?.toString() ?? 'Unknown error'));
+
+              case 'done':
+                if (data is Map<String, dynamic>) {
+                  rawResponse = data;
+                  if (data.containsKey('data') && data['data'] is Map) {
+                    final respData = data['data'] as Map<String, dynamic>;
+                    if (answerText.isEmpty) {
+                      answerText = respData['answer']?.toString() ?? '';
+                    }
+                    if (thinkingText.isEmpty) {
+                      thinkingText = respData['thinking']?.toString() ?? '';
+                    }
+                    iterationsCount = (respData['iterations'] as num?)?.toInt();
+                    if (respData.containsKey('tools_used') && respData['tools_used'] is List) {
+                      toolsUsed = (respData['tools_used'] as List)
+                          .map((e) => e is Map ? Map<String, dynamic>.from(e) : <String, dynamic>{})
+                          .where((e) => e.isNotEmpty)
+                          .toList();
+                    }
+                    if (respData.containsKey('citations') && respData['citations'] is List) {
+                      citations = (respData['citations'] as List)
+                          .map((e) => e is Map ? Map<String, dynamic>.from(e) : <String, dynamic>{})
+                          .where((e) => e.isNotEmpty)
+                          .toList();
+                    }
+                  }
+                  if (data.containsKey('token_usage') && data['token_usage'] is Map) {
+                    tokenUsage = data['token_usage'] as Map<String, dynamic>;
+                  }
+                  if (data.containsKey('suggested_questions') && data['suggested_questions'] is List) {
+                    suggestedQuestions = (data['suggested_questions'] as List).map((e) => e.toString()).toList();
+                  }
+                }
+                break;
             }
+          } catch (e) {
+            if (e is Exception && e.toString().contains('friendlyError')) rethrow;
+            if (kDebugMode) AppLogger.debug('SSE parse skip: $jsonStr');
           }
-        } catch (_) {
-          // ถ้า parse JSON ไม่ได้ ใช้ default error message
         }
-        throw Exception(errorMsg);
       }
+
+      // Reset status
+      if (mounted) setState(() => _statusText = '');
+
+      if (answerText.isEmpty) {
+        throw Exception(global.language('chatbot_response_empty'));
+      }
+
+      // Fallback: ถ้า done event ไม่มี tools_used แต่มี liveTools จาก SSE → ใช้ liveTools
+      // (เกิดได้ถ้า backend ไม่ส่ง final tools_used หรือ stream หลุดก่อน done)
+      if ((toolsUsed == null || toolsUsed.isEmpty) && liveTools.isNotEmpty) {
+        toolsUsed = liveTools;
+      }
+
+      // คำนวณเวลาที่ใช้ทั้ง request → response
+      final totalElapsedMs = DateTime.now().difference(requestStart).inMilliseconds;
+
+      if (kDebugMode) {
+        AppLogger.debug('🦐 น้องกุ้ง answer: ${answerText.length} chars (${totalElapsedMs}ms)');
+        if (tokenUsage != null) AppLogger.debug('💰 Tokens: ${tokenUsage['total_tokens']}');
+        if (toolsUsed != null) AppLogger.debug('🔧 Tools: ${toolsUsed.length}');
+      }
+
+      return {
+        'text': answerText,
+        'cached': false,
+        'token_usage': tokenUsage,
+        'suggested_questions': suggestedQuestions,
+        'tools_used': toolsUsed,
+        'citations': citations,
+        'thinking': thinkingText.isNotEmpty ? thinkingText : null,
+        'iterations': iterationsCount,
+        'total_elapsed_ms': totalElapsedMs,
+        'raw_response': rawResponse,
+      };
     } on http.ClientException catch (e) {
-      if (kDebugMode) {
-        AppLogger.error('ClientException in _callChatAPI: $e');
-      }
-      throw Exception(
-        'ไม่สามารถเชื่อมต่อกับ Chatbot API\n'
-        'URL: $url\n'
-        'กรุณาตรวจสอบว่า API Server ทำงานอยู่\n'
-        'Error: $e',
-      );
+      if (mounted) setState(() => _statusText = '');
+      if (kDebugMode) AppLogger.error('ClientException: $e');
+      throw Exception('ไม่สามารถเชื่อมต่อกับน้องกุ้ง\nกรุณาตรวจสอบว่า API Server ทำงานอยู่');
     } catch (e) {
-      if (kDebugMode) {
-        AppLogger.error('Error in _callChatAPI: $e');
-      }
+      if (mounted) setState(() => _statusText = '');
+      if (kDebugMode) AppLogger.error('Error in _callChatAPI: $e');
       rethrow;
     }
   }
@@ -539,17 +737,27 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
     );
 
     if (confirmed == true) {
+      // ล้าง session บน server
+      try {
+        final clearUrl = Uri.parse(global.goApiUrlPath('api/v1/chatbot/clear-session'));
+        http.post(clearUrl,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'shop_id': global.getShopId(), 'session_id': _sessionId}),
+        );
+      } catch (_) {}
+
       setState(() {
         // สร้าง Session ID ใหม่
         _sessionId = const Uuid().v4();
+        _statusText = '';
         if (kDebugMode) {
-          AppLogger.debug('🔄 Reset Chatbot - New Session: $_sessionId');
+          AppLogger.debug('🔄 Reset Chat - New Session: $_sessionId');
         }
 
         _messages.clear();
         _messages.add(
           ChatMessage(
-            text: global.language('chatbot_welcome_emoji'),
+            text: 'สวัสดีค่ะ! น้องกุ้งพร้อมช่วยแล้วค่ะ 🦐\nถามเรื่องยอดขาย สต็อก ลูกค้า การเงิน ได้เลยนะคะ',
             isUser: false,
             timestamp: DateTime.now(),
           ),
@@ -559,6 +767,11 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
   }
 
   // แปลง HTML เป็น Markdown
+  /// ตรวจว่า text มี HTML tags หรือไม่
+  bool _containsHtml(String text) {
+    return RegExp(r'<(table|div|style|h[1-6]|ul|ol|p|br|strong|em|a |span|td|th)\b', caseSensitive: false).hasMatch(text);
+  }
+
   String _htmlToMarkdown(String html) {
     // ลบ HTML tags พื้นฐาน
     String markdown = html
@@ -1128,59 +1341,208 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
     );
   }
 
+  Future<void> _pickImages() async {
+    try {
+      final picker = ImagePicker();
+      final images = await picker.pickMultiImage(imageQuality: 80, maxWidth: 1024);
+      if (images.isEmpty) return;
+      for (final img in images) {
+        final bytes = await img.readAsBytes();
+        setState(() => _attachedImages.add(bytes));
+      }
+    } catch (e) {
+      if (kDebugMode) AppLogger.error('Image pick error: $e');
+    }
+  }
+
+  Widget _buildSearchToggles() {
+    final items = [
+      (global.language('chatbot_search_database'), _searchDatabase, (bool v) => setState(() => _searchDatabase = v)),
+      (global.language('chatbot_search_kb'), _searchKnowledgeBase, (bool v) => setState(() => _searchKnowledgeBase = v)),
+      (global.language('chatbot_search_internet'), _searchInternet, (bool v) => setState(() => _searchInternet = v)),
+    ];
+    return Row(
+      children: items.map((item) {
+        final label = item.$1;
+        final value = item.$2;
+        final onChanged = item.$3;
+        return Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: InkWell(
+            onTap: () => onChanged(!value),
+            borderRadius: BorderRadius.circular(12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: Checkbox(
+                    value: value,
+                    onChanged: (v) => onChanged(v ?? false),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    activeColor: global.theme.primaryColor,
+                  ),
+                ),
+                const SizedBox(width: 3),
+                Text(label, style: TextStyle(fontSize: 11, color: global.theme.textSecondaryColor)),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   Widget _buildInputArea() {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: global.theme.cardColor,
         border: Border(top: BorderSide(color: global.theme.dividerBorderColor)),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: TextField(
-              controller: _messageController,
-              decoration: InputDecoration(
-                hintText: global.language('chatbot_type_message'),
-                hintStyle: TextStyle(fontSize: 14, color: global.theme.formHintColor),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(color: global.theme.formBorderColor),
+          // Image preview strip
+          if (_attachedImages.isNotEmpty)
+            SizedBox(
+              height: 70,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _attachedImages.length,
+                itemBuilder: (ctx, i) => Padding(
+                  padding: const EdgeInsets.only(right: 6, bottom: 4),
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.memory(_attachedImages[i], height: 64, width: 64, fit: BoxFit.cover),
+                      ),
+                      Positioned(
+                        top: -4,
+                        right: -4,
+                        child: GestureDetector(
+                          onTap: () => setState(() => _attachedImages.removeAt(i)),
+                          child: Container(
+                            decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                            padding: const EdgeInsets.all(2),
+                            child: const Icon(Icons.close, size: 12, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(color: global.theme.formBorderColor),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(color: primaryColor, width: 1.5),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                filled: true,
-                fillColor: global.theme.formFillColor,
-                isDense: true,
               ),
-              style: const TextStyle(fontSize: 14),
-              maxLines: null,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => _sendMessage(),
             ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: primaryColor,
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white, size: 18),
-              onPressed: _isLoading ? null : _sendMessage,
-              padding: const EdgeInsets.all(8),
-              constraints: const BoxConstraints(),
-            ),
+          // Search source toggles
+          _buildSearchToggles(),
+          const SizedBox(height: 4),
+          // Input row
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // Upload button
+              IconButton(
+                icon: Icon(Icons.attach_file, color: global.theme.textSecondaryColor, size: 20),
+                onPressed: _pickImages,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+              // Text field (multi-line)
+              Expanded(
+                child: Focus(
+                  onKeyEvent: (node, event) {
+                    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+                    // Enter = ส่ง, Shift+Enter = ขึ้นบรรทัดใหม่
+                    if (event.logicalKey == LogicalKeyboardKey.enter &&
+                        !HardwareKeyboard.instance.isShiftPressed &&
+                        !_isLoading) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        final text = _messageController.text;
+                        if (text.endsWith('\n')) {
+                          _messageController.text = text.substring(0, text.length - 1);
+                        }
+                        _sendMessage();
+                      });
+                      return KeyEventResult.ignored;
+                    }
+
+                    // Thai backspace fix: Flutter default ลบ grapheme cluster ทั้งก้อน
+                    // (พยัญชนะ + สระ + วรรณยุกต์) ทำให้กด backspace ครั้งเดียวสระหายไปด้วย
+                    // แก้โดยลบทีละ rune (code point) — ผู้ใช้ลบวรรณยุกต์ก่อน แล้วค่อยสระ แล้วค่อยพยัญชนะ
+                    if (event.logicalKey == LogicalKeyboardKey.backspace &&
+                        !HardwareKeyboard.instance.isControlPressed &&
+                        !HardwareKeyboard.instance.isAltPressed) {
+                      final value = _messageController.value;
+                      final sel = value.selection;
+                      // ข้ามถ้ากำลัง compose IME, มี selection range, หรือ cursor อยู่หัว
+                      if (!sel.isValid || !sel.isCollapsed) return KeyEventResult.ignored;
+                      if (value.composing.isValid && !value.composing.isCollapsed) {
+                        return KeyEventResult.ignored;
+                      }
+                      final offset = sel.baseOffset;
+                      if (offset <= 0) return KeyEventResult.ignored;
+                      final before = value.text.substring(0, offset);
+                      final after = value.text.substring(offset);
+                      final runes = before.runes.toList();
+                      if (runes.isEmpty) return KeyEventResult.ignored;
+                      runes.removeLast();
+                      final newBefore = String.fromCharCodes(runes);
+                      _messageController.value = TextEditingValue(
+                        text: newBefore + after,
+                        selection: TextSelection.collapsed(offset: newBefore.length),
+                      );
+                      return KeyEventResult.handled;
+                    }
+
+                    return KeyEventResult.ignored;
+                  },
+                  child: TextField(
+                    controller: _messageController,
+                    focusNode: _inputFocusNode,
+                    decoration: InputDecoration(
+                      hintText: global.language('chatbot_type_message'),
+                      hintStyle: TextStyle(fontSize: 13, color: global.theme.formHintColor),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: global.theme.formBorderColor),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: global.theme.formBorderColor),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: primaryColor, width: 1.5),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      filled: true,
+                      fillColor: global.theme.formFillColor,
+                      isDense: true,
+                    ),
+                    style: const TextStyle(fontSize: 13),
+                    maxLines: 5,
+                    minLines: 1,
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              // Send button
+              Container(
+                decoration: BoxDecoration(color: primaryColor, shape: BoxShape.circle),
+                child: IconButton(
+                  icon: const Icon(Icons.send, color: Colors.white, size: 18),
+                  onPressed: _isLoading ? null : _sendMessage,
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1226,9 +1588,45 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // แสดง Thinking (collapsible) — แยก widget จากคำตอบ
+                  if (!message.isUser &&
+                      message.thinking != null &&
+                      message.thinking!.isNotEmpty)
+                    _ThinkingWidget(thinking: message.thinking!),
+
+                  // แสดง Iterations badge
+                  if (!message.isUser && message.iterations != null && message.iterations! > 1)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.blue.shade200),
+                        ),
+                        child: Text(
+                          'วิเคราะห์ ${message.iterations} รอบ',
+                          style: TextStyle(fontSize: 10, color: Colors.blue.shade700, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+
+                  // แสดงรูปที่แนบมา (user message เท่านั้น)
+                  if (message.isUser && message.images != null && message.images!.isNotEmpty) ...[
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: message.images!.map((img) => ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.memory(img, height: 80, width: 80, fit: BoxFit.cover),
+                      )).toList(),
+                    ),
+                    const SizedBox(height: 6),
+                  ],
+
                   // แสดง HTML สำหรับ AI response หรือ Text สำหรับ User
                   if (message.isHtml && !message.isUser)
-                    // ใช้ InAppWebView เพื่อแสดง HTML เหมือน browser 100%
                     _HtmlContentView(
                       htmlContent: message.text,
                       onSendMessage: _sendMessageFromHTML,
@@ -1251,6 +1649,14 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
                       ),
                     ),
                   const SizedBox(height: 4),
+
+                  // แสดง Citations (แหล่งอ้างอิง kb/web) เป็นปุ่มกดได้
+                  if (!message.isUser &&
+                      message.citations != null &&
+                      message.citations!.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    _buildCitationsSection(message.citations!),
+                  ],
 
                   // แสดง Tools Used (เฉพาะ AI response ที่ใช้ tools)
                   if (!message.isUser &&
@@ -1313,95 +1719,124 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
                             ],
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            '• Model: ${message.tokenUsage!['model'] ?? 'N/A'}',
-                            style: const TextStyle(fontSize: 11),
+                          // Model + iterations + elapsed (1 row)
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 2,
+                            children: [
+                              _miniStat(
+                                Icons.smart_toy_outlined,
+                                'Model',
+                                '${message.tokenUsage!['model'] ?? 'N/A'}',
+                              ),
+                              if (message.iterations != null && message.iterations! > 0)
+                                _miniStat(
+                                  Icons.repeat,
+                                  'Iterations',
+                                  '${message.iterations}',
+                                ),
+                              if (message.totalElapsedMs != null)
+                                _miniStat(
+                                  Icons.timer_outlined,
+                                  'Elapsed',
+                                  '${(message.totalElapsedMs! / 1000).toStringAsFixed(2)}s',
+                                ),
+                            ],
                           ),
-                          Text(
-                            '• Tokens: ${message.tokenUsage!['total_tokens'] ?? 0}',
-                            style: const TextStyle(fontSize: 11),
+                          const SizedBox(height: 4),
+                          // Tokens — แยก prompt/completion/total
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 2,
+                            children: [
+                              _miniStat(
+                                Icons.arrow_upward,
+                                'Prompt',
+                                '${message.tokenUsage!['prompt_tokens'] ?? 0}',
+                                color: Colors.blue.shade700,
+                              ),
+                              _miniStat(
+                                Icons.arrow_downward,
+                                'Completion',
+                                '${message.tokenUsage!['completion_tokens'] ?? 0}',
+                                color: Colors.green.shade700,
+                              ),
+                              _miniStat(
+                                Icons.layers,
+                                'Total',
+                                '${message.tokenUsage!['total_tokens'] ?? 0}',
+                                color: Colors.indigo.shade700,
+                              ),
+                              _miniStat(
+                                Icons.attach_money,
+                                'Cost',
+                                '${message.tokenUsage!['cost_thb'] ?? 0} ฿',
+                                color: Colors.amber.shade800,
+                              ),
+                            ],
                           ),
-                          Text(
-                            '• Cost: ${message.tokenUsage!['cost_thb'] ?? 0} THB',
-                            style: const TextStyle(fontSize: 11),
-                          ),
+                          if (message.tokenUsage!['has_thinking'] == false)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                '⚠️ Model นี้ไม่มีการวางแผนคำถาม',
+                                style: TextStyle(fontSize: 11, color: Colors.orange.shade700),
+                              ),
+                            ),
+                          // Debug raw JSON (collapsible) — เฉพาะเมื่อมี rawResponse
+                          if (message.rawResponse != null) ...[
+                            const SizedBox(height: 6),
+                            _RawJsonDebugPanel(
+                              rawResponse: message.rawResponse!,
+                              onCopy: () => _copyToClipboard(_prettyJson(message.rawResponse), false),
+                            ),
+                          ],
                         ],
                       ),
                     ),
                   ],
 
-                  // แสดง Suggested Questions (เฉพาะ AI response)
+                  // แสดง Suggested Questions เป็นปุ่มกด
                   if (!message.isUser &&
                       message.suggestedQuestions != null &&
                       message.suggestedQuestions!.isNotEmpty) ...[
-                    SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.purple.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.purple.shade200),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.lightbulb_outline,
-                                size: 14,
-                                color: Colors.purple.shade700,
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: message.suggestedQuestions!.map((q) {
+                        return Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              _messageController.text = q;
+                              _sendMessage();
+                            },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.purple.shade50,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.purple.shade300),
                               ),
-                              SizedBox(width: 4),
-                              Text(
-                                global.language('chatbot_suggested_questions'),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.purple.shade700,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.lightbulb_outline, size: 12, color: Colors.purple.shade600),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      q,
+                                      style: TextStyle(fontSize: 11, color: Colors.purple.shade800),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
-                          const SizedBox(height: 6),
-                          ...message.suggestedQuestions!.asMap().entries.map((
-                            entry,
-                          ) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: InkWell(
-                                onTap: () {
-                                  // กดแล้วส่งข้อความเลย
-                                  _messageController.text = entry.value;
-                                  _sendMessage();
-                                },
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      '${entry.key + 1}.',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.purple.shade700,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Expanded(
-                                      child: Text(
-                                        entry.value,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: Colors.purple.shade900,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }),
-                        ],
-                      ),
+                        );
+                      }).toList(),
                     ),
                   ],
 
@@ -1424,22 +1859,15 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
                           onTap: () =>
                               _copyToClipboard(message.text, message.isHtml),
                           child: Padding(
-                            padding: EdgeInsets.all(4),
+                            padding: const EdgeInsets.all(4),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
-                                  Icons.copy,
-                                  size: 12,
-                                  color: global.theme.textSecondaryColor,
-                                ),
-                                SizedBox(width: 4),
+                                Icon(Icons.copy, size: 12, color: global.theme.textSecondaryColor),
+                                const SizedBox(width: 4),
                                 Text(
                                   global.language('chatbot_copy'),
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: global.theme.textSecondaryColor,
-                                  ),
+                                  style: TextStyle(fontSize: 10, color: global.theme.textSecondaryColor),
                                 ),
                               ],
                             ),
@@ -1492,9 +1920,250 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
     'get_yoy_comparison': global.language('yoy_comparison'),
     'get_mom_comparison': global.language('mom_comparison'),
     'list_units': global.language('product_unit'),
+    'query_mongodb': 'Query MongoDB',
+    'aggregate_mongodb': 'Aggregate MongoDB',
+    'list_mongodb_collections': 'รายชื่อ Collections',
+    'query_clickhouse': 'Query ClickHouse',
+    'list_clickhouse_tables': 'รายชื่อ Tables',
+    'query_postgresql': 'Query PostgreSQL',
+    'web_search': 'ค้นหาอินเทอร์เน็ต',
   };
 
+  /// mini stat chip (icon + label + value)
+  Widget _miniStat(IconData icon, String label, String value, {Color? color}) {
+    final c = color ?? global.theme.iconSecondaryColor;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 11, color: c),
+        const SizedBox(width: 3),
+        Text(
+          '$label:',
+          style: TextStyle(fontSize: 10, color: c),
+        ),
+        const SizedBox(width: 2),
+        Text(
+          value,
+          style: TextStyle(fontSize: 10, color: c, fontWeight: FontWeight.w600),
+        ),
+      ],
+    );
+  }
+
+  /// Pretty-print JSON สำหรับโชว์ใน params/result panel
+  static String _prettyJson(dynamic value) {
+    if (value == null) return '(null)';
+    try {
+      const encoder = JsonEncoder.withIndent('  ');
+      return encoder.convert(value);
+    } catch (_) {
+      return value.toString();
+    }
+  }
+
+  /// Source badge config — สี + emoji + label
+  static ({String emoji, String text, Color bg, Color border, Color textColor}) _sourceBadgeConfig(String source) {
+    switch (source) {
+      case 'web_search':
+        return (
+          emoji: '🌐',
+          text: 'ค้นหาจากอินเทอร์เน็ต',
+          bg: Colors.blue.shade50,
+          border: Colors.blue.shade200,
+          textColor: Colors.blue.shade700,
+        );
+      case 'custom_query':
+        return (
+          emoji: '💻',
+          text: 'เขียนโปรแกรมเอง',
+          bg: Colors.purple.shade50,
+          border: Colors.purple.shade200,
+          textColor: Colors.purple.shade700,
+        );
+      default:
+        return (
+          emoji: '📊',
+          text: 'ข้อมูลภายในระบบ',
+          bg: Colors.teal.shade50,
+          border: Colors.teal.shade200,
+          textColor: Colors.teal.shade700,
+        );
+    }
+  }
+
+  Widget _buildCitationsSection(List<Map<String, dynamic>> citations) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: global.theme.surfaceColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: global.theme.dividerBorderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.link, size: 14, color: global.theme.primaryColor),
+              const SizedBox(width: 4),
+              Text(
+                'แหล่งอ้างอิง (${citations.length})',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: global.theme.primaryColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: citations.map((c) {
+              final type = (c['type'] ?? '').toString();
+              final label = (c['label'] ?? '').toString().isEmpty
+                  ? (type == 'web' ? 'Web' : 'เอกสาร')
+                  : c['label'].toString();
+              final isKB = type == 'kb';
+              return InkWell(
+                onTap: () => _handleCitationTap(c),
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isKB
+                        ? global.theme.primaryColor.withValues(alpha: 0.1)
+                        : global.theme.infoHighlightColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isKB
+                          ? global.theme.primaryColor.withValues(alpha: 0.4)
+                          : global.theme.infoHighlightColor.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isKB ? Icons.description : Icons.public,
+                        size: 13,
+                        color: isKB ? global.theme.primaryColor : global.theme.infoHighlightColor,
+                      ),
+                      const SizedBox(width: 4),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 220),
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: global.theme.textColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleCitationTap(Map<String, dynamic> citation) {
+    final type = (citation['type'] ?? '').toString();
+    if (type == 'web') {
+      final url = (citation['url'] ?? '').toString();
+      if (url.isNotEmpty) {
+        _showWebViewDialog(url);
+      }
+      return;
+    }
+    // kb → show text dialog
+    final label = (citation['label'] ?? 'เอกสาร').toString();
+    final text = (citation['text'] ?? '').toString();
+    _showKBTextDialog(label, text);
+  }
+
+  void _showWebViewDialog(String url) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) => _WebViewDialog(url: url),
+    );
+  }
+
+  void _showKBTextDialog(String label, String text) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 700, maxHeight: 600),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: global.theme.primaryColor,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.description, color: global.theme.onPrimaryColor, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          color: global.theme.onPrimaryColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close, color: global.theme.onPrimaryColor, size: 20),
+                      onPressed: () => Navigator.of(ctx).pop(),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: SelectableText(
+                    text.isEmpty ? '(ไม่มีเนื้อหา)' : text,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: global.theme.textColor,
+                      height: 1.6,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildToolsUsedSection(List<Map<String, dynamic>> tools) {
+    // นับสถิติ: success/fail + total duration
+    final successCount = tools.where((t) => t['error'] == null || t['error'].toString().isEmpty).length;
+    final failCount = tools.length - successCount;
+    final totalDuration = tools.fold<int>(0, (sum, t) {
+      final d = t['duration_ms'];
+      return sum + (d is num ? d.toInt() : 0);
+    });
+
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -1505,45 +2174,47 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header — สรุปจำนวน + เวลา + สถิติ
           Row(
             children: [
               Icon(Icons.build_circle, size: 14, color: Colors.teal.shade700),
               const SizedBox(width: 4),
               Text(
-                global.language('ai_data_source'),
+                '${global.language('ai_data_source')} (${tools.length})',
                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.teal.shade700),
+              ),
+              const SizedBox(width: 8),
+              if (successCount > 0)
+                Text(
+                  '✓ $successCount',
+                  style: TextStyle(fontSize: 10, color: Colors.green.shade700, fontWeight: FontWeight.w600),
+                ),
+              if (failCount > 0) ...[
+                const SizedBox(width: 6),
+                Text(
+                  '✗ $failCount',
+                  style: TextStyle(fontSize: 10, color: Colors.red.shade700, fontWeight: FontWeight.w600),
+                ),
+              ],
+              const Spacer(),
+              Text(
+                '⏱ ${totalDuration}ms',
+                style: TextStyle(fontSize: 10, color: Colors.teal.shade600, fontWeight: FontWeight.w500),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          ...tools.map((tool) {
-            final toolName = tool['tool']?.toString() ?? '';
-            final label = _toolLabels[toolName] ?? toolName;
-            final durationMs = tool['duration_ms'] ?? 0;
-            final hasError = tool['error'] != null && tool['error'].toString().isNotEmpty;
-
-            return Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Row(
-                children: [
-                  Icon(
-                    hasError ? Icons.error_outline : Icons.check_circle_outline,
-                    size: 12,
-                    color: hasError ? Colors.red.shade400 : Colors.teal.shade500,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: TextStyle(fontSize: 11, color: Colors.teal.shade800),
-                    ),
-                  ),
-                  Text(
-                    '${durationMs}ms',
-                    style: TextStyle(fontSize: 10, color: global.theme.iconSecondaryColor),
-                  ),
-                ],
-              ),
+          const SizedBox(height: 6),
+          // แต่ละ tool เป็น expandable tile
+          ...tools.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final tool = entry.value;
+            return _ToolExpansionTile(
+              index: idx + 1,
+              tool: tool,
+              labelMap: _toolLabels,
+              sourceBadgeBuilder: _sourceBadgeConfig,
+              prettyJson: _prettyJson,
+              onCopyJson: (json) => _copyToClipboard(json, false),
             );
           }),
         ],
@@ -1585,14 +2256,14 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      global.language('ai_thinking'),
+                      _statusText.isNotEmpty ? 'น้องกุ้ง' : global.language('ai_thinking'),
                       style: TextStyle(fontSize: 12, color: global.theme.iconSecondaryColor),
                     ),
                   ],
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  global.language('fetching_data_from_system'),
+                  _statusText.isNotEmpty ? _statusText : global.language('fetching_data_from_system'),
                   style: TextStyle(fontSize: 10, color: global.theme.iconSecondaryColor),
                 ),
               ],
@@ -1618,6 +2289,7 @@ class _ChatbotOverlayState extends State<ChatbotOverlay>
     final minute = time.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
   }
+
 }
 
 class ChatMessage {
@@ -1629,19 +2301,485 @@ class ChatMessage {
   final Map<String, dynamic>? tokenUsage; // Token usage จาก Go API
   final List<String>? suggestedQuestions; // คำถามแนะนำ
   final bool? cached; // ใช้ cache หรือไม่
-  final List<Map<String, dynamic>>? toolsUsed; // Tools ที่ AI เรียกใช้
+  final List<Map<String, dynamic>>? toolsUsed; // Tools ที่ AI เรียกใช้ (params/result/error/source)
+  final String? thinking; // Extended thinking จาก AI
+  final int? iterations; // จำนวนรอบที่ AI วิเคราะห์
+  final List<Uint8List>? images; // รูปที่แนบมาพร้อมข้อความ
+  final String? model; // ชื่อ model ที่ใช้ตอบ
+  final int? totalElapsedMs; // เวลารวม request → response (ms)
+  final Map<String, dynamic>? rawResponse; // raw JSON สำหรับ debug panel
+  final List<Map<String, dynamic>>? citations; // แหล่งอ้างอิง (kb/web)
 
   ChatMessage({
     required this.text,
     required this.isUser,
     required this.timestamp,
     this.isError = false,
-    this.isHtml = false, // default เป็น plain text
-    this.tokenUsage, // optional
-    this.suggestedQuestions, // optional
-    this.cached, // optional
-    this.toolsUsed, // optional
+    this.isHtml = false,
+    this.tokenUsage,
+    this.suggestedQuestions,
+    this.cached,
+    this.toolsUsed,
+    this.thinking,
+    this.iterations,
+    this.images,
+    this.model,
+    this.totalElapsedMs,
+    this.rawResponse,
+    this.citations,
   });
+}
+
+/// Widget สำหรับแสดง Thinking (collapsible)
+class _ThinkingWidget extends StatefulWidget {
+  final String thinking;
+  const _ThinkingWidget({required this.thinking});
+
+  @override
+  State<_ThinkingWidget> createState() => _ThinkingWidgetState();
+}
+
+class _ThinkingWidgetState extends State<_ThinkingWidget> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        gradient: LinearGradient(
+          colors: [Colors.blue.shade50, Colors.indigo.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    _isExpanded ? Icons.expand_less : Icons.expand_more,
+                    size: 16,
+                    color: Colors.blue.shade700,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '💭 วิธีคิดคำตอบ',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_isExpanded) ...[
+            Divider(height: 1, color: Colors.blue.shade200),
+            Container(
+              constraints: const BoxConstraints(maxHeight: 300),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(10),
+                child: SelectableText(
+                  widget.thinking,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.blueGrey.shade600,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Widget สำหรับแสดง Tool call แบบ ExpansionTile
+/// เปิดดู params, result preview, error ได้
+class _ToolExpansionTile extends StatefulWidget {
+  final int index;
+  final Map<String, dynamic> tool;
+  final Map<String, String> labelMap;
+  final ({String emoji, String text, Color bg, Color border, Color textColor}) Function(String) sourceBadgeBuilder;
+  final String Function(dynamic) prettyJson;
+  final void Function(String) onCopyJson;
+
+  const _ToolExpansionTile({
+    required this.index,
+    required this.tool,
+    required this.labelMap,
+    required this.sourceBadgeBuilder,
+    required this.prettyJson,
+    required this.onCopyJson,
+  });
+
+  @override
+  State<_ToolExpansionTile> createState() => _ToolExpansionTileState();
+}
+
+class _ToolExpansionTileState extends State<_ToolExpansionTile> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final tool = widget.tool;
+    final toolName = tool['tool']?.toString() ?? '';
+    final label = widget.labelMap[toolName] ?? toolName;
+    final durationMs = tool['duration_ms'] ?? 0;
+    final iteration = tool['iteration'];
+    final hasError = tool['error'] != null && tool['error'].toString().isNotEmpty;
+    final source = tool['source']?.toString() ?? 'mcp';
+    final params = tool['params'];
+    final result = tool['result'] ?? tool['result_preview'];
+    final errorText = tool['error']?.toString() ?? '';
+
+    final badge = widget.sourceBadgeBuilder(source);
+
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: hasError ? Colors.red.shade200 : Colors.teal.shade100,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header — กดเปิด/ปิดได้
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(6),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              child: Row(
+                children: [
+                  // Icon expand/collapse
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 14,
+                    color: Colors.teal.shade600,
+                  ),
+                  const SizedBox(width: 2),
+                  // Index
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Text(
+                      '#${widget.index}',
+                      style: TextStyle(fontSize: 9, color: Colors.grey.shade700, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  // Status icon
+                  Icon(
+                    hasError ? Icons.error_outline : Icons.check_circle_outline,
+                    size: 12,
+                    color: hasError ? Colors.red.shade400 : Colors.teal.shade500,
+                  ),
+                  const SizedBox(width: 4),
+                  // Source badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: badge.bg,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: badge.border),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(badge.emoji, style: const TextStyle(fontSize: 9)),
+                        const SizedBox(width: 2),
+                        Text(badge.text, style: TextStyle(fontSize: 9, color: badge.textColor)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  // Tool label
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: TextStyle(fontSize: 11, color: Colors.teal.shade800, fontWeight: FontWeight.w500),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  // Iteration badge
+                  if (iteration != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.indigo.shade50,
+                        borderRadius: BorderRadius.circular(3),
+                        border: Border.all(color: Colors.indigo.shade200),
+                      ),
+                      child: Text(
+                        'iter $iteration',
+                        style: TextStyle(fontSize: 9, color: Colors.indigo.shade700),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+                  // Duration
+                  Text(
+                    '${durationMs}ms',
+                    style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Expanded content — params + result + error
+          if (_expanded) ...[
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Tool name (raw)
+                  Row(
+                    children: [
+                      Icon(Icons.tag, size: 11, color: Colors.grey.shade500),
+                      const SizedBox(width: 3),
+                      Text(
+                        toolName,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey.shade600,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Params
+                  if (params != null) ...[
+                    const SizedBox(height: 6),
+                    _buildJsonBlock(
+                      'Params',
+                      Icons.input,
+                      Colors.blue,
+                      widget.prettyJson(params),
+                      onCopy: () => widget.onCopyJson(widget.prettyJson(params)),
+                    ),
+                  ],
+                  // Result
+                  if (result != null && !hasError) ...[
+                    const SizedBox(height: 6),
+                    _buildJsonBlock(
+                      'Result Preview',
+                      Icons.output,
+                      Colors.green,
+                      widget.prettyJson(result),
+                      onCopy: () => widget.onCopyJson(widget.prettyJson(result)),
+                    ),
+                  ],
+                  // Error
+                  if (hasError) ...[
+                    const SizedBox(height: 6),
+                    _buildJsonBlock(
+                      'Error',
+                      Icons.error,
+                      Colors.red,
+                      errorText,
+                      onCopy: () => widget.onCopyJson(errorText),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildJsonBlock(String title, IconData icon, MaterialColor color, String content, {VoidCallback? onCopy}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: color.shade50,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            child: Row(
+              children: [
+                Icon(icon, size: 11, color: color.shade700),
+                const SizedBox(width: 4),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: color.shade700,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                if (onCopy != null)
+                  InkWell(
+                    onTap: onCopy,
+                    child: Padding(
+                      padding: const EdgeInsets.all(2),
+                      child: Icon(Icons.copy, size: 11, color: color.shade600),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          // Content (scrollable, max-height 180)
+          Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(maxHeight: 180),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(3),
+                bottomRight: Radius.circular(3),
+              ),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(6),
+              child: SelectableText(
+                content,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontFamily: 'monospace',
+                  color: Colors.grey.shade800,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Widget แสดง raw JSON debug panel (collapsible)
+/// ใช้ดู response เต็มจาก backend สำหรับ debug + transparency
+class _RawJsonDebugPanel extends StatefulWidget {
+  final Map<String, dynamic> rawResponse;
+  final VoidCallback onCopy;
+
+  const _RawJsonDebugPanel({required this.rawResponse, required this.onCopy});
+
+  @override
+  State<_RawJsonDebugPanel> createState() => _RawJsonDebugPanelState();
+}
+
+class _RawJsonDebugPanelState extends State<_RawJsonDebugPanel> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final pretty = const JsonEncoder.withIndent('  ').convert(widget.rawResponse);
+    final lineCount = pretty.split('\n').length;
+    final byteSize = pretty.length;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(6),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              child: Row(
+                children: [
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 14,
+                    color: Colors.grey.shade700,
+                  ),
+                  const SizedBox(width: 2),
+                  Icon(Icons.code, size: 12, color: Colors.grey.shade700),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Raw JSON Debug',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Text(
+                      '$lineCount lines · ${(byteSize / 1024).toStringAsFixed(1)}KB',
+                      style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (_expanded)
+                    InkWell(
+                      onTap: widget.onCopy,
+                      child: Padding(
+                        padding: const EdgeInsets.all(2),
+                        child: Icon(Icons.copy, size: 12, color: Colors.grey.shade600),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          // JSON content
+          if (_expanded) ...[
+            const Divider(height: 1),
+            Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(maxHeight: 250),
+              padding: const EdgeInsets.all(6),
+              child: SingleChildScrollView(
+                child: SelectableText(
+                  pretty,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontFamily: 'monospace',
+                    color: Colors.grey.shade800,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 /// Widget สำหรับแสดง HTML Content โดยปรับความสูงอัตโนมัติ
@@ -1672,6 +2810,20 @@ class _HtmlContentViewState extends State<_HtmlContentView> {
 
   // ฟังก์ชันสำหรับ inject JavaScript เพื่อดัก event
   void _setupEventListeners(InAppWebViewController controller) {
+    // Handler สำหรับ resize height เมื่อ details toggle
+    controller.addJavaScriptHandler(
+      handlerName: 'resizeHeight',
+      callback: (args) {
+        if (_isDisposed || !mounted || args.isEmpty) return;
+        try {
+          final h = double.tryParse(args[0].toString());
+          if (h != null && h > 0) {
+            setState(() => _contentHeight = h);
+          }
+        } catch (_) {}
+      },
+    );
+
     // Handler หลักสำหรับ event ทั่วไป
     controller.addJavaScriptHandler(
       handlerName: 'flutterHandler',
@@ -1853,10 +3005,13 @@ class _HtmlContentViewState extends State<_HtmlContentView> {
       child: InAppWebView(
         initialData: InAppWebViewInitialData(
           data: widget.htmlContent,
+          // baseUrl ใช้สำหรับ resolve relative paths ใน HTML —
+          // ตอนนี้ระบบ HTML ของน้องกุ้งไม่มี image/external resource (ตาม Output Format rule)
+          // ใช้ goApiUrl ของ goapi เป็น base — fallback เป็น about:blank ถ้าไม่ตั้ง
           baseUrl: WebUri(
-            kDebugMode
-                ? 'http://localhost:9999'
-                : 'https://bcaicallcenter.dedetouch.com',
+            global.myAppConfig.goApiUrl.isNotEmpty
+                ? global.myAppConfig.goApiUrl
+                : 'about:blank',
           ),
         ),
         initialSettings: InAppWebViewSettings(

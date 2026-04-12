@@ -5,8 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	serviceConfig "smlcloudplatform/internal/goapi/config"
 	"smlcloudplatform/internal/goapi/logger"
+	myGlobal "smlcloudplatform/internal/goapi/myglobal"
+	"smlcloudplatform/internal/goapi/myollama"
 	mypg "smlcloudplatform/internal/goapi/mypg"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // ==================== Top Customers ====================
@@ -578,4 +584,181 @@ func GetCustomerSegments(ctx context.Context, shopID, fromDate, toDate string) (
 	}
 
 	return response, nil
+}
+
+// ==================== Search Customers (semantic-first) ====================
+
+// CustomerSearchResult — lightweight customer record สำหรับ search result
+type CustomerSearchResult struct {
+	GuidFixed string `json:"guidfixed"`
+	Code      string `json:"code"`
+	Name0     string `json:"name0"`
+	TaxId     string `json:"taxid,omitempty"`
+	Email     string `json:"email,omitempty"`
+	ShopID    string `json:"shopid"`
+}
+
+// SearchCustomersResponse — result สำหรับ search_customers MCP tool
+type SearchCustomersResponse struct {
+	Customers   []CustomerSearchResult `json:"customers"`
+	Count       int                   `json:"count"`
+	Keyword     string                `json:"keyword"`
+	SearchMode  string                `json:"search_mode"` // "vector", "regex"
+	GeneratedAt time.Time             `json:"generated_at"`
+}
+
+// SearchCustomers — vector-first semantic search สำหรับ agent ใช้
+func SearchCustomers(ctx context.Context, shopID, keyword string, limit int) (*SearchCustomersResponse, error) {
+	if shopID == "" {
+		return nil, fmt.Errorf("shop_id is required")
+	}
+	if keyword == "" {
+		return nil, fmt.Errorf("keyword is required")
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+	if limit > 50 {
+		limit = 50
+	}
+
+	logger.Info("[SearchEntity] search_customers shopID=%s keyword=%s limit=%d", shopID, keyword, limit)
+
+	// 1. Try pgvector first
+	vectorResults, vecErr := searchCustomersVector(shopID, keyword, limit)
+	if vecErr == nil && len(vectorResults) > 0 {
+		logger.Info("[SearchEntity] search_customers vector found %d results", len(vectorResults))
+		return &SearchCustomersResponse{
+			Customers:   vectorResults,
+			Count:       len(vectorResults),
+			Keyword:     keyword,
+			SearchMode:  "vector",
+			GeneratedAt: time.Now(),
+		}, nil
+	}
+	if vecErr != nil {
+		logger.Info("[SearchEntity] search_customers vector fallback (err: %v) — trying MongoDB", vecErr)
+	}
+
+	// 2. Fallback: MongoDB regex (collection name: customers)
+	mongoClient := myGlobal.SafeMongoConnectFast()
+	if mongoClient == nil {
+		return nil, fmt.Errorf("ไม่สามารถเชื่อมต่อ MongoDB ได้")
+	}
+	svcCfg := serviceConfig.NewServiceConfig()
+	dbName := svcCfg.MongodbDatabaseName()
+
+	filter := bson.M{
+		"shopid": shopID,
+		"$or": []bson.M{
+			{"deletedat": bson.M{"$exists": false}},
+			{"deletedat": time.Time{}},
+		},
+	}
+	keyFilter := bson.M{
+		"$or": []bson.M{
+			{"code": bson.M{"$regex": keyword, "$options": "i"}},
+			{"name0": bson.M{"$regex": keyword, "$options": "i"}},
+			{"names.name": bson.M{"$regex": keyword, "$options": "i"}},
+			{"taxid": bson.M{"$regex": keyword, "$options": "i"}},
+		},
+	}
+	filter = bson.M{"$and": []bson.M{filter, keyFilter}}
+
+	coll := mongoClient.Database(dbName).Collection("customers")
+	opts := options.Find().SetLimit(int64(limit)).SetSort(bson.D{{Key: "code", Value: 1}})
+	cursor, err := coll.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, fmt.Errorf("query ล้มเหลว: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	type mongoCustomer struct {
+		GuidFixed string `bson:"guidfixed"`
+		Code      string `bson:"code"`
+		Name0     string `bson:"name0"`
+		TaxId     string `bson:"taxid"`
+		Email     string `bson:"email"`
+		ShopID    string `bson:"shopid"`
+	}
+	var raw []mongoCustomer
+	if err := cursor.All(ctx, &raw); err != nil {
+		return nil, fmt.Errorf("decode ล้มเหลว: %w", err)
+	}
+
+	customers := make([]CustomerSearchResult, 0, len(raw))
+	for _, r := range raw {
+		customers = append(customers, CustomerSearchResult{
+			GuidFixed: r.GuidFixed,
+			Code:      r.Code,
+			Name0:     r.Name0,
+			TaxId:     r.TaxId,
+			Email:     r.Email,
+			ShopID:    r.ShopID,
+		})
+	}
+
+	logger.Info("[SearchEntity] search_customers regex found %d results", len(customers))
+	return &SearchCustomersResponse{
+		Customers:   customers,
+		Count:       len(customers),
+		Keyword:     keyword,
+		SearchMode:  "regex",
+		GeneratedAt: time.Now(),
+	}, nil
+}
+
+// searchCustomersVector — pgvector search บน customer table
+func searchCustomersVector(shopID, keyword string, limit int) ([]CustomerSearchResult, error) {
+	db, err := mypg.PgSqlFastConnect(shopID)
+	if err != nil {
+		return nil, err
+	}
+
+	var colExists bool
+	db.QueryRow(`SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='customer' AND column_name='name_embedding')`).Scan(&colExists)
+	if !colExists {
+		return nil, fmt.Errorf("no name_embedding column in customer table")
+	}
+
+	var hasEmb bool
+	db.QueryRow(`SELECT EXISTS(SELECT 1 FROM customer WHERE name_embedding IS NOT NULL LIMIT 1)`).Scan(&hasEmb)
+	if !hasEmb {
+		return nil, fmt.Errorf("no embeddings in customer table")
+	}
+
+	queryEmb, err := myollama.GenerateSingleEmbedding(keyword)
+	if err != nil {
+		return nil, fmt.Errorf("embedding failed: %w", err)
+	}
+
+	vecStr := float32SliceToVectorString(queryEmb)
+	sqlQuery := `SELECT COALESCE(guidfixed,''), COALESCE(code,''), COALESCE(name0,''),
+			COALESCE(taxid,''), COALESCE(email,''),
+			(name_embedding <=> $1::vector) as distance
+		FROM customer
+		WHERE shopid = $2 AND name_embedding IS NOT NULL
+		ORDER BY name_embedding <=> $1::vector
+		LIMIT $3`
+
+	rows, err := db.Query(sqlQuery, vecStr, shopID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []CustomerSearchResult
+	for rows.Next() {
+		var r CustomerSearchResult
+		var distance float64
+		if err := rows.Scan(&r.GuidFixed, &r.Code, &r.Name0, &r.TaxId, &r.Email, &distance); err != nil {
+			continue
+		}
+		if distance > 0.5 {
+			continue
+		}
+		r.ShopID = shopID
+		results = append(results, r)
+	}
+	return results, nil
 }

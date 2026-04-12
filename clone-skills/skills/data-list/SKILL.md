@@ -2,8 +2,9 @@
 name: data-list
 description: >
   Data list screen standards for Flutter ERP. SplitView layout, listScreen/editScreen,
-  row colors (hover/selected/edit), search bar, column header, ThemeRefreshMixin.
-  Triggers: "data list", "split view", "row color", "hover", "list screen", "edit screen".
+  row colors (hover/selected/edit), search bar, column header, ThemeRefreshMixin. Use
+  when the user mentions building or fixing a list+edit screen (config, master data, or
+  transaction list screens).
 user-invocable: true
 ---
 
@@ -12,6 +13,29 @@ user-invocable: true
 ## Usage
 - `/data-list` — Check/create data list screens to match standards
 - `/data-list <screen-name>` — Check specific screen
+
+## When to Use
+
+- Building a new screen with list on the left and form on the right (SplitView pattern)
+- Review/fix screens where row color is incorrect (not orange when editing)
+- Screens where hover does not work or double-tap does not open edit mode
+- Check whether font size uses `global.deviceConfig.listDataFontSize` or a local variable
+- Mobile screens that need to switch between TabBarView (mobile) and SplitView (desktop)
+
+## Anti-Patterns
+
+- Do NOT use plain `ListView.builder` — must use SplitView + listScreen/editScreen pattern
+- Do NOT hardcode font size — use `global.deviceConfig.listDataFontSize` via `ListFontSizeControl`
+- Do NOT add a separate `IconButton(Icons.line_weight)` — `ListFontSizeControl` already includes this button
+- Do NOT use `screenEvent == edit` to check edit mode — use `isEditMode` or `isSaveAllow` instead
+- Do NOT hardcode `Colors.*` in row/background — always use `global.theme.*`
+- Do NOT forget `global.ThemeRefreshMixin` — without it the screen won't rebuild on theme change
+
+## Related Skills
+
+- `/theming` — all color properties, scan for hardcoded colors
+- `/tab-focus` — Tab cycling for editScreen form fields
+- `/date-time-picker` — Date/Time fields in edit panel
 
 ## Reference Screen
 `lib/screens/config/product_barcode_screen.dart` — covers all patterns

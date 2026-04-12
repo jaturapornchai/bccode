@@ -1,5 +1,4 @@
-﻿// ---
-import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
+﻿import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:smlaicloud/environment.dart';
 import 'package:smlaicloud/utils/backend_url_manager.dart';
 import 'package:smlaicloud/utils/logger/app_logger.dart';
@@ -80,7 +79,9 @@ AppConfigClass appConfigInit() {
       AppLogger.debug('mainApiUrl: ${BackendUrlManager.getMainApiUrl()}');
     }
   } else {
-    AppLogger.error('[appConfigInit] Backend URL ยังไม่ได้ตั้งค่า — กรุณาตั้งค่าในหน้า Login');
+    AppLogger.error(
+      '[appConfigInit] Backend URL ยังไม่ได้ตั้งค่า — กรุณาตั้งค่าในหน้า Login',
+    );
   }
 
   return appConfig;

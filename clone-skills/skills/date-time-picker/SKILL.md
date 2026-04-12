@@ -2,11 +2,34 @@
 name: date-time-picker
 description: >
   Date and time picker components for Flutter ERP. CustomDatePicker with Thai Buddhist
-  calendar, CustomTimePicker with 24-hour quick select. Use instead of Flutter built-ins.
-  Triggers: "date picker", "time picker", "Buddhist calendar", "select date/time".
+  calendar (B.E.), CustomTimePicker with 24-hour quick select. Use instead of Flutter
+  built-ins whenever the user mentions date/time input in a form screen.
 ---
 
 # Date & Time Picker Components
+
+## When to Use
+
+- Adding a date field in a document header (PO, SO, QT, PR, etc.)
+- Adding a time field alongside a date field in a transaction screen
+- Screens with date range (firstDate/lastDate) for filtering
+- Reviewing whether a screen uses Flutter built-in `showDatePicker()` (must fix)
+- Checking that date/time merge correctly when selected separately
+
+## Anti-Patterns
+
+- Do NOT use `showDatePicker()` — does not support Thai Buddhist calendar (B.E.)
+- Do NOT use `showTimePicker()` — no quick select and not 24hr format
+- Do NOT hardcode `useBuddhistCalendar: true/false` — use `null` to auto-detect from branch settings
+- Do NOT hardcode `languageCode` — use `null` to auto-detect
+- Do NOT forget to preserve existing time when selecting date (and existing date when selecting time)
+- Do NOT forget `.toLocal()` before display — otherwise timezone will be wrong
+
+## Related Skills
+
+- `/data-list` — SplitView form pattern where date picker is used in edit panel
+- `/tab-focus` — Tab focus cycling including date/time fields
+- `/theming` — form input decoration colors
 
 ## Components
 

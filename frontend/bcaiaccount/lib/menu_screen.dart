@@ -307,6 +307,7 @@ class MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin, g
     configMenuList.add(menuWidget(label: global.language("permission_definition"), category: 'system', icon: Icons.security, routeName: '/permission_definition', isAllowed: isSuperAdmin));
     configMenuList.add(menuWidget(label: global.language("permission_link"), category: 'system', icon: Icons.link, routeName: '/permission_link', isAllowed: isSuperAdmin));
     configMenuList.add(menuWidget(label: global.language('mcp_token'), category: 'system', icon: Icons.vpn_key, routeName: '/mcp_apikey', isAllowed: isSuperAdmin));
+    configMenuList.add(menuWidget(label: 'AI Provider', category: 'system', icon: Icons.smart_toy, routeName: '/ai_provider', isAllowed: isSuperAdmin));
     configMenuList.add(menuWidget(label: global.language("transfer_data"), category: 'system', icon: Icons.cloud_download, routeName: '/copy_uat_to_dev', isAllowed: isSuperAdmin));
 
     creditorMenuList = [];

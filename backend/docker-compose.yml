@@ -154,6 +154,11 @@ services:
       DEPLOY_TOKEN: "${DEPLOY_TOKEN:-}"
       DEPLOY_REPO_DIR: "${DEPLOY_REPO_DIR:-/opt/bcaicloud/backend}"
       DEPLOY_COMPOSE_FILE: "${DEPLOY_COMPOSE_FILE:-docker-compose.yml}"
+      # ─── RAGFlow (Knowledge Base) ───────────
+      # ลูกพี่ตั้ง RAGFLOW_API_KEY จาก RAGFlow Web UI → Profile → API → Create API Key
+      # แล้วใส่ใน .env หรือ shell ก่อน docker compose up
+      RAGFLOW_BASE_URL: "${RAGFLOW_BASE_URL:-http://host.docker.internal:9380}"
+      RAGFLOW_API_KEY: "${RAGFLOW_API_KEY:-ragflow-XbUOXi2zDzeKDvnrQNTF9O58gYMtYcf9YgoSd-qb7qw}"
     volumes:
       - ./bootstrap.json:/app/bootstrap.json:rw
       - ./tdict-std.txt:/app/tdict-std.txt

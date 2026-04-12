@@ -201,3 +201,19 @@ PR, RFQ, and PO all share the same generic approval handlers:
 draft -> pending_approval -> approved -> converted (to RFQ/PO)
                           -> rejected -> draft (edit and resubmit)
 ```
+
+## PR/RFQ Pitfalls (lessons learned)
+
+1. **Docker build uses root `main.go`** — not `cmd/app/main.go`. Register handlers in both files.
+2. **TransactionModel lacks PR-specific fields** — inject fields (requestercode, departmentcode, purpose, urgency) into JSON before POST in repository layer.
+3. **PR has no payment system** — `TransactionCalculator.calPayTotal()` + `verifyPayment()` must early-return for PR.
+4. **GoAPI `getdoc.go` switch** — add case `purchase-requisition` (transflag=21) and `rfq` (transflag=22) in system type switch.
+5. **Kafka consumer needs 2 layers** — (1) `transactionconsumer/` → PG sync + (2) `goapi/handlers/kafka/` → ClickHouse sync. Missing either = incomplete data.
+6. **PR/RFQ share PO's approval system** — reuse `po_approval_helper.dart` / `po_approval_handler.dart`, differentiate by `purchase_type_code`.
+7. **Job/Project 2-step selection** — `PRHeaderWidget` uses repo directly (not via BLoC), caches in state (`_cachedJobProjects`, `_cachedCostCenters`), dialog uses `StatefulBuilder`. Filter: parentcode='' → projects, parentcode=code → jobs. Display name (jobNameController) not code.
+8. **costCenterNameController** — must add to `clearAll()` and `dispose()` in PRFormController.
+9. **Vendor Preferences dynamic list** — store as JSON array in transient field, auto-sync to screenData via TextEditingController.addListener, serialize/deserialize with json.encode/decode.
+10. **Never use showDatePicker** — always use CustomDatePicker (supports Buddhist Era per yeartype).
+11. **Preview sync pattern** — PR fields live in form controllers, not screenData. Sync before preview with addPostFrameCallback (not during build — avoid setState during build).
+12. **Multi-Currency in PR** — copy pattern from PO (transaction_edit.dart): state vars + `_loadCurrencies` + `_onCurrencyChanged` + pass to header widget. CurrencyModel has `name` (string), not `names` (LanguageDataModel).
+13. **Department dialog** — use `DepartmentRepository.getDepartmentList()` + searchable StatefulBuilder dialog (same pattern as CostCenter).

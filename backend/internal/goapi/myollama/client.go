@@ -14,8 +14,8 @@ const (
 	// OllamaURL - URL ของ Ollama service
 	OllamaURL = "http://ollama:11434/api/embed"
 
-	// ModelName - E5 multilingual model
-	ModelName = "yxchia/multilingual-e5-base"
+	// ModelName - nomic-embed-text (768 dim, supports Thai)
+	ModelName = "nomic-embed-text"
 )
 
 var httpClient *http.Client

@@ -2,11 +2,34 @@
 name: tab-focus
 description: >
   Tab focus cycling for Flutter config/edit screens. Controls Tab/Shift+Tab to cycle
-  only through text fields. Cursor goes to end of text. Cross-platform.
-  Triggers: "tab focus", "focus cycling", "tab escaping", "tab stuck".
+  only through text fields. Cursor goes to end of text. Cross-platform. Use when the
+  user mentions Tab key behavior in edit panels, config forms, or transaction screens.
 ---
 
 # Tab Focus Cycling
+
+## When to Use
+
+- Building a new edit screen with multiple form fields
+- Tab key escapes from the form to other buttons or out of the screen
+- Tab is slow (may be using Approach B with 100 pre-allocated FocusNodes)
+- Migrating a legacy screen from `RawKeyboardListener` / Approach B to Approach A
+- Need Enter to behave like Tab (next focus)
+
+## Anti-Patterns
+
+- Do NOT use `RawKeyboardListener` — deprecated, use `Focus` + `onKeyEvent` instead
+- Do NOT pre-allocate 100 FocusNodes (Approach B) for new screens — slow, use Approach A
+- Do NOT forget to dispose self-created FocusNodes — memory leak on long-running sessions
+- Do NOT call `requestFocus()` inside focusNode listener — infinite loop
+- Do NOT use `context.widget is EditableText` — use `findAncestorWidgetOfExactType<EditableText>()` instead
+- Do NOT forget `skipTraversal: true` on buttons/checkboxes inside a FocusTraversalGroup
+
+## Related Skills
+
+- `/data-list` — SplitView editScreen that uses tab-focus pattern
+- `/theming` — not directly related, but form structure is shared
+- `/date-time-picker` — date/time fields in the same focus traversal group
 
 ## Architecture — 2 Approaches
 

@@ -1,6 +1,9 @@
 ---
 name: api-spec
-description: View API specification (request/response/parameters) — use to inspect endpoint details or generate models
+description: >
+  View API specification (request/response/parameters) — use to inspect endpoint details or
+  generate models. Use when the user wants to know request body, response format, or parameters
+  of an API. Uses MCP get_api_spec tool.
 user-invocable: true
 ---
 
@@ -83,3 +86,22 @@ curl -X POST http://localhost:9090/goapi/api/v1/chatbot/chat-agent \
 - If path is unknown → use `/api-search` first
 - These tools are on MCP Dev endpoint only
 - URL base: `http://localhost:9090/goapi`
+
+## When to Use
+- Need to know the request body structure before writing a Dart API call
+- Need to view response format to create a model or parse JSON
+- Need a curl example to manually test an endpoint
+- Need to know if an endpoint requires an Authorization header
+- Generating a Dart model and need the complete field list
+
+## Anti-Patterns
+- Do NOT guess request body fields from convention or intuition — always use `get_api_spec`
+- Do NOT read Go handler source directly to guess structs — MCP provides more accurate information
+- Do NOT hardcode response fields without checking spec — backend may add/change fields
+- Do NOT skip `get_api_example` — examples show edge cases that spec may not cover
+- Do NOT call `/api-spec` without knowing the path — use `/api-search` first
+
+## Related Skills
+- `/api-search` — Find endpoint path before viewing spec
+- `/model-gen` — Generate Dart class from the response schema
+- `/enum-list` — View enum values for fields that are enum types

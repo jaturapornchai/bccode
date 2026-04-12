@@ -1,6 +1,8 @@
 ---
 name: api-search
-description: Search API endpoints from backend via MCP — use to find available endpoints before calling /api-spec
+description: >
+  Search API endpoints from backend via MCP — use to find available endpoints before calling
+  /api-spec. Use when the user mentions searching for routes, endpoints, or APIs.
 user-invocable: true
 ---
 
@@ -56,3 +58,22 @@ Show as table:
 - Requires MCP server running (`GET http://localhost:9090/goapi/mcp/dev/health`)
 - `list_api_endpoints` is on Dev endpoint only (not General)
 - URL base: `http://localhost:9090/goapi`
+
+## When to Use
+- Need to know which endpoints support a feature being developed
+- Before calling `/api-spec` when the exact path is unknown
+- Need to list all APIs under the same category (chatbot, sale, product)
+- Building a Dart API client but need to know the endpoint first
+- Debugging whether the backend has a specific route
+
+## Anti-Patterns
+- Do NOT grep for endpoints in `handlers/` directly — use MCP `list_api_endpoints` instead (faster, more accurate)
+- Do NOT guess paths from convention — endpoints may differ from expectation, always search first
+- Do NOT hardcode URLs before verifying — paths may have `/goapi/api/v1/` prefix that is easy to miss
+- Do NOT skip `/api-search` and call `/api-spec` directly without knowing the path
+- Do NOT use Browser DevTools network tab instead — MCP is faster and has complete descriptions
+
+## Related Skills
+- `/api-spec` — View request/response details for the found endpoint
+- `/model-gen` — Generate Dart model from response schema
+- `/enum-list` — View enum values used in request parameters

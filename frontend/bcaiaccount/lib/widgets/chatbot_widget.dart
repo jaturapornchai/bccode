@@ -38,6 +38,11 @@ class _ChatbotWidgetState extends State<ChatbotWidget>
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
 
+  // Search source toggles
+  bool _searchDatabase = true;
+  bool _searchKnowledgeBase = true;
+  bool _searchInternet = false;
+
   // สีธีม
   Color get primaryColor => global.theme.primaryColor;
   Color get primaryDarkColor => global.theme.primaryColor;
@@ -175,6 +180,9 @@ class _ChatbotWidgetState extends State<ChatbotWidget>
       'shop_id': shopId,
       'question': message,
       'function_name': widget.functionName,
+      'search_database': _searchDatabase,
+      'search_kb': _searchKnowledgeBase,
+      'search_internet': _searchInternet,
     };
 
     final response = await http
@@ -692,6 +700,46 @@ class _ChatbotWidgetState extends State<ChatbotWidget>
     return '$hour:$minute';
   }
 
+  Widget _buildSearchToggles() {
+    final items = [
+      (global.language('chatbot_search_database'), _searchDatabase, (bool v) => setState(() => _searchDatabase = v)),
+      (global.language('chatbot_search_kb'), _searchKnowledgeBase, (bool v) => setState(() => _searchKnowledgeBase = v)),
+      (global.language('chatbot_search_internet'), _searchInternet, (bool v) => setState(() => _searchInternet = v)),
+    ];
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        children: items.map((item) {
+          final (label, value, onChanged) = item;
+          return Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: InkWell(
+              onTap: () => onChanged(!value),
+              borderRadius: BorderRadius.circular(16),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: Checkbox(
+                      value: value,
+                      onChanged: (v) => onChanged(v ?? false),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      activeColor: global.theme.primaryColor,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(label, style: TextStyle(fontSize: 12, color: global.theme.textColor)),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Widget _buildChatInput() {
     return Container(
       decoration: BoxDecoration(
@@ -704,59 +752,74 @@ class _ChatbotWidgetState extends State<ChatbotWidget>
           ),
         ],
       ),
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ช่องพิมพ์ข้อความ
-          Expanded(
-            child: TextField(
-              controller: _messageController,
-              decoration: InputDecoration(
-                hintText: global.language("chatbot_type_message"),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide(color: global.theme.formBorderColor),
+          _buildSearchToggles(),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildTextField(),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide(color: global.theme.formBorderColor),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide(color: primaryColor, width: 2),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-                filled: true,
-                fillColor: global.theme.formFillColor,
-              ),
-              maxLines: null,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => _sendMessage(),
-            ),
-          ),
-          const SizedBox(width: 12),
-          // ปุ่มส่งข้อความ
-          Container(
-            decoration: BoxDecoration(
-              color: primaryColor,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: primaryColor.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
+                const SizedBox(width: 12),
+                _buildSendButton(),
               ],
-            ),
-            child: IconButton(
-              icon: Icon(Icons.send, color: global.theme.onPrimaryColor),
-              onPressed: _isLoading ? null : _sendMessage,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTextField() {
+    return TextField(
+      controller: _messageController,
+      decoration: InputDecoration(
+        hintText: global.language("chatbot_type_message"),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(24),
+          borderSide: BorderSide(color: global.theme.formBorderColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(24),
+          borderSide: BorderSide(color: global.theme.formBorderColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(24),
+          borderSide: BorderSide(color: primaryColor, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 12,
+        ),
+        filled: true,
+        fillColor: global.theme.formFillColor,
+      ),
+      maxLines: null,
+      textInputAction: TextInputAction.send,
+      onSubmitted: (_) => _sendMessage(),
+    );
+  }
+
+  Widget _buildSendButton() {
+    return Container(
+      decoration: BoxDecoration(
+        color: primaryColor,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: IconButton(
+        icon: Icon(Icons.send, color: global.theme.onPrimaryColor),
+        onPressed: _isLoading ? null : _sendMessage,
       ),
     );
   }

@@ -25,8 +25,8 @@ Manuals are user-facing documentation. Write with enough detail that users under
 - Use icons/emoji for categorization (e.g., ⚙️ 📋 💡)
 
 ### 4. Language
-- Write in **Thai**, easy to understand
-- Parenthesize English for technical terms, e.g., "สกุลเงินหลัก (Base Currency)"
+- Write in **Thai** (user-facing manuals), easy to understand
+- Parenthesize English for technical terms in Thai manuals, e.g., Thai term followed by "(Base Currency)"
 - Friendly, clear tone — avoid overly technical jargon
 
 ### 5. Website Manual Page Format (Next.js)
@@ -40,5 +40,5 @@ Manuals are user-facing documentation. Write with enough detail that users under
 - [ ] All backend/frontend fields covered
 - [ ] Every field has description + example
 - [ ] Default values match source code
-- [ ] Thai text is clear and readable
+- [ ] Thai text is clear and readable (for user-facing manuals)
 - [ ] Build passes with no errors

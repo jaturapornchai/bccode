@@ -10,9 +10,8 @@ part 'knowledge_base_state.dart';
 class KnowledgeBaseCubit extends Cubit<KnowledgeBaseState> {
   KnowledgeBaseCubit() : super(const KnowledgeBaseState());
 
-  final String apiBaseUrl = kDebugMode
-      ? 'http://localhost:9999/api/documents'
-      : 'https://bcaicallcenter.dedetouch.com/api/documents';
+  // KB endpoints live on goapi (RAGFlow-backed) at /api/v1/kb/*
+  String get apiBaseUrl => global.goApiUrlPath('api/v1/kb');
 
   // Load documents
   Future<void> loadDocuments({String? branchId}) async {

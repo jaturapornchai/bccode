@@ -1,6 +1,8 @@
 ---
 name: enum-list
-description: List backend enum values (doc status, product type, payment type) — use to check or sync enums
+description: >
+  List backend enum values (doc status, product type, payment type) — use to check or sync
+  enums. Use when the user needs enum values, status codes, or type constants.
 user-invocable: true
 ---
 
@@ -24,12 +26,12 @@ Parameters:
 ```
 ## Enum: DocStatus
 
-| Value | Label (TH) | Label (EN) |
-|-------|-----------|-----------|
-| 0 | ร่าง | Draft |
-| 1 | รออนุมัติ | Pending |
-| 2 | อนุมัติ | Approved |
-| 3 | ยกเลิก | Cancelled |
+| Value | Label |
+|-------|-------|
+| 0 | Draft |
+| 1 | Pending |
+| 2 | Approved |
+| 3 | Cancelled |
 
 ## Enum: PaymentType
 
@@ -74,3 +76,22 @@ enum DocStatus {
 - `list_enums` is on MCP Dev endpoint only
 - Enum values must match between frontend and backend
 - If backend adds new enum values → frontend must handle them (default case)
+
+## When to Use
+- Need to know the numeric value of `DocStatus` (e.g., is approved = 2 or 3?)
+- Creating a Dart enum to match backend constants
+- Checking supported payment types before implementing UI
+- Debugging why a status filter is not working — values may not match
+- Need Thai/English labels for each enum value
+
+## Anti-Patterns
+- Do NOT hardcode enum values like `status == 2` without lookup — use this skill to verify first
+- Do NOT guess enum values from names — `cancelled` may be 3 or 9 depending on the system
+- Do NOT create Dart enums before checking backend values — they must stay in sync
+- Do NOT forget a default case in switch — backend may add new enum values
+- Do NOT use magic numbers in filter queries — reference the enum name instead
+
+## Related Skills
+- `/model-gen` — View the fields that use this enum in the model
+- `/api-spec` — Check how an endpoint accepts enum values (int or string)
+- `/api-search` — Find endpoints related to this enum

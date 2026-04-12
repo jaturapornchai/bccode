@@ -84,6 +84,11 @@ class _PRHeaderWidgetState extends State<PRHeaderWidget> with global.ThemeRefres
   List<JobProjectModel>? _cachedJobProjects;
   List<CostCenterModel>? _cachedCostCenters;
 
+  // Department dropdown overlay
+  final _deptLayerLink = LayerLink();
+  final _deptSearchCtrl = TextEditingController();
+  OverlayEntry? _deptOverlay;
+
   // โครงการที่เลือกอยู่ (local state — ไม่ save ไป backend, derive จาก jobcode)
   String _selectedProjectCode = '';
   String _selectedProjectName = '';
@@ -228,6 +233,8 @@ class _PRHeaderWidgetState extends State<PRHeaderWidget> with global.ThemeRefres
 
   @override
   void dispose() {
+    _deptOverlay?.remove();
+    _deptSearchCtrl.dispose();
     _projectNameCtrl.dispose();
     _jobDisplayCtrl.dispose();
     _costCenterDisplayCtrl.dispose();
@@ -367,16 +374,19 @@ class _PRHeaderWidgetState extends State<PRHeaderWidget> with global.ThemeRefres
                   icon: Icons.person_outline,
                 )),
                 fg,
-                Expanded(child: TextFormField(
-                  controller: fc.departmentNameController,
-                  readOnly: true,
-                  decoration: _fd(global.language('department'), icon: Icons.business_outlined,
-                    suffix: fc.departmentCodeController.text.isNotEmpty
-                      ? _clearBtn(() { widget.setState(() { fc.departmentCodeController.clear(); fc.departmentNameController.clear(); }); })
-                      : null,
+                Expanded(child: CompositedTransformTarget(
+                  link: _deptLayerLink,
+                  child: TextFormField(
+                    controller: fc.departmentNameController,
+                    readOnly: true,
+                    decoration: _fd(global.language('department'), icon: Icons.business_outlined,
+                      suffix: fc.departmentCodeController.text.isNotEmpty
+                        ? _clearBtn(() { widget.setState(() { fc.departmentCodeController.clear(); fc.departmentNameController.clear(); _closeDeptOverlay(); }); })
+                        : null,
+                    ),
+                    style: const TextStyle(fontSize: 13),
+                    onTap: _toggleDeptOverlay,
                   ),
-                  style: const TextStyle(fontSize: 13),
-                  onTap: _showDepartmentDialog,
                 )),
                 fg,
                 Expanded(flex: 2, child: TextFormField(
@@ -1124,80 +1134,44 @@ class _PRHeaderWidgetState extends State<PRHeaderWidget> with global.ThemeRefres
   // Cost Center searchable dialog
   // ──────────────────────────────────────────────────────
   // ──────────────────────────────────────────────────────
-  // Dialog: เลือกแผนกจาก master data
+  // Dropdown overlay: เลือกแผนกจาก master data (แสดงใต้ textbox)
   // ──────────────────────────────────────────────────────
-  Future<void> _showDepartmentDialog() async {
-    // ดึง departments จาก branch data (เหมือน department_screen)
+  void _toggleDeptOverlay() {
+    if (_deptOverlay != null) {
+      _closeDeptOverlay();
+    } else {
+      _showDeptOverlay();
+    }
+  }
+
+  void _closeDeptOverlay() {
+    _deptOverlay?.remove();
+    _deptOverlay = null;
+    _deptSearchCtrl.clear();
+  }
+
+  void _showDeptOverlay() {
+    _closeDeptOverlay();
     final departments = global.companyBranchSelectData.departments;
+    if (departments.isEmpty) return;
 
-    if (!mounted) return;
-
-    String searchText = '';
-
-    await showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) {
-          final all = departments;
-          final filtered = all.where((e) {
-            final name = global.activeLangName(e.names);
-            return searchText.isEmpty || name.toLowerCase().contains(searchText.toLowerCase()) || e.code.toLowerCase().contains(searchText.toLowerCase());
-          }).toList();
-
-          return AlertDialog(
-            title: Text(global.language('department'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            contentPadding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-            content: SizedBox(
-              width: 360,
-              height: 380,
-              child: Column(
-                children: [
-                  TextField(
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      hintText: global.language('search'),
-                      prefixIcon: const Icon(Icons.search, size: 18),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      isDense: true,
-                    ),
-                    onChanged: (v) => setDialogState(() => searchText = v),
-                  ),
-                  const SizedBox(height: 10),
-                  Expanded(
-                    child: filtered.isEmpty
-                        ? Center(child: Text(global.language('no_data'), style: TextStyle(color: global.theme.textSecondaryColor)))
-                        : ListView.builder(
-                            itemCount: filtered.length,
-                            itemBuilder: (_, i) {
-                              final item = filtered[i];
-                              final name = global.activeLangName(item.names);
-                              return ListTile(
-                                dense: true,
-                                leading: Icon(Icons.business_outlined, size: 18, color: global.theme.iconColor),
-                                title: Text(name.isNotEmpty ? name : item.code, style: const TextStyle(fontSize: 14)),
-                                subtitle: Text(item.code, style: TextStyle(fontSize: 12, color: global.theme.textSecondaryColor)),
-                                onTap: () {
-                                  setState(() {
-                                    fc.departmentCodeController.text = item.code;
-                                    fc.departmentNameController.text = name.isNotEmpty ? '${item.code} / $name' : item.code;
-                                  });
-                                  Navigator.pop(ctx);
-                                },
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(global.language('close'))),
-            ],
-          );
+    _deptOverlay = OverlayEntry(
+      builder: (context) => _DeptDropdownOverlay(
+        link: _deptLayerLink,
+        departments: departments,
+        searchCtrl: _deptSearchCtrl,
+        onSelect: (item) {
+          final name = global.activeLangName(item.names);
+          setState(() {
+            fc.departmentCodeController.text = item.code;
+            fc.departmentNameController.text = name.isNotEmpty ? '${item.code} / $name' : item.code;
+          });
+          _closeDeptOverlay();
         },
+        onClose: _closeDeptOverlay,
       ),
     );
+    Overlay.of(context).insert(_deptOverlay!);
   }
 
   Future<void> _showCostCenterDialog() async {
@@ -1975,6 +1949,130 @@ class _PRHeaderWidgetState extends State<PRHeaderWidget> with global.ThemeRefres
         fillColor: global.theme.cardColor,
       ),
       style: TextStyle(fontSize: 13, color: global.theme.textSecondaryColor),
+    );
+  }
+}
+
+/// Dropdown overlay สำหรับเลือกแผนก — แสดงใต้ textbox พร้อมค้นหา
+class _DeptDropdownOverlay extends StatefulWidget {
+  final LayerLink link;
+  final List<dynamic> departments;
+  final TextEditingController searchCtrl;
+  final void Function(dynamic item) onSelect;
+  final VoidCallback onClose;
+
+  const _DeptDropdownOverlay({
+    required this.link,
+    required this.departments,
+    required this.searchCtrl,
+    required this.onSelect,
+    required this.onClose,
+  });
+
+  @override
+  State<_DeptDropdownOverlay> createState() => _DeptDropdownOverlayState();
+}
+
+class _DeptDropdownOverlayState extends State<_DeptDropdownOverlay> {
+  String _search = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = widget.departments.where((e) {
+      final name = global.activeLangName(e.names);
+      return _search.isEmpty ||
+          name.toLowerCase().contains(_search.toLowerCase()) ||
+          e.code.toLowerCase().contains(_search.toLowerCase());
+    }).toList();
+
+    return Stack(
+      children: [
+        // กด backdrop ปิด overlay
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: widget.onClose,
+            child: const SizedBox.expand(),
+          ),
+        ),
+        CompositedTransformFollower(
+          link: widget.link,
+          targetAnchor: Alignment.bottomLeft,
+          followerAnchor: Alignment.topLeft,
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(8),
+            color: global.theme.cardColor,
+            child: Container(
+              width: 320,
+              constraints: const BoxConstraints(maxHeight: 280),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: global.theme.inputTextBoxColor),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Search field
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+                    child: TextField(
+                      controller: widget.searchCtrl,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: global.language('search'),
+                        prefixIcon: const Icon(Icons.search, size: 16),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                        isDense: true,
+                      ),
+                      style: const TextStyle(fontSize: 13),
+                      onChanged: (v) => setState(() => _search = v),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  // List
+                  Flexible(
+                    child: filtered.isEmpty
+                        ? Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(global.language('no_data'),
+                                style: TextStyle(fontSize: 13, color: global.theme.textSecondaryColor)),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            padding: EdgeInsets.zero,
+                            itemCount: filtered.length,
+                            itemBuilder: (_, i) {
+                              final item = filtered[i];
+                              final name = global.activeLangName(item.names);
+                              return InkWell(
+                                onTap: () => widget.onSelect(item),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.business_outlined, size: 16, color: global.theme.iconColor),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          name.isNotEmpty ? '${item.code} / $name' : item.code,
+                                          style: const TextStyle(fontSize: 13),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

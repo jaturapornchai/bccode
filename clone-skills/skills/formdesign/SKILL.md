@@ -2,8 +2,8 @@
 name: formdesign
 description: >
   WYSIWYG form template editor for ERP document templates. Row-based layout, element types,
-  data bindings, styles, JSON templates.
-  Triggers: "form design", "form template", "template JSON", "form editor", "form preview".
+  data bindings, styles, JSON templates. Use when the user works on form layouts, print
+  templates, or document design.
 ---
 
 # Form Designer Skill
@@ -103,3 +103,22 @@ Add `DataBindingField` to appropriate category in `data_binding.dart` — auto-a
 ## References
 - [Data Bindings](references/data-bindings.md) — all 64 fields across 8 categories
 - [Template Patterns](references/template-patterns.md) — row patterns + JSON examples
+
+## When to Use
+- Creating a new print template for ERP documents (tax invoice, purchase order, receipt)
+- Editing layout of an existing form template — adding rows, cells, or elements
+- Adding new data binding fields to a template
+- Fixing footer positioning issues or detail overflow
+- Adding a new ElementType (QR code, barcode, signature)
+
+## Anti-Patterns
+- Do NOT put business logic or calculations in template JSON — templates should only contain layout + binding
+- Do NOT use fixed-position layout for new templates — always use row-based
+- Do NOT put more than 4 cells per row — will overflow on paper
+- Do NOT edit `.json` templates directly without understanding the schema — use the WYSIWYG editor or read this skill first
+- Do NOT forget to register the template in `templates_index.json` and `form_template_factory.dart`
+
+## Related Skills
+- `/model-gen` — View data model fields to bind in the template
+- `/enum-list` — View status/type values for conditional display
+- `/api-spec` — Check response structure to map with data binding fields

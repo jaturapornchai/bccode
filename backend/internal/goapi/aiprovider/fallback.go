@@ -14,8 +14,8 @@ import (
 var (
 	cooldownMap       = make(map[string]cooldownEntry)
 	cooldownMu        sync.RWMutex
-	defaultCooldown   = 1 * time.Hour   // config ผิด, 401, 404 → cooldown นาน
-	rateLimitCooldown = 2 * time.Minute // 429 rate limit → cooldown สั้น
+	defaultCooldown   = 5 * time.Minute // config ผิด, 401, 404 → cooldown moderate (เดิม 1h — มากเกินเมื่อ upstream flap)
+	rateLimitCooldown = 1 * time.Minute // 429 / 503 server_overloaded / transient → cooldown สั้น
 )
 
 type cooldownEntry struct {
@@ -47,9 +47,20 @@ func markFailed(name string, duration time.Duration) {
 	logger.Warn("[AIProvider] %s ถูก cooldown %v", name, duration)
 }
 
-// isRateLimitError ตรวจว่า error เป็น 429 rate limit หรือไม่
+// isRateLimitError ตรวจว่า error เป็น transient failure ที่จะหายเองในไม่กี่นาที
+// รวมทั้ง 429 rate limit, 503 server overloaded, 500 timeout, service capacity exceeded, etc.
+// เหตุผล: cooldown ยาว (1h) ไม่เหมาะกับ upstream ที่ flap — ใช้ cooldown สั้น (1min) ให้มีโอกาสรีทรายเร็วๆ
 func isRateLimitError(err error) bool {
-	return strings.Contains(err.Error(), "status 429")
+	s := err.Error()
+	return strings.Contains(s, "status 429") ||
+		strings.Contains(s, "status 503") ||
+		strings.Contains(s, "status 500") ||
+		strings.Contains(s, "server_overloaded") ||
+		strings.Contains(s, "rate limit") ||
+		strings.Contains(s, "rate_limit") ||
+		strings.Contains(s, "TimeoutError") ||
+		strings.Contains(s, "service_tier_capacity_exceeded") ||
+		strings.Contains(s, "capacity exceeded")
 }
 
 // isCoolingDown ตรวจว่า provider ยัง cooldown อยู่หรือไม่

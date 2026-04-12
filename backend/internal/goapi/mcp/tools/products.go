@@ -15,6 +15,7 @@ import (
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/models"
 	"smlcloudplatform/internal/goapi/myglobal"
+	"smlcloudplatform/internal/goapi/myollama"
 	mypg "smlcloudplatform/internal/goapi/mypg"
 )
 
@@ -137,6 +138,15 @@ func SearchProducts(ctx context.Context, shopID, keyword, whcode, locationcode s
 		fuzzyProducts, fuzzyErr := searchProductsFuzzy(db, keyword, limit)
 		if fuzzyErr == nil && len(fuzzyProducts) > len(products) {
 			products = mergeProducts(products, fuzzyProducts, limit)
+		}
+	}
+
+	// Phase 3: Vector similarity search (semantic) — fallback when text search finds little
+	if len(products) < 3 {
+		vectorProducts, vecErr := searchProductsVector(db, keyword, limit)
+		if vecErr == nil && len(vectorProducts) > 0 {
+			products = mergeProducts(products, vectorProducts, limit)
+			logger.Info("[MCP SearchProducts] Vector search added %d products", len(vectorProducts))
 		}
 	}
 
@@ -458,6 +468,96 @@ func searchProductsFuzzy(db *sql.DB, keyword string, limit int) ([]ProductItem, 
 	}
 
 	return products, rows.Err()
+}
+
+// searchProductsVector — Phase 3: semantic search ด้วย pgvector
+// แปลง keyword → embedding แล้วหา nearest neighbors (cosine similarity)
+func searchProductsVector(db *sql.DB, keyword string, limit int) ([]ProductItem, error) {
+	// ตรวจว่า pgvector + column พร้อม
+	var colExists bool
+	if err := db.QueryRow(`
+		SELECT EXISTS(
+			SELECT 1 FROM information_schema.columns
+			WHERE table_name = 'productbarcode' AND column_name = 'name_embedding'
+		)
+	`).Scan(&colExists); err != nil || !colExists {
+		return nil, nil // ยังไม่มี column → skip quietly
+	}
+
+	// ตรวจว่ามี embedding อยู่จริง (ไม่ใช่ column ว่าง)
+	var hasEmbeddings bool
+	if err := db.QueryRow(`SELECT EXISTS(SELECT 1 FROM productbarcode WHERE name_embedding IS NOT NULL LIMIT 1)`).Scan(&hasEmbeddings); err != nil || !hasEmbeddings {
+		return nil, nil
+	}
+
+	// สร้าง embedding จาก keyword
+	embedding, err := myollama.GenerateSingleEmbedding(keyword)
+	if err != nil {
+		logger.Warn("[MCP SearchProducts] Vector search skipped (Ollama error): %v", err)
+		return nil, nil // graceful fallback
+	}
+
+	// แปลง embedding → pgvector string
+	vecStr := float32SliceToVectorStr(embedding)
+
+	// ค้นหา nearest neighbors ด้วย cosine distance (<=>)
+	query := fmt.Sprintf(`
+		SELECT itemcode, name0, (name_embedding <=> $1::vector) as distance
+		FROM (
+			SELECT DISTINCT ON (itemcode) itemcode, name0, name_embedding
+			FROM productbarcode
+			WHERE name_embedding IS NOT NULL
+			ORDER BY itemcode, id
+		) sub
+		ORDER BY name_embedding <=> $1::vector
+		LIMIT %d
+	`, limit)
+
+	rows, err := db.Query(query, vecStr)
+	if err != nil {
+		logger.Warn("[MCP SearchProducts] Vector query failed: %v", err)
+		return nil, nil
+	}
+	defer rows.Close()
+
+	var products []ProductItem
+	for rows.Next() {
+		var itemCode, name0 string
+		var distance float64
+		if err := rows.Scan(&itemCode, &name0, &distance); err != nil {
+			continue
+		}
+		// cosine distance < 0.5 ถือว่าใกล้เคียงพอ (0=identical, 2=opposite)
+		if distance > 0.5 {
+			continue
+		}
+		products = append(products, ProductItem{
+			ItemCode: itemCode,
+			Name0:    name0,
+			Units:    []ProductUnit{},
+			Score:    int((1.0 - distance) * 500), // แปลง distance → score
+		})
+	}
+
+	if len(products) > 0 {
+		logger.Info("[MCP SearchProducts] Vector search found %d similar products (best distance=%.3f)", len(products), 1.0-float64(products[0].Score)/500.0)
+	}
+
+	return products, rows.Err()
+}
+
+// float32SliceToVectorStr แปลง []float32 → "[0.1,0.2,...]" สำหรับ pgvector
+func float32SliceToVectorStr(v []float32) string {
+	var sb strings.Builder
+	sb.WriteByte('[')
+	for i, f := range v {
+		if i > 0 {
+			sb.WriteByte(',')
+		}
+		fmt.Fprintf(&sb, "%g", f)
+	}
+	sb.WriteByte(']')
+	return sb.String()
 }
 
 // fetchAllUnits gets all units for products

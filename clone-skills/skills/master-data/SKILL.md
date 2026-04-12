@@ -1,10 +1,27 @@
 ---
 name: master-data
-description: Manage master data (units, barcodes, product groups, categories, creditors, debtors) via MCP tools. CRUD operations, search, schema inspection, batch import.
+description: >
+  Manage master data via MCP tools: units, barcodes, product groups, categories, creditors
+  (suppliers), and debtors (customers). Use when the user wants to create/update/delete
+  master records, search products, or inspect schemas.
 user-invocable: true
 ---
 
 # Master Data Management
+
+## When to Use
+- User wants to add a new unit of measure (e.g., Dozen, Box, Pallet)
+- User wants to create or update a product barcode with a new price/unit
+- User needs to add a new supplier (creditor) or customer (debtor) to the system
+- User asks to batch-create multiple records at once (e.g., import list of units)
+- User wants to inspect what fields are required before creating a record
+
+## Anti-Patterns
+- Do NOT create barcodes without checking the schema first — missing required fields cause silent failures
+- Do NOT delete a unit that is referenced by existing barcodes or transactions
+- Do NOT create duplicate creditor/debtor codes — the system does not auto-deduplicate
+- Do NOT skip `get_ref_barcodes` when setting up multi-unit products — reference chain must be correct
+- Do NOT use `search_products` to modify data — it is read-only; use dedicated MCP tools for writes
 
 ## Usage
 `/master-data list <type>` -- List records
@@ -114,3 +131,9 @@ Replace suffix: `product_group(s)`, `product_category(ies)`, `creditor(s)`, `deb
 - Create/Update/Delete require an API key with write permissions
 - `search_products` supports Thai language
 - Batch operations (create_units, delete_barcodes) accept arrays
+
+## Related Skills
+- `/product` — full product management, BOM, options, AI classification
+- `/stock-inventory` — warehouse and stock balance management
+- `/import-export` — bulk import products and stock from Excel files
+- `/coupon-promotion` — coupon conditions linked to specific products or customers

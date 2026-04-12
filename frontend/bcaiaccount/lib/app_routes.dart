@@ -91,6 +91,7 @@ import 'package:smlaicloud/screens/config/transport_channel.dart';
 import 'package:smlaicloud/screens/config/permission_definition_screen.dart';
 import 'package:smlaicloud/screens/config/permission_link_screen.dart';
 import 'package:smlaicloud/screens/config/mcp_apikey_screen.dart';
+import 'package:smlaicloud/screens/config/ai_provider_screen.dart';
 import 'package:smlaicloud/screens/config/copy_uat_to_dev_screen.dart';
 import 'package:smlaicloud/screens/config/product_warehouse.dart';
 import 'package:smlaicloud/screens/config/product_location.dart';
@@ -166,6 +167,8 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const PermissionLinkScreen(), settings: settings);
       case '/mcp_apikey':
         return MaterialPageRoute(builder: (_) => const MCPAPIKeyScreen(), settings: settings);
+      case '/ai_provider':
+        return MaterialPageRoute(builder: (_) => const AIProviderScreen(), settings: settings);
       case '/copy_uat_to_dev':
         return MaterialPageRoute(builder: (_) => const CopyUatToDevScreen(), settings: settings);
       case '/creditor':

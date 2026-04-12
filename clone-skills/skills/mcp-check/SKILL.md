@@ -1,6 +1,12 @@
 ---
 name: mcp-check
-description: Check MCP server status, available tools, API key — use when MCP has issues or tool calls fail
+description: >
+  Check MCP server status, available tools, API key, endpoint health — use when MCP has issues,
+  tool calls fail, or need to verify which tools are available before implementing chatbot features.
+  Use this skill whenever the user mentions MCP, MCP server, MCP tools, tool not found, AI agent tools,
+  MCP health, Claude Desktop MCP config, or tool call fails.
+  Trigger keywords: "MCP", "MCP server", "MCP tools", "tool not found", "tool call failed",
+  "MCP health", "Claude Desktop", "SSE endpoint", "AI tools", "chatbot tools".
 user-invocable: true
 ---
 
@@ -76,6 +82,20 @@ GET http://localhost:9090/goapi/mcp/dev/tools
 2. Dev tools only work on `/goapi/mcp/dev/` endpoint
 3. Check API key permissions
 
+## When to Use
+- AI agent or chatbot calls MCP tool and receives an error or no result
+- Need to verify MCP server is online before implementing a feature that requires MCP
+- Claude Desktop cannot find tools or SSE connection fails
+- Need to list all available tools (General vs Dev) before writing agent prompt
+- API key is expired or there are permission issues for tool usage
+
+## Anti-Patterns
+- Never restart backend server every time MCP has issues — use `/mcp-check` to diagnose first
+- Never use Dev tools (`/goapi/mcp/dev/`) in production AI agent — they have dangerous database access
+- Remember that port must be **9090** only — not 8888 or 9091
+- Never use `/goapi/mcp/` without the `/goapi` prefix — GoAPI is merged into MainAPI
+- Never hardcode API key in source code — use environment variable or config
+
 ## Endpoint Summary
 | Endpoint | Port | Path | Purpose |
 |----------|------|------|---------|
@@ -85,3 +105,8 @@ GET http://localhost:9090/goapi/mcp/dev/tools
 | Tools (Dev) | 9090 | `/goapi/mcp/dev/tools` | All tools |
 | SSE (General) | 9090 | `/goapi/mcp/sse` | Claude Desktop/AI |
 | SSE (Dev) | 9090 | `/goapi/mcp/dev/sse` | Dev AI clients |
+
+## Related Skills
+- [lineoa-chatbot](../lineoa-chatbot/SKILL.md) — AI chatbot that uses MCP tools for data retrieval
+- [dashboard-report](../dashboard-report/SKILL.md) — Dashboard KPI data pulled via MCP
+- [procurement](../procurement/SKILL.md) — MCP tools for procurement data

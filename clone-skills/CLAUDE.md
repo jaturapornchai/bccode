@@ -1,203 +1,98 @@
 # Jead Skill — Global AI Rules
 
-## Who is Jead?
-See `identity.md` for Jead's identity and style.
-All AI agents using this skill must follow `identity.md` at all times.
+See `identity.md` for Jead's identity, clone team, and critical pitfalls.
 
-## AI Behavior Rules (Critical)
+## Required Reads per Session
+1. `identity.md` — who Jead is, style, permanent pitfalls
+2. This file — rules
+3. Relevant `rules/*.md` — based on current task (load lazily)
+4. Relevant `references/**/*.md` — domain knowledge (load lazily)
 
-### Re-read skills before every task
-**At every new session or task switch, re-read clone-skills first.**
-Skills may have been updated by another session, another AI, or Jead directly.
-
-1. **Read `identity.md`** — understand Jead + latest Lessons Learned
-2. **Read `CLAUDE.md`** — latest rules
-3. **Read relevant `rules/`** — based on current project/task
-4. **Read relevant `references/`** — domain knowledge + code templates
-5. **Communicate in Thai** — always respond in Thai
-6. **Act immediately** — if you can do it, don't ask
-
-### Required AI Personality
-- **Concise and direct** — no verbose explanations
-- **Action-oriented** — do first, explain later
-- **Pragmatic** — make it work first, polish later
-- **Proactive** — suggest next steps without being asked
-
-### End-of-session checklist
-1. **Summarize work** — what was done
-2. **Check for skill updates** — anything new worth remembering?
-3. **Update clone-skills** — write new learnings immediately
-
-## Directory Structure
-
-```
-clone-skills/
-├── CLAUDE.md              ← This file — global rules
-├── identity.md            ← Jead's identity/style
-├── rules/
-│   ├── coding-style.md    ← Go + Flutter conventions
-│   ├── mcp-first.md       ← MCP-First development rules
-│   ├── erp-conventions.md ← ERP system conventions
-│   ├── security.md        ← Security rules
-│   ├── workflow.md        ← Development workflow + deploy pipeline
-│   └── manual-writing.md  ← Documentation writing rules
-├── skills/                ← Slash commands (user-invocable)
-│   ├── accounting/SKILL.md       ← Accounting / GL / Journal
-│   ├── api-search/SKILL.md
-│   ├── api-spec/SKILL.md
-│   ├── approval-workflow/SKILL.md ← Approval workflow
-│   ├── auto-packing/SKILL.md    ← Pick&Pack, BOM, auto packing, shipping label
-│   ├── coupon-promotion/SKILL.md ← Coupon & Promotion
-│   ├── creditor-debtor/SKILL.md  ← Creditor / Debtor management
-│   ├── dashboard-report/SKILL.md ← Dashboard & Reports
-│   ├── data-list/SKILL.md
-│   ├── date-time-picker/SKILL.md
-│   ├── enum-list/SKILL.md
-│   ├── formdesign/SKILL.md
-│   ├── import-export/SKILL.md    ← Import / Export data
-│   ├── lineoa-chatbot/SKILL.md   ← LINE OA Chatbot
-│   ├── master-data/SKILL.md
-│   ├── mcp-check/SKILL.md
-│   ├── model-gen/SKILL.md
-│   ├── payment/SKILL.md          ← Payment / PromptPay / QR
-│   ├── procurement/SKILL.md      ← PR/RFQ/PO feature tracker + competitive analysis
-│   ├── product/SKILL.md          ← Product CRUD, Barcode, BOM, Options
-│   ├── quotation/SKILL.md        ← Quotation / ใบเสนอราคา
-│   ├── restaurant-pos/SKILL.md   ← Restaurant POS, Zone, Table, Kitchen
-│   ├── sales-transaction/SKILL.md ← Sales/Purchase 40+ doc types
-│   ├── stock-inventory/SKILL.md  ← Warehouse, Stock, Transfer, Costing
-│   ├── tab-focus/SKILL.md
-│   └── theming/SKILL.md
-├── references/            ← Domain knowledge + code templates
-│   ├── core/
-│   │   ├── business-rules.md     ← Validation, checklist, common mistakes
-│   │   ├── document-flows.md     ← State machine for every document type
-│   │   ├── system-flow.md        ← System overview (Mermaid diagrams)
-│   │   ├── database-schema.md    ← PostgreSQL/MongoDB/ClickHouse tables
-│   │   ├── schema-migration.md   ← Rules for DB schema changes
-│   │   ├── cross-system-workflow.md ← Frontend <-> Backend workflow
-│   │   └── procurement-flow.md   ← PR -> RFQ -> PO flow (API, DB, Kafka, Approval)
-│   ├── flutter/
-│   │   ├── bloc-pattern.md       ← Full BLoC code templates
-│   │   ├── api-client.md         ← Dio, ApiResponse, GoAPI URLs
-│   │   └── ui-components.md      ← UI patterns, status badges, forms
-│   └── go/
-│       ├── handlers.md           ← Handler templates (list/save/approve)
-│       ├── database-queries.md   ← SQL patterns (PG/Mongo/ClickHouse)
-│       ├── mcp-tools.md          ← How to create + register MCP tools
-│       └── inventory-costing.md  ← Inventory Costing System (7 methods)
-└── docs/
-    └── mcp-tools-guide.md        ← MCP tools reference (41 tools)
-```
+Skills (`skills/*/SKILL.md`) auto-load via description metadata — trigger by keyword.
 
 ## Rules (mandatory)
 
-### 1. Communication Language
-- **Always communicate with Jead in Thai**
-- Code comments/logs may use Thai
-- Variable names and function names must use English
+### 1. Language
+- **Always respond in Thai** — Jead is Thai
+- Variable/function names in English
+- Log messages/comments: Thai allowed (for human readers)
+- System prompts sent to LLMs: **English** (see `rules/ai-prompt-language.md`)
 
-### 2. Coding Style
-See `rules/coding-style.md`
+### 2. Workflow
+- **Act immediately** — don't ask if you can just do it
+- **Read before editing** — understand code first
+- **MCP-first** — check backend via MCP before writing frontend code
+- **No over-engineering** — only what's asked
+- **End-of-task summary** — what was done, backend changes needed, skill updates
 
-### 3. MCP-First
-See `rules/mcp-first.md`
+### 3. Cross-Project Scope
+| Repo | Path | Access |
+|---|---|---|
+| Backend (Go) | `D:\bcdev\backend` | read + edit |
+| Frontend (Flutter) | `D:\bcdev\frontend\bcaiaccount` | read + edit |
+| clone-skills | `D:\bcdev\clone-skills` | read + update |
 
-### 4. ERP Conventions
-See `rules/erp-conventions.md`
+Changes on one side require cross-check on the other (see `rules/erp-conventions.md`).
 
-### 5. Security
-See `rules/security.md`
+### 4. Subagent Model
+- Spawned Agents always use `model: "sonnet"`
+- Opus reserved for main conversation
+- Exception: architecture decisions / complex debugging that need Opus quality
+- Reason: save "All models" quota; Sonnet handles boilerplate fine
 
-### 6. Workflow & Deploy
-See `rules/workflow.md`
+### 5. AI Prompt Language (set 2026-04-08)
+- All system prompts to LLMs: **English** (token efficiency, better instruction-following)
+- AI reply to user: **Thai** — enforce via `CRITICAL: Always reply in Thai` at end of prompt
+- Applies to: agent system prompts, tool descriptions, mid-conversation injections, summarizer prompts
+- Details: `rules/ai-prompt-language.md`
 
-### 7. Manual Writing
-See `rules/manual-writing.md`
+### 6. Other rule files (load when relevant)
+| File | When |
+|---|---|
+| `rules/coding-style.md` | Writing Go or Flutter code |
+| `rules/mcp-first.md` | Backend API work, new endpoints |
+| `rules/erp-conventions.md` | Document flow, multi-tenant, sync |
+| `rules/security.md` | Auth, permissions, sensitive data |
+| `rules/workflow.md` | Deploy pipeline, Docker, CI/CD |
+| `rules/manual-writing.md` | User-facing docs |
+| `rules/chatbot-answer-format.md` | Nong Kung chatbot output |
 
-### 8. Cross-Project Work
-- **Backend (Go)** `D:\bcdev\backend` — read + edit allowed
-- **Frontend (Flutter)** `D:\bcdev\frontend\bcaiaccount` — read + edit allowed
-- **clone-skills** `D:\bcdev\clone-skills` — read + update (AI's responsibility)
-- **Cross-check data structures** — changes on one side require verification on the other (see `rules/erp-conventions.md`)
+### 7. References (load when relevant)
+| Task | Reference |
+|---|---|
+| Any task | `references/core/business-rules.md` — checklist + common mistakes |
+| Documents (PO/SO/Invoice) | `references/core/document-flows.md` |
+| Procurement (PR/RFQ/PO) | `references/core/procurement-flow.md` + `references/modules/procurement/` |
+| Frontend↔backend integration | `references/core/cross-system-workflow.md` |
+| DB schema changes | `references/core/schema-migration.md` |
+| Flutter | `references/flutter/{bloc-pattern,api-client,ui-components}.md` |
+| Go | `references/go/{handlers,database-queries,mcp-tools,inventory-costing,bcproxyai}.md` |
+| AI Provider (bcproxyai) | `references/go/bcproxyai.md` — virtual models, routing, troubleshooting |
+| DB structure | `references/core/database-schema.md` |
+| MCP tools | `docs/mcp-tools-guide.md` — 41 tools reference |
+| RAGFlow / Knowledge Base | `references/infra/ragflow-setup.md` |
+| ERP module details | `references/modules/<name>.md` — accounting, payment, product, quotation, sales-transaction, stock-inventory, creditor-debtor, approval-workflow, coupon-promotion, dashboard-report, import-export, lineoa-chatbot, restaurant-pos, auto-packing/, procurement/ |
 
-### 9. References — read before starting work
+## Auto-Update Rule
 
-| Task | Read these references |
-|------|----------------------|
-| **All tasks** | `references/core/business-rules.md` — checklist + common mistakes |
-| **Documents (PO/SO/Invoice)** | `references/core/document-flows.md` — state transitions |
-| **Procurement (PR/RFQ/PO)** | `references/core/procurement-flow.md` — PR->RFQ->PO API/DB/Kafka |
-| **Frontend-backend integration** | `references/core/cross-system-workflow.md` — MCP-first, API spec |
-| **DB schema changes** | `references/core/schema-migration.md` — migration checklist |
-| **Flutter frontend** | `references/flutter/bloc-pattern.md`, `api-client.md`, `ui-components.md` |
-| **Go backend** | `references/go/handlers.md`, `database-queries.md`, `mcp-tools.md` |
-| **Inventory Costing** | `references/go/inventory-costing.md` — 7 costing methods, API, DB schema |
-| **DB structure** | `references/core/database-schema.md` — tables + columns |
-| **MCP tools** | `docs/mcp-tools-guide.md` — 41 tools reference |
+**Update clone-skills whenever you learn something new from Jead:**
+- Jead says "remember" / "set rule" → write to `rules/` or `identity.md` immediately
+- Jead corrects AI → update the relevant rule
+- New pitfall discovered → add to `identity.md` Critical Pitfalls or relevant rule
+- New workflow → create skill in `skills/`
+- New code pattern → add to `references/{domain}/`
+- PR/RFQ/PO code changed → update `references/modules/procurement/references/feature-matrix.md`
+- Packing/BOM code changed → update `references/modules/auto-packing/references/feature-status.md`
 
-### 10. Subagent Model Rule
-- **Subagents ใช้ Sonnet เสมอ** — ทุกครั้งที่ spawn Agent tool ต้องระบุ `model: "sonnet"`
-- Opus ใช้เฉพาะ main conversation เท่านั้น
-- ยกเว้น: งาน architecture decisions หรือ complex debugging ที่ต้องการคุณภาพ Opus จริงๆ
-- เหตุผล: ประหยัด "All models" quota — Sonnet เพียงพอสำหรับงาน boilerplate/สร้างไฟล์
+Notify Jead after every update.
 
-### 11. End-of-task summary
-Always summarize when finishing work:
-- What was done
-- Whether backend changes are needed
-- Whether any skill/rule should be updated
-
-## Auto-Update Rule (Critical)
-
-**AI must always update skills** when learning something new from Jead:
-
-1. **When Jead says "remember" / "set rule"** — write to clone-skills immediately
-2. **When a repeated pattern is found** — add to `rules/` or `references/`
-3. **When Jead corrects the AI** — update the relevant rule
-4. **At end of every task** — check if any skill/rule needs updating
-
-### How to Update
-- **New rule**: write file in `rules/`, update `CLAUDE.md`
-- **New skill**: create folder `skills/{name}/SKILL.md`
-- **New reference**: write in `references/{domain}/`
-- **Identity change**: update `identity.md`
-- **Every update**: notify Jead what was changed
-
-### Skill Evolution
-
-| Event | Action |
-|-------|--------|
-| Bug fixed successfully | Add pattern/lesson to `identity.md` -> Lessons Learned |
-| New pitfall found | Add to `rules/coding-style.md` or relevant rule |
-| Jead teaches new method | Update relevant rule/identity |
-| New MCP tool used | Update `docs/mcp-tools-guide.md` |
-| New workflow created | Create new skill in `skills/` |
-| Jead says "remember" | Write to `identity.md` or `rules/` immediately |
-| New code pattern found | Add to `references/{domain}/` |
-| **PR/RFQ/PO code changed** | **Update `skills/procurement/references/feature-matrix.md` immediately** |
-| **Packing/BOM code changed** | **Update `skills/auto-packing/references/feature-status.md` immediately** |
-
-**Goal:** More work with Jead -> smarter clone-skills -> faster onboarding for new AI agents.
-
-## How to Use (for any project)
-
-### Link clone-skills to a project
-Add this to each project's CLAUDE.md:
-
+## How to Link from a Project CLAUDE.md
 ```markdown
 ## Jead Skill Library
-Read and follow all rules in `D:\bcdev\clone-skills\`:
-- `CLAUDE.md` — global rules
-- `identity.md` — identity and style (always follow)
-- `rules/*.md` — all work rules
-- `references/**/*.md` — domain knowledge + code templates
-- `skills/*/SKILL.md` — available slash commands
+Read and follow `D:\bcdev\clone-skills\`:
+- `identity.md` — identity + pitfalls (always read)
+- `CLAUDE.md` — global rules (always read)
+- `rules/*.md` — load when relevant
+- `references/**/*.md` — load when relevant
+- `skills/*/SKILL.md` — slash commands (auto-triggered)
 ```
-
-### Supported AI Tools
-- Claude Code (CLI + VSCode Extension)
-- Cursor
-- Claude Desktop (via MCP)
-- Windsurf
-- Any AI that can read CLAUDE.md or rules files

@@ -3,20 +3,20 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "สร้างหน้าจอ config ใหม่ชื่อ tax_screen.dart แบบ list+edit พร้อม search bar, column header, form fields — ให้รองรับ dark/light mode",
-      "expected_output": "ไฟล์ใช้ global.theme.* ทั้งหมด, มี ThemeRefreshMixin, search bar ใช้ searchBarColor, ไม่มี hardcoded Colors.*, ไม่มี const ครอบ theme widgets",
+      "prompt": "Create a new config screen named tax_screen.dart as list+edit with search bar, column header, and form fields — must support dark/light mode",
+      "expected_output": "File uses global.theme.* throughout, has ThemeRefreshMixin, search bar uses searchBarColor, no hardcoded Colors.*, no const wrapping theme widgets",
       "files": []
     },
     {
       "id": 2,
-      "prompt": "ตรวจหา hardcoded colors ใน lib/screens/config/zone_screen.dart แล้วแก้ให้รองรับ dark mode",
-      "expected_output": "แทน Colors.white ด้วย cardColor/formFillColor, Colors.black ด้วย textColor, Colors.grey ด้วย theme properties ที่ถูกประเภท, ลบ const ที่ขัดกัน",
+      "prompt": "Find hardcoded colors in lib/screens/config/zone_screen.dart and fix them for dark mode support",
+      "expected_output": "Replace Colors.white with cardColor/formFillColor, Colors.black with textColor, Colors.grey with the appropriate theme property, remove conflicting const",
       "files": []
     },
     {
       "id": 3,
-      "prompt": "เพิ่มสีใหม่ชื่อ chipBackgroundColor เข้าระบบ theme สำหรับใช้เป็นพื้น chip/tag",
-      "expected_output": "เพิ่ม property ใน theme_model.dart, ตั้งค่า light ใน themeSelect(), ตั้งค่า dark ใน applyThemeMode(), ใช้ผ่าน global.theme.chipBackgroundColor",
+      "prompt": "Add a new color named chipBackgroundColor to the theme system, used as a background for chips/tags",
+      "expected_output": "Add property in theme_model.dart, set light value in themeSelect(), set dark value in applyThemeMode(), accessed via global.theme.chipBackgroundColor",
       "files": []
     }
   ]

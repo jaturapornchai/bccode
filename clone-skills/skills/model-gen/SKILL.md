@@ -1,6 +1,9 @@
 ---
 name: model-gen
-description: View backend data model schema and generate Dart classes. Inspect field types, DB tables, sample data, sync frontend-backend models.
+description: >
+  View backend data model schema and generate Dart classes. Inspect field types, DB tables,
+  sample data, sync frontend-backend models. Use when the user mentions model schema, Dart
+  class generation, or DB table inspection.
 user-invocable: true
 ---
 
@@ -117,3 +120,22 @@ Parameters:
 - Always verify JSON tags match `fromJson` keys
 - New backend fields are safe (frontend ignores unknown fields)
 - Removed/renamed backend fields are breaking (frontend must update)
+
+## When to Use
+- Creating a new Dart model for an API endpoint response
+- Syncing frontend model after backend adds/changes fields
+- Checking field types and JSON tags before writing `fromJson`
+- Need to view DB table structure to understand the data model
+- Creating a complex model with nested objects or List fields
+
+## Anti-Patterns
+- Do NOT manually edit `.g.dart` files — always regenerate with `build_runner`
+- Do NOT guess field names from model name — JSON tag may differ from Go field name
+- Do NOT forget `??` default in `fromJson` — prevents null crashes
+- Do NOT copy model from old files without checking — schema may have changed
+- Do NOT create model in the wrong directory — must be in `lib/model/`
+
+## Related Skills
+- `/api-spec` — View response schema before generating model
+- `/enum-list` — View enum values for fields that are enums
+- `/api-search` — Find endpoints that use this model

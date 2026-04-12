@@ -51,3 +51,15 @@ backend/vendor/
 **/dist/
 **/.DS_Store
 **/Thumbs.db
+
+# Claude worktrees (duplicate sources — wastes Glob/Grep)
+.claude/worktrees/
+**/.claude/worktrees/
+
+# Long-term scripts/prompts (rarely loaded as context)
+backend/scripts/
+prompts/api_requests/
+
+# Migrations (auto-generated, don't bloat search)
+backend/migrations/
+backend/internal/**/migrations/
