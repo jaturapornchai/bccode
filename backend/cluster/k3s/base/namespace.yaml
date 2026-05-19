@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bc-ai-account
+  labels:
+    app.kubernetes.io/name: bc-ai-account
+

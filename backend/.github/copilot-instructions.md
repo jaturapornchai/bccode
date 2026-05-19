@@ -16,7 +16,7 @@ Go 1.26 module `smlcloudplatform` — unified backend (mainapi + goapi) using Ec
 - Docker mount: `bootstrap.json:/app/bootstrap.json:rw`
 
 ## Docker Services
-goapi(:8888), mainapi(:9090), MongoDB(:27017), PostgreSQL(:5432), ClickHouse(:8123/:9000), Redis(:6379), Kafka(:9092)
+MainAPI gateway(:8888, includes /goapi/*), MongoDB(:27017), PostgreSQL(:5432), ClickHouse(:8123/:9000), Redis(:6379), Kafka(:9092)
 
 ## Code Style
 - Thai OK in logs/comments

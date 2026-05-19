@@ -5,10 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"smlcloudplatform/internal/goapi/aiprovider"
-	"smlcloudplatform/internal/goapi/logger"
 	"io"
 	"net/http"
+	"smlcloudplatform/internal/goapi/aiprovider"
+	"smlcloudplatform/internal/goapi/logger"
 	"strings"
 	"time"
 
@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	MaxConversationMessages = 20         // Keep last 20 messages for context
+	MaxConversationMessages = 20 // Keep last 20 messages for context
 	SessionExpiry           = 30 * time.Minute
 )
 
@@ -182,7 +182,7 @@ func handlePostback(shopID string, event LineEvent) {
 func handleFollow(shopID string, event LineEvent) {
 	replyToken := event.ReplyToken
 
-	welcomeMessage := "สวัสดีครับ! ยินดีต้อนรับสู่ BCAI Cloud ERP 🎉\n\nผมคือ AI ผู้ช่วยของคุณ สามารถช่วยเรื่อง:\n• 📦 ดูข้อมูลสินค้าและสต็อก\n• 💰 ตรวจสอบยอดขาย\n• 📊 ดูรายงานต่างๆ\n\nลองเลือกเมนูด้านล่าง หรือพิมพ์คำถามได้เลยครับ"
+	welcomeMessage := "สวัสดีครับ! ยินดีต้อนรับสู่ BC Ai Account 🎉\n\nผมคือ AI ผู้ช่วยของคุณ สามารถช่วยเรื่อง:\n• 📦 ดูข้อมูลสินค้าและสต็อก\n• 💰 ตรวจสอบยอดขาย\n• 📊 ดูรายงานต่างๆ\n\nลองเลือกเมนูด้านล่าง หรือพิมพ์คำถามได้เลยครับ"
 
 	quickReplies := getMainMenuQuickReplies(shopID)
 	sendTextReply(shopID, replyToken, welcomeMessage, quickReplies)
@@ -238,7 +238,7 @@ func generateAIResponse(shopID string, session *ConversationSession) (string, []
 
 // buildSystemPrompt creates the system prompt for AI
 func buildSystemPrompt(shopID string) string {
-	return fmt.Sprintf(`คุณเป็น AI ผู้ช่วยร้านค้าของระบบ BCAI Cloud ERP
+	return fmt.Sprintf(`คุณเป็น AI ผู้ช่วยร้านค้าของระบบ BC Ai Account
 
 **ข้อมูลร้าน:**
 - Shop ID: %s

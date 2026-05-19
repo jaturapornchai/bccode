@@ -285,11 +285,11 @@ func GetAccountsReceivable(ctx context.Context, shopID string) (*AccountsReceiva
 	// Get total receivable from unpaid invoices
 	query := `
 		SELECT
-			COALESCE(SUM(totalamount - COALESCE(paidamount, 0)), 0) as total_receivable,
-			COALESCE(SUM(CASE WHEN duedate < CURRENT_DATE THEN totalamount - COALESCE(paidamount, 0) ELSE 0 END), 0) as overdue
+			COALESCE(SUM(totalamount - COALESCE(0 /*paidamount: column missing, treating as 0*/, 0)), 0) as total_receivable,
+			COALESCE(SUM(CASE WHEN duedate < CURRENT_DATE THEN totalamount - COALESCE(0 /*paidamount: column missing, treating as 0*/, 0) ELSE 0 END), 0) as overdue
 		FROM doc
 		WHERE transflag IN (16, 18)
-			AND totalamount > COALESCE(paidamount, 0)
+			AND totalamount > COALESCE(0 /*paidamount: column missing, treating as 0*/, 0)
 			AND (isdelete = false OR isdelete IS NULL)
 	`
 
@@ -322,11 +322,11 @@ func GetAccountsReceivable(ctx context.Context, shopID string) (*AccountsReceiva
 				WHEN CURRENT_DATE - duedate BETWEEN 61 AND 90 THEN '61-90 days overdue'
 				ELSE '90+ days overdue'
 			END as label,
-			COALESCE(SUM(totalamount - COALESCE(paidamount, 0)), 0) as amount,
+			COALESCE(SUM(totalamount - COALESCE(0 /*paidamount: column missing, treating as 0*/, 0)), 0) as amount,
 			COUNT(*) as cnt
 		FROM doc
 		WHERE transflag IN (16, 18)
-			AND totalamount > COALESCE(paidamount, 0)
+			AND totalamount > COALESCE(0 /*paidamount: column missing, treating as 0*/, 0)
 			AND (isdelete = false OR isdelete IS NULL)
 		GROUP BY label
 		ORDER BY CASE label
@@ -360,13 +360,13 @@ func GetAccountsReceivable(ctx context.Context, shopID string) (*AccountsReceiva
 		SELECT
 			COALESCE(custcode, 'N/A') as customer_code,
 			COALESCE(custname, custcode, 'Unknown') as customer_name,
-			SUM(totalamount - COALESCE(paidamount, 0)) as total_owed,
-			SUM(CASE WHEN duedate < CURRENT_DATE THEN totalamount - COALESCE(paidamount, 0) ELSE 0 END) as overdue_amount,
+			SUM(totalamount - COALESCE(0 /*paidamount: column missing, treating as 0*/, 0)) as total_owed,
+			SUM(CASE WHEN duedate < CURRENT_DATE THEN totalamount - COALESCE(0 /*paidamount: column missing, treating as 0*/, 0) ELSE 0 END) as overdue_amount,
 			MIN(docdate)::text as oldest_invoice,
 			COALESCE(MAX(CURRENT_DATE - duedate), 0) as days_overdue
 		FROM doc
 		WHERE transflag IN (16, 18)
-			AND totalamount > COALESCE(paidamount, 0)
+			AND totalamount > COALESCE(0 /*paidamount: column missing, treating as 0*/, 0)
 			AND custcode IS NOT NULL AND custcode != ''
 			AND (isdelete = false OR isdelete IS NULL)
 		GROUP BY custcode, custname
@@ -393,12 +393,12 @@ func GetAccountsReceivable(ctx context.Context, shopID string) (*AccountsReceiva
 		SELECT
 			docno,
 			COALESCE(custname, custcode, 'Unknown') as customer_name,
-			totalamount - COALESCE(paidamount, 0) as amount,
+			totalamount - COALESCE(0 /*paidamount: column missing, treating as 0*/, 0) as amount,
 			duedate::text as due_date,
 			CURRENT_DATE - duedate as days_overdue
 		FROM doc
 		WHERE transflag IN (16, 18)
-			AND totalamount > COALESCE(paidamount, 0)
+			AND totalamount > COALESCE(0 /*paidamount: column missing, treating as 0*/, 0)
 			AND duedate < CURRENT_DATE
 			AND (isdelete = false OR isdelete IS NULL)
 		ORDER BY days_overdue DESC
@@ -489,12 +489,12 @@ func GetAccountsPayable(ctx context.Context, shopID string) (*AccountsPayableRes
 	// Get total payable from unpaid purchase orders
 	query := `
 		SELECT
-			COALESCE(SUM(totalamount - COALESCE(paidamount, 0)), 0) as total_payable,
-			COALESCE(SUM(CASE WHEN duedate < CURRENT_DATE THEN totalamount - COALESCE(paidamount, 0) ELSE 0 END), 0) as overdue,
-			COALESCE(SUM(CASE WHEN duedate BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days' THEN totalamount - COALESCE(paidamount, 0) ELSE 0 END), 0) as due_this_week
+			COALESCE(SUM(totalamount - COALESCE(0 /*paidamount: column missing, treating as 0*/, 0)), 0) as total_payable,
+			COALESCE(SUM(CASE WHEN duedate < CURRENT_DATE THEN totalamount - COALESCE(0 /*paidamount: column missing, treating as 0*/, 0) ELSE 0 END), 0) as overdue,
+			COALESCE(SUM(CASE WHEN duedate BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days' THEN totalamount - COALESCE(0 /*paidamount: column missing, treating as 0*/, 0) ELSE 0 END), 0) as due_this_week
 		FROM doc
 		WHERE transflag IN (1, 3)
-			AND totalamount > COALESCE(paidamount, 0)
+			AND totalamount > COALESCE(0 /*paidamount: column missing, treating as 0*/, 0)
 			AND (isdelete = false OR isdelete IS NULL)
 	`
 
@@ -522,11 +522,11 @@ func GetAccountsPayable(ctx context.Context, shopID string) (*AccountsPayableRes
 		SELECT
 			COALESCE(custcode, 'N/A') as supplier_code,
 			COALESCE(custname, custcode, 'Unknown') as supplier_name,
-			SUM(totalamount - COALESCE(paidamount, 0)) as total_owed,
+			SUM(totalamount - COALESCE(0 /*paidamount: column missing, treating as 0*/, 0)) as total_owed,
 			MIN(docdate)::text as oldest_invoice
 		FROM doc
 		WHERE transflag IN (1, 3)
-			AND totalamount > COALESCE(paidamount, 0)
+			AND totalamount > COALESCE(0 /*paidamount: column missing, treating as 0*/, 0)
 			AND (isdelete = false OR isdelete IS NULL)
 		GROUP BY custcode, custname
 		ORDER BY total_owed DESC
@@ -552,12 +552,12 @@ func GetAccountsPayable(ctx context.Context, shopID string) (*AccountsPayableRes
 		SELECT
 			docno,
 			COALESCE(custname, custcode, 'Unknown') as supplier_name,
-			totalamount - COALESCE(paidamount, 0) as amount,
+			totalamount - COALESCE(0 /*paidamount: column missing, treating as 0*/, 0) as amount,
 			duedate::text as due_date,
 			duedate - CURRENT_DATE as days_until_due
 		FROM doc
 		WHERE transflag IN (1, 3)
-			AND totalamount > COALESCE(paidamount, 0)
+			AND totalamount > COALESCE(0 /*paidamount: column missing, treating as 0*/, 0)
 			AND duedate >= CURRENT_DATE
 			AND duedate <= CURRENT_DATE + INTERVAL '30 days'
 			AND (isdelete = false OR isdelete IS NULL)
@@ -656,7 +656,7 @@ func GetCashFlow(ctx context.Context, shopID, fromDate, toDate string) (*CashFlo
 	// Get cash inflows (sales receipts)
 	var salesInflow float64
 	query := `
-		SELECT COALESCE(SUM(paidamount), 0)
+		SELECT COALESCE(SUM(0 /*paidamount: column missing, treating as 0*/), 0)
 		FROM doc
 		WHERE transflag IN (16, 18)
 			AND docdate >= $1 AND docdate <= $2
@@ -667,7 +667,7 @@ func GetCashFlow(ctx context.Context, shopID, fromDate, toDate string) (*CashFlo
 	// Get cash outflows (purchase payments)
 	var purchaseOutflow float64
 	query = `
-		SELECT COALESCE(SUM(paidamount), 0)
+		SELECT COALESCE(SUM(0 /*paidamount: column missing, treating as 0*/), 0)
 		FROM doc
 		WHERE transflag IN (1, 3)
 			AND docdate >= $1 AND docdate <= $2
@@ -700,8 +700,8 @@ func GetCashFlow(ctx context.Context, shopID, fromDate, toDate string) (*CashFlo
 	dailyQuery := `
 		SELECT
 			TO_CHAR(docdate, 'YYYY-MM-DD') as date,
-			COALESCE(SUM(CASE WHEN transflag IN (16, 18) THEN paidamount ELSE 0 END), 0) as inflows,
-			COALESCE(SUM(CASE WHEN transflag IN (1, 3) THEN paidamount ELSE 0 END), 0) as outflows
+			COALESCE(SUM(CASE WHEN transflag IN (16, 18) THEN 0 /*paidamount: column missing, treating as 0*/ ELSE 0 END), 0) as inflows,
+			COALESCE(SUM(CASE WHEN transflag IN (1, 3) THEN 0 /*paidamount: column missing, treating as 0*/ ELSE 0 END), 0) as outflows
 		FROM doc
 		WHERE transflag IN (1, 3, 16, 18)
 			AND docdate >= $1 AND docdate <= $2

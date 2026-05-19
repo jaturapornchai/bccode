@@ -108,6 +108,7 @@ func (h AuthenticationHttp) RegisterHttp() {
 
 	h.ms.PUT("/profile", h.Update)
 	h.ms.PUT("/profile/password", h.UpdatePassword)
+	h.ms.PUT("/profile/password/reset/:username", h.ResetPasswordToDefault)
 	h.ms.PUT("/profile/link-line", h.LinkLine)
 	h.ms.DELETE("/profile/link-line", h.UnlinkLine)
 
@@ -901,6 +902,40 @@ func (h AuthenticationHttp) UpdatePassword(ctx microservice.IContext) error {
 	}
 
 	ctx.Response(http.StatusCreated, common.ApiResponse{
+		Success: true,
+	})
+
+	return nil
+}
+
+// ResetPasswordToDefault godoc
+// @Summary		Reset user password to default
+// @Description	Reset a shop user's password to the default password by authorized shop user
+// @Tags		Authentication
+// @Param		username  path      string  true  "username"
+// @Success		200	{object}	common.ResponseSuccessWithID
+// @Failure		400 {object}	common.AuthResponseFailed
+// @Accept 		json
+// @Router		/profile/password/reset/{username} [put]
+func (h AuthenticationHttp) ResetPasswordToDefault(ctx microservice.IContext) error {
+	userInfo := ctx.UserInfo()
+	targetUsername := ctx.Param("username")
+
+	if len(targetUsername) < 1 {
+		ctx.ResponseError(400, "username invalid")
+		return nil
+	}
+
+	err := h.authenticationService.ResetPasswordToDefault(userInfo.ShopID, userInfo.Username, targetUsername)
+	if err != nil {
+		ctx.Response(http.StatusBadRequest, common.ApiResponse{
+			Success: false,
+			Message: err.Error(),
+		})
+		return err
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
 	})
 

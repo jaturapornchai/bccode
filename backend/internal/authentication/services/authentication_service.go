@@ -31,6 +31,7 @@ type IAuthenticationService interface {
 	ForgotPasswordByPhonenumber(userRequest auth_models.ForgotPasswordPhoneNumberRequest) error
 	Update(username string, userRequest auth_models.UserProfileRequest) error
 	UpdatePassword(username string, currentPassword string, newPassword string) error
+	ResetPasswordToDefault(shopID string, authUsername string, targetUsername string) error
 	Logout(authorizationHeader string) error
 	Profile(username string) (auth_models.UserProfile, error)
 	AccessShop(shopID string, username string, authorizationHeader string, authContext models.AuthenticationContext) error
@@ -308,6 +309,12 @@ func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc,
 			return models.TokenLoginResponse{}, errors.New("shop invalid")
 		}
 
+		if err = svc.ensureShopAccessAllowed(context.Background(), shopID, shopUser); err != nil {
+			svc.authService.DeleteToken(microservice.AUTHTYPE_BEARER, tokenString)
+			svc.authService.DeleteToken(microservice.AUTHTYPE_REFRESH, refreshTokenString)
+			return models.TokenLoginResponse{}, err
+		}
+
 		err = svc.authService.SelectShop(microservice.AUTHTYPE_BEARER, tokenString, shopID, shopUser.Role)
 
 		if err != nil {
@@ -334,6 +341,23 @@ func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc,
 	}
 
 	return models.TokenLoginResponse{Token: tokenString, Refresh: refreshTokenString}, nil
+}
+
+func (svc *AuthenticationService) ensureShopAccessAllowed(ctx context.Context, shopID string, shopUser auth_models.ShopUser) error {
+	if !shopUser.IsAccessDisabled {
+		return nil
+	}
+
+	createdBy, err := svc.shopUserRepo.FindShopCreatedBy(ctx, shopID)
+	if err != nil {
+		return err
+	}
+
+	if strings.EqualFold(utils.NormalizeUsername(shopUser.Username), utils.NormalizeUsername(createdBy)) {
+		return nil
+	}
+
+	return errors.New("user_access_disabled")
 }
 
 func (svc AuthenticationService) RefreshToken(tokenRequest models.TokenLoginRequest) (models.TokenLoginResponse, error) {
@@ -634,6 +658,84 @@ func (svc AuthenticationService) UpdatePassword(username string, currentPassword
 	return nil
 }
 
+func (svc AuthenticationService) ResetPasswordToDefault(shopID string, authUsername string, targetUsername string) error {
+	shopID = strings.TrimSpace(shopID)
+	authUsername = utils.NormalizeUsername(authUsername)
+	targetUsername = utils.NormalizeUsername(targetUsername)
+
+	if shopID == "" {
+		return errors.New("shop invalid")
+	}
+	if authUsername == "" || targetUsername == "" {
+		return errors.New("username invalid")
+	}
+	if authUsername == targetUsername {
+		return errors.New("use change password for self")
+	}
+
+	authUser, err := svc.shopUserRepo.FindByShopIDAndUsername(context.Background(), shopID, authUsername)
+	if err != nil {
+		return err
+	}
+	if authUser.Role != models.ROLE_OWNER && authUser.Role != models.ROLE_ADMIN {
+		return errors.New("permission denied")
+	}
+
+	targetShopUser, err := svc.shopUserRepo.FindByShopIDAndUsername(context.Background(), shopID, targetUsername)
+	if err != nil {
+		return err
+	}
+	if targetShopUser.Username == "" {
+		return errors.New("user not found")
+	}
+	if authUser.Role == models.ROLE_ADMIN && targetShopUser.Role == models.ROLE_OWNER {
+		return errors.New("permission denied")
+	}
+
+	hashPassword, err := svc.passwordEncoder(models.DefaultUserPassword)
+	if err != nil {
+		return err
+	}
+
+	userFind, err := svc.authRepo.FindUser(context.Background(), targetUsername)
+	if err != nil {
+		if !isMongoNotFoundError(err) {
+			return err
+		}
+		user := auth_models.UserDoc{}
+		user.UID = svc.generateGUID()
+		user.Username = targetUsername
+		user.Password = hashPassword
+		user.UserDetail.Name = targetUsername
+		user.CreatedAt = svc.timeNow()
+		_, err = svc.authRepo.CreateUser(context.Background(), user)
+		return err
+	}
+	if userFind.Username == "" {
+		user := auth_models.UserDoc{}
+		user.UID = svc.generateGUID()
+		user.Username = targetUsername
+		user.Password = hashPassword
+		user.UserDetail.Name = targetUsername
+		user.CreatedAt = svc.timeNow()
+		_, err = svc.authRepo.CreateUser(context.Background(), user)
+		return err
+	}
+
+	userFind.Password = hashPassword
+	userFind.UpdatedAt = svc.timeNow()
+
+	return svc.authRepo.UpdateUser(context.Background(), targetUsername, *userFind)
+}
+
+func isMongoNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+	message := strings.ToLower(err.Error())
+	return strings.Contains(message, "no documents") || strings.Contains(message, "not found")
+}
+
 func (svc AuthenticationService) Logout(authorizationHeader string) error {
 	return svc.authService.ExpireToken(microservice.AUTHTYPE_BEARER, authorizationHeader)
 }
@@ -646,10 +748,12 @@ func (svc AuthenticationService) Profile(username string) (auth_models.UserProfi
 		return userProfile, err
 	}
 	userProfile.Username = user.Username
+	userProfile.Email = user.Email
 	userProfile.UserDetail = user.UserDetail
 	userProfile.LineUserID = user.LineUserID
 	userProfile.LineDisplayName = user.LineDisplayName
 	userProfile.LinePictureURL = user.LinePictureURL
+	userProfile.IsDefaultPassword = user.Password != "" && svc.checkHashPassword(models.DefaultUserPassword, user.Password)
 
 	return userProfile, nil
 }
@@ -682,6 +786,10 @@ func (svc AuthenticationService) AccessShop(shopID string, username string, auth
 
 	if shopUser.ID == primitive.NilObjectID {
 		return errors.New("shop invalid")
+	}
+
+	if err = svc.ensureShopAccessAllowed(context.Background(), shopID, shopUser); err != nil {
+		return err
 	}
 
 	err = svc.authService.SelectShop(microservice.AUTHTYPE_BEARER, tokenStr, shopID, shopUser.Role)
@@ -757,7 +865,9 @@ func (svc AuthenticationService) LoginWithFirebaseToken(token string) (string, e
 		// register
 		user := auth_models.UserDoc{}
 
+		user.UID = svc.generateGUID()
 		user.Username = userInfo.Email
+		user.Email = userInfo.Email
 		user.Password = ""
 		user.UserDetail.Name = userInfo.Name
 		user.CreatedAt = svc.timeNow()
@@ -801,7 +911,9 @@ func (svc AuthenticationService) LoginWithGoogleEmail(email string, displayName 
 	// ถ้าไม่มี user ให้สร้างใหม่
 	if len(userFind.Username) == 0 {
 		user := auth_models.UserDoc{}
+		user.UID = svc.generateGUID()
 		user.Username = email
+		user.Email = email
 		user.Password = ""
 		user.UserDetail.Name = displayName
 		user.CreatedAt = svc.timeNow()
@@ -845,6 +957,7 @@ func (svc AuthenticationService) LoginWithLineToken(token string) (string, error
 		// register new user
 		user := auth_models.UserDoc{}
 
+		user.UID = svc.generateGUID()
 		user.Username = userInfo.UserId
 		user.Password = ""
 		user.UserDetail.Name = userInfo.DisplayName

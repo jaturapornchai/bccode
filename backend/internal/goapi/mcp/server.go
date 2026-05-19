@@ -373,6 +373,15 @@ var AvailableTools = []map[string]interface{}{
 			"keyword":  "string (optional) - Search in enum name, label, or description",
 		},
 	},
+	// Web Search Tool (ค้นหาข้อมูลจาก internet)
+	{
+		"name":        "web_search",
+		"description": "Search the internet for information using DuckDuckGo. Use when you need external knowledge not available in the shop's data (e.g. tax rates, regulations, product info, market data).",
+		"parameters": map[string]interface{}{
+			"query": "string (required) - Search query (Thai or English)",
+			"limit": "number (optional) - Max results (default: 5, max: 10)",
+		},
+	},
 	// Unit of Measure Tools (หน่วยนับ)
 	{
 		"name":        "list_units",
@@ -544,6 +553,16 @@ var AvailableTools = []map[string]interface{}{
 		"description": "Full rebuild: sync ALL product barcodes from MongoDB → PostgreSQL + ClickHouse. Use when Kafka sync fails or data is out of sync. Same as frontend 'สร้างสินค้าใหม่' button.",
 		"parameters": map[string]interface{}{
 			"shop_id": "string (required) - Shop ID to rebuild products for",
+		},
+	},
+	// Rebuild Embeddings (สร้าง vector embeddings สำหรับ semantic search)
+	{
+		"name":        "rebuild_embeddings",
+		"description": "สร้าง vector embeddings สำหรับ semantic search ด้วย Ollama → pgvector. รองรับ product, debtor, creditor, customer. ใช้ entity_type=all เพื่อสร้างทั้งหมด",
+		"parameters": map[string]interface{}{
+			"shop_id":     "string (required) - Shop ID",
+			"entity_type": "string (optional) - product|debtor|creditor|customer|all (default: product)",
+			"force_all":   "boolean (optional) - true=สร้างใหม่ทั้งหมด, false=เฉพาะที่ยังไม่มี (default: false)",
 		},
 	},
 	// Product Group Tools (กลุ่มสินค้า)
@@ -981,6 +1000,31 @@ func (s *MCPServer) ExecuteToolDirect(ctx context.Context, toolName string, para
 		return s.invokeGetMoMComparison(ctx, params)
 	case "list_units":
 		return s.invokeListUnits(ctx, params)
+	case "web_search":
+		return s.invokeWebSearch(ctx, params)
+	case "query_mongodb":
+		return s.invokeQueryMongoDB(ctx, params)
+	case "list_mongodb_collections":
+		return s.invokeListMongoDBCollections(ctx, params)
+	case "aggregate_mongodb":
+		return s.invokeAggregateMongoDB(ctx, params)
+	case "query_clickhouse":
+		return s.invokeQueryClickHouse(ctx, params)
+	case "list_clickhouse_tables":
+		return s.invokeListClickHouseTables(ctx, params)
+	case "query_postgresql":
+		return s.invokeExecutePgCommand(ctx, params)
+	case "execute_js":
+		return s.invokeExecuteJS(ctx, params)
+	case "execute_python":
+		return s.invokeExecutePython(ctx, params)
+	// Entity semantic search tools
+	case "search_debtors":
+		return s.invokeSearchDebtors(ctx, params)
+	case "search_creditors":
+		return s.invokeSearchCreditors(ctx, params)
+	case "search_customers":
+		return s.invokeSearchCustomers(ctx, params)
 	default:
 		return nil, fmt.Errorf("unknown tool: %s", toolName)
 	}
@@ -1179,6 +1223,9 @@ func (s *MCPServer) InvokeTool(c echo.Context) error {
 		result, err = s.invokeExecutePgCommand(ctx, req.Params)
 	case "execute_ch_command":
 		result, err = s.invokeExecuteChCommand(ctx, req.Params)
+	// Web Search
+	case "web_search":
+		result, err = s.invokeWebSearch(ctx, req.Params)
 	// Unit of Measure Tools (หน่วยนับ)
 	case "list_units":
 		result, err = s.invokeListUnits(ctx, req.Params)
@@ -1218,6 +1265,8 @@ func (s *MCPServer) InvokeTool(c echo.Context) error {
 		result, err = s.invokeCreateMultiUnitBarcode(ctx, req.Params)
 	case "rebuild_products":
 		result, err = s.invokeRebuildProducts(ctx, req.Params)
+	case "rebuild_embeddings":
+		result, err = s.invokeRebuildEmbeddings(ctx, req.Params)
 	// Product Group Tools (กลุ่มสินค้า)
 	case "list_product_groups":
 		result, err = s.invokeListProductGroups(ctx, req.Params)
@@ -1618,6 +1667,13 @@ func (s *MCPServer) invokeGetInventoryTurnover(ctx context.Context, params map[s
 
 // ==================== Customer Tool Invocations ====================
 
+func (s *MCPServer) invokeSearchCustomers(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	shopID := getStringParam(params, "shop_id")
+	keyword := getStringParam(params, "keyword")
+	limit := getIntParam(params, "limit")
+	return tools.SearchCustomers(ctx, shopID, keyword, limit)
+}
+
 // invokeGetTopCustomers invokes the top customers tool
 func (s *MCPServer) invokeGetTopCustomers(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	shopID := getStringParam(params, "shop_id")
@@ -1750,6 +1806,22 @@ func (s *MCPServer) invokeExecutePgCommand(ctx context.Context, params map[strin
 	query := getStringParam(params, "query")
 	limit := getIntParam(params, "limit")
 	return tools.ExecutePgCommand(ctx, shopID, query, limit)
+}
+
+// invokeExecuteJS รัน JavaScript ใน Goja sandbox (readonly)
+// AI เขียน JS เอง → รัน → ดูผล → แก้ → รันใหม่ จนได้คำตอบ
+func (s *MCPServer) invokeExecuteJS(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	shopID := getStringParam(params, "shop_id")
+	code := getStringParam(params, "code")
+	return tools.ExecuteJS(ctx, shopID, code)
+}
+
+// invokeExecutePython รัน Python 3 script ใน subprocess sandbox (readonly)
+// LLM เขียน Python เก่งที่สุด → ใช้เป็น primary tool สำหรับงาน data/query
+func (s *MCPServer) invokeExecutePython(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	shopID := getStringParam(params, "shop_id")
+	code := getStringParam(params, "code")
+	return tools.ExecutePython(ctx, shopID, code)
 }
 
 // invokeExecuteChCommand invokes the dev ClickHouse command tool
@@ -1949,6 +2021,15 @@ func (s *MCPServer) invokeGetUnitSchema(ctx context.Context, params map[string]i
 	return tools.GetUnitSchema(), nil
 }
 
+// ==================== Web Search Tool Invocation ====================
+
+// invokeWebSearch invokes the web search tool
+func (s *MCPServer) invokeWebSearch(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	query := getStringParam(params, "query")
+	limit := getIntParam(params, "limit")
+	return tools.WebSearch(ctx, query, limit)
+}
+
 // ==================== Product Barcode Tool Invocations ====================
 
 // invokeListBarcodes invokes the list/search barcodes tool
@@ -2053,6 +2134,16 @@ func (s *MCPServer) invokeRebuildProducts(ctx context.Context, params map[string
 	return tools.RebuildProducts(ctx, shopID)
 }
 
+func (s *MCPServer) invokeRebuildEmbeddings(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	shopID := getStringParam(params, "shop_id")
+	forceAll := getBoolParam(params, "force_all")
+	entityType := getStringParam(params, "entity_type")
+	if entityType == "all" {
+		return tools.RebuildAllEmbeddings(ctx, shopID, forceAll)
+	}
+	return tools.RebuildEmbeddings(ctx, shopID, forceAll, entityType)
+}
+
 // ==================== Product Group Tool Invocations ====================
 
 func (s *MCPServer) invokeListProductGroups(ctx context.Context, params map[string]interface{}) (interface{}, error) {
@@ -2155,6 +2246,13 @@ func (s *MCPServer) invokeListCreditors(ctx context.Context, params map[string]i
 	return tools.ListCreditors(ctx, shopID, keyword, limit)
 }
 
+func (s *MCPServer) invokeSearchCreditors(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	shopID := getStringParam(params, "shop_id")
+	keyword := getStringParam(params, "keyword")
+	limit := getIntParam(params, "limit")
+	return tools.SearchCreditors(ctx, shopID, keyword, limit)
+}
+
 func (s *MCPServer) invokeCreateCreditor(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	shopID := getStringParam(params, "shop_id")
 	code := getStringParam(params, "code")
@@ -2207,6 +2305,13 @@ func (s *MCPServer) invokeListDebtors(ctx context.Context, params map[string]int
 	keyword := getStringParam(params, "keyword")
 	limit := getIntParam(params, "limit")
 	return tools.ListDebtors(ctx, shopID, keyword, limit)
+}
+
+func (s *MCPServer) invokeSearchDebtors(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	shopID := getStringParam(params, "shop_id")
+	keyword := getStringParam(params, "keyword")
+	limit := getIntParam(params, "limit")
+	return tools.SearchDebtors(ctx, shopID, keyword, limit)
 }
 
 func (s *MCPServer) invokeCreateDebtor(ctx context.Context, params map[string]interface{}) (interface{}, error) {

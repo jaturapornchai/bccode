@@ -14,6 +14,7 @@ import (
 	"smlcloudplatform/internal/goapi/handlers/approval"
 	"smlcloudplatform/internal/goapi/handlers/datahistory"
 	"smlcloudplatform/internal/goapi/handlers/kafka"
+	"smlcloudplatform/internal/goapi/handlers/knowledgebase"
 	"smlcloudplatform/internal/goapi/handlers/lineoa"
 	"smlcloudplatform/internal/goapi/handlers/unified"
 	"smlcloudplatform/internal/goapi/inventory"
@@ -206,7 +207,10 @@ func (s *GoAPIServer) RegisterMiddleware(g *echo.Group) {
 				strings.HasSuffix(path, "/listsourceshops") ||
 				strings.Contains(path, "/rebuild/progress/") ||
 				strings.HasSuffix(path, "/mcp/sse") ||
-				strings.HasSuffix(path, "/mcp/message")
+				strings.HasSuffix(path, "/mcp/message") ||
+				strings.Contains(path, "/chatbot/chat-agent") ||
+				strings.Contains(path, "/aichat/v1/chat/completions") ||
+				strings.Contains(path, "/ai-provider/test")
 		},
 		ErrorMessage: "Request timeout",
 		Timeout:      30 * time.Second,
@@ -451,7 +455,32 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 	chatbotV1 := g.Group("/api/v1/chatbot")
 	chatbotV1.POST("/chat-gemini", aichat.ChatGemini)
 	chatbotV1.POST("/chat-agent", aichat.ChatAgent)
+	chatbotV1.POST("/chat-agent-v2", aichat.ChatAgentV2)           // น้องกุ้ง SSE streaming
+	chatbotV1.POST("/chat-agent-v2-sync", aichat.ChatAgentV2Sync)  // น้องกุ้ง non-streaming fallback
+	chatbotV1.POST("/clear-session", aichat.ClearChatSession)      // ล้างประวัติสนทนา
 	chatbotV1.POST("/analyze-document", aichat.AnalyzeDocument)
+
+	// Knowledge Base (RAGFlow-backed)
+	knowledgebase.RegisterRoutes(g.Group("/api/v1/kb"))
+
+	// OpenAI-compatible gateway (สำหรับ OpenClaw / client ที่พูด OpenAI protocol)
+	openaiGW := g.Group("/api/aichat/v1")
+	openaiGW.POST("/chat/completions", aichat.OpenAIGatewayChatCompletions)
+	openaiGW.GET("/models", aichat.OpenAIGatewayListModels)
+
+	// Result store (frontend ดึง full tool result ที่ truncate ใน chat ออกไป)
+	g.GET("/api/aichat/result/:id", aichat.GetAIChatResult)
+
+	// AI Provider Config (per-shop settings stored in MongoDB)
+	aiProviderV1 := g.Group("/api/v1/ai-provider")
+	aiProviderV1.POST("/list", aichat.ListAIProviders)
+	aiProviderV1.POST("/save", aichat.SaveAIProvider)
+	aiProviderV1.POST("/delete", aichat.DeleteAIProvider)
+	aiProviderV1.POST("/test", aichat.TestAIProvider)
+	aiProviderV1.POST("/models", aichat.ListAIModels)
+	aiProviderV1.POST("/status", aichat.AIProviderStatus)
+	aiProviderV1.POST("/question-history", aichat.ListQuestionHistory)
+	aiProviderV1.POST("/complaint", aichat.SubmitComplaint)
 
 	// Unified API
 	unifiedV1 := g.Group("/api/v1/unified")

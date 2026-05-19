@@ -1,4 +1,4 @@
-# BC AI Backend — Project Rules
+# BC Ai Account Backend — Project Rules
 
 ## Overview
 Unified Go backend: **mainapi** (cloud platform) + **goapi** (BI/analytics API) in one module.
@@ -164,9 +164,41 @@ MCP เป็น bridge ให้ AI tools ฝั่ง frontend เข้าถ
 - **Tools (15 files):** sales, dashboard, financial, inventory, customers, products, comparison, database, model_schema, enum_catalog, clickhouse_query, mongodb_query, api_catalog, api_spec, token_export
 
 **กฏสำคัญ:**
-- Frontend project (bcaiaccount) ตั้งกฏว่า AI ห้ามอ่าน backend code — ต้องผ่าน MCP เท่านั้น
-- ถ้า frontend ต้องการ API ใหม่ จะส่ง API Specification Prompt มาในไฟล์ `prompts/api_requests/{feature}.md`
+- Frontend target ใหม่คือ Next.js ที่ `D:\bccode\frontend` จาก `https://github.com/jaturapornchai/bccode`
+- Flutter ที่ `D:\bcdev\frontend` จาก `https://github.com/jaturapornchai/bcdev` โดยเฉพาะ `bcaiaccount` เป็น reference/template สำหรับ migration เท่านั้น
+- AI ฝั่ง frontend ห้ามเดา backend behavior/schema — ต้องใช้ MCP, API docs, หรือ API Specification Prompt
+- ถ้า frontend ต้องการ API ใหม่ ให้ส่ง API Specification Prompt มาในไฟล์ `prompts/api_requests/{feature}.md`
 - เมื่อได้รับ prompt จาก frontend → สร้าง API ตาม spec + เพิ่ม MCP tool ถ้าจำเป็น
+
+### ERP Language Source Of Truth
+- `assets/language/languages.tsv` is the single source of truth for ERP UI labels, field labels, report names, report headers, report columns, status text, and repeated business terms.
+- Backend reports, PDF generation, API metadata, and frontend screens must use the same keys from `languages.tsv`; do not maintain separate report-only JSON dictionaries or frontend-only business-label dictionaries that can drift.
+- Language APIs must normalize aliases such as `zh -> cn`, `jp -> ja`, `kr -> ko`, and `tl -> fil`.
+- Fallback order is requested language → English → Thai → key.
+- Report request payloads must pass `language_code`; generated report titles/headers/columns must match frontend screen labels for the same selected language.
+- When adding any visible ERP text, add the key to `assets/language/languages.tsv` and add/update a narrow test for the backend/frontend path using it.
+
+### Multi-Tenant With tenant_id
+- `tenant_id` is the canonical tenant boundary for new backend/API/report work.
+- `tenant_id` represents one company/business/legal entity/workspace. It must not represent the owner user because one user can own or access many companies.
+- For existing production data, `tenant_id` is a logical alias whose value is the existing core `shopid`. Do not create a second tenant id for old records.
+- User/company access must be modeled through membership/role data: `user_id` -> many `tenant_id`; each `tenant_id` -> many `branch_id`.
+- Owner-level overview across many companies uses `company_group_id` above many `tenant_id` values. Keep authorization tenant-scoped and pass only authorized tenant lists to ClickHouse.
+- Existing core storage uses `shopid` as the physical tenant identity in many current tables, collections, ClickHouse rows, and Kafka payloads. Some GoAPI/MCP/AI/approval DTOs use `shop_id`; inspect the module before choosing the physical key. Keep existing field names as-is unless a later migration has a functional reason beyond naming consistency.
+- Every handler must derive `tenant_id` from authenticated user/workspace membership, validate access, and pass it through repository/service/report/job layers.
+- Every customer-data query must filter by the logical `tenant_id`. In legacy repositories, map that value to physical `shopid` or module-specific `shop_id` and keep the filter in the same query.
+- New standalone schema should include `tenant_id` and composite indexes such as `(tenant_id, id)`, `(tenant_id, branch_id, doc_no)`, or the best key for the access pattern. Legacy schema may keep its real physical tenant key, usually `shopid`.
+- Do not remove or rename existing `shopid` / `shop_id` fields until all callers, migrations, indexes, tests, reports, Kafka consumers, and object paths are verified and there is a real functional benefit.
+- Cross-tenant admin/report operations require explicit admin permission, audit log, and clear code-level naming.
+- Use `architecture/high-scale-multitenant-bi.md` as the blueprint for MongoDB -> Kafka -> PostgreSQL -> Kafka -> ClickHouse at high concurrency.
+- Use `architecture/admin-access-control.md` for platform admins, group owners, tenant admins, branch grants, first-admin bootstrap, and policy-based access resolution.
+
+### K3s Production Scaling
+- Docker Desktop/docker-compose remains local/dev only. Use `cluster/k3s` for production/high-concurrency deployment.
+- Do not promise 10,000 concurrent screens until a load test proves the full path: Ingress → mainapi/goapi → PostgreSQL/MongoDB/ClickHouse/Kafka/object storage/report generation.
+- K3s production must use HA control-plane design, SSD-backed datastore, secrets encryption at rest, resource requests/limits, HPA, probes, PodDisruptionBudget, and no hardcoded secrets in manifests.
+- `mainapi` is stateless enough to scale horizontally only when production config is read from Kubernetes Secret/ConfigMap or a shared config service. Mutable per-pod `bootstrap.json` writes are not safe for multiple replicas.
+- Stateful dependencies must be external HA services or dedicated clustered deployments. Do not copy single-node docker-compose infrastructure into production K3s as-is.
 
 ### Kafka
 - `ENABLE_KAFKA=true` in bootstrap.json `service.enable_kafka`
@@ -185,15 +217,7 @@ MCP เป็น bridge ให้ AI tools ฝั่ง frontend เข้าถ
 - `internal/goapi/handlers/genpdf_handler.go:439` — `fmt.Sprintf("%,.2f", amount)` uses invalid Go format verb `%,`
 - mainapi Dockerfile requires CGO + librdkafka (confluent-kafka-go)
 
-## Jead Skill (Global Rules — ต้องใช้เสมอ)
-**ทุก session ต้องอ่าน `D:\bcdev\jead-skill\` เพื่อเข้าใจ Jead:**
-- `identity.md` — ตัวตน, สไตล์, lessons learned ของ Jead (ต้องปฏิบัติตามเสมอ)
-- `rules/*.md` — กฏการทำงานทั้งหมด (coding, workflow, security, MCP)
-- `skills/*/SKILL.md` — slash commands ที่ใช้ได้
-- `docs/` — reference documents (MCP tools guide)
-
-**Auto-update (สำคัญมาก):**
-- เมื่อเรียนรู้สิ่งใหม่จาก Jead → update jead-skill ทันที
-- เมื่อพบ pattern/pitfall ใหม่ → เพิ่มใน identity.md หรือ rules/
-- เมื่อจบ session → ตรวจสอบว่ามีอะไรควร update
-- เป้าหมาย: **ยิ่งทำงานด้วยกัน skill ยิ่งฉลาดขึ้น**
+## Project Rules Source
+- Use this `CLAUDE.md`, backend source code, `prompts/`, `assets/language/`, and MCP docs as the source of truth.
+- Do not rely on deleted shared skill folders.
+- When Jead asks to keep a new backend rule, update the relevant project-local docs or prompts.

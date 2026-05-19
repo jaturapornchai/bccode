@@ -133,9 +133,11 @@ type UserLoginPhoneNumberRequest struct {
 }
 
 type UserProfile struct {
-	UsernameField `bson:"inline"`
-	UserDetail    `bson:"inline"`
-	UserPassword  `bson:"inline"`
+	UsernameField     `bson:"inline"`
+	Email             string `json:"email,omitempty" bson:"email,omitempty"`
+	UserDetail        `bson:"inline"`
+	UserPassword      `bson:"inline"`
+	IsDefaultPassword bool `json:"isdefaultpassword" bson:"-"`
 
 	// === ข้อมูล LINE (ระดับ user) ===
 	LineUserID      string `json:"line_user_id" bson:"line_user_id"`
@@ -177,6 +179,8 @@ const (
 	ROLE_SYSTEM = 255 // APP MANAGER
 )
 
+const DefaultUserPassword = "12345"
+
 type ShopUserBase struct {
 	Username string   `json:"username" bson:"username"`
 	ShopID   string   `json:"shopid" bson:"shopid"`
@@ -190,10 +194,16 @@ type DocumentApproval struct {
 }
 
 type ShopUser struct {
-	ID             primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ShopUserBase   `bson:"inline"`
-	IsFavorite     bool      `json:"isfavorite" bson:"isfavorite"`
-	LastAccessedAt time.Time `json:"lastaccessedat" bson:"lastaccessedat"`
+	ID               primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ShopUserBase     `bson:"inline"`
+	IsFavorite       bool      `json:"isfavorite" bson:"isfavorite"`
+	LastAccessedAt   time.Time `json:"lastaccessedat" bson:"lastaccessedat"`
+	IsCreator        bool      `json:"iscreator,omitempty" bson:"-"`
+	IsAccessDisabled bool      `json:"isaccessdisabled" bson:"isaccessdisabled"`
+	AccessDisabledAt time.Time `json:"accessdisabledat,omitempty" bson:"accessdisabledat,omitempty"`
+	AccessDisabledBy string    `json:"accessdisabledby,omitempty" bson:"accessdisabledby,omitempty"`
+	AccessEnabledAt  time.Time `json:"accessenabledat,omitempty" bson:"accessenabledat,omitempty"`
+	AccessEnabledBy  string    `json:"accessenabledby,omitempty" bson:"accessenabledby,omitempty"`
 
 	// === ข้อมูลพนักงาน ===
 	Position   string `json:"position" bson:"position"`     // ตำแหน่งงาน
@@ -217,13 +227,19 @@ type ShopUserInfo struct {
 	ShopID string `json:"shopid" bson:"shopid"`
 	Name   string `json:"name" bson:"name1"`
 	// Name1          string         `json:"name1" bson:"name1"`
-	MainShopId     string         `json:"mainshopid" bson:"mainshopid"`
-	Names          []models.NameX `json:"names" bson:"names"`
-	BranchCode     string         `json:"branchcode" bson:"branchcode"`
-	Role           UserRole       `json:"role" bson:"role"`
-	IsFavorite     bool           `json:"isfavorite" bson:"isfavorite"`
-	LastAccessedAt time.Time      `json:"lastaccessedat" bson:"lastaccessedat"`
-	CreatedBy      string         `json:"createdby" bson:"createdby"`
+	MainShopId       string         `json:"mainshopid" bson:"mainshopid"`
+	Names            []models.NameX `json:"names" bson:"names"`
+	BranchCode       string         `json:"branchcode" bson:"branchcode"`
+	Role             UserRole       `json:"role" bson:"role"`
+	IsFavorite       bool           `json:"isfavorite" bson:"isfavorite"`
+	LastAccessedAt   time.Time      `json:"lastaccessedat" bson:"lastaccessedat"`
+	CreatedBy        string         `json:"createdby" bson:"createdby"`
+	IsCreator        bool           `json:"iscreator,omitempty" bson:"-"`
+	IsAccessDisabled bool           `json:"isaccessdisabled" bson:"isaccessdisabled"`
+	AccessDisabledAt time.Time      `json:"accessdisabledat,omitempty" bson:"accessdisabledat,omitempty"`
+	AccessDisabledBy string         `json:"accessdisabledby,omitempty" bson:"accessdisabledby,omitempty"`
+	AccessEnabledAt  time.Time      `json:"accessenabledat,omitempty" bson:"accessenabledat,omitempty"`
+	AccessEnabledBy  string         `json:"accessenabledby,omitempty" bson:"accessenabledby,omitempty"`
 }
 
 func (*ShopUserInfo) CollectionName() string {
@@ -231,10 +247,15 @@ func (*ShopUserInfo) CollectionName() string {
 }
 
 type UserRoleRequest struct {
-	ShopID       string   `json:"shopid" bson:"shopid"`
-	EditUsername string   `json:"editusername" bson:"editusername"`
-	Username     string   `json:"username" bson:"username"`
-	Role         UserRole `json:"role" bson:"role"`
+	ShopID           string    `json:"shopid" bson:"shopid"`
+	EditUsername     string    `json:"editusername" bson:"editusername"`
+	Username         string    `json:"username" bson:"username"`
+	Role             UserRole  `json:"role" bson:"role"`
+	IsAccessDisabled bool      `json:"isaccessdisabled" bson:"isaccessdisabled"`
+	AccessDisabledAt time.Time `json:"accessdisabledat,omitempty" bson:"accessdisabledat,omitempty"`
+	AccessDisabledBy string    `json:"accessdisabledby,omitempty" bson:"accessdisabledby,omitempty"`
+	AccessEnabledAt  time.Time `json:"accessenabledat,omitempty" bson:"accessenabledat,omitempty"`
+	AccessEnabledBy  string    `json:"accessenabledby,omitempty" bson:"accessenabledby,omitempty"`
 
 	// === ข้อมูลพนักงาน ===
 	Position   string `json:"position" bson:"position"`     // ตำแหน่งงาน
@@ -263,8 +284,16 @@ func (*ShopUserAccessLog) CollectionName() string {
 }
 
 type ShopUserProfile struct {
-	ShopUserBase    `bson:"inline"`
-	UserProfileName string `json:"userprofilename" bson:"userprofilename"`
+	ShopUserBase     `bson:"inline"`
+	UID              string    `json:"uid,omitempty" bson:"uid,omitempty"`
+	Email            string    `json:"email,omitempty" bson:"email,omitempty"`
+	UserProfileName  string    `json:"userprofilename" bson:"userprofilename"`
+	IsCreator        bool      `json:"iscreator,omitempty" bson:"-"`
+	IsAccessDisabled bool      `json:"isaccessdisabled" bson:"isaccessdisabled"`
+	AccessDisabledAt time.Time `json:"accessdisabledat,omitempty" bson:"accessdisabledat,omitempty"`
+	AccessDisabledBy string    `json:"accessdisabledby,omitempty" bson:"accessdisabledby,omitempty"`
+	AccessEnabledAt  time.Time `json:"accessenabledat,omitempty" bson:"accessenabledat,omitempty"`
+	AccessEnabledBy  string    `json:"accessenabledby,omitempty" bson:"accessenabledby,omitempty"`
 
 	// === ข้อมูลพนักงาน ===
 	Position   string `json:"position" bson:"position"`     // ตำแหน่งงาน

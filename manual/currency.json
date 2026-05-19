@@ -1,0 +1,247 @@
+{
+  "screen": "currency",
+  "updatedAt": "2026-05-18",
+  "translations": {
+    "th": {
+      "title": "คู่มือหน้าจอสกุลเงิน",
+      "summary": "ใช้เพิ่ม แก้ไข ค้นหา และปิดใช้งานสกุลเงินที่ใช้ในเอกสารของกิจการ",
+      "objective": "หน้าจอสกุลเงินช่วยให้ผู้ใช้กำหนดรหัสสกุลเงิน ชื่อ สัญลักษณ์ และสถานะใช้งาน เพื่อให้เอกสารซื้อ ขาย บัญชี และรายงานเลือกใช้สกุลเงินได้ถูกต้องตามกิจการและสาขาที่กำลังทำงานอยู่",
+      "prerequisites": [
+        "เข้าสู่ระบบแล้ว และเลือกกิจการกับสาขาเรียบร้อย",
+        "ผู้ใช้ต้องมีสิทธิ์ในเมนู ตั้งค่าระบบ -> สกุลเงิน",
+        "Backend URL ต้องเชื่อมต่อได้ และ token ต้องยังไม่หมดอายุ",
+        "ควรทราบสกุลเงินหลักของสาขาก่อนแก้ไขข้อมูล"
+      ],
+      "workflow": [
+        "เปิดเมนูหลัก แล้วไปที่ ตั้งค่าระบบ -> สกุลเงิน",
+        "ตรวจชื่อกิจการ สาขา และสกุลเงินหลักที่แสดงด้านบนของหน้าจอ",
+        "ใช้ช่องค้นหาเพื่อค้นหาจากรหัส ชื่อ หรือสัญลักษณ์ เช่น THB, USD, ฿ หรือ Dollar",
+        "กด โหลดใหม่ เมื่อต้องการดึงข้อมูลล่าสุดจาก backend",
+        "กด เพิ่มสกุลเงิน เพื่อเปิดฟอร์มสร้างรายการใหม่",
+        "กรอกรหัสสกุลเงินเป็นตัวอักษร 2-5 ตัว เช่น THB หรือ USD ระบบจะแปลงเป็นตัวพิมพ์ใหญ่อัตโนมัติ",
+        "กรอกชื่อสกุลเงินที่ผู้ใช้ทั่วไปเข้าใจ เช่น Thai Baht หรือ US Dollar",
+        "เลือกสัญลักษณ์จากรายการ เช่น ฿, $, €, ¥ หรือสัญลักษณ์ ASEAN ที่เตรียมไว้",
+        "ถ้าต้องการเก็บไว้แต่ไม่ให้เลือกในเอกสาร ให้ติ๊ก ปิดใช้งาน",
+        "กด บันทึก แล้วรอข้อความสำเร็จ ก่อนใช้งานสกุลเงินนั้นในหน้าจออื่น",
+        "เมื่อต้องการแก้ไข ให้กดปุ่มดินสอที่การ์ดสกุลเงิน ระบบจะล็อกรหัสสกุลเงินตาม workflow เดิมและให้แก้ไขชื่อ สัญลักษณ์ หรือสถานะ",
+        "เมื่อต้องการลบ ให้กดปุ่มถังขยะและยืนยัน เฉพาะรายการที่แน่ใจว่าไม่ต้องใช้แล้ว"
+      ],
+      "fields": [
+        { "name": "รหัสสกุลเงิน", "description": "รหัสมาตรฐานหรือรหัสภายใน ความยาว 2-5 ตัวอักษร เช่น THB, USD, EUR ใช้ค้นหาและอ้างอิงในเอกสาร" },
+        { "name": "ชื่อสกุลเงิน", "description": "ชื่อที่แสดงให้ผู้ใช้เห็นในหน้าจอและรายงาน ควรใช้ชื่อที่เข้าใจง่ายและไม่ซ้ำกัน" },
+        { "name": "สัญลักษณ์", "description": "เครื่องหมายที่แสดงหน้าจำนวนเงิน เช่น ฿ หรือ $ เลือกจากรายการที่เตรียมไว้เพื่อให้แสดงผลสม่ำเสมอ" },
+        { "name": "ปิดใช้งาน", "description": "ใช้ซ่อนสกุลเงินจากการเลือกในงานเอกสาร โดยยังเก็บข้อมูลเดิมไว้สำหรับเอกสารเก่าหรือรายงาน" },
+        { "name": "สกุลเงินหลัก", "description": "ค่าจากสาขาที่เลือก ใช้บอกว่าสกุลเงินใดเป็นฐานของกิจการ รายการที่ตรงกันจะแสดงป้าย หลัก" }
+      ],
+      "actions": [
+        { "name": "ค้นหา", "description": "กรองรายการในหน้าจอทันทีจากรหัส ชื่อ หรือสัญลักษณ์ โดยไม่แก้ไขข้อมูลจริง" },
+        { "name": "โหลดใหม่", "description": "เรียกข้อมูลจาก backend อีกครั้ง เหมาะหลังมีผู้ใช้อื่นเพิ่มหรือแก้ไขข้อมูล" },
+        { "name": "เพิ่มสกุลเงิน", "description": "เปิดฟอร์มสร้างสกุลเงินใหม่" },
+        { "name": "แก้ไข", "description": "เปิดฟอร์มแก้ไขรายการเดิม รหัสสกุลเงินจะถูกล็อกเพื่อป้องกันเอกสารเดิมอ้างอิงผิด" },
+        { "name": "ลบ", "description": "ลบสกุลเงินตาม guidfixed หลังยืนยัน ควรใช้ด้วยความระวังหากข้อมูลถูกใช้แล้ว" },
+        { "name": "คู่มือ", "description": "เปิดคู่มือนี้ในหน้าต่างใหม่ และสามารถกด Home เพื่อกลับสารบัญคู่มือ" },
+        { "name": "ธีม", "description": "สลับมืดหรือสว่างจากปุ่มด้านบนสุดของหน้าจอ" }
+      ],
+      "config": [
+        "ข้อมูลถูกโหลดผ่าน endpoint /currency ของ backend โดย backend เป็นผู้กำหนด shop จาก token",
+        "Frontend ใช้ Backend URL และ token จาก session login เดิมในเครื่องนี้",
+        "ภาษาที่เลือกจะใช้ dictionary จาก backend language API และ fallback เป็นข้อความใน frontend",
+        "หน้าจอใช้ theme token กลาง จึงเปลี่ยนสีตามโหมดมืดหรือสว่างทันที"
+      ],
+      "expectedResults": [
+        "เห็นรายการสกุลเงินของกิจการปัจจุบัน",
+        "เพิ่มรายการใหม่แล้วมีข้อความสำเร็จและรายการปรากฏในตาราง/การ์ด",
+        "แก้ไขชื่อ สัญลักษณ์ หรือสถานะแล้วข้อมูลโหลดใหม่ถูกต้อง",
+        "รายการที่ตรงกับสกุลเงินหลักของสาขามีป้าย หลัก",
+        "เมื่อเปลี่ยนภาษา ข้อความบนหน้าจอเปลี่ยนตามภาษาที่เลือก"
+      ],
+      "commonMistakes": [
+        "กรอกรหัสสั้นกว่า 2 ตัวหรือยาวกว่า 5 ตัว",
+        "สร้างรหัสซ้ำกับรายการเดิม backend จะไม่ยอมบันทึก",
+        "ลบสกุลเงินที่เคยใช้ในเอกสาร ทำให้ตรวจสอบย้อนหลังยาก",
+        "ลืมเลือกสัญลักษณ์หรือใช้ชื่อที่ผู้ใช้ไม่เข้าใจ"
+      ],
+      "troubleshooting": [
+        { "name": "โหลดข้อมูลไม่สำเร็จ", "description": "ตรวจว่าเข้าสู่ระบบแล้ว เลือกกิจการแล้ว และ Backend URL ยังใช้งานได้ จากนั้นกด โหลดใหม่" },
+        { "name": "บันทึกไม่สำเร็จเพราะรหัสซ้ำ", "description": "เปลี่ยนรหัสเป็นรหัสที่ยังไม่มี หรือแก้ไขรายการเดิมแทนการเพิ่มใหม่" },
+        { "name": "ภาษาไม่เปลี่ยน", "description": "กดเลือกภาษาใหม่อีกครั้ง และตรวจว่า backend language API ตอบกลับได้" },
+        { "name": "ธีมไม่เปลี่ยน", "description": "กดไอคอนธีมด้านบนสุดของหน้าจอ ระบบจะบันทึกค่าไว้ในเครื่องนี้" }
+      ],
+      "limitations": [
+        "โหมดแก้ไขล็อกรหัสสกุลเงินเพื่อป้องกันผลกระทบกับเอกสารเดิม",
+        "หน้าจอนี้ยังไม่จัดการประวัติอัตราแลกเปลี่ยนโดยตรง",
+        "การลบควรทำเฉพาะเมื่อมั่นใจว่าไม่กระทบเอกสารและรายงาน"
+      ],
+      "nextSteps": [
+        "ตั้งค่าอัตราแลกเปลี่ยนในหน้าจอที่เกี่ยวข้อง",
+        "ทดสอบสร้างเอกสารซื้อหรือขายด้วยสกุลเงินที่เพิ่มใหม่",
+        "ตรวจรายงานที่ใช้สกุลเงินหลายค่าให้แสดงผลถูกต้อง"
+      ]
+    },
+    "en": {
+      "title": "Currency Screen Manual",
+      "summary": "Add, edit, search, disable, and delete currencies used by ERP documents.",
+      "objective": "The currency screen keeps currency codes, names, symbols, and active status consistent for purchasing, sales, accounting, and reports in the selected company and branch.",
+      "prerequisites": ["Sign in and select a company and branch.", "Your role must be allowed to open System Settings -> Currency.", "The Backend URL and token must be valid.", "Know the branch base currency before editing records."],
+      "workflow": ["Open Main Menu, then System Settings -> Currency.", "Check the company, branch, and base currency shown at the top.", "Search by code, name, or symbol such as THB, USD, ฿, or Dollar.", "Click Refresh to reload the latest backend data.", "Click Add currency to open the create form.", "Enter a 2-5 character currency code. The screen converts it to uppercase.", "Enter a clear currency name.", "Choose a symbol from the prepared ASEAN and major currency list.", "Tick Disabled if the currency should be kept but hidden from document selection.", "Click Save and wait for the success message.", "Click the pencil button to edit an existing record. The code is locked in edit mode.", "Click the trash button and confirm only when the currency is no longer needed."],
+      "fields": [{"name": "Currency code", "description": "A 2-5 character code such as THB, USD, or EUR. It is used for search and document references."}, {"name": "Currency name", "description": "The display name shown on screens and reports."}, {"name": "Symbol", "description": "The sign shown with amounts, such as ฿, $, €, or ¥."}, {"name": "Disabled", "description": "Hides the currency from new document selection while keeping old records readable."}, {"name": "Base currency", "description": "The selected branch base currency. Matching records show a Base badge."}],
+      "actions": [{"name": "Search", "description": "Filters visible records without changing data."}, {"name": "Refresh", "description": "Reloads records from the backend."}, {"name": "Add currency", "description": "Opens the create form."}, {"name": "Edit", "description": "Updates name, symbol, or status while keeping the code fixed."}, {"name": "Delete", "description": "Deletes the selected record after confirmation."}, {"name": "Manual", "description": "Opens this manual in a new window."}, {"name": "Theme", "description": "Switches between dark and light mode."}],
+      "config": ["Data uses the backend /currency endpoint.", "The backend derives shop access from the bearer token.", "The screen uses the stored Backend URL and login session.", "Text is loaded from the backend language API with frontend fallback.", "Theme colors come from shared CSS tokens."],
+      "expectedResults": ["The current company currency list is shown.", "New records appear after saving.", "Edited records reload with the latest values.", "The branch base currency record has a Base badge.", "Changing language updates the screen text."],
+      "commonMistakes": ["Using a code shorter than 2 or longer than 5 characters.", "Creating a duplicate currency code.", "Deleting a currency already used by documents.", "Using an unclear name or wrong symbol."],
+      "troubleshooting": [{"name": "Cannot load data", "description": "Check login, selected company, Backend URL, and token, then click Refresh."}, {"name": "Duplicate code error", "description": "Use another code or edit the existing record."}, {"name": "Language did not change", "description": "Select the language again and check backend language API connectivity."}, {"name": "Theme did not change", "description": "Use the top theme icon; the preference is stored locally."}],
+      "limitations": ["The code is locked in edit mode to protect existing documents.", "Exchange-rate history is managed by a separate screen.", "Delete should be used carefully when the currency may already be referenced."],
+      "nextSteps": ["Set exchange rates in the related screen.", "Test purchase or sales documents with the new currency.", "Check multi-currency reports."]
+    },
+    "cn": {
+      "title": "货币页面手册",
+      "summary": "用于新增、编辑、搜索、停用和删除 ERP 单据使用的货币。",
+      "objective": "此页面让所选公司和分支的货币代码、名称、符号和启用状态保持一致，供采购、销售、会计和报表使用。",
+      "prerequisites": ["已登录并选择公司和分支。", "用户需要有 系统设置 -> 货币 的权限。", "Backend URL 和 token 必须可用。", "编辑前先确认分支的基础货币。"],
+      "workflow": ["打开主菜单，然后进入 系统设置 -> 货币。", "确认页面顶部的公司、分支和基础货币。", "可用代码、名称或符号搜索，例如 THB、USD、฿ 或 Dollar。", "点击刷新从 backend 重新载入资料。", "点击新增货币打开表单。", "输入 2-5 个字符的代码，系统会自动转为大写。", "输入容易理解的货币名称。", "从列表选择符号。", "如需保留但不让新单据选择，请勾选停用。", "点击保存并等待成功讯息。", "点击铅笔可编辑，编辑时代码会被锁定。", "点击删除前请确认该货币已不再使用。"],
+      "fields": [{"name": "货币代码", "description": "2-5 个字符，例如 THB、USD、EUR，用于单据引用和搜索。"}, {"name": "货币名称", "description": "显示在页面和报表上的名称。"}, {"name": "符号", "description": "金额旁显示的符号，例如 ฿、$、€、¥。"}, {"name": "停用", "description": "隐藏新单据选择，但保留旧资料。"}, {"name": "基础货币", "description": "来自当前分支，匹配记录会显示 Base 标签。"}],
+      "actions": [{"name": "搜索", "description": "只过滤当前画面，不修改资料。"}, {"name": "刷新", "description": "从 backend 重新加载资料。"}, {"name": "新增", "description": "打开新增表单。"}, {"name": "编辑", "description": "修改名称、符号或状态，代码保持固定。"}, {"name": "删除", "description": "确认后删除记录。"}, {"name": "手册", "description": "在新窗口打开本手册。"}, {"name": "主题", "description": "切换深色或浅色模式。"}],
+      "config": ["资料使用 backend /currency endpoint。", "backend 从 token 解析公司权限。", "文字使用 backend language API 并有 frontend fallback。", "颜色使用全局 CSS theme token。"],
+      "expectedResults": ["显示当前公司的货币列表。", "保存后新记录会出现。", "编辑后重新加载为最新资料。", "基础货币显示标签。", "切换语言后文字会更新。"],
+      "commonMistakes": ["代码长度不正确。", "新增重复代码。", "删除已被单据引用的货币。", "使用不清楚的名称或错误符号。"],
+      "troubleshooting": [{"name": "无法加载", "description": "检查登录、公司选择、Backend URL 和 token，然后刷新。"}, {"name": "代码重复", "description": "换一个代码或编辑旧记录。"}, {"name": "语言不变", "description": "重新选择语言并检查 language API。"}],
+      "limitations": ["编辑时锁定代码以保护旧单据。", "汇率历史在其他页面管理。", "删除需谨慎。"],
+      "nextSteps": ["设置汇率。", "用新增货币测试采购或销售单据。", "检查多币别报表。"]
+    },
+    "ja": {
+      "title": "通貨画面マニュアル",
+      "summary": "ERP 文書で使用する通貨を追加、編集、検索、無効化、削除します。",
+      "objective": "選択中の会社と支店で使う通貨コード、名称、記号、状態を管理し、購買、販売、会計、レポートで同じ値を使えるようにします。",
+      "prerequisites": ["ログインし、会社と支店を選択済みであること。", "システム設定 -> 通貨 の権限があること。", "Backend URL と token が有効であること。", "編集前に支店の基準通貨を確認すること。"],
+      "workflow": ["メインメニューから システム設定 -> 通貨 を開きます。", "上部の会社、支店、基準通貨を確認します。", "THB、USD、฿、Dollar などで検索します。", "再読み込みで backend から最新データを取得します。", "通貨を追加を押して入力フォームを開きます。", "2-5 文字の通貨コードを入力します。", "わかりやすい通貨名を入力します。", "用意された一覧から記号を選びます。", "新しい文書で使わせない場合は無効にします。", "保存して成功メッセージを確認します。", "既存行の鉛筆で編集します。コードは固定されます。", "不要な通貨だけ削除します。"],
+      "fields": [{"name": "通貨コード", "description": "THB、USD、EUR など 2-5 文字のコードです。"}, {"name": "通貨名", "description": "画面とレポートに表示される名称です。"}, {"name": "記号", "description": "金額に表示する記号です。"}, {"name": "無効", "description": "新規文書の選択から隠し、過去データは残します。"}, {"name": "基準通貨", "description": "現在の支店の基準通貨です。"}],
+      "actions": [{"name": "検索", "description": "表示だけを絞り込みます。"}, {"name": "再読み込み", "description": "backend から再取得します。"}, {"name": "追加", "description": "新規フォームを開きます。"}, {"name": "編集", "description": "コード以外を更新します。"}, {"name": "削除", "description": "確認後に削除します。"}, {"name": "マニュアル", "description": "新しいウィンドウで開きます。"}, {"name": "テーマ", "description": "明暗テーマを切り替えます。"}],
+      "config": ["backend /currency endpoint を使用します。", "会社権限は token から判定されます。", "文言は backend language API を優先します。", "テーマは共通 CSS token で切り替わります。"],
+      "expectedResults": ["通貨一覧が表示されます。", "保存後に新規通貨が表示されます。", "編集後に最新値で再読み込みされます。", "基準通貨にラベルが付きます。", "言語変更で画面文言が更新されます。"],
+      "commonMistakes": ["コード長が不正。", "重複コードを作成する。", "文書で使用済みの通貨を削除する。", "名称や記号が不明確。"],
+      "troubleshooting": [{"name": "読み込めない", "description": "ログイン、会社選択、Backend URL、token を確認します。"}, {"name": "重複コード", "description": "別コードを使うか既存行を編集します。"}],
+      "limitations": ["編集時にコードは固定されます。", "為替履歴は別画面です。", "削除は慎重に行います。"],
+      "nextSteps": ["為替レートを設定します。", "購買または販売文書でテストします。", "多通貨レポートを確認します。"]
+    },
+    "ko": {
+      "title": "통화 화면 매뉴얼",
+      "summary": "ERP 문서에서 사용할 통화를 추가, 수정, 검색, 비활성화, 삭제합니다.",
+      "objective": "선택한 회사와 지점에서 통화 코드, 이름, 기호, 상태를 관리하여 구매, 판매, 회계, 보고서가 같은 값을 사용하게 합니다.",
+      "prerequisites": ["로그인 후 회사와 지점을 선택해야 합니다.", "시스템 설정 -> 통화 권한이 필요합니다.", "Backend URL 과 token 이 유효해야 합니다.", "수정 전 기준 통화를 확인합니다."],
+      "workflow": ["메인 메뉴에서 시스템 설정 -> 통화를 엽니다.", "상단의 회사, 지점, 기준 통화를 확인합니다.", "THB, USD, ฿, Dollar 등으로 검색합니다.", "새로고침으로 backend 최신 데이터를 가져옵니다.", "통화 추가를 눌러 폼을 엽니다.", "2-5 글자 코드를 입력합니다.", "명확한 통화 이름을 입력합니다.", "목록에서 기호를 선택합니다.", "문서 선택에서 숨기려면 비활성화를 선택합니다.", "저장 후 성공 메시지를 확인합니다.", "연필 버튼으로 수정합니다. 코드는 잠깁니다.", "더 이상 필요 없는 통화만 삭제합니다."],
+      "fields": [{"name": "통화 코드", "description": "THB, USD, EUR 같은 2-5 글자 코드입니다."}, {"name": "통화명", "description": "화면과 보고서에 표시되는 이름입니다."}, {"name": "기호", "description": "금액 옆에 표시되는 기호입니다."}, {"name": "비활성", "description": "새 문서 선택에서는 숨기고 기존 데이터는 유지합니다."}, {"name": "기준 통화", "description": "현재 지점의 기준 통화입니다."}],
+      "actions": [{"name": "검색", "description": "현재 화면만 필터링합니다."}, {"name": "새로고침", "description": "backend 에서 다시 불러옵니다."}, {"name": "추가", "description": "새 통화 폼을 엽니다."}, {"name": "수정", "description": "코드 외 정보를 수정합니다."}, {"name": "삭제", "description": "확인 후 삭제합니다."}, {"name": "매뉴얼", "description": "새 창에서 엽니다."}, {"name": "테마", "description": "다크/라이트 모드를 전환합니다."}],
+      "config": ["backend /currency endpoint 를 사용합니다.", "권한은 token 의 shop 정보로 판단합니다.", "문구는 backend language API 를 우선 사용합니다.", "색상은 공통 CSS token 을 사용합니다."],
+      "expectedResults": ["현재 회사의 통화 목록이 표시됩니다.", "저장 후 새 항목이 나타납니다.", "수정 후 최신 값으로 갱신됩니다.", "기준 통화에 배지가 표시됩니다.", "언어 변경 시 문구가 바뀝니다."],
+      "commonMistakes": ["코드 길이가 잘못됨.", "중복 코드 생성.", "사용 중인 통화 삭제.", "이름이나 기호가 불명확함."],
+      "troubleshooting": [{"name": "로드 실패", "description": "로그인, 회사 선택, Backend URL, token 을 확인하고 새로고침합니다."}, {"name": "중복 코드", "description": "다른 코드를 사용하거나 기존 항목을 수정합니다."}],
+      "limitations": ["수정 모드에서 코드는 잠깁니다.", "환율 이력은 별도 화면입니다.", "삭제는 신중히 합니다."],
+      "nextSteps": ["환율을 설정합니다.", "구매 또는 판매 문서로 테스트합니다.", "다중 통화 보고서를 확인합니다."]
+    },
+    "lo": {
+      "title": "ຄູ່ມືໜ້າຈໍສະກຸນເງິນ",
+      "summary": "ເພີ່ມ ແກ້ໄຂ ຄົ້ນຫາ ປິດໃຊ້ງານ ແລະລຶບສະກຸນເງິນທີ່ໃຊ້ໃນ ERP.",
+      "objective": "ໜ້າຈໍນີ້ໃຊ້ຈັດການລະຫັດ ຊື່ ສັນຍາລັກ ແລະສະຖານະສະກຸນເງິນຂອງກິດຈະການ ເພື່ອໃຫ້ເອກະສານ ແລະລາຍງານໃຊ້ຄ່າດຽວກັນ.",
+      "prerequisites": ["ເຂົ້າລະບົບແລ້ວ ແລະເລືອກກິດຈະການ/ສາຂາແລ້ວ.", "ມີສິດເຂົ້າ ຕັ້ງຄ່າລະບົບ -> ສະກຸນເງິນ.", "Backend URL ແລະ token ຕ້ອງໃຊ້ໄດ້.", "ຄວນຮູ້ສະກຸນເງິນຫຼັກກ່ອນແກ້ໄຂ."],
+      "workflow": ["ເປີດເມນູຫຼັກ ແລ້ວເຂົ້າ ຕັ້ງຄ່າລະບົບ -> ສະກຸນເງິນ.", "ກວດກິດຈະການ ສາຂາ ແລະສະກຸນເງິນຫຼັກ.", "ຄົ້ນຫາດ້ວຍ THB, USD, ฿ ຫຼື Dollar.", "ກົດໂຫຼດໃໝ່ເພື່ອດຶງຂໍ້ມູນຈາກ backend.", "ກົດເພີ່ມສະກຸນເງິນ.", "ປ້ອນລະຫັດ 2-5 ຕົວອັກສອນ.", "ປ້ອນຊື່ທີ່ເຂົ້າໃຈງ່າຍ.", "ເລືອກສັນຍາລັກ.", "ຖ້າບໍ່ຢາກໃຫ້ເລືອກໃນເອກະສານໃໝ່ ໃຫ້ຕິກປິດໃຊ້.", "ກົດບັນທຶກ.", "ກົດດິນສໍເພື່ອແກ້ໄຂ.", "ກົດຖັງຂີ້ເຫຍື້ອເພື່ອລຶບຫຼັງຢືນຢັນ."],
+      "fields": [{"name": "ລະຫັດສະກຸນເງິນ", "description": "2-5 ຕົວອັກສອນ ເຊັ່ນ THB, USD."}, {"name": "ຊື່", "description": "ຊື່ທີ່ສະແດງໃນໜ້າຈໍ ແລະລາຍງານ."}, {"name": "ສັນຍາລັກ", "description": "ເຄື່ອງໝາຍເງິນເຊັ່ນ ฿ ຫຼື $."}, {"name": "ປິດໃຊ້", "description": "ຊ່ອນຈາກເອກະສານໃໝ່ ແຕ່ຂໍ້ມູນເກົ່າຍັງຢູ່."}, {"name": "ສະກຸນຫຼັກ", "description": "ຄ່າຂອງສາຂາທີ່ເລືອກ."}],
+      "actions": [{"name": "ຄົ້ນຫາ", "description": "ກອງລາຍການໃນໜ້າຈໍ."}, {"name": "ໂຫຼດໃໝ່", "description": "ດຶງຂໍ້ມູນໃໝ່ຈາກ backend."}, {"name": "ເພີ່ມ", "description": "ເປີດຟອມໃໝ່."}, {"name": "ແກ້ໄຂ", "description": "ແກ້ຊື່ ສັນຍາລັກ ຫຼືສະຖານະ."}, {"name": "ລຶບ", "description": "ລຶບຫຼັງຢືນຢັນ."}, {"name": "ຄູ່ມື", "description": "ເປີດໜ້າຕ່າງໃໝ່."}, {"name": "ທີມ", "description": "ສະຫຼັບມືດ/ສະຫວ່າງ."}],
+      "config": ["ໃຊ້ backend /currency.", "backend ເອົາ shop ຈາກ token.", "ພາສາໂຫຼດຈາກ backend language API.", "ສີໃຊ້ CSS token ກາງ."],
+      "expectedResults": ["ເຫັນລາຍການສະກຸນເງິນ.", "ບັນທຶກແລ້ວລາຍການປາກົດ.", "ແກ້ໄຂແລ້ວຂໍ້ມູນຖືກຕ້ອງ.", "ສະກຸນຫຼັກມີປ້າຍ.", "ປ່ຽນພາສາແລ້ວຂໍ້ຄວາມປ່ຽນ."],
+      "commonMistakes": ["ລະຫັດຍາວ/ສັ້ນເກີນໄປ.", "ລະຫັດຊໍ້າ.", "ລຶບສະກຸນທີ່ເຄີຍໃຊ້.", "ຊື່ຫຼືສັນຍາລັກບໍ່ຊັດ."],
+      "troubleshooting": [{"name": "ໂຫຼດບໍ່ໄດ້", "description": "ກວດ login, ກິດຈະການ, Backend URL, token."}, {"name": "ລະຫັດຊໍ້າ", "description": "ໃຊ້ລະຫັດໃໝ່ ຫຼືແກ້ລາຍການເກົ່າ."}],
+      "limitations": ["ໂໝດແກ້ໄຂລັອກລະຫັດ.", "ປະຫວັດອັດຕາແລກປ່ຽນຢູ່ໜ້າອື່ນ.", "ລຶບດ້ວຍຄວາມລະວັງ."],
+      "nextSteps": ["ຕັ້ງອັດຕາແລກປ່ຽນ.", "ທົດສອບເອກະສານຊື້/ຂາຍ.", "ກວດລາຍງານຫຼາຍສະກຸນ."]
+    },
+    "my": {
+      "title": "ငွေကြေး မျက်နှာပြင် လမ်းညွှန်",
+      "summary": "ERP စာရွက်စာတမ်းများတွင်အသုံးပြုမည့် ငွေကြေးကို ထည့်၊ ပြင်၊ ရှာ၊ ပိတ်၊ ဖျက်နိုင်သည်။",
+      "objective": "ကုမ္ပဏီနှင့်ဌာနခွဲအလိုက် ငွေကြေးကုဒ်၊ အမည်၊ သင်္ကေတနှင့်အသုံးပြုမှုအခြေအနေကို တစ်နေရာတည်းတွင်စီမံရန်ဖြစ်သည်။",
+      "prerequisites": ["Login ဝင်ပြီး ကုမ္ပဏီနှင့်ဌာနခွဲရွေးပြီးဖြစ်ရမည်။", "System Settings -> Currency အခွင့်ရှိရမည်။", "Backend URL နှင့် token သက်တမ်းရှိရမည်။", "ပြင်ဆင်မီ base currency ကိုသိထားရမည်။"],
+      "workflow": ["Main menu မှ System Settings -> Currency ကိုဖွင့်ပါ။", "အပေါ်ရှိ ကုမ္ပဏီ၊ ဌာနခွဲ၊ base currency ကိုစစ်ပါ။", "THB, USD, ฿, Dollar ဖြင့်ရှာပါ။", "Refresh ကိုနှိပ်ပြီး backend မှနောက်ဆုံးဒေတာရယူပါ။", "Add currency ကိုနှိပ်ပါ။", "၂-၅ လုံးရှိ currency code ထည့်ပါ။", "နားလည်လွယ်သောအမည်ထည့်ပါ။", "သင်္ကေတရွေးပါ။", "စာရွက်စာတမ်းအသစ်တွင်မရွေးစေလိုပါက Disabled ကိုရွေးပါ။", "Save နှိပ်ပြီး success message စောင့်ပါ။", "Pencil ကိုနှိပ်ပြီးပြင်နိုင်သည်။ Code သည် lock ဖြစ်သည်။", "မလိုအပ်တော့မှသာ delete လုပ်ပါ။"],
+      "fields": [{"name": "Currency code", "description": "THB, USD, EUR ကဲ့သို့ ၂-၅ လုံးကုဒ်။"}, {"name": "Currency name", "description": "မျက်နှာပြင်နှင့် report တွင်ပြမည့်အမည်။"}, {"name": "Symbol", "description": "ငွေပမာဏအနီးပြမည့် သင်္ကေတ။"}, {"name": "Disabled", "description": "အသစ်ရွေးချယ်မှုမှဖျောက်ပြီး data ဟောင်းကိုထားသည်။"}, {"name": "Base currency", "description": "လက်ရှိဌာနခွဲ၏အခြေခံငွေကြေး။"}],
+      "actions": [{"name": "Search", "description": "စာရင်းကိုသာ filter လုပ်သည်။"}, {"name": "Refresh", "description": "backend မှပြန်ဖတ်သည်။"}, {"name": "Add", "description": "အသစ်ထည့် form ဖွင့်သည်။"}, {"name": "Edit", "description": "code မပြောင်းဘဲပြင်သည်။"}, {"name": "Delete", "description": "အတည်ပြုပြီးဖျက်သည်။"}, {"name": "Manual", "description": "window အသစ်ဖြင့်ဖွင့်သည်။"}, {"name": "Theme", "description": "Dark/Light ပြောင်းသည်။"}],
+      "config": ["backend /currency endpoint ကိုအသုံးပြုသည်။", "backend သည် shop ကို token မှယူသည်။", "ဘာသာစကားကို backend language API မှယူသည်။", "Theme ကို global CSS token ဖြင့်ပြောင်းသည်။"],
+      "expectedResults": ["ငွေကြေးစာရင်းမြင်ရမည်။", "Save ပြီးပါက item အသစ်ပေါ်ရမည်။", "ပြင်ပြီးပါက latest data ပြရမည်။", "Base currency တွင် badge ပေါ်ရမည်။", "ဘာသာပြောင်းလျှင် စာသားပြောင်းရမည်။"],
+      "commonMistakes": ["Code အရှည်မှားခြင်း။", "Code ထပ်နေခြင်း။", "သုံးပြီးသား currency ဖျက်ခြင်း။", "အမည်/သင်္ကေတမရှင်းခြင်း။"],
+      "troubleshooting": [{"name": "Load မရ", "description": "login, company, Backend URL, token စစ်ပြီး Refresh နှိပ်ပါ။"}, {"name": "Duplicate code", "description": "code အသစ်သုံးပါ သို့မဟုတ် item ဟောင်းကိုပြင်ပါ။"}],
+      "limitations": ["Edit mode တွင် code lock ဖြစ်သည်။", "Exchange rate history သည် screen အခြားတစ်ခုတွင်ရှိသည်။", "Delete ကိုသတိထားသုံးပါ။"],
+      "nextSteps": ["Exchange rate သတ်မှတ်ပါ။", "Purchase/Sales document ဖြင့်စမ်းပါ။", "Multi-currency report စစ်ပါ။"]
+    },
+    "km": {
+      "title": "សៀវភៅណែនាំទំព័ររូបិយប័ណ្ណ",
+      "summary": "បន្ថែម កែប្រែ ស្វែងរក បិទ និងលុបរូបិយប័ណ្ណសម្រាប់ឯកសារ ERP។",
+      "objective": "ទំព័រនេះគ្រប់គ្រងកូដ ឈ្មោះ សញ្ញា និងស្ថានភាពរូបិយប័ណ្ណសម្រាប់ក្រុមហ៊ុន និងសាខាដែលបានជ្រើស។",
+      "prerequisites": ["បានចូលប្រើ និងជ្រើសក្រុមហ៊ុន/សាខា។", "មានសិទ្ធិ System Settings -> Currency។", "Backend URL និង token ត្រូវដំណើរការ។", "គួរដឹងរូបិយប័ណ្ណមូលដ្ឋានមុនកែប្រែ។"],
+      "workflow": ["បើក Main menu រួចចូល System Settings -> Currency។", "ពិនិត្យក្រុមហ៊ុន សាខា និងរូបិយប័ណ្ណមូលដ្ឋាន។", "ស្វែងរកដោយ THB, USD, ฿ ឬ Dollar។", "ចុច Refresh ដើម្បីយកទិន្នន័យថ្មីពី backend។", "ចុច Add currency។", "បញ្ចូលកូដ 2-5 តួអក្សរ។", "បញ្ចូលឈ្មោះងាយយល់។", "ជ្រើសសញ្ញា។", "បើមិនចង់ឱ្យជ្រើសក្នុងឯកសារថ្មី សូមធីក Disabled។", "ចុច Save និងរង់ចាំសារ success។", "ចុច pencil ដើម្បីកែប្រែ។ Code ត្រូវបាន lock។", "លុបតែរូបិយប័ណ្ណដែលមិនប្រើទៀត។"],
+      "fields": [{"name": "កូដរូបិយប័ណ្ណ", "description": "កូដ 2-5 តួអក្សរ ដូចជា THB, USD។"}, {"name": "ឈ្មោះ", "description": "ឈ្មោះបង្ហាញលើទំព័រ និងរបាយការណ៍។"}, {"name": "សញ្ញា", "description": "សញ្ញាចំនួនប្រាក់។"}, {"name": "Disabled", "description": "លាក់ពីឯកសារថ្មី ប៉ុន្តែរក្សាទិន្នន័យចាស់។"}, {"name": "Base currency", "description": "រូបិយប័ណ្ណមូលដ្ឋានរបស់សាខាបច្ចុប្បន្ន។"}],
+      "actions": [{"name": "Search", "description": "ត្រងបញ្ជីក្នុងទំព័រ។"}, {"name": "Refresh", "description": "ផ្ទុកឡើងវិញពី backend។"}, {"name": "Add", "description": "បើក form ថ្មី។"}, {"name": "Edit", "description": "កែឈ្មោះ សញ្ញា ឬស្ថានភាព។"}, {"name": "Delete", "description": "លុបបន្ទាប់ពីបញ្ជាក់។"}, {"name": "Manual", "description": "បើក window ថ្មី។"}, {"name": "Theme", "description": "ប្ដូរងងឹត/ភ្លឺ។"}],
+      "config": ["ប្រើ backend /currency។", "backend កំណត់ shop ពី token។", "ភាសាអានពី backend language API។", "ពណ៌ប្រើ CSS token រួម។"],
+      "expectedResults": ["ឃើញបញ្ជីរូបិយប័ណ្ណ។", "Save ហើយ item ថ្មីបង្ហាញ។", "កែហើយទិន្នន័យត្រឹមត្រូវ។", "Base currency មាន badge។", "ប្តូរភាសាហើយអក្សរប្តូរ។"],
+      "commonMistakes": ["កូដវែង/ខ្លីមិនត្រឹមត្រូវ។", "កូដស្ទួន។", "លុបរូបិយប័ណ្ណដែលបានប្រើ។", "ឈ្មោះ ឬសញ្ញាមិនច្បាស់។"],
+      "troubleshooting": [{"name": "មិនអាចផ្ទុក", "description": "ពិនិត្យ login, company, Backend URL, token រួច Refresh។"}, {"name": "កូដស្ទួន", "description": "ប្រើកូដផ្សេង ឬកែ item ចាស់។"}],
+      "limitations": ["Edit mode lock code។", "Exchange rate history នៅទំព័រផ្សេង។", "Delete ត្រូវប្រុងប្រយ័ត្ន។"],
+      "nextSteps": ["កំណត់ exchange rate។", "សាកល្បងឯកសារ purchase/sales។", "ពិនិត្យ report ច្រើនរូបិយប័ណ្ណ។"]
+    },
+    "vi": {
+      "title": "Hướng dẫn màn hình tiền tệ",
+      "summary": "Thêm, sửa, tìm kiếm, tắt và xóa tiền tệ dùng trong chứng từ ERP.",
+      "objective": "Màn hình này quản lý mã, tên, ký hiệu và trạng thái tiền tệ cho công ty và chi nhánh đang chọn để mua hàng, bán hàng, kế toán và báo cáo dùng cùng một dữ liệu.",
+      "prerequisites": ["Đã đăng nhập và chọn công ty/chi nhánh.", "Có quyền System Settings -> Currency.", "Backend URL và token còn hiệu lực.", "Biết tiền tệ cơ sở của chi nhánh trước khi sửa."],
+      "workflow": ["Mở Main menu, vào System Settings -> Currency.", "Kiểm tra công ty, chi nhánh và tiền tệ cơ sở ở đầu màn hình.", "Tìm bằng THB, USD, ฿ hoặc Dollar.", "Bấm Refresh để tải dữ liệu mới từ backend.", "Bấm Add currency để mở form.", "Nhập mã 2-5 ký tự.", "Nhập tên tiền tệ rõ ràng.", "Chọn ký hiệu.", "Tick Disabled nếu muốn giữ dữ liệu nhưng không cho chọn trong chứng từ mới.", "Bấm Save và đợi thông báo thành công.", "Bấm biểu tượng bút để sửa. Mã bị khóa khi sửa.", "Chỉ xóa khi chắc chắn không còn dùng."],
+      "fields": [{"name": "Mã tiền tệ", "description": "Mã 2-5 ký tự như THB, USD, EUR."}, {"name": "Tên tiền tệ", "description": "Tên hiển thị trên màn hình và báo cáo."}, {"name": "Ký hiệu", "description": "Dấu hiển thị cạnh số tiền."}, {"name": "Disabled", "description": "Ẩn khỏi chứng từ mới nhưng giữ dữ liệu cũ."}, {"name": "Tiền tệ cơ sở", "description": "Tiền tệ cơ sở của chi nhánh hiện tại."}],
+      "actions": [{"name": "Search", "description": "Lọc danh sách trên màn hình."}, {"name": "Refresh", "description": "Tải lại từ backend."}, {"name": "Add", "description": "Mở form thêm mới."}, {"name": "Edit", "description": "Sửa tên, ký hiệu hoặc trạng thái."}, {"name": "Delete", "description": "Xóa sau khi xác nhận."}, {"name": "Manual", "description": "Mở hướng dẫn trong cửa sổ mới."}, {"name": "Theme", "description": "Đổi giao diện tối/sáng."}],
+      "config": ["Dùng backend /currency.", "Backend lấy shop từ token.", "Ngôn ngữ lấy từ backend language API.", "Màu dùng CSS token toàn cục."],
+      "expectedResults": ["Thấy danh sách tiền tệ.", "Thêm xong item xuất hiện.", "Sửa xong dữ liệu cập nhật đúng.", "Tiền tệ cơ sở có badge.", "Đổi ngôn ngữ thì chữ đổi theo."],
+      "commonMistakes": ["Mã không đúng độ dài.", "Tạo mã trùng.", "Xóa tiền tệ đã dùng trong chứng từ.", "Tên hoặc ký hiệu không rõ."],
+      "troubleshooting": [{"name": "Không tải được", "description": "Kiểm tra đăng nhập, công ty, Backend URL, token rồi Refresh."}, {"name": "Mã trùng", "description": "Dùng mã khác hoặc sửa item cũ."}],
+      "limitations": ["Khi sửa, mã bị khóa.", "Lịch sử tỷ giá ở màn hình khác.", "Cần cẩn thận khi xóa."],
+      "nextSteps": ["Thiết lập tỷ giá.", "Thử chứng từ mua/bán.", "Kiểm tra báo cáo đa tiền tệ."]
+    },
+    "ms": {
+      "title": "Manual Skrin Mata Wang",
+      "summary": "Tambah, edit, cari, nyahaktif dan padam mata wang untuk dokumen ERP.",
+      "objective": "Skrin ini mengurus kod, nama, simbol dan status mata wang untuk syarikat dan cawangan yang dipilih.",
+      "prerequisites": ["Sudah log masuk dan pilih syarikat/cawangan.", "Ada akses System Settings -> Currency.", "Backend URL dan token sah.", "Ketahui base currency cawangan sebelum mengedit."],
+      "workflow": ["Buka Main menu dan pilih System Settings -> Currency.", "Semak syarikat, cawangan dan base currency di bahagian atas.", "Cari dengan THB, USD, ฿ atau Dollar.", "Tekan Refresh untuk muat semula dari backend.", "Tekan Add currency.", "Masukkan kod 2-5 aksara.", "Masukkan nama yang jelas.", "Pilih simbol.", "Tandakan Disabled jika mahu sembunyikan daripada dokumen baharu.", "Tekan Save dan tunggu mesej berjaya.", "Tekan ikon pensel untuk edit. Kod dikunci.", "Padam hanya jika pasti tidak digunakan."],
+      "fields": [{"name": "Currency code", "description": "Kod 2-5 aksara seperti THB, USD."}, {"name": "Currency name", "description": "Nama paparan pada skrin dan laporan."}, {"name": "Symbol", "description": "Simbol amaun."}, {"name": "Disabled", "description": "Sembunyikan dari dokumen baharu tetapi simpan data lama."}, {"name": "Base currency", "description": "Mata wang asas cawangan semasa."}],
+      "actions": [{"name": "Search", "description": "Tapis senarai pada skrin."}, {"name": "Refresh", "description": "Muat semula dari backend."}, {"name": "Add", "description": "Buka borang baharu."}, {"name": "Edit", "description": "Edit nama, simbol atau status."}, {"name": "Delete", "description": "Padam selepas pengesahan."}, {"name": "Manual", "description": "Buka manual dalam window baharu."}, {"name": "Theme", "description": "Tukar gelap/cerah."}],
+      "config": ["Menggunakan backend /currency.", "Backend menentukan shop dari token.", "Bahasa dari backend language API.", "Tema dari global CSS token."],
+      "expectedResults": ["Senarai mata wang dipaparkan.", "Item baharu muncul selepas simpan.", "Edit memuatkan nilai terkini.", "Base currency ada badge.", "Teks bertukar ikut bahasa."],
+      "commonMistakes": ["Panjang kod salah.", "Kod berganda.", "Padam mata wang yang sudah digunakan.", "Nama atau simbol tidak jelas."],
+      "troubleshooting": [{"name": "Tidak boleh muat", "description": "Semak login, syarikat, Backend URL, token dan Refresh."}, {"name": "Kod berganda", "description": "Guna kod lain atau edit item lama."}],
+      "limitations": ["Kod dikunci semasa edit.", "Sejarah kadar tukaran di skrin lain.", "Padam dengan berhati-hati."],
+      "nextSteps": ["Tetapkan kadar tukaran.", "Uji dokumen belian/jualan.", "Semak laporan pelbagai mata wang."]
+    },
+    "id": {
+      "title": "Panduan Layar Mata Uang",
+      "summary": "Tambah, edit, cari, nonaktifkan, dan hapus mata uang untuk dokumen ERP.",
+      "objective": "Layar ini mengelola kode, nama, simbol, dan status mata uang untuk perusahaan dan cabang yang dipilih.",
+      "prerequisites": ["Sudah login dan memilih perusahaan/cabang.", "Memiliki akses System Settings -> Currency.", "Backend URL dan token valid.", "Ketahui base currency cabang sebelum mengubah."],
+      "workflow": ["Buka Main menu lalu System Settings -> Currency.", "Periksa perusahaan, cabang, dan base currency di atas.", "Cari dengan THB, USD, ฿, atau Dollar.", "Klik Refresh untuk memuat ulang dari backend.", "Klik Add currency.", "Masukkan kode 2-5 karakter.", "Masukkan nama yang jelas.", "Pilih simbol.", "Centang Disabled jika ingin menyembunyikan dari dokumen baru.", "Klik Save dan tunggu pesan berhasil.", "Klik ikon pensil untuk edit. Kode dikunci.", "Hapus hanya jika yakin tidak dipakai."],
+      "fields": [{"name": "Currency code", "description": "Kode 2-5 karakter seperti THB, USD."}, {"name": "Currency name", "description": "Nama yang tampil di layar dan laporan."}, {"name": "Symbol", "description": "Simbol jumlah uang."}, {"name": "Disabled", "description": "Sembunyikan dari dokumen baru namun simpan data lama."}, {"name": "Base currency", "description": "Mata uang dasar cabang saat ini."}],
+      "actions": [{"name": "Search", "description": "Memfilter daftar di layar."}, {"name": "Refresh", "description": "Memuat ulang dari backend."}, {"name": "Add", "description": "Membuka form baru."}, {"name": "Edit", "description": "Mengubah nama, simbol, atau status."}, {"name": "Delete", "description": "Menghapus setelah konfirmasi."}, {"name": "Manual", "description": "Membuka panduan di window baru."}, {"name": "Theme", "description": "Mengubah gelap/terang."}],
+      "config": ["Menggunakan backend /currency.", "Backend menentukan shop dari token.", "Bahasa dari backend language API.", "Tema dari global CSS token."],
+      "expectedResults": ["Daftar mata uang tampil.", "Item baru muncul setelah simpan.", "Edit memuat nilai terbaru.", "Base currency memiliki badge.", "Teks berubah saat bahasa diganti."],
+      "commonMistakes": ["Panjang kode salah.", "Kode duplikat.", "Menghapus mata uang yang sudah dipakai.", "Nama atau simbol tidak jelas."],
+      "troubleshooting": [{"name": "Gagal memuat", "description": "Cek login, perusahaan, Backend URL, token lalu Refresh."}, {"name": "Kode duplikat", "description": "Gunakan kode lain atau edit item lama."}],
+      "limitations": ["Kode dikunci saat edit.", "Riwayat kurs ada di layar lain.", "Hapus dengan hati-hati."],
+      "nextSteps": ["Atur kurs.", "Uji dokumen pembelian/penjualan.", "Periksa laporan multi mata uang."]
+    },
+    "fil": {
+      "title": "Currency Screen Manual",
+      "summary": "Magdagdag, mag-edit, maghanap, mag-disable, at mag-delete ng currency para sa ERP documents.",
+      "objective": "Pinapamahalaan ng screen na ito ang code, name, symbol, at status ng currency para sa napiling company at branch.",
+      "prerequisites": ["Naka-login at nakapili na ng company/branch.", "May access sa System Settings -> Currency.", "Valid ang Backend URL at token.", "Alamin muna ang base currency ng branch."],
+      "workflow": ["Buksan ang Main menu at pumunta sa System Settings -> Currency.", "Suriin ang company, branch, at base currency sa taas.", "Mag-search gamit ang THB, USD, ฿, o Dollar.", "Pindutin ang Refresh para kumuha ng latest data.", "Pindutin ang Add currency.", "Ilagay ang 2-5 character code.", "Ilagay ang malinaw na name.", "Pumili ng symbol.", "I-check ang Disabled kung itatago sa bagong documents.", "Pindutin ang Save at hintayin ang success message.", "Gamitin ang pencil icon para mag-edit. Naka-lock ang code.", "Mag-delete lang kung sigurado nang hindi ginagamit."],
+      "fields": [{"name": "Currency code", "description": "2-5 character code tulad ng THB o USD."}, {"name": "Currency name", "description": "Pangalan na lalabas sa screens at reports."}, {"name": "Symbol", "description": "Simbolo ng halaga."}, {"name": "Disabled", "description": "Itinatago sa bagong documents pero pinapanatili ang lumang data."}, {"name": "Base currency", "description": "Base currency ng kasalukuyang branch."}],
+      "actions": [{"name": "Search", "description": "I-filter ang listahan sa screen."}, {"name": "Refresh", "description": "I-reload mula backend."}, {"name": "Add", "description": "Buksan ang bagong form."}, {"name": "Edit", "description": "I-edit ang name, symbol, o status."}, {"name": "Delete", "description": "Tanggalin pagkatapos ng confirmation."}, {"name": "Manual", "description": "Buksan sa bagong window."}, {"name": "Theme", "description": "Palitan ang dark/light mode."}],
+      "config": ["Gumagamit ng backend /currency.", "Kinukuha ng backend ang shop mula token.", "Language mula backend language API.", "Theme mula global CSS token."],
+      "expectedResults": ["Makikita ang currency list.", "Lalabas ang bagong item pagkatapos mag-save.", "Updated ang values pagkatapos mag-edit.", "May badge ang base currency.", "Nagbabago ang text kapag nagpalit ng language."],
+      "commonMistakes": ["Maling haba ng code.", "Duplicate code.", "Pag-delete ng currency na ginagamit na.", "Hindi malinaw ang name o symbol."],
+      "troubleshooting": [{"name": "Hindi mag-load", "description": "I-check login, company, Backend URL, token at Refresh."}, {"name": "Duplicate code", "description": "Gumamit ng ibang code o i-edit ang existing item."}],
+      "limitations": ["Naka-lock ang code sa edit mode.", "Exchange rate history ay nasa ibang screen.", "Mag-delete nang maingat."],
+      "nextSteps": ["I-set ang exchange rate.", "I-test sa purchase/sales document.", "I-check ang multi-currency reports."]
+    }
+  }
+}

@@ -1,6 +1,6 @@
-# BC AI Data Model Reference
+# BC Ai Account Data Model Reference
 
-เอกสาร Data Model สำหรับ BC AI Platform — ใช้ร่วมกันระหว่าง **Backend** (Go) และ **Frontend** (Flutter)
+เอกสาร Data Model สำหรับ BC Ai Account Platform — ใช้ร่วมกันระหว่าง **Backend** (Go) และ **Frontend** (Flutter)
 
 ## สารบัญ
 

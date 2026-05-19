@@ -9,6 +9,8 @@ import (
 	serviceConfig "smlcloudplatform/internal/goapi/config"
 	"smlcloudplatform/internal/goapi/logger"
 	myGlobal "smlcloudplatform/internal/goapi/myglobal"
+	"smlcloudplatform/internal/goapi/myollama"
+	"smlcloudplatform/internal/goapi/mypg"
 
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
@@ -131,10 +133,185 @@ func ListCreditors(ctx context.Context, shopID, keyword string, limit int) (*Lis
 		creditors = []CreditorDocument{}
 	}
 
+	// Vector search fallback — ถ้า MongoDB regex หาได้น้อยกว่า 3 ลอง PG vector search
+	if keyword != "" && len(creditors) < 3 {
+		vectorCreditors, vecErr := searchCreditorsVector(shopID, keyword, limit)
+		if vecErr == nil && len(vectorCreditors) > 0 {
+			creditors = mergeCreditors(creditors, vectorCreditors, limit)
+			logger.Info("[MCP ListCreditors] Vector search added results, total=%d", len(creditors))
+		}
+	}
+
 	return &ListCreditorsResponse{
 		Creditors:   creditors,
 		Count:       len(creditors),
 		Keyword:     keyword,
+		GeneratedAt: time.Now(),
+	}, nil
+}
+
+// searchCreditorsVector — ค้นหาเจ้าหนี้ด้วย pgvector cosine similarity
+func searchCreditorsVector(shopID, keyword string, limit int) ([]CreditorDocument, error) {
+	db, err := mypg.PgSqlFastConnect(shopID)
+	if err != nil {
+		return nil, err
+	}
+
+	var colExists bool
+	db.QueryRow(`SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='creditor' AND column_name='name_embedding')`).Scan(&colExists)
+	if !colExists {
+		return nil, fmt.Errorf("no name_embedding column")
+	}
+
+	var hasEmb bool
+	db.QueryRow(`SELECT EXISTS(SELECT 1 FROM creditor WHERE name_embedding IS NOT NULL LIMIT 1)`).Scan(&hasEmb)
+	if !hasEmb {
+		return nil, fmt.Errorf("no embeddings")
+	}
+
+	queryEmb, err := myollama.GenerateSingleEmbedding(keyword)
+	if err != nil {
+		return nil, fmt.Errorf("embedding failed: %w", err)
+	}
+
+	vecStr := float32SliceToVectorString(queryEmb)
+	query := `SELECT guidfixed, code, names, COALESCE(taxid,''), COALESCE(email,''),
+			(name_embedding <=> $1::vector) as distance
+		FROM creditor
+		WHERE shopid = $2 AND name_embedding IS NOT NULL
+		ORDER BY name_embedding <=> $1::vector
+		LIMIT $3`
+
+	rows, err := db.Query(query, vecStr, shopID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []CreditorDocument
+	for rows.Next() {
+		var c CreditorDocument
+		var namesJSON string
+		var distance float64
+		if err := rows.Scan(&c.GuidFixed, &c.Code, &namesJSON, &c.TaxId, &c.Email, &distance); err != nil {
+			continue
+		}
+		if distance > 0.5 {
+			continue
+		}
+		c.ShopID = shopID
+		if namesJSON != "" {
+			json.Unmarshal([]byte(namesJSON), &c.Names)
+		}
+		results = append(results, c)
+	}
+	return results, nil
+}
+
+// mergeCreditors — รวมผลลัพธ์โดยไม่ซ้ำ (ใช้ guidfixed เป็น key)
+func mergeCreditors(existing, extra []CreditorDocument, limit int) []CreditorDocument {
+	seen := make(map[string]bool, len(existing))
+	for _, c := range existing {
+		seen[c.GuidFixed] = true
+	}
+	merged := existing
+	for _, c := range extra {
+		if len(merged) >= limit {
+			break
+		}
+		if !seen[c.GuidFixed] {
+			merged = append(merged, c)
+			seen[c.GuidFixed] = true
+		}
+	}
+	return merged
+}
+
+// ==================== Search Creditors (semantic-first) ====================
+
+// SearchCreditorsResponse — result สำหรับ search_creditors MCP tool
+type SearchCreditorsResponse struct {
+	Creditors   []CreditorDocument `json:"creditors"`
+	Count       int                `json:"count"`
+	Keyword     string             `json:"keyword"`
+	SearchMode  string             `json:"search_mode"` // "vector", "regex", "combined"
+	GeneratedAt time.Time          `json:"generated_at"`
+}
+
+// SearchCreditors — vector-first semantic search สำหรับ agent ใช้
+func SearchCreditors(ctx context.Context, shopID, keyword string, limit int) (*SearchCreditorsResponse, error) {
+	if shopID == "" {
+		return nil, fmt.Errorf("shop_id is required")
+	}
+	if keyword == "" {
+		return nil, fmt.Errorf("keyword is required")
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+	if limit > 50 {
+		limit = 50
+	}
+
+	logger.Info("[SearchEntity] search_creditors shopID=%s keyword=%s limit=%d", shopID, keyword, limit)
+
+	// 1. Try pgvector first
+	vectorResults, vecErr := searchCreditorsVector(shopID, keyword, limit)
+	if vecErr == nil && len(vectorResults) > 0 {
+		logger.Info("[SearchEntity] search_creditors vector found %d results", len(vectorResults))
+		return &SearchCreditorsResponse{
+			Creditors:   vectorResults,
+			Count:       len(vectorResults),
+			Keyword:     keyword,
+			SearchMode:  "vector",
+			GeneratedAt: time.Now(),
+		}, nil
+	}
+	if vecErr != nil {
+		logger.Info("[SearchEntity] search_creditors vector fallback (err: %v) — trying regex", vecErr)
+	}
+
+	// 2. Fallback: MongoDB regex search
+	mongoClient := myGlobal.SafeMongoConnectFast()
+	if mongoClient == nil {
+		return nil, fmt.Errorf("ไม่สามารถเชื่อมต่อ MongoDB ได้")
+	}
+	svcConfig := serviceConfig.NewServiceConfig()
+	dbName := svcConfig.MongodbDatabaseName()
+
+	baseFilter := bson.M{
+		"shopid": shopID,
+		"$or": []bson.M{
+			{"deletedat": bson.M{"$exists": false}},
+			{"deletedat": time.Time{}},
+		},
+	}
+	keywordFilter := BuildEntityKeywordFilter(keyword, []string{"code", "names.name", "taxid"})
+	logger.Info("[SearchEntity] search_creditors tokens=%v", TokenizeEntityKeyword(keyword))
+	filter := bson.M{"$and": []bson.M{baseFilter, keywordFilter}}
+
+	coll := mongoClient.Database(dbName).Collection(creditorCollection)
+	opts := options.Find().SetLimit(int64(limit)).SetSort(bson.D{{Key: "code", Value: 1}})
+	cursor, err := coll.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, fmt.Errorf("query ล้มเหลว: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var creditors []CreditorDocument
+	if err := cursor.All(ctx, &creditors); err != nil {
+		return nil, fmt.Errorf("decode ล้มเหลว: %w", err)
+	}
+	if creditors == nil {
+		creditors = []CreditorDocument{}
+	}
+
+	logger.Info("[SearchEntity] search_creditors regex found %d results", len(creditors))
+	return &SearchCreditorsResponse{
+		Creditors:   creditors,
+		Count:       len(creditors),
+		Keyword:     keyword,
+		SearchMode:  "regex",
 		GeneratedAt: time.Now(),
 	}, nil
 }

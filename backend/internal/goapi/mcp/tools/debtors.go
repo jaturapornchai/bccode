@@ -9,6 +9,8 @@ import (
 	serviceConfig "smlcloudplatform/internal/goapi/config"
 	"smlcloudplatform/internal/goapi/logger"
 	myGlobal "smlcloudplatform/internal/goapi/myglobal"
+	"smlcloudplatform/internal/goapi/myollama"
+	"smlcloudplatform/internal/goapi/mypg"
 
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
@@ -131,10 +133,189 @@ func ListDebtors(ctx context.Context, shopID, keyword string, limit int) (*ListD
 		debtors = []DebtorDocument{}
 	}
 
+	// Vector search fallback — ถ้า MongoDB regex หาได้น้อยกว่า 3 ลอง PG vector search
+	if keyword != "" && len(debtors) < 3 {
+		vectorDebtors, vecErr := searchDebtorsVector(shopID, keyword, limit)
+		if vecErr == nil && len(vectorDebtors) > 0 {
+			debtors = mergeDebtors(debtors, vectorDebtors, limit)
+			logger.Info("[MCP ListDebtors] Vector search added results, total=%d", len(debtors))
+		}
+	}
+
 	return &ListDebtorsResponse{
 		Debtors:     debtors,
 		Count:       len(debtors),
 		Keyword:     keyword,
+		GeneratedAt: time.Now(),
+	}, nil
+}
+
+// searchDebtorsVector — ค้นหาลูกหนี้ด้วย pgvector cosine similarity
+func searchDebtorsVector(shopID, keyword string, limit int) ([]DebtorDocument, error) {
+	db, err := mypg.PgSqlFastConnect(shopID)
+	if err != nil {
+		return nil, err
+	}
+
+	// ตรวจว่ามี column name_embedding
+	var colExists bool
+	db.QueryRow(`SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='debtor' AND column_name='name_embedding')`).Scan(&colExists)
+	if !colExists {
+		return nil, fmt.Errorf("no name_embedding column")
+	}
+
+	// ตรวจว่ามี embeddings อยู่จริง
+	var hasEmb bool
+	db.QueryRow(`SELECT EXISTS(SELECT 1 FROM debtor WHERE name_embedding IS NOT NULL LIMIT 1)`).Scan(&hasEmb)
+	if !hasEmb {
+		return nil, fmt.Errorf("no embeddings")
+	}
+
+	// สร้าง embedding จาก keyword
+	queryEmb, err := myollama.GenerateSingleEmbedding(keyword)
+	if err != nil {
+		return nil, fmt.Errorf("embedding failed: %w", err)
+	}
+
+	vecStr := float32SliceToVectorString(queryEmb)
+	query := `SELECT guidfixed, code, names, COALESCE(taxid,''), COALESCE(email,''),
+			(name_embedding <=> $1::vector) as distance
+		FROM debtor
+		WHERE shopid = $2 AND name_embedding IS NOT NULL
+		ORDER BY name_embedding <=> $1::vector
+		LIMIT $3`
+
+	rows, err := db.Query(query, vecStr, shopID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []DebtorDocument
+	for rows.Next() {
+		var d DebtorDocument
+		var namesJSON string
+		var distance float64
+		if err := rows.Scan(&d.GuidFixed, &d.Code, &namesJSON, &d.TaxId, &d.Email, &distance); err != nil {
+			continue
+		}
+		if distance > 0.5 {
+			continue
+		}
+		d.ShopID = shopID
+		if namesJSON != "" {
+			json.Unmarshal([]byte(namesJSON), &d.Names)
+		}
+		results = append(results, d)
+	}
+	return results, nil
+}
+
+// mergeDebtors — รวมผลลัพธ์โดยไม่ซ้ำ (ใช้ guidfixed เป็น key)
+func mergeDebtors(existing, extra []DebtorDocument, limit int) []DebtorDocument {
+	seen := make(map[string]bool, len(existing))
+	for _, d := range existing {
+		seen[d.GuidFixed] = true
+	}
+	merged := existing
+	for _, d := range extra {
+		if len(merged) >= limit {
+			break
+		}
+		if !seen[d.GuidFixed] {
+			merged = append(merged, d)
+			seen[d.GuidFixed] = true
+		}
+	}
+	return merged
+}
+
+// ==================== Search Debtors (semantic-first) ====================
+
+// SearchDebtorsResponse — result สำหรับ search_debtors MCP tool
+type SearchDebtorsResponse struct {
+	Debtors     []DebtorDocument `json:"debtors"`
+	Count       int              `json:"count"`
+	Keyword     string           `json:"keyword"`
+	SearchMode  string           `json:"search_mode"` // "vector", "regex", "combined"
+	GeneratedAt time.Time        `json:"generated_at"`
+}
+
+// SearchDebtors — vector-first semantic search สำหรับ agent ใช้
+// เรียก pgvector ก่อน ถ้าไม่ได้ผล fallback ไป MongoDB regex
+func SearchDebtors(ctx context.Context, shopID, keyword string, limit int) (*SearchDebtorsResponse, error) {
+	if shopID == "" {
+		return nil, fmt.Errorf("shop_id is required")
+	}
+	if keyword == "" {
+		return nil, fmt.Errorf("keyword is required")
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+	if limit > 50 {
+		limit = 50
+	}
+
+	logger.Info("[SearchEntity] search_debtors shopID=%s keyword=%s limit=%d", shopID, keyword, limit)
+
+	// 1. Try pgvector first
+	vectorResults, vecErr := searchDebtorsVector(shopID, keyword, limit)
+	if vecErr == nil && len(vectorResults) > 0 {
+		logger.Info("[SearchEntity] search_debtors vector found %d results", len(vectorResults))
+		return &SearchDebtorsResponse{
+			Debtors:     vectorResults,
+			Count:       len(vectorResults),
+			Keyword:     keyword,
+			SearchMode:  "vector",
+			GeneratedAt: time.Now(),
+		}, nil
+	}
+	if vecErr != nil {
+		logger.Info("[SearchEntity] search_debtors vector fallback (err: %v) — trying regex", vecErr)
+	}
+
+	// 2. Fallback: MongoDB regex search
+	mongoClient := myGlobal.SafeMongoConnectFast()
+	if mongoClient == nil {
+		return nil, fmt.Errorf("ไม่สามารถเชื่อมต่อ MongoDB ได้")
+	}
+	svcConfig := serviceConfig.NewServiceConfig()
+	dbName := svcConfig.MongodbDatabaseName()
+
+	baseFilter := bson.M{
+		"shopid": shopID,
+		"$or": []bson.M{
+			{"deletedat": bson.M{"$exists": false}},
+			{"deletedat": time.Time{}},
+		},
+	}
+	keywordFilter := BuildEntityKeywordFilter(keyword, []string{"code", "names.name", "taxid"})
+	logger.Info("[SearchEntity] search_debtors tokens=%v", TokenizeEntityKeyword(keyword))
+	filter := bson.M{"$and": []bson.M{baseFilter, keywordFilter}}
+
+	coll := mongoClient.Database(dbName).Collection(debtorCollection)
+	opts := options.Find().SetLimit(int64(limit)).SetSort(bson.D{{Key: "code", Value: 1}})
+	cursor, err := coll.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, fmt.Errorf("query ล้มเหลว: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var debtors []DebtorDocument
+	if err := cursor.All(ctx, &debtors); err != nil {
+		return nil, fmt.Errorf("decode ล้มเหลว: %w", err)
+	}
+	if debtors == nil {
+		debtors = []DebtorDocument{}
+	}
+
+	logger.Info("[SearchEntity] search_debtors regex found %d results", len(debtors))
+	return &SearchDebtorsResponse{
+		Debtors:     debtors,
+		Count:       len(debtors),
+		Keyword:     keyword,
+		SearchMode:  "regex",
 		GeneratedAt: time.Now(),
 	}, nil
 }

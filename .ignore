@@ -1,0 +1,76 @@
+# BC Ai Account search/context ignore
+#
+# This file is respected by ripgrep (`rg`). It keeps default searches focused on
+# active source files so Codex and other agents do not waste context on generated
+# artifacts, dependencies, legacy scaffolds, or binary assets.
+
+# Dependencies and build artifacts
+.git/
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+dist/
+**/dist/
+build/
+**/build/
+coverage/
+**/coverage/
+tmp/
+**/.dart_tool/
+**/.turbo/
+**/.cache/
+playwright-report/
+test-results/
+storybook-static/
+
+# Legacy / deleted / reference trees. Read explicitly only when the task asks.
+clone-skills/
+frontend/bcaiaccount/
+frontend/bclms/
+
+# Generated API docs. Prefer source handlers and tests.
+backend/docs/docs.go
+backend/docs/swagger.json
+backend/docs/swagger.yaml
+backend/api/swagger/swagger.json
+
+# Large binary/static assets. Read exact paths only when needed.
+backend/assets/fonts/
+*.ttf
+*.otf
+*.woff
+*.woff2
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.ico
+*.svg
+*.pdf
+*.mp4
+*.mov
+*.zip
+*.7z
+*.tar
+*.gz
+*.log
+
+# Large text/reference artifacts. Query exact paths explicitly when needed.
+backend/tdict-std.txt
+frontend/package-lock.json
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Manuals are not default context. Read only when the user asks for manual work.
+manual/
+manual/*.json
+
+# Duplicate agent/IDE skill bundles under backend. Use root .agents/ instead.
+backend/.claude/
+backend/.cline/
+backend/.roo/
+backend/.kiro/
+backend/.kilocode/

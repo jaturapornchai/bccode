@@ -24,7 +24,7 @@ RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o go-app -tags musl main.go
 ##
 FROM alpine:3.21
 
-RUN apk add --no-cache librdkafka ca-certificates && update-ca-certificates
+RUN apk add --no-cache librdkafka ca-certificates python3 && update-ca-certificates
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 WORKDIR /app/

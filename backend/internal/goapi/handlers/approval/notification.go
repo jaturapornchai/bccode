@@ -7,10 +7,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"smlcloudplatform/internal/goapi/logger"
 	"io"
 	"net/http"
 	"os"
+	"smlcloudplatform/internal/goapi/logger"
 	"strings"
 	"time"
 
@@ -82,7 +82,7 @@ func sendBrevoEmail(toEmail, toName, subject, htmlBody string) error {
 	}
 	senderName := os.Getenv("BREVO_FROM_NAME")
 	if senderName == "" {
-		senderName = "BCAI Cloud ERP"
+		senderName = "BC Ai Account"
 	}
 
 	emailReq := BrevoEmailRequest{
@@ -235,7 +235,7 @@ func SendApprovalEmail(toEmail, toName, shopID, docNo, totalAmount, purchaseType
         </div>
 
         <div class="footer">
-            <p>Email นี้ส่งจากระบบ BCAI Cloud ERP</p>
+            <p>Email นี้ส่งจากระบบ BC Ai Account</p>
             <p>กรุณาอย่าตอบกลับ email นี้</p>
         </div>
     </div>
@@ -260,8 +260,8 @@ func SendApprovalEmail(toEmail, toName, shopID, docNo, totalAmount, purchaseType
 
 // LINE Push API structures
 type LinePushRequest struct {
-	To       string      `json:"to"`
-	Messages []LineMsg   `json:"messages"`
+	To       string    `json:"to"`
+	Messages []LineMsg `json:"messages"`
 }
 
 type LineMsg struct {
@@ -273,10 +273,10 @@ type LineMsg struct {
 
 // LineBubble สำหรับ Flex Message
 type LineBubble struct {
-	Type   string       `json:"type"`
-	Header *LineBox     `json:"header,omitempty"`
-	Body   *LineBox     `json:"body,omitempty"`
-	Footer *LineBox     `json:"footer,omitempty"`
+	Type   string   `json:"type"`
+	Header *LineBox `json:"header,omitempty"`
+	Body   *LineBox `json:"body,omitempty"`
+	Footer *LineBox `json:"footer,omitempty"`
 }
 
 type LineBox struct {
@@ -298,12 +298,12 @@ type LineText struct {
 }
 
 type LineButton struct {
-	Type   string          `json:"type"`
-	Style  string          `json:"style,omitempty"`
-	Color  string          `json:"color,omitempty"`
+	Type   string           `json:"type"`
+	Style  string           `json:"style,omitempty"`
+	Color  string           `json:"color,omitempty"`
 	Action LineButtonAction `json:"action"`
-	Height string          `json:"height,omitempty"`
-	Margin string          `json:"margin,omitempty"`
+	Height string           `json:"height,omitempty"`
+	Margin string           `json:"margin,omitempty"`
 }
 
 type LineButtonAction struct {
@@ -585,9 +585,9 @@ func SendLinePushApprovalV2(params ApprovalNotificationParams) error {
 			},
 		},
 		Body: &LineBox{
-			Type:    "box",
-			Layout:  "vertical",
-			Spacing: "md",
+			Type:     "box",
+			Layout:   "vertical",
+			Spacing:  "md",
 			Contents: bodyContents,
 		},
 		Footer: &LineBox{
@@ -1449,16 +1449,16 @@ func GetEmailStatusHandler(c echo.Context) error {
 	}
 	senderName := os.Getenv("BREVO_FROM_NAME")
 	if senderName == "" {
-		senderName = "BCAI Cloud ERP"
+		senderName = "BC Ai Account"
 	}
 
 	return c.JSON(http.StatusOK, map[string]any{
-		"success":      true,
-		"configured":   brevoConfigured,
-		"provider":     "brevo",
-		"from_email":   senderEmail,
-		"from_name":    senderName,
-		"has_api_key":  brevoConfigured,
+		"success":     true,
+		"configured":  brevoConfigured,
+		"provider":    "brevo",
+		"from_email":  senderEmail,
+		"from_name":   senderName,
+		"has_api_key": brevoConfigured,
 	})
 }
 
@@ -1503,7 +1503,7 @@ func SendTestEmailHandler(c echo.Context) error {
 	}
 
 	// สร้าง HTML content สำหรับทดสอบ
-	subject := "ทดสอบส่ง Email จาก BCAI Cloud ERP"
+	subject := "ทดสอบส่ง Email จาก BC Ai Account"
 	htmlBody := fmt.Sprintf(`
 <!DOCTYPE html>
 <html>
@@ -1528,11 +1528,11 @@ func SendTestEmailHandler(c echo.Context) error {
             <div class="success-icon">✅</div>
             <h2>ส่ง Email สำเร็จ!</h2>
             <p>เรียน คุณ%s,</p>
-            <p>นี่คือ email ทดสอบจากระบบ BCAI Cloud ERP</p>
+            <p>นี่คือ email ทดสอบจากระบบ BC Ai Account</p>
             <p>ระบบส่ง Email ผ่าน Brevo API ทำงานปกติ</p>
         </div>
         <div class="footer">
-            <p>Email นี้ส่งจากระบบ BCAI Cloud ERP</p>
+            <p>Email นี้ส่งจากระบบ BC Ai Account</p>
             <p>เวลาที่ส่ง: %s</p>
         </div>
     </div>
@@ -1598,11 +1598,11 @@ func GetLineOAConfigStatusHandler(c echo.Context) error {
 
 	if err == mongo.ErrNoDocuments {
 		return c.JSON(http.StatusOK, map[string]any{
-			"success":      true,
-			"found":        false,
-			"message":      "ไม่พบ LINE OA config สำหรับ shop นี้",
-			"shop_id":      shopID,
-			"diagnosis":    "ต้องสร้าง lineoa_configs document ใน MongoDB Atlas",
+			"success":   true,
+			"found":     false,
+			"message":   "ไม่พบ LINE OA config สำหรับ shop นี้",
+			"shop_id":   shopID,
+			"diagnosis": "ต้องสร้าง lineoa_configs document ใน MongoDB Atlas",
 		})
 	}
 	if err != nil {
@@ -1635,18 +1635,18 @@ func GetLineOAConfigStatusHandler(c echo.Context) error {
 	readyForLine := config.AccessToken != "" && config.LiffID != "" && config.IsActive
 
 	return c.JSON(http.StatusOK, map[string]any{
-		"success":            true,
-		"found":              true,
-		"shop_id":            config.ShopID,
-		"channel_id":         config.ChannelID,
-		"has_access_token":   config.AccessToken != "",
+		"success":              true,
+		"found":                true,
+		"shop_id":              config.ShopID,
+		"channel_id":           config.ChannelID,
+		"has_access_token":     config.AccessToken != "",
 		"access_token_preview": accessTokenMasked,
-		"has_liff_id":        config.LiffID != "",
-		"liff_id":            config.LiffID,
-		"is_active":          config.IsActive,
-		"has_channel_secret": config.ChannelSecret != "",
-		"ready_for_line_push": readyForLine,
-		"issues":             issues,
+		"has_liff_id":          config.LiffID != "",
+		"liff_id":              config.LiffID,
+		"is_active":            config.IsActive,
+		"has_channel_secret":   config.ChannelSecret != "",
+		"ready_for_line_push":  readyForLine,
+		"issues":               issues,
 	})
 }
 
@@ -1674,11 +1674,11 @@ func ListAllLineOAConfigsHandler(c echo.Context) error {
 	var configs []map[string]any
 	for cursor.Next(ctx) {
 		var doc struct {
-			ShopID      string `bson:"shop_id"`
-			ChannelID   string `bson:"channel_id"`
-			LiffID      string `bson:"liff_id"`
-			IsActive    bool   `bson:"is_active"`
-			HasToken    bool
+			ShopID    string `bson:"shop_id"`
+			ChannelID string `bson:"channel_id"`
+			LiffID    string `bson:"liff_id"`
+			IsActive  bool   `bson:"is_active"`
+			HasToken  bool
 		}
 		if err := cursor.Decode(&doc); err != nil {
 			continue
@@ -1754,7 +1754,7 @@ func TestLinePushHandler(c echo.Context) error {
 		"to": req.LineUserID,
 		"messages": []map[string]any{
 			{
-				"type": "flex",
+				"type":    "flex",
 				"altText": "ทดสอบการแจ้งเตือน LINE",
 				"contents": map[string]any{
 					"type": "bubble",
@@ -2506,16 +2506,16 @@ func ResendApprovalNotificationHandler(c echo.Context) error {
 			} else {
 				// บันทึก log การส่ง (type = reminder)
 				_, _ = notificationCollection.InsertOne(ctx, bson.M{
-					"shop_id":            req.ShopID,
-					"docno":              req.DocNo,
-					"guidfixed":          req.GuidFixed,
-					"approver_code":      approver.UserCode,
-					"approver_name":      approver.UserName,
-					"notification_type":  "line_reminder",
-					"recipient_line_id":  approver.LineUserID,
-					"status":             "sent",
-					"sent_at":            now,
-					"created_at":         now,
+					"shop_id":           req.ShopID,
+					"docno":             req.DocNo,
+					"guidfixed":         req.GuidFixed,
+					"approver_code":     approver.UserCode,
+					"approver_name":     approver.UserName,
+					"notification_type": "line_reminder",
+					"recipient_line_id": approver.LineUserID,
+					"status":            "sent",
+					"sent_at":           now,
+					"created_at":        now,
 				})
 				lineSent++
 				results = append(results, map[string]any{

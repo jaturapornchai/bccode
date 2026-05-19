@@ -17,21 +17,21 @@ import (
 	coupon_database "smlcloudplatform/internal/coupon/database"
 	coupon_repositories "smlcloudplatform/internal/coupon/repositories"
 	coupon_services "smlcloudplatform/internal/coupon/services"
+	"smlcloudplatform/internal/currency"
 	"smlcloudplatform/internal/debtaccount/creditor"
 	"smlcloudplatform/internal/debtaccount/creditorgroup"
 	"smlcloudplatform/internal/debtaccount/customer"
 	"smlcloudplatform/internal/debtaccount/customergroup"
 	"smlcloudplatform/internal/debtaccount/debtor"
 	"smlcloudplatform/internal/debtaccount/debtorgroup"
-	"smlcloudplatform/internal/currency"
 	"smlcloudplatform/internal/dimension"
 	"smlcloudplatform/internal/documentwarehouse/documentimage"
 	"smlcloudplatform/internal/filestatus"
+	"smlcloudplatform/internal/form/formtemplate"
 	"smlcloudplatform/internal/images"
 	"smlcloudplatform/internal/logger"
 	"smlcloudplatform/internal/masterexpense"
 	"smlcloudplatform/internal/masterincome"
-	"smlcloudplatform/internal/purchasetype"
 	"smlcloudplatform/internal/mastersync"
 	"smlcloudplatform/internal/media"
 	"smlcloudplatform/internal/member"
@@ -62,7 +62,6 @@ import (
 	products "smlcloudplatform/internal/product/product"
 	"smlcloudplatform/internal/product/productbarcode"
 	"smlcloudplatform/internal/product/productcategory"
-	"smlcloudplatform/internal/form/formtemplate"
 	"smlcloudplatform/internal/product/productgroup"
 	"smlcloudplatform/internal/product/producttype"
 	"smlcloudplatform/internal/product/promotion"
@@ -71,6 +70,7 @@ import (
 	"smlcloudplatform/internal/productsection/sectionbranch"
 	"smlcloudplatform/internal/productsection/sectionbusinesstype"
 	"smlcloudplatform/internal/productsection/sectiondepartment"
+	"smlcloudplatform/internal/purchasetype"
 	"smlcloudplatform/internal/restaurant/device"
 	"smlcloudplatform/internal/restaurant/kitchen"
 	"smlcloudplatform/internal/restaurant/printer"
@@ -129,10 +129,10 @@ import (
 	"smlcloudplatform/internal/transaction/purchasepartial"
 	"smlcloudplatform/internal/transaction/purchaserequisition"
 	"smlcloudplatform/internal/transaction/purchasereturn"
-	"smlcloudplatform/internal/transaction/rfq"
 	"smlcloudplatform/internal/transaction/quotation"
 	"smlcloudplatform/internal/transaction/receivedeposit"
 	"smlcloudplatform/internal/transaction/receivedepositrefund"
+	"smlcloudplatform/internal/transaction/rfq"
 	"smlcloudplatform/internal/transaction/saleinvoice"
 	"smlcloudplatform/internal/transaction/saleinvoicebomprice"
 	"smlcloudplatform/internal/transaction/saleinvoicereturn"
@@ -165,10 +165,10 @@ import (
 	purchase_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchase"
 	purchasedebitnote_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchasedebitnote"
 	purchaseorder_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchaseorder"
-	purchaserequisition_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchaserequisition"
-	rfq_consumer "smlcloudplatform/internal/transaction/transactionconsumer/rfq"
 	purchasereceive_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchasereceive"
+	purchaserequisition_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchaserequisition"
 	purchasereturn_consumer "smlcloudplatform/internal/transaction/transactionconsumer/purchasereturn"
+	rfq_consumer "smlcloudplatform/internal/transaction/transactionconsumer/rfq"
 
 	saledebitnote_consumer "smlcloudplatform/internal/transaction/transactionconsumer/saledebitnote"
 	saleinvoice_consumer "smlcloudplatform/internal/transaction/transactionconsumer/saleinvoice"
@@ -209,7 +209,7 @@ func init() {
 	time.Local = time.UTC
 }
 
-// @title           BC AI Cloud Platform API
+// @title           BC Ai Account API
 // @version         1.0
 // @contact.name   API Support
 // @contact.url    http://www.swagger.io/support
@@ -297,7 +297,7 @@ func main() {
 			"/line-sync",
 			"/reload-config",
 
-			"/goapi/*",           // GoAPI routes — bypass auth (goapi มี auth ของตัวเอง)
+			"/goapi/*",        // GoAPI routes — bypass auth (goapi มี auth ของตัวเอง)
 			"/api/language/*", // Language — public (pre-login language loading)
 		}
 
@@ -591,14 +591,14 @@ func main() {
 		transactionconsumer.MigrationDatabase(ms, cfg)
 
 		// purchase
-		purchaseorder_consumer.MigrationDatabase(ms, cfg)     // สั่งซื้อสินค้า
+		purchaseorder_consumer.MigrationDatabase(ms, cfg)       // สั่งซื้อสินค้า
 		purchaserequisition_consumer.MigrationDatabase(ms, cfg) // ใบขอซื้อ
 		rfq_consumer.MigrationDatabase(ms, cfg)                 // สืบราคา
-		purchase_consumer.MigrationDatabase(ms, cfg)          // ซื้อสินค้า
-		purchasereturn_consumer.MigrationDatabase(ms, cfg)    // ส่งคืนสินค้า
-		purchasedebitnote_consumer.MigrationDatabase(ms, cfg) // เพิ่มหนี้ซื้อสินค้า
-		purchasereceive_consumer.MigrationDatabase(ms, cfg)   // รับสินค้า
-		appurchasereceive_consumer.MigrationDatabase(ms, cfg) // ตั้งหนี้จากการรับ
+		purchase_consumer.MigrationDatabase(ms, cfg)            // ซื้อสินค้า
+		purchasereturn_consumer.MigrationDatabase(ms, cfg)      // ส่งคืนสินค้า
+		purchasedebitnote_consumer.MigrationDatabase(ms, cfg)   // เพิ่มหนี้ซื้อสินค้า
+		purchasereceive_consumer.MigrationDatabase(ms, cfg)     // รับสินค้า
+		appurchasereceive_consumer.MigrationDatabase(ms, cfg)   // ตั้งหนี้จากการรับ
 
 		// sales
 		saleorder_consumer.MigrationDatabase(ms, cfg)         // สั่งขายสินค้า

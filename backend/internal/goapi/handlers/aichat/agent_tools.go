@@ -1,31 +1,217 @@
 package aichat
 
-import "smlcloudplatform/internal/goapi/aiprovider"
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+	"sync"
+
+	"smlcloudplatform/internal/goapi/aiprovider"
+)
+
+// ====== Lazy-answer detection helpers ======
+//
+// บาง model (โดยเฉพาะ custom proxy / instruction-following ไม่ดี) ตอบ "กำลังค้นหาให้ค่ะ..."
+// ลอยๆ โดยไม่เรียก tool — ทำให้ผู้ใช้ได้ข้อความว่างเปล่า
+//
+// helpers ด้านล่างใช้ตรวจจับและสร้าง prompt บังคับให้ AI ค้นหาจริง
+
+// lazyAnswerKeywords — signs that AI is procrastinating or fallback-greeting
+var lazyAnswerKeywords = []string{
+	// Procrastinating phrases
+	"กำลังค้น", "กำลังหา", "กำลังตรวจ", "กำลังดู", "กำลังเช็ค",
+	"เดี๋ยวค้น", "เดี๋ยวหา", "เดี๋ยวดู", "เดี๋ยวเช็ค", "เดี๋ยวจะ",
+	"ขอเวลา", "รอสักครู่", "หาให้", "ค้นให้", "เช็คให้",
+	"searching", "looking up", "let me check", "one moment",
+	// Greeting fallback (asks user what they want instead of answering)
+	"ฉันคือ", "ฉันเป็น", "ฉันสามารถช่วย", "ผมคือ", "ผมสามารถช่วย",
+	"กุ้งคือ", "กุ้งสามารถช่วย", "กุ้งเป็น",
+	"คุณต้องการความช่วยเหลือ", "คุณต้องการอะไร", "มีอะไรให้ช่วย",
+	"how can i help", "what would you like", "i am an assistant",
+	// Refusing without trying
+	"ไม่สามารถ", "ไม่มีข้อมูล", "ไม่รู้", "i don't know", "i cannot",
+}
+
+// nonDataQueryStarters — questions that legitimately don't need a database tool
+// (still need a real answer though — Plan + Result + Analysis from own knowledge or web_search)
+var nonDataQueryStarters = []string{
+	"สูตร", "วิธีทำ", "ทำยังไง", "ทำอย่างไร", "อะไรคือ", "คืออะไร",
+	"recipe", "how to", "what is", "explain",
+}
+
+// looksLikeLazyAnswer — ตรวจว่า answer text เป็นการ procrastinate ไม่มีข้อมูลจริง
+func looksLikeLazyAnswer(text string) bool {
+	if text == "" {
+		return false
+	}
+	lower := strings.ToLower(text)
+	for _, kw := range lazyAnswerKeywords {
+		if strings.Contains(lower, strings.ToLower(kw)) {
+			return true
+		}
+	}
+	return false
+}
+
+// looksLikeRealQuestion — checks whether the user is asking something that needs a substantive answer
+// (not just a greeting). True for almost everything except trivial hi/hello.
+//
+// Renamed from looksLikeDataQuery to reflect the new policy: every real question deserves
+// a Plan+Result+Analysis answer, regardless of whether it needs a DB tool or just AI knowledge.
+func looksLikeRealQuestion(question string) bool {
+	q := strings.TrimSpace(question)
+	if q == "" {
+		return false
+	}
+	// Pure greeting (very short, no question mark, no digits)
+	if len([]rune(q)) <= 3 {
+		return false
+	}
+	// Common Thai/English greetings — let model handle these naturally
+	lower := strings.ToLower(q)
+	greetings := []string{"hi", "hello", "hey", "สวัสดี", "หวัดดี", "ดี"}
+	for _, g := range greetings {
+		if lower == g {
+			return false
+		}
+	}
+	// Anything else = real question deserving a real answer
+	return true
+}
+
+// Backward-compatible alias — keep old name working until callers migrate
+func looksLikeDataQuery(question string) bool {
+	return looksLikeRealQuestion(question)
+}
+
+// buildLazyAnswerReminder — build a system message that forces the AI to actually call a tool.
+// Includes a concrete example matching the question pattern.
+// LANGUAGE RULE: this reminder goes to the LLM → English (token-efficient).
+func buildLazyAnswerReminder(question string) string {
+	q := strings.TrimSpace(question)
+
+	var hint strings.Builder
+	hint.WriteString("[SYSTEM-CRITICAL] You answered without calling any tool — this violates Rule #1.\n\n")
+	hint.WriteString("You MUST call a tool **right now** to fetch real data. Do not say \"searching\" or \"let me check\".\n\n")
+	hint.WriteString("Concrete example for this question:\n\n")
+
+	// detect pattern
+	digitCount := 0
+	for _, r := range q {
+		if r >= '0' && r <= '9' {
+			digitCount++
+		}
+	}
+
+	if digitCount == 13 {
+		// taxid
+		hint.WriteString(fmt.Sprintf("```javascript\n// Question is exactly 13 digits = Thai tax ID\nconst id = \"%s\";\nlet r = query_pg(\"SELECT 'debtor' as src, code, taxid, names FROM debtor WHERE taxid = '\" + id + \"' UNION ALL SELECT 'creditor' as src, code, taxid, names FROM creditor WHERE taxid = '\" + id + \"' LIMIT 5\");\nif (r.length === 0) r = query_pg(\"SELECT 'product' as src, itemcode, barcode, name0 FROM productbarcode WHERE barcode = '\" + id + \"' LIMIT 5\");\nreturn {found: r.length, items: r};\n```\n\n", q))
+	} else if digitCount >= 8 && digitCount <= 14 {
+		// barcode-ish
+		hint.WriteString(fmt.Sprintf("```javascript\n// %d-digit number = likely a barcode\nconst rows = query_pg(\"SELECT itemcode, barcode, name0, price1 FROM productbarcode WHERE barcode = '%s' LIMIT 5\");\nreturn rows;\n```\n\n", digitCount, q))
+	} else {
+		// generic name search
+		hint.WriteString("```javascript\n// Search by name using ILIKE across multiple tables\nlet r = query_pg(\"SELECT itemcode, name0, price1 FROM productbarcode WHERE name0 ILIKE '%KEYWORD%' LIMIT 5\");\nif (r.length === 0) r = query_pg(\"SELECT code, names FROM debtor WHERE names::text ILIKE '%KEYWORD%' LIMIT 5\");\nreturn r;\n```\n\n")
+	}
+
+	hint.WriteString("**Rule:** If you still don't call a tool this round, the system will force-retry. Please call `execute_js` or `query_postgresql` **NOW**. Reply in Thai when you have data.")
+	return hint.String()
+}
+
+// truncateToolResultForUI — แปลง tool result เป็น compact preview สำหรับส่งให้ frontend
+//
+// ตัวอย่าง use case: query_pg คืน 100 rows × 50 columns = ~50KB JSON
+// frontend ไม่ต้องการข้อมูลทั้งหมด แค่ preview ก่อน — ถ้าผู้ใช้อยากดูเต็มก็ไปดู log
+//
+// ขั้นตอน:
+//   1. ถ้า result เป็น array → เก็บ first N items + รายงาน total count
+//   2. Marshal เป็น JSON แล้วตัดถ้ายาวเกิน maxChars
+func truncateToolResultForUI(result any, maxChars int) any {
+	if result == nil {
+		return nil
+	}
+	if maxChars <= 0 {
+		maxChars = 1500
+	}
+
+	// Optimize: ถ้าเป็น slice ใหญ่ → เก็บแค่ 5 ตัวแรก + meta
+	switch v := result.(type) {
+	case []any:
+		if len(v) > 5 {
+			return map[string]any{
+				"_preview":     v[:5],
+				"_total_items": len(v),
+				"_truncated":   true,
+				"_note":        "showing first 5 of " + jsonItoa(len(v)) + " items",
+			}
+		}
+	case []map[string]any:
+		if len(v) > 5 {
+			return map[string]any{
+				"_preview":     v[:5],
+				"_total_items": len(v),
+				"_truncated":   true,
+				"_note":        "showing first 5 of " + jsonItoa(len(v)) + " items",
+			}
+		}
+	}
+
+	// Marshal เพื่อตรวจขนาด — ถ้าเล็กกว่า maxChars ใช้ได้เลย
+	b, err := json.Marshal(result)
+	if err != nil || len(b) <= maxChars {
+		return result
+	}
+
+	// Result ใหญ่เกิน — ส่ง string preview แทน
+	return map[string]any{
+		"_string_preview": string(b[:maxChars]) + "...(truncated)",
+		"_original_size":  len(b),
+		"_truncated":      true,
+	}
+}
+
+// jsonItoa — int → string เลี่ยง strconv import
+func jsonItoa(n int) string {
+	b, _ := json.Marshal(n)
+	return string(b)
+}
+
+// ====== Cached tool definitions ======
+//
+// AgentToolDefs() ถูกเรียกทุก agent iteration → สร้าง object graph ใหม่ทุกครั้ง (~200 lines worth)
+// เนื้อหา tool defs คงที่ตลอด runtime → cache ไว้เลย
+// ใช้ sync.Once เพื่อ thread-safe init
+var (
+	cachedAgentToolDefs []aiprovider.OAITool
+	agentToolDefsOnce   sync.Once
+)
 
 // agentToolNames — whitelist ของ tools ที่ agent ใช้ได้ (readonly business tools เท่านั้น)
+//
+// 2026-04-07 ลด tools จาก 27 → 8 ตัว เพื่อลด payload + ป้องกัน 503 timeout จาก upstream
+// AI ใช้ execute_js เขียน JS ที่ query ข้อมูลเองได้ — ไม่ต้องมี wrapper เยอะๆ
+//
+// ที่เก็บไว้:
+//   - execute_js — เครื่องมือหลัก (AI เขียน script + query เอง)
+//   - query_postgresql/query_mongodb/query_clickhouse — ใช้ตรงเมื่อ query สั้นๆ ไม่ต้องเขียน script
+//   - list_mongodb_collections/list_clickhouse_tables — สำรวจ schema
+//   - aggregate_mongodb — pipeline ที่ JS เขียนยาก
+//   - web_search — ข้อมูลภายนอก
 var agentToolNames = map[string]bool{
-	"search_products":       true,
-	"get_daily_sales":       true,
-	"get_sales_by_date_range": true,
-	"get_top_selling_products": true,
-	"get_sales_by_seller":   true,
-	"get_monthly_summary":   true,
-	"get_dashboard_kpis":    true,
-	"get_business_health":   true,
-	"get_profit_analysis":   true,
-	"get_accounts_receivable": true,
-	"get_accounts_payable":  true,
-	"get_cash_flow":         true,
-	"get_inventory_value":   true,
-	"get_low_stock_alerts":  true,
-	"get_dead_stock":        true,
-	"get_inventory_turnover": true,
-	"get_top_customers":     true,
-	"get_customer_growth":   true,
-	"get_customer_segments": true,
-	"get_yoy_comparison":    true,
-	"get_mom_comparison":    true,
-	"list_units":            true,
+	// Code interpreters — AI เขียน + ทดสอบ + รัน เอง
+	// Python เป็น primary (LLM เขียน Python เก่งสุด), JS เป็น fallback
+	"execute_python": true,
+	"execute_js":     true,
+	// Database query tools (readonly — สำหรับ query สั้นๆ)
+	"query_postgresql":         true,
+	"query_mongodb":            true,
+	"query_clickhouse":         true,
+	"aggregate_mongodb":        true,
+	"list_mongodb_collections": true,
+	"list_clickhouse_tables":   true,
+	// External
+	"web_search":           true,
+	"query_knowledge_base": true,
 }
 
 // IsAgentTool ตรวจว่า tool อยู่ใน whitelist หรือไม่
@@ -33,451 +219,348 @@ func IsAgentTool(name string) bool {
 	return agentToolNames[name]
 }
 
+// dedupeCitations — รวม citations ที่ซ้ำ (เทียบด้วย URL สำหรับ web, DocID สำหรับ kb)
+func dedupeCitations(in []Citation) []Citation {
+	if len(in) == 0 {
+		return nil
+	}
+	seen := map[string]bool{}
+	var out []Citation
+	for _, c := range in {
+		key := c.Type + "|"
+		if c.Type == "web" {
+			key += c.URL
+		} else {
+			key += c.DocID
+			if c.DocID == "" {
+				key += c.Label
+			}
+		}
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		out = append(out, c)
+	}
+	return out
+}
+
+// extractCitationsFromTool ดึง citations ออกจากผลลัพธ์ของ tool
+//   - web_search → citation type="web" (label=title, url=URL)
+//   - query_knowledge_base → citation type="kb" (label=doc_name, text=content)
+func extractCitationsFromTool(toolName string, result any) []Citation {
+	if result == nil {
+		return nil
+	}
+	m, ok := result.(map[string]any)
+	if !ok {
+		return nil
+	}
+	switch toolName {
+	case "web_search":
+		// Expected shape: {"results": [{"title","url","snippet"}, ...]}
+		raw, ok := m["results"].([]any)
+		if !ok {
+			return nil
+		}
+		var out []Citation
+		for _, item := range raw {
+			r, ok := item.(map[string]any)
+			if !ok {
+				continue
+			}
+			url, _ := r["url"].(string)
+			title, _ := r["title"].(string)
+			if url == "" {
+				continue
+			}
+			if title == "" {
+				title = url
+			}
+			out = append(out, Citation{Type: "web", Label: title, URL: url})
+		}
+		return out
+	case "query_knowledge_base":
+		// Expected shape: {"results": [{"doc_id","doc_name","content"}, ...]}
+		raw, ok := m["results"].([]any)
+		if !ok {
+			return nil
+		}
+		seen := map[string]int{}
+		var out []Citation
+		for _, item := range raw {
+			r, ok := item.(map[string]any)
+			if !ok {
+				continue
+			}
+			docID, _ := r["doc_id"].(string)
+			docName, _ := r["doc_name"].(string)
+			content, _ := r["content"].(string)
+			if docName == "" && docID == "" {
+				continue
+			}
+			if idx, exists := seen[docID]; exists && docID != "" {
+				out[idx].Text += "\n\n" + content
+				continue
+			}
+			seen[docID] = len(out)
+			out = append(out, Citation{Type: "kb", Label: docName, DocID: docID, Text: content})
+		}
+		return out
+	}
+	return nil
+}
+
+// filterAgentTools กรอง tools ตาม search flags ของ request
+// nil flag = default true = เปิดใช้งาน (OpenClaw / clients ที่ไม่ส่ง flag ค้นหาทั้งหมด)
+var dbToolNames = map[string]bool{
+	"execute_python": true, "execute_js": true,
+	"query_postgresql": true, "query_mongodb": true, "query_clickhouse": true,
+	"aggregate_mongodb": true, "list_mongodb_collections": true, "list_clickhouse_tables": true,
+}
+
+func filterAgentTools(all []aiprovider.OAITool, req AgentV2Request) []aiprovider.OAITool {
+	useDB := req.SearchDatabase == nil || *req.SearchDatabase
+	useKB := req.SearchKB == nil || *req.SearchKB
+	useWeb := req.SearchInternet == nil || *req.SearchInternet
+	// ถ้าเปิดทั้งหมด ไม่ต้องกรอง
+	if useDB && useKB && useWeb {
+		return all
+	}
+	out := make([]aiprovider.OAITool, 0, len(all))
+	for _, t := range all {
+		name := t.Function.Name
+		if !useDB && dbToolNames[name] {
+			continue
+		}
+		if !useKB && name == "query_knowledge_base" {
+			continue
+		}
+		if !useWeb && name == "web_search" {
+			continue
+		}
+		out = append(out, t)
+	}
+	return out
+}
+
 // AgentToolDefs returns OpenAI function calling format tool definitions
+// ผลลัพธ์ถูก cache ไว้ตลอด process lifetime (เนื้อหาคงที่) — safe เพราะ OpenAI client
+// ทำ marshal เป็น JSON ก่อนส่ง ไม่ได้ mutate slice
 func AgentToolDefs() []aiprovider.OAITool {
+	agentToolDefsOnce.Do(func() {
+		cachedAgentToolDefs = buildAgentToolDefs()
+	})
+	return cachedAgentToolDefs
+}
+
+// buildAgentToolDefs — สร้าง tool defs จริง (เรียกครั้งเดียวจาก AgentToolDefs)
+func buildAgentToolDefs() []aiprovider.OAITool {
 	return []aiprovider.OAITool{
-		// Product Search
+		// ==================== Database Query Tools (readonly — เขียนโปรแกรมเอง) ====================
+		// MongoDB Query
 		{
 			Type: "function",
 			Function: aiprovider.OAIFunction{
-				Name:        "search_products",
-				Description: "ค้นหาสินค้าด้วยคำค้น พร้อมข้อมูลราคาและยอดคงเหลือ",
+				Name:        "query_mongodb",
+				Description: "ค้นหาข้อมูลใน MongoDB ด้วย filter (readonly) — ใช้เมื่อ tools สำเร็จรูปไม่มีข้อมูลที่ต้องการ",
 				Parameters: map[string]interface{}{
 					"type": "object",
 					"properties": map[string]interface{}{
-						"keyword": map[string]interface{}{
+						"collection": map[string]interface{}{
 							"type":        "string",
-							"description": "คำค้นหาสินค้า (ภาษาไทยหรืออังกฤษ)",
+							"description": "ชื่อ collection เช่น barcodes, saleinvoices, purchaseorders",
+						},
+						"filter": map[string]interface{}{
+							"type":        "string",
+							"description": "JSON filter (bson.M format) เช่น {\"itemcode\":\"P001\"} หรือ {\"docdate\":{\"$gte\":\"2026-01-01\"}}",
 						},
 						"limit": map[string]interface{}{
 							"type":        "number",
-							"description": "จำนวนสินค้าสูงสุด (default: 50, max: 200)",
+							"description": "จำนวน documents สูงสุด (default: 20, max: 100)",
 						},
 					},
-					"required": []string{"keyword"},
+					"required": []string{"collection"},
 				},
 			},
 		},
-		// Sales Tools
+		// MongoDB Aggregate
 		{
 			Type: "function",
 			Function: aiprovider.OAIFunction{
-				Name:        "get_daily_sales",
-				Description: "ดูยอดขายรายวัน — สรุปยอดขาย จำนวนออเดอร์ และรายละเอียดของวันที่ระบุ",
+				Name:        "aggregate_mongodb",
+				Description: "รัน MongoDB aggregation pipeline (readonly) — สำหรับวิเคราะห์ข้อมูลซับซ้อน group/sum/count/avg",
 				Parameters: map[string]interface{}{
 					"type": "object",
 					"properties": map[string]interface{}{
-						"date": map[string]interface{}{
+						"collection": map[string]interface{}{
 							"type":        "string",
-							"description": "วันที่ในรูปแบบ YYYY-MM-DD",
+							"description": "ชื่อ collection",
 						},
-						"branch_code": map[string]interface{}{
+						"pipeline": map[string]interface{}{
 							"type":        "string",
-							"description": "รหัสสาขา (ไม่ระบุ = ทุกสาขา)",
-						},
-					},
-					"required": []string{"date"},
-				},
-			},
-		},
-		{
-			Type: "function",
-			Function: aiprovider.OAIFunction{
-				Name:        "get_sales_by_date_range",
-				Description: "ดูยอดขายตามช่วงเวลา — สามารถจัดกลุ่มเป็นรายวัน/สัปดาห์/เดือน",
-				Parameters: map[string]interface{}{
-					"type": "object",
-					"properties": map[string]interface{}{
-						"from_date": map[string]interface{}{
-							"type":        "string",
-							"description": "วันเริ่มต้น YYYY-MM-DD",
-						},
-						"to_date": map[string]interface{}{
-							"type":        "string",
-							"description": "วันสิ้นสุด YYYY-MM-DD",
-						},
-						"group_by": map[string]interface{}{
-							"type":        "string",
-							"description": "จัดกลุ่ม: day, week, month (default: day)",
-							"enum":        []string{"day", "week", "month"},
-						},
-						"branch_code": map[string]interface{}{
-							"type":        "string",
-							"description": "รหัสสาขา (ไม่ระบุ = ทุกสาขา)",
-						},
-					},
-					"required": []string{"from_date", "to_date"},
-				},
-			},
-		},
-		{
-			Type: "function",
-			Function: aiprovider.OAIFunction{
-				Name:        "get_top_selling_products",
-				Description: "ดูสินค้าขายดีตามช่วงเวลา",
-				Parameters: map[string]interface{}{
-					"type": "object",
-					"properties": map[string]interface{}{
-						"from_date": map[string]interface{}{
-							"type":        "string",
-							"description": "วันเริ่มต้น YYYY-MM-DD",
-						},
-						"to_date": map[string]interface{}{
-							"type":        "string",
-							"description": "วันสิ้นสุด YYYY-MM-DD",
+							"description": "JSON array ของ pipeline stages เช่น [{\"$match\":{\"docdate\":{\"$gte\":\"2026-01-01\"}}},{\"$group\":{\"_id\":\"$itemcode\",\"total\":{\"$sum\":\"$amount\"}}}]",
 						},
 						"limit": map[string]interface{}{
 							"type":        "number",
-							"description": "จำนวนสินค้า (default: 10, max: 100)",
-						},
-						"branch_code": map[string]interface{}{
-							"type":        "string",
-							"description": "รหัสสาขา (ไม่ระบุ = ทุกสาขา)",
+							"description": "จำนวนผลลัพธ์สูงสุด (default: 100, max: 100)",
 						},
 					},
-					"required": []string{"from_date", "to_date"},
+					"required": []string{"collection", "pipeline"},
 				},
 			},
 		},
+		// List MongoDB Collections
 		{
 			Type: "function",
 			Function: aiprovider.OAIFunction{
-				Name:        "get_sales_by_seller",
-				Description: "ดูยอดขายแยกตามพนักงานขาย",
-				Parameters: map[string]interface{}{
-					"type": "object",
-					"properties": map[string]interface{}{
-						"from_date": map[string]interface{}{
-							"type":        "string",
-							"description": "วันเริ่มต้น YYYY-MM-DD",
-						},
-						"to_date": map[string]interface{}{
-							"type":        "string",
-							"description": "วันสิ้นสุด YYYY-MM-DD",
-						},
-					},
-					"required": []string{"from_date", "to_date"},
-				},
-			},
-		},
-		{
-			Type: "function",
-			Function: aiprovider.OAIFunction{
-				Name:        "get_monthly_summary",
-				Description: "สรุปยอดขายรายเดือน เทียบกับเดือนก่อนหน้า",
-				Parameters: map[string]interface{}{
-					"type": "object",
-					"properties": map[string]interface{}{
-						"year": map[string]interface{}{
-							"type":        "number",
-							"description": "ปี (default: ปีปัจจุบัน)",
-						},
-						"month": map[string]interface{}{
-							"type":        "number",
-							"description": "เดือน 1-12 (default: เดือนปัจจุบัน)",
-						},
-					},
-				},
-			},
-		},
-		// Dashboard Tools
-		{
-			Type: "function",
-			Function: aiprovider.OAIFunction{
-				Name:        "get_dashboard_kpis",
-				Description: "ดู KPI Dashboard สำหรับผู้บริหาร — ยอดขาย ออเดอร์ กำไร ลูกค้า สินค้าคงเหลือ",
-				Parameters: map[string]interface{}{
-					"type": "object",
-					"properties": map[string]interface{}{
-						"period": map[string]interface{}{
-							"type":        "string",
-							"description": "ช่วงเวลา: today, this_week, this_month, this_year (default: this_month)",
-							"enum":        []string{"today", "this_week", "this_month", "this_year"},
-						},
-					},
-				},
-			},
-		},
-		{
-			Type: "function",
-			Function: aiprovider.OAIFunction{
-				Name:        "get_business_health",
-				Description: "ดูคะแนนสุขภาพธุรกิจ (0-100) พร้อมตัวชี้วัดและคำแนะนำ",
+				Name:        "list_mongodb_collections",
+				Description: "แสดงรายชื่อ collections ทั้งหมดใน MongoDB database",
 				Parameters: map[string]interface{}{
 					"type":       "object",
 					"properties": map[string]interface{}{},
 				},
 			},
 		},
-		// Financial Tools
+		// ClickHouse Query
 		{
 			Type: "function",
 			Function: aiprovider.OAIFunction{
-				Name:        "get_profit_analysis",
-				Description: "วิเคราะห์กำไร — รายได้ ต้นทุน อัตรากำไร",
+				Name:        "query_clickhouse",
+				Description: "รัน SQL query บน ClickHouse (readonly SELECT เท่านั้น) — สำหรับ analytics ข้อมูลขนาดใหญ่",
 				Parameters: map[string]interface{}{
 					"type": "object",
 					"properties": map[string]interface{}{
-						"from_date": map[string]interface{}{
+						"query": map[string]interface{}{
 							"type":        "string",
-							"description": "วันเริ่มต้น YYYY-MM-DD",
+							"description": "SQL SELECT query เช่น SELECT date, sum(amount) FROM sales GROUP BY date ORDER BY date DESC LIMIT 30",
 						},
-						"to_date": map[string]interface{}{
-							"type":        "string",
-							"description": "วันสิ้นสุด YYYY-MM-DD",
+						"limit": map[string]interface{}{
+							"type":        "number",
+							"description": "จำนวนแถวสูงสุด (default: 100)",
 						},
 					},
+					"required": []string{"query"},
 				},
 			},
 		},
+		// List ClickHouse Tables
 		{
 			Type: "function",
 			Function: aiprovider.OAIFunction{
-				Name:        "get_accounts_receivable",
-				Description: "ดูลูกหนี้การค้า — ยอดค้างชำระและลูกหนี้รายใหญ่",
+				Name:        "list_clickhouse_tables",
+				Description: "แสดงรายชื่อ tables ทั้งหมดใน ClickHouse database",
 				Parameters: map[string]interface{}{
 					"type":       "object",
 					"properties": map[string]interface{}{},
 				},
 			},
 		},
+		// PostgreSQL Query
 		{
 			Type: "function",
 			Function: aiprovider.OAIFunction{
-				Name:        "get_accounts_payable",
-				Description: "ดูเจ้าหนี้การค้า — ยอดค้างจ่ายและเจ้าหนี้รายใหญ่",
-				Parameters: map[string]interface{}{
-					"type":       "object",
-					"properties": map[string]interface{}{},
-				},
-			},
-		},
-		{
-			Type: "function",
-			Function: aiprovider.OAIFunction{
-				Name:        "get_cash_flow",
-				Description: "วิเคราะห์กระแสเงินสด — รายรับ รายจ่าย ยอดสุทธิ",
+				Name:        "query_postgresql",
+				Description: "รัน SQL query บน PostgreSQL (readonly SELECT เท่านั้น) — สำหรับข้อมูล transactional",
 				Parameters: map[string]interface{}{
 					"type": "object",
 					"properties": map[string]interface{}{
-						"from_date": map[string]interface{}{
+						"query": map[string]interface{}{
 							"type":        "string",
-							"description": "วันเริ่มต้น YYYY-MM-DD",
-						},
-						"to_date": map[string]interface{}{
-							"type":        "string",
-							"description": "วันสิ้นสุด YYYY-MM-DD",
-						},
-					},
-				},
-			},
-		},
-		// Inventory Tools
-		{
-			Type: "function",
-			Function: aiprovider.OAIFunction{
-				Name:        "get_inventory_value",
-				Description: "ดูมูลค่าสินค้าคงเหลือ แยกตามหมวดหมู่และคลังสินค้า",
-				Parameters: map[string]interface{}{
-					"type": "object",
-					"properties": map[string]interface{}{
-						"whcode": map[string]interface{}{
-							"type":        "string",
-							"description": "รหัสคลังสินค้า (ไม่ระบุ = ทุกคลัง)",
-						},
-					},
-				},
-			},
-		},
-		{
-			Type: "function",
-			Function: aiprovider.OAIFunction{
-				Name:        "get_low_stock_alerts",
-				Description: "ดูสินค้าที่ใกล้หมด หรือต่ำกว่าระดับขั้นต่ำ",
-				Parameters: map[string]interface{}{
-					"type": "object",
-					"properties": map[string]interface{}{
-						"threshold": map[string]interface{}{
-							"type":        "number",
-							"description": "จำนวนขั้นต่ำที่ถือว่าใกล้หมด (default: 10)",
+							"description": "SQL SELECT query",
 						},
 						"limit": map[string]interface{}{
 							"type":        "number",
-							"description": "จำนวนรายการ (default: 50)",
+							"description": "จำนวนแถวสูงสุด (default: 100)",
 						},
 					},
+					"required": []string{"query"},
 				},
 			},
 		},
+		// Python Code Interpreter — **PRIMARY TOOL** สำหรับงาน data/query
+		// (LLM เขียน Python เก่งที่สุด — prefer Python over JS whenever possible)
 		{
 			Type: "function",
 			Function: aiprovider.OAIFunction{
-				Name:        "get_dead_stock",
-				Description: "ดูสินค้าค้างสต็อก ไม่มีความเคลื่อนไหว",
+				Name: "execute_python",
+				Description: "**PREFERRED TOOL for data queries and analysis.** Run Python 3 in a readonly sandbox. " +
+					"Write idiomatic Python — list comprehensions, dicts, f-strings, loops — exactly as you would in a Jupyter notebook. " +
+					"Sandbox helpers (already imported): query_pg(sql, limit=200), query_mongo(collection, filter=None, limit=200), " +
+					"query_ch(sql, limit=200), log(*args). " +
+					"**Assign your final answer to the variable `__result__`** (no `return` at top level — this runs as a script, not a function). " +
+					"Example: `rows = query_pg(\"SELECT itemcode, name0, price1 FROM productbarcode ORDER BY price1 DESC LIMIT 10\"); " +
+					"__result__ = {\"count\": len(rows), \"items\": rows}`. " +
+					"Use try/except to handle query errors and fall back to other searches. Timeout: 30s.",
 				Parameters: map[string]interface{}{
 					"type": "object",
 					"properties": map[string]interface{}{
-						"days_no_movement": map[string]interface{}{
-							"type":        "number",
-							"description": "จำนวนวันที่ไม่มีเคลื่อนไหว (default: 90)",
+						"code": map[string]interface{}{
+							"type":        "string",
+							"description": "Python 3 code. Must assign final answer to __result__. No INSERT/UPDATE/DELETE/DROP. No network / file I/O. Timeout 30s.",
+						},
+					},
+					"required": []string{"code"},
+				},
+			},
+		},
+		// JS Code Interpreter — fallback เมื่อต้องการ specific JS behavior
+		{
+			Type: "function",
+			Function: aiprovider.OAIFunction{
+				Name: "execute_js",
+				Description: "Fallback JavaScript sandbox (use execute_python instead when possible — Python is preferred). " +
+					"Readonly Goja sandbox. Helpers: query_pg(sql, limit?), query_mongo(collection, filter?, limit?), " +
+					"query_ch(sql, limit?), log(...). Script must `return` a value. Timeout 30s.",
+				Parameters: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"code": map[string]interface{}{
+							"type":        "string",
+							"description": "JavaScript code (ES5+ via Goja). ต้อง return ค่าออกมา. ห้าม INSERT/UPDATE/DELETE/DROP. Timeout 30 วินาที.",
+						},
+					},
+					"required": []string{"code"},
+				},
+			},
+		},
+		// Knowledge Base RAG — query เอกสารภายใน shop ที่อัปโหลดไว้
+		{
+			Type: "function",
+			Function: aiprovider.OAIFunction{
+				Name:        "query_knowledge_base",
+				Description: "Search the shop's Knowledge Base — internal documents the shop has uploaded itself (PDF/Word/Excel/Markdown/Text) via RAG retrieval. This is the shop's own private library: handbooks, policies, manuals, contracts, internal FAQs, uploaded reports. CALL THIS TOOL whenever the user's question is plausibly answered by something the shop wrote down for itself — anything shop-specific that is NOT raw transactional data (products/sales/customers) and NOT general world knowledge. If you find yourself about to answer a shop-specific factual question (a number, a procedure, a contact, a rule) from your training data, you MUST call this tool first instead. Returning 'not found' from this tool is a valid and useful answer; fabricating an answer is not. shop_id is set automatically — pass query as a natural language question (Thai or English).",
+				Parameters: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"query": map[string]interface{}{
+							"type":        "string",
+							"description": "คำถามที่จะค้นหาใน Knowledge Base (ภาษาไทยหรืออังกฤษ)",
+						},
+					},
+					"required": []string{"query"},
+				},
+			},
+		},
+		// Web Search (ค้นหาจาก internet)
+		{
+			Type: "function",
+			Function: aiprovider.OAIFunction{
+				Name:        "web_search",
+				Description: "ค้นหาข้อมูลจาก internet เมื่อต้องการข้อมูลภายนอก เช่น อัตราภาษี กฎหมาย ข้อมูลตลาด เทรนด์ ราคาวัตถุดิบ",
+				Parameters: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"query": map[string]interface{}{
+							"type":        "string",
+							"description": "คำค้นหา (ไทยหรืออังกฤษ)",
 						},
 						"limit": map[string]interface{}{
 							"type":        "number",
-							"description": "จำนวนรายการ (default: 50)",
+							"description": "จำนวนผลลัพธ์สูงสุด (default: 5, max: 10)",
 						},
 					},
-				},
-			},
-		},
-		{
-			Type: "function",
-			Function: aiprovider.OAIFunction{
-				Name:        "get_inventory_turnover",
-				Description: "ดูอัตราการหมุนเวียนสินค้า และจำนวนวันที่สินค้าอยู่ในคลัง",
-				Parameters: map[string]interface{}{
-					"type": "object",
-					"properties": map[string]interface{}{
-						"from_date": map[string]interface{}{
-							"type":        "string",
-							"description": "วันเริ่มต้น YYYY-MM-DD",
-						},
-						"to_date": map[string]interface{}{
-							"type":        "string",
-							"description": "วันสิ้นสุด YYYY-MM-DD",
-						},
-					},
-				},
-			},
-		},
-		// Customer Tools
-		{
-			Type: "function",
-			Function: aiprovider.OAIFunction{
-				Name:        "get_top_customers",
-				Description: "ดูลูกค้ารายใหญ่ตามยอดซื้อ",
-				Parameters: map[string]interface{}{
-					"type": "object",
-					"properties": map[string]interface{}{
-						"from_date": map[string]interface{}{
-							"type":        "string",
-							"description": "วันเริ่มต้น YYYY-MM-DD",
-						},
-						"to_date": map[string]interface{}{
-							"type":        "string",
-							"description": "วันสิ้นสุด YYYY-MM-DD",
-						},
-						"limit": map[string]interface{}{
-							"type":        "number",
-							"description": "จำนวนลูกค้า (default: 10)",
-						},
-						"sort_by": map[string]interface{}{
-							"type":        "string",
-							"description": "เรียงตาม: amount, orders, profit (default: amount)",
-							"enum":        []string{"amount", "orders", "profit"},
-						},
-					},
-				},
-			},
-		},
-		{
-			Type: "function",
-			Function: aiprovider.OAIFunction{
-				Name:        "get_customer_growth",
-				Description: "ดูการเติบโตของลูกค้า — ลูกค้าใหม่ ลูกค้าที่กลับมาซื้อ",
-				Parameters: map[string]interface{}{
-					"type": "object",
-					"properties": map[string]interface{}{
-						"from_date": map[string]interface{}{
-							"type":        "string",
-							"description": "วันเริ่มต้น YYYY-MM-DD",
-						},
-						"to_date": map[string]interface{}{
-							"type":        "string",
-							"description": "วันสิ้นสุด YYYY-MM-DD",
-						},
-					},
-				},
-			},
-		},
-		{
-			Type: "function",
-			Function: aiprovider.OAIFunction{
-				Name:        "get_customer_segments",
-				Description: "วิเคราะห์กลุ่มลูกค้า (RFM: ความถี่ ความใกล้ชิด มูลค่า)",
-				Parameters: map[string]interface{}{
-					"type": "object",
-					"properties": map[string]interface{}{
-						"from_date": map[string]interface{}{
-							"type":        "string",
-							"description": "วันเริ่มต้น YYYY-MM-DD",
-						},
-						"to_date": map[string]interface{}{
-							"type":        "string",
-							"description": "วันสิ้นสุด YYYY-MM-DD",
-						},
-					},
-				},
-			},
-		},
-		// Comparison Tools
-		{
-			Type: "function",
-			Function: aiprovider.OAIFunction{
-				Name:        "get_yoy_comparison",
-				Description: "เปรียบเทียบปีต่อปี — รายได้ ออเดอร์ กำไร",
-				Parameters: map[string]interface{}{
-					"type": "object",
-					"properties": map[string]interface{}{
-						"year": map[string]interface{}{
-							"type":        "number",
-							"description": "ปีที่ต้องการเปรียบเทียบ (default: ปีปัจจุบัน)",
-						},
-						"month": map[string]interface{}{
-							"type":        "number",
-							"description": "เดือนที่ต้องการ 1-12 (ไม่ระบุ = ทั้งปี)",
-						},
-					},
-				},
-			},
-		},
-		{
-			Type: "function",
-			Function: aiprovider.OAIFunction{
-				Name:        "get_mom_comparison",
-				Description: "เปรียบเทียบเดือนต่อเดือน พร้อมรายละเอียดรายสัปดาห์",
-				Parameters: map[string]interface{}{
-					"type": "object",
-					"properties": map[string]interface{}{
-						"year": map[string]interface{}{
-							"type":        "number",
-							"description": "ปี (default: ปีปัจจุบัน)",
-						},
-						"month": map[string]interface{}{
-							"type":        "number",
-							"description": "เดือน 1-12 (default: เดือนปัจจุบัน)",
-						},
-					},
-				},
-			},
-		},
-		// Unit Tools
-		{
-			Type: "function",
-			Function: aiprovider.OAIFunction{
-				Name:        "list_units",
-				Description: "ดูรายการหน่วยนับสินค้าทั้งหมด (ชิ้น, กล่อง, โหล ฯลฯ)",
-				Parameters: map[string]interface{}{
-					"type": "object",
-					"properties": map[string]interface{}{
-						"keyword": map[string]interface{}{
-							"type":        "string",
-							"description": "คำค้นหาหน่วยนับ (ไม่ระบุ = ทั้งหมด)",
-						},
-						"limit": map[string]interface{}{
-							"type":        "number",
-							"description": "จำนวนรายการ (default: 100)",
-						},
-					},
+					"required": []string{"query"},
 				},
 			},
 		},

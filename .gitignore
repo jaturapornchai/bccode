@@ -18,6 +18,9 @@ bootstrap.json
 *.so
 *.dylib
 tmp/
+dist/
+coverage/
+**/.next/
 
 # Go
 vendor/
@@ -32,5 +35,15 @@ vendor/
 # Node
 node_modules/
 
-# Claude
+# Agent/local caches
 .claude/
+.cline/
+.roo/
+.kiro/
+.kilocode/
+.serena/
+.codex/
+.playwright-mcp/
+__pycache__/
+*.pyc
+generated-images/

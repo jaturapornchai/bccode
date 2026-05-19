@@ -1,0 +1,562 @@
+{
+  "screen": "login",
+  "updatedAt": "2026-05-17",
+  "translations": {
+    "th": {
+      "title": "คู่มือหน้าเข้าสู่ระบบ",
+      "objective": "ใช้หน้าเข้าสู่ระบบเพื่อยืนยันตัวตนก่อนเข้า ERP ระบบนี้รองรับการเข้าสู่ระบบด้วยรหัสผู้ใช้ Google และ LINE โดยการใช้งานครั้งแรกควรเข้าด้วย Google เพื่อสร้างกิจการใหม่และรองรับ Multi Company",
+      "workflow": [
+        "ตรวจช่อง Backend URL ถ้าเป็นเครื่อง local ปกติใช้ http://localhost:8888/goapi",
+        "กดปุ่มทดสอบเพื่อดูว่า frontend ติดต่อ backend ได้หรือไม่",
+        "ถ้าใช้งานครั้งแรก ให้กดเข้าสู่ระบบด้วย Google เพื่อสร้างกิจการใหม่",
+        "ถ้าเป็นผู้ใช้เดิม ให้กรอกรหัสผู้ใช้หรืออีเมลและรหัสผ่าน แล้วกดเข้าสู่ระบบ",
+        "หลังเข้าสู่ระบบสำเร็จ ระบบจะไปหน้าเลือกกิจการและสาขา",
+        "ถ้าต้องเปลี่ยนภาษา ให้กดปุ่มภาษา เลือกภาษาจาก dialog แล้วข้อความบนหน้าจอจะเปลี่ยนทันที"
+      ],
+      "config": [
+        "Backend URL, ภาษา และธีมถูกบันทึกใน browser ของเครื่องนี้",
+        "Token หลัง login ถูกใช้ต่อในหน้าเลือกกิจการและเมนู",
+        "ปุ่มธีมมีหนึ่งปุ่มต่อหน้าและอยู่ด้านบนเพื่อเปลี่ยนมืด/สว่างทันที"
+      ],
+      "limitations": [
+        "ปุ่ม Google ทดสอบใช้เฉพาะเครื่อง local",
+        "ถ้า backend ไม่พร้อม การเข้าสู่ระบบและเลือกกิจการจะล้มเหลว",
+        "การแปลชื่อข้อมูลธุรกิจขึ้นกับข้อมูลที่บันทึกใน backend ไม่ใช่ข้อความ UI"
+      ],
+      "summary": "คู่มือสำหรับผู้ใช้ใหม่และผู้ใช้เดิม เพื่อเข้าสู่ BC Ai Account เลือกภาษา เปลี่ยนธีม ตรวจ Backend URL และเริ่มสร้างกิจการแรกด้วย Google",
+      "prerequisites": [
+        "มี Backend API ทำงานอยู่ และรู้ค่า Backend URL ที่ต้องใช้",
+        "มีบัญชี Google สำหรับการสร้างกิจการครั้งแรก หรือมีรหัสผู้ใช้ที่ backend สร้างไว้แล้ว",
+        "Browser ต้องอนุญาต popup ถ้าจะใช้ Google OAuth",
+        "เลือกภาษาและธีมให้เรียบร้อยก่อนเริ่ม เพื่อให้ข้อความทั้งระบบแสดงตามต้องการ"
+      ],
+      "fields": [
+        {
+          "name": "Backend URL",
+          "description": "ที่อยู่ backend API ที่ frontend จะเรียกใช้งาน ต้องเป็น URL ที่เปิดได้จากเครื่องนี้"
+        },
+        {
+          "name": "ชื่อผู้ใช้",
+          "description": "รหัสพนักงานหรืออีเมลที่ backend อนุญาตให้เข้าสู่ระบบ"
+        },
+        {
+          "name": "รหัสผ่าน",
+          "description": "รหัสผ่านของผู้ใช้ ระบบไม่ควรแสดงหรือบันทึกรหัสผ่านแบบอ่านได้"
+        },
+        {
+          "name": "จดชื่อผู้ใช้",
+          "description": "เก็บชื่อผู้ใช้ใน browser เพื่อพิมพ์ครั้งถัดไปให้น้อยลง ไม่ควรใช้บนเครื่องสาธารณะ"
+        }
+      ],
+      "actions": [
+        {
+          "name": "ทดสอบ",
+          "description": "ตรวจการเชื่อมต่อ backend ก่อน login ถ้าไม่ผ่านให้ตรวจ Docker/backend URL"
+        },
+        {
+          "name": "เข้าสู่ระบบ",
+          "description": "ส่งข้อมูลผู้ใช้และรหัสผ่านไป backend เพื่อรับ token"
+        },
+        {
+          "name": "เข้าสู่ระบบด้วย Google",
+          "description": "ใช้ Google OAuth เหมาะกับการเริ่มใช้งานครั้งแรกและสร้างกิจการใหม่"
+        },
+        {
+          "name": "ทดสอบ Google",
+          "description": "ปุ่มเฉพาะเครื่อง local สำหรับทดสอบบัญชี jaturapornchai@gmail.com"
+        },
+        {
+          "name": "เข้าสู่ระบบด้วย LINE",
+          "description": "ใช้ LINE สำหรับผู้ใช้ที่ backend ผูกบัญชีไว้แล้ว"
+        },
+        {
+          "name": "คู่มือ",
+          "description": "เปิดคู่มือหน้านี้ใน browser tab/window ใหม่"
+        }
+      ],
+      "expectedResults": [
+        "ทดสอบ backend แล้วเห็นสถานะสำเร็จ",
+        "Login สำเร็จแล้วถูกพาไปหน้าเลือกกิจการ",
+        "ภาษาที่เลือกถูกจำไว้เมื่อ refresh หรือเปิดหน้าใหม่",
+        "ธีมมืด/สว่างเปลี่ยนสีพื้นหลัง ตัวอักษร กรอบ และปุ่มตาม CSS token"
+      ],
+      "commonMistakes": [
+        "พิมพ์ Backend URL ผิด port หรือ path",
+        "backend/docker ยังไม่ทำงานแต่กด login ทันที",
+        "browser block popup ทำให้ Google login ไม่เปิด",
+        "เลือกภาษาแล้วคาดหวังให้ข้อมูลชื่อกิจการจาก backend ถูกแปล ทั้งที่ข้อมูลนั้นมาจากฐานข้อมูลลูกค้า"
+      ],
+      "troubleshooting": [
+        {
+          "name": "ทดสอบ backend ไม่ผ่าน",
+          "description": "ตรวจว่า backend ทำงานอยู่ ตรวจ port 8888 และลองเปิด URL จาก browser หรือ curl"
+        },
+        {
+          "name": "Google login ไม่เปิด",
+          "description": "อนุญาต popup สำหรับ localhost แล้วลองใหม่"
+        },
+        {
+          "name": "Login ผ่านแต่ไม่ไปต่อ",
+          "description": "เปิด DevTools ดู network ของ /api/auth หรือ /api/workspace แล้วตรวจ token/backend message"
+        },
+        {
+          "name": "ภาษาไม่เปลี่ยนทันที",
+          "description": "กดเลือกภาษาใน dialog อีกครั้ง ถ้ายังไม่เปลี่ยนให้แจ้งชื่อหน้าและข้อความที่ยังค้าง"
+        }
+      ],
+      "nextSteps": [
+        "หลัง login ให้เลือกหรือสร้างกิจการ",
+        "เลือกสาขาให้ถูกต้องก่อนเข้าเมนูหลัก",
+        "ตั้งค่าระบบพื้นฐานในหน้า Settings ก่อนเริ่มใช้งานจริง"
+      ]
+    },
+    "en": {
+      "title": "Login Screen Manual",
+      "objective": "Use this screen to authenticate before entering the ERP. The system supports username/password, Google, and LINE login. First-time users should sign in with Google to create a new company and use Multi Company features.",
+      "workflow": [
+        "Check Backend URL. For local testing the usual value is http://localhost:8888/goapi.",
+        "Click the test button to confirm the frontend can reach the backend.",
+        "For first-time use, click Google login to create a new company.",
+        "For existing users, enter username or email and password, then click sign in.",
+        "After successful login, the system opens company and branch selection.",
+        "To change language, open the language dialog and select a language. Text should update immediately."
+      ],
+      "config": [
+        "Backend URL, language, and theme are stored in this browser.",
+        "The login token is reused by workspace and menu screens.",
+        "Each page has one theme toggle at the top and CSS tokens update all colors."
+      ],
+      "limitations": [
+        "The Google test button is local-only.",
+        "Login and workspace selection fail when the backend is unavailable.",
+        "Business data names come from the backend and may not be translated by UI language."
+      ],
+      "summary": "A complete guide for signing in to BC Ai Account, choosing language, switching theme, checking Backend URL, and starting the first company with Google.",
+      "prerequisites": [
+        "Backend API is running and you know the Backend URL.",
+        "A Google account is available for first-time company creation, or the backend already has your user account.",
+        "The browser allows popups when using Google OAuth.",
+        "Choose language and theme first so the whole UI uses the expected display mode."
+      ],
+      "fields": [
+        {
+          "name": "Backend URL",
+          "description": "The backend API address used by this frontend. It must be reachable from this machine."
+        },
+        {
+          "name": "Username",
+          "description": "Employee code or email allowed by the backend."
+        },
+        {
+          "name": "Password",
+          "description": "The user password. It should not be displayed or stored in readable form."
+        },
+        {
+          "name": "Remember username",
+          "description": "Stores the username in this browser. Avoid it on shared machines."
+        }
+      ],
+      "actions": [
+        {
+          "name": "Test",
+          "description": "Checks backend connectivity before login."
+        },
+        {
+          "name": "Sign in",
+          "description": "Sends username and password to the backend and receives a token."
+        },
+        {
+          "name": "Sign in with Google",
+          "description": "Starts Google OAuth, recommended for first-time company creation."
+        },
+        {
+          "name": "Test Google",
+          "description": "Local-only shortcut for testing jaturapornchai@gmail.com."
+        },
+        {
+          "name": "Sign in with LINE",
+          "description": "Uses LINE login for users already linked by the backend."
+        },
+        {
+          "name": "Manual",
+          "description": "Opens this manual in a new browser tab or window."
+        }
+      ],
+      "expectedResults": [
+        "Backend test shows a successful state.",
+        "Successful login redirects to workspace selection.",
+        "Selected language persists after refresh.",
+        "Dark/light mode updates background, text, border, and button colors."
+      ],
+      "commonMistakes": [
+        "Wrong Backend URL port or path.",
+        "Backend or Docker is not running before login.",
+        "Browser blocks the Google popup.",
+        "Expecting backend business data, such as company names, to be translated by UI language."
+      ],
+      "troubleshooting": [
+        {
+          "name": "Backend test fails",
+          "description": "Check that backend is running, verify port 8888, and open the URL from browser or curl."
+        },
+        {
+          "name": "Google login does not open",
+          "description": "Allow popups for localhost and try again."
+        },
+        {
+          "name": "Login succeeds but does not continue",
+          "description": "Inspect /api/auth or /api/workspace network calls and check token/backend message."
+        },
+        {
+          "name": "Language does not update immediately",
+          "description": "Select the language again and report the page name plus the text that remains unchanged."
+        }
+      ],
+      "nextSteps": [
+        "Select or create a company.",
+        "Choose the correct branch before opening the main menu.",
+        "Configure core system settings before real use."
+      ]
+    },
+    "cn": {
+      "title": "登录页面手册",
+      "objective": "登录 BC Ai Account，设置 Backend URL，并使用 Google 创建第一家公司。",
+      "workflow": [
+        "检查 Backend URL 并测试连接。",
+        "使用用户名/密码、Google 或 LINE 登录。",
+        "首次使用请用 Google 登录以创建新公司。"
+      ],
+      "config": [
+        "Backend URL 保存在本设备。",
+        "语言和主题保存在浏览器。"
+      ],
+      "limitations": [
+        "Google 测试按钮仅限本机使用。",
+        "如果后端不可用，登录和选择公司会失败。"
+      ],
+      "summary": "登录 BC Ai Account，设置 Backend URL，并使用 Google 创建第一家公司。",
+      "prerequisites": [
+        "Backend URL 保存在本设备。",
+        "语言和主题保存在浏览器。"
+      ],
+      "expectedResults": [
+        "使用用户名/密码、Google 或 LINE 登录。",
+        "首次使用请用 Google 登录以创建新公司。"
+      ],
+      "commonMistakes": [
+        "Google 测试按钮仅限本机使用。",
+        "如果后端不可用，登录和选择公司会失败。"
+      ],
+      "nextSteps": [
+        "使用用户名/密码、Google 或 LINE 登录。",
+        "首次使用请用 Google 登录以创建新公司。"
+      ]
+    },
+    "ja": {
+      "title": "ログイン画面マニュアル",
+      "objective": "BC Ai Account にログインし、Backend URL を設定し、Google で最初の会社を作成します。",
+      "workflow": [
+        "Backend URL を確認して接続テストを実行します。",
+        "ユーザー名/パスワード、Google、LINE でログインします。",
+        "初回は Google でログインして新しい会社を作成します。"
+      ],
+      "config": [
+        "Backend URL はこの端末に保存されます。",
+        "言語とテーマはブラウザに保存されます。"
+      ],
+      "limitations": [
+        "Google テストボタンはローカル環境のみ使用できます。",
+        "バックエンドが利用できない場合、ログインと会社選択は失敗します。"
+      ],
+      "summary": "BC Ai Account にログインし、Backend URL を設定し、Google で最初の会社を作成します。",
+      "prerequisites": [
+        "Backend URL はこの端末に保存されます。",
+        "言語とテーマはブラウザに保存されます。"
+      ],
+      "expectedResults": [
+        "ユーザー名/パスワード、Google、LINE でログインします。",
+        "初回は Google でログインして新しい会社を作成します。"
+      ],
+      "commonMistakes": [
+        "Google テストボタンはローカル環境のみ使用できます。",
+        "バックエンドが利用できない場合、ログインと会社選択は失敗します。"
+      ],
+      "nextSteps": [
+        "ユーザー名/パスワード、Google、LINE でログインします。",
+        "初回は Google でログインして新しい会社を作成します。"
+      ]
+    },
+    "ko": {
+      "title": "로그인 화면 매뉴얼",
+      "objective": "BC Ai Account에 로그인하고 Backend URL을 설정하며 Google로 첫 회사를 생성합니다.",
+      "workflow": [
+        "Backend URL을 확인하고 연결을 테스트합니다.",
+        "사용자명/비밀번호, Google 또는 LINE으로 로그인합니다.",
+        "처음 사용할 때는 Google로 로그인하여 새 회사를 만듭니다."
+      ],
+      "config": [
+        "Backend URL은 이 장치에 저장됩니다.",
+        "언어와 테마는 브라우저에 저장됩니다."
+      ],
+      "limitations": [
+        "Google 테스트 버튼은 로컬 장치에서만 사용할 수 있습니다.",
+        "백엔드가 준비되지 않으면 로그인과 회사 선택이 실패합니다."
+      ],
+      "summary": "BC Ai Account에 로그인하고 Backend URL을 설정하며 Google로 첫 회사를 생성합니다.",
+      "prerequisites": [
+        "Backend URL은 이 장치에 저장됩니다.",
+        "언어와 테마는 브라우저에 저장됩니다."
+      ],
+      "expectedResults": [
+        "사용자명/비밀번호, Google 또는 LINE으로 로그인합니다.",
+        "처음 사용할 때는 Google로 로그인하여 새 회사를 만듭니다."
+      ],
+      "commonMistakes": [
+        "Google 테스트 버튼은 로컬 장치에서만 사용할 수 있습니다.",
+        "백엔드가 준비되지 않으면 로그인과 회사 선택이 실패합니다."
+      ],
+      "nextSteps": [
+        "사용자명/비밀번호, Google 또는 LINE으로 로그인합니다.",
+        "처음 사용할 때는 Google로 로그인하여 새 회사를 만듭니다."
+      ]
+    },
+    "lo": {
+      "title": "ຄູ່ມືໜ້າເຂົ້າລະບົບ",
+      "objective": "ເຂົ້າສູ່ BC Ai Account, ຕັ້ງຄ່າ Backend URL ແລະ ສ້າງກິດຈະການທໍາອິດດ້ວຍ Google.",
+      "workflow": [
+        "ກວດ Backend URL ແລະທົດສອບການເຊື່ອມຕໍ່.",
+        "ເຂົ້າດ້ວຍຊື່ຜູ້ໃຊ້/ລະຫັດຜ່ານ, Google ຫຼື LINE.",
+        "ໃຊ້ຄັ້ງທໍາອິດໃຫ້ເຂົ້າດ້ວຍ Google ເພື່ອສ້າງກິດຈະການໃໝ່."
+      ],
+      "config": [
+        "Backend URL ຖືກບັນທຶກໃນເຄື່ອງນີ້.",
+        "ພາສາແລະທີມຖືກບັນທຶກໃນ browser."
+      ],
+      "limitations": [
+        "ປຸ່ມທົດສອບ Google ໃຊ້ໄດ້ສະເພາະ local.",
+        "ຖ້າ backend ບໍ່ພ້ອມ ການເຂົ້າແລະເລືອກກິດຈະການຈະລົ້ມເຫຼວ."
+      ],
+      "summary": "ເຂົ້າສູ່ BC Ai Account, ຕັ້ງຄ່າ Backend URL ແລະ ສ້າງກິດຈະການທໍາອິດດ້ວຍ Google.",
+      "prerequisites": [
+        "Backend URL ຖືກບັນທຶກໃນເຄື່ອງນີ້.",
+        "ພາສາແລະທີມຖືກບັນທຶກໃນ browser."
+      ],
+      "expectedResults": [
+        "ເຂົ້າດ້ວຍຊື່ຜູ້ໃຊ້/ລະຫັດຜ່ານ, Google ຫຼື LINE.",
+        "ໃຊ້ຄັ້ງທໍາອິດໃຫ້ເຂົ້າດ້ວຍ Google ເພື່ອສ້າງກິດຈະການໃໝ່."
+      ],
+      "commonMistakes": [
+        "ປຸ່ມທົດສອບ Google ໃຊ້ໄດ້ສະເພາະ local.",
+        "ຖ້າ backend ບໍ່ພ້ອມ ການເຂົ້າແລະເລືອກກິດຈະການຈະລົ້ມເຫຼວ."
+      ],
+      "nextSteps": [
+        "ເຂົ້າດ້ວຍຊື່ຜູ້ໃຊ້/ລະຫັດຜ່ານ, Google ຫຼື LINE.",
+        "ໃຊ້ຄັ້ງທໍາອິດໃຫ້ເຂົ້າດ້ວຍ Google ເພື່ອສ້າງກິດຈະການໃໝ່."
+      ]
+    },
+    "my": {
+      "title": "Login မျက်နှာပြင်လမ်းညွှန်",
+      "objective": "BC Ai Account သို့ဝင်ရောက်ရန်၊ Backend URL သတ်မှတ်ရန်နှင့် Google ဖြင့် ပထမဆုံးကုမ္ပဏီဖန်တီးရန်။",
+      "workflow": [
+        "Backend URL ကိုစစ်ပြီး ချိတ်ဆက်မှုစမ်းသပ်ပါ။",
+        "အသုံးပြုသူ/စကားဝှက်၊ Google သို့မဟုတ် LINE ဖြင့်ဝင်ပါ။",
+        "ပထမဆုံးအသုံးပြုရာတွင် Google ဖြင့်ဝင်ပြီး ကုမ္ပဏီအသစ်ဖန်တီးပါ။"
+      ],
+      "config": [
+        "Backend URL ကိုဤစက်တွင်သိမ်းထားသည်။",
+        "ဘာသာစကားနှင့်အပြင်အဆင်ကို browser တွင်သိမ်းထားသည်။"
+      ],
+      "limitations": [
+        "Google စမ်းသပ်ခလုတ်သည် local စက်တွင်သာသုံးနိုင်သည်။",
+        "backend မရနိုင်လျှင် login နှင့် company selection မအောင်မြင်ပါ။"
+      ],
+      "summary": "BC Ai Account သို့ဝင်ရောက်ရန်၊ Backend URL သတ်မှတ်ရန်နှင့် Google ဖြင့် ပထမဆုံးကုမ္ပဏီဖန်တီးရန်။",
+      "prerequisites": [
+        "Backend URL ကိုဤစက်တွင်သိမ်းထားသည်။",
+        "ဘာသာစကားနှင့်အပြင်အဆင်ကို browser တွင်သိမ်းထားသည်။"
+      ],
+      "expectedResults": [
+        "အသုံးပြုသူ/စကားဝှက်၊ Google သို့မဟုတ် LINE ဖြင့်ဝင်ပါ။",
+        "ပထမဆုံးအသုံးပြုရာတွင် Google ဖြင့်ဝင်ပြီး ကုမ္ပဏီအသစ်ဖန်တီးပါ။"
+      ],
+      "commonMistakes": [
+        "Google စမ်းသပ်ခလုတ်သည် local စက်တွင်သာသုံးနိုင်သည်။",
+        "backend မရနိုင်လျှင် login နှင့် company selection မအောင်မြင်ပါ။"
+      ],
+      "nextSteps": [
+        "အသုံးပြုသူ/စကားဝှက်၊ Google သို့မဟုတ် LINE ဖြင့်ဝင်ပါ။",
+        "ပထမဆုံးအသုံးပြုရာတွင် Google ဖြင့်ဝင်ပြီး ကုမ္ပဏီအသစ်ဖန်တီးပါ။"
+      ]
+    },
+    "km": {
+      "title": "សៀវភៅណែនាំទំព័រចូលប្រើ",
+      "objective": "ចូលប្រើ BC Ai Account កំណត់ Backend URL និងបង្កើតក្រុមហ៊ុនដំបូងដោយ Google។",
+      "workflow": [
+        "ពិនិត្យ Backend URL ហើយសាកល្បងការតភ្ជាប់។",
+        "ចូលដោយឈ្មោះអ្នកប្រើ/ពាក្យសម្ងាត់ Google ឬ LINE។",
+        "ការប្រើលើកដំបូងសូមចូលដោយ Google ដើម្បីបង្កើតក្រុមហ៊ុនថ្មី។"
+      ],
+      "config": [
+        "Backend URL ត្រូវបានរក្សាទុកលើឧបករណ៍នេះ។",
+        "ភាសា និងរូបរាងត្រូវបានរក្សាទុកក្នុង browser។"
+      ],
+      "limitations": [
+        "ប៊ូតុងសាកល្បង Google ប្រើបានតែ local។",
+        "បើ backend មិនរួចរាល់ ការចូល និងជ្រើសក្រុមហ៊ុននឹងបរាជ័យ។"
+      ],
+      "summary": "ចូលប្រើ BC Ai Account កំណត់ Backend URL និងបង្កើតក្រុមហ៊ុនដំបូងដោយ Google។",
+      "prerequisites": [
+        "Backend URL ត្រូវបានរក្សាទុកលើឧបករណ៍នេះ។",
+        "ភាសា និងរូបរាងត្រូវបានរក្សាទុកក្នុង browser។"
+      ],
+      "expectedResults": [
+        "ចូលដោយឈ្មោះអ្នកប្រើ/ពាក្យសម្ងាត់ Google ឬ LINE។",
+        "ការប្រើលើកដំបូងសូមចូលដោយ Google ដើម្បីបង្កើតក្រុមហ៊ុនថ្មី។"
+      ],
+      "commonMistakes": [
+        "ប៊ូតុងសាកល្បង Google ប្រើបានតែ local។",
+        "បើ backend មិនរួចរាល់ ការចូល និងជ្រើសក្រុមហ៊ុននឹងបរាជ័យ។"
+      ],
+      "nextSteps": [
+        "ចូលដោយឈ្មោះអ្នកប្រើ/ពាក្យសម្ងាត់ Google ឬ LINE។",
+        "ការប្រើលើកដំបូងសូមចូលដោយ Google ដើម្បីបង្កើតក្រុមហ៊ុនថ្មី។"
+      ]
+    },
+    "vi": {
+      "title": "Hướng dẫn màn hình đăng nhập",
+      "objective": "Đăng nhập BC Ai Account, đặt Backend URL và tạo công ty đầu tiên bằng Google.",
+      "workflow": [
+        "Kiểm tra Backend URL và thử kết nối.",
+        "Đăng nhập bằng tài khoản/mật khẩu, Google hoặc LINE.",
+        "Lần đầu sử dụng hãy đăng nhập bằng Google để tạo công ty mới."
+      ],
+      "config": [
+        "Backend URL được lưu trên thiết bị này.",
+        "Ngôn ngữ và giao diện được lưu trong browser."
+      ],
+      "limitations": [
+        "Nút Google thử nghiệm chỉ dùng trên máy local.",
+        "Nếu backend chưa sẵn sàng, đăng nhập và chọn công ty sẽ lỗi."
+      ],
+      "summary": "Đăng nhập BC Ai Account, đặt Backend URL và tạo công ty đầu tiên bằng Google.",
+      "prerequisites": [
+        "Backend URL được lưu trên thiết bị này.",
+        "Ngôn ngữ và giao diện được lưu trong browser."
+      ],
+      "expectedResults": [
+        "Đăng nhập bằng tài khoản/mật khẩu, Google hoặc LINE.",
+        "Lần đầu sử dụng hãy đăng nhập bằng Google để tạo công ty mới."
+      ],
+      "commonMistakes": [
+        "Nút Google thử nghiệm chỉ dùng trên máy local.",
+        "Nếu backend chưa sẵn sàng, đăng nhập và chọn công ty sẽ lỗi."
+      ],
+      "nextSteps": [
+        "Đăng nhập bằng tài khoản/mật khẩu, Google hoặc LINE.",
+        "Lần đầu sử dụng hãy đăng nhập bằng Google để tạo công ty mới."
+      ]
+    },
+    "ms": {
+      "title": "Manual Skrin Log Masuk",
+      "objective": "Log masuk ke BC Ai Account, tetapkan Backend URL dan cipta syarikat pertama dengan Google.",
+      "workflow": [
+        "Semak Backend URL dan uji sambungan.",
+        "Log masuk dengan pengguna/kata laluan, Google atau LINE.",
+        "Untuk kali pertama, log masuk dengan Google untuk mencipta syarikat baharu."
+      ],
+      "config": [
+        "Backend URL disimpan pada peranti ini.",
+        "Bahasa dan tema disimpan dalam browser."
+      ],
+      "limitations": [
+        "Butang ujian Google hanya untuk mesin local.",
+        "Jika backend tidak tersedia, log masuk dan pilihan syarikat akan gagal."
+      ],
+      "summary": "Log masuk ke BC Ai Account, tetapkan Backend URL dan cipta syarikat pertama dengan Google.",
+      "prerequisites": [
+        "Backend URL disimpan pada peranti ini.",
+        "Bahasa dan tema disimpan dalam browser."
+      ],
+      "expectedResults": [
+        "Log masuk dengan pengguna/kata laluan, Google atau LINE.",
+        "Untuk kali pertama, log masuk dengan Google untuk mencipta syarikat baharu."
+      ],
+      "commonMistakes": [
+        "Butang ujian Google hanya untuk mesin local.",
+        "Jika backend tidak tersedia, log masuk dan pilihan syarikat akan gagal."
+      ],
+      "nextSteps": [
+        "Log masuk dengan pengguna/kata laluan, Google atau LINE.",
+        "Untuk kali pertama, log masuk dengan Google untuk mencipta syarikat baharu."
+      ]
+    },
+    "id": {
+      "title": "Panduan Layar Login",
+      "objective": "Masuk ke BC Ai Account, atur Backend URL, dan buat perusahaan pertama dengan Google.",
+      "workflow": [
+        "Periksa Backend URL dan uji koneksi.",
+        "Masuk dengan pengguna/kata sandi, Google, atau LINE.",
+        "Untuk penggunaan pertama, masuk dengan Google untuk membuat perusahaan baru."
+      ],
+      "config": [
+        "Backend URL disimpan di perangkat ini.",
+        "Bahasa dan tema disimpan di browser."
+      ],
+      "limitations": [
+        "Tombol tes Google hanya untuk mesin local.",
+        "Jika backend tidak tersedia, login dan pemilihan perusahaan akan gagal."
+      ],
+      "summary": "Masuk ke BC Ai Account, atur Backend URL, dan buat perusahaan pertama dengan Google.",
+      "prerequisites": [
+        "Backend URL disimpan di perangkat ini.",
+        "Bahasa dan tema disimpan di browser."
+      ],
+      "expectedResults": [
+        "Masuk dengan pengguna/kata sandi, Google, atau LINE.",
+        "Untuk penggunaan pertama, masuk dengan Google untuk membuat perusahaan baru."
+      ],
+      "commonMistakes": [
+        "Tombol tes Google hanya untuk mesin local.",
+        "Jika backend tidak tersedia, login dan pemilihan perusahaan akan gagal."
+      ],
+      "nextSteps": [
+        "Masuk dengan pengguna/kata sandi, Google, atau LINE.",
+        "Untuk penggunaan pertama, masuk dengan Google untuk membuat perusahaan baru."
+      ]
+    },
+    "fil": {
+      "title": "Manual ng Login Screen",
+      "objective": "Mag-login sa BC Ai Account, itakda ang Backend URL, at gumawa ng unang kumpanya gamit ang Google.",
+      "workflow": [
+        "Suriin ang Backend URL at subukan ang koneksyon.",
+        "Mag-login gamit ang username/password, Google, o LINE.",
+        "Sa unang paggamit, mag-login gamit ang Google para gumawa ng bagong kumpanya."
+      ],
+      "config": [
+        "Ang Backend URL ay naka-save sa device na ito.",
+        "Ang wika at theme ay naka-save sa browser."
+      ],
+      "limitations": [
+        "Ang Google test button ay para lamang sa local machine.",
+        "Kung hindi available ang backend, mabibigo ang login at pagpili ng kumpanya."
+      ],
+      "summary": "Mag-login sa BC Ai Account, itakda ang Backend URL, at gumawa ng unang kumpanya gamit ang Google.",
+      "prerequisites": [
+        "Ang Backend URL ay naka-save sa device na ito.",
+        "Ang wika at theme ay naka-save sa browser."
+      ],
+      "expectedResults": [
+        "Mag-login gamit ang username/password, Google, o LINE.",
+        "Sa unang paggamit, mag-login gamit ang Google para gumawa ng bagong kumpanya."
+      ],
+      "commonMistakes": [
+        "Ang Google test button ay para lamang sa local machine.",
+        "Kung hindi available ang backend, mabibigo ang login at pagpili ng kumpanya."
+      ],
+      "nextSteps": [
+        "Mag-login gamit ang username/password, Google, o LINE.",
+        "Sa unang paggamit, mag-login gamit ang Google para gumawa ng bagong kumpanya."
+      ]
+    }
+  }
+}

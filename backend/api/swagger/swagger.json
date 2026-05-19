@@ -1,9 +1,9 @@
 {
   "swagger": "2.0",
   "info": {
-    "description": "BC AI Cloud Platform API",
+    "description": "BC Ai Account API",
     "version": "1.0.0",
-    "title": "BC AI Cloud Platform API",
+    "title": "BC Ai Account API",
     "contact": {
       "email": "dev@smlsoft.com"
     },

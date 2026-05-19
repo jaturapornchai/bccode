@@ -403,15 +403,15 @@ type PdfHistorySimpleItem struct {
 	TotalAmountText string  `json:"totalamountText"` // ยอดรวม (format แล้ว)
 
 	// ข้อมูล PDF
-	Theme       string `json:"theme"`       // theme ที่ใช้
-	Template    string `json:"template"`    // template ที่ใช้
-	PageSize    string `json:"pageSize"`    // A4, A3, etc.
-	Orientation string `json:"orientation"` // P=Portrait, L=Landscape
-	Language    string `json:"language"`    // th, en, etc.
-	FileName    string `json:"filename"`    // ชื่อไฟล์ PDF
-	FileSize    int64  `json:"filesize"`    // ขนาดไฟล์ (bytes)
-	FileSizeText string `json:"filesizeText"` // ขนาดไฟล์ (format แล้ว)
-	PdfURL      string `json:"pdfurl,omitempty"` // Presigned URL
+	Theme        string `json:"theme"`            // theme ที่ใช้
+	Template     string `json:"template"`         // template ที่ใช้
+	PageSize     string `json:"pageSize"`         // A4, A3, etc.
+	Orientation  string `json:"orientation"`      // P=Portrait, L=Landscape
+	Language     string `json:"language"`         // th, en, etc.
+	FileName     string `json:"filename"`         // ชื่อไฟล์ PDF
+	FileSize     int64  `json:"filesize"`         // ขนาดไฟล์ (bytes)
+	FileSizeText string `json:"filesizeText"`     // ขนาดไฟล์ (format แล้ว)
+	PdfURL       string `json:"pdfurl,omitempty"` // Presigned URL
 
 	// ข้อมูลการพิมพ์
 	PrintedAt    string `json:"printedAt"`    // วันเวลาที่พิมพ์ (ISO format)
@@ -435,8 +435,7 @@ func formatFileSize(bytes int64) string {
 
 // formatAmount - แปลงยอดเงินเป็นรูปแบบที่อ่านง่าย
 func formatAmount(amount float64) string {
-	// Format with 2 decimal places and thousand separator
-	return fmt.Sprintf("%,.2f", amount)
+	return gentranspdf.FormatNumber(amount, 2)
 }
 
 // buildPdfHistoryItem - สร้าง PdfHistorySimpleItem จาก PdfHistory

@@ -245,92 +245,32 @@ GET {BASE_URL}/goapi/mcp/tools
 
 ---
 
-## Claude Code Skills (Slash Commands)
+## Claude Code / Project-local Usage
 
-MCP tools เรียกผ่าน curl/HTTP ได้โดยตรง แต่ถ้าใช้ **Claude Code** (AI agent) จะมี **Skills** ที่ครอบ MCP tools ไว้เป็น slash commands ใช้ง่ายกว่ามาก
+MCP tools เรียกผ่าน curl/HTTP ได้โดยตรง และให้ใช้เอกสาร project-local เป็นหลัก:
 
-### Shared Skills Repo
+- Backend rules: `D:\bcdev\backend\CLAUDE.md`
+- Frontend rules: `D:\bcdev\frontend\bcaiaccount\CLAUDE.md`
+- API request prompts: `D:\bcdev\backend\prompts\api_requests\`
+- MCP guide: ไฟล์นี้
 
-```
-c:\bcdev\bcai-claude-skills\
-├── skills/
-│   ├── api-search/SKILL.md   # /api-search — ค้นหา API endpoints
-│   ├── api-spec/SKILL.md     # /api-spec — ดู API specification
-│   ├── model-gen/SKILL.md    # /model-gen — Generate model class
-│   ├── enum-list/SKILL.md    # /enum-list — ดู enum values
-│   └── mcp-check/SKILL.md    # /mcp-check — ตรวจสอบ MCP status
-├── rules/
-│   ├── mcp-first.md           # MCP-First development rules
-│   └── erp-conventions.md     # ERP system conventions
-└── docs/
-    └── mcp-tools-guide.md     # ไฟล์นี้ (copy)
-```
+### Common MCP workflows
 
-GitHub: `https://github.com/jaturapornchai/bcaicloudskill`
-
-### Skills ที่มี
-
-| Skill | คำสั่ง | ใช้ทำอะไร | MCP Tool ที่ใช้ |
-|-------|--------|----------|----------------|
-| API Search | `/api-search login` | ค้นหา API endpoints ของ backend | `list_api_endpoints` |
-| API Spec | `/api-spec login` | ดู request/response spec + curl + code snippet | `get_api_spec` + `get_api_example` + `get_model_schema` |
-| Model Gen | `/model-gen Shop` | Generate model class (Dart/TS/Go) จาก MCP schema | `get_model_schema` + `get_database_schema` + `get_table_sample` |
-| Enum List | `/enum-list transflag` | ดู enum values / constants | `list_enums` |
-| MCP Check | `/mcp-check` | ตรวจสอบ MCP server + ทดสอบ tools | ทดสอบ 5 tools พร้อมกัน |
-| Master Data | `/master-data product` | ดูโครงสร้างข้อมูลหลัก (สินค้า, ลูกค้า, คลัง, สาขา ฯลฯ) | `get_model_schema` + `get_database_schema` + `get_table_sample` + `list_api_endpoints` |
-
-### วิธี Setup Skills
-
-#### วิธีที่ 1: Symlink (แนะนำ)
-
-```bash
-# Windows (Run as Administrator)
-mklink /D "C:\bcdev\bcaiaccount\.claude\skills" "C:\bcdev\bcai-claude-skills\skills"
-mklink /D "C:\bcdev\bcaiaccount\.claude\rules" "C:\bcdev\bcai-claude-skills\rules"
-
-# macOS / Linux
-ln -s /path/to/bcai-claude-skills/skills /path/to/myproject/.claude/skills
-ln -s /path/to/bcai-claude-skills/rules /path/to/myproject/.claude/rules
-```
-
-#### วิธีที่ 2: User-Level (ใช้ได้ทุก project)
-
-```bash
-# Windows
-xcopy /E /I "C:\bcdev\bcai-claude-skills\skills" "%USERPROFILE%\.claude\skills"
-xcopy /E /I "C:\bcdev\bcai-claude-skills\rules" "%USERPROFILE%\.claude\rules"
-
-# macOS / Linux
-cp -r bcai-claude-skills/skills ~/.claude/skills
-cp -r bcai-claude-skills/rules ~/.claude/rules
-```
-
-### ตัวอย่างการใช้ Skills
-
-```
-# ค้นหา API เกี่ยวกับ product
-/api-search product
-
-# ดู spec ของ login API
-/api-spec login
-
-# Generate Dart model จาก Shop schema
-/model-gen Shop
-
-# ดู enum transflag (ประเภทเอกสาร)
-/enum-list transflag
-
-# เช็คว่า MCP server ทำงานอยู่ไหม
-/mcp-check
-```
+| Need | MCP Tool |
+|------|----------|
+| ค้นหา API endpoints | `list_api_endpoints` |
+| ดู request/response spec | `get_api_spec`, `get_api_example` |
+| สร้าง model จาก schema | `get_model_schema`, `get_database_schema`, `get_table_sample` |
+| ดู enum values/constants | `list_enums` |
+| ตรวจ MCP server | `GET /goapi/mcp/health`, `GET /goapi/mcp/tools` |
 
 ### Workflow แนะนำ
 
-1. เริ่ม dev session → `/mcp-check` (ยืนยัน MCP ทำงาน)
-2. หา API → `/api-search {keyword}`
-3. ดู spec ละเอียด → `/api-spec {path}`
-4. สร้าง model → `/model-gen {model-name}`
-5. ดู enum values → `/enum-list {category}`
+1. เริ่ม dev session → ตรวจ `GET {BASE_URL}/goapi/mcp/health`
+2. หา API → เรียก `list_api_endpoints`
+3. ดู spec ละเอียด → เรียก `get_api_spec`
+4. สร้าง model → เรียก `get_model_schema`
+5. ดู enum values → เรียก `list_enums`
 
 ---
 
@@ -362,5 +302,4 @@ cp -r bcai-claude-skills/rules ~/.claude/rules
 - Database query tools อนุญาตเฉพาะ `SELECT` / `SHOW`
 - Data isolation: ทุก query filter by `shop_id` จาก API key อัตโนมัติ
 - Rate limit: ยังไม่มี (อนาคตจะเพิ่ม)
-- Skills repo อยู่ที่ `c:\bcdev\bcai-claude-skills\` (local) หรือ GitHub
-- Skills update: `cd bcai-claude-skills && git pull`
+- ใช้ project-local docs/source เป็นหลัก ไม่พึ่ง shared local skills folder

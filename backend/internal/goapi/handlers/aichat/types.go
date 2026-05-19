@@ -35,6 +35,7 @@ type TokenUsage struct {
 	CostUSD          float64 `json:"cost_usd"`
 	CostTHB          float64 `json:"cost_thb"`
 	Model            string  `json:"model"`
+	HasThinking      bool    `json:"has_thinking"`
 }
 
 // StockData represents product/customer data information
