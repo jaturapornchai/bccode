@@ -2,9 +2,13 @@ package shop
 
 import (
 	"context"
+	"net/mail"
 	"smlcloudplatform/internal/authentication/models"
+	shopmodels "smlcloudplatform/internal/shop/models"
+	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/pkg/microservice"
 	micromodels "smlcloudplatform/pkg/microservice/models"
+	"strings"
 	"time"
 
 	"github.com/smlsoft/mongopagination"
@@ -26,6 +30,7 @@ type IShopUserRepository interface {
 	FindByShopIDAndUsername(ctx context.Context, shopID string, username string) (models.ShopUser, error)
 	FindByShopIDAndLineUserID(ctx context.Context, shopID string, lineUserID string) (models.ShopUser, error)
 	FindByLineUserID(ctx context.Context, lineUserID string) (models.ShopUser, error)
+	FindShopCreatedBy(ctx context.Context, shopID string) (string, error)
 	FindRole(ctx context.Context, shopID string, username string) (models.UserRole, error)
 	FindByShopID(ctx context.Context, shopID string) (*[]models.ShopUser, error)
 	FindByUsername(ctx context.Context, username string) (*[]models.ShopUser, error)
@@ -82,6 +87,11 @@ func (svc ShopUserRepository) Save(ctx context.Context, shopID string, username 
 func (svc ShopUserRepository) SaveFullProfile(ctx context.Context, shopID string, req *models.UserRoleRequest) error {
 	updateData := bson.M{
 		"role":              req.Role,
+		"isaccessdisabled":  req.IsAccessDisabled,
+		"accessdisabledat":  req.AccessDisabledAt,
+		"accessdisabledby":  req.AccessDisabledBy,
+		"accessenabledat":   req.AccessEnabledAt,
+		"accessenabledby":   req.AccessEnabledBy,
 		"position":          req.Position,
 		"department":        req.Department,
 		"line_user_id":      req.LineUserID,
@@ -192,6 +202,17 @@ func (svc ShopUserRepository) FindByShopIDAndUsername(ctx context.Context, shopI
 	return *shopUser, nil
 }
 
+func (svc ShopUserRepository) FindShopCreatedBy(ctx context.Context, shopID string) (string, error) {
+	shopDoc := &shopmodels.ShopDoc{}
+
+	err := svc.pst.FindOne(ctx, &shopmodels.ShopDoc{}, bson.M{"guidfixed": shopID}, shopDoc)
+	if err != nil {
+		return "", err
+	}
+
+	return shopDoc.CreatedBy, nil
+}
+
 // FindByShopIDAndLineUserID - ค้นหาผู้ใช้ตาม LINE User ID (สำหรับตรวจสอบ duplicate)
 func (svc ShopUserRepository) FindByShopIDAndLineUserID(ctx context.Context, shopID string, lineUserID string) (models.ShopUser, error) {
 	shopUser := &models.ShopUser{}
@@ -290,14 +311,19 @@ func (repo ShopUserRepository) FindByUsernamePage(ctx context.Context, username 
 		},
 		bson.M{
 			"$project": bson.M{
-				"_id":            1,
-				"role":           1,
-				"shopid":         1,
-				"isfavorite":     1,
-				"lastaccessedat": 1,
-				"names":          bson.M{"$first": "$shopInfo.names"},
-				"branchcode":     bson.M{"$first": "$shopInfo.branchcode"},
-				"createdby":      bson.M{"$first": "$shopInfo.createdby"},
+				"_id":              1,
+				"role":             1,
+				"shopid":           1,
+				"isfavorite":       1,
+				"lastaccessedat":   1,
+				"isaccessdisabled": 1,
+				"accessdisabledat": 1,
+				"accessdisabledby": 1,
+				"accessenabledat":  1,
+				"accessenabledby":  1,
+				"names":            bson.M{"$first": "$shopInfo.names"},
+				"branchcode":       bson.M{"$first": "$shopInfo.branchcode"},
+				"createdby":        bson.M{"$first": "$shopInfo.createdby"},
 			},
 		},
 		bson.M{
@@ -375,5 +401,47 @@ func (repo ShopUserRepository) FindUserProfileByUsernames(ctx context.Context, u
 		return []models.UserProfile{}, err
 	}
 
+	for idx := range docList {
+		username := strings.TrimSpace(docList[idx].Username)
+		if username == "" {
+			continue
+		}
+
+		updateSet := bson.M{}
+		if strings.TrimSpace(docList[idx].UID) == "" {
+			uid := utils.NewGUID()
+			updateSet["uid"] = uid
+			docList[idx].UID = uid
+		}
+		// Legacy Google/email accounts used username as the registered email before
+		// the users.email field existed. Do not overwrite a stored email.
+		if strings.TrimSpace(docList[idx].Email) == "" && isEmailUsername(username) {
+			email := strings.ToLower(username)
+			updateSet["email"] = email
+			docList[idx].Email = email
+		}
+		if len(updateSet) == 0 {
+			continue
+		}
+
+		err = repo.pst.Update(
+			ctx,
+			&models.UserDoc{},
+			bson.M{"username": docList[idx].Username},
+			bson.M{"$set": updateSet},
+		)
+		if err != nil {
+			return []models.UserProfile{}, err
+		}
+	}
+
 	return docList, nil
+}
+
+func isEmailUsername(username string) bool {
+	address, err := mail.ParseAddress(username)
+	if err != nil {
+		return false
+	}
+	return strings.EqualFold(address.Address, strings.TrimSpace(username))
 }

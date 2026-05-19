@@ -83895,7 +83895,7 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "",
 	BasePath:         "",
 	Schemes:          []string{"http", "https"},
-	Title:            "BC AI Cloud Platform API",
+	Title:            "BC Ai Account API",
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

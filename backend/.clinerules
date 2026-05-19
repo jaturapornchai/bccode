@@ -19,8 +19,7 @@
    - Docker mount: `bootstrap.json:/app/bootstrap.json:rw`
    - Windows: `C:/Windows/Temp/bcdev/config/bootstrap.json`
 2. Docker stack in docker-compose.yml:
-   - goapi: 8888, Dockerfile.goapi (no CGO)
-   - mainapi: 9090→8080, Dockerfile (CGO + librdkafka)
+   - MainAPI gateway: 8888, Dockerfile (CGO + librdkafka), embeds GoAPI under /goapi/*
    - MongoDB: 27017, PostgreSQL: 5432, ClickHouse: 8123/9000, Redis: 6379, Kafka: 9092
 3. Thai language in logs/comments is normal
 4. Logger: `logger.Info()`, `logger.Error()`, `logger.Success()`, `logger.Warn()`

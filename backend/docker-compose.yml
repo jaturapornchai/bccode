@@ -1,5 +1,5 @@
 # ========================================
-# BC AI Backend - Docker Compose
+# BC Ai Account Backend - Docker Compose
 # ใช้ไฟล์เดียวกันทุก environment (Docker Desktop, VPS, Production)
 # ========================================
 #
@@ -47,11 +47,11 @@ services:
     container_name: clickhouse
     ports:
       - "127.0.0.1:18123:8123"
-      - "127.0.0.1:19000:9000"
+      - "127.0.0.1:19002:9000"
     environment:
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
       CLICKHOUSE_USER: default
-      CLICKHOUSE_PASSWORD: JeadSanit19682511
+      CLICKHOUSE_PASSWORD: "${CLICKHOUSE_PASSWORD:?CLICKHOUSE_PASSWORD is required}"
       TZ: Asia/Bangkok
     volumes:
       - clickhouse-data:/var/lib/clickhouse
@@ -156,9 +156,9 @@ services:
       DEPLOY_COMPOSE_FILE: "${DEPLOY_COMPOSE_FILE:-docker-compose.yml}"
       # ─── RAGFlow (Knowledge Base) ───────────
       # ลูกพี่ตั้ง RAGFLOW_API_KEY จาก RAGFlow Web UI → Profile → API → Create API Key
-      # แล้วใส่ใน .env หรือ shell ก่อน docker compose up
+      # แล้ว export/set ใน shell หรือ secret store ก่อน docker compose up
       RAGFLOW_BASE_URL: "${RAGFLOW_BASE_URL:-http://host.docker.internal:9380}"
-      RAGFLOW_API_KEY: "${RAGFLOW_API_KEY:-ragflow-XbUOXi2zDzeKDvnrQNTF9O58gYMtYcf9YgoSd-qb7qw}"
+      RAGFLOW_API_KEY: "${RAGFLOW_API_KEY:-}"
     volumes:
       - ./bootstrap.json:/app/bootstrap.json:rw
       - ./tdict-std.txt:/app/tdict-std.txt

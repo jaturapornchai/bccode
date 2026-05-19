@@ -19,8 +19,7 @@
 - Docker mount: `bootstrap.json:/app/bootstrap.json:rw`
 
 ## Docker Stack (docker-compose.yml)
-- goapi: port 8888, Dockerfile.goapi (no CGO)
-- mainapi: port 9090→8080, Dockerfile (CGO + librdkafka)
+- MainAPI gateway: port 8888, Dockerfile (CGO + librdkafka), embeds GoAPI under /goapi/*
 - MongoDB: mongo:7 port 27017
 - PostgreSQL: postgres:16-alpine port 5432
 - ClickHouse: clickhouse-server:latest port 8123/9000

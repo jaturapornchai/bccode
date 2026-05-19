@@ -286,7 +286,7 @@ func (h DepartmentHttp) SearchDepartmentPage(ctx microservice.IContext) error {
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.SearchDepartment(shopID, map[string]interface{}{}, pageable)
+	docList, pagination, err := h.svc.SearchDepartment(shopID, departmentBranchFilters(ctx), pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -321,7 +321,7 @@ func (h DepartmentHttp) SearchDepartmentStep(ctx microservice.IContext) error {
 
 	lang := ctx.QueryParam("lang")
 
-	docList, total, err := h.svc.SearchDepartmentStep(shopID, lang, pageableStep)
+	docList, total, err := h.svc.SearchDepartmentStep(shopID, lang, departmentBranchFilters(ctx), pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -334,6 +334,20 @@ func (h DepartmentHttp) SearchDepartmentStep(ctx microservice.IContext) error {
 		Total:   total,
 	})
 	return nil
+}
+
+func departmentBranchFilters(ctx microservice.IContext) map[string]interface{} {
+	filters := map[string]interface{}{}
+	if branchCode := ctx.QueryParam("branchcode"); branchCode != "" {
+		filters["branchcode"] = branchCode
+	}
+	if branchGuid := ctx.QueryParam("branchguid"); branchGuid != "" {
+		filters["branchguid"] = branchGuid
+	}
+	if branchKey := ctx.QueryParam("branch_key"); branchKey != "" {
+		filters["branch_key"] = branchKey
+	}
+	return filters
 }
 
 // Create Department Bulk godoc

@@ -21,7 +21,7 @@ import (
 // เพราะ data shape ตรงกันแล้ว
 
 const (
-	// agentID — ชื่อ agent หลักของ น้องกุ้ง (BC AI Account chatbot)
+	// agentID — ชื่อ agent หลักของ น้องกุ้ง (BC Ai Account chatbot)
 	agentID = "nongkung"
 
 	// channelWebChat — channel สำหรับ chat ที่มาจาก Flutter app
@@ -61,10 +61,10 @@ type OpenClawError struct {
 
 // OpenClawErrorDetail — รายละเอียดเพิ่มเติม + คำแนะนำว่า client ควรทำอะไรต่อ
 type OpenClawErrorDetail struct {
-	Code                string `json:"code,omitempty"`                  // เช่น "MODEL_TIMEOUT"
-	Reason              string `json:"reason,omitempty"`                // human-readable why
-	RecommendedNextStep string `json:"recommendedNextStep,omitempty"`   // hint ให้ client
-	CanRetry            bool   `json:"canRetry,omitempty"`              // retry แล้วน่าจะหายไหม
+	Code                string `json:"code,omitempty"`                // เช่น "MODEL_TIMEOUT"
+	Reason              string `json:"reason,omitempty"`              // human-readable why
+	RecommendedNextStep string `json:"recommendedNextStep,omitempty"` // hint ให้ client
+	CanRetry            bool   `json:"canRetry,omitempty"`            // retry แล้วน่าจะหายไหม
 }
 
 // Standard error codes (ตรงกับ OpenClaw spec ที่เราใช้)
@@ -79,11 +79,11 @@ const (
 
 // recommendedNextStep values (ตรงกับ OpenClaw spec)
 const (
-	NextStepRetry              = "retry"
-	NextStepRetryWithBackoff   = "wait_then_retry"
-	NextStepConfigureProvider  = "configure_provider"
-	NextStepReviewConfig       = "review_auth_configuration"
-	NextStepUpdateCredentials  = "update_auth_credentials"
+	NextStepRetry             = "retry"
+	NextStepRetryWithBackoff  = "wait_then_retry"
+	NextStepConfigureProvider = "configure_provider"
+	NextStepReviewConfig      = "review_auth_configuration"
+	NextStepUpdateCredentials = "update_auth_credentials"
 )
 
 // NewOpenClawError สร้าง error envelope แบบเร็ว

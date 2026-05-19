@@ -218,7 +218,7 @@ func kungSystemPrompt(format string) string {
 
 // buildKungSystemPrompt — build the actual system prompt (extracted for caching).
 //
-// LANGUAGE RULE (clone-skills/rules/ai-prompt-language.md):
+// LANGUAGE RULE:
 // This prompt is in ENGLISH for token efficiency. The AI MUST reply in Thai.
 // Token reduction: ~60% vs Thai version (3000 → ~1200 chars).
 //

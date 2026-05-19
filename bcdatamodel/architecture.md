@@ -1,6 +1,6 @@
 # Database Architecture
 
-BC AI Platform ใช้ 3 ฐานข้อมูลหลัก + Message Queue + Cache
+BC Ai Account Platform ใช้ 3 ฐานข้อมูลหลัก + Message Queue + Cache
 
 ```
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐

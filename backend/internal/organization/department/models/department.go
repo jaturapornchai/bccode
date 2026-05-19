@@ -11,6 +11,9 @@ const departmentCollectionName = "organizationDepartments"
 type Department struct {
 	models.PartitionIdentity `bson:"inline"`
 	Code                     string          `json:"code" bson:"code"`
+	BranchCode               string          `json:"branchcode" bson:"branchcode"`
+	BranchGuid               string          `json:"branchguid" bson:"branchguid"`
+	BranchKey                string          `json:"branch_key" bson:"branch_key"`
 	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 }
 

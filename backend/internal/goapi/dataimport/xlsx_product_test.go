@@ -13,6 +13,10 @@ import (
 
 // TestXLSXProductCompare - ทดสอบการ compare Excel กับ MongoDB
 func TestXLSXProductCompare(t *testing.T) {
+	if os.Getenv("BC_RUN_XLSX_PRODUCT_COMPARE") != "1" {
+		t.Skip("set BC_RUN_XLSX_PRODUCT_COMPARE=1 to run this integration test with local .env and upload fixture")
+	}
+
 	// โหลด .env จาก parent directory (เพราะ working dir คือ dataimport/)
 	wd, _ := os.Getwd()
 	envPath := filepath.Join(wd, "..", ".env.development")

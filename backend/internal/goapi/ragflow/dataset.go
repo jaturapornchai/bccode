@@ -28,7 +28,7 @@ type DatasetMeta struct {
 //
 // Note: we deliberately do NOT set language or embedding_model — RAGFlow
 // will use the tenant defaults that were configured at provisioning time
-// (see clone-skills/references/infra/ragflow-setup.md). This avoids version
+// during provisioning. This avoids version
 // drift in field names/values across RAGFlow releases.
 //
 // embedding_model format on newer RAGFlow versions is "<model>@<provider>"

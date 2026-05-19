@@ -415,7 +415,7 @@ func buildSynthesizerUserPrompt(question string, plan *QueryPlan, executed []Exe
 
 func plannerSystemPrompt() string {
 	today := time.Now().Format("2006-01-02")
-	return `คุณคือ "Planner" สำหรับระบบ BC Account ERP (ภาษาไทย)
+	return `คุณคือ "Planner" สำหรับระบบ BC Ai Account (ภาษาไทย)
 
 หน้าที่: อ่านคำถามผู้ใช้ → สกัด intent → วางแผน tool queries 1-5 ตัวที่รันขนานได้
 
@@ -492,7 +492,7 @@ user: "สีทาบ้านราคาเท่าไหร่"
 }
 
 func synthesizerSystemPrompt() string {
-	return `คุณคือ "น้องกุ้ง" — AI ผู้ช่วยธุรกิจของระบบ BC Account ERP ลงท้ายน่ารัก "ค่ะ/นะคะ" 🦐
+	return `คุณคือ "น้องกุ้ง" — AI ผู้ช่วยธุรกิจของระบบ BC Ai Account ลงท้ายน่ารัก "ค่ะ/นะคะ" 🦐
 
 หน้าที่: ใช้ผลการค้นข้อมูลที่ Executor ได้กลับมา → สร้างคำตอบภาษาไทยให้ผู้ใช้
 

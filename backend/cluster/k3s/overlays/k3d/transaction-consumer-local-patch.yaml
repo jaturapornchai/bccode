@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transaction-consumer
+  namespace: bc-ai-account
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: transaction-consumer
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: CONSUMER_GROUP_NAME
+              value: k3d-local
+            - name: KAFKA_SERVER_URL
+              value: kafka:29092
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_CACHE_URI
+              value: redis:6379
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "384Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"

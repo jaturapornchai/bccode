@@ -423,6 +423,95 @@ func TestAuthService_UpdatePassword(t *testing.T) {
 	}
 }
 
+func TestAuthService_ProfileFlagsDefaultPassword(t *testing.T) {
+	authRepo := new(AuthenticationRepositoryMock)
+	shopUserRepo := new(ShopUserRepositoryMock)
+	shopUserAccessLogRepo := new(ShopUserAccessLogRepositoryMock)
+	smsRepo := new(SMSRepositoryMock)
+	microAuthServiceMock := &AuthServiceMock{}
+
+	userDoc := &models.UserDoc{}
+	userDoc.Username = "default_user"
+	userDoc.Email = "default_user@example.com"
+	userDoc.Password = models.DefaultUserPassword
+	userDoc.Name = "Default User"
+
+	authRepo.On("FindUser", "default_user").Return(userDoc, nil)
+
+	authService := services.NewAuthenticationService(
+		authRepo,
+		shopUserRepo,
+		shopUserAccessLogRepo,
+		smsRepo,
+		microAuthServiceMock,
+		MockRandomString,
+		MockRandomNumber,
+		MockGUID,
+		MockHashPassword,
+		MockCheckPasswordHash,
+		MockTime,
+		MockFirebaseAdapter(),
+		MockLineAdapter())
+
+	profile, err := authService.Profile("default_user")
+
+	assert.Nil(t, err)
+	assert.Equal(t, "default_user@example.com", profile.Email)
+	assert.True(t, profile.IsDefaultPassword)
+	assert.Empty(t, profile.Password)
+}
+
+func TestAuthService_ResetPasswordToDefault(t *testing.T) {
+	authRepo := new(AuthenticationRepositoryMock)
+	shopUserRepo := new(ShopUserRepositoryMock)
+	shopUserAccessLogRepo := new(ShopUserAccessLogRepositoryMock)
+	smsRepo := new(SMSRepositoryMock)
+	microAuthServiceMock := &AuthServiceMock{}
+
+	owner := models.ShopUser{}
+	owner.ShopID = "shop_test"
+	owner.Username = "owner_user"
+	owner.Role = models.ROLE_OWNER
+
+	targetShopUser := models.ShopUser{}
+	targetShopUser.ShopID = "shop_test"
+	targetShopUser.Username = "target_user"
+	targetShopUser.Role = models.ROLE_USER
+
+	targetUser := &models.UserDoc{}
+	targetUser.Username = "target_user"
+	targetUser.Password = "old_hash"
+
+	expectedUser := models.UserDoc{}
+	expectedUser.Username = "target_user"
+	expectedUser.Password = models.DefaultUserPassword
+	expectedUser.UpdatedAt = MockTime()
+
+	shopUserRepo.On("FindByShopIDAndUsername", "shop_test", "owner_user").Return(owner, nil)
+	shopUserRepo.On("FindByShopIDAndUsername", "shop_test", "target_user").Return(targetShopUser, nil)
+	authRepo.On("FindUser", "target_user").Return(targetUser, nil)
+	authRepo.On("UpdateUser", "target_user", expectedUser).Return(nil)
+
+	authService := services.NewAuthenticationService(
+		authRepo,
+		shopUserRepo,
+		shopUserAccessLogRepo,
+		smsRepo,
+		microAuthServiceMock,
+		MockRandomString,
+		MockRandomNumber,
+		MockGUID,
+		MockHashPassword,
+		MockCheckPasswordHash,
+		MockTime,
+		MockFirebaseAdapter(),
+		MockLineAdapter())
+
+	err := authService.ResetPasswordToDefault("shop_test", "owner_user", "target_user")
+
+	assert.Nil(t, err)
+}
+
 func TestAuthService_AccessShop(t *testing.T) {
 	authRepo := new(AuthenticationRepositoryMock)
 	shopUserRepo := new(ShopUserRepositoryMock)
@@ -430,8 +519,8 @@ func TestAuthService_AccessShop(t *testing.T) {
 	smsRepo := new(SMSRepositoryMock)
 	microAuthServiceMock := &AuthServiceMock{}
 
-	microAuthServiceMock.On("GetTokenFromAuthorizationHeader", "authorization_header_valid").Return("valid_token", nil)
-	microAuthServiceMock.On("GetTokenFromAuthorizationHeader", "").Return("", errors.New("authorization is not empty"))
+	microAuthServiceMock.On("GetTokenFromAuthorizationHeader", microservice.AUTHTYPE_BEARER, "authorization_header_valid").Return("valid_token", nil)
+	microAuthServiceMock.On("GetTokenFromAuthorizationHeader", microservice.AUTHTYPE_BEARER, "").Return("", errors.New("authorization is not empty"))
 
 	shopUser := models.ShopUser{}
 	shopUser.ID = MockObjectID()
@@ -443,8 +532,38 @@ func TestAuthService_AccessShop(t *testing.T) {
 
 	shopUserRepo.On("FindByShopIDAndUsername", "shop_test_invalid", "user_access_shop").Return(models.ShopUser{}, nil)
 
-	microAuthServiceMock.On("SelectShop", "valid_token", "shop_test", uint8(0)).Return(nil)
-	microAuthServiceMock.On("SelectShop", "valid_token_invalid", "shop_test_invalid", uint8(0)).Return(errors.New("select shop failed"))
+	disabledShopUser := shopUser
+	disabledShopUser.Username = "disabled_user"
+	disabledShopUser.ShopID = "shop_disabled"
+	disabledShopUser.IsAccessDisabled = true
+
+	disabledCreator := shopUser
+	disabledCreator.Username = "creator_user"
+	disabledCreator.ShopID = "shop_disabled_creator"
+	disabledCreator.IsAccessDisabled = true
+
+	shopUserRepo.On("FindByShopIDAndUsername", "shop_disabled", "disabled_user").Return(disabledShopUser, nil)
+	shopUserRepo.On("FindShopCreatedBy", "shop_disabled").Return("creator_user", nil)
+	shopUserRepo.On("FindByShopIDAndUsername", "shop_disabled_creator", "creator_user").Return(disabledCreator, nil)
+	shopUserRepo.On("FindShopCreatedBy", "shop_disabled_creator").Return("creator_user", nil)
+	shopUserRepo.On("UpdateLastAccess", "shop_test", "user_access_shop", MockTime()).Return(nil)
+	shopUserRepo.On("UpdateLastAccess", "shop_disabled_creator", "creator_user", MockTime()).Return(nil)
+	shopUserAccessLogRepo.On("Create", mock.MatchedBy(func(log models.ShopUserAccessLog) bool {
+		return log.ShopID == "shop_test" &&
+			log.Username == "user_access_shop" &&
+			log.Ip == "localhost" &&
+			log.LastAccessedAt.Equal(MockTime())
+	})).Return(nil)
+	shopUserAccessLogRepo.On("Create", mock.MatchedBy(func(log models.ShopUserAccessLog) bool {
+		return log.ShopID == "shop_disabled_creator" &&
+			log.Username == "creator_user" &&
+			log.Ip == "localhost" &&
+			log.LastAccessedAt.Equal(MockTime())
+	})).Return(nil)
+
+	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token", "shop_test", uint8(0)).Return(nil)
+	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token", "shop_disabled_creator", uint8(0)).Return(nil)
+	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, "valid_token_invalid", "shop_test_invalid", uint8(0)).Return(errors.New("select shop failed"))
 
 	type args struct {
 		shopID              string
@@ -492,6 +611,24 @@ func TestAuthService_AccessShop(t *testing.T) {
 				authorizationHeader: "authorization_header_valid",
 			},
 			wantErr: true,
+		},
+		{
+			name: "failure access disabled user",
+			args: args{
+				shopID:              "shop_disabled",
+				username:            "disabled_user",
+				authorizationHeader: "authorization_header_valid",
+			},
+			wantErr: true,
+		},
+		{
+			name: "success disabled creator still access",
+			args: args{
+				shopID:              "shop_disabled_creator",
+				username:            "creator_user",
+				authorizationHeader: "authorization_header_valid",
+			},
+			wantErr: false,
 		},
 	}
 
@@ -548,6 +685,11 @@ func (m *AuthenticationRepositoryMock) FindByPhonenumber(ctx context.Context, ph
 	return args.Get(0).(*models.UserDoc), args.Error(1)
 }
 
+func (m *AuthenticationRepositoryMock) FindByLineUserID(ctx context.Context, lineUserID string) (*models.UserDoc, error) {
+	args := m.Called(lineUserID)
+	return args.Get(0).(*models.UserDoc), args.Error(1)
+}
+
 func (m *AuthenticationRepositoryMock) CreateUser(ctx context.Context, doc models.UserDoc) (primitive.ObjectID, error) {
 	args := m.Called(doc)
 	return args.Get(0).(primitive.ObjectID), args.Error(1)
@@ -582,6 +724,11 @@ func (m *ShopUserRepositoryMock) Save(ctx context.Context, shopID string, userna
 	return args.Error(0)
 }
 
+func (m *ShopUserRepositoryMock) SaveFullProfile(ctx context.Context, shopID string, req *models.UserRoleRequest) error {
+	args := m.Called(shopID, req)
+	return args.Error(0)
+}
+
 func (m *ShopUserRepositoryMock) UpdateLastAccess(ctx context.Context, shopID string, username string, lastAccessedAt time.Time) error {
 	args := m.Called(shopID, username, lastAccessedAt)
 	return args.Error(0)
@@ -597,6 +744,11 @@ func (m *ShopUserRepositoryMock) Delete(ctx context.Context, shopID string, user
 	return args.Error(0)
 }
 
+func (m *ShopUserRepositoryMock) DeleteEmptyUsernames(ctx context.Context, shopID string) (int64, error) {
+	args := m.Called(shopID)
+	return args.Get(0).(int64), args.Error(1)
+}
+
 func (m *ShopUserRepositoryMock) FindByShopIDAndUsernameInfo(ctx context.Context, shopID string, username string) (models.ShopUserInfo, error) {
 	args := m.Called(shopID, username)
 	return args.Get(0).(models.ShopUserInfo), args.Error(1)
@@ -605,6 +757,21 @@ func (m *ShopUserRepositoryMock) FindByShopIDAndUsernameInfo(ctx context.Context
 func (m *ShopUserRepositoryMock) FindByShopIDAndUsername(ctx context.Context, shopID string, username string) (models.ShopUser, error) {
 	args := m.Called(shopID, username)
 	return args.Get(0).(models.ShopUser), args.Error(1)
+}
+
+func (m *ShopUserRepositoryMock) FindByShopIDAndLineUserID(ctx context.Context, shopID string, lineUserID string) (models.ShopUser, error) {
+	args := m.Called(shopID, lineUserID)
+	return args.Get(0).(models.ShopUser), args.Error(1)
+}
+
+func (m *ShopUserRepositoryMock) FindByLineUserID(ctx context.Context, lineUserID string) (models.ShopUser, error) {
+	args := m.Called(lineUserID)
+	return args.Get(0).(models.ShopUser), args.Error(1)
+}
+
+func (m *ShopUserRepositoryMock) FindShopCreatedBy(ctx context.Context, shopID string) (string, error) {
+	args := m.Called(shopID)
+	return args.String(0), args.Error(1)
 }
 
 func (m *ShopUserRepositoryMock) FindRole(ctx context.Context, shopID string, username string) (models.UserRole, error) {

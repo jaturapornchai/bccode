@@ -133,6 +133,11 @@ func (m *ShopUserRepositoryMock) Save(ctx context.Context, shopID string, userna
 	return args.Error(0)
 }
 
+func (m *ShopUserRepositoryMock) SaveFullProfile(ctx context.Context, shopID string, req *auth_model.UserRoleRequest) error {
+	args := m.Called(ctx, shopID, req)
+	return args.Error(0)
+}
+
 func (m *ShopUserRepositoryMock) UpdateLastAccess(ctx context.Context, shopID string, username string, lastAccessedAt time.Time) error {
 	args := m.Called(ctx, shopID, username, lastAccessedAt)
 	return args.Error(0)
@@ -148,6 +153,11 @@ func (m *ShopUserRepositoryMock) Delete(ctx context.Context, shopID string, user
 	return args.Error(0)
 }
 
+func (m *ShopUserRepositoryMock) DeleteEmptyUsernames(ctx context.Context, shopID string) (int64, error) {
+	args := m.Called(ctx, shopID)
+	return args.Get(0).(int64), args.Error(1)
+}
+
 func (m *ShopUserRepositoryMock) FindByShopIDAndUsernameInfo(ctx context.Context, shopID string, username string) (auth_model.ShopUserInfo, error) {
 	args := m.Called(ctx, shopID, username)
 	return args.Get(0).(auth_model.ShopUserInfo), args.Error(1)
@@ -156,6 +166,21 @@ func (m *ShopUserRepositoryMock) FindByShopIDAndUsernameInfo(ctx context.Context
 func (m *ShopUserRepositoryMock) FindByShopIDAndUsername(ctx context.Context, shopID string, username string) (auth_model.ShopUser, error) {
 	args := m.Called(ctx, shopID, username)
 	return args.Get(0).(auth_model.ShopUser), args.Error(1)
+}
+
+func (m *ShopUserRepositoryMock) FindByShopIDAndLineUserID(ctx context.Context, shopID string, lineUserID string) (auth_model.ShopUser, error) {
+	args := m.Called(ctx, shopID, lineUserID)
+	return args.Get(0).(auth_model.ShopUser), args.Error(1)
+}
+
+func (m *ShopUserRepositoryMock) FindByLineUserID(ctx context.Context, lineUserID string) (auth_model.ShopUser, error) {
+	args := m.Called(ctx, lineUserID)
+	return args.Get(0).(auth_model.ShopUser), args.Error(1)
+}
+
+func (m *ShopUserRepositoryMock) FindShopCreatedBy(ctx context.Context, shopID string) (string, error) {
+	args := m.Called(ctx, shopID)
+	return args.String(0), args.Error(1)
 }
 
 func (m *ShopUserRepositoryMock) FindRole(ctx context.Context, shopID string, username string) (auth_model.UserRole, error) {

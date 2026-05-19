@@ -26,7 +26,7 @@ type IDepartmentHttpService interface {
 	InfoDepartment(shopID string, guid string) (models.DepartmentInfo, error)
 	InfoDepartmentByCode(shopID, branchCode, departmentCode string) (models.DepartmentInfo, error)
 	SearchDepartment(shopID string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.DepartmentInfo, mongopagination.PaginationData, error)
-	SearchDepartmentStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.DepartmentInfo, int, error)
+	SearchDepartmentStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.DepartmentInfo, int, error)
 	SaveInBatch(shopID string, authUsername string, dataList []models.Department) (common.BulkImport, error)
 
 	GetModuleName() string
@@ -64,7 +64,7 @@ func (svc DepartmentHttpService) CreateDepartment(shopID string, authUsername st
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	findDoc, err := svc.repo.FindOneFilter(ctx, shopID, departmentBranchCodeFilter(doc))
 
 	if err != nil {
 		return "", err
@@ -222,7 +222,7 @@ func (svc DepartmentHttpService) SearchDepartment(shopID string, filters map[str
 	return docList, pagination, nil
 }
 
-func (svc DepartmentHttpService) SearchDepartmentStep(shopID string, langCode string, pageableStep micromodels.PageableStep) ([]models.DepartmentInfo, int, error) {
+func (svc DepartmentHttpService) SearchDepartmentStep(shopID string, langCode string, filters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.DepartmentInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -233,7 +233,7 @@ func (svc DepartmentHttpService) SearchDepartmentStep(shopID string, langCode st
 
 	selectFields := map[string]interface{}{}
 
-	docList, total, err := svc.repo.FindStep(ctx, shopID, map[string]interface{}{}, searchInFields, selectFields, pageableStep)
+	docList, total, err := svc.repo.FindStep(ctx, shopID, filters, searchInFields, selectFields, pageableStep)
 
 	if err != nil {
 		return []models.DepartmentInfo{}, 0, err
@@ -369,4 +369,22 @@ func (svc DepartmentHttpService) saveMasterSync(shopID string) {
 
 func (svc DepartmentHttpService) GetModuleName() string {
 	return "department"
+}
+
+func departmentBranchCodeFilter(doc models.Department) map[string]interface{} {
+	filter := map[string]interface{}{
+		"code": doc.Code,
+	}
+	if doc.BranchCode != "" {
+		filter["branchcode"] = doc.BranchCode
+		return filter
+	}
+	if doc.BranchGuid != "" {
+		filter["branchguid"] = doc.BranchGuid
+		return filter
+	}
+	if doc.BranchKey != "" {
+		filter["branch_key"] = doc.BranchKey
+	}
+	return filter
 }

@@ -23,6 +23,7 @@ type IDepartmentRepository interface {
 	FindByGuid(ctx context.Context, shopID string, guid string) (models.DepartmentDoc, error)
 
 	FindInItemGuid(ctx context.Context, shopID string, columnName string, itemGuidList []string) ([]models.DepartmentItemGuid, error)
+	FindOneFilter(ctx context.Context, shopID string, filters map[string]interface{}) (models.DepartmentDoc, error)
 	FindByDocIndentityGuid(ctx context.Context, shopID string, indentityField string, indentityValue interface{}) (models.DepartmentDoc, error)
 	FindPageFilter(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, pageable micromodels.Pageable) ([]models.DepartmentInfo, mongopagination.PaginationData, error)
 	FindStep(ctx context.Context, shopID string, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableLimit micromodels.PageableStep) ([]models.DepartmentInfo, int, error)
@@ -59,14 +60,18 @@ func NewDepartmentRepository(pst microservice.IPersisterMongo) *DepartmentReposi
 
 func (repo DepartmentRepository) FindOneByCode(ctx context.Context, shopID string, branchCode, departmentCode string) (models.DepartmentDoc, error) {
 	doc := models.DepartmentDoc{}
+	filter := bson.M{
+		"shopid":    shopID,
+		"deletedat": bson.M{"$exists": false},
+		"code":      departmentCode,
+	}
+	if branchCode != "" {
+		filter["branchcode"] = branchCode
+	}
 	err := repo.pst.FindOne(ctx,
 		models.DepartmentDoc{},
-		bson.M{
-			"shopid":         shopID,
-			"deletedat":      bson.M{"$exists": false},
-			"branchcode":     branchCode,
-			"departmentcode": departmentCode,
-		}, &doc)
+		filter,
+		&doc)
 
 	if err != nil {
 		return doc, err

@@ -6,6 +6,8 @@ import (
 	"smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/utils"
 	micromodels "smlcloudplatform/pkg/microservice/models"
+	"strings"
+	"time"
 
 	"github.com/smlsoft/mongopagination"
 )
@@ -37,6 +39,56 @@ func NewShopUserService(shopUserRepo IShopUserRepository) ShopUserService {
 	}
 }
 
+func sameUsername(left string, right string) bool {
+	return strings.EqualFold(utils.NormalizeUsername(left), utils.NormalizeUsername(right))
+}
+
+func copyAccessStatusToRequest(req *models.UserRoleRequest, user models.ShopUser) {
+	req.IsAccessDisabled = user.IsAccessDisabled
+	req.AccessDisabledAt = user.AccessDisabledAt
+	req.AccessDisabledBy = user.AccessDisabledBy
+	req.AccessEnabledAt = user.AccessEnabledAt
+	req.AccessEnabledBy = user.AccessEnabledBy
+}
+
+func applyAccessStatus(req *models.UserRoleRequest, existing models.ShopUser, authUsername string, now time.Time, isCreator bool) error {
+	if isCreator {
+		if req.IsAccessDisabled {
+			return errors.New("creator_access_cannot_be_disabled")
+		}
+		req.IsAccessDisabled = false
+		req.AccessDisabledAt = time.Time{}
+		req.AccessDisabledBy = ""
+		req.AccessEnabledAt = existing.AccessEnabledAt
+		req.AccessEnabledBy = existing.AccessEnabledBy
+		return nil
+	}
+
+	if req.IsAccessDisabled {
+		if existing.IsAccessDisabled && !existing.AccessDisabledAt.IsZero() {
+			req.AccessDisabledAt = existing.AccessDisabledAt
+			req.AccessDisabledBy = existing.AccessDisabledBy
+		} else {
+			req.AccessDisabledAt = now
+			req.AccessDisabledBy = authUsername
+		}
+		req.AccessEnabledAt = time.Time{}
+		req.AccessEnabledBy = ""
+		return nil
+	}
+
+	if existing.IsAccessDisabled {
+		req.AccessEnabledAt = now
+		req.AccessEnabledBy = authUsername
+	} else {
+		req.AccessEnabledAt = existing.AccessEnabledAt
+		req.AccessEnabledBy = existing.AccessEnabledBy
+	}
+	req.AccessDisabledAt = time.Time{}
+	req.AccessDisabledBy = ""
+	return nil
+}
+
 func (svc ShopUserService) InfoShopByUser(shopID string, username string) (models.ShopUserProfile, error) {
 
 	shopUserProfile := models.ShopUserProfile{}
@@ -56,9 +108,25 @@ func (svc ShopUserService) InfoShopByUser(shopID string, username string) (model
 	shopUserProfile.ShopID = shopUser.ShopID
 	shopUserProfile.Username = username
 	shopUserProfile.Role = shopUser.Role
+	shopUserProfile.IsAccessDisabled = shopUser.IsAccessDisabled
+	shopUserProfile.AccessDisabledAt = shopUser.AccessDisabledAt
+	shopUserProfile.AccessDisabledBy = shopUser.AccessDisabledBy
+	shopUserProfile.AccessEnabledAt = shopUser.AccessEnabledAt
+	shopUserProfile.AccessEnabledBy = shopUser.AccessEnabledBy
+
+	createdBy, err := svc.repo.FindShopCreatedBy(context.Background(), shopID)
+	if err != nil {
+		return models.ShopUserProfile{}, err
+	}
+	shopUserProfile.IsCreator = sameUsername(username, createdBy)
+	if shopUserProfile.IsCreator {
+		shopUserProfile.IsAccessDisabled = false
+	}
 
 	// Profile name
 	if len(userProfiles) > 0 {
+		shopUserProfile.UID = userProfiles[0].UID
+		shopUserProfile.Email = userProfiles[0].Email
 		shopUserProfile.UserProfileName = userProfiles[0].Name
 	}
 
@@ -86,6 +154,13 @@ func (svc ShopUserService) ListShopByUser(authUsername string, pageable micromod
 		return docList, pagination, err
 	}
 
+	for idx := range docList {
+		docList[idx].IsCreator = sameUsername(authUsername, docList[idx].CreatedBy)
+		if docList[idx].IsCreator {
+			docList[idx].IsAccessDisabled = false
+		}
+	}
+
 	return docList, pagination, err
 }
 
@@ -110,19 +185,9 @@ func (svc ShopUserService) ListUserInShop(shopID string, pageable micromodels.Pa
 		return shopUserProfiles, pagination, err
 	}
 
-	for _, doc := range shopUsers {
-		shopUserProfile := models.ShopUserProfile{}
-
-		shopUserProfile.ShopID = doc.ShopID
-		shopUserProfile.Username = doc.Username
-		shopUserProfile.Role = doc.Role
-
-		// LINE data
-		shopUserProfile.LineUserID = doc.LineUserID
-		shopUserProfile.LineDisplayName = doc.LineDisplayName
-		shopUserProfile.LinePictureURL = doc.LinePictureURL
-
-		shopUserProfiles = append(shopUserProfiles, shopUserProfile)
+	createdBy, err := svc.repo.FindShopCreatedBy(context.Background(), shopID)
+	if err != nil {
+		return shopUserProfiles, pagination, err
 	}
 
 	dictUserProfiles := map[string]models.UserProfile{}
@@ -130,10 +195,38 @@ func (svc ShopUserService) ListUserInShop(shopID string, pageable micromodels.Pa
 		dictUserProfiles[doc.Username] = doc
 	}
 
-	for idx, doc := range userProfiles {
-		tempUserProfile := dictUserProfiles[doc.Username]
+	for _, doc := range shopUsers {
+		shopUserProfile := models.ShopUserProfile{}
 
-		shopUserProfiles[idx].UserProfileName = tempUserProfile.Name
+		shopUserProfile.ShopID = doc.ShopID
+		shopUserProfile.Username = doc.Username
+		shopUserProfile.Role = doc.Role
+		shopUserProfile.Position = doc.Position
+		shopUserProfile.Department = doc.Department
+		shopUserProfile.POApproval = doc.POApproval
+		shopUserProfile.QuotationApproval = doc.QuotationApproval
+		shopUserProfile.IsAccessDisabled = doc.IsAccessDisabled
+		shopUserProfile.AccessDisabledAt = doc.AccessDisabledAt
+		shopUserProfile.AccessDisabledBy = doc.AccessDisabledBy
+		shopUserProfile.AccessEnabledAt = doc.AccessEnabledAt
+		shopUserProfile.AccessEnabledBy = doc.AccessEnabledBy
+		shopUserProfile.IsCreator = sameUsername(doc.Username, createdBy)
+		if shopUserProfile.IsCreator {
+			shopUserProfile.IsAccessDisabled = false
+		}
+
+		// LINE data
+		shopUserProfile.LineUserID = doc.LineUserID
+		shopUserProfile.LineDisplayName = doc.LineDisplayName
+		shopUserProfile.LinePictureURL = doc.LinePictureURL
+
+		if tempUserProfile, ok := dictUserProfiles[doc.Username]; ok {
+			shopUserProfile.UID = tempUserProfile.UID
+			shopUserProfile.Email = tempUserProfile.Email
+			shopUserProfile.UserProfileName = tempUserProfile.Name
+		}
+
+		shopUserProfiles = append(shopUserProfiles, shopUserProfile)
 	}
 
 	return shopUserProfiles, pagination, err
@@ -212,7 +305,7 @@ func (svc ShopUserService) SaveUserFullProfile(shopID string, authUsername strin
 	username := utils.NormalizeUsername(req.Username)
 	editusername := utils.NormalizeUsername(req.EditUsername)
 
-	if authUsername == username || authUsername == editusername {
+	if sameUsername(authUsername, username) || sameUsername(authUsername, editusername) {
 		return errors.New("can not edit self permission")
 	}
 
@@ -225,11 +318,25 @@ func (svc ShopUserService) SaveUserFullProfile(shopID string, authUsername strin
 		return errors.New("permission denied")
 	}
 
+	createdBy, err := svc.repo.FindShopCreatedBy(context.Background(), shopID)
+	if err != nil {
+		return err
+	}
+
+	existingTarget, existingTargetErr := svc.repo.FindByShopIDAndUsername(context.Background(), shopID, username)
+	if existingTargetErr != nil {
+		existingTarget = models.ShopUser{}
+	}
+
+	if err = applyAccessStatus(req, existingTarget, authUsername, time.Now().UTC(), sameUsername(username, createdBy)); err != nil {
+		return err
+	}
+
 	// ตรวจสอบว่า LINE ID ไม่ซ้ำกับผู้ใช้คนอื่น - ถ้าซ้ำให้ auto-unlink คนเก่า
 	if req.LineUserID != "" {
-		existingUser, _ := svc.repo.FindByShopIDAndLineUserID(context.Background(), shopID, req.LineUserID)
+		existingUser, existingUserErr := svc.repo.FindByShopIDAndLineUserID(context.Background(), shopID, req.LineUserID)
 		// ถ้าพบผู้ใช้ที่ใช้ LINE ID นี้แล้ว และไม่ใช่ผู้ใช้คนเดียวกัน ให้ลบ LINE data ของคนเก่า (auto-unlink)
-		if existingUser.Username != "" && existingUser.Username != username {
+		if existingUserErr == nil && existingUser.Username != "" && !sameUsername(existingUser.Username, username) {
 			// ลบ LINE data ของ user เก่า
 			oldReq := &models.UserRoleRequest{
 				Username:          existingUser.Username,
@@ -242,6 +349,7 @@ func (svc ShopUserService) SaveUserFullProfile(shopID string, authUsername strin
 				POApproval:        existingUser.POApproval,
 				QuotationApproval: existingUser.QuotationApproval,
 			}
+			copyAccessStatusToRequest(oldReq, existingUser)
 			svc.repo.SaveFullProfile(context.Background(), shopID, oldReq)
 		}
 	}
@@ -279,6 +387,15 @@ func (svc ShopUserService) DeleteUserPermissionShop(shopID string, authUsername 
 	// ตรวจสอบว่าพบผู้ใช้ที่ต้องการลบหรือไม่
 	if findUser.Username == "" {
 		return errors.New("user not found")
+	}
+
+	createdBy, err := svc.repo.FindShopCreatedBy(context.Background(), shopID)
+	if err != nil {
+		return err
+	}
+
+	if sameUsername(findUser.Username, createdBy) {
+		return errors.New("creator_cannot_delete")
 	}
 
 	if authUser.Role == models.ROLE_ADMIN && findUser.Role == models.ROLE_OWNER {
@@ -322,8 +439,8 @@ func (svc ShopUserService) SyncLineData(shopID string, username string, lineUser
 
 	// ถ้า LINE ID ถูกใช้โดยผู้ใช้คนอื่นแล้ว ให้ลบ LINE data ของคนนั้นก่อน (auto-unlink)
 	if lineUserID != "" {
-		existingLineUser, _ := svc.repo.FindByShopIDAndLineUserID(context.Background(), shopID, lineUserID)
-		if existingLineUser.Username != "" && existingLineUser.Username != username {
+		existingLineUser, existingLineUserErr := svc.repo.FindByShopIDAndLineUserID(context.Background(), shopID, lineUserID)
+		if existingLineUserErr == nil && existingLineUser.Username != "" && !sameUsername(existingLineUser.Username, username) {
 			// ลบ LINE data ของ user เก่า
 			oldReq := &models.UserRoleRequest{
 				Username:        existingLineUser.Username,
@@ -334,6 +451,7 @@ func (svc ShopUserService) SyncLineData(shopID string, username string, lineUser
 				LineDisplayName: "",
 				LinePictureURL:  "",
 			}
+			copyAccessStatusToRequest(oldReq, existingLineUser)
 			svc.repo.SaveFullProfile(context.Background(), shopID, oldReq)
 		}
 	}
@@ -350,6 +468,7 @@ func (svc ShopUserService) SyncLineData(shopID string, username string, lineUser
 		POApproval:        existingUser.POApproval,
 		QuotationApproval: existingUser.QuotationApproval,
 	}
+	copyAccessStatusToRequest(req, existingUser)
 
 	return svc.repo.SaveFullProfile(context.Background(), shopID, req)
 }
@@ -374,8 +493,8 @@ func (svc ShopUserService) SaveMyLineData(shopID string, username string, lineUs
 
 	// ถ้า LINE ID ถูกใช้โดยผู้ใช้คนอื่นแล้ว ให้ลบ LINE data ของคนนั้นก่อน (auto-unlink)
 	if lineUserID != "" {
-		existingLineUser, _ := svc.repo.FindByShopIDAndLineUserID(context.Background(), shopID, lineUserID)
-		if existingLineUser.Username != "" && existingLineUser.Username != username {
+		existingLineUser, existingLineUserErr := svc.repo.FindByShopIDAndLineUserID(context.Background(), shopID, lineUserID)
+		if existingLineUserErr == nil && existingLineUser.Username != "" && !sameUsername(existingLineUser.Username, username) {
 			// ลบ LINE data ของ user เก่า
 			oldReq := &models.UserRoleRequest{
 				Username:        existingLineUser.Username,
@@ -386,6 +505,7 @@ func (svc ShopUserService) SaveMyLineData(shopID string, username string, lineUs
 				LineDisplayName: "",
 				LinePictureURL:  "",
 			}
+			copyAccessStatusToRequest(oldReq, existingLineUser)
 			svc.repo.SaveFullProfile(context.Background(), shopID, oldReq)
 		}
 	}
@@ -402,6 +522,7 @@ func (svc ShopUserService) SaveMyLineData(shopID string, username string, lineUs
 		POApproval:        existingUser.POApproval,
 		QuotationApproval: existingUser.QuotationApproval,
 	}
+	copyAccessStatusToRequest(req, existingUser)
 
 	return svc.repo.SaveFullProfile(context.Background(), shopID, req)
 }

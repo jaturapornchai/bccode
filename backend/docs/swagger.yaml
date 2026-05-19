@@ -16969,7 +16969,7 @@ info:
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
-  title: BC AI Cloud Platform API
+  title: BC Ai Account API
   version: "1.0"
 paths:
   /aicloud/brand:

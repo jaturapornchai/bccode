@@ -1,0 +1,221 @@
+[browser] Image with src "/flags/th.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[browser] Image with src "/flags/th.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[browser] Encountered two children with the same key, ``. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, ``. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, ``. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, ``. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, ``. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, ``. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, ``. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, ``. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, ``. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, ``. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, ``. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, ``. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, ``. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, ``. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, ``. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, ``. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, ``. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, ``. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Uncaught ReferenceError: stopLinePolling is not defined
+    at MainMenuDashboard.useEffect (src/app/menu/main-menu-screen.tsx:213:13)
+    at MainMenuDashboard (unknown)
+  211 |   }, [initialLanguage, router]);
+  212 |
+> 213 |   useEffect(() => {
+      |             ^
+  214 |     document.documentElement.lang = language;
+  215 |     localStorage.setItem("user_language", language);
+  216 |   }, [language]);
+[browser] Uncaught ReferenceError: PermissionMatrixEditor is not defined
+    at FieldEditor (src/app/system-settings/system-settings-screen.tsx:1088:8)
+    at SettingFormDialog/formElement<.children<.children<.children< (src/app/system-settings/system-settings-screen.tsx:1030:142)
+    at SettingFormDialog (src/app/system-settings/system-settings-screen.tsx:1030:142)
+    at SystemSettingsScreen (src/app/system-settings/system-settings-screen.tsx:849:65)
+    at WorkTabPanel (src/app/menu/main-menu-screen.tsx:1417:28)
+    at MainMenuDashboard/<.children<.children<.children<.children<.children<.children< (src/app/menu/main-menu-screen.tsx:731:33)
+    at MainMenuDashboard (src/app/menu/main-menu-screen.tsx:714:32)
+    at MainMenuScreen (file://D:/bccode/frontend/.next/dev/static/chunks/src_0r13sih._.js?id=%255Bproject%255D%252Fsrc%252Fapp%252Fmenu%252Fmain-menu-screen.tsx+%255Bapp-client%255D+%2528ecmascript%2529:164:221)
+    at MenuPage (src\app\menu\page.tsx:6:10)
+  1086 |   if (config.slug === "permission_definition" && field.key === "branches") {
+  1087 |     return (
+> 1088 |       <PermissionMatrixEditor
+       |        ^
+  1089 |         dateTimeScope={dateTimeScope}
+  1090 |         dictionary={dictionary}
+  1091 |         form={form}
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[browser] Image with src "/flags/th.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[browser] Uncaught ReferenceError: stringArrayFromForm is not defined
+    at PermissionLinkMultiSelectEditor (src/app/system-settings/system-settings-screen.tsx:1201:25)
+    at FieldEditor (src/app/system-settings/system-settings-screen.tsx:1437:12)
+    at SettingFormDialog/formElement<.children<.children<.children< (src/app/system-settings/system-settings-screen.tsx:1055:15)
+    at SettingFormDialog (src/app/system-settings/system-settings-screen.tsx:1055:15)
+    at SystemSettingsScreen (src/app/system-settings/system-settings-screen.tsx:864:93)
+    at WorkTabPanel (src/app/menu/main-menu-screen.tsx:1419:12)
+    at MainMenuDashboard/<.children<.children<.children<.children<.children<.children< (src/app/menu/main-menu-screen.tsx:735:25)
+    at MainMenuDashboard (src/app/menu/main-menu-screen.tsx:716:25)
+    at MainMenuScreen (src/app/menu/menu-kpi-chart.tsx:51:47)
+    at MenuPage (src\app\menu\page.tsx:6:10)
+  1199 |   const [loading, setLoading] = useState(false);
+  1200 |   const [error, setError] = useState("");
+> 1201 |   const selectedCodes = stringArrayFromForm(form[field.key]);
+       |                         ^
+  1202 |   const label = fieldLabel(field, language, undefined, dictionary);
+  1203 |
+  1204 |   useEffect(() => {
+[browser] Image with src "/flags/th.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[browser] Uncaught ReferenceError: isWorkspaceOwner is not defined
+    at MainMenuDashboard.useMemo[isOwner] (src/app/menu/main-menu-screen.tsx:208:33)
+    at MainMenuDashboard (src/app/menu/main-menu-screen.tsx:208:26)
+    at MainMenuScreen (src/app/menu/menu-dashboard-data.ts:76:1)
+    at MenuPage (src\app\menu\page.tsx:6:10)
+  206 |   const loginIdentity = auth?.profile?.email?.trim() || auth?.username?.trim() || "-";
+  207 |   const loginText = backendText(backendLanguage, "login", language === "th" ? "เข้าสู่ระบบ" ...
+> 208 |   const isOwner = useMemo(() => isWorkspaceOwner(workspace, auth), [auth, workspace]);
+      |                                 ^
+  209 |   const canAccessMenuItem = useCallback((item: MenuItem) => isOwner || allowedMenuIds.has...
+  210 |
+  211 |   useEffect(() => {
+⨯ ReferenceError: isWorkspaceOwner is not defined
+    at <unknown> (src\app\menu\main-menu-screen.tsx:208:33)
+    at MainMenuDashboard (src\app\menu\main-menu-screen.tsx:208:26)
+  206 |   const loginIdentity = auth?.profile?.email?.trim() || auth?.username?.trim() || "-";
+  207 |   const loginText = backendText(backendLanguage, "login", language === "th" ? "เข้าสู่ระบบ" ...
+> 208 |   const isOwner = useMemo(() => isWorkspaceOwner(workspace, auth), [auth, workspace]);
+      |                                 ^
+  209 |   const canAccessMenuItem = useCallback((item: MenuItem) => isOwner || allowedMenuIds.has...
+  210 |   const allMenuItems = useMemo(() => flattenMenuItems(), []);
+  211 | {
+  digest: '3800944438'
+}
+[browser] Uncaught ReferenceError: isWorkspaceOwner is not defined
+    at MainMenuDashboard.useMemo[isOwner] (src/app/menu/main-menu-screen.tsx:208:33)
+    at MainMenuDashboard (src/app/menu/main-menu-screen.tsx:208:26)
+    at MainMenuScreen (src/app/menu/main-menu-screen.tsx:159:7)
+    at MenuPage (src\app\menu\page.tsx:6:10)
+  206 |   const loginIdentity = auth?.profile?.email?.trim() || auth?.username?.trim() || "-";
+  207 |   const loginText = backendText(backendLanguage, "login", language === "th" ? "เข้าสู่ระบบ" ...
+> 208 |   const isOwner = useMemo(() => isWorkspaceOwner(workspace, auth), [auth, workspace]);
+      |                                 ^
+  209 |   const canAccessMenuItem = useCallback((item: MenuItem) => isOwner || allowedMenuIds.has...
+  210 |   const allMenuItems = useMemo(() => flattenMenuItems(), []);
+  211 |
+⨯ ReferenceError: isWorkspaceOwner is not defined
+    at <unknown> (src\app\menu\main-menu-screen.tsx:208:33)
+    at MainMenuDashboard (src\app\menu\main-menu-screen.tsx:208:26)
+  206 |   const loginIdentity = auth?.profile?.email?.trim() || auth?.username?.trim() || "-";
+  207 |   const loginText = backendText(backendLanguage, "login", language === "th" ? "เข้าสู่ระบบ" ...
+> 208 |   const isOwner = useMemo(() => isWorkspaceOwner(workspace, auth), [auth, workspace]);
+      |                                 ^
+  209 |   const canAccessMenuItem = useCallback((item: MenuItem) => isOwner || allowedMenuIds.has...
+  210 |   const allMenuItems = useMemo(() => flattenMenuItems(), []);
+  211 | {
+  digest: '2626898101'
+}
+[browser] Uncaught ReferenceError: isWorkspaceOwner is not defined
+    at MainMenuDashboard.useMemo[isOwner] (src/app/menu/main-menu-screen.tsx:208:33)
+    at MainMenuDashboard (src/app/menu/main-menu-screen.tsx:208:26)
+    at MainMenuScreen (src/app/menu/main-menu-screen.tsx:159:7)
+    at MenuPage (src\app\menu\page.tsx:6:10)
+  206 |   const loginIdentity = auth?.profile?.email?.trim() || auth?.username?.trim() || "-";
+  207 |   const loginText = backendText(backendLanguage, "login", language === "th" ? "เข้าสู่ระบบ" ...
+> 208 |   const isOwner = useMemo(() => isWorkspaceOwner(workspace, auth), [auth, workspace]);
+      |                                 ^
+  209 |   const canAccessMenuItem = useCallback((item: MenuItem) => isOwner || allowedMenuIds.has...
+  210 |   const allMenuItems = useMemo(() => flattenMenuItems(), []);
+  211 |
+⨯ ReferenceError: isWorkspaceOwner is not defined
+    at <unknown> (src\app\menu\main-menu-screen.tsx:208:33)
+    at MainMenuDashboard (src\app\menu\main-menu-screen.tsx:208:26)
+  206 |   const loginIdentity = auth?.profile?.email?.trim() || auth?.username?.trim() || "-";
+  207 |   const loginText = backendText(backendLanguage, "login", language === "th" ? "เข้าสู่ระบบ" ...
+> 208 |   const isOwner = useMemo(() => isWorkspaceOwner(workspace, auth), [auth, workspace]);
+      |                                 ^
+  209 |   const canAccessMenuItem = useCallback((item: MenuItem) => isOwner || allowedMenuIds.has...
+  210 |   const allMenuItems = useMemo(() => flattenMenuItems(), []);
+  211 | {
+  digest: '2626898101'
+}
+[browser] Uncaught ReferenceError: isWorkspaceOwner is not defined
+    at MainMenuDashboard.useMemo[isOwner] (src/app/menu/main-menu-screen.tsx:208:33)
+    at MainMenuDashboard (src/app/menu/main-menu-screen.tsx:208:26)
+    at MainMenuScreen (src/app/menu/main-menu-screen.tsx:159:7)
+    at MenuPage (src\app\menu\page.tsx:6:10)
+  206 |   const loginIdentity = auth?.profile?.email?.trim() || auth?.username?.trim() || "-";
+  207 |   const loginText = backendText(backendLanguage, "login", language === "th" ? "เข้าสู่ระบบ" ...
+> 208 |   const isOwner = useMemo(() => isWorkspaceOwner(workspace, auth), [auth, workspace]);
+      |                                 ^
+  209 |   const canAccessMenuItem = useCallback((item: MenuItem) => isOwner || allowedMenuIds.has...
+  210 |   const allMenuItems = useMemo(() => flattenMenuItems(), []);
+  211 |
+⨯ ReferenceError: isWorkspaceOwner is not defined
+    at <unknown> (src\app\menu\main-menu-screen.tsx:208:33)
+    at MainMenuDashboard (src\app\menu\main-menu-screen.tsx:208:26)
+  206 |   const loginIdentity = auth?.profile?.email?.trim() || auth?.username?.trim() || "-";
+  207 |   const loginText = backendText(backendLanguage, "login", language === "th" ? "เข้าสู่ระบบ" ...
+> 208 |   const isOwner = useMemo(() => isWorkspaceOwner(workspace, auth), [auth, workspace]);
+      |                                 ^
+  209 |   const canAccessMenuItem = useCallback((item: MenuItem) => isOwner || allowedMenuIds.has...
+  210 |   const allMenuItems = useMemo(() => flattenMenuItems(), []);
+  211 | {
+  digest: '2626898101'
+}
+[browser] Uncaught ReferenceError: isWorkspaceOwner is not defined
+    at MainMenuDashboard.useMemo[isOwner] (src/app/menu/main-menu-screen.tsx:208:33)
+    at MainMenuDashboard (src/app/menu/main-menu-screen.tsx:208:26)
+    at MainMenuScreen (src/app/menu/main-menu-screen.tsx:159:7)
+    at MenuPage (src\app\menu\page.tsx:6:10)
+  206 |   const loginIdentity = auth?.profile?.email?.trim() || auth?.username?.trim() || "-";
+  207 |   const loginText = backendText(backendLanguage, "login", language === "th" ? "เข้าสู่ระบบ" ...
+> 208 |   const isOwner = useMemo(() => isWorkspaceOwner(workspace, auth), [auth, workspace]);
+      |                                 ^
+  209 |   const canAccessMenuItem = useCallback((item: MenuItem) => isOwner || allowedMenuIds.has...
+  210 |   const allMenuItems = useMemo(() => flattenMenuItems(), []);
+  211 |
+[browser] Image with src "/flags/th.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[browser] Image with src "/flags/th.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[browser] Image with src "/flags/th.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[browser] Uncaught ReferenceError: isSelfUserRecord is not defined
+    at SettingCard (src/app/system-settings/system-settings-screen.tsx:957:18)
+    at SystemSettingsScreen/content<.children<.children<.children< (src/app/system-settings/system-settings-screen.tsx:863:14)
+    at SystemSettingsScreen (src/app/system-settings/system-settings-screen.tsx:862:38)
+    at WorkTabPanel (src/app/menu/main-menu-screen.tsx:1540:147)
+    at MainMenuDashboard/<.children<.children<.children<.children<.children<.children< (src/app/menu/main-menu-screen.tsx:835:53)
+    at MainMenuDashboard (src/app/menu/main-menu-screen.tsx:833:94)
+    at MainMenuScreen (src/app/menu/main-menu-screen.tsx:219:73)
+    at MenuPage (src\app\menu\page.tsx:6:10)
+  955 |   const isUser = config.slug === "user";
+  956 |   const isCreator = isUser && isCreatorRecord(record, workspace);
+> 957 |   const isSelf = isUser && isSelfUserRecord(record, auth);
+      |                  ^
+  958 |   const accessDisabled = isUser && userAccessDisabled(record);
+  959 |   return (
+  960 |     <Card className={cn(
+[browser] Uncaught ReferenceError: isSelfUserRecord is not defined
+    at SettingCard (src/app/system-settings/system-settings-screen.tsx:957:28)
+    at <unknown> (src/app/system-settings/system-settings-screen.tsx:863:14)
+    at Array.map (<anonymous>)
+    at SystemSettingsScreen (src/app/system-settings/system-settings-screen.tsx:862:38)
+    at SystemSettingPage (src\app\[systemSetting]\page.tsx:15:10)
+  955 |   const isUser = config.slug === "user";
+  956 |   const isCreator = isUser && isCreatorRecord(record, workspace);
+> 957 |   const isSelf = isUser && isSelfUserRecord(record, auth);
+      |                            ^
+  958 |   const accessDisabled = isUser && userAccessDisabled(record);
+  959 |   return (
+  960 |     <Card className={cn(
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[browser] Image with src "/flags/th.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[browser] Uncaught TypeError: Failed to execute 'measure' on 'Performance': '​SystemSettingPage' cannot have a negative time stamp.
+[browser] Image with src "/flags/th.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading

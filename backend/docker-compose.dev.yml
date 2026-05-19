@@ -1,0 +1,10 @@
+# Docker Desktop local development overrides.
+# Use with:
+#   docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build mainapi
+services:
+  mainapi:
+    environment:
+      LANGUAGE_FILE_PATH: /app/language/languages.tsv
+      LANGUAGE_RELOAD_ENABLED: "true"
+    volumes:
+      - ./assets/language:/app/language:ro
