@@ -9,6 +9,8 @@ export type CurrencySymbolPreset = {
   name: string;
   isoName: string;
   symbol: string;
+  symbolAliases?: readonly string[];
+  symbolKind?: "symbol" | "abbreviation";
   aliases?: readonly string[];
 };
 
@@ -17,31 +19,32 @@ export const currencyPresetSource = {
   authority: "SIX Financial Information",
   list: "List One: Current Currency & Funds",
   published: "2026-01-01",
+  symbolSource: "Wikipedia currency symbol and currency pages",
 } as const;
 
 export const currencySymbolPresets: readonly CurrencySymbolPreset[] = [
   { code: "THB", name: "Thai Baht", isoName: "Baht", symbol: "฿", aliases: ["Baht"] },
-  { code: "VND", name: "Vietnamese Dong", isoName: "Dong", symbol: "₫", aliases: ["Dong"] },
-  { code: "LAK", name: "Lao Kip", isoName: "Lao Kip", symbol: "₭" },
+  { code: "VND", name: "Vietnamese Dong", isoName: "Dong", symbol: "₫", symbolAliases: ["đ"], aliases: ["Dong"] },
+  { code: "LAK", name: "Lao Kip", isoName: "Lao Kip", symbol: "₭", symbolAliases: ["₭N"] },
   { code: "KHR", name: "Cambodian Riel", isoName: "Riel", symbol: "៛", aliases: ["Riel"] },
-  { code: "MMK", name: "Myanmar Kyat", isoName: "Kyat", symbol: "K", aliases: ["Kyat"] },
+  { code: "MMK", name: "Myanmar Kyat", isoName: "Kyat", symbol: "K", symbolAliases: ["Ks."], aliases: ["Kyat"] },
   { code: "MYR", name: "Malaysian Ringgit", isoName: "Malaysian Ringgit", symbol: "RM" },
-  { code: "SGD", name: "Singapore Dollar", isoName: "Singapore Dollar", symbol: "S$" },
+  { code: "SGD", name: "Singapore Dollar", isoName: "Singapore Dollar", symbol: "S$", symbolAliases: ["$"] },
   { code: "IDR", name: "Indonesian Rupiah", isoName: "Rupiah", symbol: "Rp", aliases: ["Rupiah"] },
-  { code: "PHP", name: "Philippine Peso", isoName: "Philippine Peso", symbol: "₱" },
-  { code: "BND", name: "Brunei Dollar", isoName: "Brunei Dollar", symbol: "B$" },
-  { code: "USD", name: "US Dollar", isoName: "US Dollar", symbol: "$" },
+  { code: "PHP", name: "Philippine Peso", isoName: "Philippine Peso", symbol: "₱", symbolAliases: ["PHP", "PhP", "Php", "P"] },
+  { code: "BND", name: "Brunei Dollar", isoName: "Brunei Dollar", symbol: "B$", symbolAliases: ["$"] },
+  { code: "USD", name: "US Dollar", isoName: "US Dollar", symbol: "$", symbolAliases: ["US$", "U$"] },
   { code: "EUR", name: "Euro", isoName: "Euro", symbol: "€" },
   { code: "JPY", name: "Japanese Yen", isoName: "Yen", symbol: "¥", aliases: ["Yen"] },
-  { code: "CNY", name: "Chinese Yuan", isoName: "Yuan Renminbi", symbol: "¥", aliases: ["Yuan Renminbi"] },
+  { code: "CNY", name: "Chinese Yuan", isoName: "Yuan Renminbi", symbol: "¥", symbolAliases: ["RMB", "¥ RMB"], aliases: ["Yuan Renminbi"] },
   { code: "GBP", name: "Pound Sterling", isoName: "Pound Sterling", symbol: "£" },
-  { code: "INR", name: "Indian Rupee", isoName: "Indian Rupee", symbol: "₹" },
+  { code: "INR", name: "Indian Rupee", isoName: "Indian Rupee", symbol: "₹", symbolAliases: ["INR", "Re", "Rs"] },
   { code: "KRW", name: "Korean Won", isoName: "Won", symbol: "₩", aliases: ["Won"] },
-  { code: "HKD", name: "Hong Kong Dollar", isoName: "Hong Kong Dollar", symbol: "HK$" },
-  { code: "AUD", name: "Australian Dollar", isoName: "Australian Dollar", symbol: "A$" },
-  { code: "CHF", name: "Swiss Franc", isoName: "Swiss Franc", symbol: "CHF" },
+  { code: "HKD", name: "Hong Kong Dollar", isoName: "Hong Kong Dollar", symbol: "HK$", symbolAliases: ["$", "元"] },
+  { code: "AUD", name: "Australian Dollar", isoName: "Australian Dollar", symbol: "A$", symbolAliases: ["$"] },
+  { code: "CHF", name: "Swiss Franc", isoName: "Swiss Franc", symbol: "CHF", symbolAliases: ["Fr.", "fr."], symbolKind: "abbreviation" },
   { code: "BRL", name: "Brazilian Real", isoName: "Brazilian Real", symbol: "R$" },
-  { code: "CAD", name: "Canadian Dollar", isoName: "Canadian Dollar", symbol: "C$" },
+  { code: "CAD", name: "Canadian Dollar", isoName: "Canadian Dollar", symbol: "Can$", symbolAliases: ["CA$", "C$", "$"] },
 ] as const;
 
 export function applyCurrencySymbolPreset<TForm extends CurrencyPresetForm>(
@@ -72,11 +75,15 @@ export function findCurrencySymbolPreset(form: CurrencyPresetForm): CurrencySymb
   return currencySymbolPresets.find((preset) =>
     preset.code === code &&
     isKnownCurrencyName(preset, name) &&
-    preset.symbol === symbol,
+    isKnownCurrencySymbol(preset, symbol),
   );
 }
 
 function isKnownCurrencyName(preset: CurrencySymbolPreset, normalizedName: string): boolean {
   const names = [preset.name, preset.isoName, ...(preset.aliases ?? [])].map((value) => value.toLowerCase());
   return names.includes(normalizedName);
+}
+
+function isKnownCurrencySymbol(preset: CurrencySymbolPreset, symbol: string): boolean {
+  return [preset.symbol, ...(preset.symbolAliases ?? [])].includes(symbol);
 }

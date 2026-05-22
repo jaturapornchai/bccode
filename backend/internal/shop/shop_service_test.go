@@ -207,6 +207,16 @@ func (m *ShopUserRepositoryMock) FindByUserInShopPage(ctx context.Context, shopI
 	return args.Get(0).([]auth_model.ShopUser), args.Get(1).(mongopagination.PaginationData), args.Error(2)
 }
 
+func (m *ShopUserRepositoryMock) FindByUserInShopPageWithProfileMatches(ctx context.Context, shopID string, pageable micromodels.Pageable, profileUsernames []string) ([]auth_model.ShopUser, mongopagination.PaginationData, error) {
+	args := m.Called(ctx, shopID, pageable, profileUsernames)
+	return args.Get(0).([]auth_model.ShopUser), args.Get(1).(mongopagination.PaginationData), args.Error(2)
+}
+
+func (m *ShopUserRepositoryMock) FindUsernamesByProfileQuery(ctx context.Context, query string) ([]string, error) {
+	args := m.Called(ctx, query)
+	return args.Get(0).([]string), args.Error(1)
+}
+
 func (m *ShopUserRepositoryMock) FindUserProfileByUsernames(ctx context.Context, usernames []string) ([]auth_model.UserProfile, error) {
 	args := m.Called(ctx, usernames)
 	return args.Get(0).([]auth_model.UserProfile), args.Error(1)

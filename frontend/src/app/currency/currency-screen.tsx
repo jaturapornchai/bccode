@@ -18,6 +18,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { backendText, useBackendLanguage, type BackendLanguageDictionary } from "@/lib/backend-language";
 import { applyCurrencySymbolPreset, currencyPresetSource, filterCurrencySymbolPresets, findCurrencySymbolPreset } from "@/lib/currency-presets";
@@ -42,7 +43,8 @@ type CurrencyScreenProps = {
 };
 
 type CurrencyRecord = {
-  guidfixed: string;
+  guid_fixed: string;
+  duplicate_guid_fixeds?: string[];
   code: string;
   name: string;
   symbol: string;
@@ -51,7 +53,7 @@ type CurrencyRecord = {
 };
 
 type ExchangeRateEntry = {
-  guidfixed?: string;
+  guid_fixed?: string;
   date?: string;
   rate?: number;
 };
@@ -115,8 +117,9 @@ const currencyTextEn = {
   symbolSearch: "Search code, name, or symbol",
   currencyVerified: "Verified",
   currencyNotVerified: "Not verified",
-  currencyVerifySource: "Verified against ISO 4217 / SIX current list.",
+  currencyVerifySource: "Code/name: ISO 4217 / SIX. Symbol/abbreviation: Wikipedia.",
   currencyVerifyRequired: "Select a currency from the verified list.",
+  duplicateCode: "This currency code already exists.",
   noSymbolResult: "No matching currency",
   loadFailed: "Could not load currencies.",
   requestFailed: "Request failed.",
@@ -136,7 +139,7 @@ type CurrencyTextKey = keyof typeof currencyTextEn;
 const currencyText: Partial<Record<LanguageCode, Partial<Record<CurrencyTextKey, string>>>> = {
   th: {
     title: "สกุลเงิน",
-    subtitle: "จัดการสกุลเงิน สัญลักษณ์ และสถานะใช้งานของกิจการที่เลือก",
+    subtitle: "จัดการสกุลเงิน สัญลักษณ์ และสถานะใช้งานของบริษัทที่เลือก",
     refresh: "โหลดใหม่",
     total: "ทั้งหมด",
     active: "ใช้งาน",
@@ -168,8 +171,9 @@ const currencyText: Partial<Record<LanguageCode, Partial<Record<CurrencyTextKey,
     symbolSearch: "ค้นหารหัส ชื่อ หรือสัญลักษณ์",
     currencyVerified: "ยืนยันแล้ว",
     currencyNotVerified: "ยังไม่ยืนยัน",
-    currencyVerifySource: "ยืนยันกับรายการปัจจุบัน ISO 4217 / SIX",
+    currencyVerifySource: "รหัส/ชื่อ: ISO 4217 / SIX; สัญลักษณ์/ตัวย่อ: Wikipedia",
     currencyVerifyRequired: "กรุณาเลือกสกุลเงินจากรายการที่ค้นพบเพื่อยืนยันว่ามีอยู่จริง",
+    duplicateCode: "รหัสสกุลเงินนี้มีอยู่แล้ว",
     noSymbolResult: "ไม่พบสกุลเงินที่ตรงกัน",
     loadFailed: "โหลดสกุลเงินไม่สำเร็จ",
     requestFailed: "เรียกข้อมูลไม่สำเร็จ",
@@ -177,8 +181,8 @@ const currencyText: Partial<Record<LanguageCode, Partial<Record<CurrencyTextKey,
     addSuccess: "เพิ่มสกุลเงินสำเร็จ",
     editSuccess: "แก้ไขสกุลเงินสำเร็จ",
     deleteSuccess: "ลบสกุลเงินสำเร็จ",
-    apiRequired: "กรุณาเข้าสู่ระบบและเลือกกิจการก่อนเปิดหน้าจอนี้",
-    tenant: "กิจการ",
+    apiRequired: "กรุณาเข้าสู่ระบบและเลือกบริษัทก่อนเปิดหน้าจอนี้",
+    tenant: "บริษัท",
     branch: "สาขา",
     exchangeRates: "อัตราแลกเปลี่ยน",
     none: "ไม่มี",
@@ -368,6 +372,7 @@ const backendKeys: Partial<Record<CurrencyTextKey, string>> = {
   symbolSearch: "search_currency_symbol",
   currencyVerifyRequired: "currency_verify_required",
   currencyVerifySource: "currency_verify_source",
+  duplicateCode: "duplicate_currency_code",
   symbol: "symbol",
   title: "currency",
 };
@@ -392,6 +397,7 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
   const [editing, setEditing] = useState<CurrencyRecord | null>(null);
   const [form, setForm] = useState<CurrencyForm>(emptyForm);
   const [formOpen, setFormOpen] = useState(false);
+  const { confirm, confirmationDialog } = useConfirmDialog();
   const activeBackendUrl = auth?.backendUrl ?? initialBackendUrl;
   const backendLanguage = useBackendLanguage(language, activeBackendUrl, language === initialLanguage ? initialBackendLanguage : undefined);
 
@@ -493,11 +499,19 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
       setNotice({ type: "error", text: validation });
       return;
     }
+    const duplicate = currencies.some((currency) =>
+      currency.code === payload.code &&
+      (!editing || currency.guid_fixed !== editing.guid_fixed),
+    );
+    if (duplicate) {
+      setNotice({ type: "error", text: text("duplicateCode") });
+      return;
+    }
 
     setSaving(true);
     setNotice(null);
     try {
-      const path = editing ? `/api/currency/${encodeURIComponent(editing.guidfixed)}` : "/api/currency";
+      const path = editing ? `/api/currency/${encodeURIComponent(editing.guid_fixed)}` : "/api/currency";
       const response = await fetch(path, {
         method: editing ? "PUT" : "POST",
         headers: {
@@ -507,7 +521,7 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
         },
         body: JSON.stringify({
           backendUrl: auth.backendUrl,
-          guidfixed: editing?.guidfixed ?? "",
+          guid_fixed: editing?.guid_fixed ?? "",
           ...payload,
         }),
       });
@@ -528,18 +542,35 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
   }
 
   async function deleteCurrency(currency: CurrencyRecord) {
-    if (!auth || !currency.guidfixed) return;
-    if (!window.confirm(text("deleteConfirm"))) return;
+    if (!auth) return;
+    const deleteIds = uniqueStrings([currency.guid_fixed, ...(currency.duplicate_guid_fixeds ?? [])]);
+    if (!deleteIds.length) {
+      setNotice({ type: "error", text: text("requestFailed") });
+      return;
+    }
+    const confirmed = await confirm({
+      title: text("deleteConfirm"),
+      description: `${currency.code} ${currency.name}`.trim(),
+      details: currency.duplicate_guid_fixeds && currency.duplicate_guid_fixeds.length > 1
+        ? `${language === "th" ? "จะลบรายการซ้ำทั้งหมด" : "All duplicate entries will be deleted"}: ${currency.duplicate_guid_fixeds.length}`
+        : undefined,
+      confirmLabel: text("delete"),
+      cancelLabel: text("cancel"),
+      tone: "danger",
+    });
+    if (!confirmed) return;
 
     setLoading(true);
     setNotice(null);
     try {
-      const response = await fetch(`/api/currency/${encodeURIComponent(currency.guidfixed)}`, {
+      const response = await fetch(deleteIds.length === 1 ? `/api/currency/${encodeURIComponent(deleteIds[0])}` : "/api/currency", {
         method: "DELETE",
         headers: {
+          ...(deleteIds.length > 1 ? { "Content-Type": "application/json" } : {}),
           "x-bc-backend-url": auth.backendUrl,
           Authorization: `Bearer ${auth.token}`,
         },
+        body: deleteIds.length > 1 ? JSON.stringify(deleteIds) : undefined,
       });
       const data = await response.json() as ApiResponse<unknown>;
       if (!response.ok || data.success === false) {
@@ -616,6 +647,20 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
         </CardContent>
       </Card>
 
+      {formOpen ? (
+        <CurrencyFormPanel
+          editing={editing}
+          form={form}
+          onClose={() => {
+            if (!saving) setFormOpen(false);
+          }}
+          onFormChange={setForm}
+          onSubmit={saveCurrency}
+          saving={saving}
+          text={text}
+        />
+      ) : null}
+
       {loading && currencies.length === 0 ? (
         <Card>
           <CardContent className="flex min-h-40 items-center justify-center gap-2 p-4 text-sm text-muted-foreground">
@@ -629,7 +674,7 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
             <CurrencyCard
               baseCurrency={baseCurrency}
               currency={currency}
-              key={currency.guidfixed || currency.code}
+              key={currency.guid_fixed || currency.code}
               onDelete={deleteCurrency}
               onEdit={openEdit}
               text={text}
@@ -652,19 +697,7 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
         </Card>
       )}
 
-      {formOpen ? (
-        <CurrencyFormDialog
-          editing={editing}
-          form={form}
-          onClose={() => {
-            if (!saving) setFormOpen(false);
-          }}
-          onFormChange={setForm}
-          onSubmit={saveCurrency}
-          saving={saving}
-          text={text}
-        />
-      ) : null}
+      {confirmationDialog}
     </div>
   );
 
@@ -719,7 +752,11 @@ function CurrencyCard({
                 {currency.isdisabled ? <Badge variant="warning">{text("disabled")}</Badge> : null}
               </div>
               <p className="truncate text-sm text-muted-foreground">{currency.name}</p>
-              {verifiedPreset ? <p className="truncate text-xs text-muted-foreground">{verifiedPreset.isoName} · {currencyPresetSource.standard}</p> : null}
+              {verifiedPreset ? (
+                <p className="truncate text-xs text-muted-foreground">
+                  {verifiedPreset.isoName} · {currencyPresetSource.standard} · {currencyPresetSource.symbolSource}
+                </p>
+              ) : null}
             </div>
           </div>
           <div className="flex shrink-0 gap-1">
@@ -746,7 +783,7 @@ function CurrencyCard({
   );
 }
 
-function CurrencyFormDialog({
+function CurrencyFormPanel({
   editing,
   form,
   onClose,
@@ -768,14 +805,8 @@ function CurrencyFormDialog({
   const verifiedPreset = useMemo(() => findCurrencySymbolPreset(form), [form]);
 
   return (
-    <div className="dialog-backdrop" role="presentation">
-      <form
-        className="grid max-h-[calc(100dvh-24px)] w-[min(980px,calc(100vw-24px))] gap-3 overflow-y-auto rounded-2xl border border-border bg-card p-3 text-foreground shadow-xl"
-        onSubmit={onSubmit}
-        role="dialog"
-        aria-modal="true"
-        aria-label={editing ? text("formEdit") : text("formNew")}
-      >
+    <Card className="shadow-sm">
+      <form className="grid gap-3 p-3" onSubmit={onSubmit} aria-label={editing ? text("formEdit") : text("formNew")}>
         <header className="flex min-w-0 items-center justify-between gap-2">
           <div className="min-w-0">
             <h2 className="truncate text-lg font-semibold">{editing ? text("formEdit") : text("formNew")}</h2>
@@ -862,7 +893,7 @@ function CurrencyFormDialog({
           </Button>
         </footer>
       </form>
-    </div>
+    </Card>
   );
 }
 
@@ -890,7 +921,21 @@ function readWorkspace(): WorkspaceSession | null {
 
 function normalizeCurrencies(value: unknown): CurrencyRecord[] {
   if (!Array.isArray(value)) return [];
-  return value.map(normalizeCurrency).filter((currency): currency is CurrencyRecord => Boolean(currency));
+  const currencies = value.map(normalizeCurrency).filter((currency): currency is CurrencyRecord => Boolean(currency));
+  const byCode = new Map<string, CurrencyRecord & { duplicate_guid_fixeds: string[] }>();
+  for (const currency of currencies) {
+    const existing = byCode.get(currency.code);
+    if (!existing) {
+      byCode.set(currency.code, { ...currency, duplicate_guid_fixeds: uniqueStrings([currency.guid_fixed]) });
+      continue;
+    }
+
+    existing.duplicate_guid_fixeds = uniqueStrings([...existing.duplicate_guid_fixeds, currency.guid_fixed]);
+    if ((existing.isdisabled && !currency.isdisabled) || (!existing.guid_fixed && currency.guid_fixed)) {
+      byCode.set(currency.code, { ...currency, duplicate_guid_fixeds: existing.duplicate_guid_fixeds });
+    }
+  }
+  return [...byCode.values()];
 }
 
 function normalizeCurrency(value: unknown): CurrencyRecord | null {
@@ -900,13 +945,17 @@ function normalizeCurrency(value: unknown): CurrencyRecord | null {
   if (!code) return null;
 
   return {
-    guidfixed: toStringValue(item.guidfixed || item.guidFixed || item.id),
+    guid_fixed: toStringValue(item.guid_fixed || item.guidfixed || item.guidFixed || item.id || item._id),
     code,
     name: toStringValue(item.name),
     symbol: toStringValue(item.symbol),
     isdisabled: Boolean(item.isdisabled),
     exchange_rates: Array.isArray(item.exchange_rates) ? item.exchange_rates as ExchangeRateEntry[] : [],
   };
+}
+
+function uniqueStrings(values: unknown[]): string[] {
+  return Array.from(new Set(values.map((value) => toStringValue(value).trim()).filter(Boolean)));
 }
 
 function toStringValue(value: unknown): string {

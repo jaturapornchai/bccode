@@ -1,6 +1,7 @@
 package search
 
 import (
+	"regexp"
 	"strings"
 
 	m "github.com/veer66/mapkha"
@@ -52,25 +53,32 @@ func ExtractSearchTerms(query string) []string {
 }
 
 func GenerateFieldFilters(searchFields []string, searchTerms []string) []interface{} {
-	fieldFilters := []interface{}{}
+	termMatchFilters := []interface{}{}
 
-	for _, field := range searchFields {
-		termFilters := []interface{}{}
+	for _, searchTerm := range searchTerms {
+		searchTerm = strings.TrimSpace(searchTerm)
+		if searchTerm == "" {
+			continue
+		}
 
-		for _, searchTerm := range searchTerms {
-			termFilters = append(termFilters, bson.M{
+		fieldFilters := []interface{}{}
+		for _, field := range searchFields {
+			fieldFilters = append(fieldFilters, bson.M{
 				field: primitive.Regex{
-					Pattern: searchTerm,
+					Pattern: regexp.QuoteMeta(searchTerm),
 					Options: "i",
 				},
 			})
 		}
 
-		if len(termFilters) > 0 {
-			fieldFilters = append(fieldFilters, bson.M{"$and": termFilters})
+		if len(fieldFilters) > 0 {
+			termMatchFilters = append(termMatchFilters, bson.M{"$or": fieldFilters})
 		}
-
 	}
 
-	return fieldFilters
+	if len(termMatchFilters) == 0 {
+		return []interface{}{}
+	}
+
+	return []interface{}{bson.M{"$and": termMatchFilters}}
 }

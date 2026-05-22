@@ -6,6 +6,7 @@ import (
 	"smlcloudplatform/internal/authentication/models"
 	shopmodels "smlcloudplatform/internal/shop/models"
 	"smlcloudplatform/internal/utils"
+	"smlcloudplatform/internal/utils/search"
 	"smlcloudplatform/pkg/microservice"
 	micromodels "smlcloudplatform/pkg/microservice/models"
 	"strings"
@@ -36,6 +37,8 @@ type IShopUserRepository interface {
 	FindByUsername(ctx context.Context, username string) (*[]models.ShopUser, error)
 	FindByUsernamePage(ctx context.Context, username string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error)
 	FindByUserInShopPage(ctx context.Context, shopID string, pageable micromodels.Pageable) ([]models.ShopUser, mongopagination.PaginationData, error)
+	FindByUserInShopPageWithProfileMatches(ctx context.Context, shopID string, pageable micromodels.Pageable, profileUsernames []string) ([]models.ShopUser, mongopagination.PaginationData, error)
+	FindUsernamesByProfileQuery(ctx context.Context, query string) ([]string, error)
 	FindUserProfileByUsernames(ctx context.Context, usernames []string) ([]models.UserProfile, error)
 }
 
@@ -114,7 +117,33 @@ func (svc ShopUserRepository) SaveFullProfile(ctx context.Context, shopID string
 		return err
 	}
 
+	if err := svc.saveUserLoginProfile(ctx, req); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (svc ShopUserRepository) saveUserLoginProfile(ctx context.Context, req *models.UserRoleRequest) error {
+	username := strings.TrimSpace(req.Username)
+	if username == "" {
+		return nil
+	}
+
+	updateData := bson.M{}
+	if name := strings.TrimSpace(req.UserProfileName); name != "" {
+		updateData["name"] = name
+	}
+	if !isEmailUsername(username) {
+		updateData["email"] = strings.TrimSpace(req.Email)
+	}
+	if len(updateData) == 0 {
+		return nil
+	}
+	updateData["updated_at"] = time.Now().UTC()
+
+	optUpdate := options.Update().SetUpsert(false)
+	return svc.pst.Update(ctx, &models.UserDoc{}, bson.M{"username": username}, bson.M{"$set": updateData}, optUpdate)
 }
 
 func (svc ShopUserRepository) UpdateLastAccess(ctx context.Context, shopID string, username string, lastAccessedAt time.Time) error {
@@ -355,25 +384,29 @@ func (repo ShopUserRepository) FindByUsernamePage(ctx context.Context, username 
 }
 
 func (repo ShopUserRepository) FindByUserInShopPage(ctx context.Context, shopID string, pageable micromodels.Pageable) ([]models.ShopUser, mongopagination.PaginationData, error) {
+	return repo.FindByUserInShopPageWithProfileMatches(ctx, shopID, pageable, nil)
+}
 
+func (repo ShopUserRepository) FindByUserInShopPageWithProfileMatches(ctx context.Context, shopID string, pageable micromodels.Pageable, profileUsernames []string) ([]models.ShopUser, mongopagination.PaginationData, error) {
 	docList := []models.ShopUser{}
 
 	searchInFields := []string{
 		"username",
+		"position",
+		"department",
+		"line_display_name",
 	}
 
-	searchFilterList := []interface{}{}
-
-	for _, colName := range searchInFields {
-		searchFilterList = append(searchFilterList, bson.M{colName: bson.M{"$regex": primitive.Regex{
-			Pattern: ".*" + pageable.Query + ".*",
-			Options: "",
-		}}})
+	searchFilterList := search.CreateTextFilter(searchInFields, pageable.Query)
+	if len(profileUsernames) > 0 {
+		searchFilterList = append(searchFilterList, bson.M{"username": bson.M{"$in": profileUsernames}})
 	}
 
 	filtter := bson.M{
 		"shopid": shopID,
-		"$or":    searchFilterList,
+	}
+	if len(searchFilterList) > 0 {
+		filtter["$or"] = searchFilterList
 	}
 
 	paginattion, err := repo.pst.FindPage(ctx, &models.ShopUser{}, filtter, pageable, &docList)
@@ -383,6 +416,46 @@ func (repo ShopUserRepository) FindByUserInShopPage(ctx context.Context, shopID 
 	}
 
 	return docList, paginattion, nil
+}
+
+func (repo ShopUserRepository) FindUsernamesByProfileQuery(ctx context.Context, query string) ([]string, error) {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return []string{}, nil
+	}
+
+	docList := []models.UserProfile{}
+	filters := bson.M{}
+	searchFilterList := search.CreateTextFilter([]string{
+		"username",
+		"uid",
+		"name",
+		"email",
+		"line_user_id",
+		"line_display_name",
+	}, query)
+	if len(searchFilterList) > 0 {
+		filters["$or"] = searchFilterList
+	}
+
+	if err := repo.pst.Find(ctx, &models.UserProfile{}, filters, &docList); err != nil {
+		return []string{}, err
+	}
+
+	usernames := make([]string, 0, len(docList))
+	seen := map[string]struct{}{}
+	for _, doc := range docList {
+		username := strings.TrimSpace(doc.Username)
+		if username == "" {
+			continue
+		}
+		if _, ok := seen[username]; ok {
+			continue
+		}
+		seen[username] = struct{}{}
+		usernames = append(usernames, username)
+	}
+	return usernames, nil
 }
 
 func (repo ShopUserRepository) FindUserProfileByUsernames(ctx context.Context, usernames []string) ([]models.UserProfile, error) {

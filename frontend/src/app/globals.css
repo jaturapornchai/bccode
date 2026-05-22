@@ -241,44 +241,169 @@ a:hover {
   text-decoration: underline;
 }
 
+main.min-h-dvh,
+main.min-h-screen,
+main.bg-background {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--primary) 8%, transparent), transparent 38%),
+    linear-gradient(315deg, color-mix(in srgb, var(--amber) 8%, transparent), transparent 34%),
+    var(--bg);
+}
+
+.bg-background {
+  background-color: var(--bg);
+}
+
+.bg-card {
+  background-color: var(--panel-strong);
+}
+
+.bg-muted\/30 {
+  background-color: color-mix(in srgb, var(--icon-soft-bg) 46%, transparent);
+}
+
+.border-border {
+  border-color: var(--line);
+}
+
+.text-muted-foreground {
+  color: var(--muted);
+}
+
+.text-primary {
+  color: var(--primary);
+}
+
+.bg-primary\/10 {
+  background-color: color-mix(in srgb, var(--primary) 12%, var(--panel-soft));
+}
+
+.rounded-2xl,
+.rounded-xl {
+  border-radius: 8px;
+}
+
+.shadow-sm {
+  box-shadow: var(--shadow-card);
+}
+
+.shadow-xl {
+  box-shadow: var(--shadow);
+}
+
+main.min-h-dvh > .grid,
+main.min-h-screen > .grid {
+  width: 100%;
+  max-width: 100%;
+}
+
+main.min-h-dvh header.bg-card,
+main.min-h-screen header.bg-card {
+  border-color: color-mix(in srgb, var(--primary) 20%, var(--line));
+  background:
+    linear-gradient(135deg, var(--panel-strong), color-mix(in srgb, var(--panel-strong) 86%, var(--action-bg))),
+    var(--panel-strong);
+  box-shadow: var(--shadow-card);
+}
+
+main.min-h-dvh .grid > .bg-card,
+main.min-h-screen .grid > .bg-card {
+  border-color: color-mix(in srgb, var(--primary) 16%, var(--line));
+}
+
+main.min-h-dvh input.bg-background,
+main.min-h-screen input.bg-background {
+  background-color: var(--panel-soft);
+}
+
 .login-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(320px, 0.92fr) minmax(380px, 1.08fr);
+  grid-template-columns: minmax(0, 720px) minmax(380px, 560px);
+  justify-content: center;
+  align-items: stretch;
+  gap: clamp(14px, 2.2vw, 28px);
+  padding: clamp(10px, 2.4vw, 24px);
   background:
-    linear-gradient(135deg, var(--bg-accent-a), transparent 42%),
-    linear-gradient(315deg, var(--bg-accent-b), transparent 34%),
+    linear-gradient(135deg, color-mix(in srgb, var(--primary) 10%, transparent), transparent 36%),
+    linear-gradient(315deg, color-mix(in srgb, var(--amber) 11%, transparent), transparent 34%),
     var(--bg);
 }
 
 .brand-panel {
-  min-height: 100vh;
-  padding: clamp(28px, 5vw, 64px);
+  min-height: calc(100vh - clamp(20px, 4.8vw, 48px));
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(20px, 4vw, 44px);
   display: grid;
-  align-content: center;
-  gap: 34px;
-  color: #ffffff;
+  align-content: space-between;
+  gap: clamp(16px, 3vw, 30px);
+  border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--line));
+  border-radius: 8px;
+  color: var(--text);
   background:
-    linear-gradient(rgba(20, 32, 51, 0.76), rgba(20, 32, 51, 0.68)),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='900' viewBox='0 0 1200 900'%3E%3Crect width='1200' height='900' fill='%233049a5'/%3E%3Cpath d='M0 180 C220 120 310 260 520 210 C780 148 910 42 1200 120 L1200 0 L0 0 Z' fill='%2300897b' opacity='.75'/%3E%3Cpath d='M0 730 C240 650 360 760 610 690 C845 626 990 680 1200 585 L1200 900 L0 900 Z' fill='%23b7791f' opacity='.72'/%3E%3Cg opacity='.18' stroke='%23ffffff' stroke-width='2'%3E%3Cpath d='M150 310h900M150 390h900M150 470h900M150 550h900'/%3E%3Cpath d='M280 250v380M470 250v380M660 250v380M850 250v380'/%3E%3C/g%3E%3C/svg%3E");
-  background-size: cover;
-  background-position: center;
+    linear-gradient(140deg, color-mix(in srgb, var(--panel) 92%, var(--primary) 8%), color-mix(in srgb, var(--panel-soft) 84%, var(--amber) 16%)),
+    var(--panel);
+  box-shadow: var(--shadow-card);
+}
+
+.brand-panel::before {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  z-index: -1;
+  border: 1px solid color-mix(in srgb, var(--primary) 14%, transparent);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--primary) 10%, transparent) 1px, transparent 1px),
+    linear-gradient(0deg, color-mix(in srgb, var(--primary) 8%, transparent) 1px, transparent 1px);
+  background-size: 76px 76px;
+  opacity: 0.5;
+}
+
+.brand-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-badge-row > div:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.brand-badge-row .eyebrow {
+  margin: 0;
+  color: var(--muted);
+}
+
+.brand-badge-row strong {
+  color: var(--text);
+  font-size: 0.98rem;
+  font-weight: 900;
+  overflow-wrap: anywhere;
 }
 
 .brand-mark {
-  width: 92px;
-  height: 92px;
+  width: 62px;
+  height: 62px;
   display: grid;
   place-items: center;
-  border: 2px solid rgba(255, 255, 255, 0.72);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.14);
-  font-size: 34px;
+  flex: 0 0 62px;
+  border: 1px solid color-mix(in srgb, var(--primary) 34%, var(--line));
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-size: 24px;
   font-weight: 900;
+  box-shadow: var(--shadow-card);
 }
 
 .brand-copy {
-  max-width: 560px;
+  align-self: center;
+  max-width: 680px;
 }
 
 .eyebrow {
@@ -296,39 +421,93 @@ h2 {
   letter-spacing: 0;
 }
 
-h1 {
-  font-size: clamp(2.2rem, 6vw, 4.8rem);
+h1:not([class]) {
+  font-size: clamp(1.7rem, 4vw, 3rem);
   line-height: 1.02;
 }
 
-h2 {
+h2:not([class]) {
   font-size: clamp(1.7rem, 4vw, 2.35rem);
   line-height: 1.12;
 }
 
+.brand-copy h1 {
+  font-size: clamp(3rem, 8vw, 7rem);
+  line-height: 1.02;
+}
+
 .brand-copy p:last-child {
   max-width: 520px;
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--text-soft);
   font-size: 1.05rem;
-  line-height: 1.75;
+  line-height: 1.6;
+}
+
+.brand-feature-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--density-gap);
+}
+
+.brand-feature-card {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--line));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  box-shadow: var(--shadow-card);
+}
+
+.brand-feature-card > svg {
+  flex: 0 0 auto;
+  color: var(--primary);
+}
+
+.brand-feature-card div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.brand-feature-card strong {
+  min-width: 0;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.brand-feature-card span {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .status-strip {
-  max-width: 620px;
+  width: 100%;
+  max-width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  padding: 16px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  gap: var(--density-gap);
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--line));
   border-radius: 8px;
-  background: rgba(8, 13, 23, 0.3);
+  background: var(--panel-strong);
+  box-shadow: var(--shadow-card);
 }
 
 .status-strip span {
   display: block;
   margin-bottom: 3px;
-  color: rgba(255, 255, 255, 0.66);
+  color: var(--muted);
   font-size: 0.75rem;
   font-weight: 800;
 }
@@ -336,27 +515,73 @@ h2 {
 .status-strip strong {
   display: block;
   overflow-wrap: anywhere;
-  color: #ffffff;
+  color: var(--text);
   font-size: 0.95rem;
 }
 
 .form-panel {
-  min-height: 100vh;
+  min-height: calc(100vh - clamp(20px, 4.8vw, 48px));
   display: grid;
   place-items: center;
-  padding: clamp(22px, 5vw, 64px);
+  padding: 0;
 }
 
 .login-card {
   width: 100%;
-  max-width: 100%;
+  max-width: 560px;
   display: grid;
-  gap: 20px;
-  padding: clamp(22px, 4vw, 36px);
-  border: 1px solid var(--line);
+  gap: 14px;
+  padding: clamp(16px, 3vw, 28px);
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--line));
   border-radius: 8px;
   background: var(--panel-strong);
   box-shadow: var(--shadow);
+}
+
+@media (min-width: 1600px) {
+  .login-shell {
+    grid-template-columns: minmax(0, 760px) minmax(420px, 580px);
+  }
+
+  .login-card {
+    max-width: 580px;
+  }
+}
+
+@media (min-width: 901px) and (max-height: 820px) {
+  .login-shell {
+    align-items: start;
+    padding: 16px;
+  }
+
+  .brand-panel,
+  .form-panel {
+    min-height: calc(100vh - 32px);
+  }
+
+  .login-card {
+    align-self: start;
+    gap: 10px;
+    padding: 18px;
+  }
+
+  .card-header {
+    gap: 10px;
+    margin-bottom: 0;
+  }
+
+  .brand-feature-card,
+  .first-use-note {
+    padding: 9px 10px;
+  }
+
+  .field-group {
+    gap: 5px;
+  }
+
+  .social-login-grid {
+    gap: 8px;
+  }
 }
 
 .card-header {
@@ -374,8 +599,8 @@ h2 {
 
 .lock-badge {
   flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
   border-radius: 8px;
@@ -391,6 +616,12 @@ h2 {
   flex: 0 0 auto;
   justify-content: flex-end;
   margin-left: auto;
+}
+
+.card-header .language-dialog-trigger {
+  width: auto;
+  min-width: 168px;
+  flex: 0 1 210px;
 }
 
 .language-dialog-trigger {
@@ -623,6 +854,19 @@ h2 {
 
 .input-shell input::placeholder {
   color: var(--placeholder);
+}
+
+.input-shell input:-webkit-autofill,
+.input-shell input:-webkit-autofill:hover,
+.input-shell input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--text);
+  box-shadow: 0 0 0 1000px var(--panel-soft) inset;
+  transition: background-color 9999s ease-out;
+}
+
+.input-shell:focus-within input:-webkit-autofill {
+  box-shadow: 0 0 0 1000px var(--input-focus-bg) inset;
 }
 
 .icon-button,
@@ -1084,6 +1328,16 @@ h2 {
 
 .signup-open-button {
   width: 100%;
+}
+
+.email-signup-button {
+  min-height: 46px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.email-signup-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--primary) 92%, var(--text) 8%);
 }
 
 .line-link-action {
@@ -2092,7 +2346,8 @@ h2 {
 }
 
 .workspace-title p,
-.workspace-title h1 {
+.workspace-title h1,
+.workspace-title small {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2108,6 +2363,13 @@ h2 {
 
 .workspace-title h1 {
   font-size: clamp(1.15rem, 3.5vw, 1.55rem);
+}
+
+.workspace-title small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 
 .workspace-panel,
@@ -2127,6 +2389,46 @@ h2 {
 :root[data-theme="dark"] .workspace-panel,
 :root[data-theme="dark"] .menu-workspace {
   box-shadow: 0 16px 46px rgba(0, 0, 0, 0.28);
+}
+
+.workspace-panel-head {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--density-gap);
+  flex-wrap: wrap;
+}
+
+.workspace-panel-head div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.workspace-panel-head h2,
+.workspace-panel-head p {
+  min-width: 0;
+  margin: 0;
+}
+
+.workspace-panel-head h2 {
+  color: var(--text);
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+
+.workspace-panel-head p {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.workspace-head-action {
+  min-height: var(--density-control-h);
+  flex: 0 1 220px;
+  padding: 0 12px;
 }
 
 .step-strip {
@@ -2171,6 +2473,30 @@ h2 {
   gap: var(--density-gap);
   color: var(--muted);
   font-weight: 850;
+}
+
+.workspace-empty-state {
+  width: 100%;
+  min-height: 112px;
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  padding: 16px;
+  border: 1px dashed color-mix(in srgb, var(--indigo) 30%, var(--line));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--icon-soft-bg) 52%, var(--panel-soft));
+  color: var(--muted);
+  text-align: center;
+}
+
+.workspace-empty-state svg {
+  color: var(--indigo);
+}
+
+.workspace-empty-state strong {
+  max-width: 520px;
+  color: var(--text);
+  font-size: 0.95rem;
 }
 
 .workspace-toolbar,
@@ -2329,6 +2655,10 @@ h2 {
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 750;
+}
+
+.shop-main strong {
+  font-size: 0.96rem;
 }
 
 .shop-badges {
@@ -2679,15 +3009,20 @@ h2 {
 
   .brand-panel {
     min-height: auto;
-    padding: 28px 22px;
+    padding: 22px;
     align-content: start;
     gap: 18px;
   }
 
+  .brand-feature-grid {
+    grid-template-columns: 1fr;
+  }
+
   .brand-mark {
-    width: 68px;
-    height: 68px;
-    font-size: 25px;
+    width: 58px;
+    height: 58px;
+    flex-basis: 58px;
+    font-size: 22px;
   }
 
   .brand-copy p:last-child {
@@ -2696,7 +3031,7 @@ h2 {
 
   .form-panel {
     min-height: auto;
-    padding: 22px;
+    padding: 0;
   }
 
   .settings-grid {
@@ -2748,12 +3083,24 @@ h2 {
 }
 
 @media (max-width: 520px) {
+  .login-shell {
+    padding: 8px;
+  }
+
+  .brand-panel {
+    padding: 16px;
+  }
+
+  .brand-panel::before {
+    inset: 10px;
+  }
+
   .login-card {
-    padding: 20px;
+    padding: 16px;
   }
 
   .input-shell {
-    min-height: 50px;
+    min-height: 44px;
   }
 
   .text-action {
@@ -2881,5 +3228,59 @@ h2 {
 
   .work-panel {
     grid-template-columns: 1fr;
+  }
+}
+
+.print-only {
+  display: none;
+}
+
+@media print {
+  body.product-label-printing * {
+    visibility: hidden;
+  }
+
+  body.product-label-printing .print-only,
+  body.product-label-printing .print-only * {
+    visibility: visible;
+  }
+
+  body.product-label-printing .print-only {
+    display: block;
+    position: absolute;
+    inset: 0;
+    background: white;
+    color: black;
+  }
+
+  body.product-label-printing .label-sheet {
+    display: grid;
+    grid-template-columns: repeat(3, 65mm);
+    gap: 4mm;
+    padding: 8mm;
+  }
+
+  body.product-label-printing .print-label {
+    display: grid;
+    align-content: start;
+    gap: 1.5mm;
+    width: 65mm;
+    min-height: 35mm;
+    overflow: hidden;
+    border: 1px solid #111;
+    padding: 3mm;
+    page-break-inside: avoid;
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+  }
+
+  body.product-label-printing .print-label b,
+  body.product-label-printing .print-label strong {
+    font-size: 11pt;
+  }
+
+  body.product-label-printing .label-bars {
+    width: 100%;
+    height: 10mm;
   }
 }

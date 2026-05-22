@@ -34,11 +34,14 @@ import {
   UploadCloud,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { FormEvent, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, FormEvent, ReactNode, type PointerEvent as ReactPointerEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { MasterPicker } from "@/components/product-barcode/master-picker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DateField, TimeField } from "@/components/ui/date-time-field";
 import { Input } from "@/components/ui/input";
 import { backendText, useBackendLanguage, type BackendLanguageDictionary } from "@/lib/backend-language";
@@ -52,6 +55,7 @@ import {
 } from "@/lib/system-setting-screens";
 import { LANGUAGES, normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { MENU_SECTIONS, menuText } from "@/lib/menu-data";
+import type { MasterEntry, MasterName } from "@/lib/product-barcode/api";
 import {
   branchDisplayName,
   shopDisplayName,
@@ -76,6 +80,29 @@ type SystemSettingsScreenProps = {
 type SettingRecord = Record<string, unknown>;
 type FormState = Record<string, unknown>;
 type Notice = { type: "error" | "info" | "success"; text: string } | null;
+type ProductUnitOption = {
+  unitcode: string;
+  names?: { code?: string; name?: string }[];
+};
+type LanguageConfigFormRow = {
+  code: LanguageCode;
+  codetranslator: string;
+  name: string;
+  is_use: boolean;
+  isdefault: boolean;
+};
+type StandardUnitDialogState = {
+  open: boolean;
+  loading: boolean;
+  saving: boolean;
+  query: string;
+  options: ProductUnitOption[];
+  selectedCodes: string[];
+  source: string;
+  error: string;
+};
+
+const SETTINGS_LIST_PAGE_SIZE = 100;
 
 type WorkDayTime = {
   starttime?: string;
@@ -87,7 +114,7 @@ type WorkDayTime = {
   startdayoffsetutc?: number;
   enddayoffsetutc?: number;
   timezone?: string;
-  timezoneoffset?: string;
+  timezone_offset?: string;
 };
 
 type WorkDay = {
@@ -103,14 +130,26 @@ type DateTimeScope = {
   branchcode: string;
   branchguid: string;
   timezone: string;
-  timezonelabel: string;
-  timezoneoffset: string;
+  timezone_label: string;
+  timezone_offset: string;
   calendarYearType: CalendarYearType;
 };
 
+const emptyStandardUnitDialog: StandardUnitDialogState = {
+  open: false,
+  loading: false,
+  saving: false,
+  query: "",
+  options: [],
+  selectedCodes: [],
+  source: "",
+  error: "",
+};
+
 const companySetupDefaults: FormState = {
-  "settings.countrycode": "TH",
+  "settings.country_code": "TH",
   "settings.language": "th",
+  "settings.languageconfigs": defaultLanguageConfigs("th"),
   "settings.base_currency": "THB",
   "settings.timezone": "Asia/Bangkok",
   "settings.date_format": "dd/MM/yyyy",
@@ -120,6 +159,28 @@ const companySetupDefaults: FormState = {
   "settings.is_vat_registered": false,
   "settings.vatrate": "0",
   "settings.usebuddhistcalendar": true,
+};
+
+const branchSetupDefaults: FormState = {
+  languages: ["th"],
+  language: "th",
+  "contact.latitude": 0,
+  "contact.longitude": 0,
+  "contact.phonenumber": "",
+  "pos.taxid": "",
+  "pos.vatrate": 0,
+  "pos.vattypesale": 0,
+  "pos.vattypepurchase": 0,
+  "pos.inquirytypesale": 0,
+  "pos.inquirytypepurchase": 0,
+  "pos.headerreceiptpos": "",
+  "pos.footerreceiptpos": "",
+  "pos.isbom": false,
+  decimal_quantity: 2,
+  decimal_price: 2,
+  decimal_document: 2,
+  couponusetype: 0,
+  paymentrounding: defaultPaymentRoundingJson(),
 };
 
 const uiEn = {
@@ -144,15 +205,26 @@ const uiEn = {
   edit: "Edit",
   empty: "No data",
   emptyHint: "Add a new item or change the search term.",
+  readOnlyEmptyHint: "No data found from the real database.",
   enableAccess: "Enable access",
   enabled: "Enabled",
   errorRequired: "Please fill required fields.",
   fullDay: "Full day",
   id: "ID",
   jsonInvalid: "JSON format is invalid.",
+  details: "Details",
+  items: "items",
+  list: "List",
   loading: "Loading data",
   manual: "Manual",
   newItem: "New item",
+  findStandardUnits: "Find standard units",
+  standardUnits: "Standard units",
+  addSelected: "Add selected",
+  clearSelection: "Clear selection",
+  noStandardUnits: "No standard units to add.",
+  selectAll: "Select all",
+  selected: "Selected",
   off: "Closed",
   preview: "Preview",
   quickAdd: "Quick add",
@@ -169,7 +241,10 @@ const uiEn = {
   search: "Search",
   selfOnly: "Own data only",
   selectSourceShop: "Select source shop",
+  sourceEnvironment: "Source environment",
+  sourcePro: "PRO",
   sourceShop: "Source shop",
+  sourceUat: "UAT",
   startTime: "Start",
   status: "Status",
   targetShop: "Target shop",
@@ -201,7 +276,7 @@ const uiText: Partial<Record<LanguageCode, Partial<Record<keyof typeof uiEn, str
     branch: "สาขา",
     cancel: "ยกเลิก",
     close: "ปิด",
-    company: "กิจการ",
+    company: "บริษัท",
     copyNow: "โอนข้อมูล",
     copyMondaySchedule: "คัดลอกเวลาจันทร์",
     creator: "ผู้สร้าง",
@@ -213,15 +288,26 @@ const uiText: Partial<Record<LanguageCode, Partial<Record<keyof typeof uiEn, str
     edit: "แก้ไข",
     empty: "ไม่มีข้อมูล",
     emptyHint: "เพิ่มรายการใหม่ หรือเปลี่ยนคำค้นหา",
+    readOnlyEmptyHint: "ไม่พบข้อมูลจากฐานข้อมูลจริง",
     enableAccess: "ให้เข้าใช้งานได้",
     enabled: "เปิดใช้งาน",
     errorRequired: "กรุณากรอกช่องที่จำเป็น",
     fullDay: "ทั้งวัน",
     id: "รหัส",
     jsonInvalid: "รูปแบบ JSON ไม่ถูกต้อง",
+    details: "รายละเอียด",
+    items: "รายการ",
+    list: "รายการ",
     loading: "กำลังโหลดข้อมูล",
     manual: "คู่มือ",
     newItem: "รายการใหม่",
+    findStandardUnits: "ค้นหาหน่วยนับมาตรฐาน",
+    standardUnits: "หน่วยนับมาตรฐาน",
+    addSelected: "เพิ่มรายการที่เลือก",
+    clearSelection: "ล้างการเลือก",
+    noStandardUnits: "ไม่พบหน่วยนับมาตรฐานที่เพิ่มได้",
+    selectAll: "เลือกทั้งหมด",
+    selected: "เลือกแล้ว",
     off: "หยุด",
     preview: "ตรวจสอบก่อนโอน",
     quickAdd: "เพิ่มด่วน",
@@ -238,7 +324,10 @@ const uiText: Partial<Record<LanguageCode, Partial<Record<keyof typeof uiEn, str
     search: "ค้นหา",
     selfOnly: "เห็นข้อมูลตัวเองเท่านั้น",
     selectSourceShop: "เลือก shop ต้นทาง",
+    sourceEnvironment: "ฐานข้อมูลต้นทาง",
+    sourcePro: "PRO ใช้งานจริง",
     sourceShop: "Shop ต้นทาง",
+    sourceUat: "UAT ทดสอบ",
     startTime: "เริ่ม",
     status: "สถานะ",
     targetShop: "Shop ปลายทาง",
@@ -286,6 +375,13 @@ const uiBackendKeys: Partial<Record<keyof typeof uiEn, string>> = {
   loading: "loading",
   manual: "manual",
   newItem: "new_item",
+  findStandardUnits: "find_standard_units",
+  standardUnits: "standard_units",
+  addSelected: "add_selected",
+  clearSelection: "clear_selection",
+  noStandardUnits: "no_standard_units",
+  selectAll: "select_all",
+  selected: "selected",
   readAccess: "access",
   refresh: "refresh",
   resetPassword: "reset_password",
@@ -328,6 +424,15 @@ const fieldBackendKeys: Record<string, string> = {
   "branch.names": "branch_name",
   "branch.timezone": "timezone",
   "branch.yeartype": "year_type",
+  "branch.languages": "select_data_language",
+  "branch.businesstype": "business_type",
+  "branch.pos.taxid": "company_tax_id",
+  "branch.pos.vatrate": "vat_rate",
+  "branch.pos.isbom": "cut_stock_by_bom",
+  "branch.pos.vattypepurchase": "vattype_purchase",
+  "branch.pos.inquirytypepurchase": "inquirytype_purchase",
+  "branch.pos.vattypesale": "vattype_sale",
+  "branch.pos.inquirytypesale": "inquirytype_sale",
   "business_type_screen.code": "code",
   "business_type_screen.names": "business_type",
   "company.address": "company_address",
@@ -335,7 +440,7 @@ const fieldBackendKeys: Record<string, string> = {
   "company.names": "company_name",
   "company.settings.base_currency": "base_currency",
   "company.settings.company_registration_no": "company_registration_no",
-  "company.settings.countrycode": "country_code",
+  "company.settings.country_code": "country_code",
   "company.settings.date_format": "date_format",
   "company.settings.decimal_document": "decimal_document",
   "company.settings.decimal_price": "decimal_price",
@@ -344,7 +449,8 @@ const fieldBackendKeys: Record<string, string> = {
   "company.settings.isusebranch": "use_branch_system",
   "company.settings.isusedepartment": "use_department_system",
   "company.settings.language": "default_language",
-  "company.settings.taxid": "tax_id",
+  "company.settings.languageconfigs": "active_languages",
+  "company.settings.tax_id": "tax_id",
   "company.settings.timezone": "timezone",
   "company.settings.usebuddhistcalendar": "year_type",
   "company.settings.vatrate": "vat_rate",
@@ -353,9 +459,9 @@ const fieldBackendKeys: Record<string, string> = {
   "department.names": "department_name",
   "holiday_screen.date": "date",
   "holiday_screen.desc": "description",
-  "user.isaccessdisabled": "access_status",
+  "user.is_access_disabled": "access_status",
   "user.uid": "user_id_guid",
-  "user.username": "login_username",
+  "user.user_profile_name": "user_name",
   "user.email": "registered_email",
   "user.role": "user_role",
   "user.position": "user_position",
@@ -398,15 +504,23 @@ export function SystemSettingsScreen({ embedded = false, initialBackendLanguage,
   const [records, setRecords] = useState<SettingRecord[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [recordTotal, setRecordTotal] = useState(0);
+  const [allRecordTotal, setAllRecordTotal] = useState(0);
+  const [allRecordsLoaded, setAllRecordsLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
   const [editing, setEditing] = useState<SettingRecord | null>(null);
   const [form, setForm] = useState<FormState>({});
   const [formOpen, setFormOpen] = useState(false);
+  const [selectedRecordId, setSelectedRecordId] = useState("");
   const [autoOpenedCompanyId, setAutoOpenedCompanyId] = useState("");
   const [workDays, setWorkDays] = useState<WorkDay[]>([]);
   const [sourceShopId, setSourceShopId] = useState("");
+  const [copySourceEnvironment, setCopySourceEnvironment] = useState<"uat" | "pro">("uat");
   const [copyPreview, setCopyPreview] = useState<unknown>(null);
+  const [standardUnitDialog, setStandardUnitDialog] = useState<StandardUnitDialogState>(emptyStandardUnitDialog);
+  const { confirm, confirmationDialog } = useConfirmDialog();
   const activeBackendUrl = auth?.backendUrl ?? initialBackendUrl;
   const backendLanguage = useBackendLanguage(language, activeBackendUrl, language === initialLanguage ? initialBackendLanguage : undefined);
 
@@ -424,14 +538,22 @@ export function SystemSettingsScreen({ embedded = false, initialBackendLanguage,
   const subtitle = config ? config.subtitle[language] ?? config.subtitle.en ?? config.subtitle.th : "";
   const dateTimeScope = useMemo(() => resolveDateTimeScope(workspace), [workspace]);
 
-  const loadRecords = useCallback(async (currentAuth: AuthSession | null, currentWorkspace: WorkspaceSession | null, currentConfig: SystemSettingConfig | undefined) => {
+  const loadRecords = useCallback(async (
+    currentAuth: AuthSession | null,
+    currentWorkspace: WorkspaceSession | null,
+    currentConfig: SystemSettingConfig | undefined,
+    offset = 0,
+    append = false,
+  ) => {
     if (!currentAuth || !currentWorkspace || !currentConfig) return;
-    setLoading(true);
+    if (append) setLoadingMore(true);
+    else setLoading(true);
     setNotice(null);
     try {
       const searchParams = new URLSearchParams({
-        limit: "1000",
-        offset: "0",
+        limit: String(SETTINGS_LIST_PAGE_SIZE),
+        offset: String(offset),
+        page: String(Math.floor(offset / SETTINGS_LIST_PAGE_SIZE) + 1),
         q: query,
         shopid: currentWorkspace.shop.shopid,
       });
@@ -441,6 +563,7 @@ export function SystemSettingsScreen({ embedded = false, initialBackendLanguage,
         if (scope.branchcode) searchParams.set("branchcode", scope.branchcode);
         if (scope.branchguid) searchParams.set("branchguid", scope.branchguid);
       }
+      if (currentConfig.kind === "copy-uat") searchParams.set("source_environment", copySourceEnvironment);
       const response = await fetch(`/api/system-settings/${currentConfig.slug}?${searchParams.toString()}`, {
         headers: {
           "x-bc-backend-url": currentAuth.backendUrl,
@@ -451,18 +574,31 @@ export function SystemSettingsScreen({ embedded = false, initialBackendLanguage,
       const payload = await response.json() as unknown;
       if (!response.ok || isFailed(payload)) throw new Error(extractMessage(payload) ?? text("requestFailed"));
       const nextRecords = normalizeRecords(payload, currentConfig);
-      setRecords(currentConfig.slug === "holiday_screen" || currentConfig.slug === "department" ? filterRecordsByDateTimeScope(nextRecords, scope) : nextRecords);
+      const scopedRecords = currentConfig.slug === "holiday_screen" || currentConfig.slug === "department" ? filterRecordsByDateTimeScope(nextRecords, scope) : nextRecords;
+      const nextTotal = extractRecordTotal(payload, scopedRecords.length);
+      setRecordTotal(nextTotal);
+      if (!query.trim()) setAllRecordTotal(nextTotal);
+      setAllRecordsLoaded(scopedRecords.length < SETTINGS_LIST_PAGE_SIZE || offset + scopedRecords.length >= nextTotal);
+      setRecords((currentRecords) => append ? mergeRecords(currentRecords, scopedRecords, currentConfig) : scopedRecords);
       if (currentConfig.slug === "work_day_screen") setWorkDays(normalizeWorkDays(nextRecords, language, scope));
     } catch (error) {
       setNotice({ type: "error", text: errorText(error) });
     } finally {
-      setLoading(false);
+      if (append) setLoadingMore(false);
+      else setLoading(false);
     }
-  }, [errorText, language, query, setLoading, setNotice, setRecords, setWorkDays, text]);
+  }, [copySourceEnvironment, errorText, language, query, setLoading, setNotice, setRecords, setWorkDays, text]);
 
   useEffect(() => {
     if (externalLanguage) setLanguage(externalLanguage);
   }, [externalLanguage]);
+
+  useEffect(() => {
+    if (config?.kind !== "copy-uat" || !auth || !workspace) return;
+    setSourceShopId("");
+    setCopyPreview(null);
+    void loadRecords(auth, workspace, config);
+  }, [auth, config, copySourceEnvironment, loadRecords, workspace]);
 
   useEffect(() => {
     if (!config) return;
@@ -472,7 +608,7 @@ export function SystemSettingsScreen({ embedded = false, initialBackendLanguage,
     const nextAuth = readAuth();
     const nextWorkspace = readWorkspace();
     if (!nextAuth || !nextWorkspace) {
-      setNotice({ type: "info", text: "กรุณาเข้าสู่ระบบและเลือกกิจการก่อนเปิดหน้าจอนี้" });
+      setNotice({ type: "info", text: "กรุณาเข้าสู่ระบบและเลือกบริษัทก่อนเปิดหน้าจอนี้" });
       if (!embedded) router.replace("/");
       return;
     }
@@ -493,10 +629,31 @@ export function SystemSettingsScreen({ embedded = false, initialBackendLanguage,
     if (!needle) return records;
     return records.filter((record) => `${recordTitle(record, config, language)} ${recordId(record, config)} ${JSON.stringify(record)}`.toLowerCase().includes(needle));
   }, [config, language, query, records]);
+  const displayTotal = recordTotal || visibleRecords.length;
+  const totalAllRecords = allRecordTotal || (!query.trim() ? displayTotal : 0);
+  const hasMoreRecords = Boolean(config && records.length > 0 && records.length < displayTotal && !allRecordsLoaded);
+  const loadMoreRecords = useCallback(() => {
+    if (!auth || !workspace || !config || loading || loadingMore || !hasMoreRecords) return;
+    void loadRecords(auth, workspace, config, records.length, true);
+  }, [auth, config, hasMoreRecords, loadRecords, loading, loadingMore, records.length, workspace]);
+  const selectedRecord = useMemo(() => {
+    if (!config || !visibleRecords.length) return null;
+    return visibleRecords.find((record) => recordId(record, config) === selectedRecordId) ?? visibleRecords[0] ?? null;
+  }, [config, selectedRecordId, visibleRecords]);
 
   useEffect(() => {
-    if (!config || config.kind !== "company" || records.length !== 1 || formOpen || editing) return;
-    const record = records[0];
+    if (!config || !visibleRecords.length) {
+      setSelectedRecordId("");
+      return;
+    }
+    if (selectedRecordId && visibleRecords.some((record) => recordId(record, config) === selectedRecordId)) return;
+    setSelectedRecordId(recordId(visibleRecords[0], config));
+  }, [config, selectedRecordId, visibleRecords]);
+
+  useEffect(() => {
+    if (!config || config.kind !== "company" || formOpen || editing) return;
+    const record = companyRecordForEdit(records, workspace);
+    if (!record) return;
     const id = recordId(record, config);
     if (autoOpenedCompanyId === id) return;
     setEditing(record);
@@ -504,7 +661,7 @@ export function SystemSettingsScreen({ embedded = false, initialBackendLanguage,
     setFormOpen(true);
     setNotice(null);
     setAutoOpenedCompanyId(id);
-  }, [autoOpenedCompanyId, config, editing, formOpen, language, records]);
+  }, [autoOpenedCompanyId, config, editing, formOpen, language, records, workspace]);
 
   if (!config) {
     return (
@@ -514,19 +671,40 @@ export function SystemSettingsScreen({ embedded = false, initialBackendLanguage,
     );
   }
   const currentConfig = config;
+  const canEdit = currentConfig.editable !== false;
 
   function openCreate() {
     setEditing(null);
     setForm(defaultForm(currentConfig, language));
     setFormOpen(true);
+    setSelectedRecordId("");
     setNotice(null);
   }
 
-  function openEdit(record: SettingRecord) {
+  async function openEdit(record: SettingRecord) {
+    setSelectedRecordId(recordId(record, currentConfig));
     setEditing(record);
     setForm(formFromRecord(record, currentConfig, language));
     setFormOpen(true);
     setNotice(null);
+    if (!auth || !workspace || currentConfig.kind !== "main-crud") return;
+    const id = recordId(record, currentConfig);
+    if (!id) return;
+    try {
+      const params = new URLSearchParams({ shopid: workspace.shop.shopid });
+      const response = await fetch(`/api/system-settings/${currentConfig.slug}/${encodeURIComponent(id)}?${params.toString()}`, {
+        headers: requestHeaders(auth),
+        cache: "no-store",
+      });
+      const payload = await response.json() as unknown;
+      if (!response.ok || isFailed(payload)) return;
+      const detail = normalizeRecords(payload, currentConfig)[0];
+      if (!detail) return;
+      setEditing(detail);
+      setForm(formFromRecord(detail, currentConfig, language));
+    } catch {
+      // Keep the list-row data visible if detail fetch is unavailable.
+    }
   }
 
   async function saveRecord(event?: FormEvent<HTMLFormElement>) {
@@ -569,6 +747,10 @@ export function SystemSettingsScreen({ embedded = false, initialBackendLanguage,
       if (!response.ok || isFailed(data)) throw new Error(extractMessage(data) ?? text("requestFailed"));
       setNotice({ type: "success", text: text("saved") });
       if (currentConfig.kind === "company") {
+        const nextWorkspace = { ...workspace, shopInfo: payload };
+        setWorkspace(nextWorkspace);
+        localStorage.setItem(workspaceStorageKeys.workspace, JSON.stringify(nextWorkspace));
+        localStorage.setItem(workspaceStorageKeys.shopInfo, JSON.stringify(payload));
         setFormOpen(true);
         setEditing(payload);
       } else {
@@ -593,8 +775,16 @@ export function SystemSettingsScreen({ embedded = false, initialBackendLanguage,
       setNotice({ type: "info", text: text("creatorCannotDelete") });
       return;
     }
-    if (!window.confirm(text("deleteConfirm"))) return;
     const id = recordId(record, currentConfig);
+    const confirmed = await confirm({
+      title: text("deleteConfirm"),
+      description: recordTitle(record, currentConfig, language),
+      details: id ? `${language === "th" ? "รหัสอ้างอิง" : "Reference ID"}: ${id}` : undefined,
+      confirmLabel: text("delete"),
+      cancelLabel: text("cancel"),
+      tone: "danger",
+    });
+    if (!confirmed) return;
     setLoading(true);
     setNotice(null);
     try {
@@ -627,7 +817,7 @@ export function SystemSettingsScreen({ embedded = false, initialBackendLanguage,
 
     const id = recordId(record, currentConfig);
     const nextForm = formFromRecord(record, currentConfig, language);
-    nextForm.isaccessdisabled = disabled;
+    nextForm.is_access_disabled = disabled;
 
     let payload: SettingRecord;
     try {
@@ -664,7 +854,15 @@ export function SystemSettingsScreen({ embedded = false, initialBackendLanguage,
     }
     const username = stringValue(record.username ?? record.email ?? record.code);
     if (!username) return;
-    if (!window.confirm(text("resetPasswordConfirm"))) return;
+    const confirmed = await confirm({
+      title: text("resetPassword"),
+      description: text("resetPasswordConfirm"),
+      details: `${language === "th" ? "ผู้ใช้" : "User"}: ${username}`,
+      confirmLabel: text("resetPassword"),
+      cancelLabel: text("cancel"),
+      tone: "warning",
+    });
+    if (!confirmed) return;
 
     setSaving(true);
     setNotice(null);
@@ -725,6 +923,8 @@ export function SystemSettingsScreen({ embedded = false, initialBackendLanguage,
         body: JSON.stringify({
           action,
           backendUrl: auth.backendUrl,
+          source_environment: copySourceEnvironment,
+          target_environment: "dev",
           source_shop_id: sourceShopId,
           target_shop_id: workspace.shop.shopid,
         }),
@@ -738,6 +938,81 @@ export function SystemSettingsScreen({ embedded = false, initialBackendLanguage,
     } finally {
       setSaving(false);
     }
+  }
+
+  async function openStandardUnitDialog() {
+    if (!auth || !workspace) return;
+    setStandardUnitDialog({ ...emptyStandardUnitDialog, open: true, loading: true });
+    await loadStandardUnitOptions("");
+  }
+
+  async function loadStandardUnitOptions(searchText = standardUnitDialog.query) {
+    if (!auth || !workspace) return;
+    setStandardUnitDialog((current) => ({ ...current, loading: true, error: "", query: searchText }));
+    try {
+      const params = new URLSearchParams({
+        backendUrl: auth.backendUrl,
+        mainShopId: getMainShopIdFromWorkspace(workspace),
+        q: searchText,
+      });
+      const response = await fetch(`/api/workspace/product-units/standard?${params.toString()}`, {
+        headers: requestHeaders(auth),
+        cache: "no-store",
+      });
+      const payload = await response.json() as unknown;
+      if (!response.ok || isFailed(payload)) throw new Error(extractMessage(payload) ?? text("requestFailed"));
+      const options = isRecord(payload) && Array.isArray(payload.data) ? payload.data.filter(isProductUnitOption) : [];
+      setStandardUnitDialog((current) => ({
+        ...current,
+        loading: false,
+        options,
+        selectedCodes: options.map((unit) => unit.unitcode),
+        source: isRecord(payload) ? stringValue(payload.source) : "",
+      }));
+    } catch (error) {
+      setStandardUnitDialog((current) => ({ ...current, loading: false, error: errorText(error) }));
+    }
+  }
+
+  async function saveStandardUnits() {
+    if (!auth || !workspace || standardUnitDialog.selectedCodes.length === 0) return;
+    setStandardUnitDialog((current) => ({ ...current, saving: true, error: "" }));
+    setNotice(null);
+    try {
+      const response = await fetch("/api/workspace/product-units/defaults", {
+        method: "POST",
+        headers: requestHeaders(auth),
+        body: JSON.stringify({
+          backendUrl: auth.backendUrl,
+          mainShopId: getMainShopIdFromWorkspace(workspace),
+          unitcodes: standardUnitDialog.selectedCodes,
+        }),
+      });
+      const payload = await response.json() as unknown;
+      if (!response.ok || isFailed(payload)) throw new Error(extractMessage(payload) ?? text("requestFailed"));
+      setStandardUnitDialog(emptyStandardUnitDialog);
+      setNotice({ type: "success", text: extractMessage(payload) ?? text("saved") });
+      await loadRecords(auth, workspace, currentConfig);
+    } catch (error) {
+      setStandardUnitDialog((current) => ({ ...current, saving: false, error: errorText(error) }));
+    }
+  }
+
+  function toggleStandardUnit(unitcode: string, checked: boolean) {
+    setStandardUnitDialog((current) => {
+      const selected = new Set(current.selectedCodes);
+      if (checked) selected.add(unitcode);
+      else selected.delete(unitcode);
+      return { ...current, selectedCodes: Array.from(selected) };
+    });
+  }
+
+  function selectAllStandardUnits() {
+    setStandardUnitDialog((current) => ({ ...current, selectedCodes: current.options.map((unit) => unit.unitcode) }));
+  }
+
+  function clearStandardUnits() {
+    setStandardUnitDialog((current) => ({ ...current, selectedCodes: [] }));
   }
 
   const content = (
@@ -764,7 +1039,7 @@ export function SystemSettingsScreen({ embedded = false, initialBackendLanguage,
           <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
             <Badge variant="outline">{text("company")}: {shopDisplayName(workspace.shop)}</Badge>
             <Badge variant="outline">{text("branch")}: {workspace.branch ? branchDisplayName(workspace.branch) : "-"}</Badge>
-            <Badge variant="outline">{text("timezone")}: {dateTimeScope.timezonelabel || dateTimeScope.timezone || dateTimeScope.timezoneoffset || "-"}</Badge>
+            <Badge variant="outline">{text("timezone")}: {dateTimeScope.timezone_label || dateTimeScope.timezone || dateTimeScope.timezone_offset || "-"}</Badge>
           </div>
         ) : null}
       </header>
@@ -787,6 +1062,8 @@ export function SystemSettingsScreen({ embedded = false, initialBackendLanguage,
           saving={saving}
           selected={sourceShopId}
           setSelected={setSourceShopId}
+          sourceEnvironment={copySourceEnvironment}
+          setSourceEnvironment={setCopySourceEnvironment}
           targetShopId={workspace?.shop.shopid ?? ""}
           text={text}
         />
@@ -803,7 +1080,7 @@ export function SystemSettingsScreen({ embedded = false, initialBackendLanguage,
           workDays={workDays}
         />
       ) : config.kind === "company" ? (
-        loading && !records.length ? (
+        loading && !companyRecordForEdit(records, workspace) ? (
           <Card><CardContent className="flex min-h-40 items-center justify-center gap-2 p-4 text-sm text-muted-foreground"><Loader2 className="animate-spin" />{text("loading")}</CardContent></Card>
         ) : formOpen ? (
           <SettingFormDialog
@@ -826,95 +1103,117 @@ export function SystemSettingsScreen({ embedded = false, initialBackendLanguage,
           <Card>
             <CardContent className="grid min-h-44 place-items-center p-4 text-center">
               <div className="grid gap-2">
-                <AlertCircle className="mx-auto size-10 text-muted-foreground" />
-                <h2 className="text-base font-semibold">{text("empty")}</h2>
-                <p className="text-sm text-muted-foreground">{text("emptyHint")}</p>
+                <Loader2 className="mx-auto size-8 animate-spin text-muted-foreground" />
+                <h2 className="text-base font-semibold">{text("loading")}</h2>
+                <p className="text-sm text-muted-foreground">{language === "th" ? "กำลังเตรียมข้อมูลบริษัทปัจจุบัน" : "Preparing current company settings."}</p>
               </div>
             </CardContent>
           </Card>
         )
       ) : (
         <>
-          <section className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard label={text("total")} value={visibleRecords.length.toLocaleString(localeOf(language))} />
-            <StatCard label={text("active")} value={visibleRecords.filter(isActiveRecord).length.toLocaleString(localeOf(language))} />
-          </section>
-
           <Card>
             <CardContent className="grid gap-2 p-3">
-              <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
+              <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto]">
                 <label className="relative block min-w-0">
                   <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input className="pl-9" placeholder={`${text("search")} ${title}`} value={query} onChange={(event) => setQuery(event.target.value)} />
                 </label>
+                <div className="flex min-h-9 items-center gap-2 rounded-lg border border-border bg-background px-2 text-sm shadow-sm">
+                  <span className="font-medium text-muted-foreground">{language === "th" ? "ทั้งหมด" : "Total"}</span>
+                  <b className="text-foreground">{totalAllRecords.toLocaleString(localeOf(language))}</b>
+                  <span className="h-4 w-px bg-border" aria-hidden="true" />
+                  <span className="font-medium text-muted-foreground">{text("active")}</span>
+                  <b className="text-foreground">{visibleRecords.filter(isActiveRecord).length.toLocaleString(localeOf(language))}</b>
+                </div>
+                {currentConfig.slug === "productunit" && canEdit ? (
+                  <Button type="button" variant="outline" onClick={() => void openStandardUnitDialog()} disabled={loading || saving || !auth}>
+                    <DownloadCloud />
+                    {text("findStandardUnits")}
+                  </Button>
+                ) : null}
                 <Button type="button" variant="outline" onClick={() => void loadRecords(auth, workspace, config)} disabled={loading || !auth}>
                   {loading ? <Loader2 className="animate-spin" /> : <RefreshCcw />}
                   {text("refresh")}
                 </Button>
-                <Button type="button" onClick={openCreate} disabled={!auth}>
-                  <Plus />
-                  {text("add")}
-                </Button>
+                {canEdit ? (
+                  <Button type="button" onClick={openCreate} disabled={!auth}>
+                    <Plus />
+                    {text("add")}
+                  </Button>
+                ) : null}
               </div>
             </CardContent>
           </Card>
 
           {loading && !records.length ? (
             <Card><CardContent className="flex min-h-40 items-center justify-center gap-2 p-4 text-sm text-muted-foreground"><Loader2 className="animate-spin" />{text("loading")}</CardContent></Card>
-          ) : visibleRecords.length ? (
-            <section className="grid min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-              {visibleRecords.map((record, index) => (
-                <SettingCard
-                  auth={auth}
-                  config={config}
-                  dictionary={backendLanguage}
-                  key={`${recordId(record, config)}-${index}`}
-                  language={language}
-                  onDelete={deleteRecord}
-                  onEdit={openEdit}
-                  onResetPassword={resetUserPassword}
-                  onToggleAccess={toggleUserAccess}
-                  record={record}
-                  saving={saving}
-                  text={text}
-                  workspace={workspace}
-                />
-              ))}
-            </section>
+          ) : visibleRecords.length || formOpen ? (
+            <SettingDataList
+              auth={auth}
+              config={config}
+              dateTimeScope={dateTimeScope}
+              dictionary={backendLanguage}
+              editing={editing}
+              form={form}
+              formOpen={formOpen}
+              language={language}
+              onCloseForm={() => {
+                if (!saving) setFormOpen(false);
+              }}
+              onDelete={deleteRecord}
+              onEdit={openEdit}
+              onResetPassword={resetUserPassword}
+              onSelect={(record) => {
+                setSelectedRecordId(recordId(record, config));
+                setFormOpen(false);
+                setEditing(null);
+              }}
+              onSubmit={saveRecord}
+              onToggleAccess={toggleUserAccess}
+              hasMore={hasMoreRecords}
+              loadingMore={loadingMore}
+              onLoadMore={loadMoreRecords}
+              records={visibleRecords}
+              totalRecords={displayTotal}
+              saving={saving}
+              selectedRecord={selectedRecord}
+              setForm={setForm}
+              text={text}
+              workspace={workspace}
+            />
           ) : (
             <Card>
               <CardContent className="grid min-h-44 place-items-center p-4 text-center">
                 <div className="grid gap-2">
                   <AlertCircle className="mx-auto size-10 text-muted-foreground" />
                   <h2 className="text-base font-semibold">{text("empty")}</h2>
-                  <p className="text-sm text-muted-foreground">{text("emptyHint")}</p>
-                  <Button type="button" onClick={openCreate} disabled={!auth}><Plus />{text("add")}</Button>
+                  <p className="text-sm text-muted-foreground">{canEdit ? text("emptyHint") : text("readOnlyEmptyHint")}</p>
+                  {canEdit ? <Button type="button" onClick={openCreate} disabled={!auth}><Plus />{text("add")}</Button> : null}
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {formOpen ? (
-            <SettingFormDialog
-              auth={auth}
-              config={config}
-              dictionary={backendLanguage}
-              editing={editing}
-              form={form}
-              dateTimeScope={dateTimeScope}
+          {standardUnitDialog.open ? (
+            <StandardUnitDialog
+              dialog={standardUnitDialog}
               language={language}
-              saving={saving}
-              setForm={setForm}
-              workspace={workspace}
+              onClear={clearStandardUnits}
               onClose={() => {
-                if (!saving) setFormOpen(false);
+                if (!standardUnitDialog.saving) setStandardUnitDialog(emptyStandardUnitDialog);
               }}
-              onSubmit={saveRecord}
+              onQueryChange={(value) => setStandardUnitDialog((current) => ({ ...current, query: value }))}
+              onRefresh={() => void loadStandardUnitOptions()}
+              onSave={() => void saveStandardUnits()}
+              onSelectAll={selectAllStandardUnits}
+              onToggle={toggleStandardUnit}
               text={text}
             />
           ) : null}
         </>
       )}
+      {confirmationDialog}
     </div>
   );
 
@@ -956,6 +1255,7 @@ function SettingCard({
   const isCreator = isUser && isCreatorRecord(record, workspace);
   const isSelf = isUser && isSelfUserRecord(record, auth);
   const accessDisabled = isUser && userAccessDisabled(record);
+  const canEdit = config.editable !== false;
   return (
     <Card className={cn(
       "min-w-0 shadow-sm",
@@ -979,9 +1279,11 @@ function SettingCard({
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap justify-end gap-1">
-            <Button type="button" size="icon" variant="outline" onClick={() => onEdit(record)} disabled={isSelf} aria-label={isSelf ? text("selfPermissionCannotEdit") : text("edit")} title={isSelf ? text("selfPermissionCannotEdit") : text("edit")}>
-              <Edit3 />
-            </Button>
+            {canEdit ? (
+              <Button type="button" size="icon" variant="outline" onClick={() => onEdit(record)} disabled={isSelf} aria-label={isSelf ? text("selfPermissionCannotEdit") : text("edit")} title={isSelf ? text("selfPermissionCannotEdit") : text("edit")}>
+                <Edit3 />
+              </Button>
+            ) : null}
             {isUser && !isCreator && !isSelf ? (
               <Button
                 type="button"
@@ -1009,7 +1311,7 @@ function SettingCard({
                 <span className="hidden sm:inline">{accessDisabled ? text("enableAccess") : text("temporarilyDisableAccess")}</span>
               </Button>
             ) : null}
-            {config.kind === "company" ? null : (
+            {config.kind === "company" || !canEdit ? null : (
               <Button type="button" size="icon" variant="outline" onClick={() => onDelete(record)} disabled={isCreator || isSelf} aria-label={isCreator ? text("creatorCannotDelete") : isSelf ? text("selfPermissionCannotEdit") : text("delete")} title={isCreator ? text("creatorCannotDelete") : isSelf ? text("selfPermissionCannotEdit") : text("delete")}>
                 <Trash2 />
               </Button>
@@ -1026,6 +1328,466 @@ function SettingCard({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function SettingDataList({
+  auth,
+  config,
+  dateTimeScope,
+  dictionary,
+  editing,
+  form,
+  formOpen,
+  language,
+  onCloseForm,
+  onDelete,
+  onEdit,
+  onResetPassword,
+  onSelect,
+  onSubmit,
+  onToggleAccess,
+  hasMore,
+  loadingMore,
+  onLoadMore,
+  records,
+  totalRecords,
+  saving,
+  selectedRecord,
+  setForm,
+  text,
+  workspace,
+}: {
+  auth: AuthSession | null;
+  config: SystemSettingConfig;
+  dateTimeScope: DateTimeScope;
+  dictionary: BackendLanguageDictionary;
+  editing: SettingRecord | null;
+  form: FormState;
+  formOpen: boolean;
+  language: LanguageCode;
+  onCloseForm: () => void;
+  onDelete: (record: SettingRecord) => void;
+  onEdit: (record: SettingRecord) => void;
+  onResetPassword: (record: SettingRecord) => void;
+  onSelect: (record: SettingRecord) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onToggleAccess: (record: SettingRecord, disabled: boolean) => void;
+  hasMore: boolean;
+  loadingMore: boolean;
+  onLoadMore: () => void;
+  records: SettingRecord[];
+  totalRecords: number;
+  saving: boolean;
+  selectedRecord: SettingRecord | null;
+  setForm: (form: FormState) => void;
+  text: (key: keyof typeof uiEn) => string;
+  workspace: WorkspaceSession | null;
+}) {
+  const selectedId = selectedRecord ? recordId(selectedRecord, config) : "";
+  const editingId = editing ? recordId(editing, config) : "";
+  const listScrollRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const [listMaxHeight, setListMaxHeight] = useState(420);
+  const [leftPanePercent, setLeftPanePercent] = useState(30);
+  const [hoveredRecordId, setHoveredRecordId] = useState("");
+  const columns = useMemo(() => settingListColumns(config, language, dictionary, text), [config, dictionary, language, text]);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || !hasMore || loadingMore) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) onLoadMore();
+    }, { root: listScrollRef.current, rootMargin: "240px 0px", threshold: 0.01 });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, onLoadMore]);
+
+  useLayoutEffect(() => {
+    const element = listScrollRef.current;
+    if (!element) return;
+    const updateHeight = () => {
+      const top = element.getBoundingClientRect().top;
+      const bottomGap = 12;
+      setListMaxHeight(Math.max(260, Math.floor(window.innerHeight - top - bottomGap)));
+    };
+    updateHeight();
+    const resizeObserver = new ResizeObserver(updateHeight);
+    resizeObserver.observe(document.body);
+    resizeObserver.observe(element);
+    window.addEventListener("resize", updateHeight);
+    window.addEventListener("orientationchange", updateHeight);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateHeight);
+      window.removeEventListener("orientationchange", updateHeight);
+    };
+  }, [formOpen, records.length, selectedId]);
+
+  const startPaneResize = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    const container = event.currentTarget.parentElement;
+    if (!container) return;
+    event.preventDefault();
+    const rect = container.getBoundingClientRect();
+    const update = (clientX: number) => {
+      const next = ((clientX - rect.left) / rect.width) * 100;
+      setLeftPanePercent(Math.min(95, Math.max(5, next)));
+    };
+    update(event.clientX);
+    const onMove = (moveEvent: PointerEvent) => update(moveEvent.clientX);
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }, []);
+
+  return (
+    <Card className="overflow-hidden shadow-sm">
+      <CardContent className="flex min-h-[520px] flex-col gap-0 p-0 lg:flex-row">
+        <section className="min-h-0 min-w-0 border-b border-border lg:border-b-0" style={{ flexBasis: `${leftPanePercent}%` }} aria-label={text("list")}>
+          <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/30 px-3 py-1.5">
+            <div className="min-w-0">
+              <h2 className="truncate text-sm font-semibold">{systemSettingTitle(config, language, dictionary)}</h2>
+              <p className="text-xs text-muted-foreground">{records.length.toLocaleString(localeOf(language))} / {totalRecords.toLocaleString(localeOf(language))} {text("items")}</p>
+            </div>
+          </div>
+          <div ref={listScrollRef} className="min-h-[260px] w-full overflow-x-hidden overflow-y-auto" style={{ maxHeight: listMaxHeight }}>
+            <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b border-border bg-muted/95 px-3 py-1.5 text-xs font-semibold text-muted-foreground backdrop-blur">
+              {columns.map((column, columnIndex) => (
+                <span className={cn("min-w-0 break-words", columnIndex === 0 ? "basis-36 grow-[2]" : "basis-24 grow")} key={column.key}>{column.label}</span>
+              ))}
+              <span className="basis-24 grow text-right">{language === "th" ? "จัดการ" : "Actions"}</span>
+            </div>
+            {records.map((record, index) => {
+              const id = recordId(record, config);
+              const active = id === selectedId;
+              const isHovered = id === hoveredRecordId;
+              const isEditing = Boolean(editingId && id === editingId);
+              const isCreator = config.slug === "user" && isCreatorRecord(record, workspace);
+              const accessDisabled = config.slug === "user" && userAccessDisabled(record);
+              const rowStyle = settingListRowStyle({ active, index, isEditing, isHovered });
+              return (
+                <div
+                  className={cn(
+                    "flex w-full cursor-pointer flex-wrap items-center gap-2 overflow-x-hidden border-b border-border px-3 py-1.5 text-left text-sm transition-colors last:border-b-0",
+                    isEditing
+                      ? "bg-amber-100 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100"
+                      : active
+                        ? "bg-primary/10 text-primary"
+                        : index % 2 === 0
+                          ? "bg-background"
+                          : "bg-muted/30",
+                  )}
+                  style={rowStyle}
+                  aria-current={isEditing ? "step" : active ? "true" : undefined}
+                  key={`${id}-${index}`}
+                  onClick={() => onSelect(record)}
+                  onMouseEnter={() => setHoveredRecordId(id)}
+                  onMouseLeave={() => setHoveredRecordId((current) => current === id ? "" : current)}
+                  onFocus={() => setHoveredRecordId(id)}
+                  onBlur={() => setHoveredRecordId((current) => current === id ? "" : current)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onSelect(record);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
+                  {columns.map((column, columnIndex) => (
+                    <span className={cn("min-w-0 break-words", columnIndex === 0 ? "basis-36 grow-[2]" : "basis-24 grow")} key={column.key}>
+                      {column.render(record, { isCreator, accessDisabled, id, columnIndex })}
+                    </span>
+                  ))}
+                  <span className="flex min-w-0 basis-24 grow flex-wrap justify-end gap-1" onClick={(event) => event.stopPropagation()}>
+                    {config.editable !== false ? (
+                      <Button type="button" size="icon" variant="outline" onClick={() => onEdit(record)} disabled={config.slug === "user" && isSelfUserRecord(record, auth)} aria-label={text("edit")} title={text("edit")}>
+                        <Edit3 />
+                      </Button>
+                    ) : null}
+                    {config.slug === "user" && !isCreator && !isSelfUserRecord(record, auth) ? (
+                      <Button type="button" size="icon" variant="outline" onClick={() => onResetPassword(record)} disabled={saving} aria-label={text("resetPassword")} title={text("resetPassword")}>
+                        <KeyRound />
+                      </Button>
+                    ) : null}
+                    {config.kind === "company" || config.editable === false ? null : (
+                      <Button type="button" size="icon" variant="outline" onClick={() => onDelete(record)} disabled={isCreator || isSelfUserRecord(record, auth)} aria-label={text("delete")} title={text("delete")}>
+                        <Trash2 />
+                      </Button>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
+            <div ref={loadMoreRef} className="flex min-h-10 items-center justify-center py-2 text-xs text-muted-foreground">
+              {loadingMore ? <><Loader2 className="mr-2 size-4 animate-spin" />{text("loading")}</> : hasMore ? text("loading") : null}
+            </div>
+          </div>
+        </section>
+
+        <div
+          className="hidden w-1.5 shrink-0 cursor-col-resize bg-border/70 transition hover:bg-primary/50 lg:block"
+          onPointerDown={startPaneResize}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label={language === "th" ? "ปรับความกว้างรายการและรายละเอียด" : "Resize list and detail panes"}
+        />
+
+        <section className="min-h-0 min-w-0 flex-1 p-3 lg:sticky lg:top-3 lg:self-start" aria-label={text("details")}>
+          {formOpen ? (
+            <SettingFormDialog
+              inline
+              auth={auth}
+              config={config}
+              dateTimeScope={dateTimeScope}
+              dictionary={dictionary}
+              editing={editing}
+              form={form}
+              language={language}
+              onClose={onCloseForm}
+              onSubmit={onSubmit}
+              saving={saving}
+              setForm={setForm}
+              text={text}
+              workspace={workspace}
+            />
+          ) : selectedRecord ? (
+            <SettingDetailPanel
+              auth={auth}
+              config={config}
+              dictionary={dictionary}
+              language={language}
+              onDelete={onDelete}
+              onEdit={onEdit}
+              onResetPassword={onResetPassword}
+              onToggleAccess={onToggleAccess}
+              record={selectedRecord}
+              saving={saving}
+              text={text}
+              workspace={workspace}
+            />
+          ) : (
+            <div className="grid min-h-44 place-items-center rounded-2xl border border-dashed border-border bg-muted/20 p-4 text-center text-sm text-muted-foreground">
+              {text("empty")}
+            </div>
+          )}
+        </section>
+      </CardContent>
+    </Card>
+  );
+}
+
+type SettingListColumn = {
+  key: string;
+  label: string;
+  render: (record: SettingRecord, meta: { accessDisabled: boolean; columnIndex: number; id: string; isCreator: boolean }) => ReactNode;
+};
+
+function settingListRowStyle({
+  active,
+  index,
+  isEditing,
+  isHovered,
+}: {
+  active: boolean;
+  index: number;
+  isEditing: boolean;
+  isHovered: boolean;
+}): CSSProperties | undefined {
+  if (!isHovered) return undefined;
+  if (isEditing) {
+    return {
+      backgroundColor: "rgba(251, 191, 36, 0.18)",
+      borderColor: "rgba(245, 158, 11, 0.32)",
+      color: "var(--foreground)",
+    };
+  }
+  if (active) {
+    return {
+      backgroundColor: "rgba(14, 165, 233, 0.12)",
+      borderColor: "rgba(14, 116, 144, 0.24)",
+      color: "var(--foreground)",
+    };
+  }
+  const backgroundColor = index % 2 === 0
+    ? "rgba(14, 165, 233, 0.055)"
+    : "rgba(14, 165, 233, 0.09)";
+  return {
+    backgroundColor,
+    borderColor: "rgba(14, 116, 144, 0.18)",
+    color: "var(--foreground)",
+  };
+}
+
+function settingListColumns(
+  config: SystemSettingConfig,
+  language: LanguageCode,
+  dictionary: BackendLanguageDictionary,
+  text: (key: keyof typeof uiEn) => string,
+): SettingListColumn[] {
+  if (config.slug === "user") {
+    const roleField = config.fields.find((field) => field.key === "role");
+    return [
+      {
+        key: "username",
+        label: language === "th" ? "รหัสผู้ใช้ หรือ email" : "User code or email",
+        render: (record, meta) => (
+          <span className="flex min-w-0 items-center gap-1.5">
+            <b className="min-w-0 break-words">{stringValue(record.username ?? record.email ?? meta.id) || "-"}</b>
+            {meta.isCreator ? <Badge variant="warning" className="shrink-0 gap-1"><Crown className="size-3" />{text("creator")}</Badge> : null}
+          </span>
+        ),
+      },
+      {
+        key: "user_profile_name",
+        label: language === "th" ? "ชื่อผู้ใช้งาน" : "User name",
+        render: (record) => stringValue(record.user_profile_name ?? record.userprofilename ?? record.name) || "-",
+      },
+      {
+        key: "email",
+        label: language === "th" ? "อีเมล" : "Email",
+        render: (record) => stringValue(record.email) || "-",
+      },
+      {
+        key: "role",
+        label: language === "th" ? "สิทธิ์" : "Role",
+        render: (record) => roleField ? fieldDisplayValue(roleField, record.role, language) : shortValue(record.role, language),
+      },
+      {
+        key: "status",
+        label: language === "th" ? "สถานะ" : "Status",
+        render: (_record, meta) => <Badge variant={meta.accessDisabled ? "warning" : "success"}>{meta.accessDisabled ? text("accessTemporarilyDisabled") : text("accessEnabled")}</Badge>,
+      },
+    ];
+  }
+
+  if (config.slug === "employee") {
+    return [
+      {
+        key: "code",
+        label: language === "th" ? "รหัสพนักงาน" : "Employee code",
+        render: (record, meta) => <b>{stringValue(record.code ?? meta.id) || "-"}</b>,
+      },
+      {
+        key: "name",
+        label: language === "th" ? "ชื่อพนักงาน" : "Employee name",
+        render: (record) => stringValue(record.name ?? record.employeeName) || "-",
+      },
+      {
+        key: "email",
+        label: language === "th" ? "อีเมล" : "Email",
+        render: (record) => stringValue(record.email) || "-",
+      },
+      {
+        key: "status",
+        label: language === "th" ? "สถานะ" : "Status",
+        render: (record) => <Badge variant={isActiveRecord(record) ? "success" : "warning"}>{isActiveRecord(record) ? text("active") : language === "th" ? "ปิดใช้งาน" : "Inactive"}</Badge>,
+      },
+    ];
+  }
+
+  const fields = config.fields.filter((field) => !["image-upload", "json", "language-configs", "language-list"].includes(field.type)).slice(0, 4);
+  if (!fields.length) {
+    return [
+      {
+        key: "title",
+        label: systemSettingTitle(config, language, dictionary),
+        render: (record, meta) => recordTitle(record, config, language) || meta.id || "-",
+      },
+    ];
+  }
+  return fields.map((field) => ({
+    key: field.key,
+    label: fieldLabel(field, language, config, dictionary),
+    render: (record) => fieldDisplayValue(field, getByPath(record, field.key), language),
+  }));
+}
+
+function SettingDetailPanel({
+  auth,
+  config,
+  dictionary,
+  language,
+  onDelete,
+  onEdit,
+  onResetPassword,
+  onToggleAccess,
+  record,
+  saving,
+  text,
+  workspace,
+}: {
+  auth: AuthSession | null;
+  config: SystemSettingConfig;
+  dictionary: BackendLanguageDictionary;
+  language: LanguageCode;
+  onDelete: (record: SettingRecord) => void;
+  onEdit: (record: SettingRecord) => void;
+  onResetPassword: (record: SettingRecord) => void;
+  onToggleAccess: (record: SettingRecord, disabled: boolean) => void;
+  record: SettingRecord;
+  saving: boolean;
+  text: (key: keyof typeof uiEn) => string;
+  workspace: WorkspaceSession | null;
+}) {
+  const id = recordId(record, config);
+  const title = recordTitle(record, config, language);
+  const isUser = config.slug === "user";
+  const isCreator = isUser && isCreatorRecord(record, workspace);
+  const isSelf = isUser && isSelfUserRecord(record, auth);
+  const accessDisabled = isUser && userAccessDisabled(record);
+  const canEdit = config.editable !== false;
+  return (
+    <section className="grid gap-3">
+      <header className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="truncate text-lg font-semibold">{title || id || "-"}</h2>
+          <p className="truncate text-sm text-muted-foreground">{text("id")}: {id || "-"}</p>
+          <div className="mt-1 flex flex-wrap gap-1">
+            {isCreator ? <Badge variant="warning" className="gap-1"><Crown className="size-3" />{text("creator")}</Badge> : null}
+            {isUser ? <Badge variant={accessDisabled ? "warning" : "success"}>{accessDisabled ? text("accessTemporarilyDisabled") : text("accessEnabled")}</Badge> : null}
+          </div>
+        </div>
+        <div className="flex flex-wrap justify-end gap-1">
+          {canEdit ? (
+            <Button type="button" size="sm" variant="outline" onClick={() => onEdit(record)} disabled={isSelf}>
+              <Edit3 />{text("edit")}
+            </Button>
+          ) : null}
+          {isUser && !isCreator && !isSelf ? (
+            <Button type="button" size="sm" variant="outline" onClick={() => onResetPassword(record)} disabled={saving}>
+              <KeyRound />{text("resetPassword")}
+            </Button>
+          ) : null}
+          {isUser && !isCreator && !isSelf ? (
+            <Button type="button" size="sm" variant={accessDisabled ? "outline" : "destructive"} onClick={() => onToggleAccess(record, !accessDisabled)} disabled={saving}>
+              {accessDisabled ? <UserCheck /> : <UserX />}
+              {accessDisabled ? text("enableAccess") : text("temporarilyDisableAccess")}
+            </Button>
+          ) : null}
+          {config.kind === "company" || !canEdit ? null : (
+            <Button type="button" size="sm" variant="outline" onClick={() => onDelete(record)} disabled={isCreator || isSelf}>
+              <Trash2 />{text("delete")}
+            </Button>
+          )}
+        </div>
+      </header>
+      <div className="grid gap-1.5 md:grid-cols-2">
+        {config.fields.map((field) => (
+          <div className="grid gap-1 rounded-xl border border-border bg-background px-2 py-1.5 text-sm" key={field.key}>
+            <span className="text-xs font-medium text-muted-foreground">{fieldLabel(field, language, config, dictionary)}</span>
+            <b className="min-w-0 break-words text-foreground">{fieldDisplayValue(field, getByPath(record, field.key), language)}</b>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -1087,11 +1849,26 @@ function SettingFormDialog({
         </header>
 
         <div className={cn("grid min-h-0 gap-2 pr-1", inline ? "" : "overflow-y-auto")}>
-          <div className="grid gap-2 md:grid-cols-2">
-            {config.fields.map((field) => (
-              <FieldEditor auth={auth} config={config} dateTimeScope={dateTimeScope} dictionary={dictionary} field={field} form={form} key={field.key} language={language} setForm={setForm} workspace={workspace} />
-            ))}
-          </div>
+          {config.slug === "user" ? (
+            <UserFormSections
+              auth={auth}
+              config={config}
+              dateTimeScope={dateTimeScope}
+              dictionary={dictionary}
+              form={form}
+              language={language}
+              setForm={setForm}
+              workspace={workspace}
+            />
+          ) : (
+            <div className="grid gap-2 md:grid-cols-2">
+              {config.fields.map((field) => (
+                <div className={fieldGridItemClass(field, config)} key={field.key}>
+                  <FieldEditor auth={auth} config={config} dateTimeScope={dateTimeScope} dictionary={dictionary} field={field} form={form} language={language} setForm={setForm} workspace={workspace} />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <footer className="flex flex-wrap justify-end gap-2">
@@ -1105,6 +1882,205 @@ function SettingFormDialog({
   );
   if (inline) return formElement;
   return <div className="dialog-backdrop" role="presentation">{formElement}</div>;
+}
+
+function UserFormSections({
+  auth,
+  config,
+  dateTimeScope,
+  dictionary,
+  form,
+  language,
+  setForm,
+  workspace,
+}: {
+  auth: AuthSession | null;
+  config: SystemSettingConfig;
+  dateTimeScope: DateTimeScope;
+  dictionary: BackendLanguageDictionary;
+  form: FormState;
+  language: LanguageCode;
+  setForm: (form: FormState) => void;
+  workspace: WorkspaceSession | null;
+}) {
+  const fieldsByKey = new Map(config.fields.map((field) => [field.key, field]));
+  const loginHint = isEmailLike(form.username)
+    ? language === "th"
+      ? "รหัสผู้ใช้ตอนนี้เป็นอีเมลแล้ว ผู้ใช้งานจะใช้ค่านี้เข้าสู่ระบบได้ ส่วนช่องอีเมลที่ลงทะเบียนจะใช้อีเมลเดียวกัน"
+      : "The user code is already an email. This value is used for sign-in, and the registered email uses the same value."
+    : language === "th"
+      ? "ถ้าต้องการให้ผู้ใช้งานเข้าสู่ระบบด้วยอีเมล ให้กรอกอีเมลในช่องรหัสผู้ใช้ หรือ email ส่วนอีเมลที่ลงทะเบียนมีไว้สำหรับส่งอีเมลเท่านั้น"
+      : "To let the user sign in with email, enter the email in User code or email. The registered email is only for sending email.";
+  const sections = [
+    {
+      keys: ["uid", "username", "user_profile_name", "email"],
+      title: language === "th" ? "บัญชีเข้าสู่ระบบ" : "Sign-in account",
+      description: loginHint,
+    },
+    {
+      keys: ["role", "is_access_disabled"],
+      title: language === "th" ? "สิทธิ์และสถานะ" : "Permission and status",
+      description: language === "th" ? "กำหนดระดับสิทธิ์ในร้าน และเปิดหรือปิดการเข้าใช้งานของผู้ใช้นี้" : "Set the user's shop role and whether this user can access the system.",
+    },
+    {
+      keys: ["position", "department", "line_user_id", "line_display_name"],
+      title: language === "th" ? "ข้อมูลองค์กรและ LINE" : "Organization and LINE",
+      description: language === "th" ? "ใช้สำหรับอ้างอิงตำแหน่ง แผนก และข้อมูล LINE ที่ผูกกับผู้ใช้งาน" : "Reference position, department, and LINE data linked to this user.",
+    },
+  ];
+
+  return (
+    <div className="grid gap-2">
+      {sections.map((section) => {
+        const fields = section.keys.map((key) => fieldsByKey.get(key)).filter((field): field is SystemSettingField => Boolean(field));
+        if (fields.length === 0) return null;
+        return (
+          <section className="grid gap-2 rounded-2xl border border-border bg-background/70 p-2" key={section.title}>
+            <header className="grid gap-0.5">
+              <h3 className="text-sm font-semibold">{section.title}</h3>
+              <p className="text-xs leading-snug text-muted-foreground">{section.description}</p>
+            </header>
+            <div className="grid items-start gap-2 md:grid-cols-2">
+              {fields.map((field) => (
+                <div className={fieldGridItemClass(field, config)} key={field.key}>
+                  <FieldEditor auth={auth} config={config} dateTimeScope={dateTimeScope} dictionary={dictionary} field={field} form={form} language={language} setForm={setForm} workspace={workspace} />
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+function fieldGridItemClass(field: SystemSettingField, config: SystemSettingConfig): string {
+  if (config.kind === "company") return "min-w-0 md:col-span-2";
+  if (
+    field.type === "image-upload"
+    || field.type === "json"
+    || field.type === "language-configs"
+    || field.type === "language-list"
+    || field.type === "master-picker"
+    || field.type === "names"
+    || field.type === "textarea"
+  ) {
+    return "min-w-0 md:col-span-2";
+  }
+  if (
+    (config.slug === "permission_definition" && field.key === "branches")
+    || (config.slug === "approval_setting" && field.key === "approvals")
+    || (config.slug === "permission_link" && (field.key === "employeeCode" || field.key === "permissionCodes" || field.key === "approvalCodes"))
+  ) {
+    return "min-w-0 md:col-span-2";
+  }
+  return "min-w-0";
+}
+
+function StandardUnitDialog({
+  dialog,
+  language,
+  onClear,
+  onClose,
+  onQueryChange,
+  onRefresh,
+  onSave,
+  onSelectAll,
+  onToggle,
+  text,
+}: {
+  dialog: StandardUnitDialogState;
+  language: LanguageCode;
+  onClear: () => void;
+  onClose: () => void;
+  onQueryChange: (value: string) => void;
+  onRefresh: () => void;
+  onSave: () => void;
+  onSelectAll: () => void;
+  onToggle: (unitcode: string, checked: boolean) => void;
+  text: (key: keyof typeof uiEn) => string;
+}) {
+  return (
+    <div className="dialog-backdrop" role="presentation">
+      <section className="grid max-h-[calc(100dvh-24px)] w-[min(720px,calc(100vw-24px))] gap-3 overflow-hidden rounded-2xl border border-border bg-card p-3 text-foreground shadow-xl" role="dialog" aria-modal="true" aria-label={text("standardUnits")}>
+        <header className="flex min-w-0 items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">PRODUCT UNIT</p>
+            <h2 className="truncate text-lg font-semibold">{text("standardUnits")}</h2>
+          </div>
+          <Button type="button" variant="outline" size="icon" onClick={onClose} disabled={dialog.saving} aria-label={text("close")}>
+            <X />
+          </Button>
+        </header>
+
+        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <label className="relative block min-w-0">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input className="pl-9" placeholder={text("search")} value={dialog.query} onChange={(event) => onQueryChange(event.target.value)} disabled={dialog.loading || dialog.saving} />
+          </label>
+          <Button type="button" variant="outline" onClick={onRefresh} disabled={dialog.loading || dialog.saving}>
+            {dialog.loading ? <Loader2 className="animate-spin" /> : <Search />}
+            {text("search")}
+          </Button>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-semibold">
+          <Badge variant="outline">{text("selected")}: {dialog.selectedCodes.length.toLocaleString(localeOf(language))}/{dialog.options.length.toLocaleString(localeOf(language))}</Badge>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={onSelectAll} disabled={dialog.loading || dialog.saving || dialog.options.length === 0}>
+              {text("selectAll")}
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={onClear} disabled={dialog.loading || dialog.saving || dialog.selectedCodes.length === 0}>
+              {text("clearSelection")}
+            </Button>
+          </div>
+        </div>
+
+        {dialog.error ? (
+          <div className="message error">
+            <AlertCircle size={18} />
+            <span>{dialog.error}</span>
+          </div>
+        ) : null}
+
+        <div className="grid min-h-0 gap-2 overflow-y-auto pr-1">
+          {dialog.loading ? (
+            <div className="flex min-h-32 items-center justify-center gap-2 rounded-2xl border border-border bg-background p-4 text-sm font-semibold text-muted-foreground">
+              <Loader2 className="animate-spin" />
+              {text("loading")}
+            </div>
+          ) : dialog.options.length ? dialog.options.map((unit) => {
+            const checked = dialog.selectedCodes.includes(unit.unitcode);
+            return (
+              <label className="flex min-w-0 cursor-pointer items-center gap-2 rounded-2xl border border-border bg-background px-3 py-2 text-sm font-semibold" key={unit.unitcode}>
+                <input
+                  className="size-4 shrink-0 accent-primary"
+                  type="checkbox"
+                  checked={checked}
+                  disabled={dialog.saving}
+                  onChange={(event) => onToggle(unit.unitcode, event.target.checked)}
+                />
+                <span className="min-w-0 flex-1 truncate">{unitDisplayName(unit, language)}</span>
+                <b className="shrink-0 text-xs text-muted-foreground">{unit.unitcode}</b>
+              </label>
+            );
+          }) : (
+            <div className="grid min-h-32 place-items-center rounded-2xl border border-border bg-background p-4 text-center text-sm font-semibold text-muted-foreground">
+              {text("noStandardUnits")}
+            </div>
+          )}
+        </div>
+
+        <footer className="flex flex-wrap justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onClose} disabled={dialog.saving}>{text("cancel")}</Button>
+          <Button type="button" onClick={onSave} disabled={dialog.loading || dialog.saving || dialog.selectedCodes.length === 0}>
+            {dialog.saving ? <Loader2 className="animate-spin" /> : <Plus />}
+            {text("addSelected")}
+          </Button>
+        </footer>
+      </section>
+    </div>
+  );
 }
 
 type MenuPermissionAction = "access" | "create" | "update" | "delete" | "own_only";
@@ -1234,7 +2210,7 @@ function permissionLinkUserOption(record: SettingRecord): PermissionLinkUserOpti
   const code = stringValue(record.username ?? record.email ?? record.uid);
   const name = stringValue(record.name ?? record.email ?? record.username) || code;
   const subtitle = stringValue(record.email) || stringValue(record.uid);
-  return { code, name, subtitle, isDisabled: Boolean(record.isaccessdisabled ?? record.is_access_disabled ?? false) };
+  return { code, name, subtitle, isDisabled: Boolean(record.is_access_disabled ?? record.is_access_disabled ?? false) };
 }
 
 function PermissionLinkUserSelector({
@@ -1683,6 +2659,10 @@ function FieldEditor({
   if (field.type === "radio") {
     const options = field.options ?? [];
     const selectedValue = radioFormValue(value, field);
+    const hasUnknownValue = Boolean(selectedValue) && options.length > 0 && !options.some((option) => option.value === selectedValue);
+    const unknownValueText = language === "th"
+      ? `ค่าปัจจุบันไม่ตรงกับบทบาทที่ระบบรองรับ: ${selectedValue} กรุณาเลือกใหม่`
+      : `Current value is not a supported role: ${selectedValue}. Please choose a valid role.`;
     return (
       <section className="grid gap-1 text-sm font-semibold">
         <span>{label}{field.required ? " *" : ""}</span>
@@ -1710,34 +2690,67 @@ function FieldEditor({
             );
           })}
         </div>
+        {hasUnknownValue ? <span className="text-xs font-medium text-destructive">{unknownValueText}</span> : null}
       </section>
     );
   }
 
   if (field.type === "names") {
     const names = isRecord(value) ? value : {};
-    const selectedLanguage = LANGUAGES.find((item) => item.code === language) ?? LANGUAGES[0];
+    const editorLanguages = nameEditorLanguageCodes(form, config, language);
     return (
       <section className="grid gap-1 rounded-2xl border border-border bg-background p-2 md:col-span-2">
-        <label className="grid gap-1 text-sm font-semibold">
-          <span className="flex flex-wrap items-center gap-2">
-            <span>{label}{field.required ? " *" : ""}</span>
-            <span className="rounded-full border border-border bg-card px-2 py-0.5 text-xs font-semibold text-muted-foreground">{selectedLanguage.name}</span>
-          </span>
-          {field.multiline ? (
-            <textarea
-              className="min-h-28 w-full rounded-2xl border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              value={typeof names[language] === "string" ? String(names[language]) : ""}
-              onChange={(event) => setForm({ ...form, [field.key]: { ...names, [language]: event.target.value } })}
-            />
-          ) : (
-            <Input
-              value={typeof names[language] === "string" ? String(names[language]) : ""}
-              onChange={(event) => setForm({ ...form, [field.key]: { ...names, [language]: event.target.value } })}
-            />
-          )}
-        </label>
+        <div className="text-sm font-semibold">{label}{field.required ? " *" : ""}</div>
+        <div className={cn("grid gap-2", editorLanguages.length > 1 && "md:grid-cols-2")}>
+          {editorLanguages.map((code, index) => {
+            const currentValue = typeof names[code] === "string" ? String(names[code]) : "";
+            return (
+              <label className="grid gap-1 text-sm font-semibold" key={code}>
+                <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+                  <LanguageFlag code={code} />
+                  <span className="truncate">{index === 0 ? (language === "th" ? "ภาษาแรก" : "Primary") : languageName(code, language)}</span>
+                  <span className="uppercase">{code}</span>
+                </span>
+                {field.multiline ? (
+                  <textarea
+                    className="min-h-20 w-full rounded-2xl border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    value={currentValue}
+                    onChange={(event) => setForm({ ...form, [field.key]: { ...names, [code]: event.target.value } })}
+                  />
+                ) : (
+                  <Input
+                    value={currentValue}
+                    onChange={(event) => setForm({ ...form, [field.key]: { ...names, [code]: event.target.value } })}
+                  />
+                )}
+              </label>
+            );
+          })}
+        </div>
       </section>
+    );
+  }
+
+  if (field.type === "language-configs") {
+    return (
+      <LanguageConfigsEditor
+        form={form}
+        language={language}
+        label={label}
+        setForm={setForm}
+      />
+    );
+  }
+
+  if (field.type === "language-list") {
+    return (
+      <LanguageListEditor
+        form={form}
+        field={field}
+        language={language}
+        label={label}
+        setForm={setForm}
+      />
     );
   }
 
@@ -1759,18 +2772,29 @@ function FieldEditor({
     return <ComboFieldEditor field={field} form={form} label={label} language={language} setForm={setForm} />;
   }
 
+  if (field.type === "master-picker") {
+    return <MasterPickerFieldEditor auth={auth} field={field} form={form} label={label} language={language} setForm={setForm} />;
+  }
+
   if (field.type === "image-upload") {
     return <ImageUploadFieldEditor auth={auth} field={field} form={form} label={label} language={language} setForm={setForm} />;
   }
 
   if (field.type === "select") {
+    const onSelectChange = (nextValue: string) => {
+      const nextForm = { ...form, [field.key]: optionValueToFormValue(nextValue, field) };
+      if (config.kind === "company" && field.key === "settings.language") {
+        nextForm["settings.languageconfigs"] = setDefaultLanguageConfig(nextForm["settings.languageconfigs"], nextValue);
+      }
+      setForm(nextForm);
+    };
     return (
       <label className="grid gap-1 text-sm font-semibold">
         <span>{label}{field.required ? " *" : ""}</span>
         <select
           className="min-h-10 w-full rounded-2xl border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
           value={String(value ?? "")}
-          onChange={(event) => setForm({ ...form, [field.key]: event.target.value })}
+          onChange={(event) => onSelectChange(event.target.value)}
         >
           <option value=""></option>
           {field.options?.map((item) => <option key={item.value} value={item.value}>{optionLabel(item, language)}</option>)}
@@ -1785,12 +2809,14 @@ function FieldEditor({
         language={language}
         yearType={dateTimeScope.calendarYearType}
         label={`${label}${field.required ? " *" : ""}`}
-        timezoneLabel={dateTimeScope.timezonelabel || dateTimeScope.timezoneoffset}
+        timezoneLabel={dateTimeScope.timezone_label || dateTimeScope.timezone_offset}
         value={String(value ?? "")}
         onChange={(event) => setForm({ ...form, [field.key]: event.target.value })}
       />
     );
   }
+
+  const emailLockedByLoginCode = config.slug === "user" && field.key === "email" && isEmailLike(form.username);
 
   return (
     <label className="grid gap-1 text-sm font-semibold">
@@ -1798,11 +2824,11 @@ function FieldEditor({
       <Input
         type={field.type === "number" ? "number" : "text"}
         value={String(value ?? "")}
-        readOnly={field.readOnly}
-        disabled={field.readOnly}
-        aria-readonly={field.readOnly}
+        readOnly={field.readOnly || emailLockedByLoginCode}
+        disabled={field.readOnly || emailLockedByLoginCode}
+        aria-readonly={field.readOnly || emailLockedByLoginCode}
         onChange={(event) => {
-          if (field.readOnly) return;
+          if (field.readOnly || emailLockedByLoginCode) return;
           setForm({ ...form, [field.key]: event.target.value });
         }}
         placeholder={field.placeholder}
@@ -1811,10 +2837,498 @@ function FieldEditor({
   );
 }
 
+function LanguageConfigsEditor({
+  form,
+  language,
+  label,
+  setForm,
+}: {
+  form: FormState;
+  language: LanguageCode;
+  label: string;
+  setForm: (form: FormState) => void;
+}) {
+  const defaultCode = supportedLanguageCode(form["settings.language"], "th");
+  const rows = normalizeLanguageConfigs(form["settings.languageconfigs"], defaultCode);
+  const usedCodes = new Set(rows.map((row) => row.code));
+  const availableLanguages = LANGUAGES.filter((item) => !usedCodes.has(item.code));
+  const [languageToAdd, setLanguageToAdd] = useState<string>(availableLanguages[0]?.code ?? "");
+
+  function commit(nextRows: LanguageConfigFormRow[], nextDefault = defaultCode) {
+    const normalized = normalizeLanguageConfigs(nextRows, nextDefault);
+    const primary = normalized[0]?.code ?? supportedLanguageCode(nextDefault, "th");
+    setForm({
+      ...form,
+      "settings.language": primary,
+      "settings.languageconfigs": normalized,
+    });
+  }
+
+  function move(index: number, direction: -1 | 1) {
+    const targetIndex = index + direction;
+    if (index <= 0 || targetIndex <= 0 || targetIndex >= rows.length) return;
+    const nextRows = [...rows];
+    const [row] = nextRows.splice(index, 1);
+    nextRows.splice(targetIndex, 0, row);
+    commit(nextRows);
+  }
+
+  const textPrimary = language === "th" ? "ภาษาแรก" : "Primary language";
+  const textAdd = language === "th" ? "เพิ่มภาษา" : "Add language";
+  const textSetPrimary = language === "th" ? "ตั้งเป็นภาษาแรก" : "Set primary";
+  const textRemove = language === "th" ? "เอาออก" : "Remove";
+  const textNoMore = language === "th" ? "เพิ่มครบทุกภาษาที่รองรับแล้ว" : "All supported languages are already added.";
+
+  return (
+    <section className="grid gap-2 rounded-2xl border border-border bg-background p-2 text-sm md:col-span-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="font-semibold">{label}</div>
+          <div className="text-xs text-muted-foreground">{language === "th" ? "ลำดับแรกคือภาษาแรกของบริษัท" : "The first row is the company primary language."}</div>
+        </div>
+        {availableLanguages.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            <select
+              className="min-h-9 min-w-44 rounded-xl border border-input bg-background px-2 text-sm text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              value={languageToAdd || availableLanguages[0]?.code || ""}
+              onChange={(event) => setLanguageToAdd(event.target.value)}
+              aria-label={textAdd}
+            >
+              {availableLanguages.map((item) => (
+                <option key={item.code} value={item.code}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                const code = supportedLanguageCode(languageToAdd || availableLanguages[0]?.code, "");
+                if (!code) return;
+                commit([...rows, languageConfigRow(code, false)]);
+                setLanguageToAdd("");
+              }}
+            >
+              <Plus />
+              {textAdd}
+            </Button>
+          </div>
+        ) : null}
+      </div>
+      <div className="grid gap-1">
+        {rows.map((row, index) => (
+          <div
+            key={row.code}
+            className={cn(
+              "grid gap-2 rounded-xl border border-border bg-card px-2 py-1.5 sm:grid-cols-[56px_minmax(0,1fr)_auto] sm:items-center",
+              index === 0 && "border-primary/40 bg-primary/5",
+            )}
+          >
+            <div className={cn("grid size-10 place-items-center rounded-full font-semibold", index === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-foreground")}>
+              {index + 1}
+            </div>
+            <div className="flex min-w-0 items-center gap-2">
+              <LanguageFlag code={row.code} />
+              <div className="min-w-0">
+                <div className="truncate font-semibold">{languageName(row.code, language)}</div>
+                <div className="flex flex-wrap items-center gap-2 text-xs uppercase text-muted-foreground">
+                  <span>{row.code}</span>
+                  {index === 0 ? <Badge variant="outline">{textPrimary}</Badge> : null}
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap justify-end gap-1">
+              {index > 0 ? (
+                <>
+                  <Button type="button" variant="outline" size="sm" onClick={() => commit(rows, row.code)} title={textSetPrimary}>
+                    <Edit3 />
+                    <span className="sr-only">{textSetPrimary}</span>
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => move(index, -1)} disabled={index <= 1} title={language === "th" ? "เลื่อนขึ้น" : "Move up"}>
+                    ↑
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => move(index, 1)} disabled={index >= rows.length - 1} title={language === "th" ? "เลื่อนลง" : "Move down"}>
+                    ↓
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => commit(rows.filter((item) => item.code !== row.code))} title={textRemove}>
+                    <Trash2 />
+                    <span className="sr-only">{textRemove}</span>
+                  </Button>
+                </>
+              ) : null}
+            </div>
+          </div>
+        ))}
+      </div>
+      {availableLanguages.length === 0 ? <p className="text-xs text-muted-foreground">{textNoMore}</p> : null}
+    </section>
+  );
+}
+
+function LanguageListEditor({
+  field,
+  form,
+  language,
+  label,
+  setForm,
+}: {
+  field: SystemSettingField;
+  form: FormState;
+  language: LanguageCode;
+  label: string;
+  setForm: (form: FormState) => void;
+}) {
+  const rows = normalizeLanguageList(form[field.key], form.language);
+  const usedCodes = new Set(rows);
+  const availableLanguages = LANGUAGES.filter((item) => !usedCodes.has(item.code));
+  const [languageToAdd, setLanguageToAdd] = useState<string>(availableLanguages[0]?.code ?? "");
+  const textPrimary = language === "th" ? "ภาษาแรก" : "Primary";
+  const textAdd = language === "th" ? "เพิ่มภาษา" : "Add language";
+  const textRemove = language === "th" ? "เอาออก" : "Remove";
+  const textNoMore = language === "th" ? "เพิ่มครบทุกภาษาที่รองรับแล้ว" : "All supported languages are already added.";
+
+  function commit(nextCodes: string[]) {
+    const normalized = normalizeLanguageList(nextCodes, nextCodes[0] ?? form.language);
+    setForm({
+      ...form,
+      [field.key]: normalized,
+      language: normalized[0] ?? "th",
+    });
+  }
+
+  function move(index: number, direction: -1 | 1) {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= rows.length) return;
+    const nextRows = [...rows];
+    const [row] = nextRows.splice(index, 1);
+    nextRows.splice(targetIndex, 0, row);
+    commit(nextRows);
+  }
+
+  return (
+    <section className="grid gap-2 rounded-2xl border border-border bg-background p-2 text-sm md:col-span-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="font-semibold">{label}</div>
+          <div className="text-xs text-muted-foreground">{language === "th" ? "ลำดับแรกคือภาษาแรกของข้อมูลนี้" : "The first row is the primary language for this record."}</div>
+        </div>
+        {availableLanguages.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            <select
+              className="min-h-9 min-w-44 rounded-xl border border-input bg-background px-2 text-sm text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              value={languageToAdd || availableLanguages[0]?.code || ""}
+              onChange={(event) => setLanguageToAdd(event.target.value)}
+              aria-label={textAdd}
+            >
+              {availableLanguages.map((item) => (
+                <option key={item.code} value={item.code}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                const code = supportedLanguageCode(languageToAdd || availableLanguages[0]?.code, "");
+                if (!code) return;
+                commit([...rows, code]);
+                setLanguageToAdd("");
+              }}
+            >
+              <Plus />
+              {textAdd}
+            </Button>
+          </div>
+        ) : null}
+      </div>
+      <div className="grid gap-1">
+        {rows.map((code, index) => (
+          <div
+            key={code}
+            className={cn(
+              "grid gap-2 rounded-xl border border-border bg-card px-2 py-1.5 sm:grid-cols-[56px_minmax(0,1fr)_auto] sm:items-center",
+              index === 0 && "border-primary/40 bg-primary/5",
+            )}
+          >
+            <div className={cn("grid size-10 place-items-center rounded-full font-semibold", index === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-foreground")}>
+              {index + 1}
+            </div>
+            <div className="flex min-w-0 items-center gap-2">
+              <LanguageFlag code={code} />
+              <div className="min-w-0">
+                <div className="truncate font-semibold">{languageName(code, language)}</div>
+                <div className="flex flex-wrap items-center gap-2 text-xs uppercase text-muted-foreground">
+                  <span>{code}</span>
+                  {index === 0 ? <Badge variant="outline">{textPrimary}</Badge> : null}
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap justify-end gap-1">
+              <Button type="button" variant="outline" size="sm" onClick={() => move(index, -1)} disabled={index === 0} title={language === "th" ? "เลื่อนขึ้น" : "Move up"}>
+                ↑
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => move(index, 1)} disabled={index >= rows.length - 1} title={language === "th" ? "เลื่อนลง" : "Move down"}>
+                ↓
+              </Button>
+              {index > 0 ? (
+                <Button type="button" variant="ghost" size="sm" onClick={() => commit(rows.filter((item) => item !== code))} title={textRemove}>
+                  <Trash2 />
+                  <span className="sr-only">{textRemove}</span>
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        ))}
+      </div>
+      {availableLanguages.length === 0 ? <p className="text-xs text-muted-foreground">{textNoMore}</p> : null}
+    </section>
+  );
+}
+
+function MasterPickerFieldEditor({
+  auth,
+  field,
+  form,
+  label,
+  language,
+  setForm,
+}: {
+  auth: AuthSession | null;
+  field: SystemSettingField;
+  form: FormState;
+  label: string;
+  language: LanguageCode;
+  setForm: (form: FormState) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const anchorRef = useRef<HTMLButtonElement | null>(null);
+  const rawValue = form[field.key];
+  const value: SettingRecord = isRecord(rawValue) ? rawValue : {};
+  const names = getLocalizedNameArray(value.names);
+  const displayName = localizedNameForLanguage(names, language) || stringValue(value.name);
+  const code = stringValue(value.code);
+  const master = (field.master ?? "businesstype") as MasterName;
+
+  function select(entry: MasterEntry) {
+    setForm({
+      ...form,
+      [field.key]: {
+        guidfixed: entry.guidfixed,
+        code: entry.code,
+        names: entry.names,
+      },
+    });
+    setOpen(false);
+  }
+
+  return (
+    <section className="grid gap-1 text-sm font-semibold md:col-span-2">
+      <span>{label}{field.required ? " *" : ""}</span>
+      <div className="flex min-w-0 gap-2">
+        <button
+          ref={anchorRef}
+          type="button"
+          className="flex min-h-10 min-w-0 flex-1 items-center justify-between gap-2 rounded-2xl border border-input bg-background px-3 text-left text-sm text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          onClick={() => setOpen(true)}
+        >
+          <span className={cn("min-w-0 truncate", !code && !displayName && "text-muted-foreground")}>
+            {code || displayName ? `${code}${code && displayName ? " - " : ""}${displayName}` : (language === "th" ? "เลือกข้อมูล" : "Select")}
+          </span>
+          <Search className="size-4 shrink-0 text-muted-foreground" />
+        </button>
+        {code || displayName ? (
+          <Button type="button" variant="outline" size="icon" onClick={() => setForm({ ...form, [field.key]: {} })} aria-label={language === "th" ? "ล้างค่า" : "Clear"}>
+            <X />
+          </Button>
+        ) : null}
+      </div>
+      <MasterPicker
+        open={open}
+        onClose={() => setOpen(false)}
+        auth={auth}
+        language={language}
+        master={master}
+        placement="field"
+        anchorRef={anchorRef}
+        title={label}
+        onSelect={select}
+      />
+    </section>
+  );
+}
+
+function defaultLanguageConfigs(defaultCode: unknown): LanguageConfigFormRow[] {
+  return [languageConfigRow(supportedLanguageCode(defaultCode, "th"), true)];
+}
+
+function setDefaultLanguageConfig(value: unknown, defaultCode: unknown): LanguageConfigFormRow[] {
+  return normalizeLanguageConfigs(value, defaultCode);
+}
+
+function normalizeLanguageConfigs(value: unknown, defaultCode: unknown): LanguageConfigFormRow[] {
+  const requestedPrimaryCode = supportedLanguageCode(defaultCode, "");
+  const source = typeof value === "string" ? safeJsonParse(value, []) : value;
+  const input = Array.isArray(source) ? source : [];
+  const seen = new Set<string>();
+  const rows: LanguageConfigFormRow[] = [];
+
+  for (const item of input) {
+    if (!isRecord(item)) continue;
+    const code = supportedLanguageCode(item.code, "");
+    if (!code || seen.has(code)) continue;
+    const isDefault = booleanLikeValue(item.isdefault) || code === requestedPrimaryCode;
+    const isUse = item.is_use === undefined && item.isuse === undefined ? true : booleanLikeValue(item.is_use ?? item.isuse);
+    if (!isUse && !isDefault) continue;
+    seen.add(code);
+    rows.push({
+      code,
+      codetranslator: stringValue(item.codetranslator ?? item.codeTranslator) || code,
+      name: stringValue(item.name) || languageName(code, "en"),
+      is_use: true,
+      isdefault: isDefault,
+    });
+  }
+
+  const primaryCode = supportedLanguageCode(requestedPrimaryCode || rows.find((row) => row.isdefault)?.code || "th", "th");
+  if (!seen.has(primaryCode)) rows.unshift(languageConfigRow(primaryCode, true));
+  const defaultRow = rows.find((row) => row.code === primaryCode) ?? rows.find((row) => row.isdefault) ?? rows[0] ?? languageConfigRow("th", true);
+  const ordered = [
+    { ...defaultRow, is_use: true, isdefault: true },
+    ...rows.filter((row) => row.code !== defaultRow.code).map((row) => ({ ...row, is_use: true, isdefault: false })),
+  ];
+  return ordered.map((row) => ({
+    ...row,
+    codetranslator: row.codetranslator || row.code,
+    name: row.name || languageName(row.code, "en"),
+  }));
+}
+
+function languageConfigRow(code: LanguageCode, isDefault: boolean): LanguageConfigFormRow {
+  return {
+    code,
+    codetranslator: code,
+    name: languageName(code, "en"),
+    is_use: true,
+    isdefault: isDefault,
+  };
+}
+
+function supportedLanguageCode(value: unknown, fallback: LanguageCode): LanguageCode;
+function supportedLanguageCode(value: unknown, fallback: ""): LanguageCode | "";
+function supportedLanguageCode(value: unknown, fallback: LanguageCode | ""): LanguageCode | "" {
+  const raw = stringValue(value).toLowerCase();
+  if (!raw) return fallback;
+  const normalized = normalizeLanguage(raw);
+  return LANGUAGES.some((item) => item.code === normalized) ? normalized : fallback;
+}
+
+function languageName(code: string, language: LanguageCode): string {
+  const item = LANGUAGES.find((entry) => entry.code === code);
+  if (!item) return code.toUpperCase();
+  if (language === "th") return item.name;
+  return `${item.name} (${item.code.toUpperCase()})`;
+}
+
+function LanguageFlag({ code }: { code: string }) {
+  const normalized = supportedLanguageCode(code, "th");
+  return (
+    <span className="grid size-7 shrink-0 place-items-center overflow-hidden rounded border border-border bg-card">
+      <Image alt="" height={18} src={`/flags/${normalized}.png`} width={27} />
+    </span>
+  );
+}
+
+function normalizeLanguageList(value: unknown, defaultCode: unknown): string[] {
+  const requestedPrimaryCode = supportedLanguageCode(defaultCode, "");
+  const source = typeof value === "string"
+    ? (value.trim().startsWith("[") ? safeJsonParse(value, []) : value.split(","))
+    : value;
+  const input = Array.isArray(source) ? source : [];
+  const seen = new Set<string>();
+  const rows: string[] = [];
+
+  for (const item of input) {
+    const code = supportedLanguageCode(item, "");
+    if (!code || seen.has(code)) continue;
+    seen.add(code);
+    rows.push(code);
+  }
+
+  const primaryCode = requestedPrimaryCode || rows[0] || "th";
+  const ordered = [primaryCode, ...rows.filter((code) => code !== primaryCode)];
+  return ordered.length ? ordered : ["th"];
+}
+
+function nameEditorLanguageCodes(form: FormState, config: SystemSettingConfig, language: LanguageCode): string[] {
+  if (config.kind === "company") {
+    return normalizeLanguageConfigs(form["settings.languageconfigs"], form["settings.language"]).map((row) => row.code);
+  }
+  if (config.slug === "branch") {
+    return normalizeLanguageList(form.languages, form.language);
+  }
+  return [language];
+}
+
+function getLocalizedNameArray(value: unknown): Array<{ code?: string; name?: string }> {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord).map((item) => ({
+    code: stringValue(item.code),
+    name: stringValue(item.name),
+  }));
+}
+
+function localizedNameForLanguage(names: Array<{ code?: string; name?: string }>, language: LanguageCode): string {
+  return names.find((item) => item.code === language && item.name)?.name
+    ?? names.find((item) => item.code === "th" && item.name)?.name
+    ?? names.find((item) => item.name)?.name
+    ?? "";
+}
+
+function defaultPaymentRoundingJson(): string {
+  const defaultRules = [
+    { lowerbound: 0.01, upperbound: 0.12, roundto: 0 },
+    { lowerbound: 0.13, upperbound: 0.37, roundto: 0.25 },
+    { lowerbound: 0.38, upperbound: 0.62, roundto: 0.5 },
+    { lowerbound: 0.63, upperbound: 0.87, roundto: 0.75 },
+    { lowerbound: 0.88, upperbound: 0.99, roundto: 1 },
+  ];
+  const method = { enabled: true, rules: defaultRules };
+  return JSON.stringify({
+    banktransfer: method,
+    cash: method,
+    cheque: method,
+    coupon: method,
+    creditcard: method,
+    delivery: method,
+    qrcode: method,
+  }, null, 2);
+}
+
 type ComboOption = SystemSettingOption;
-type UploadTextKey = "chooseImage" | "imageTooLarge" | "imageUploadFailed" | "imageUploadHint" | "removeImage" | "uploading";
+type ComboPlacement = {
+  left: number;
+  top: number;
+  width: number;
+  maxHeight: number;
+};
+
+const COMBO_VIEWPORT_MARGIN = 12;
+const COMBO_GAP = 4;
+const COMBO_MAX_HEIGHT = 360;
+const COMBO_MIN_USABLE_HEIGHT = 80;
+type UploadTextKey = "applyCrop" | "cancel" | "chooseImage" | "cropImage" | "cropTitle" | "imageTooLarge" | "imageUploadFailed" | "imageUploadHint" | "removeImage" | "uploading";
 
 const uploadText: Record<UploadTextKey, Partial<Record<LanguageCode, string>> & { en: string; th: string }> = {
+  applyCrop: {
+    th: "ใช้รูปนี้",
+    en: "Apply crop",
+  },
+  cancel: {
+    th: "ยกเลิก",
+    en: "Cancel",
+  },
   chooseImage: {
     th: "เลือกรูป",
     en: "Choose image",
@@ -1828,6 +3342,14 @@ const uploadText: Record<UploadTextKey, Partial<Record<LanguageCode, string>> & 
     ms: "Pilih imej",
     id: "Pilih gambar",
     fil: "Pumili ng larawan",
+  },
+  cropImage: {
+    th: "แก้ไขรูป",
+    en: "Edit image",
+  },
+  cropTitle: {
+    th: "ครอปรูป",
+    en: "Crop image",
   },
   imageTooLarge: {
     th: "ไฟล์รูปต้องไม่เกิน 12 MB",
@@ -1918,18 +3440,27 @@ function ImageUploadFieldEditor({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
+  const [cropSource, setCropSource] = useState("");
+  const [localPreview, setLocalPreview] = useState("");
   const [uploading, setUploading] = useState(false);
   const value = stringValue(form[field.key]);
-  const previewStyle = value ? { backgroundImage: `url(${JSON.stringify(value)})` } : undefined;
+  const previewValue = localPreview || imageDisplayUrl(value, auth);
+  const previewStyle = previewValue ? { backgroundImage: `url(${JSON.stringify(previewValue)})` } : undefined;
 
-  async function handleFile(file: File | undefined) {
-    if (!file || uploading) return;
+  useEffect(() => {
+    if (!localPreview) return;
+    return () => URL.revokeObjectURL(localPreview);
+  }, [localPreview]);
+
+  function clearImage() {
+    setLocalPreview("");
+    setCropSource("");
+    setForm({ ...form, [field.key]: "" });
+  }
+
+  async function uploadImageFile(file: File) {
     if (!auth) {
       setError(uploadUiText(language, "imageUploadFailed"));
-      return;
-    }
-    if (!file.type.startsWith("image/") || file.size > 12 * 1024 * 1024) {
-      setError(uploadUiText(language, "imageTooLarge"));
       return;
     }
 
@@ -1960,6 +3491,23 @@ function ImageUploadFieldEditor({
     }
   }
 
+  async function applyCroppedFile(file: File) {
+    const objectUrl = URL.createObjectURL(file);
+    setLocalPreview(objectUrl);
+    setCropSource("");
+    await uploadImageFile(file);
+  }
+
+  async function handleFile(file: File | undefined) {
+    if (!file || uploading) return;
+    if (!file.type.startsWith("image/") || file.size > 12 * 1024 * 1024) {
+      setError(uploadUiText(language, "imageTooLarge"));
+      return;
+    }
+    setLocalPreview(URL.createObjectURL(file));
+    await uploadImageFile(file);
+  }
+
   return (
     <section className="grid gap-1 rounded-2xl border border-border bg-background p-2 text-sm font-semibold md:col-span-2">
       <span>{label}{field.required ? " *" : ""}</span>
@@ -1971,7 +3519,7 @@ function ImageUploadFieldEditor({
           style={previewStyle}
           type="button"
         >
-          {value ? <span className="sr-only">{label}</span> : <ImageIcon className="size-8" />}
+          {previewValue ? <span className="sr-only">{label}</span> : <ImageIcon className="size-8" />}
         </button>
         <div className="grid min-w-48 flex-1 gap-2">
           <div className="flex w-full flex-wrap gap-2">
@@ -1979,8 +3527,14 @@ function ImageUploadFieldEditor({
               {uploading ? <Loader2 className="animate-spin" /> : <UploadCloud />}
               {uploading ? uploadUiText(language, "uploading") : uploadUiText(language, "chooseImage")}
             </Button>
-            {value ? (
-              <Button type="button" variant="outline" onClick={() => setForm({ ...form, [field.key]: "" })} disabled={uploading}>
+            {previewValue ? (
+              <Button type="button" variant="outline" onClick={() => setCropSource(previewValue)} disabled={uploading}>
+                <Edit3 />
+                {uploadUiText(language, "cropImage")}
+              </Button>
+            ) : null}
+            {previewValue ? (
+              <Button type="button" variant="outline" onClick={clearImage} disabled={uploading}>
                 <Trash2 />
                 {uploadUiText(language, "removeImage")}
               </Button>
@@ -1997,6 +3551,14 @@ function ImageUploadFieldEditor({
         accept="image/png,image/jpeg,image/webp,image/gif"
         onChange={(event) => void handleFile(event.target.files?.[0])}
       />
+      {cropSource ? (
+        <ImageCropDialog
+          imageUrl={cropSource}
+          language={language}
+          onCancel={() => setCropSource("")}
+          onApply={(file) => void applyCroppedFile(file)}
+        />
+      ) : null}
     </section>
   );
 }
@@ -2015,22 +3577,117 @@ function ComboFieldEditor({
   setForm: (form: FormState) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const [placement, setPlacement] = useState<ComboPlacement | null>(null);
   const [query, setQuery] = useState("");
   const value = String(form[field.key] ?? "");
   const options = useMemo(() => comboOptionsForField(field, language, value), [field, language, value]);
   const currentOption = options.find((option) => option.value === value);
   const needle = query.trim().toLowerCase();
   const visibleOptions = needle
-    ? options.filter((option) => `${option.value} ${optionLabel(option, language)}`.toLowerCase().includes(needle)).slice(0, 80)
-    : options.slice(0, 80);
+    ? options.filter((option) => `${option.value} ${optionLabel(option, language)}`.toLowerCase().includes(needle))
+    : options;
+
+  const updatePlacement = useCallback(() => {
+    if (!open || typeof window === "undefined") return;
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const margin = COMBO_VIEWPORT_MARGIN;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const availableWidth = Math.max(120, viewportWidth - margin * 2);
+    const width = Math.min(Math.max(rect.width, Math.min(240, availableWidth)), availableWidth);
+    const maxLeft = Math.max(margin, viewportWidth - margin - width);
+    const left = Math.min(Math.max(rect.left, margin), maxLeft);
+    const below = Math.max(0, viewportHeight - rect.bottom - COMBO_GAP - margin);
+    const above = Math.max(0, rect.top - COMBO_GAP - margin);
+    const bestSpace = Math.max(below, above);
+
+    let top: number;
+    let maxHeight: number;
+    if (bestSpace < COMBO_MIN_USABLE_HEIGHT) {
+      top = margin;
+      maxHeight = Math.max(COMBO_MIN_USABLE_HEIGHT, viewportHeight - margin * 2);
+    } else if (below >= COMBO_MIN_USABLE_HEIGHT || below >= above) {
+      maxHeight = Math.min(COMBO_MAX_HEIGHT, below);
+      top = rect.bottom + COMBO_GAP;
+    } else {
+      maxHeight = Math.min(COMBO_MAX_HEIGHT, above);
+      top = Math.max(margin, rect.top - COMBO_GAP - maxHeight);
+    }
+
+    setPlacement((current) => {
+      if (
+        current &&
+        current.left === left &&
+        current.top === top &&
+        current.width === width &&
+        current.maxHeight === maxHeight
+      ) {
+        return current;
+      }
+      return { left, top, width, maxHeight };
+    });
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setPlacement(null);
+      return;
+    }
+
+    updatePlacement();
+    let frameId = 0;
+    const scheduleUpdate = () => {
+      window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(updatePlacement);
+    };
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined" && buttonRef.current ? new ResizeObserver(scheduleUpdate) : null;
+
+    window.addEventListener("resize", scheduleUpdate);
+    window.addEventListener("scroll", scheduleUpdate, true);
+    resizeObserver?.observe(buttonRef.current as Element);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", scheduleUpdate);
+      window.removeEventListener("scroll", scheduleUpdate, true);
+      resizeObserver?.disconnect();
+    };
+  }, [open, updatePlacement]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (panelRef.current?.contains(target)) return;
+      if (buttonRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    window.addEventListener("pointerdown", handler, true);
+    return () => window.removeEventListener("pointerdown", handler, true);
+  }, [open]);
 
   function choose(option: ComboOption) {
     const nextForm = { ...form, [field.key]: option.value };
     if (field.optionSource === "timezones") {
       const meta = timezoneMeta(option.value);
       const prefix = field.key.includes(".") ? `${field.key.split(".").slice(0, -1).join(".")}.` : "";
-      nextForm[`${prefix}timezonelabel`] = meta.label;
-      nextForm[`${prefix}timezoneoffset`] = meta.offset;
+      nextForm[`${prefix}timezone_label`] = meta.label;
+      nextForm[`${prefix}timezone_offset`] = meta.offset;
     }
     if (field.optionSource === "countries") applyCountryDefaultsToForm(nextForm, option.value);
     setForm(nextForm);
@@ -2039,9 +3696,10 @@ function ComboFieldEditor({
   }
 
   return (
-    <div className="relative grid gap-1 text-sm font-semibold">
+    <div className="grid gap-1 text-sm font-semibold">
       <span>{label}{field.required ? " *" : ""}</span>
       <button
+        ref={buttonRef}
         aria-expanded={open}
         className="flex min-h-10 w-full items-center justify-between gap-2 rounded-2xl border border-input bg-background px-3 text-left text-sm text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={() => setOpen((current) => !current)}
@@ -2053,18 +3711,29 @@ function ComboFieldEditor({
         <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
       </button>
       {open ? (
-        <div className="absolute left-0 right-0 top-full z-30 mt-1 grid gap-1 rounded-2xl border border-border bg-popover p-2 text-popover-foreground shadow-lg">
+        <div
+          ref={panelRef}
+          className="fixed z-50 grid grid-rows-[auto_minmax(0,1fr)] gap-1 overflow-hidden rounded-2xl border border-border bg-popover p-2 text-popover-foreground shadow-lg"
+          style={{
+            left: placement?.left ?? COMBO_VIEWPORT_MARGIN,
+            top: placement?.top ?? COMBO_VIEWPORT_MARGIN,
+            width: placement?.width ?? 240,
+            maxHeight: placement?.maxHeight,
+            visibility: placement ? "visible" : "hidden",
+          }}
+        >
           <Input
             autoFocus
+            className="h-9 min-h-9 rounded-xl px-3 text-sm font-normal"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={language === "th" ? "ค้นหา" : "Search"}
           />
-          <div className="grid max-h-72 gap-1 overflow-y-auto">
+          <div className="grid min-h-0 gap-1 overflow-y-auto">
             {visibleOptions.length ? visibleOptions.map((option) => (
               <button
                 className={cn(
-                  "flex min-h-9 w-full items-center justify-between gap-2 rounded-xl px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground",
+                  "flex min-h-8 w-full items-center justify-between gap-2 rounded-xl px-2 py-1 text-left text-sm font-medium hover:bg-accent hover:text-accent-foreground",
                   option.value === value && "bg-primary/10 text-primary",
                 )}
                 key={option.value}
@@ -2223,7 +3892,7 @@ function WorkDayPanel({
                           <TimeField
                             aria-label={`${dayNames[language]?.[index] ?? day.name} ${text("range")} ${timeIndex + 1} ${text("workTime")} start`}
                             label={text("startTime")}
-                            timezoneLabel={dateTimeScope.timezoneoffset}
+                            timezoneLabel={dateTimeScope.timezone_offset}
                             utcPreview={formatUtcPreview(time.starttimeutc, time.startdayoffsetutc)}
                             value={workTimeStart(time)}
                             onChange={(event) => updateTime(index, timeIndex, "starttime", event.target.value)}
@@ -2231,7 +3900,7 @@ function WorkDayPanel({
                           <TimeField
                             aria-label={`${dayNames[language]?.[index] ?? day.name} ${text("range")} ${timeIndex + 1} ${text("workTime")} end`}
                             label={text("endTime")}
-                            timezoneLabel={dateTimeScope.timezoneoffset}
+                            timezoneLabel={dateTimeScope.timezone_offset}
                             utcPreview={formatUtcPreview(time.endtimeutc, time.enddayoffsetutc)}
                             value={workTimeEnd(time)}
                             onChange={(event) => updateTime(index, timeIndex, "endtime", event.target.value)}
@@ -2266,6 +3935,8 @@ function CopyUatPanel({
   saving,
   selected,
   setSelected,
+  sourceEnvironment,
+  setSourceEnvironment,
   targetShopId,
   text,
 }: {
@@ -2278,13 +3949,30 @@ function CopyUatPanel({
   saving: boolean;
   selected: string;
   setSelected: (value: string) => void;
+  sourceEnvironment: "uat" | "pro";
+  setSourceEnvironment: (value: "uat" | "pro") => void;
   targetShopId: string;
   text: (key: keyof typeof uiEn) => string;
 }) {
   return (
     <Card>
       <CardContent className="grid gap-3 p-3">
-        <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
+        <div className="grid gap-2 lg:grid-cols-[minmax(180px,220px)_minmax(0,1fr)_auto_auto]">
+          <label className="grid gap-1 text-sm font-semibold">
+            <span>{text("sourceEnvironment")}</span>
+            <select
+              className="min-h-10 w-full rounded-2xl border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              disabled={loading || saving}
+              onChange={(event) => {
+                setSelected("");
+                setSourceEnvironment(event.target.value === "pro" ? "pro" : "uat");
+              }}
+              value={sourceEnvironment}
+            >
+              <option value="uat">{text("sourceUat")}</option>
+              <option value="pro">{text("sourcePro")}</option>
+            </select>
+          </label>
           <label className="grid gap-1 text-sm font-semibold">
             <span>{text("sourceShop")}</span>
             <select
@@ -2295,7 +3983,7 @@ function CopyUatPanel({
             >
               <option value="">{text("selectSourceShop")}</option>
               {records.map((record, index) => {
-                const id = String(record.guidfixed ?? record.shopid ?? record._id ?? "");
+                const id = String(record.guid_fixed ?? record.shopid ?? record._id ?? "");
                 return <option key={`${id}-${index}`} value={id}>{recordTitle(record, config, language)} ({id})</option>;
               })}
             </select>
@@ -2310,6 +3998,7 @@ function CopyUatPanel({
           </Button>
         </div>
         <div className="grid gap-2 rounded-2xl border border-border bg-background p-3 text-sm">
+          <b>{text("sourceEnvironment")}: {sourceEnvironment.toUpperCase()} → DEV</b>
           <b>{text("targetShop")}: {targetShopId || "-"}</b>
           <p className="text-muted-foreground">Preview ก่อน copy ทุกครั้ง เพราะ action นี้มีผลกับข้อมูล MongoDB ของ shop ปัจจุบัน</p>
         </div>
@@ -2354,6 +4043,34 @@ function readWorkspace(): WorkspaceSession | null {
   }
 }
 
+function companyRecordForEdit(records: SettingRecord[], workspace: WorkspaceSession | null): SettingRecord | null {
+  return records[0] ?? companyRecordFromWorkspace(workspace);
+}
+
+function companyRecordFromWorkspace(workspace: WorkspaceSession | null): SettingRecord | null {
+  if (!workspace?.shop?.shopid) return null;
+  const shopInfo = isRecord(workspace.shopInfo) ? { ...workspace.shopInfo } : {};
+  const names = Array.isArray(shopInfo.names)
+    ? shopInfo.names
+    : Array.isArray(workspace.shop.names)
+      ? workspace.shop.names
+      : workspace.shop.name
+        ? [{ code: "th", name: workspace.shop.name }]
+        : [];
+  return {
+    ...shopInfo,
+    shopid: stringValue(shopInfo.shopid) || workspace.shop.shopid,
+    names,
+    settings: isRecord(shopInfo.settings) ? shopInfo.settings : {},
+  };
+}
+
+function getMainShopIdFromWorkspace(workspace: WorkspaceSession | null): string {
+  if (!workspace?.shopInfo) return "";
+  const mainShopId = workspace.shopInfo.main_shop_id ?? workspace.shopInfo.mainshopid ?? workspace.shopInfo.mainShopId;
+  return typeof mainShopId === "string" ? mainShopId.trim() : "";
+}
+
 function requestHeaders(auth: AuthSession): HeadersInit {
   return {
     "Content-Type": "application/json",
@@ -2365,10 +4082,55 @@ function requestHeaders(auth: AuthSession): HeadersInit {
 function normalizeRecords(payload: unknown, config: SystemSettingConfig): SettingRecord[] {
   if (Array.isArray(payload)) return payload.filter(isRecord);
   if (!isRecord(payload)) return [];
+  if (config.kind === "company") {
+    const company = extractCompanyRecord(payload);
+    return company ? [company] : [];
+  }
   if (config.kind === "ai-provider" && Array.isArray(payload.providers)) return payload.providers.filter(isRecord);
   if (Array.isArray(payload.data)) return payload.data.filter(isRecord).map((record) => normalizeRestaurantRecord(record, config));
   if (isRecord(payload.data)) return [payload.data];
   return [];
+}
+
+function extractRecordTotal(payload: unknown, fallback: number): number {
+  if (!isRecord(payload)) return fallback;
+  const directTotal = payload.total ?? payload.count ?? payload.total_count ?? payload.totalCount;
+  if (typeof directTotal === "number" && Number.isFinite(directTotal)) return directTotal;
+  const pagination = payload.pagination;
+  if (isRecord(pagination)) {
+    const pageTotal = pagination.total ?? pagination.total_count ?? pagination.totalCount;
+    if (typeof pageTotal === "number" && Number.isFinite(pageTotal)) return pageTotal;
+  }
+  const meta = payload.meta;
+  if (isRecord(meta)) {
+    const metaTotal = meta.total ?? meta.total_count ?? meta.totalCount;
+    if (typeof metaTotal === "number" && Number.isFinite(metaTotal)) return metaTotal;
+  }
+  return fallback;
+}
+
+function mergeRecords(currentRecords: SettingRecord[], nextRecords: SettingRecord[], config: SystemSettingConfig): SettingRecord[] {
+  const seen = new Set<string>();
+  const merged: SettingRecord[] = [];
+  for (const record of [...currentRecords, ...nextRecords]) {
+    const id = recordId(record, config);
+    const key = id || JSON.stringify(record);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(record);
+  }
+  return merged;
+}
+
+function extractCompanyRecord(payload: Record<string, unknown>): SettingRecord | null {
+  const data = payload.data;
+  if (isRecord(data)) return data;
+  const shop = payload.shop;
+  if (isRecord(shop)) return shop;
+  const result = payload.result;
+  if (isRecord(result)) return result;
+  if (payload.shopid || payload.names || payload.settings) return payload;
+  return null;
 }
 
 function normalizeRestaurantRecord(record: SettingRecord, config: SystemSettingConfig): SettingRecord {
@@ -2441,10 +4203,10 @@ function applyUtcFields(time: WorkDayTime, scope?: DateTimeScope): WorkDayTime {
   next.end = toLegacyTime(endtime);
   if (scope) {
     next.timezone = scope.timezone;
-    next.timezoneoffset = scope.timezoneoffset;
+    next.timezone_offset = scope.timezone_offset;
   }
-  const startUtc = scope?.timezoneoffset ? localTimeToUtcTime(starttime, scope.timezoneoffset) : null;
-  const endUtc = scope?.timezoneoffset ? localTimeToUtcTime(endtime, scope.timezoneoffset) : null;
+  const startUtc = scope?.timezone_offset ? localTimeToUtcTime(starttime, scope.timezone_offset) : null;
+  const endUtc = scope?.timezone_offset ? localTimeToUtcTime(endtime, scope.timezone_offset) : null;
   if (startUtc) {
     next.starttimeutc = startUtc.time;
     next.startdayoffsetutc = startUtc.dayOffset;
@@ -2560,8 +4322,13 @@ function defaultForm(config: SystemSettingConfig, language: LanguageCode): FormS
   for (const field of config.fields) {
     if (field.type === "checkbox") form[field.key] = field.key === "isActive" || field.key === "is_active" || field.key === "isenabled";
     else if (field.type === "names") form[field.key] = Object.fromEntries(LANGUAGES.map((item) => [item.code, item.code === language ? "" : ""]));
-    else if (field.type === "json") form[field.key] = field.key === "permissionCodes" || field.key === "approvalCodes" || field.key === "allowed_tools" ? "[]" : "{}";
-    else if (field.type === "number") form[field.key] = "";
+    else if (field.type === "language-configs") form[field.key] = defaultLanguageConfigs("th");
+    else if (field.type === "language-list") form[field.key] = ["th"];
+    else if (field.type === "master-picker") form[field.key] = {};
+    else if (field.type === "json") form[field.key] = field.key === "paymentrounding"
+      ? defaultPaymentRoundingJson()
+      : field.key === "permissionCodes" || field.key === "approvalCodes" || field.key === "allowed_tools" ? "[]" : "{}";
+    else if (field.type === "number") form[field.key] = isDecimalSettingField(field.key) ? 2 : "";
     else if (field.type === "radio") form[field.key] = radioValueToFormValue(field.options?.[0]?.value ?? "", field);
     else form[field.key] = "";
   }
@@ -2589,6 +4356,7 @@ function defaultForm(config: SystemSettingConfig, language: LanguageCode): FormS
     form.approvalCodes = [];
   }
   applyCompanyDefaults(form, config);
+  applyBranchDefaults(form, config);
   return form;
 }
 
@@ -2597,15 +4365,20 @@ function formFromRecord(record: SettingRecord, config: SystemSettingConfig, lang
   for (const field of config.fields) {
     const value = getByPath(record, field.key);
     if (field.type === "names") form[field.key] = namesToObject(value);
+    else if (field.type === "language-configs") form[field.key] = normalizeLanguageConfigs(value, getByPath(record, "settings.language"));
+    else if (field.type === "language-list") form[field.key] = normalizeLanguageList(value, getByPath(record, "language"));
+    else if (field.type === "master-picker") form[field.key] = isRecord(value) ? value : {};
     else if (field.type === "json" && config.slug === "permission_definition" && field.key === "branches") form[field.key] = isRecord(value) ? value : {};
     else if (field.type === "json" && config.slug === "approval_setting" && field.key === "approvals") form[field.key] = isRecord(value) ? value : {};
     else if (field.type === "json" && config.slug === "permission_link" && (field.key === "permissionCodes" || field.key === "approvalCodes")) form[field.key] = stringArrayFromForm(value);
     else if (field.type === "json") form[field.key] = JSON.stringify(value ?? (field.key === "permissionCodes" || field.key === "approvalCodes" || field.key === "allowed_tools" ? [] : {}), null, 2);
     else if (field.type === "radio") form[field.key] = radioValueToFormValue(radioFormValue(value, field), field);
     else if (field.key === "api_key") form[field.key] = "";
+    else if (field.type === "number" && isDecimalSettingField(field.key)) form[field.key] = normalizeDecimalPlaces(value);
     else form[field.key] = value ?? "";
   }
   applyCompanyDefaults(form, config);
+  applyBranchDefaults(form, config);
   return form;
 }
 
@@ -2616,16 +4389,36 @@ function applyCompanyDefaults(form: FormState, config: SystemSettingConfig) {
   }
   const timezone = stringValue(form["settings.timezone"]);
   if (timezone) applyTimezoneMetaToForm(form, "settings.timezone", timezone);
+  syncCompanyLanguageForm(form);
+}
+
+function applyBranchDefaults(form: FormState, config: SystemSettingConfig) {
+  if (config.slug !== "branch") return;
+  for (const [key, value] of Object.entries(branchSetupDefaults)) {
+    setFormValueIfEmpty(form, key, value);
+  }
+  form.languages = normalizeLanguageList(form.languages, form.language);
+  if (!stringValue(form.language)) form.language = Array.isArray(form.languages) ? form.languages[0] ?? "th" : "th";
+  const timezone = stringValue(form.timezone);
+  if (timezone) applyTimezoneMetaToForm(form, "timezone", timezone);
 }
 
 function applyCountryDefaultsToForm(form: FormState, countryCode: string) {
   if (countryCode !== "TH") return;
   for (const [key, value] of Object.entries(companySetupDefaults)) {
-    if (key === "settings.countrycode") continue;
+    if (key === "settings.country_code") continue;
     setFormValueIfEmpty(form, key, value);
   }
   const timezone = stringValue(form["settings.timezone"]);
   if (timezone) applyTimezoneMetaToForm(form, "settings.timezone", timezone);
+  syncCompanyLanguageForm(form);
+}
+
+function syncCompanyLanguageForm(form: FormState) {
+  const defaultCode = supportedLanguageCode(form["settings.language"], "th");
+  const configs = normalizeLanguageConfigs(form["settings.languageconfigs"], defaultCode);
+  form["settings.language"] = configs[0]?.code ?? defaultCode;
+  form["settings.languageconfigs"] = configs;
 }
 
 function setFormValueIfEmpty(form: FormState, key: string, value: unknown) {
@@ -2639,8 +4432,8 @@ function isEmptyFormValue(value: unknown): boolean {
 function applyTimezoneMetaToForm(form: FormState, key: string, timeZone: string) {
   const meta = timezoneMeta(timeZone);
   const prefix = key.includes(".") ? `${key.split(".").slice(0, -1).join(".")}.` : "";
-  setFormValueIfEmpty(form, `${prefix}timezonelabel`, meta.label);
-  setFormValueIfEmpty(form, `${prefix}timezoneoffset`, meta.offset);
+  setFormValueIfEmpty(form, `${prefix}timezone_label`, meta.label);
+  setFormValueIfEmpty(form, `${prefix}timezone_offset`, meta.offset);
 }
 
 function buildPayload(form: FormState, editing: SettingRecord | null, config: SystemSettingConfig, workspace: WorkspaceSession, auth: AuthSession, language: LanguageCode): SettingRecord {
@@ -2648,16 +4441,31 @@ function buildPayload(form: FormState, editing: SettingRecord | null, config: Sy
   for (const field of config.fields) {
     if (field.readOnly) continue;
     const value = form[field.key];
-    if (field.type === "names") setByPath(payload, field.key, objectToNames(value, language));
+    if (field.type === "names") {
+      setByPath(payload, field.key, objectToNames(
+        value,
+        language,
+        getByPath(payload, field.key),
+        nameEditorLanguageCodes(form, config, language),
+      ));
+    }
+    else if (field.type === "language-configs") setByPath(payload, field.key, normalizeLanguageConfigs(value, form["settings.language"]));
+    else if (field.type === "language-list") setByPath(payload, field.key, normalizeLanguageList(value, form.language));
+    else if (field.type === "master-picker") setByPath(payload, field.key, isRecord(value) ? value : {});
     else if (field.type === "json") setByPath(payload, field.key, parseJsonField(value, field.key));
     else if (field.type === "checkbox") setByPath(payload, field.key, Boolean(value));
     else if (field.type === "radio") setByPath(payload, field.key, radioValueToFormValue(radioFormValue(value, field), field));
+    else if (field.type === "select") setByPath(payload, field.key, optionValueToFormValue(String(value ?? ""), field));
     else if (field.type === "combo") {
       const selectedValue = String(value ?? "").trim();
       setByPath(payload, field.key, selectedValue);
       if (field.optionSource === "timezones" && selectedValue) setTimezoneDerivedPayload(payload, field.key, selectedValue);
     }
-    else if (field.type === "number") setByPath(payload, field.key, value === "" || value === null || value === undefined ? 0 : Number(value));
+    else if (field.type === "number") setByPath(
+      payload,
+      field.key,
+      isDecimalSettingField(field.key) ? normalizeDecimalPlaces(value) : value === "" || value === null || value === undefined ? 0 : Number(value),
+    );
     else if (field.key === "api_key" && !String(value ?? "").trim()) {
       deleteByPath(payload, field.key);
     } else {
@@ -2690,13 +4498,33 @@ function buildPayload(form: FormState, editing: SettingRecord | null, config: Sy
   }
 
   if (config.kind === "company") {
+    const configs = normalizeLanguageConfigs(getByPath(payload, "settings.languageconfigs"), form["settings.language"] ?? getByPath(payload, "settings.language"));
+    setByPath(payload, "settings.languageconfigs", configs);
+    setByPath(payload, "settings.language", configs[0]?.code ?? "th");
     payload.shopid = workspace.shop.shopid;
+  }
+
+  if (config.slug === "branch") {
+    const languages = normalizeLanguageList(getByPath(payload, "languages"), form.language ?? getByPath(payload, "language"));
+    setByPath(payload, "languages", languages);
+    setByPath(payload, "language", languages[0] ?? "th");
+    const timezone = stringValue(getByPath(payload, "timezone"));
+    if (timezone) {
+      const meta = timezoneMeta(timezone);
+      setByPath(payload, "timezonelabel", stringValue(getByPath(payload, "timezonelabel")) || meta.label);
+      setByPath(payload, "timezoneoffset", normalizeUtcOffset(stringValue(getByPath(payload, "timezoneoffset")) || meta.offset));
+      setByPath(payload, "timezone_label", stringValue(getByPath(payload, "timezone_label")) || meta.label);
+      setByPath(payload, "timezone_offset", normalizeUtcOffset(stringValue(getByPath(payload, "timezone_offset")) || meta.offset));
+    }
   }
 
   if (config.slug === "user") {
     payload.shopid = workspace.shop.shopid;
     if (editing) payload.editusername = recordId(editing, config);
-    if (isCreatorRecord(payload, workspace)) payload.isaccessdisabled = false;
+    if (isEmailLike(payload.username)) {
+      payload.email = payload.username;
+    }
+    if (isCreatorRecord(payload, workspace)) payload.is_access_disabled = false;
   }
 
   if (config.slug === "department") {
@@ -2708,7 +4536,7 @@ function buildPayload(form: FormState, editing: SettingRecord | null, config: Sy
     Object.assign(payload, dateTimeScopePayload(scope));
     if (config.slug === "holiday_screen") {
       const localDate = String(payload.date ?? "").trim();
-      const utcDate = localDateToUtcIso(localDate, scope.timezoneoffset);
+      const utcDate = localDateToUtcIso(localDate, scope.timezone_offset);
       if (utcDate) payload.date_utc = utcDate;
     }
   }
@@ -2720,11 +4548,11 @@ function resolveDateTimeScope(workspace: WorkspaceSession | null): DateTimeScope
   const branch = workspace?.branch ?? null;
   const shopInfo = workspace?.shopInfo ?? null;
   const branchcode = stringValue(branch?.code ?? workspace?.shop.branchcode);
-  const branchguid = stringValue(branch?.guidfixed);
+  const branchguid = stringValue(branch?.guid_fixed);
   const shopTimezone = stringValue(getByPath(shopInfo, "settings.timezone"));
-  const shopTimezoneLabel = stringValue(getByPath(shopInfo, "settings.timezonelabel"));
-  const shopTimezoneOffset = stringValue(getByPath(shopInfo, "settings.timezoneoffset"));
-  const branchYear = stringValue(branch?.yeartype).toLowerCase();
+  const shopTimezoneLabel = stringValue(getByPath(shopInfo, "settings.timezone_label"));
+  const shopTimezoneOffset = stringValue(getByPath(shopInfo, "settings.timezone_offset"));
+  const branchYear = stringValue(branch?.year_type).toLowerCase();
   const useBuddhistCalendar = booleanLikeValue(getByPath(shopInfo, "settings.usebuddhistcalendar"));
   const calendarYearType: CalendarYearType =
     branchYear === "buddhist" || branchYear === "be" || branchYear === "พ.ศ."
@@ -2739,8 +4567,8 @@ function resolveDateTimeScope(workspace: WorkspaceSession | null): DateTimeScope
     branchcode,
     branchguid,
     timezone: stringValue(branch?.timezone) || shopTimezone,
-    timezonelabel: stringValue(branch?.timezonelabel) || shopTimezoneLabel || stringValue(branch?.timezone) || shopTimezone,
-    timezoneoffset: normalizeUtcOffset(stringValue(branch?.timezoneoffset) || shopTimezoneOffset),
+    timezone_label: stringValue(branch?.timezone_label) || shopTimezoneLabel || stringValue(branch?.timezone) || shopTimezone,
+    timezone_offset: normalizeUtcOffset(stringValue(branch?.timezone_offset) || shopTimezoneOffset),
     calendarYearType,
   };
 }
@@ -2751,8 +4579,8 @@ function dateTimeScopePayload(scope: DateTimeScope): SettingRecord {
     branchcode: scope.branchcode,
     branchguid: scope.branchguid,
     timezone: scope.timezone,
-    timezonelabel: scope.timezonelabel,
-    timezoneoffset: scope.timezoneoffset,
+    timezone_label: scope.timezone_label,
+    timezone_offset: scope.timezone_offset,
     calendar_year_type: scope.calendarYearType,
   };
 }
@@ -2777,14 +4605,18 @@ function stringValue(value: unknown): string {
   return typeof value === "string" ? value.trim() : value === null || value === undefined ? "" : String(value).trim();
 }
 
+function isEmailLike(value: unknown): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(stringValue(value));
+}
+
 function recordId(record: SettingRecord | null | undefined, config: SystemSettingConfig): string {
   if (!record) return "";
   const value = config.idField ? getByPath(record, config.idField) : undefined;
-  return String(value ?? record.guidfixed ?? record.id ?? record._id ?? record.code ?? record.shopid ?? record.provider_name ?? "");
+  return String(value ?? record.guid_fixed ?? record.id ?? record._id ?? record.code ?? record.shopid ?? record.provider_name ?? "");
 }
 
 function recordTitle(record: SettingRecord, config: SystemSettingConfig | undefined, language: LanguageCode): string {
-  const names = getByPath(record, "names") ?? getByPath(record, "desc");
+  const names = getByPath(record, "names") ?? getByPath(record, "name") ?? getByPath(record, "desc");
   const localized = localizedValue(names, language);
   if (localized) return localized;
   return String(
@@ -2796,7 +4628,7 @@ function recordTitle(record: SettingRecord, config: SystemSettingConfig | undefi
     record.username ??
     record.provider_name ??
     record.code ??
-    record.guidfixed ??
+    record.guid_fixed ??
     config?.slug ??
     "",
   );
@@ -2807,7 +4639,7 @@ function recordBranchCaption(record: SettingRecord): string {
 }
 
 function isCreatorRecord(record: SettingRecord, workspace: WorkspaceSession | null): boolean {
-  if (Boolean(record.iscreator)) return true;
+  if (Boolean(record.is_creator)) return true;
   const creator = stringValue(record.createdby ?? workspace?.shop.createdby ?? getByPath(workspace?.shopInfo ?? {}, "createdby"));
   const username = stringValue(record.username ?? record.email ?? record.code);
   return Boolean(creator && username && creator.toLowerCase() === username.toLowerCase());
@@ -2822,7 +4654,7 @@ function isSelfUserRecord(record: SettingRecord, auth: AuthSession | null): bool
 }
 
 function userAccessDisabled(record: SettingRecord): boolean {
-  return Boolean(record.isaccessdisabled ?? record.is_access_disabled ?? false);
+  return Boolean(record.is_access_disabled ?? record.is_access_disabled ?? false);
 }
 
 function localizedValue(value: unknown, language: LanguageCode): string {
@@ -2859,17 +4691,179 @@ function optionLabel(option: SystemSettingOption, language: LanguageCode): strin
   return option.labels?.[language] ?? option.labels?.en ?? option.labels?.th ?? option.label;
 }
 
+function isProductUnitOption(value: unknown): value is ProductUnitOption {
+  return isRecord(value) && typeof value.unitcode === "string" && value.unitcode.trim().length > 0;
+}
+
+function unitDisplayName(unit: ProductUnitOption, language: LanguageCode): string {
+  const names = Array.isArray(unit.names) ? unit.names : [];
+  return names.find((name) => name.code?.toLowerCase() === language && name.name?.trim())?.name?.trim()
+    ?? names.find((name) => name.code?.toLowerCase() === "th" && name.name?.trim())?.name?.trim()
+    ?? names.find((name) => name.name?.trim())?.name?.trim()
+    ?? unit.unitcode;
+}
+
 function uploadUiText(language: LanguageCode, key: UploadTextKey): string {
   return uploadText[key][language] ?? uploadText[key].en;
 }
 
+function ImageCropDialog({
+  imageUrl,
+  language,
+  onApply,
+  onCancel,
+}: {
+  imageUrl: string;
+  language: LanguageCode;
+  onApply: (file: File) => void;
+  onCancel: () => void;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [offsetX, setOffsetX] = useState(0);
+  const [offsetY, setOffsetY] = useState(0);
+  const [zoom, setZoom] = useState(1);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    const nextImage = new window.Image();
+    nextImage.crossOrigin = "anonymous";
+    nextImage.onload = () => {
+      if (!active) return;
+      setImage(nextImage);
+      setOffsetX(0);
+      setOffsetY(0);
+      setZoom(1);
+      setError("");
+    };
+    nextImage.onerror = () => {
+      if (active) setError(uploadUiText(language, "imageUploadFailed"));
+    };
+    nextImage.src = imageUrl;
+    return () => {
+      active = false;
+    };
+  }, [imageUrl, language]);
+
+  useEffect(() => {
+    if (!image || !canvasRef.current) return;
+    drawCroppedImage(canvasRef.current, image, { offsetX, offsetY, zoom });
+  }, [image, offsetX, offsetY, zoom]);
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onCancel]);
+
+  async function apply() {
+    if (!canvasRef.current) return;
+    try {
+      const blob = await canvasToBlob(canvasRef.current, "image/webp", 0.86);
+      if (!blob) throw new Error(uploadUiText(language, "imageUploadFailed"));
+      onApply(new File([blob], "cropped-image.webp", { type: "image/webp", lastModified: Date.now() }));
+    } catch {
+      setError(uploadUiText(language, "imageUploadFailed"));
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-2" role="dialog" aria-modal="true">
+      <section className="grid w-[min(420px,calc(100vw-16px))] gap-2 rounded-2xl border border-border bg-card p-3 text-card-foreground shadow-xl">
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-sm font-semibold">{uploadUiText(language, "cropTitle")}</div>
+          <Button type="button" variant="ghost" size="sm" onClick={onCancel} aria-label={uploadUiText(language, "cancel")}>
+            <X />
+          </Button>
+        </div>
+        <div className="grid place-items-center rounded-2xl border border-input bg-muted/40 p-2">
+          <canvas ref={canvasRef} width={512} height={512} className="aspect-square w-full max-w-80 rounded-xl bg-background object-contain" />
+        </div>
+        <label className="grid gap-1 text-xs font-semibold">
+          <span>Zoom</span>
+          <input type="range" min="1" max="3" step="0.01" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} />
+        </label>
+        <label className="grid gap-1 text-xs font-semibold">
+          <span>X</span>
+          <input type="range" min="-100" max="100" step="1" value={offsetX} onChange={(event) => setOffsetX(Number(event.target.value))} />
+        </label>
+        <label className="grid gap-1 text-xs font-semibold">
+          <span>Y</span>
+          <input type="range" min="-100" max="100" step="1" value={offsetY} onChange={(event) => setOffsetY(Number(event.target.value))} />
+        </label>
+        {error ? <p className="text-xs font-semibold text-destructive">{error}</p> : null}
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onCancel}>{uploadUiText(language, "cancel")}</Button>
+          <Button type="button" onClick={() => void apply()} disabled={!image}>{uploadUiText(language, "applyCrop")}</Button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function drawCroppedImage(
+  canvas: HTMLCanvasElement,
+  image: HTMLImageElement,
+  crop: { offsetX: number; offsetY: number; zoom: number },
+) {
+  const size = Math.min(image.naturalWidth, image.naturalHeight);
+  const cropSize = Math.max(1, size / Math.max(1, crop.zoom));
+  const maxX = Math.max(0, image.naturalWidth - cropSize);
+  const maxY = Math.max(0, image.naturalHeight - cropSize);
+  const sourceX = clampNumber((image.naturalWidth - cropSize) / 2 + (crop.offsetX / 100) * (maxX / 2), 0, maxX);
+  const sourceY = clampNumber((image.naturalHeight - cropSize) / 2 + (crop.offsetY / 100) * (maxY / 2), 0, maxY);
+  const context = canvas.getContext("2d");
+  if (!context) return;
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+  context.drawImage(image, sourceX, sourceY, cropSize, cropSize, 0, 0, canvas.width, canvas.height);
+}
+
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
 function extractUploadUri(payload: unknown): string {
   if (!isRecord(payload)) return "";
-  const direct = stringValue(payload.uri ?? payload.url ?? payload.imageurl ?? payload.image_uri);
+  const direct = stringValue(payload.uri ?? payload.url ?? payload.file_url ?? payload.fileUrl ?? payload.imageurl ?? payload.image_uri);
   if (direct) return direct;
   const data = payload.data;
   if (!isRecord(data)) return "";
-  return stringValue(data.uri ?? data.url ?? data.imageurl ?? data.image_uri);
+  return stringValue(data.uri ?? data.url ?? data.file_url ?? data.fileUrl ?? data.imageurl ?? data.image_uri);
+}
+
+function imageDisplayUrl(value: unknown, auth: AuthSession | null): string {
+  const raw = stringValue(value).trim();
+  if (!raw) return "";
+  if (/^(blob:|data:|https?:\/\/)/i.test(raw)) return raw;
+  if (raw.startsWith("//")) return typeof window === "undefined" ? raw : `${window.location.protocol}${raw}`;
+  if (raw.startsWith("/api/")) return raw;
+
+  const base = mainApiDisplayBase(auth?.backendUrl);
+  if (!base) return raw;
+  if (raw.startsWith("/")) return `${base}${raw}`;
+  if (raw.toLowerCase().startsWith("images/")) return `${base}/${raw.replace(/^\/+/, "")}`;
+  return `${base}/images/${raw.replace(/^\/+/, "")}`;
+}
+
+function mainApiDisplayBase(rawBackendUrl: unknown): string {
+  const raw = stringValue(rawBackendUrl).trim();
+  if (!raw) return "";
+  try {
+    const withProtocol = /^https?:\/\//i.test(raw) ? raw : `http://${raw}`;
+    const parsed = new URL(withProtocol);
+    const path = parsed.pathname.replace(/\/+$/, "");
+    parsed.pathname = path.toLowerCase().endsWith("/goapi") ? path.slice(0, -"/goapi".length) || "/" : "/";
+    parsed.search = "";
+    parsed.hash = "";
+    return parsed.toString().replace(/\/$/, "");
+  } catch {
+    return "";
+  }
 }
 
 async function resizeLogoFile(file: File): Promise<File> {
@@ -2923,8 +4917,17 @@ function radioFormValue(value: unknown, field: SystemSettingField): string {
   return fallback;
 }
 
-function radioValueToFormValue(value: string, field: SystemSettingField): string | boolean {
+function radioValueToFormValue(value: string, field: SystemSettingField): string | boolean | number {
   if (field.valueType === "boolean") return booleanLikeValue(value);
+  if (field.valueType === "number") return Number(value);
+  return value;
+}
+
+function optionValueToFormValue(value: string, field: SystemSettingField): string | number {
+  if (field.valueType === "number") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
   return value;
 }
 
@@ -2932,6 +4935,21 @@ function booleanLikeValue(value: unknown): boolean {
   if (typeof value === "boolean") return value;
   const normalized = stringValue(value).toLowerCase();
   return normalized === "true" || normalized === "1" || normalized === "yes" || normalized === "y" || normalized === "buddhist" || normalized === "be" || normalized === "พ.ศ.";
+}
+
+function isDecimalSettingField(key: string): boolean {
+  return key === "decimal_quantity"
+    || key === "decimal_price"
+    || key === "decimal_document"
+    || key === "settings.decimal_quantity"
+    || key === "settings.decimal_price"
+    || key === "settings.decimal_document";
+}
+
+function normalizeDecimalPlaces(value: unknown): number {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < 2) return 2;
+  return Math.min(8, Math.trunc(numeric));
 }
 
 function comboOptionsForField(field: SystemSettingField, language: LanguageCode, currentValue: string): ComboOption[] {
@@ -2968,8 +4986,8 @@ function timezoneMeta(timeZone: string): { label: string; offset: string } {
 function setTimezoneDerivedPayload(payload: SettingRecord, key: string, timeZone: string) {
   const meta = timezoneMeta(timeZone);
   const prefix = key.includes(".") ? `${key.split(".").slice(0, -1).join(".")}.` : "";
-  setByPath(payload, `${prefix}timezonelabel`, meta.label);
-  setByPath(payload, `${prefix}timezoneoffset`, meta.offset);
+  setByPath(payload, `${prefix}timezone_label`, meta.label);
+  setByPath(payload, `${prefix}timezone_offset`, meta.offset);
 }
 
 function timezoneUtcOffset(timeZone: string): string {
@@ -2994,11 +5012,20 @@ function namesToObject(value: unknown): Record<string, string> {
   return Object.fromEntries(value.filter(isRecord).map((item) => [String(item.code ?? ""), String(item.name ?? "")]));
 }
 
-function objectToNames(value: unknown, language: LanguageCode): { code: string; name: string; isauto: boolean; isdelete: boolean }[] {
+function objectToNames(
+  value: unknown,
+  language: LanguageCode,
+  previousValue?: unknown,
+  activeLanguages?: string[],
+): { code: string; name: string; isauto: boolean; isdelete: boolean }[] {
   const record = namesToObject(value);
+  const previous = namesToObject(previousValue);
+  const active = new Set((activeLanguages?.length ? activeLanguages : LANGUAGES.map((item) => item.code)).map((code) => code.toLowerCase()));
   return LANGUAGES.map((item) => ({
     code: item.code,
-    name: record[item.code]?.trim() || (item.code === "en" ? record[language]?.trim() : "") || "",
+    name: active.has(item.code)
+      ? record[item.code]?.trim() || (item.code === "en" ? record[language]?.trim() : "") || ""
+      : previous[item.code]?.trim() || record[item.code]?.trim() || "",
     isauto: false,
     isdelete: false,
   }));
@@ -3045,6 +5072,15 @@ function shortValue(value: unknown, language: LanguageCode): string {
   return String(value ?? "-");
 }
 
+function fieldDisplayValue(field: SystemSettingField, value: unknown, language: LanguageCode): string {
+  if (field.type === "radio" || field.type === "select") {
+    const optionValue = field.type === "radio" ? radioFormValue(value, field) : String(value ?? "");
+    const option = field.options?.find((item) => item.value === optionValue);
+    if (option) return optionLabel(option, language);
+  }
+  return shortValue(value, language);
+}
+
 function isRecord(value: unknown): value is SettingRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -3069,7 +5105,7 @@ function safeJsonParse(value: string, fallback: unknown): unknown {
 }
 
 function isActiveRecord(record: SettingRecord): boolean {
-  if ("isaccessdisabled" in record || "is_access_disabled" in record) return !userAccessDisabled(record);
+  if ("is_access_disabled" in record || "is_access_disabled" in record) return !userAccessDisabled(record);
   if ("is_active" in record) return Boolean(record.is_active);
   if ("isActive" in record) return Boolean(record.isActive);
   if ("isenabled" in record) return Boolean(record.isenabled);

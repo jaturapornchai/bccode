@@ -1,5 +1,7 @@
+import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { validateBackendUrl } from "@/lib/backend-url";
+import { getJwtClaimShopId, verifyHs256Jwt } from "@/lib/server-jwt";
 import { getSystemSettingConfig, type SystemSettingConfig } from "@/lib/system-setting-screens";
 import {
   getBackendUrlFromRequest,
@@ -24,6 +26,9 @@ export async function GET(request: Request, context: SystemSettingsProxyContext)
   const resolved = await resolveProxy(context);
   if (resolved instanceof NextResponse) return resolved;
 
+  const tenantResponse = validateTenantAccess(request);
+  if (tenantResponse) return tenantResponse;
+
   const base = resolveBaseUrl(request, resolved.config);
   if (base instanceof NextResponse) return base;
 
@@ -36,6 +41,9 @@ export async function POST(request: Request, context: SystemSettingsProxyContext
 
   const resolved = await resolveProxy(context);
   if (resolved instanceof NextResponse) return resolved;
+
+  const tenantResponse = validateTenantAccess(request, body);
+  if (tenantResponse) return tenantResponse;
 
   const base = resolveBaseUrl(request, resolved.config, body);
   if (base instanceof NextResponse) return base;
@@ -56,6 +64,9 @@ export async function PUT(request: Request, context: SystemSettingsProxyContext)
   const resolved = await resolveProxy(context);
   if (resolved instanceof NextResponse) return resolved;
 
+  const tenantResponse = validateTenantAccess(request, body);
+  if (tenantResponse) return tenantResponse;
+
   const base = resolveBaseUrl(request, resolved.config, body);
   if (base instanceof NextResponse) return base;
 
@@ -68,6 +79,9 @@ export async function DELETE(request: Request, context: SystemSettingsProxyConte
   const body = await readBody(request);
   const resolved = await resolveProxy(context);
   if (resolved instanceof NextResponse) return resolved;
+
+  const tenantResponse = validateTenantAccess(request, isRecord(body) ? body : undefined);
+  if (tenantResponse) return tenantResponse;
 
   const base = resolveBaseUrl(request, resolved.config, isRecord(body) ? body : undefined);
   if (base instanceof NextResponse) return base;
@@ -108,6 +122,36 @@ function usesGoApi(config: SystemSettingConfig): boolean {
   return config.kind === "ai-provider" || config.kind === "atlas" || config.kind === "copy-uat" || config.kind === "goapi-crud";
 }
 
+function validateTenantAccess(request: Request, body?: Record<string, unknown>): NextResponse | null {
+  const requestedShopId = getRequestedShopId(request, body);
+  if (!requestedShopId) return null;
+  if (!process.env.JWT_SECRET_KEY?.trim()) return null;
+
+  const authorization = requireBearerToken(request);
+  if (typeof authorization !== "string") return authorization;
+
+  const jwt = verifyHs256Jwt(authorization);
+  if (!jwt.ok) return NextResponse.json({ success: false, message: jwt.message }, { status: jwt.status });
+
+  const claimShopId = getJwtClaimShopId(jwt.claims);
+  if (!claimShopId) return NextResponse.json({ success: false, message: "token ไม่มีรหัสบริษัท" }, { status: 401 });
+  if (claimShopId !== requestedShopId) {
+    return NextResponse.json({ success: false, message: "ไม่มีสิทธิ์เข้าถึงข้อมูลบริษัทนี้" }, { status: 403 });
+  }
+  return null;
+}
+
+function getRequestedShopId(request: Request, body?: Record<string, unknown>): string {
+  const url = new URL(request.url);
+  const value =
+    body?.shopid ??
+    body?.shop_id ??
+    url.searchParams.get("shopid") ??
+    url.searchParams.get("shop_id") ??
+    "";
+  return String(value).trim();
+}
+
 function buildGetPath(request: Request, config: SystemSettingConfig, id: string): string {
   const url = new URL(request.url);
   const query = new URLSearchParams();
@@ -140,7 +184,8 @@ function buildGetPath(request: Request, config: SystemSettingConfig, id: string)
   }
 
   if (config.kind === "copy-uat") {
-    return "/listsourceshops";
+    const sourceEnvironment = url.searchParams.get("source_environment") ?? url.searchParams.get("source_env") ?? "uat";
+    return `/listsourceshops?source_environment=${encodeURIComponent(sourceEnvironment)}`;
   }
 
   const basePath = id ? `${config.basePath}/${encodeURIComponent(id)}` : (config.listPath ?? config.basePath ?? "");
@@ -218,7 +263,7 @@ function buildWritePayload(request: Request, config: SystemSettingConfig, id: st
   const shopid = String(payload.shopid ?? payload.shop_id ?? url.searchParams.get("shopid") ?? "");
 
   if (config.kind === "restaurant-setting") {
-    const { guidfixed: _guidfixed, ...rest } = payload;
+    const { guid_fixed: _guidfixed, ...rest } = payload;
     void _guidfixed;
     return {
       code: config.code,
@@ -315,8 +360,8 @@ async function ensureUsernameLoginUser(request: Request, baseUrl: string, payloa
     headers: { "Content-Type": "application/json", "Accept-Language": request.headers.get("accept-language") ?? "th" },
     body: JSON.stringify({
       username,
-      password: "12345",
-      name: String(payload.name ?? payload.userprofilename ?? username),
+      password: randomBytes(12).toString("hex"),
+      name: String(payload.name ?? payload.user_profile_name ?? username),
     }),
     cache: "no-store",
   });

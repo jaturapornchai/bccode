@@ -40,6 +40,9 @@ describe("currency presets", () => {
   it("confirms a selected currency exists only when code name and symbol match", () => {
     expect(findCurrencySymbolPreset({ code: "THB", name: "Thai Baht", symbol: "฿" })?.code).toBe("THB");
     expect(findCurrencySymbolPreset({ code: "THB", name: "Baht", symbol: "฿" })?.code).toBe("THB");
+    expect(findCurrencySymbolPreset({ code: "USD", name: "US Dollar", symbol: "US$" })?.code).toBe("USD");
+    expect(findCurrencySymbolPreset({ code: "CHF", name: "Swiss Franc", symbol: "Fr." })?.code).toBe("CHF");
+    expect(findCurrencySymbolPreset({ code: "CAD", name: "Canadian Dollar", symbol: "C$" })?.code).toBe("CAD");
     expect(findCurrencySymbolPreset({ code: "THB", name: "Wrong", symbol: "฿" })).toBeUndefined();
   });
 
@@ -48,8 +51,11 @@ describe("currency presets", () => {
       standard: "ISO 4217",
       authority: "SIX Financial Information",
       list: "List One: Current Currency & Funds",
+      symbolSource: "Wikipedia currency symbol and currency pages",
     });
     expect(currencySymbolPresets.find((item) => item.code === "CNY")?.isoName).toBe("Yuan Renminbi");
     expect(currencySymbolPresets.find((item) => item.code === "JPY")?.isoName).toBe("Yen");
+    expect(currencySymbolPresets.find((item) => item.code === "CAD")?.symbol).toBe("Can$");
+    expect(currencySymbolPresets.find((item) => item.code === "CHF")?.symbolKind).toBe("abbreviation");
   });
 });

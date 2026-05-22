@@ -167,7 +167,16 @@ func (svc ShopUserService) ListShopByUser(authUsername string, pageable micromod
 func (svc ShopUserService) ListUserInShop(shopID string, pageable micromodels.Pageable) ([]models.ShopUserProfile, mongopagination.PaginationData, error) {
 	shopUserProfiles := []models.ShopUserProfile{}
 
-	shopUsers, pagination, err := svc.repo.FindByUserInShopPage(context.Background(), shopID, pageable)
+	profileMatchedUsernames := []string{}
+	if strings.TrimSpace(pageable.Query) != "" {
+		var profileErr error
+		profileMatchedUsernames, profileErr = svc.repo.FindUsernamesByProfileQuery(context.Background(), pageable.Query)
+		if profileErr != nil {
+			return shopUserProfiles, mongopagination.PaginationData{}, profileErr
+		}
+	}
+
+	shopUsers, pagination, err := svc.repo.FindByUserInShopPageWithProfileMatches(context.Background(), shopID, pageable, profileMatchedUsernames)
 
 	if err != nil {
 		return shopUserProfiles, pagination, err

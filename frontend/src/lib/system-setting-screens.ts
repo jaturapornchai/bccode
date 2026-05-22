@@ -11,14 +11,29 @@ export type SystemSettingOption = {
 export type SystemSettingField = {
   key: string;
   label: SystemSettingText;
-  type: "checkbox" | "combo" | "date" | "image-upload" | "json" | "names" | "number" | "radio" | "select" | "text" | "textarea";
+  type:
+    | "checkbox"
+    | "combo"
+    | "date"
+    | "image-upload"
+    | "json"
+    | "language-configs"
+    | "language-list"
+    | "master-picker"
+    | "names"
+    | "number"
+    | "radio"
+    | "select"
+    | "text"
+    | "textarea";
   required?: boolean;
   readOnly?: boolean;
   options?: SystemSettingOption[];
   optionSource?: "countries" | "currency" | "timezones";
+  master?: "businesstype";
   placeholder?: string;
   multiline?: boolean;
-  valueType?: "boolean" | "string";
+  valueType?: "boolean" | "number" | "string";
 };
 
 export type SystemSettingKind =
@@ -123,6 +138,51 @@ const accessTemporarilyDisabledLabel: SystemSettingText = {
   fil: "Pansamantalang hindi pinapayagan",
 };
 
+const roleUserLabel: SystemSettingText = {
+  th: "ระดับผู้ใช้งาน",
+  en: "User Level",
+  cn: "用户级别",
+  ja: "ユーザーレベル",
+  ko: "사용자 레벨",
+  lo: "ລະດັບຜູ້ໃຊ້ງານ",
+  my: "အသုံးပြုသူအဆင့်",
+  km: "កម្រិតអ្នកប្រើ",
+  vi: "Cấp người dùng",
+  ms: "User Level",
+  id: "User Level",
+  fil: "User Level",
+};
+
+const roleAdminLabel: SystemSettingText = {
+  th: "ระดับแอดมิน",
+  en: "Admin Level",
+  cn: "管理员级别",
+  ja: "管理者レベル",
+  ko: "관리자 레벨",
+  lo: "ລະດັບແອດມິນ",
+  my: "အက်မင်အဆင့်",
+  km: "កម្រិតអ្នកគ្រប់គ្រង",
+  vi: "Cấp quản trị",
+  ms: "Admin Level",
+  id: "Admin Level",
+  fil: "Admin Level",
+};
+
+const roleOwnerLabel: SystemSettingText = {
+  th: "ระดับเจ้าของร้าน",
+  en: "Owner Level",
+  cn: "店主级别",
+  ja: "オーナーレベル",
+  ko: "점주 레벨",
+  lo: "ລະດັບເຈົ້າຂອງຮ້ານ",
+  my: "ပိုင်ရှင်အဆင့်",
+  km: "កម្រិតម្ចាស់ហាង",
+  vi: "Cấp chủ cửa hàng",
+  ms: "Owner Level",
+  id: "Owner Level",
+  fil: "Owner Level",
+};
+
 const userIdGuidLabel: SystemSettingText = {
   th: "รหัสผู้ใช้ (GUID)",
   en: "User ID (GUID)",
@@ -199,6 +259,7 @@ const vatRegisteredLabel: SystemSettingText = {
 };
 
 export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
+  ...productMasterConfigs(),
   {
     slug: "business_type_screen",
     route: "/business_type_screen",
@@ -207,7 +268,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     icon: "tag",
     basePath: "/organization/business-type",
     listPath: "/organization/business-type/list",
-    idField: "guidfixed",
+    idField: "guid_fixed",
     title: { th: "ประเภทธุรกิจ", en: "Business Type" },
     subtitle: { th: "จัดการรหัสประเภทธุรกิจและชื่อตามภาษาที่เลือก", en: "Manage business type codes and names for the selected language." },
     fields: [
@@ -222,17 +283,17 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     manual: "company",
     kind: "company",
     icon: "building",
-    idField: "guidfixed",
+    idField: "guid_fixed",
     title: { th: "บริษัท", en: "Company" },
-    subtitle: { th: "แก้ไขข้อมูลกิจการปัจจุบัน ภาษา สกุลเงินหลัก และข้อมูลติดต่อ", en: "Edit the selected company, language settings, base currency, and contact data." },
+    subtitle: { th: "แก้ไขข้อมูลบริษัทปัจจุบัน ภาษา สกุลเงินหลัก และข้อมูลติดต่อ", en: "Edit the selected company, language settings, base currency, and contact data." },
     fields: [
+      languageConfigsField("settings.languageconfigs", "ภาษาที่ใช้งาน", "Active languages"),
       namesField("names", "ชื่อบริษัท", "Company names"),
       namesField("address", "ที่อยู่", "Address", true),
       textField("telephone", "โทรศัพท์", "Telephone"),
       imageUploadField("logo", "โลโก้บริษัท", "Company logo"),
-      comboField("settings.countrycode", "ประเทศ", "Country", countryOptions(), false, "countries"),
-      selectField("settings.language", "ภาษาหลัก", "Main language", languageOptions()),
-      textField("settings.taxid", "เลขผู้เสียภาษี", "Tax ID"),
+      comboField("settings.country_code", "ประเทศ", "Country", countryOptions(), false, "countries"),
+      textField("settings.tax_id", "เลขผู้เสียภาษี", "Tax ID"),
       textField("settings.company_registration_no", "เลขทะเบียนบริษัท", "Company registration no."),
       radioField("settings.is_vat_registered", "สถานะ VAT", "VAT status", [
         { value: "false", label: vatNotRegisteredLabel.th, labels: vatNotRegisteredLabel },
@@ -261,17 +322,22 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     icon: "branch",
     basePath: "/organization/branch",
     listPath: "/organization/branch/list",
-    idField: "guidfixed",
+    idField: "guid_fixed",
     title: { th: "สาขา", en: "Branch" },
     subtitle: { th: "จัดการสาขา สกุลเงิน ภาษา timezone และคุณสมบัติธุรกิจ", en: "Manage branches, base currency, language, timezone, and business flags." },
     fields: [
+      languageListField("languages", "ภาษาที่ใช้งาน", "Active languages"),
       textField("code", "รหัสสาขา", "Branch code", true),
-      namesField("names", "ชื่อสาขา", "Branch names"),
       namesField("companynames", "ชื่อบริษัทบนเอกสาร", "Company names on documents"),
+      namesField("names", "ชื่อสาขา", "Branch names"),
+      namesField("contact.address", "ที่อยู่สาขา", "Branch address", true),
+      numberField("contact.latitude", "ละติจูด", "Latitude"),
+      numberField("contact.longitude", "ลองจิจูด", "Longitude"),
+      textField("contact.phonenumber", "เบอร์โทรสาขา", "Branch phone"),
+      masterPickerField("businesstype", "รหัสประเภทธุรกิจ ~ ชื่อประเภทธุรกิจ", "Business type", "businesstype"),
       comboField("base_currency", "สกุลเงินหลัก", "Base currency", currencyOptions(), false, "currency"),
-      selectField("language", "ภาษาหลัก", "Main language", languageOptions()),
       comboField("timezone", "Timezone", "Timezone", [], false, "timezones"),
-      textField("date_format", "รูปแบบวันที่", "Date format"),
+      selectField("date_format", "รูปแบบวันที่", "Date format", dateFormatOptions()),
       selectField("yeartype", "ประเภทปี", "Year type", [
         { value: "buddhist", label: buddhistEraLabel.th, labels: buddhistEraLabel },
         { value: "christian", label: christianEraLabel.th, labels: christianEraLabel },
@@ -279,10 +345,40 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       numberField("decimal_quantity", "ทศนิยมจำนวน", "Quantity decimals"),
       numberField("decimal_price", "ทศนิยมราคา", "Price decimals"),
       numberField("decimal_document", "ทศนิยมเอกสาร", "Document decimals"),
+      textField("pos.taxid", "เลขที่ผู้เสียภาษี", "Tax ID"),
+      numberField("pos.vatrate", "อัตราภาษี (%)", "VAT rate (%)"),
+      checkboxField("pos.isbom", "ตัดสต็อกตามสูตรผลิต (BOM)", "Cut stock by BOM"),
+      radioField("pos.vattypepurchase", "ประเภทภาษีซื้อ", "Purchase VAT type", vatTypeOptions(), false, "number"),
+      radioField("pos.inquirytypepurchase", "ประเภทรายการซื้อ", "Purchase inquiry type", inquiryTypeOptions(), false, "number"),
+      radioField("pos.vattypesale", "ประเภทภาษีขาย", "Sale VAT type", vatTypeOptions(), false, "number"),
+      radioField("pos.inquirytypesale", "ประเภทรายการขาย", "Sale inquiry type", inquiryTypeOptions(), false, "number"),
+      textareaField("pos.headerreceiptpos", "ข้อความหัวใบเสร็จ", "Receipt header"),
+      textareaField("pos.footerreceiptpos", "ข้อความท้ายใบเสร็จ", "Receipt footer"),
+      radioField("couponusetype", "ประเภทการใช้งานคูปอง", "Coupon usage type", couponUseTypeOptions(), false, "number"),
+      jsonField("paymentrounding", "การปัดเศษ", "Payment rounding"),
+      imageUploadField("imageuri", "รูปภาพ", "Image"),
+      imageUploadField("logouri", "โลโก้ร้าน", "Logo"),
       checkboxField("is_restaurant", "ร้านอาหาร", "Restaurant"),
+      checkboxField("is_tire", "ยางรถ", "Tire"),
+      checkboxField("is_agriculture", "เกษตร", "Agriculture"),
+      checkboxField("is_pharmacy", "ร้านยา", "Pharmacy"),
       checkboxField("is_retail", "ค้าปลีก", "Retail"),
       checkboxField("is_service", "บริการ", "Service"),
       checkboxField("is_wholesale", "ค้าส่ง", "Wholesale"),
+      checkboxField("is_manufacturing", "ผลิต", "Manufacturing"),
+      checkboxField("is_import_export", "นำเข้า/ส่งออก", "Import/Export"),
+      checkboxField("is_contractor", "ผู้รับเหมา", "Contractor"),
+      checkboxField("is_rental", "ให้เช่า", "Rental"),
+      checkboxField("is_ecommerce", "อีคอมเมิร์ซ", "E-commerce"),
+      checkboxField("is_logistics", "ขนส่ง", "Logistics"),
+      checkboxField("is_education", "การศึกษา", "Education"),
+      checkboxField("is_hotel", "โรงแรม", "Hotel"),
+      checkboxField("is_beauty", "ความงาม", "Beauty"),
+      checkboxField("is_gold_shop", "ร้านทอง", "Gold shop"),
+      checkboxField("is_accounting_firm", "สำนักงานบัญชี", "Accounting firm"),
+      checkboxField("is_construction", "วัสดุก่อสร้าง", "Construction"),
+      checkboxField("is_electronics", "อิเล็กทรอนิกส์", "Electronics"),
+      checkboxField("is_mobile_shop", "ร้านมือถือ", "Mobile shop"),
     ],
   },
   {
@@ -293,7 +389,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     icon: "network",
     basePath: "/organization/department",
     listPath: "/organization/department/list",
-    idField: "guidfixed",
+    idField: "guid_fixed",
     title: { th: "แผนก", en: "Department" },
     subtitle: { th: "จัดการรหัสแผนกและชื่อตามภาษาที่เลือก", en: "Manage department codes and names for the selected language." },
     fields: [textField("code", "รหัสแผนก", "Department code", true), namesField("names", "ชื่อแผนก", "Department names")],
@@ -305,7 +401,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     kind: "restaurant-setting",
     icon: "calendar",
     code: "workDay",
-    idField: "guidfixed",
+    idField: "guid_fixed",
     title: { th: "วันทำงาน", en: "Work Day" },
     subtitle: { th: "ตั้งค่าวันทำงานและช่วงเวลาทำงานตามระบบเดิม", en: "Configure weekly work days and working time ranges." },
     fields: [jsonField("body", "ข้อมูลวันทำงาน", "Work day JSON")],
@@ -317,7 +413,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     kind: "restaurant-setting",
     icon: "calendar-check",
     code: "Holiday",
-    idField: "guidfixed",
+    idField: "guid_fixed",
     title: { th: "วันหยุด", en: "Holiday" },
     subtitle: { th: "จัดการวันหยุดและคำอธิบายตามภาษาที่เลือก", en: "Manage holidays and descriptions for the selected language." },
     fields: [dateField("date", "วันที่", "Date", true), namesField("desc", "คำอธิบาย", "Description")],
@@ -330,7 +426,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     icon: "user-round",
     basePath: "/shop/employee",
     listPath: "/shop/employee/list",
-    idField: "guidfixed",
+    idField: "guid_fixed",
     title: { th: "พนักงาน", en: "Employee" },
     subtitle: { th: "จัดการพนักงาน อีเมล สถานะ POS และ PIN", en: "Manage employees, email, POS access, and PIN." },
     fields: [
@@ -356,10 +452,15 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     subtitle: { th: "จัดการผู้ใช้งาน บทบาท แผนก LINE และสิทธิ์อนุมัติ", en: "Manage users, role, department, LINE profile, and approval permissions." },
     fields: [
       { key: "uid", label: userIdGuidLabel, type: "text", readOnly: true },
-      { ...textField("username", loginUsernameLabel.th, loginUsernameLabel.en, true), label: loginUsernameLabel },
-      { ...textField("email", registeredEmailLabel.th, registeredEmailLabel.en), label: registeredEmailLabel, readOnly: true },
-      numberField("role", "บทบาท", "Role"),
-      radioField("isaccessdisabled", accessStatusLabel.th, accessStatusLabel.en, [
+      textField("username", "รหัสผู้ใช้ หรือ email", "User code or email", true),
+      textField("user_profile_name", "ชื่อผู้ใช้งาน", "User name"),
+      { ...textField("email", registeredEmailLabel.th, registeredEmailLabel.en), label: registeredEmailLabel },
+      radioField("role", "สิทธิ์ผู้ใช้งาน", "User Role", [
+        { value: "0", label: roleUserLabel.en, labels: roleUserLabel },
+        { value: "2", label: roleOwnerLabel.en, labels: roleOwnerLabel },
+        { value: "1", label: roleAdminLabel.en, labels: roleAdminLabel },
+      ], true, "number"),
+      radioField("is_access_disabled", accessStatusLabel.th, accessStatusLabel.en, [
         { value: "false", label: accessEnabledLabel.en, labels: accessEnabledLabel },
         { value: "true", label: accessTemporarilyDisabledLabel.en, labels: accessTemporarilyDisabledLabel },
       ], true, "boolean"),
@@ -377,13 +478,13 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     icon: "file-cog",
     basePath: "/form/template",
     listPath: "/form/template",
-    idField: "guidfixed",
+    idField: "guid_fixed",
     title: { th: "ออกแบบฟอร์ม", en: "Form Design" },
     subtitle: { th: "จัดการ template ฟอร์มเอกสารและข้อมูลแบบ JSON", en: "Manage document form templates and template JSON data." },
     fields: [
       textField("code", "รหัสฟอร์ม", "Form code", true),
       namesField("names", "ชื่อฟอร์ม", "Form names"),
-      textField("doctype", "ประเภทเอกสาร", "Document type"),
+      textField("doc_type", "ประเภทเอกสาร", "Document type"),
       checkboxField("isdefault", "ค่าเริ่มต้น", "Default"),
       jsonField("templatedata", "Template Data", "Template data"),
     ],
@@ -396,7 +497,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     icon: "bell",
     basePath: "/notify",
     listPath: "/notify/list",
-    idField: "guidfixed",
+    idField: "guid_fixed",
     title: { th: "LINE Notify", en: "LINE Notify" },
     subtitle: { th: "จัดการ token และ event แจ้งเตือนของสาขา", en: "Manage notification tokens and branch events." },
     fields: [
@@ -520,6 +621,196 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
   },
 ];
 
+function productMasterConfigs(): SystemSettingConfig[] {
+  const codeNameFields = (codeLabelTh = "รหัส", codeLabelEn = "Code", nameLabelTh = "ชื่อ", nameLabelEn = "Name") => [
+    textField("code", codeLabelTh, codeLabelEn, true),
+    namesField("names", nameLabelTh, nameLabelEn),
+  ];
+
+  const codeNameConfig = (
+    slug: string,
+    route: string,
+    icon: string,
+    basePath: string,
+    listPath: string,
+    titleTh: string,
+    titleEn: string,
+    codeLabelTh = "รหัส",
+    codeLabelEn = "Code",
+    nameLabelTh = "ชื่อ",
+    nameLabelEn = "Name",
+  ): SystemSettingConfig => ({
+    slug,
+    route,
+    manual: slug,
+    kind: "main-crud",
+    icon,
+    basePath,
+    listPath,
+    idField: "guid_fixed",
+    title: { th: titleTh, en: titleEn },
+    subtitle: {
+      th: `จัดการ${titleTh}ตามรูปแบบหน้าจอ Flutter เดิม`,
+      en: `Manage ${titleEn.toLowerCase()} using the legacy Flutter workflow.`,
+    },
+    fields: codeNameFields(codeLabelTh, codeLabelEn, nameLabelTh, nameLabelEn),
+  });
+
+  const aicloudConfig = (
+    slug: string,
+    route: string,
+    icon: string,
+    path: string,
+    titleTh: string,
+    titleEn: string,
+  ) => codeNameConfig(slug, route, icon, `/aicloud/${path}`, `/aicloud/${path}/list`, titleTh, titleEn);
+
+  return [
+    {
+      slug: "productunit",
+      route: "/productunit",
+      manual: "productunit",
+      kind: "main-crud",
+      icon: "ruler",
+      basePath: "/unit",
+      listPath: "/unit/list",
+      idField: "guidfixed",
+      title: { th: "หน่วยนับสินค้า", en: "Product Unit" },
+      subtitle: { th: "จัดการรหัสหน่วยนับและชื่อหน่วยนับสินค้า", en: "Manage product unit codes and names." },
+      fields: [
+        textField("unitcode", "รหัสหน่วยนับ", "Unit code", true),
+        namesField("names", "ชื่อหน่วยนับ", "Unit names"),
+      ],
+    },
+    codeNameConfig("productgroup", "/productgroup", "group", "/product/group", "/product/group/list", "กลุ่มสินค้า", "Product Group", "รหัสกลุ่ม", "Group code", "ชื่อกลุ่มสินค้า", "Product group names"),
+    {
+      slug: "product_category_group_select_screen",
+      route: "/product_category_group_select_screen",
+      manual: "product_category_group_select_screen",
+      kind: "main-crud",
+      icon: "folder",
+      basePath: "/product/category",
+      listPath: "/product/category/list",
+      idField: "guid_fixed",
+      title: { th: "หมวดสินค้า", en: "Product Category" },
+      subtitle: { th: "จัดการหมวดสินค้าและกลุ่มหมวดตามหน้าจอเดิม", en: "Manage product categories and category groups." },
+      fields: [
+        namesField("names", "ชื่อหมวดสินค้า", "Product category names"),
+        numberField("group_number", "กลุ่มลำดับ", "Group number"),
+        textField("parent_guid", "หมวดแม่", "Parent category GUID"),
+        checkboxField("useimageorcolor", "ใช้รูปหรือสี", "Use image or color"),
+        textField("colorselecthex", "สี", "Color"),
+        jsonField("xsorts", "ลำดับหมวดย่อย", "Subcategory order JSON"),
+        jsonField("codelist", "รายการสินค้าในหมวด", "Category product list JSON"),
+      ],
+    },
+    {
+      slug: "productcategorylist",
+      route: "/productcategorylist",
+      manual: "productcategorylist",
+      kind: "main-crud",
+      icon: "list",
+      basePath: "/product/category",
+      listPath: "/product/category/list",
+      idField: "guid_fixed",
+      title: { th: "รายการหมวดสินค้า", en: "Product Category List" },
+      subtitle: { th: "จัดการรายการสินค้าที่ผูกกับหมวดสินค้า", en: "Manage product items linked to product categories." },
+      fields: [
+        namesField("names", "ชื่อหมวดสินค้า", "Product category names"),
+        jsonField("codelist", "รายการสินค้า", "Product list JSON"),
+      ],
+    },
+    codeNameConfig("product_warehouse_screen", "/product_warehouse_screen", "warehouse", "/warehouse", "/warehouse/list", "คลังสินค้า", "Warehouse", "รหัสคลังสินค้า", "Warehouse code", "ชื่อคลังสินค้า", "Warehouse names"),
+    {
+      slug: "product_location_screen",
+      route: "/product_location_screen",
+      manual: "product_location_screen",
+      kind: "main-crud",
+      icon: "location",
+      basePath: "/warehouse/location",
+      listPath: "/warehouse/location",
+      idField: "guid_fixed",
+      editable: false,
+      title: { th: "ที่เก็บสินค้า", en: "Product Location" },
+      subtitle: { th: "แสดงคลัง ที่เก็บ และชั้นวางจากฐานข้อมูลจริง", en: "View warehouses, locations, and shelves from the real database." },
+      fields: [
+        { ...textField("warehousecode", "รหัสคลังสินค้า", "Warehouse code"), readOnly: true },
+        { ...namesField("warehousenames", "ชื่อคลังสินค้า", "Warehouse names"), readOnly: true },
+        { ...textField("locationcode", "รหัสที่เก็บ", "Location code"), readOnly: true },
+        { ...namesField("locationnames", "ชื่อที่เก็บ", "Location names"), readOnly: true },
+        { ...jsonField("shelf", "ชั้นวาง", "Shelf JSON"), readOnly: true },
+      ],
+    },
+    {
+      slug: "order_type_screen",
+      route: "/order_type_screen",
+      manual: "order_type_screen",
+      kind: "main-crud",
+      icon: "tag",
+      basePath: "/product/order-type",
+      listPath: "/product/order-type/list",
+      idField: "guid_fixed",
+      title: { th: "ประเภทสั่งอาหาร", en: "Order Type" },
+      subtitle: { th: "จัดการประเภทคำสั่ง ราคา และหมายเหตุ", en: "Manage order types, prices, and remarks." },
+      fields: [
+        textField("code", "รหัสประเภทคำสั่ง", "Order type code", true),
+        namesField("names", "ชื่อประเภทคำสั่ง", "Order type names"),
+        jsonField("prices", "ราคา", "Prices JSON"),
+        jsonField("remarks", "หมายเหตุ", "Remarks JSON"),
+      ],
+    },
+    codeNameConfig("product_type_screen", "/product_type_screen", "tag", "/product/type", "/product/type/list", "ประเภทสินค้า", "Product Type", "รหัสประเภท", "Type code", "ชื่อประเภทสินค้า", "Product type names"),
+    {
+      slug: "product_dimension",
+      route: "/product_dimension",
+      manual: "product_dimension",
+      kind: "main-crud",
+      icon: "design",
+      basePath: "/dimension",
+      listPath: "/dimension/list",
+      idField: "guid_fixed",
+      title: { th: "มิติสินค้า", en: "Product Dimension" },
+      subtitle: { th: "จัดการมิติสินค้าและรายการย่อย", en: "Manage product dimensions and dimension items." },
+      fields: [
+        namesField("names", "ชื่อมิติสินค้า", "Product dimension names"),
+        checkboxField("isdisabled", "ปิดใช้งาน", "Disabled"),
+        jsonField("items", "รายการมิติย่อย", "Dimension items JSON"),
+      ],
+    },
+    {
+      slug: "product_bom",
+      route: "/product_bom",
+      manual: "product_bom",
+      kind: "main-crud",
+      icon: "network",
+      basePath: "/product/bom",
+      listPath: "/product/bom/list",
+      idField: "guid_fixed",
+      editable: false,
+      title: { th: "สูตรประกอบสินค้า", en: "Product BOM" },
+      subtitle: { th: "แสดงสูตรประกอบสินค้าจากฐานข้อมูลจริง", en: "View product bill of materials from the real database." },
+      fields: [
+        { ...textField("barcode", "บาร์โค้ด", "Barcode"), readOnly: true },
+        { ...namesField("names", "ชื่อสินค้า", "Product names"), readOnly: true },
+        { ...textField("item_unit_code", "รหัสหน่วยนับ", "Unit code"), readOnly: true },
+        { ...namesField("itemunitnames", "ชื่อหน่วยนับ", "Unit names"), readOnly: true },
+        { ...jsonField("bom", "รายการสูตรประกอบ", "BOM items JSON"), readOnly: true },
+      ],
+    },
+    codeNameConfig("promotion_screen", "/promotion_screen", "gift", "/product/promotion", "/product/promotion/list", "โปรโมชั่น", "Promotion", "รหัสโปรโมชั่น", "Promotion code", "ชื่อโปรโมชั่น", "Promotion names"),
+    aicloudConfig("master_brand_screen", "/master_brand_screen", "settings", "brand", "ยี่ห้อ", "Brand"),
+    aicloudConfig("master_category_screen", "/master_category_screen", "category", "category", "Category", "Category"),
+    aicloudConfig("master_class_screen", "/master_class_screen", "category", "class", "Class", "Class"),
+    aicloudConfig("master_design_screen", "/master_design_screen", "design", "design", "Design", "Design"),
+    aicloudConfig("master_grade_screen", "/master_grade_screen", "badge", "grade", "Grade", "Grade"),
+    aicloudConfig("master_model_screen", "/master_model_screen", "activity", "model", "Model", "Model"),
+    aicloudConfig("master_pattern_screen", "/master_pattern_screen", "grid", "pattern", "Pattern", "Pattern"),
+    aicloudConfig("master_group_screen", "/master_group_screen", "group", "group", "กลุ่มหลัก", "Main Group"),
+    aicloudConfig("master_group_sub1_screen", "/master_group_sub1_screen", "group", "groupsubone", "กลุ่มย่อย 1", "Sub Group 1"),
+    aicloudConfig("master_group_sub2_screen", "/master_group_sub2_screen", "group", "groupsubtwo", "กลุ่มย่อย 2", "Sub Group 2"),
+  ];
+}
+
 export const SYSTEM_SETTING_SLUGS = SYSTEM_SETTING_CONFIGS.map((item) => item.slug);
 
 export function getSystemSettingConfig(routeOrSlug: string): SystemSettingConfig | undefined {
@@ -563,6 +854,14 @@ function jsonField(key: string, th: string, en: string): SystemSettingField {
   return { key, label: { th, en }, type: "json" };
 }
 
+function languageListField(key: string, th: string, en: string): SystemSettingField {
+  return { key, label: { th, en }, type: "language-list" };
+}
+
+function masterPickerField(key: string, th: string, en: string, master: "businesstype"): SystemSettingField {
+  return { key, label: { th, en }, type: "master-picker", master };
+}
+
 function comboField(
   key: string,
   th: string,
@@ -580,17 +879,47 @@ function radioField(
   en: string,
   options: SystemSettingOption[],
   required = false,
-  valueType: "boolean" | "string" = "string",
+  valueType: "boolean" | "number" | "string" = "string",
 ): SystemSettingField {
   return { key, label: { th, en }, type: "radio", options, required, valueType };
 }
 
-function selectField(key: string, th: string, en: string, options: SystemSettingOption[], required = false): SystemSettingField {
-  return { key, label: { th, en }, type: "select", options, required };
+function selectField(
+  key: string,
+  th: string,
+  en: string,
+  options: SystemSettingOption[],
+  required = false,
+  valueType: "number" | "string" = "string",
+): SystemSettingField {
+  return { key, label: { th, en }, type: "select", options, required, valueType };
 }
 
-function languageOptions() {
-  return LANGUAGES.map((item) => ({ value: item.code, label: item.name }));
+function languageConfigsField(key: string, th: string, en: string): SystemSettingField {
+  return { key, label: { th, en }, type: "language-configs" };
+}
+
+function vatTypeOptions(): SystemSettingOption[] {
+  return [
+    { value: "0", label: "ราคาไม่รวมภาษี", labels: { th: "ราคาไม่รวมภาษี", en: "VAT excluded" } },
+    { value: "1", label: "ราคารวมภาษี", labels: { th: "ราคารวมภาษี", en: "VAT included" } },
+    { value: "2", label: "ภาษีอัตราศูนย์", labels: { th: "ภาษีอัตราศูนย์", en: "Zero-rated VAT" } },
+    { value: "3", label: "ไม่กระทบภาษี", labels: { th: "ไม่กระทบภาษี", en: "No VAT" } },
+  ];
+}
+
+function inquiryTypeOptions(): SystemSettingOption[] {
+  return [
+    { value: "0", label: "เครดิต", labels: { th: "เครดิต", en: "Credit" } },
+    { value: "1", label: "เงินสด", labels: { th: "เงินสด", en: "Cash" } },
+  ];
+}
+
+function couponUseTypeOptions(): SystemSettingOption[] {
+  return [
+    { value: "0", label: "ใช้ได้หลายใบ", labels: { th: "ใช้ได้หลายใบ", en: "Multiple coupons per bill" } },
+    { value: "1", label: "ใช้ได้ใบเดียว", labels: { th: "ใช้ได้ใบเดียว", en: "Single coupon per bill" } },
+  ];
 }
 
 function currencyOptions() {
@@ -624,9 +953,71 @@ function countryOptions() {
 
 function dateFormatOptions() {
   return [
-    { value: "dd/MM/yyyy", label: "dd/MM/yyyy" },
-    { value: "yyyy-MM-dd", label: "yyyy-MM-dd" },
-    { value: "MM/dd/yyyy", label: "MM/dd/yyyy" },
-    { value: "dd-MM-yyyy", label: "dd-MM-yyyy" },
-  ];
+    "dd/MM/yyyy",
+    "dd-MM-yyyy",
+    "yyyy-MM-dd",
+    "MM/dd/yyyy",
+    "dd MMM yy",
+    "dd MMM yyyy",
+    "dd MMMM yy",
+    "dd MMMM yyyy",
+    "MMM dd, yy",
+    "MMM dd, yyyy",
+    "MMMM dd, yy",
+    "MMMM dd, yyyy",
+    "yyyy MMM dd",
+    "yyyy MMMM dd",
+  ].map((pattern) => ({
+    value: pattern,
+    label: `${pattern} (${formatDatePatternExample(pattern, "th")})`,
+    labels: Object.fromEntries(LANGUAGES.map((item) => [item.code, `${pattern} (${formatDatePatternExample(pattern, item.code)})`])) as SystemSettingText,
+  }));
+}
+
+function formatDatePatternExample(pattern: string, language: LanguageCode): string {
+  const date = new Date(Date.UTC(2026, 4, 22, 12, 0, 0));
+  const parts = datePartsForLanguage(date, language);
+  return pattern
+    .replace(/yyyy/g, parts.year4)
+    .replace(/yy/g, parts.year2)
+    .replace(/MMMM/g, parts.monthLong)
+    .replace(/MMM/g, parts.monthShort)
+    .replace(/MM/g, parts.month2)
+    .replace(/dd/g, parts.day2);
+}
+
+function datePartsForLanguage(date: Date, language: LanguageCode) {
+  const locale = localeOf(language);
+  const year4 = datePart(locale, date, { year: "numeric" }, "year");
+  return {
+    day2: datePart(locale, date, { day: "2-digit" }, "day"),
+    month2: datePart(locale, date, { month: "2-digit" }, "month"),
+    monthShort: datePart(locale, date, { month: "short" }, "month"),
+    monthLong: datePart(locale, date, { month: "long" }, "month"),
+    year2: datePart(locale, date, { year: "2-digit" }, "year"),
+    year4,
+  };
+}
+
+function datePart(locale: string, date: Date, options: Intl.DateTimeFormatOptions, partType: Intl.DateTimeFormatPartTypes): string {
+  const parts = new Intl.DateTimeFormat(locale, { ...options, timeZone: "UTC" }).formatToParts(date);
+  return parts.find((part) => part.type === partType)?.value ?? "";
+}
+
+function localeOf(language: LanguageCode): string {
+  const map: Record<LanguageCode, string> = {
+    th: "th-TH",
+    en: "en-US",
+    cn: "zh-CN",
+    ja: "ja-JP",
+    ko: "ko-KR",
+    lo: "lo-LA",
+    my: "my-MM",
+    km: "km-KH",
+    vi: "vi-VN",
+    ms: "ms-MY",
+    id: "id-ID",
+    fil: "fil-PH",
+  };
+  return map[language];
 }

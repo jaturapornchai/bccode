@@ -9,24 +9,24 @@ export type ShopListItem = {
   names?: LocalizedName[];
   branchcode?: string;
   role?: number;
-  isfavorite?: boolean;
-  lastaccessedat?: string;
+  is_favorite?: boolean;
+  last_accessed_at?: string;
   createdby?: string;
-  iscreator?: boolean;
-  isaccessdisabled?: boolean;
+  is_creator?: boolean;
+  is_access_disabled?: boolean;
 };
 
 export type BranchListItem = {
-  guidfixed: string;
+  guid_fixed: string;
   code?: string;
   names?: LocalizedName[];
   companynames?: LocalizedName[];
   base_currency?: string;
   language?: string;
   timezone?: string;
-  timezoneoffset?: string;
-  timezonelabel?: string;
-  yeartype?: string;
+  timezone_offset?: string;
+  timezone_label?: string;
+  year_type?: string;
 };
 
 export type AuthSession = {
@@ -67,5 +67,5 @@ export function shopDisplayName(shop: ShopListItem): string {
 }
 
 export function branchDisplayName(branch: BranchListItem): string {
-  return localizedName(branch.names, branch.code || branch.guidfixed);
+  return localizedName(branch.names, branch.code || branch.guid_fixed);
 }
