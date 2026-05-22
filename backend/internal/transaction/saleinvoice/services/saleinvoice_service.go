@@ -778,7 +778,7 @@ func (svc SaleInvoiceService) DeleteSaleInvoiceByGUIDs(shopID string, authUserna
 
 	// Step 4: Delete all documents
 	deleteFilterQuery := map[string]interface{}{
-		"guidfixed": bson.M{"$in": GUIDs},
+		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
 	err = svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
@@ -880,7 +880,7 @@ func (svc SaleInvoiceService) SearchSaleInvoice(shopID string, filters map[strin
 		}
 
 		// append new filter
-		filters["createdat"] = bson.M{"$gt": createDateTimeAfter}
+		filters["created_at"] = bson.M{"$gt": createDateTimeAfter}
 
 		// remove createdatetimeafter from filters
 		delete(filters, "createdatetimeafter")
@@ -897,7 +897,7 @@ func (svc SaleInvoiceService) SearchSaleInvoice(shopID string, filters map[strin
 		}
 
 		// append new filter
-		filters["updatedat"] = bson.M{"$gt": createDateTimeAfter}
+		filters["updated_at"] = bson.M{"$gt": createDateTimeAfter}
 
 		// remove createdatetimeafter from filters
 		delete(filters, "updateafterdatetime")
@@ -915,8 +915,8 @@ func (svc SaleInvoiceService) SearchSaleInvoice(shopID string, filters map[strin
 
 		// append new filter
 		filters["$or"] = []bson.M{
-			{"createdat": bson.M{"$gt": createDateTimeAfter}},
-			{"updatedat": bson.M{"$gt": createDateTimeAfter}},
+			{"created_at": bson.M{"$gt": createDateTimeAfter}},
+			{"updated_at": bson.M{"$gt": createDateTimeAfter}},
 		}
 
 		// remove createdatetimeafter from filters
@@ -1101,11 +1101,11 @@ func (svc SaleInvoiceService) Export(shopID string, languageCode string, languag
 		"barcode",        //บาร์โค้ด",
 		"productname",    //"ชื่อสินค้า",
 		"unitcode",       //"หน่วยนับ",
-		"unitname",       //"ชื่อหน่วยนับ",
+		"unit_name",       //"ชื่อหน่วยนับ",
 		"qty",            //"จำนวน",
 		"price",          //ราคา",
 		"discountamount", // "มูลค่าส่วนลด",
-		"sumamount",      //"มูลค่าสินค้า",
+		"sum_amount",      //"มูลค่าสินค้า",
 	}
 
 	headerRow := []string{}
@@ -1149,7 +1149,7 @@ func (svc SaleInvoiceService) processPointCancelTransactions(ctx context.Context
 	// GetPoint cancellation - ใช้ pointsCode
 	if getPoint > 0 && pointsCode != "" {
 		// Find customer by pointsCode for GetPoint cancellation (allow non-members)
-		findCustForGet, err := svc.repoCust.FindByDocIndentityGuid(ctx, shopID, "pointscode", pointsCode)
+		findCustForGet, err := svc.repoCust.FindByDocIndentityGuid(ctx, shopID, "points_code", pointsCode)
 		if err != nil {
 			return err
 		}
@@ -1447,7 +1447,7 @@ func (svc SaleInvoiceService) processGetPointTransaction(ctx context.Context, sh
 	)
 
 	// Find customer by pointsCode for GetPoint (allow non-members)
-	findCustForGet, err := svc.repoCust.FindByDocIndentityGuid(ctx, shopID, "pointscode", pointsCode)
+	findCustForGet, err := svc.repoCust.FindByDocIndentityGuid(ctx, shopID, "points_code", pointsCode)
 	if err != nil {
 		return &models.PointTransactionError{
 			Operation: "GetPoint",

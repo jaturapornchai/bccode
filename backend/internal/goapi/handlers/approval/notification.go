@@ -34,7 +34,7 @@ type ApprovalToken struct {
 	Token        string             `bson:"token" json:"token"`
 	ShopID       string             `bson:"shop_id" json:"shop_id"`
 	DocNo        string             `bson:"docno" json:"docno"`
-	GuidFixed    string             `bson:"guidfixed" json:"guidfixed"`
+	GuidFixed    string             `bson:"guid_fixed" json:"guid_fixed"`
 	ApproverCode string             `bson:"approver_code" json:"approver_code"`
 	ApproverName string             `bson:"approver_name" json:"approver_name"`
 	Action       string             `bson:"action" json:"action"` // approve, reject
@@ -59,7 +59,7 @@ type BrevoEmailRequest struct {
 	Sender      BrevoContact   `json:"sender"`
 	To          []BrevoContact `json:"to"`
 	Subject     string         `json:"subject"`
-	HTMLContent string         `json:"htmlContent"`
+	HTMLContent string         `json:"html_content"`
 }
 
 // BrevoContact ข้อมูลผู้ส่ง/ผู้รับ
@@ -266,7 +266,7 @@ type LinePushRequest struct {
 
 type LineMsg struct {
 	Type     string      `json:"type"`
-	AltText  string      `json:"altText,omitempty"`
+	AltText  string      `json:"alt_text,omitempty"`
 	Contents interface{} `json:"contents,omitempty"`
 	Text     string      `json:"text,omitempty"`
 }
@@ -672,10 +672,10 @@ type OpenedNotificationParams struct {
 func SendLineNotifyCreatorOpened(params OpenedNotificationParams) error {
 	logger.Info("[LINE Push] SendLineNotifyCreatorOpened called - docNo: %s, creatorCode: %s, openerName: %s, totalAmount: %.2f", params.DocNo, params.CreatorCode, params.OpenerName, params.TotalAmount)
 
-	// ตรวจสอบว่า MongoDB Atlas เชื่อมต่ออยู่
+	// ตรวจสอบว่า MongoDB เชื่อมต่ออยู่
 	if atlasClient == nil || atlasDB == nil {
-		logger.Warn("[LINE Push] MongoDB Atlas not connected, skipping notification to creator")
-		return fmt.Errorf("MongoDB Atlas not connected")
+		logger.Warn("[LINE Push] MongoDB not connected, skipping notification to creator")
+		return fmt.Errorf("MongoDB not connected")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -923,7 +923,7 @@ func SendLineNotifyCreatorOpened(params OpenedNotificationParams) error {
 type SendRealNotificationsRequest struct {
 	ShopID    string `json:"shop_id"`
 	DocNo     string `json:"docno"`
-	GuidFixed string `json:"guidfixed"`
+	GuidFixed string `json:"guid_fixed"`
 	BaseURL   string `json:"base_url"` // Base URL สำหรับสร้าง link (e.g., https://erp.example.com)
 }
 
@@ -1602,7 +1602,7 @@ func GetLineOAConfigStatusHandler(c echo.Context) error {
 			"found":     false,
 			"message":   "ไม่พบ LINE OA config สำหรับ shop นี้",
 			"shop_id":   shopID,
-			"diagnosis": "ต้องสร้าง lineoa_configs document ใน MongoDB Atlas",
+			"diagnosis": "ต้องสร้าง lineoa_configs document ใน MongoDB",
 		})
 	}
 	if err != nil {
@@ -1852,13 +1852,13 @@ func TestLinePushHandler(c echo.Context) error {
 
 // PODetailItem รายการสินค้าใน PO
 type PODetailItem struct {
-	LineNumber int     `json:"linenumber"`
+	LineNumber int     `json:"line_number"`
 	ItemCode   string  `json:"itemcode"`
-	ItemName   string  `json:"itemname"`
+	ItemName   string  `json:"item_name"`
 	Qty        float64 `json:"qty"`
-	UnitName   string  `json:"unitname"`
+	UnitName   string  `json:"unit_name"`
 	Price      float64 `json:"price"`
-	SumAmount  float64 `json:"sumamount"`
+	SumAmount  float64 `json:"sum_amount"`
 }
 
 // PODetailsResponse ข้อมูล PO สำหรับแสดงใน LIFF
@@ -1866,7 +1866,7 @@ type PODetailsResponse struct {
 	DocNo            string         `json:"docno"`
 	DocDatetime      string         `json:"docdatetime"`
 	CustCode         string         `json:"custcode"`
-	CustName         string         `json:"custname"`
+	CustName         string         `json:"cust_name"`
 	PurchaseTypeName string         `json:"purchase_type_name"`
 	TotalAmount      float64        `json:"total_amount"`
 	CreatedByName    string         `json:"created_by_name"`
@@ -1964,7 +1964,7 @@ func GetPODetailsForLIFFHandler(c echo.Context) error {
 	transactionDB := atlasClient.Database("transactiondb")
 
 	// ดึง header เพื่อเอา custcode, custname, docdatetime
-	headerCollection := transactionDB.Collection("transactionheader")
+	headerCollection := transactionDB.Collection("transaction_header")
 	var transDoc bson.M
 	err = headerCollection.FindOne(ctx, bson.M{
 		"shopid": tokenDoc.ShopID,
@@ -1993,12 +1993,12 @@ func GetPODetailsForLIFFHandler(c echo.Context) error {
 
 	// ดึงรายการสินค้า
 	items := []PODetailItem{}
-	detailCollection := transactionDB.Collection("transactiondetail")
+	detailCollection := transactionDB.Collection("transaction_detail")
 
 	cursor, err := detailCollection.Find(ctx, bson.M{
 		"shopid": tokenDoc.ShopID,
 		"docno":  tokenDoc.DocNo,
-	}, options.Find().SetSort(bson.M{"linenumber": 1}))
+	}, options.Find().SetSort(bson.M{"line_number": 1}))
 
 	if err == nil {
 		defer cursor.Close(ctx)
@@ -2029,13 +2029,13 @@ func GetPODetailsForLIFFHandler(c echo.Context) error {
 			}
 
 			item := PODetailItem{
-				LineNumber: getInt(doc["linenumber"]),
+				LineNumber: getInt(doc["line_number"]),
 				ItemCode:   getString(doc["itemcode"]),
 				ItemName:   itemName,
 				Qty:        getFloat(doc["qty"]),
 				UnitName:   unitName,
 				Price:      getFloat(doc["price"]),
-				SumAmount:  getFloat(doc["sumamount"]),
+				SumAmount:  getFloat(doc["sum_amount"]),
 			}
 			items = append(items, item)
 		}
@@ -2455,7 +2455,7 @@ func ResendApprovalNotificationHandler(c echo.Context) error {
 				_, _ = notificationCollection.InsertOne(ctx, bson.M{
 					"shop_id":           req.ShopID,
 					"docno":             req.DocNo,
-					"guidfixed":         req.GuidFixed,
+					"guid_fixed":        req.GuidFixed,
 					"approver_code":     approver.UserCode,
 					"approver_name":     approver.UserName,
 					"notification_type": "email_reminder",
@@ -2508,7 +2508,7 @@ func ResendApprovalNotificationHandler(c echo.Context) error {
 				_, _ = notificationCollection.InsertOne(ctx, bson.M{
 					"shop_id":           req.ShopID,
 					"docno":             req.DocNo,
-					"guidfixed":         req.GuidFixed,
+					"guid_fixed":        req.GuidFixed,
 					"approver_code":     approver.UserCode,
 					"approver_name":     approver.UserName,
 					"notification_type": "line_reminder",

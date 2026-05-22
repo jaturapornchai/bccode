@@ -1,10 +1,14 @@
 package goapi
 
 import (
+	"bytes"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,10 +31,13 @@ import (
 	"smlcloudplatform/internal/goapi/mypostgres"
 	"smlcloudplatform/internal/goapi/workers"
 
+	appConfig "smlcloudplatform/internal/config"
 	serviceConfig "smlcloudplatform/internal/goapi/config"
-	build "smlcloudplatform/internal/goapi/process/build"
 	"smlcloudplatform/internal/goapi/setupconfig"
+	"smlcloudplatform/pkg/microservice"
+	msmodels "smlcloudplatform/pkg/microservice/models"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -60,9 +67,9 @@ func (s *GoAPIServer) Init() error {
 	// 2. MongoDB connection
 	_ = myglobal.SafeMongoConnectFast()
 
-	// 3. MongoDB Atlas (separate connection)
+	// 3. MongoDB (separate connection)
 	if err := handlers.InitMongoAtlas(); err != nil {
-		logger.Warn("GoAPI: Failed to initialize MongoDB Atlas: %v", err)
+		logger.Warn("GoAPI: Failed to initialize MongoDB: %v", err)
 	}
 
 	// 4. LINE OA + Approval init
@@ -217,9 +224,213 @@ func (s *GoAPIServer) RegisterMiddleware(g *echo.Group) {
 	}))
 }
 
+func createGoAPIAuthMiddleware(cacher microservice.ICacher) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			tokenText, err := getBearerToken(c.Request().Header.Get(echo.HeaderAuthorization))
+			if err != nil {
+				logger.Warn("GoAPI auth failed: %v", err)
+				return c.JSON(http.StatusUnauthorized, map[string]interface{}{
+					"success": false,
+					"message": "Unauthorized",
+				})
+			}
+
+			userInfo, ok := authenticateGoAPIRedisToken(cacher, tokenText)
+			if !ok {
+				userInfo, err = authenticateGoAPIJWTToken(tokenText)
+				if err != nil {
+					logger.Warn("GoAPI auth failed: invalid token")
+					return c.JSON(http.StatusUnauthorized, map[string]interface{}{
+						"success": false,
+						"message": "Unauthorized",
+					})
+				}
+			}
+			if userInfo.ShopID == "" {
+				logger.Warn("GoAPI auth failed: shop not selected")
+				return c.JSON(http.StatusUnauthorized, map[string]interface{}{
+					"success": false,
+					"message": "Shop not selected",
+				})
+			}
+
+			requestedShopID, err := goAPIRequestShopID(c)
+			if err != nil {
+				logger.Warn("GoAPI auth failed: invalid tenant payload")
+				return c.JSON(http.StatusBadRequest, map[string]interface{}{
+					"success": false,
+					"message": "Invalid request payload",
+				})
+			}
+			if requestedShopID != "" && requestedShopID != userInfo.ShopID {
+				logger.Warn("GoAPI tenant blocked: route=%s requested_shop=%s token_shop=%s", c.Path(), requestedShopID, userInfo.ShopID)
+				return c.JSON(http.StatusForbidden, map[string]interface{}{
+					"success": false,
+					"message": "Forbidden",
+				})
+			}
+
+			if isDevelopmentMode() {
+				logger.Info("[DEV][GoAPI auth] method=%s route=%s user=%s shopid=%s requested_shopid=%s",
+					c.Request().Method, c.Path(), userInfo.Username, userInfo.ShopID, requestedShopID)
+			}
+
+			c.Set("UserInfo", userInfo)
+			return next(c)
+		}
+	}
+}
+
+func authenticateGoAPIRedisToken(cacher microservice.ICacher, tokenText string) (msmodels.UserInfo, bool) {
+	if cacher == nil {
+		return msmodels.UserInfo{}, false
+	}
+
+	cacheKey := "auth-" + tokenText
+	raw, err := cacher.HMGet(cacheKey, []string{"username", "name", "shopid", "role"})
+	if err != nil || len(raw) < 4 || raw[0] == nil {
+		return msmodels.UserInfo{}, false
+	}
+
+	userInfo := msmodels.UserInfo{
+		Username: fmt.Sprintf("%v", raw[0]),
+	}
+	if raw[1] != nil {
+		userInfo.Name = fmt.Sprintf("%v", raw[1])
+	}
+	if raw[2] != nil {
+		userInfo.ShopID = fmt.Sprintf("%v", raw[2])
+	}
+	if raw[3] != nil {
+		role, err := strconv.ParseUint(fmt.Sprintf("%v", raw[3]), 10, 8)
+		if err != nil {
+			return msmodels.UserInfo{}, false
+		}
+		userInfo.Role = uint8(role)
+	}
+	if userInfo.Username == "" {
+		return msmodels.UserInfo{}, false
+	}
+
+	if userInfo.ShopID != "" {
+		_ = cacher.Expire(cacheKey, 24*3*time.Hour)
+	}
+	return userInfo, true
+}
+
+func authenticateGoAPIJWTToken(tokenText string) (msmodels.UserInfo, error) {
+	secret := goAPIJWTSecret()
+	if secret == "" {
+		return msmodels.UserInfo{}, fmt.Errorf("JWT_SECRET_KEY is not configured")
+	}
+
+	claims := &microservice.CustomClaims{RegisteredClaims: &jwt.RegisteredClaims{}}
+	token, err := jwt.ParseWithClaims(tokenText, claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(secret), nil
+	})
+	if err != nil || !token.Valid {
+		return msmodels.UserInfo{}, fmt.Errorf("invalid token")
+	}
+	return claims.UserInfo, nil
+}
+
+func goAPIJWTSecret() string {
+	secret := strings.TrimSpace(os.Getenv("JWT_SECRET_KEY"))
+	if secret != "" {
+		return secret
+	}
+	if strings.EqualFold(strings.TrimSpace(os.Getenv("MODE")), "production") {
+		return ""
+	}
+	// Development fallback follows the existing main API config source so local GoAPI can verify existing dev tokens.
+	return strings.TrimSpace((&appConfig.Config{}).JwtSecretKey())
+}
+
+func getBearerToken(authorization string) (string, error) {
+	parts := strings.SplitN(strings.TrimSpace(authorization), " ", 2)
+	if len(parts) != 2 || parts[0] != "Bearer" || strings.TrimSpace(parts[1]) == "" {
+		return "", fmt.Errorf("missing authorization bearer")
+	}
+	return strings.TrimSpace(parts[1]), nil
+}
+
+func goAPIRequestShopID(c echo.Context) (string, error) {
+	for _, key := range []string{"shopid", "shop_id", "tenant_id"} {
+		if value := strings.TrimSpace(c.QueryParam(key)); value != "" {
+			return value, nil
+		}
+	}
+
+	if c.Request().Body == nil {
+		return "", nil
+	}
+	contentType := strings.ToLower(c.Request().Header.Get(echo.HeaderContentType))
+	if !strings.Contains(contentType, "application/json") {
+		return "", nil
+	}
+
+	bodyBytes, err := io.ReadAll(c.Request().Body)
+	c.Request().Body = io.NopCloser(bytes.NewReader(bodyBytes))
+	if err != nil {
+		return "", err
+	}
+	if len(bytes.TrimSpace(bodyBytes)) == 0 {
+		return "", nil
+	}
+
+	var payload map[string]interface{}
+	if err := json.Unmarshal(bodyBytes, &payload); err != nil {
+		return "", err
+	}
+	return shopIDFromPayload(payload)
+}
+
+func shopIDFromPayload(payload map[string]interface{}) (string, error) {
+	for _, key := range []string{"shopid", "shop_id", "tenant_id"} {
+		if value := payloadString(payload[key]); value != "" {
+			return value, nil
+		}
+	}
+
+	if nested, ok := payload["body"].(map[string]interface{}); ok {
+		return shopIDFromPayload(nested)
+	}
+	if nestedRaw, ok := payload["body"].(string); ok && strings.TrimSpace(nestedRaw) != "" {
+		var nested map[string]interface{}
+		if err := json.Unmarshal([]byte(nestedRaw), &nested); err != nil {
+			return "", err
+		}
+		return shopIDFromPayload(nested)
+	}
+	return "", nil
+}
+
+func payloadString(value interface{}) string {
+	switch typed := value.(type) {
+	case string:
+		return strings.TrimSpace(typed)
+	case fmt.Stringer:
+		return strings.TrimSpace(typed.String())
+	default:
+		return ""
+	}
+}
+
+func isDevelopmentMode() bool {
+	mode := strings.ToLower(strings.TrimSpace(os.Getenv("MODE")))
+	return mode == "" || mode == "dev" || mode == "development" || mode == "local"
+}
+
 // RegisterRoutes registers all goapi routes on the Echo group
 // prefix คือ URL prefix ของ group เช่น "/goapi" หรือ "" (standalone)
 func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
+	authCacher := microservice.NewCacher((&appConfig.Config{}).CacherConfig())
+	authGroup := g.Group("", createGoAPIAuthMiddleware(authCacher))
+
 	// Health & Status
 	g.GET("/", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{
@@ -231,16 +442,6 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 	})
 	g.GET("/version", func(c echo.Context) error {
 		logger.Info("เรียกใช้ Version")
-		shopId := c.QueryParam("shopid")
-		if shopId != "" {
-			db, err := myPg.Connect(shopId)
-			if err != nil {
-				logger.Info("สร้าง Database สำหรับ shopId %s: %v", shopId, err)
-				go build.DatabaseChecker(shopId, true)
-			} else {
-				defer db.Close()
-			}
-		}
 		return c.String(http.StatusOK, "API Version: "+VersionNumber)
 	})
 	g.GET("/api/health", func(c echo.Context) error {
@@ -259,220 +460,227 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 	g.GET("/api/health/database", handlers.DatabaseHealthHandler)
 	g.GET("/api/health/system", handlers.SystemHealthHandler)
 
-	g.GET("/reportget", handlers.ReportGetHandler)
+	authGroup.GET("/reportget", handlers.ReportGetHandler)
 
 	// Database operation routes
-	g.POST("/get", handlers.PgSelectHandler)
-	g.POST("/exec", handlers.PgExecHandler)
-	g.POST("/getdoc", handlers.PgGetDocHandler)
-	g.POST("/mongogetdata", handlers.MongoGetDataHandler)
-	g.POST("/reportpost", handlers.ReportPostHandler)
-	g.GET("/rebuild/progress/:jobId", handlers.RebuildProgressSSEHandler)
+	authGroup.POST("/get", handlers.PgSelectHandler)
+	authGroup.POST("/exec", handlers.PgExecHandler)
+	authGroup.POST("/getdoc", handlers.PgGetDocHandler)
+	authGroup.POST("/mongogetdata", handlers.MongoGetDataHandler)
+	authGroup.POST("/reportpost", handlers.ReportPostHandler)
+	authGroup.GET("/rebuild/progress/:jobId", handlers.RebuildProgressSSEHandler)
 
 	// Result table endpoints
-	g.POST("/resultfromquery", handlers.ResultFromQueryHandler)
-	g.POST("/resultget", handlers.ResultGetHandler)
-	g.POST("/resulttopdf", handlers.ResultToPDFHandler)
+	authGroup.POST("/resultfromquery", handlers.ResultFromQueryHandler)
+	authGroup.POST("/resultget", handlers.ResultGetHandler)
+	authGroup.POST("/resulttopdf", handlers.ResultToPDFHandler)
 
 	// Generate PDF
-	g.POST("/genpdf", handlers.GenPDFHandler)
-	g.GET("/genpdf/history", handlers.PdfHistoryGetHandler)
-	g.POST("/genpdf/history", handlers.PdfHistoryListHandler)
-	g.GET("/genpdf/reprint/:id", handlers.PdfReprintHandler)
+	authGroup.POST("/genpdf", handlers.GenPDFHandler)
+	authGroup.GET("/genpdf/history", handlers.PdfHistoryGetHandler)
+	authGroup.POST("/genpdf/history", handlers.PdfHistoryListHandler)
+	authGroup.GET("/genpdf/reprint/:id", handlers.PdfReprintHandler)
 
 	// Inventory Costing
-	inventoryGroup := g.Group("/api")
+	inventoryGroup := authGroup.Group("/api")
 	inventory.RegisterRoutes(inventoryGroup)
 
 	// Stock
-	g.POST("/processstockcalccost", handlers.ProcessStockCalcCostHandler)
-	g.POST("/api/stockcost/query", handlers.ProcessStockCostHandler)
-	g.POST("/api/stockcost/summary", handlers.ProcessStockCostSummaryHandler)
-	g.POST("/api/stockcost/check", handlers.ProcessStockCostCheckHandler)
+	authGroup.POST("/processstockcalccost", handlers.ProcessStockCalcCostHandler)
+	authGroup.POST("/api/stockcost/query", handlers.ProcessStockCostHandler)
+	authGroup.POST("/api/stockcost/summary", handlers.ProcessStockCostSummaryHandler)
+	authGroup.POST("/api/stockcost/check", handlers.ProcessStockCostCheckHandler)
 
 	// Transaction Calculator
-	g.POST("/api/transaction/calculate", handlers.TransactionCalculatorHandler)
-	g.POST("/api/transaction/quick-calc", handlers.QuickCalculatorHandler)
-	g.POST("/api/transaction/validate-payment", handlers.ValidatePaymentHandler)
-	g.POST("/api/transaction/purchase-history", handlers.PurchaseHistoryHandler)
+	authGroup.POST("/api/transaction/calculate", handlers.TransactionCalculatorHandler)
+	authGroup.POST("/api/transaction/quick-calc", handlers.QuickCalculatorHandler)
+	authGroup.POST("/api/transaction/validate-payment", handlers.ValidatePaymentHandler)
+	authGroup.POST("/api/transaction/purchase-history", handlers.PurchaseHistoryHandler)
 
 	// Sales Report
-	g.POST("/api/report/sales/by-document", handlers.SalesReportByDocumentHandler)
-	g.POST("/api/report/sales/summary", handlers.SalesReportSummaryHandler)
+	authGroup.POST("/api/report/sales/by-document", handlers.SalesReportByDocumentHandler)
+	authGroup.POST("/api/report/sales/summary", handlers.SalesReportSummaryHandler)
 
 	// Product Cache
-	g.POST("/api/product/search", handlers.ProductSearchHandler)
-	g.POST("/api/product/barcode", handlers.ProductBarcodeSearchHandler)
-	g.POST("/api/product/barcode/list", handlers.BarcodeListHandler)
-	g.GET("/api/search/aliases", handlers.SearchAliasListHandler)
-	g.POST("/api/search/aliases", handlers.SearchAliasCreateHandler)
-	g.DELETE("/api/search/aliases/:id", handlers.SearchAliasDeleteHandler)
-	g.POST("/api/process/product-balance", handlers.ProductBalanceUpdateHandler)
-	g.GET("/api/product/cache/stats", handlers.ProductCacheStatsHandler)
-	g.POST("/api/product/cache/clear", handlers.ProductCacheClearHandler)
-	g.POST("/api/product/search/unified", handlers.UnifiedProductSearchHandler)
+	authGroup.POST("/api/product/search", handlers.ProductSearchHandler)
+	authGroup.POST("/api/product/barcode", handlers.ProductBarcodeSearchHandler)
+	authGroup.POST("/api/product/barcode/list", handlers.BarcodeListHandler)
+	authGroup.GET("/api/search/aliases", handlers.SearchAliasListHandler)
+	authGroup.POST("/api/search/aliases", handlers.SearchAliasCreateHandler)
+	authGroup.DELETE("/api/search/aliases/:id", handlers.SearchAliasDeleteHandler)
+	authGroup.POST("/api/process/product-balance", handlers.ProductBalanceUpdateHandler)
+	authGroup.GET("/api/product/cache/stats", handlers.ProductCacheStatsHandler)
+	authGroup.POST("/api/product/cache/clear", handlers.ProductCacheClearHandler)
+	authGroup.POST("/api/product/search/unified", handlers.UnifiedProductSearchHandler)
 
 	// Stock Report Lookup
-	g.POST("/api/stock-report/barcodes", handlers.StockReportBarcodesHandler)
-	g.POST("/api/stock-report/warehouses", handlers.StockReportWarehousesHandler)
+	authGroup.POST("/api/stock-report/barcodes", handlers.StockReportBarcodesHandler)
+	authGroup.POST("/api/stock-report/warehouses", handlers.StockReportWarehousesHandler)
 
 	// Line OA
-	g.POST("/api/lineoa/configs", lineoa.GetConfigsHandler)
-	g.POST("/api/lineoa/config", lineoa.GetConfigHandler)
-	g.POST("/api/lineoa/config/save", lineoa.SaveConfigHandler)
-	g.POST("/api/lineoa/test", lineoa.TestHandler)
-	g.POST("/api/lineoa/employees", lineoa.GetEmployeesHandler)
-	g.POST("/api/lineoa/employee/add", lineoa.AddEmployeeHandler)
-	g.POST("/api/lineoa/employee/remove", lineoa.RemoveEmployeeHandler)
-	g.POST("/api/lineoa/employee/link", lineoa.GenerateLinkHandler)
-	g.POST("/api/user/lineoa/link", lineoa.UserLinkHandler)
-	g.POST("/api/user/lineoa/callback", lineoa.CallbackHandler)
-	g.POST("/api/user/lineoa/profile", lineoa.GetUserProfileHandler)
+	authGroup.POST("/api/lineoa/configs", lineoa.GetConfigsHandler)
+	authGroup.POST("/api/lineoa/config", lineoa.GetConfigHandler)
+	authGroup.POST("/api/lineoa/config/save", lineoa.SaveConfigHandler)
+	authGroup.POST("/api/lineoa/test", lineoa.TestHandler)
+	authGroup.POST("/api/lineoa/employees", lineoa.GetEmployeesHandler)
+	authGroup.POST("/api/lineoa/employee/add", lineoa.AddEmployeeHandler)
+	authGroup.POST("/api/lineoa/employee/remove", lineoa.RemoveEmployeeHandler)
+	authGroup.POST("/api/lineoa/employee/link", lineoa.GenerateLinkHandler)
+	authGroup.POST("/api/user/lineoa/link", lineoa.UserLinkHandler)
+	authGroup.POST("/api/user/lineoa/callback", lineoa.CallbackHandler)
+	authGroup.POST("/api/user/lineoa/profile", lineoa.GetUserProfileHandler)
 	g.POST("/api/lineoa/webhook", lineoa.WebhookHandler)
 	g.POST("/webhook/lineoa", lineoa.WebhookHandler)
 
 	// Approval System
-	g.POST("/api/approval/po-settings", approval.GetPOApprovalSettingsHandler)
-	g.POST("/api/approval/po-setting", approval.GetPOApprovalSettingHandler)
-	g.POST("/api/approval/po-setting/save", approval.SavePOApprovalSettingHandler)
-	g.POST("/api/approval/po-setting/delete", approval.DeletePOApprovalSettingHandler)
-	g.POST("/api/approval/po-status/get", approval.GetPOApprovalStatusHandler)
-	g.POST("/api/approval/po-status/batch", approval.GetBatchPOApprovalStatusHandler)
-	g.POST("/api/approval/po-status/submit", approval.SubmitPOApprovalHandler)
-	g.POST("/api/approval/po-status/approve", approval.ApprovePOHandler)
-	g.POST("/api/approval/po-status/reject", approval.RejectPOHandler)
-	g.POST("/api/approval/po-status/withdraw", approval.WithdrawPOHandler)
-	g.POST("/api/approval/po-status/pending", approval.GetPendingApprovalsHandler)
-	g.POST("/api/approval/po-status/rejected", approval.GetRejectedPOListHandler)
-	g.POST("/api/approval/notification/check", approval.CheckNotificationSentHandler)
-	g.POST("/api/approval/notification/send", approval.SendApprovalNotificationHandler)
-	g.POST("/api/approval/notification/process", approval.ProcessPendingNotificationsHandler)
-	g.POST("/api/approval/notification/logs", approval.GetNotificationLogsHandler)
-	g.POST("/api/approval/notification/mark-opened", approval.MarkNotificationOpenedHandler)
-	g.POST("/api/approval/timeline", approval.GetApprovalTimelineHandler)
-	g.POST("/api/approval/notification/send-real", approval.SendRealApprovalNotificationHandler)
-	g.POST("/api/approval/notification/resend", approval.ResendApprovalNotificationHandler)
-	g.GET("/api/approval/smtp-status", approval.GetSMTPStatusHandler)
-	g.POST("/api/approval/test-email", approval.SendTestEmailHandler)
-	g.GET("/api/approval/lineoa-config-status", approval.GetLineOAConfigStatusHandler)
-	g.GET("/api/approval/lineoa-configs", approval.ListAllLineOAConfigsHandler)
-	g.POST("/api/approval/test-line-push", approval.TestLinePushHandler)
+	authGroup.POST("/api/approval/po-settings", approval.GetPOApprovalSettingsHandler)
+	authGroup.POST("/api/approval/po-setting", approval.GetPOApprovalSettingHandler)
+	authGroup.POST("/api/approval/po-setting/save", approval.SavePOApprovalSettingHandler)
+	authGroup.POST("/api/approval/po-setting/delete", approval.DeletePOApprovalSettingHandler)
+	authGroup.POST("/api/approval/po-status/get", approval.GetPOApprovalStatusHandler)
+	authGroup.POST("/api/approval/po-status/batch", approval.GetBatchPOApprovalStatusHandler)
+	authGroup.POST("/api/approval/po-status/submit", approval.SubmitPOApprovalHandler)
+	authGroup.POST("/api/approval/po-status/approve", approval.ApprovePOHandler)
+	authGroup.POST("/api/approval/po-status/reject", approval.RejectPOHandler)
+	authGroup.POST("/api/approval/po-status/withdraw", approval.WithdrawPOHandler)
+	authGroup.POST("/api/approval/po-status/pending", approval.GetPendingApprovalsHandler)
+	authGroup.POST("/api/approval/po-status/rejected", approval.GetRejectedPOListHandler)
+	authGroup.POST("/api/approval/notification/check", approval.CheckNotificationSentHandler)
+	authGroup.POST("/api/approval/notification/send", approval.SendApprovalNotificationHandler)
+	authGroup.POST("/api/approval/notification/process", approval.ProcessPendingNotificationsHandler)
+	authGroup.POST("/api/approval/notification/logs", approval.GetNotificationLogsHandler)
+	authGroup.POST("/api/approval/notification/mark-opened", approval.MarkNotificationOpenedHandler)
+	authGroup.POST("/api/approval/timeline", approval.GetApprovalTimelineHandler)
+	authGroup.POST("/api/approval/notification/send-real", approval.SendRealApprovalNotificationHandler)
+	authGroup.POST("/api/approval/notification/resend", approval.ResendApprovalNotificationHandler)
+	authGroup.GET("/api/approval/smtp-status", approval.GetSMTPStatusHandler)
+	authGroup.POST("/api/approval/test-email", approval.SendTestEmailHandler)
+	authGroup.GET("/api/approval/lineoa-config-status", approval.GetLineOAConfigStatusHandler)
+	authGroup.GET("/api/approval/lineoa-configs", approval.ListAllLineOAConfigsHandler)
+	authGroup.POST("/api/approval/test-line-push", approval.TestLinePushHandler)
 	g.GET("/api/approval/action", approval.ApproveViaTokenHandler)
 	g.POST("/api/approval/action", approval.ApproveViaTokenHandler)
 	g.GET("/api/approval/token-info", approval.GetApprovalTokenInfoHandler)
-	g.POST("/api/approval/po-details", approval.GetPODetailsForLIFFHandler)
-	g.POST("/api/approval/liff-approve", approval.LiffApproveHandler)
+	authGroup.POST("/api/approval/po-details", approval.GetPODetailsForLIFFHandler)
+	authGroup.POST("/api/approval/liff-approve", approval.LiffApproveHandler)
 
 	// PR Approval System (ใบขอซื้อ) — ใช้ approval engine เดียวกับ PO
 	// Frontend ส่ง purchase_type_code = "PR" เพื่อแยกจาก PO
-	g.POST("/api/approval/pr-settings", approval.GetPOApprovalSettingsHandler)
-	g.POST("/api/approval/pr-setting", approval.GetPOApprovalSettingHandler)
-	g.POST("/api/approval/pr-setting/save", approval.SavePOApprovalSettingHandler)
-	g.POST("/api/approval/pr-setting/delete", approval.DeletePOApprovalSettingHandler)
-	g.POST("/api/approval/pr-status/get", approval.GetPOApprovalStatusHandler)
-	g.POST("/api/approval/pr-status/batch", approval.GetBatchPOApprovalStatusHandler)
-	g.POST("/api/approval/pr-status/submit", approval.SubmitPOApprovalHandler)
-	g.POST("/api/approval/pr-status/approve", approval.ApprovePOHandler)
-	g.POST("/api/approval/pr-status/reject", approval.RejectPOHandler)
-	g.POST("/api/approval/pr-status/withdraw", approval.WithdrawPOHandler)
-	g.POST("/api/approval/pr-status/pending", approval.GetPendingApprovalsHandler)
-	g.POST("/api/approval/pr-status/rejected", approval.GetRejectedPOListHandler)
+	authGroup.POST("/api/approval/pr-settings", approval.GetPOApprovalSettingsHandler)
+	authGroup.POST("/api/approval/pr-setting", approval.GetPOApprovalSettingHandler)
+	authGroup.POST("/api/approval/pr-setting/save", approval.SavePOApprovalSettingHandler)
+	authGroup.POST("/api/approval/pr-setting/delete", approval.DeletePOApprovalSettingHandler)
+	authGroup.POST("/api/approval/pr-status/get", approval.GetPOApprovalStatusHandler)
+	authGroup.POST("/api/approval/pr-status/batch", approval.GetBatchPOApprovalStatusHandler)
+	authGroup.POST("/api/approval/pr-status/submit", approval.SubmitPOApprovalHandler)
+	authGroup.POST("/api/approval/pr-status/approve", approval.ApprovePOHandler)
+	authGroup.POST("/api/approval/pr-status/reject", approval.RejectPOHandler)
+	authGroup.POST("/api/approval/pr-status/withdraw", approval.WithdrawPOHandler)
+	authGroup.POST("/api/approval/pr-status/pending", approval.GetPendingApprovalsHandler)
+	authGroup.POST("/api/approval/pr-status/rejected", approval.GetRejectedPOListHandler)
 
 	// RFQ Approval System (สืบราคา) — ใช้ approval engine เดียวกับ PO
 	// Frontend ส่ง purchase_type_code = "RFQ" เพื่อแยกจาก PO
-	g.POST("/api/approval/rfq-settings", approval.GetPOApprovalSettingsHandler)
-	g.POST("/api/approval/rfq-setting", approval.GetPOApprovalSettingHandler)
-	g.POST("/api/approval/rfq-setting/save", approval.SavePOApprovalSettingHandler)
-	g.POST("/api/approval/rfq-setting/delete", approval.DeletePOApprovalSettingHandler)
-	g.POST("/api/approval/rfq-status/get", approval.GetPOApprovalStatusHandler)
-	g.POST("/api/approval/rfq-status/batch", approval.GetBatchPOApprovalStatusHandler)
-	g.POST("/api/approval/rfq-status/submit", approval.SubmitPOApprovalHandler)
-	g.POST("/api/approval/rfq-status/approve", approval.ApprovePOHandler)
-	g.POST("/api/approval/rfq-status/reject", approval.RejectPOHandler)
-	g.POST("/api/approval/rfq-status/withdraw", approval.WithdrawPOHandler)
-	g.POST("/api/approval/rfq-status/pending", approval.GetPendingApprovalsHandler)
-	g.POST("/api/approval/rfq-status/rejected", approval.GetRejectedPOListHandler)
+	authGroup.POST("/api/approval/rfq-settings", approval.GetPOApprovalSettingsHandler)
+	authGroup.POST("/api/approval/rfq-setting", approval.GetPOApprovalSettingHandler)
+	authGroup.POST("/api/approval/rfq-setting/save", approval.SavePOApprovalSettingHandler)
+	authGroup.POST("/api/approval/rfq-setting/delete", approval.DeletePOApprovalSettingHandler)
+	authGroup.POST("/api/approval/rfq-status/get", approval.GetPOApprovalStatusHandler)
+	authGroup.POST("/api/approval/rfq-status/batch", approval.GetBatchPOApprovalStatusHandler)
+	authGroup.POST("/api/approval/rfq-status/submit", approval.SubmitPOApprovalHandler)
+	authGroup.POST("/api/approval/rfq-status/approve", approval.ApprovePOHandler)
+	authGroup.POST("/api/approval/rfq-status/reject", approval.RejectPOHandler)
+	authGroup.POST("/api/approval/rfq-status/withdraw", approval.WithdrawPOHandler)
+	authGroup.POST("/api/approval/rfq-status/pending", approval.GetPendingApprovalsHandler)
+	authGroup.POST("/api/approval/rfq-status/rejected", approval.GetRejectedPOListHandler)
 
 	// Data History
-	g.GET("/api/datahistory", datahistory.GetHistoryHandler)
-	g.GET("/api/datahistory/po", datahistory.GetPOHistoryHandler)
+	authGroup.GET("/api/datahistory", datahistory.GetHistoryHandler)
+	authGroup.GET("/api/datahistory/po", datahistory.GetPOHistoryHandler)
 
 	// Purchase Order Manual Close
-	g.POST("/api/purchase-order/manual-close", handlers.ManualClosePOHandler)
+	authGroup.POST("/api/purchase-order/manual-close", handlers.ManualClosePOHandler)
 
 	// Migration
-	g.GET("/api/migrate/currency", handlers.MigrateCurrencyColumnsHandler)
-	g.GET("/api/migrate/currency-backfill", handlers.BackfillCurrencyDataHandler)
-	g.GET("/api/migrate/clickhouse-softdelete", handlers.MigrateClickHouseSoftDeleteHandler)
+	authGroup.GET("/api/migrate/currency", handlers.MigrateCurrencyColumnsHandler)
+	authGroup.GET("/api/migrate/currency-backfill", handlers.BackfillCurrencyDataHandler)
+	authGroup.GET("/api/migrate/clickhouse-softdelete", handlers.MigrateClickHouseSoftDeleteHandler)
 
 	// MongoDB copy
-	g.POST("/copymongouattodev", handlers.CopyMongoUatToDevHandler)
-	g.POST("/previewcopymongo", handlers.PreviewCopyMongoHandler)
-	g.GET("/listsourceshops", handlers.ListSourceShopsHandler)
+	authGroup.POST("/copymongouattodev", handlers.CopyMongoUatToDevHandler)
+	authGroup.POST("/previewcopymongo", handlers.PreviewCopyMongoHandler)
+	authGroup.GET("/listsourceshops", handlers.ListSourceShopsHandler)
 
-	// MongoDB Atlas
-	g.POST("/atlas/get", handlers.MongoAtlasGetHandler)
-	g.POST("/atlas/update", handlers.MongoAtlasUpdateHandler)
-	g.POST("/atlas/delete", handlers.MongoAtlasDeleteHandler)
+	// MongoDB
+	atlasGroup := authGroup.Group("/atlas")
+	atlasGroup.POST("/get", handlers.MongoAtlasGetHandler)
+	atlasGroup.POST("/update", handlers.MongoAtlasUpdateHandler)
+	atlasGroup.POST("/delete", handlers.MongoAtlasDeleteHandler)
 
 	// ClickHouse
-	g.POST("/clickhouse/query", handlers.ClickHouseQueryHandler)
-	g.POST("/clickhouse/querys", handlers.ClickHouseMultiQueryHandler)
-	g.POST("/clickhouse/select", handlers.ClickHouseSelectHandler)
+	authGroup.POST("/clickhouse/query", handlers.ClickHouseQueryHandler)
+	authGroup.POST("/clickhouse/querys", handlers.ClickHouseMultiQueryHandler)
+	authGroup.POST("/clickhouse/select", handlers.ClickHouseSelectHandler)
 
 	// Test endpoints
-	g.POST("/test/sale-order", kafka.TestSaleOrderHandler)
-	g.POST("/test/purchase", kafka.TestPurchaseHandler)
-	g.POST("/test/purchase-order", kafka.TestPurchaseOrderHandler)
-	g.POST("/test/purchase-partial", kafka.TestPurchasePartialHandler)
+	authGroup.POST("/test/sale-order", kafka.TestSaleOrderHandler)
+	authGroup.POST("/test/purchase", kafka.TestPurchaseHandler)
+	authGroup.POST("/test/purchase-order", kafka.TestPurchaseOrderHandler)
+	authGroup.POST("/test/purchase-partial", kafka.TestPurchasePartialHandler)
 
 	// S3 File Proxy
-	g.GET("/s3/file/*", handlers.S3FileProxyHandler)
+	authGroup.GET("/s3/file/*", handlers.S3FileProxyHandler)
 
 	// Upload endpoints
-	g.POST("/upload", handlers.FileUploadHandler)
-	g.POST("/upload/init", handlers.InitChunkedUploadHandler)
-	g.POST("/upload/chunk", handlers.UploadChunkHandler)
-	g.POST("/upload/merge", handlers.MergeChunksHandler)
-	g.GET("/upload/status/:uploadID", handlers.GetUploadStatusHandler)
-	g.DELETE("/upload/cancel/:uploadID", handlers.CancelUploadHandler)
+	authGroup.POST("/upload", handlers.FileUploadHandler)
+	authGroup.POST("/upload/init", handlers.InitChunkedUploadHandler)
+	authGroup.POST("/upload/chunk", handlers.UploadChunkHandler)
+	authGroup.POST("/upload/merge", handlers.MergeChunksHandler)
+	authGroup.GET("/upload/status/:uploadID", handlers.GetUploadStatusHandler)
+	authGroup.DELETE("/upload/cancel/:uploadID", handlers.CancelUploadHandler)
 
 	// Language API
 	g.GET("/api/language/:lang", handlers.GetLanguageHandler)
 
 	// Image endpoints
-	g.POST("/image/upload", handlers.ImageUploadHandler)
-	g.POST("/image/list", handlers.ImageListHandler)
-	g.POST("/image/get", handlers.ImageGetHandler)
-	g.POST("/image/info", handlers.ImageInfoHandler)
-	g.POST("/image/delete", handlers.ImageDeleteHandler)
-	g.POST("/image/promptpayverify", handlers.ImageVerifyHandler)
+	authGroup.POST("/image/upload", handlers.ImageUploadHandler)
+	authGroup.POST("/image/list", handlers.ImageListHandler)
+	authGroup.POST("/image/get", handlers.ImageGetHandler)
+	authGroup.POST("/image/info", handlers.ImageInfoHandler)
+	authGroup.POST("/image/delete", handlers.ImageDeleteHandler)
+	authGroup.POST("/image/promptpayverify", handlers.ImageVerifyHandler)
+
+	// Attachment endpoints (private, shop-scoped)
+	authGroup.POST("/api/attachment/upload", handlers.AttachmentUploadHandler)
+	authGroup.POST("/api/attachment/list", handlers.AttachmentListHandler)
+	authGroup.POST("/api/attachment/delete", handlers.AttachmentDeleteHandler)
+	authGroup.GET("/api/attachment/download/:id", handlers.AttachmentDownloadHandler)
 
 	// Excel Product Import
-	g.POST("/xlsx/product/start", dataimport.StartProductPrepareHandler)
+	authGroup.POST("/xlsx/product/start", dataimport.StartProductPrepareHandler)
 
 	// Chatbot API (Gemini)
-	chatbotV1 := g.Group("/api/v1/chatbot")
+	chatbotV1 := authGroup.Group("/api/v1/chatbot")
 	chatbotV1.POST("/chat-gemini", aichat.ChatGemini)
 	chatbotV1.POST("/chat-agent", aichat.ChatAgent)
-	chatbotV1.POST("/chat-agent-v2", aichat.ChatAgentV2)           // น้องกุ้ง SSE streaming
-	chatbotV1.POST("/chat-agent-v2-sync", aichat.ChatAgentV2Sync)  // น้องกุ้ง non-streaming fallback
-	chatbotV1.POST("/clear-session", aichat.ClearChatSession)      // ล้างประวัติสนทนา
+	chatbotV1.POST("/chat-agent-v2", aichat.ChatAgentV2)          // น้องกุ้ง SSE streaming
+	chatbotV1.POST("/chat-agent-v2-sync", aichat.ChatAgentV2Sync) // น้องกุ้ง non-streaming fallback
+	chatbotV1.POST("/clear-session", aichat.ClearChatSession)     // ล้างประวัติสนทนา
 	chatbotV1.POST("/analyze-document", aichat.AnalyzeDocument)
 
 	// Knowledge Base (RAGFlow-backed)
-	knowledgebase.RegisterRoutes(g.Group("/api/v1/kb"))
+	knowledgebase.RegisterRoutes(authGroup.Group("/api/v1/kb"))
 
 	// OpenAI-compatible gateway (สำหรับ OpenClaw / client ที่พูด OpenAI protocol)
-	openaiGW := g.Group("/api/aichat/v1")
+	openaiGW := authGroup.Group("/api/aichat/v1")
 	openaiGW.POST("/chat/completions", aichat.OpenAIGatewayChatCompletions)
 	openaiGW.GET("/models", aichat.OpenAIGatewayListModels)
 
 	// Result store (frontend ดึง full tool result ที่ truncate ใน chat ออกไป)
-	g.GET("/api/aichat/result/:id", aichat.GetAIChatResult)
+	authGroup.GET("/api/aichat/result/:id", aichat.GetAIChatResult)
 
 	// AI Provider Config (per-shop settings stored in MongoDB)
-	aiProviderV1 := g.Group("/api/v1/ai-provider")
+	aiProviderV1 := authGroup.Group("/api/v1/ai-provider")
 	aiProviderV1.POST("/list", aichat.ListAIProviders)
 	aiProviderV1.POST("/save", aichat.SaveAIProvider)
 	aiProviderV1.POST("/delete", aichat.DeleteAIProvider)
@@ -483,7 +691,7 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 	aiProviderV1.POST("/complaint", aichat.SubmitComplaint)
 
 	// Unified API
-	unifiedV1 := g.Group("/api/v1/unified")
+	unifiedV1 := authGroup.Group("/api/v1/unified")
 	unifiedServer := unified.NewUnifiedAPIServer()
 	unifiedV1.POST("/query", unifiedServer.ProcessUnifiedQuery)
 	unifiedV1.GET("/health", unifiedServer.HealthCheck)
@@ -496,15 +704,15 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 
 	// MCP API Key Management
 	mcpAPIKeyHandler := handlers.NewMCPAPIKeyHandler()
-	g.POST("/api/mcp/keys", mcpAPIKeyHandler.CreateAPIKeyHandler)
-	g.GET("/api/mcp/keys", mcpAPIKeyHandler.ListAPIKeysHandler)
-	g.GET("/api/mcp/keys/:id", mcpAPIKeyHandler.GetAPIKeyHandler)
-	g.PUT("/api/mcp/keys/:id", mcpAPIKeyHandler.UpdateAPIKeyHandler)
-	g.DELETE("/api/mcp/keys/:id", mcpAPIKeyHandler.DeleteAPIKeyHandler)
-	g.GET("/api/mcp/keys/:id/export", mcpAPIKeyHandler.ExportAPIKeyHandler)
-	g.POST("/api/mcp/keys/create-with-export", mcpAPIKeyHandler.CreateAPIKeyWithExportHandler)
-	g.GET("/api/mcp/audit-logs", mcpAPIKeyHandler.GetAuditLogsHandler)
-	g.GET("/api/mcp/available-tools", mcpAPIKeyHandler.GetAvailableToolsHandler)
+	authGroup.POST("/api/mcp/keys", mcpAPIKeyHandler.CreateAPIKeyHandler)
+	authGroup.GET("/api/mcp/keys", mcpAPIKeyHandler.ListAPIKeysHandler)
+	authGroup.GET("/api/mcp/keys/:id", mcpAPIKeyHandler.GetAPIKeyHandler)
+	authGroup.PUT("/api/mcp/keys/:id", mcpAPIKeyHandler.UpdateAPIKeyHandler)
+	authGroup.DELETE("/api/mcp/keys/:id", mcpAPIKeyHandler.DeleteAPIKeyHandler)
+	authGroup.GET("/api/mcp/keys/:id/export", mcpAPIKeyHandler.ExportAPIKeyHandler)
+	authGroup.POST("/api/mcp/keys/create-with-export", mcpAPIKeyHandler.CreateAPIKeyWithExportHandler)
+	authGroup.GET("/api/mcp/audit-logs", mcpAPIKeyHandler.GetAuditLogsHandler)
+	authGroup.GET("/api/mcp/available-tools", mcpAPIKeyHandler.GetAvailableToolsHandler)
 
 	// Setup Config Routes
 	g.POST("/api/setup/verify-password", handlers.SetupVerifyPasswordHandler)

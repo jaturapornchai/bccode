@@ -55,7 +55,7 @@ func BuildAutoPackingCache(db *sql.DB, itemCodes []string) map[string][]models.P
 	for _, row := range rows {
 		itemCode := mypg.GetStringValue(row, "itemcode")
 		cache[itemCode] = append(cache[itemCode], models.ProductBarcodePackingStruct{
-			UnitName:             mypg.GetStringValue(row, "unitname"),
+			UnitName:             mypg.GetStringValue(row, "unit_name"),
 			BarcodeRefUnitStand:  mypg.GetFloat64Value(row, "barcoderefunitstand"),
 			BarcodeRefUnitDivide: mypg.GetFloat64Value(row, "barcoderefunitdivide"),
 		})
@@ -83,7 +83,7 @@ func FetchPackingForItem(db *sql.DB, cache map[string][]models.ProductBarcodePac
 	packs := make([]models.ProductBarcodePackingStruct, 0, len(rows))
 	for _, row := range rows {
 		packs = append(packs, models.ProductBarcodePackingStruct{
-			UnitName:             mypg.GetStringValue(row, "unitname"),
+			UnitName:             mypg.GetStringValue(row, "unit_name"),
 			BarcodeRefUnitStand:  mypg.GetFloat64Value(row, "barcoderefunitstand"),
 			BarcodeRefUnitDivide: mypg.GetFloat64Value(row, "barcoderefunitdivide"),
 		})

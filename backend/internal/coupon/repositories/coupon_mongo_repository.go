@@ -105,12 +105,12 @@ func NewCouponUsageHistoryRepository(pst microservice.IPersisterMongo) CouponUsa
 func (repo CouponRepository) UpdateCouponUsage(ctx context.Context, shopID string, couponID string, remainingValue float64, isOnceOnly bool) error {
 	filter := bson.M{
 		"shopid":    shopID,
-		"guidfixed": couponID,
+		"guid_fixed": couponID,
 	}
 
 	updateFields := bson.M{
 		"remainingvalue": remainingValue,
-		"updatedat":      time.Now().UTC(), // Use UTC time consistently
+		"updated_at":      time.Now().UTC(), // Use UTC time consistently
 	}
 
 	// ถ้าเป็นคูปองใช้ครั้งเดียวและมูลค่าเหลือ 0 ให้ยกเลิกคูปอง
@@ -241,7 +241,7 @@ func (repo CouponReservationRepository) UpdateReservationStatus(ctx context.Cont
 
 	updateFields := bson.M{
 		"status":    status,
-		"updatedat": time.Now().UTC(), // Use UTC time consistently
+		"updated_at": time.Now().UTC(), // Use UTC time consistently
 	}
 
 	// เพิ่มเวลาที่ใช้งานหรือยกเลิก
@@ -275,7 +275,7 @@ func (repo CouponReservationRepository) CancelReservation(ctx context.Context, s
 	updateFields := bson.M{
 		"status":      models.ReservationStatusCanceled,
 		"canceled_at": time.Now().UTC(), // Use UTC time consistently
-		"updatedat":   time.Now().UTC(), // Use UTC time consistently
+		"updated_at":   time.Now().UTC(), // Use UTC time consistently
 	}
 
 	update := bson.M{
@@ -317,7 +317,7 @@ func (repo CouponReservationRepository) CleanupExpiredReservations(ctx context.C
 
 	updateFields := bson.M{
 		"status":    models.ReservationStatusExpired,
-		"updatedat": time.Now().UTC(), // Use UTC time consistently
+		"updated_at": time.Now().UTC(), // Use UTC time consistently
 	}
 
 	update := bson.M{
@@ -555,9 +555,9 @@ func (repo CouponUsageHistoryRepository) GetUsageHistorySummary(ctx context.Cont
 	response := models.CouponUsageHistoryResponse{
 		UsageHistory: items,
 		Pagination: struct {
-			Page      int `json:"page"`
-			PageSize  int `json:"page_size"`
-			Total     int `json:"total"`
+			Page int `json:"page"`
+			PageSize int `json:"page_size"`
+			Total int `json:"total"`
 			TotalPage int `json:"total_page"`
 		}{
 			Page:      page,
@@ -566,8 +566,8 @@ func (repo CouponUsageHistoryRepository) GetUsageHistorySummary(ctx context.Cont
 			TotalPage: totalPage,
 		},
 		Summary: struct {
-			TotalUsed        int     `json:"total_used"`
-			TotalDiscount    float64 `json:"total_discount"`
+			TotalUsed int     `json:"total_used"`
+			TotalDiscount float64 `json:"total_discount"`
 			TotalCashVoucher float64 `json:"total_cash_voucher"`
 			TotalOrderAmount float64 `json:"total_order_amount"`
 		}{

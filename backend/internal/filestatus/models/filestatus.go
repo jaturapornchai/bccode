@@ -10,18 +10,18 @@ const filestatusCollectionName = "fileStatus"
 
 type FileStatus struct {
 	models.PartitionIdentity `bson:"inline"`
-	XOrder                   int                    `json:"xorder" bson:"xorder"`
-	Username                 string                 `json:"-" bson:"username"`
-	Menu                     string                 `json:"menu" bson:"menu"`
-	JobID                    string                 `json:"jobid" bson:"jobid"`
-	Path                     string                 `json:"path" bson:"path"`
-	Status                   string                 `json:"status" bson:"status"`
-	Filter                   map[string]interface{} `json:"filter" bson:"filter"`
+	XOrder int                    `json:"xorder" bson:"xorder"`
+	Username string                 `json:"-" bson:"username"`
+	Menu string                 `json:"menu" bson:"menu"`
+	JobID string                 `json:"job_id" bson:"job_id"`
+	Path string                 `json:"path" bson:"path"`
+	Status string                 `json:"status" bson:"status"`
+	Filter map[string]interface{} `json:"filter" bson:"filter"`
 }
 
 type FileStatusInfo struct {
 	models.DocIdentity `bson:"inline"`
-	FileStatus         `bson:"inline"`
+	FileStatus  `bson:"inline"`
 }
 
 func (FileStatusInfo) CollectionName() string {
@@ -30,12 +30,12 @@ func (FileStatusInfo) CollectionName() string {
 
 type FileStatusData struct {
 	models.ShopIdentity `bson:"inline"`
-	FileStatusInfo      `bson:"inline"`
+	FileStatusInfo  `bson:"inline"`
 }
 
 type FileStatusDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	FileStatusData     `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	FileStatusData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -52,7 +52,7 @@ func (FileStatusItemGuid) CollectionName() string {
 }
 
 type FileStatusActivity struct {
-	FileStatusData      `bson:"inline"`
+	FileStatusData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

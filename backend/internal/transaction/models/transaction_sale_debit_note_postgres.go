@@ -11,9 +11,9 @@ import (
 
 type SaleDebitNoteTransactionPG struct {
 	TransactionPG `bson:"inline"`
-	CreditorCode  string                              `json:"creditorcode" gorm:"column:creditorcode"`
+	CreditorCode string                              `json:"creditorcode" gorm:"column:creditorcode"`
 	CreditorNames pkgModels.JSONB                     `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
-	Items         *[]SaleDebitNoteTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	Items *[]SaleDebitNoteTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
 }
 
 type SaleDebitNoteTransactionDetailPG struct {

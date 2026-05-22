@@ -12,13 +12,13 @@ import (
 
 // QueryResult represents a row in query_results table
 type QueryResult struct {
-	ID          int64           `json:"id"`
-	GUID        string          `json:"guid"`
-	ShopID      string          `json:"shopid"`
+	ID int64           `json:"id"`
+	GUID string          `json:"guid"`
+	ShopID string          `json:"shopid"`
 	DocDatetime time.Time       `json:"docdatetime"`
-	LineNumber  int             `json:"linenumber"`
-	DataJSON    json.RawMessage `json:"datajson"`
-	CreatedAt   time.Time       `json:"created_at"`
+	LineNumber int             `json:"line_number"`
+	DataJSON json.RawMessage `json:"datajson"`
+	CreatedAt time.Time       `json:"created_at"`
 }
 
 // CreateResultTableIfNotExists สร้าง query_results table ถ้ายังไม่มี

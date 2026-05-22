@@ -30,101 +30,101 @@ const (
 
 // PRNameEntry ชื่อหลายภาษา
 type PRNameEntry struct {
-	Code     string `json:"code" bson:"code"`
-	Name     string `json:"name" bson:"name"`
-	IsAuto   bool   `json:"isauto" bson:"isauto"`
+	Code string `json:"code" bson:"code"`
+	Name string `json:"name" bson:"name"`
+	IsAuto bool   `json:"isauto" bson:"isauto"`
 	IsDelete bool   `json:"isdelete" bson:"isdelete"`
 }
 
 // PRDetail รายละเอียดสินค้าในใบขอซื้อ
 type PRDetail struct {
-	LineNumber          int           `json:"linenumber" bson:"linenumber"`
-	DocDatetime         time.Time     `json:"docdatetime" bson:"docdatetime"`
-	Barcode             string        `json:"barcode" bson:"barcode"`
-	ItemCode            string        `json:"itemcode" bson:"itemcode"`
-	ItemNames           []PRNameEntry `json:"itemnames" bson:"itemnames"`
-	UnitCode            string        `json:"unitcode" bson:"unitcode"`
-	UnitNames           []PRNameEntry `json:"unitnames" bson:"unitnames"`
-	ItemType            int8          `json:"itemtype" bson:"itemtype"`
-	ItemGuid            string        `json:"itemguid" bson:"itemguid"`
-	Qty                 float64       `json:"qty" bson:"qty"`
-	Price               float64       `json:"price" bson:"price"`
-	Discount            string        `json:"discount" bson:"discount"`
-	DiscountAmount      float64       `json:"discountamount" bson:"discountamount"`
-	SumAmount           float64       `json:"sumamount" bson:"sumamount"`
+	LineNumber int           `json:"line_number" bson:"line_number"`
+	DocDatetime time.Time     `json:"docdatetime" bson:"docdatetime"`
+	Barcode string        `json:"barcode" bson:"barcode"`
+	ItemCode string        `json:"itemcode" bson:"itemcode"`
+	ItemNames []PRNameEntry `json:"itemnames" bson:"itemnames"`
+	UnitCode string        `json:"unitcode" bson:"unitcode"`
+	UnitNames []PRNameEntry `json:"unitnames" bson:"unitnames"`
+	ItemType int8          `json:"item_type" bson:"item_type"`
+	ItemGuid string        `json:"item_guid" bson:"item_guid"`
+	Qty float64       `json:"qty" bson:"qty"`
+	Price float64       `json:"price" bson:"price"`
+	Discount string        `json:"discount" bson:"discount"`
+	DiscountAmount float64       `json:"discountamount" bson:"discountamount"`
+	SumAmount float64       `json:"sum_amount" bson:"sum_amount"`
 	SumAmountExcludeVat float64       `json:"sumamountexcludevat" bson:"sumamountexcludevat"`
-	TotalValueVat       float64       `json:"totalvaluevat" bson:"totalvaluevat"`
-	PriceExcludeVat     float64       `json:"priceexcludevat" bson:"priceexcludevat"`
-	VatType             int8          `json:"vattype" bson:"vattype"`
-	StandValue          float64       `json:"standvalue" bson:"standvalue"`
-	DivideValue         float64       `json:"dividevalue" bson:"dividevalue"`
-	WhCode              string        `json:"whcode" bson:"whcode"`
-	WhNames             []PRNameEntry `json:"whnames" bson:"whnames"`
-	LocationCode        string        `json:"locationcode" bson:"locationcode"`
-	LocationNames       []PRNameEntry `json:"locationnames" bson:"locationnames"`
-	Remark              string        `json:"remark" bson:"remark"`
-	Description         string        `json:"description" bson:"description"`
+	TotalValueVat float64       `json:"totalvaluevat" bson:"totalvaluevat"`
+	PriceExcludeVat float64       `json:"priceexcludevat" bson:"priceexcludevat"`
+	VatType int8          `json:"vat_type" bson:"vat_type"`
+	StandValue float64       `json:"standvalue" bson:"standvalue"`
+	DivideValue float64       `json:"dividevalue" bson:"dividevalue"`
+	WhCode string        `json:"whcode" bson:"whcode"`
+	WhNames []PRNameEntry `json:"whnames" bson:"whnames"`
+	LocationCode string        `json:"locationcode" bson:"locationcode"`
+	LocationNames []PRNameEntry `json:"locationnames" bson:"locationnames"`
+	Remark string        `json:"remark" bson:"remark"`
+	Description string        `json:"description" bson:"description"`
 }
 
 // PRBranch สาขา
 type PRBranch struct {
-	GuidFixed string        `json:"guidfixed" bson:"guidfixed"`
-	Code      string        `json:"code" bson:"code"`
-	Names     []PRNameEntry `json:"names" bson:"names"`
+	GuidFixed string        `json:"guid_fixed" bson:"guid_fixed"`
+	Code string        `json:"code" bson:"code"`
+	Names []PRNameEntry `json:"names" bson:"names"`
 }
 
 // PurchaseRequisitionDocument เอกสารใบขอซื้อใน MongoDB
 type PurchaseRequisitionDocument struct {
-	ID        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ShopID    string             `json:"shopid" bson:"shopid"`
-	GuidFixed string             `json:"guidfixed" bson:"guidfixed"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ShopID string             `json:"shopid" bson:"shopid"`
+	GuidFixed string             `json:"guid_fixed" bson:"guid_fixed"`
 	// Header
-	DocNo       string    `json:"docno" bson:"docno"`
+	DocNo string    `json:"docno" bson:"docno"`
 	DocDatetime time.Time `json:"docdatetime" bson:"docdatetime"`
-	TransFlag   int       `json:"transflag" bson:"transflag"`
-	DocType     int8      `json:"doctype" bson:"doctype"`
+	TransFlag int       `json:"transflag" bson:"transflag"`
+	DocType int8      `json:"doc_type" bson:"doc_type"`
 	// Creditor (ผู้ขาย — กรณี PR ระบุได้แต่ไม่บังคับ)
-	CustCode  string        `json:"custcode" bson:"custcode"`
+	CustCode string        `json:"custcode" bson:"custcode"`
 	CustNames []PRNameEntry `json:"custnames" bson:"custnames"`
 	// Financial
-	Description    string  `json:"description" bson:"description"`
-	TotalValue     float64 `json:"totalvalue" bson:"totalvalue"`
+	Description string  `json:"description" bson:"description"`
+	TotalValue float64 `json:"totalvalue" bson:"totalvalue"`
 	TotalBeforeVat float64 `json:"totalbeforevat" bson:"totalbeforevat"`
-	TotalAfterVat  float64 `json:"totalaftervat" bson:"totalaftervat"`
-	TotalVatValue  float64 `json:"totalvatvalue" bson:"totalvatvalue"`
-	TotalAmount    float64 `json:"totalamount" bson:"totalamount"`
+	TotalAfterVat float64 `json:"totalaftervat" bson:"totalaftervat"`
+	TotalVatValue float64 `json:"totalvatvalue" bson:"totalvatvalue"`
+	TotalAmount float64 `json:"total_amount" bson:"total_amount"`
 	TotalExceptVat float64 `json:"totalexceptvat" bson:"totalexceptvat"`
-	VatType        int8    `json:"vattype" bson:"vattype"`
-	VatRate        float64 `json:"vatrate" bson:"vatrate"`
-	TotalQty       float64 `json:"totalqty" bson:"totalqty"`
-	IsCancel       bool    `json:"iscancel" bson:"iscancel"`
-	Status         int8    `json:"status" bson:"status"`
+	VatType int8    `json:"vat_type" bson:"vat_type"`
+	VatRate float64 `json:"vatrate" bson:"vatrate"`
+	TotalQty float64 `json:"totalqty" bson:"totalqty"`
+	IsCancel bool    `json:"iscancel" bson:"iscancel"`
+	Status int8    `json:"status" bson:"status"`
 	// Branch
 	Branch PRBranch `json:"branch" bson:"branch"`
 	// === PR-specific fields ===
-	RequesterCode         string        `json:"requestercode" bson:"requestercode"`
-	RequesterName         string        `json:"requestername" bson:"requestername"`
-	DepartmentCode        string        `json:"departmentcode" bson:"departmentcode"`
-	DepartmentNames       []PRNameEntry `json:"departmentnames" bson:"departmentnames"`
-	Purpose               string        `json:"purpose" bson:"purpose"`
-	BudgetCode            string        `json:"budgetcode,omitempty" bson:"budgetcode,omitempty"`
-	BudgetAmount          float64       `json:"budgetamount,omitempty" bson:"budgetamount,omitempty"`
-	Urgency               int8          `json:"urgency" bson:"urgency"` // 1=ปกติ 2=เร่งด่วน 3=เร่งด่วนมาก
+	RequesterCode string        `json:"requestercode" bson:"requestercode"`
+	RequesterName string        `json:"requestername" bson:"requestername"`
+	DepartmentCode string        `json:"departmentcode" bson:"departmentcode"`
+	DepartmentNames []PRNameEntry `json:"departmentnames" bson:"departmentnames"`
+	Purpose string        `json:"purpose" bson:"purpose"`
+	BudgetCode string        `json:"budgetcode,omitempty" bson:"budgetcode,omitempty"`
+	BudgetAmount float64       `json:"budgetamount,omitempty" bson:"budgetamount,omitempty"`
+	Urgency int8          `json:"urgency" bson:"urgency"` // 1=ปกติ 2=เร่งด่วน 3=เร่งด่วนมาก
 	RequestedDeliveryDate string        `json:"requesteddeliverydate,omitempty" bson:"requesteddeliverydate,omitempty"`
-	RefPODocNo            string        `json:"refpodocno,omitempty" bson:"refpodocno,omitempty"`
-	RefRFQDocNo           string        `json:"refrfqdocno,omitempty" bson:"refrfqdocno,omitempty"`
-	ConversionStatus      string        `json:"conversionstatus,omitempty" bson:"conversionstatus,omitempty"` // none/converted_to_rfq/converted_to_po
+	RefPODocNo string        `json:"refpodocno,omitempty" bson:"refpodocno,omitempty"`
+	RefRFQDocNo string        `json:"refrfqdocno,omitempty" bson:"refrfqdocno,omitempty"`
+	ConversionStatus string        `json:"conversionstatus,omitempty" bson:"conversionstatus,omitempty"` // none/converted_to_rfq/converted_to_po
 	// Purchase Type (for Approval)
-	PurchaseTypeCode  string        `json:"purchasetypecode" bson:"purchasetypecode"`
+	PurchaseTypeCode string        `json:"purchasetypecode" bson:"purchasetypecode"`
 	PurchaseTypeNames []PRNameEntry `json:"purchasetypenames" bson:"purchasetypenames"`
 	// Creator/Updater
 	CreatorCode string    `json:"creator_code" bson:"creatorcode"`
 	CreatorName string    `json:"creator_name" bson:"creatorname"`
-	CreatedAt   time.Time `json:"createdat" bson:"createdat"`
+	CreatedAt time.Time `json:"created_at" bson:"created_at"`
 	UpdaterCode string    `json:"modifier_code" bson:"updatercode"`
 	UpdaterName string    `json:"modifier_name" bson:"updatername"`
-	UpdatedAt   time.Time `json:"updatedat" bson:"updatedat"`
-	DeletedAt   time.Time `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
+	UpdatedAt time.Time `json:"updated_at" bson:"updated_at"`
+	DeletedAt time.Time `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
 	// Details
 	Details []PRDetail `json:"details" bson:"details"`
 }
@@ -133,9 +133,9 @@ type PurchaseRequisitionDocument struct {
 
 type ListPurchaseRequisitionsResponse struct {
 	PurchaseRequisitions []PurchaseRequisitionDocument `json:"purchase_requisitions"`
-	Count                int                           `json:"count"`
-	Keyword              string                        `json:"keyword,omitempty"`
-	GeneratedAt          time.Time                     `json:"generated_at"`
+	Count int                           `json:"count"`
+	Keyword string                        `json:"keyword,omitempty"`
+	GeneratedAt time.Time                     `json:"generated_at"`
 }
 
 func ListPurchaseRequisitions(ctx context.Context, shopID, keyword string, limit int) (*ListPurchaseRequisitionsResponse, error) {
@@ -160,8 +160,8 @@ func ListPurchaseRequisitions(ctx context.Context, shopID, keyword string, limit
 	filter := bson.M{
 		"shopid": shopID,
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 
@@ -211,12 +211,12 @@ func ListPurchaseRequisitions(ctx context.Context, shopID, keyword string, limit
 // ==================== Create Purchase Requisition ====================
 
 type CreatePurchaseRequisitionResponse struct {
-	Success              bool                         `json:"success"`
-	Message              string                       `json:"message"`
-	PurchaseRequisition  PurchaseRequisitionDocument  `json:"purchase_requisition"`
-	KafkaSync            string                       `json:"kafka_sync"`
-	KafkaError           string                       `json:"kafka_error,omitempty"`
-	GeneratedAt          time.Time                    `json:"generated_at"`
+	Success bool                         `json:"success"`
+	Message string                       `json:"message"`
+	PurchaseRequisition PurchaseRequisitionDocument  `json:"purchase_requisition"`
+	KafkaSync string                       `json:"kafka_sync"`
+	KafkaError string                       `json:"kafka_error,omitempty"`
+	GeneratedAt time.Time                    `json:"generated_at"`
 }
 
 func CreatePurchaseRequisition(ctx context.Context, shopID, docno, requesterCode, requesterName, departmentCode, departmentNamesJSON, purpose, budgetCode string, budgetAmount float64, urgency int8, requestedDeliveryDate, detailsJSON, description string, totalamount float64) (*CreatePurchaseRequisitionResponse, error) {
@@ -253,8 +253,8 @@ func CreatePurchaseRequisition(ctx context.Context, shopID, docno, requesterCode
 		"shopid": shopID,
 		"docno":  docno,
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 	count, err := coll.CountDocuments(ctx, existFilter)
@@ -338,12 +338,12 @@ func CreatePurchaseRequisition(ctx context.Context, shopID, docno, requesterCode
 // ==================== Update Purchase Requisition ====================
 
 type UpdatePurchaseRequisitionResponse struct {
-	Success              bool                         `json:"success"`
-	Message              string                       `json:"message"`
-	PurchaseRequisition  PurchaseRequisitionDocument  `json:"purchase_requisition"`
-	KafkaSync            string                       `json:"kafka_sync"`
-	KafkaError           string                       `json:"kafka_error,omitempty"`
-	GeneratedAt          time.Time                    `json:"generated_at"`
+	Success bool                         `json:"success"`
+	Message string                       `json:"message"`
+	PurchaseRequisition PurchaseRequisitionDocument  `json:"purchase_requisition"`
+	KafkaSync string                       `json:"kafka_sync"`
+	KafkaError string                       `json:"kafka_error,omitempty"`
+	GeneratedAt time.Time                    `json:"generated_at"`
 }
 
 func UpdatePurchaseRequisition(ctx context.Context, shopID, guidfixed, requesterCode, requesterName, departmentCode, departmentNamesJSON, purpose, budgetCode string, budgetAmount float64, urgency int8, requestedDeliveryDate, detailsJSON, description string, totalamount float64, status int8, conversionStatus string) (*UpdatePurchaseRequisitionResponse, error) {
@@ -365,10 +365,10 @@ func UpdatePurchaseRequisition(ctx context.Context, shopID, guidfixed, requester
 
 	filter := bson.M{
 		"shopid":    shopID,
-		"guidfixed": guidfixed,
+		"guid_fixed": guidfixed,
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 
@@ -379,7 +379,7 @@ func UpdatePurchaseRequisition(ctx context.Context, shopID, guidfixed, requester
 	}
 
 	updateFields := bson.M{
-		"updatedat":   time.Now(),
+		"updated_at":   time.Now(),
 		"updatercode": "mcp-tool",
 		"updatername": "MCP Tool",
 	}
@@ -426,7 +426,7 @@ func UpdatePurchaseRequisition(ctx context.Context, shopID, guidfixed, requester
 		updateFields["description"] = description
 	}
 	if totalamount > 0 {
-		updateFields["totalamount"] = totalamount
+		updateFields["total_amount"] = totalamount
 	}
 	if status > 0 {
 		updateFields["status"] = status
@@ -466,12 +466,12 @@ func UpdatePurchaseRequisition(ctx context.Context, shopID, guidfixed, requester
 // ==================== Delete Purchase Requisition (Soft Delete) ====================
 
 type DeletePurchaseRequisitionResponse struct {
-	Success     bool      `json:"success"`
-	Message     string    `json:"message"`
-	GuidFixed   string    `json:"guidfixed"`
-	DocNo       string    `json:"docno"`
-	KafkaSync   string    `json:"kafka_sync"`
-	KafkaError  string    `json:"kafka_error,omitempty"`
+	Success bool      `json:"success"`
+	Message string    `json:"message"`
+	GuidFixed string    `json:"guid_fixed"`
+	DocNo string    `json:"docno"`
+	KafkaSync string    `json:"kafka_sync"`
+	KafkaError string    `json:"kafka_error,omitempty"`
 	GeneratedAt time.Time `json:"generated_at"`
 }
 
@@ -494,10 +494,10 @@ func DeletePurchaseRequisition(ctx context.Context, shopID, guidfixed string) (*
 
 	filter := bson.M{
 		"shopid":    shopID,
-		"guidfixed": guidfixed,
+		"guid_fixed": guidfixed,
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 
@@ -510,10 +510,10 @@ func DeletePurchaseRequisition(ctx context.Context, shopID, guidfixed string) (*
 	// Soft delete
 	now := time.Now()
 	_, err = coll.UpdateOne(ctx, filter, bson.M{"$set": bson.M{
-		"deletedat":   now,
+		"deleted_at":   now,
 		"updatercode": "mcp-tool",
 		"updatername": "MCP Tool",
-		"updatedat":   now,
+		"updated_at":   now,
 	}})
 	if err != nil {
 		return nil, fmt.Errorf("ลบใบขอซื้อล้มเหลว: %w", err)
@@ -551,7 +551,7 @@ func GetPurchaseRequisitionSchema() map[string]interface{} {
 		"fields": map[string]interface{}{
 			"_id":                   "ObjectID — MongoDB auto-generated ID",
 			"shopid":                "string — Shop ID (tenant isolation)",
-			"guidfixed":             "string — UUID สำหรับอ้างอิงภายใน",
+			"guid_fixed":             "string — UUID สำหรับอ้างอิงภายใน",
 			"docno":                 "string (required) — เลขที่เอกสาร เช่น PR20260314-00001",
 			"docdatetime":           "datetime — วันที่เอกสาร",
 			"transflag":             "int — ประเภท transaction (21=ใบขอซื้อ)",
@@ -567,11 +567,11 @@ func GetPurchaseRequisitionSchema() map[string]interface{} {
 			"conversionstatus":      "string — สถานะแปลง (none/converted_to_rfq/converted_to_po)",
 			"refpodocno":            "string — เลขที่ PO ที่สร้างจาก PR",
 			"refrfqdocno":           "string — เลขที่ RFQ ที่สร้างจาก PR",
-			"totalamount":           "float64 — มูลค่ารวมทั้งหมด",
+			"total_amount":           "float64 — มูลค่ารวมทั้งหมด",
 			"status":                "int8 — สถานะ (0=ร่าง, 1=รออนุมัติ, 2=อนุมัติ, 3=ปฏิเสธ)",
 			"details":               "array — รายละเอียดสินค้า [{barcode, itemcode, itemnames, qty, price, sumamount, ...}]",
-			"createdat":             "datetime — วันที่สร้าง",
-			"deletedat":             "datetime — วันที่ลบ (soft delete, zero = active)",
+			"created_at":             "datetime — วันที่สร้าง",
+			"deleted_at":             "datetime — วันที่ลบ (soft delete, zero = active)",
 		},
 		"examples": []map[string]interface{}{
 			{
@@ -590,10 +590,10 @@ func GetPurchaseRequisitionSchema() map[string]interface{} {
 						"itemcode":  "NOTEBOOK001",
 						"qty":       3,
 						"price":     25000.0,
-						"sumamount": 75000.0,
+						"sum_amount": 75000.0,
 					},
 				},
-				"totalamount": 75000.0,
+				"total_amount": 75000.0,
 			},
 		},
 	}

@@ -10,16 +10,16 @@ const departmentCollectionName = "organizationDepartments"
 
 type Department struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code                     string          `json:"code" bson:"code"`
-	BranchCode               string          `json:"branchcode" bson:"branchcode"`
-	BranchGuid               string          `json:"branchguid" bson:"branchguid"`
-	BranchKey                string          `json:"branch_key" bson:"branch_key"`
-	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	Code string          `json:"code" bson:"code"`
+	BranchCode string          `json:"branchcode" bson:"branchcode"`
+	BranchGuid string          `json:"branchguid" bson:"branchguid"`
+	BranchKey string          `json:"branch_key" bson:"branch_key"`
+	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 }
 
 type DepartmentInfo struct {
 	models.DocIdentity `bson:"inline"`
-	Department         `bson:"inline"`
+	Department  `bson:"inline"`
 }
 
 func (DepartmentInfo) CollectionName() string {
@@ -28,12 +28,12 @@ func (DepartmentInfo) CollectionName() string {
 
 type DepartmentData struct {
 	models.ShopIdentity `bson:"inline"`
-	DepartmentInfo      `bson:"inline"`
+	DepartmentInfo  `bson:"inline"`
 }
 
 type DepartmentDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	DepartmentData     `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	DepartmentData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -50,7 +50,7 @@ func (DepartmentItemGuid) CollectionName() string {
 }
 
 type DepartmentActivity struct {
-	DepartmentData      `bson:"inline"`
+	DepartmentData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

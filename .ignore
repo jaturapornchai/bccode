@@ -23,16 +23,21 @@ tmp/
 playwright-report/
 test-results/
 storybook-static/
+.playwright-mcp/
+.codex/
 
 # Legacy / deleted / reference trees. Read explicitly only when the task asks.
 clone-skills/
 frontend/bcaiaccount/
 frontend/bclms/
+bcai-claude-skills/
 
 # Generated API docs. Prefer source handlers and tests.
+backend/docs/
 backend/docs/docs.go
 backend/docs/swagger.json
 backend/docs/swagger.yaml
+backend/api/swagger/
 backend/api/swagger/swagger.json
 
 # Large binary/static assets. Read exact paths only when needed.
@@ -56,6 +61,7 @@ backend/assets/fonts/
 *.tar
 *.gz
 *.log
+backend/internal/**/logs/
 
 # Large text/reference artifacts. Query exact paths explicitly when needed.
 backend/tdict-std.txt
@@ -69,6 +75,7 @@ manual/
 manual/*.json
 
 # Duplicate agent/IDE skill bundles under backend. Use root .agents/ instead.
+backend/.agents/
 backend/.claude/
 backend/.cline/
 backend/.roo/

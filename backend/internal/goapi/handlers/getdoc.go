@@ -20,9 +20,9 @@ import (
 func MongoGetDataHandler(c echo.Context) error {
 	logger.Info("MongoSelectHandler called")
 	var payLoad struct {
-		ShopId     string `json:"shopid"`
+		ShopId string `json:"shopid"`
 		Collection string `json:"collection"`
-		GuidFixed  string `json:"guidfixed"`
+		GuidFixed string `json:"guid_fixed"`
 	}
 
 	if err := c.Bind(&payLoad); err != nil {
@@ -57,7 +57,7 @@ func MongoGetDataHandler(c echo.Context) error {
 	MongodbDatabaseName := svcConfig.MongodbDatabaseName()
 	collection := mongoClient.Database(MongodbDatabaseName).Collection(payLoad.Collection)
 
-	filter := bson.M{"shopid": payLoad.ShopId, "guidfixed": payLoad.GuidFixed}
+	filter := bson.M{"shopid": payLoad.ShopId, "guid_fixed": payLoad.GuidFixed}
 
 	// ⭐ แก้ไข: Log ก่อน Find และใช้ collection name ที่ถูกต้อง
 	logger.Info("Finding documents in MongoDB collection '%s' with filter: %+v", payLoad.Collection, filter)
@@ -115,15 +115,15 @@ func PgGetDocHandler(c echo.Context) error {
 	logger.Info("PgGetDoc called")
 	// รับ JSON payLoad จาก request body
 	var payLoad struct {
-		ShopId    string   `json:"shopid"`
-		System    string   `json:"system"`
-		OffSet    int      `json:"offset"`
-		Limit     int      `json:"limit"`
-		Search    string   `json:"search"`
-		CustCode  string   `json:"custcode"`
+		ShopId string   `json:"shopid"`
+		System string   `json:"system"`
+		OffSet int      `json:"offset"`
+		Limit int      `json:"limit"`
+		Search string   `json:"search"`
+		CustCode string   `json:"custcode"`
 		DateOrder int      `json:"dateorder"` // 0=asc, 1=desc
-		FromDate  string   `json:"fromdate"`  // วันที่เริ่มต้น format: "2026-02-01"
-		ToDate    string   `json:"todate"`    // วันที่สิ้นสุด format: "2026-02-28"
+		FromDate string   `json:"fromdate"`  // วันที่เริ่มต้น format: "2026-02-01"
+		ToDate string   `json:"todate"`    // วันที่สิ้นสุด format: "2026-02-28"
 		MinAmount *float64 `json:"minamount"` // ยอดเงินต่ำสุด (nil = ไม่กรอง)
 		MaxAmount *float64 `json:"maxamount"` // ยอดเงินสูงสุด (nil = ไม่กรอง)
 		CustCodes []string `json:"custcodes"` // รายการเจ้าหนี้ที่เลือก (multi-select)
@@ -286,12 +286,12 @@ func PgGetDocHandler(c echo.Context) error {
 		}
 
 		results = append(results, map[string]any{
-			"guidfixed":    guidfixed,
+			"guid_fixed":    guidfixed,
 			"docdatetime":  docdatetime.UTC().Format("2006-01-02T15:04:05.000Z"),
 			"docno":        docno,
 			"custcode":     custcode,
-			"custname":     custname,
-			"totalamount":  totalamount,
+			"cust_name":     custname,
+			"total_amount":  totalamount,
 			"detailcount":  detailcount,
 			"transflag":    transflag,
 			"isref":        isref,
@@ -302,7 +302,7 @@ func PgGetDocHandler(c echo.Context) error {
 			"created_at":          createdAt.UTC().Format("2006-01-02T15:04:05.000Z"),
 			"doc_currency":        docCurrency,
 			"doc_currencysymbol":  docCurrencySymbol,
-			"exchangerate":        exchangeRate,
+			"exchange_rate":        exchangeRate,
 			"totalamount_doc":     totalamountDoc,
 			"iscancel":              iscancel,
 			"isdelete":              isdelete,

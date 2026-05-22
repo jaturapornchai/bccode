@@ -208,7 +208,7 @@ func (h KitchenHttp) SearchKitchen(ctx microservice.IContext) error {
 	filters := requestfilter.GenerateFilters(ctx.QueryParam, []requestfilter.FilterRequest{
 		{
 			Param: "group-number",
-			Field: "groupnumber",
+			Field: "group_number",
 			Type:  requestfilter.FieldTypeInt,
 		},
 	})
@@ -275,7 +275,7 @@ func (h KitchenHttp) SearchKitchenStep(ctx microservice.IContext) error {
 	filters := requestfilter.GenerateFilters(ctx.QueryParam, []requestfilter.FilterRequest{
 		{
 			Param: "group-number",
-			Field: "groupnumber",
+			Field: "group_number",
 			Type:  requestfilter.FieldTypeInt,
 		},
 	})

@@ -179,6 +179,7 @@ export function isBackendLanguageLoading(dictionary: BackendLanguageDictionary |
 export function backendText(dictionary: BackendLanguageDictionary, key: string, fallback?: string): string {
   const text = dictionary[key];
   if (text) return text;
-  if (!isBackendLanguageReady(dictionary)) return fallback ?? "";
+  if (fallback !== undefined) return fallback;
+  if (!isBackendLanguageReady(dictionary)) return "";
   return key;
 }

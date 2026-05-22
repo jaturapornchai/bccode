@@ -184,8 +184,8 @@ func (repo JournalReportPgRepository) GetDataTrialBalance(shopId string, account
 
 	condition := map[string]interface{}{
 		"shopid":    shopId,
-		"startdate": startDate,
-		"enddate":   endDate,
+		"start_date": startDate,
+		"end_date":   endDate,
 	}
 
 	if len(accountGroup) > 0 {
@@ -269,8 +269,8 @@ func (repo JournalReportPgRepository) GetDataProfitAndLoss(shopId string, accoun
 
 	condition := map[string]interface{}{
 		"shopid":    shopId,
-		"startdate": startDate,
-		"enddate":   endDate,
+		"start_date": startDate,
+		"end_date":   endDate,
 	}
 
 	if len(accountGroup) > 0 {
@@ -371,7 +371,7 @@ func (repo JournalReportPgRepository) GetDataBalanceSheet(shopId string, account
 
 	condition := map[string]interface{}{
 		"shopid":     shopId,
-		"enddate":    endDate,
+		"end_date":    endDate,
 		"reportyear": reportYear,
 	}
 
@@ -411,8 +411,8 @@ func (repo JournalReportPgRepository) GetDataLedgerAccount(
 
 	values := map[string]interface{}{
 		"shopid":    shopID,
-		"startdate": startDate,
-		"enddate":   endDate,
+		"start_date": startDate,
+		"end_date":   endDate,
 	}
 
 	if len(accountRanges) > 0 {
@@ -544,8 +544,8 @@ func (repo JournalReportPgRepository) GetMultiShopRevenue(
 
 	condition := map[string]interface{}{
 		"shopids":   pq.Array(shopIDs),
-		"startdate": startDate,
-		"enddate":   endDate,
+		"start_date": startDate,
+		"end_date":   endDate,
 	}
 
 	_, err := repo.pst.Raw(query, condition, &results)

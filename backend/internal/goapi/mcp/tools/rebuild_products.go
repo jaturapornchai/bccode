@@ -16,10 +16,10 @@ import (
 
 // RebuildProductsResponse ผลลัพธ์จาก rebuild
 type RebuildProductsResponse struct {
-	Success     bool      `json:"success"`
-	Message     string    `json:"message"`
-	ShopID      string    `json:"shop_id"`
-	Duration    string    `json:"duration"`
+	Success bool      `json:"success"`
+	Message string    `json:"message"`
+	ShopID string    `json:"shop_id"`
+	Duration string    `json:"duration"`
 	GeneratedAt time.Time `json:"generated_at"`
 }
 

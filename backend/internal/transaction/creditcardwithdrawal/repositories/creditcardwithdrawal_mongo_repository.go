@@ -61,7 +61,7 @@ func NewCreditCardWithdrawalRepository(pst microservice.IPersisterMongo) *Credit
 func (repo CreditCardWithdrawalRepository) FindLastDocNo(ctx context.Context, shopID string, prefixDocNo string) (models.CreditCardWithdrawalDoc, error) {
 	filters := bson.M{
 		"shopid": shopID,
-		"deletedat": bson.M{
+		"deleted_at": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

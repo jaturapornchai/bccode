@@ -12,9 +12,9 @@ import (
 // เงินมัดจำเจ้าหนี้
 type APAdvancePaymentTransactionPG struct {
 	GeneralTransactionPG `gorm:"embedded;"`
-	CreditorCode         string                                 `json:"creditorcode" gorm:"column:creditorcode"`
-	CreditorNames        pkgModels.JSONB                        `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
-	Items                *[]APAdvancePaymentTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	CreditorCode string                                 `json:"creditorcode" gorm:"column:creditorcode"`
+	CreditorNames pkgModels.JSONB                        `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
+	Items *[]APAdvancePaymentTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
 }
 
 // รายละเอียด เงินมัดจำเจ้าหนี้

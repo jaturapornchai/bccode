@@ -11,7 +11,7 @@ import (
 
 type ReflectTag struct {
 	MainName string          `json:"mainname" bson:"mainname"`
-	Child    ReflectTagChild `json:"child" bson:"child"`
+	Child ReflectTagChild `json:"child" bson:"child"`
 	ReflectTagEmbed
 }
 

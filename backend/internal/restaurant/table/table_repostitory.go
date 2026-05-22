@@ -74,7 +74,7 @@ func (repo TableRepository) SaveXOrder(ctx context.Context, shopID string, guid 
 
 	filters := bson.M{
 		"shopid":    shopID,
-		"guidfixed": guid,
+		"guid_fixed": guid,
 	}
 
 	return repo.pst.Update(ctx, models.TableDoc{}, filters, bson.M{"$set": bson.M{"xorder": xorder}})

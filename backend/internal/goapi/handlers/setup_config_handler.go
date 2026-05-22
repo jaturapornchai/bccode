@@ -7,12 +7,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"smlcloudplatform/internal/goapi/logger"
-	"smlcloudplatform/internal/goapi/myglobal"
-	"smlcloudplatform/internal/goapi/setupconfig"
 	"net"
 	"net/http"
 	"os"
+	"smlcloudplatform/internal/goapi/logger"
+	"smlcloudplatform/internal/goapi/myglobal"
+	"smlcloudplatform/internal/goapi/setupconfig"
 	"strings"
 	"time"
 
@@ -451,15 +451,15 @@ func SetupClientConfigHandler(c echo.Context) error {
 
 func SetupTestConnectionHandler(c echo.Context) error {
 	var req struct {
-		Password string `json:"password"`
-		Type     string `json:"type"`     // "mongodb", "postgresql", "clickhouse", "redis", "kafka", "http"
-		URI      string `json:"uri"`      // สำหรับ mongodb
-		Host     string `json:"host"`     // สำหรับ pg, ch, redis, kafka
-		Port     string `json:"port"`     // สำหรับ pg, ch, redis, kafka
-		User     string `json:"user"`     // สำหรับ pg, ch
+		Password  string `json:"password"`
+		Type      string `json:"type"`      // "mongodb", "postgresql", "clickhouse", "redis", "kafka", "http"
+		URI       string `json:"uri"`       // สำหรับ mongodb
+		Host      string `json:"host"`      // สำหรับ pg, ch, redis, kafka
+		Port      string `json:"port"`      // สำหรับ pg, ch, redis, kafka
+		User      string `json:"user"`      // สำหรับ pg, ch
 		Password2 string `json:"password2"` // สำหรับ pg, ch (ใช้ password2 เพราะ password ถูกใช้สำหรับ setup password)
-		Database string `json:"database"` // สำหรับ pg, ch
-		URL      string `json:"url"`      // สำหรับ http test
+		Database  string `json:"database"`  // สำหรับ pg, ch
+		URL       string `json:"url"`       // สำหรับ http test
 	}
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
@@ -691,11 +691,11 @@ func testClickHouseConnection(c echo.Context, host, port, user, password, databa
 		var chException *clickhouse.Exception
 		if errors.As(err, &chException) && chException.Code == 81 {
 			return c.JSON(http.StatusOK, map[string]interface{}{
-				"success":           false,
-				"message":           fmt.Sprintf("Ping ClickHouse ล้มเหลว: %s", err.Error()),
-				"error_code":        "database_not_exist",
-				"database":          database,
-				"latency_ms":        time.Since(start).Milliseconds(),
+				"success":    false,
+				"message":    fmt.Sprintf("Ping ClickHouse ล้มเหลว: %s", err.Error()),
+				"error_code": "database_not_exist",
+				"database":   database,
+				"latency_ms": time.Since(start).Milliseconds(),
 			})
 		}
 		return c.JSON(http.StatusOK, map[string]interface{}{
@@ -954,9 +954,11 @@ func SetupSeedConfigHandler(c echo.Context) error {
 		{Category: "service_urls", Key: "mainapi_url", Value: os.Getenv("MAINAPI_URL"), Description: "Main API URL (mainapi)", IsSecret: false},
 		{Category: "service_urls", Key: "goapi_url", Value: os.Getenv("GOAPI_URL"), Description: "Go API URL (goapi)", IsSecret: false},
 
-		// MongoDB
-		{Category: "mongodb", Key: "uri", Value: os.Getenv("MONGODB_URI"), Description: "MongoDB Connection URI", IsSecret: true},
-		{Category: "mongodb", Key: "database_name", Value: os.Getenv("MONGODB_DATABASE_NAME"), Description: "MongoDB Database Name", IsSecret: false},
+		// MongoDB DEV ใช้สำหรับ run บน local เท่านั้น; UAT/PRO จะตั้งค่าตอน deploy บน internet ภายหลัง
+		{Category: "mongodb_dev", Key: "uri", Value: envFirst("MONGODB_DEV_URI", "MONGODB_URI"), Description: "MongoDB DEV Local Connection URI", IsSecret: true},
+		{Category: "mongodb_dev", Key: "database", Value: envFirst("MONGODB_DEV_DB", "MONGODB_DEV_DATABASE", "MONGO_DB_NAME", "MONGODB_DB", "MONGODB_DATABASE_NAME"), Description: "MongoDB DEV Local Database Name", IsSecret: false},
+		{Category: "mongodb", Key: "uri", Value: os.Getenv("MONGODB_URI"), Description: "Legacy MongoDB URI (DEV fallback only)", IsSecret: true},
+		{Category: "mongodb", Key: "database", Value: envFirst("MONGODB_DB", "MONGO_DB_NAME", "MONGODB_DATABASE_NAME"), Description: "Legacy MongoDB Database Name (DEV fallback only)", IsSecret: false},
 
 		// PostgreSQL
 		{Category: "postgresql", Key: "host", Value: os.Getenv("POSTGRES_HOST"), Description: "PostgreSQL Host", IsSecret: false},
@@ -1040,4 +1042,13 @@ func SetupSeedConfigHandler(c echo.Context) error {
 		"success": true,
 		"message": fmt.Sprintf("Seed config จาก environment variables สำเร็จ %d รายการ", seededCount),
 	})
+}
+
+func envFirst(keys ...string) string {
+	for _, key := range keys {
+		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+			return value
+		}
+	}
+	return ""
 }

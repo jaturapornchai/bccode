@@ -14,6 +14,7 @@ import {
   ExternalLink,
   KeyRound,
   LayoutDashboard,
+  LayoutPanelTop,
   Lock,
   Loader2,
   LogOut,
@@ -63,6 +64,9 @@ import { MenuDataTable } from "./menu-data-table";
 import { buildChartData, buildKpis, fetchErpMenuRows, type ErpMenuRow } from "./menu-dashboard-data";
 import { MenuKpiChart } from "./menu-kpi-chart";
 import { MenuQueryProvider } from "./menu-query-provider";
+import { ProductBarcodeScreen } from "./product-barcode-screen";
+import { ProductBarcodeShelfScreen } from "./product-barcode-shelf-screen";
+import { ProductPriceHistoryScreen } from "./product-price-history-screen";
 
 type WorkTab = {
   id: string;
@@ -73,6 +77,7 @@ type WorkTab = {
 };
 
 type TabInsertSide = "before" | "after";
+type MenuLayoutMode = "left" | "top";
 type LineNotice = { type: "success" | "error" | "info"; text: string } | null;
 type PasswordNotice = { type: "success" | "error" | "info"; text: string } | null;
 type LineDialogState = {
@@ -107,6 +112,7 @@ type MenuTreeNode =
 type SettingRecord = Record<string, unknown>;
 
 const firstTab: WorkTab = { id: "home", title: "ภาพรวม ERP", route: "/menu", closable: false };
+const menuLayoutStorageKey = "bc_menu_layout_mode";
 const SOCIAL_POLL_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_SOCIAL_POLL_INTERVAL_MS = 2000;
 const emptyLineDialog: LineDialogState = {
@@ -177,7 +183,7 @@ function normalizeSettingRecords(payload: unknown): SettingRecord[] {
 
 function isWorkspaceOwner(workspace: WorkspaceSession | null, auth: AuthSession | null): boolean {
   if (!workspace) return false;
-  if (workspace.shop.iscreator) return true;
+  if (workspace.shop.is_creator) return true;
   if (Number(workspace.shop.role) === 2) return true;
   const creator = stringValue(workspace.shop.createdby ?? workspace.shopInfo?.createdby).toLowerCase();
   const identities = [auth?.username, auth?.profile?.email].map((item) => stringValue(item).toLowerCase()).filter(Boolean);
@@ -186,7 +192,7 @@ function isWorkspaceOwner(workspace: WorkspaceSession | null, auth: AuthSession 
 
 function workspacePermissionKeys(workspace: WorkspaceSession): string[] {
   return Array.from(new Set([
-    stringValue(workspace.branch?.guidfixed),
+    stringValue(workspace.branch?.guid_fixed),
     stringValue(workspace.branch?.code),
     stringValue(workspace.shop.branchcode),
     "company",
@@ -270,6 +276,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const [menuUsageKey, setMenuUsageKey] = useState("");
   const [menuUsage, setMenuUsage] = useState<MenuUsageMap>({});
+  const [menuLayout, setMenuLayout] = useState<MenuLayoutMode>("left");
   const [sidebarHidden, setSidebarHidden] = useState(false);
   const [topChromeHidden, setTopChromeHidden] = useState(false);
   const [lineDialog, setLineDialog] = useState<LineDialogState>(emptyLineDialog);
@@ -309,6 +316,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     const savedLanguage = normalizeLanguage(localStorage.getItem("user_language") ?? initialLanguage);
     setLanguage(savedLanguage);
     document.documentElement.lang = savedLanguage;
+    setMenuLayout(localStorage.getItem(menuLayoutStorageKey) === "top" ? "top" : "left");
 
     const authRaw = localStorage.getItem(workspaceStorageKeys.auth);
     const workspaceRaw = localStorage.getItem(workspaceStorageKeys.workspace);
@@ -345,6 +353,11 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     document.documentElement.lang = language;
     localStorage.setItem("user_language", language);
   }, [language]);
+
+  useEffect(() => {
+    localStorage.setItem(menuLayoutStorageKey, menuLayout);
+    if (menuLayout === "top") setSidebarHidden(true);
+  }, [menuLayout]);
 
   useEffect(() => {
     if (!authToken || !authBackendUrl) return;
@@ -414,6 +427,8 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   }, [activeSection, backendLanguage, language, rows]);
   const kpis = useMemo(() => buildKpis(rows, backendLanguage), [backendLanguage, rows]);
   const chartData = useMemo(() => buildChartData(rows, language, backendLanguage), [backendLanguage, language, rows]);
+  const activeWorkTab = useMemo(() => tabs.find((tab) => tab.id === activeTabId) ?? firstTab, [activeTabId, tabs]);
+  const activeTabNeedsFixedViewport = activeWorkTab.route === "/product_barcode";
 
   function openMenuItem(item: MenuItem) {
     if (!canAccessMenuItem(item)) return;
@@ -652,10 +667,14 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     lastContentScrollTopRef.current = nextScrollTop;
   }
 
+  const showLeftMenu = menuLayout === "left" && !sidebarHidden;
+  const menuLayoutLeftText = backendText(backendLanguage, "menu_layout_left", language === "th" ? "เมนูซ้าย" : "Left menu");
+  const menuLayoutTopText = backendText(backendLanguage, "menu_layout_top", language === "th" ? "เมนูบน" : "Top menu");
+
   return (
     <main className="min-h-dvh overflow-x-hidden bg-background text-foreground lg:h-dvh lg:overflow-hidden">
-      <div className={cn("grid min-h-dvh min-w-0 grid-cols-[minmax(0,1fr)] lg:h-dvh lg:overflow-hidden", !sidebarHidden && "lg:grid-cols-[280px_minmax(0,1fr)]")}>
-        {sidebarHidden ? null : (
+      <div className={cn("grid min-h-dvh min-w-0 grid-cols-[minmax(0,1fr)] lg:h-dvh lg:overflow-hidden", showLeftMenu && "lg:grid-cols-[280px_minmax(0,1fr)]")}>
+        {showLeftMenu ? (
         <aside className="max-h-dvh min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain border-b border-border bg-card/80 p-3 lg:sticky lg:top-0 lg:h-dvh lg:border-b-0 lg:border-r">
           <div className="mb-3 flex items-center gap-3 rounded-2xl border border-border bg-background p-3 shadow-sm">
             <div className="grid h-10 w-10 place-items-center rounded-2xl bg-primary text-primary-foreground">
@@ -700,7 +719,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
             })}
           </nav>
         </aside>
-        )}
+        ) : null}
 
         <section
           className="min-w-0 lg:flex lg:h-dvh lg:min-h-0 lg:flex-col lg:overflow-hidden"
@@ -714,11 +733,40 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
           >
             <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex min-w-0 items-center gap-2">
-                {sidebarHidden ? (
+                {menuLayout === "left" && sidebarHidden ? (
                   <Button type="button" variant="outline" size="icon" className="shrink-0" aria-label={mt(backendLanguage, "showMenu")} title={mt(backendLanguage, "showMenu")} onClick={() => setSidebarHidden(false)}>
                     <PanelLeftOpen className="h-4 w-4" />
                   </Button>
                 ) : null}
+                <div className="flex shrink-0 rounded-lg border border-border bg-card p-0.5">
+                  <Button
+                    type="button"
+                    variant={menuLayout === "left" ? "secondary" : "ghost"}
+                    size="sm"
+                    className="h-8 gap-1 px-2"
+                    aria-label={menuLayoutLeftText}
+                    title={menuLayoutLeftText}
+                    onClick={() => {
+                      setMenuLayout("left");
+                      setSidebarHidden(false);
+                    }}
+                  >
+                    <PanelLeftOpen className="h-4 w-4" />
+                    <span className="hidden sm:inline">{menuLayoutLeftText}</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={menuLayout === "top" ? "secondary" : "ghost"}
+                    size="sm"
+                    className="h-8 gap-1 px-2"
+                    aria-label={menuLayoutTopText}
+                    title={menuLayoutTopText}
+                    onClick={() => setMenuLayout("top")}
+                  >
+                    <LayoutPanelTop className="h-4 w-4" />
+                    <span className="hidden sm:inline">{menuLayoutTopText}</span>
+                  </Button>
+                </div>
               </div>
 
               <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-2 lg:flex-1">
@@ -773,10 +821,6 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                         <p className="truncate font-semibold text-foreground">{loginIdentity}</p>
                       </div>
                     </div>
-                    <DropdownMenuItem onClick={() => router.push("/settings")}>
-                      <Settings className="h-4 w-4" />
-                      {backendText(backendLanguage, "settings")}
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setPasswordDialogOpen(true)}>
                       <KeyRound className="h-4 w-4" />
                       {changePasswordText}
@@ -799,6 +843,16 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
               </div>
             </div>
           </header>
+          {menuLayout === "top" ? (
+            <TopMenuChrome
+              activeSection={activeSection}
+              backendLanguage={backendLanguage}
+              canAccessMenuItem={canAccessMenuItem}
+              language={language}
+              onOpenItem={openMenuItem}
+              onSelectSection={setActiveSection}
+            />
+          ) : null}
 
           <div className={cn(
             "grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3 p-3 lg:min-h-0 lg:flex-1 lg:overflow-hidden",
@@ -825,7 +879,13 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
               <OpenTabs tabs={tabs} activeTabId={activeTabId} backendLanguage={backendLanguage} language={language} onSelect={setActiveTabId} onClose={closeTab} onReorder={reorderTabs} />
             </div>
 
-            <div className="min-w-0 lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:pr-1" onScroll={handleContentScroll}>
+            <div
+              className={cn(
+                "min-w-0 lg:min-h-0 lg:overscroll-contain",
+                activeTabNeedsFixedViewport ? "lg:h-full lg:overflow-hidden" : "lg:overflow-y-auto lg:pr-1",
+              )}
+              onScroll={handleContentScroll}
+            >
               {menuQuery.isLoading ? (
                 <DashboardLoading backendLanguage={backendLanguage} />
               ) : menuQuery.isError ? (
@@ -840,11 +900,11 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid min-w-0 grid-cols-[minmax(0,1fr)]">
+                <div className={cn("grid min-w-0 grid-cols-[minmax(0,1fr)]", activeTabNeedsFixedViewport && "lg:h-full lg:min-h-0")}>
                   {tabs.map((tab) => (
                     <section
                       aria-hidden={tab.id !== activeTabId}
-                      className="min-w-0"
+                      className={cn("min-w-0", tab.route === "/product_barcode" && "lg:h-full lg:min-h-0 lg:overflow-hidden")}
                       hidden={tab.id !== activeTabId}
                       key={tab.id}
                       role="tabpanel"
@@ -999,6 +1059,206 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
         </div>
       ) : null}
     </main>
+  );
+}
+
+function TopMenuChrome({
+  activeSection,
+  backendLanguage,
+  canAccessMenuItem,
+  language,
+  onOpenItem,
+  onSelectSection,
+}: {
+  activeSection: string;
+  backendLanguage: BackendLanguageDictionary;
+  canAccessMenuItem: (item: MenuItem) => boolean;
+  language: LanguageCode;
+  onOpenItem: (item: MenuItem) => void;
+  onSelectSection: (sectionId: string) => void;
+}) {
+  const [openSectionId, setOpenSectionId] = useState<string | null>(null);
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  const [openSectionLeft, setOpenSectionLeft] = useState(0);
+  const [flyoutSide, setFlyoutSide] = useState<"left" | "right">("right");
+  const menuRootRef = useRef<HTMLDivElement | null>(null);
+  const openSection = MENU_SECTIONS.find((section) => section.id === openSectionId) ?? null;
+  const visibleGroups = openSection
+    ? openSection.groups
+        .map((group) => ({ group, items: getVisibleItems(group.items, language, "", backendLanguage) }))
+        .filter((entry) => entry.items.length > 0)
+    : [];
+  const activeGroupEntry = visibleGroups.find((entry) => entry.group.id === activeGroupId) ?? visibleGroups[0] ?? null;
+  const activeGroupIndex = Math.max(0, visibleGroups.findIndex((entry) => entry.group.id === activeGroupEntry?.group.id));
+
+  useEffect(() => {
+    if (!openSectionId) return;
+
+    function closeOnOutsidePointer(event: PointerEvent) {
+      const target = event.target;
+      if (target instanceof Node && menuRootRef.current?.contains(target)) return;
+      setOpenSectionId(null);
+      setActiveGroupId(null);
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setOpenSectionId(null);
+      setActiveGroupId(null);
+    }
+
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [openSectionId]);
+
+  function positionOpenSection(target: HTMLElement, section: MenuSection) {
+    const rect = target.getBoundingClientRect();
+    const firstPanelWidth = 434;
+    const secondPanelWidth = 480;
+    const gap = 4;
+    const viewportPadding = 12;
+    setOpenSectionLeft(target.offsetLeft);
+    setFlyoutSide(rect.left + firstPanelWidth + gap + secondPanelWidth <= window.innerWidth - viewportPadding ? "right" : "left");
+    setOpenSectionId(section.id);
+    setActiveGroupId(section.groups[0]?.id ?? null);
+  }
+
+  return (
+    <nav className="shrink-0 border-b border-border bg-card/95 px-3 py-1.5" aria-label={mt(backendLanguage, "navigation")}>
+      <div className="relative" ref={menuRootRef}>
+      <div className="flex min-w-0 gap-1 overflow-x-auto">
+        <Button
+          type="button"
+          variant={activeSection === "all" ? "secondary" : "ghost"}
+          size="sm"
+          className="h-8 shrink-0 gap-1 px-2"
+          onClick={() => {
+            setOpenSectionId(null);
+            setActiveGroupId(null);
+            onSelectSection("all");
+          }}
+        >
+          <LayoutDashboard className="h-4 w-4" />
+          {mt(backendLanguage, "overview")}
+        </Button>
+        {MENU_SECTIONS.map((section) => {
+          const sectionLabel = menuText(section.title, language, backendLanguage);
+          return (
+            <Button
+              key={section.id}
+              type="button"
+              variant={activeSection === section.id ? "secondary" : "ghost"}
+              size="sm"
+              className="h-8 shrink-0 gap-1 px-2"
+              aria-expanded={openSectionId === section.id}
+              onMouseEnter={(event) => {
+                onSelectSection(section.id);
+                positionOpenSection(event.currentTarget, section);
+              }}
+              onFocus={(event) => {
+                onSelectSection(section.id);
+                positionOpenSection(event.currentTarget, section);
+              }}
+              onClick={(event) => {
+                onSelectSection(section.id);
+                const rect = event.currentTarget.getBoundingClientRect();
+                const firstPanelWidth = 434;
+                const secondPanelWidth = 480;
+                setOpenSectionLeft(event.currentTarget.offsetLeft);
+                setFlyoutSide(rect.left + firstPanelWidth + 4 + secondPanelWidth <= window.innerWidth - 12 ? "right" : "left");
+                setOpenSectionId((current) => {
+                  const next = current === section.id ? null : section.id;
+                  setActiveGroupId(next ? section.groups[0]?.id ?? null : null);
+                  return next;
+                });
+              }}
+            >
+              <SectionIcon sectionId={section.id} />
+              <span>{sectionLabel}</span>
+              <Badge variant="outline" className="h-5 px-1.5">{countSectionItems(section)}</Badge>
+              <ChevronDown className={cn("h-3.5 w-3.5 opacity-70 transition", openSectionId === section.id && "rotate-180")} />
+            </Button>
+          );
+        })}
+      </div>
+      {openSection ? (
+        <div
+          className="absolute top-[calc(100%+6px)] z-40 flex overflow-visible rounded-lg border border-border bg-popover text-popover-foreground shadow-lg"
+          style={{ left: `${openSectionLeft}px` }}
+        >
+          <div className="w-72 min-w-0 max-w-[calc(100vw-1.5rem)] overflow-y-auto p-1.5">
+            <div className="mb-1 px-2 text-xs font-semibold text-muted-foreground">
+              {menuText(openSection.title, language, backendLanguage)}
+            </div>
+            <div className="grid gap-1">
+              {visibleGroups.map(({ group, items }) => {
+                const active = activeGroupEntry?.group.id === group.id;
+                return (
+                  <button
+                    key={group.id}
+                    type="button"
+                    className={cn(
+                      "flex h-9 min-w-0 items-center justify-between gap-2 rounded-md px-2 text-left text-sm hover:bg-muted",
+                      active && "bg-primary/10 text-primary",
+                    )}
+                    onClick={() => setActiveGroupId(group.id)}
+                    onMouseEnter={() => setActiveGroupId(group.id)}
+                  >
+                    <span className="truncate">{menuText(group.title, language, backendLanguage)}</span>
+                    <span className="flex shrink-0 items-center gap-1">
+                      <Badge variant={active ? "secondary" : "outline"} className="h-5 px-1.5">{items.length}</Badge>
+                      <ChevronDown className={cn("h-3.5 w-3.5 -rotate-90 opacity-70", active && "opacity-100")} />
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {activeGroupEntry ? (
+            <div
+              className="absolute z-50 w-80 max-w-[calc(100vw-19rem)] overflow-y-auto rounded-lg border border-border bg-popover p-1.5 text-popover-foreground shadow-lg"
+              style={{
+                maxHeight: "72vh",
+                top: `${28 + activeGroupIndex * 40}px`,
+                ...(flyoutSide === "left" ? { right: "calc(100% + 4px)" } : { left: "calc(100% + 4px)" }),
+              }}
+            >
+              <div className="mb-1 flex items-center justify-between gap-2 px-2 text-xs font-semibold text-muted-foreground">
+                <span className="truncate">{menuText(activeGroupEntry.group.title, language, backendLanguage)}</span>
+                <Badge variant="secondary" className="h-5 px-1.5">{activeGroupEntry.items.length}</Badge>
+              </div>
+              <div className="grid gap-1">
+                {activeGroupEntry.items.map((item) => {
+                  const locked = !canAccessMenuItem(item);
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      disabled={locked}
+                      className="flex h-9 w-full min-w-0 items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-55"
+                      onClick={() => {
+                        setOpenSectionId(null);
+                        setActiveGroupId(null);
+                        onOpenItem(item);
+                      }}
+                    >
+                      <MenuRouteIcon item={item} size={15} />
+                      <span className="min-w-0 flex-1 truncate">{menuText(item.label, language, backendLanguage)}</span>
+                      {locked ? <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      </div>
+    </nav>
   );
 }
 
@@ -1554,6 +1814,18 @@ function WorkTabPanel({ activeTab, backendLanguage, language, tabCount }: { acti
 
   if (activeTab.route === "/line-oa") {
     return <LineOaLinkScreen embedded language={language} />;
+  }
+
+  if (activeTab.route === "/product_barcode") {
+    return <ProductBarcodeScreen embedded language={language} />;
+  }
+
+  if (activeTab.route === "/product_barcode_shelf") {
+    return <ProductBarcodeShelfScreen embedded language={language} />;
+  }
+
+  if (activeTab.route === "/price_history") {
+    return <ProductPriceHistoryScreen embedded language={language} />;
   }
 
   const systemSettingConfig = getSystemSettingConfig(activeTab.route);

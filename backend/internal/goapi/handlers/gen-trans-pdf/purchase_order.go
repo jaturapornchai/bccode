@@ -17,7 +17,7 @@ func GeneratePurchaseOrderPDF(document map[string]interface{}, payload GenPDFPay
 
 	// ตรวจสอบว่าเป็น multi-currency หรือไม่
 	docCurrency := GetStringValue(document, "doc_currency")
-	exchangeRate := GetFloatValue(document, "exchangerate")
+	exchangeRate := GetFloatValue(document, "exchange_rate")
 
 	// ถ้าไม่มี doc_currency หรือ exchangeRate = 0/1 → ใช้ base PDF ปกติ
 	if docCurrency == "" || exchangeRate == 0 || exchangeRate == 1 {
@@ -94,7 +94,7 @@ func generatePurchaseOrderMultiCurrencyPDF(document map[string]interface{}, payl
 func renderPOCurrencyInfo(pdf *gofpdf.Fpdf, doc map[string]interface{}, fontFamily string, contentWidth float64, theme Theme, fontSizes FontSizes, labels Labels) {
 	docCurrency := GetStringValue(doc, "doc_currency")
 	docCurrencySymbol := GetStringValue(doc, "doc_currencysymbol")
-	exchangeRate := GetFloatValue(doc, "exchangerate")
+	exchangeRate := GetFloatValue(doc, "exchange_rate")
 
 	fontSize := float64(fontSizes.Header) - 1
 
@@ -120,7 +120,7 @@ func renderPODetailsTable(pdf *gofpdf.Fpdf, doc map[string]interface{}, payload 
 	labels := GetLabels(payload.Language)
 
 	docCurrencySymbol := GetStringValue(doc, "doc_currencysymbol")
-	exchangeRate := GetFloatValue(doc, "exchangerate")
+	exchangeRate := GetFloatValue(doc, "exchange_rate")
 
 	// ตรวจสอบว่าต้องการแสดง 2 สกุลเงินหรือไม่ (default: true)
 	showDualCurrency := true
@@ -198,7 +198,7 @@ func renderPODetailsTable(pdf *gofpdf.Fpdf, doc map[string]interface{}, payload 
 	sortedDetails := make([]detailItem, 0, len(details))
 	for _, d := range details {
 		if detailMap, ok := d.(map[string]interface{}); ok {
-			lineNum := GetIntValue(detailMap, "linenumber")
+			lineNum := GetIntValue(detailMap, "line_number")
 			sortedDetails = append(sortedDetails, detailItem{lineNumber: lineNum, data: detailMap})
 		}
 	}
@@ -233,7 +233,7 @@ func renderPODetailsTable(pdf *gofpdf.Fpdf, doc map[string]interface{}, payload 
 
 		// ถ้าไม่มี price_doc → คำนวณจาก price / exchangeRate
 		priceBase := GetFloatValue(detail, "price")
-		sumAmountBase := GetFloatValue(detail, "sumamount")
+		sumAmountBase := GetFloatValue(detail, "sum_amount")
 		if priceDoc == 0 && priceBase > 0 && exchangeRate > 0 {
 			priceDoc = priceBase / exchangeRate
 		}
@@ -365,7 +365,7 @@ func renderPOSummary(pdf *gofpdf.Fpdf, doc map[string]interface{}, payload GenPD
 
 	docCurrency := GetStringValue(doc, "doc_currency")
 	docCurrencySymbol := GetStringValue(doc, "doc_currencysymbol")
-	exchangeRate := GetFloatValue(doc, "exchangerate")
+	exchangeRate := GetFloatValue(doc, "exchange_rate")
 
 	// ตรวจสอบว่าต้องการแสดง 2 สกุลเงินหรือไม่ (default: true)
 	showDualCurrency := true
@@ -374,7 +374,7 @@ func renderPOSummary(pdf *gofpdf.Fpdf, doc map[string]interface{}, payload GenPD
 	}
 
 	// ยอดรวม base currency (THB)
-	totalAmount := GetFloatValue(doc, "totalamount")
+	totalAmount := GetFloatValue(doc, "total_amount")
 	totalDiscount := GetFloatValue(doc, "totaldiscount")
 	totalVat := GetFloatValue(doc, "totalvatvalue")
 	totalAfterVat := GetFloatValue(doc, "totalaftervat")
@@ -404,7 +404,7 @@ func renderPOSummary(pdf *gofpdf.Fpdf, doc map[string]interface{}, payload GenPD
 		if details, ok := doc["details"].(primitive.A); ok {
 			for _, d := range details {
 				if detailMap, ok := d.(map[string]interface{}); ok {
-					totalAmount += GetFloatValue(detailMap, "sumamount")
+					totalAmount += GetFloatValue(detailMap, "sum_amount")
 				}
 			}
 		}

@@ -15,7 +15,7 @@ type ChequeReturn struct {
 }
 type ChequeReturnInfo struct {
 	models.DocIdentity `bson:"inline"`
-	ChequeReturn       `bson:"inline"`
+	ChequeReturn  `bson:"inline"`
 }
 
 func (ChequeReturnInfo) CollectionName() string {
@@ -24,12 +24,12 @@ func (ChequeReturnInfo) CollectionName() string {
 
 type ChequeReturnData struct {
 	models.ShopIdentity `bson:"inline"`
-	ChequeReturnInfo    `bson:"inline"`
+	ChequeReturnInfo  `bson:"inline"`
 }
 
 type ChequeReturnDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ChequeReturnData   `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ChequeReturnData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -46,7 +46,7 @@ func (ChequeReturnItemGuid) CollectionName() string {
 }
 
 type ChequeReturnActivity struct {
-	ChequeReturnData    `bson:"inline"`
+	ChequeReturnData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

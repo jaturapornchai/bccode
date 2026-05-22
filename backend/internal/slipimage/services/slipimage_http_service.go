@@ -166,7 +166,7 @@ func (svc SlipImageHttpService) DeleteSlipImageByGUIDs(shopID string, authUserna
 	defer ctxCancel()
 
 	deleteFilterQuery := map[string]interface{}{
-		"guidfixed": bson.M{"$in": GUIDs},
+		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
 	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)

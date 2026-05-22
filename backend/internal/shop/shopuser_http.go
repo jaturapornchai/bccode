@@ -1,15 +1,18 @@
 package shop
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/config"
 	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/pkg/microservice"
+	"strings"
 )
 
 type IShopMemberHttp interface{}
@@ -361,7 +364,18 @@ func (h ShopMemberHttp) SyncLineData(ctx microservice.IContext) error {
 		return err
 	}
 
-	h.ms.Logger.Debug("SyncLineData - input: " + input)
+	configuredAPIKey := strings.TrimSpace(os.Getenv("LINE_SYNC_API_KEY"))
+	requestAPIKey := strings.TrimSpace(req.APIKey)
+	if configuredAPIKey == "" {
+		h.ms.Logger.Error("SyncLineData - LINE_SYNC_API_KEY is not configured")
+		ctx.ResponseError(http.StatusUnauthorized, "LINE sync authentication is not configured")
+		return errors.New("line sync api key is not configured")
+	}
+	if requestAPIKey == "" || subtle.ConstantTimeCompare([]byte(requestAPIKey), []byte(configuredAPIKey)) != 1 {
+		h.ms.Logger.Error("SyncLineData - unauthorized request for shop: " + req.ShopID)
+		ctx.ResponseError(http.StatusUnauthorized, "Unauthorized")
+		return errors.New("line sync unauthorized")
+	}
 
 	// ใช้ employee_code หรือ username
 	username := req.Username
@@ -373,6 +387,8 @@ func (h ShopMemberHttp) SyncLineData(ctx microservice.IContext) error {
 		ctx.ResponseError(400, "shop_id and username/employee_code are required")
 		return errors.New("missing required fields")
 	}
+
+	h.ms.Logger.Debug("SyncLineData - authenticated request for: " + username + " in shop: " + req.ShopID)
 
 	// Sync LINE data
 	err = h.svc.SyncLineData(req.ShopID, username, req.LineUserID, req.LineDisplayName, req.LinePictureURL)

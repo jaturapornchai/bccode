@@ -72,7 +72,7 @@ func (svc ImagesHttp) GetProductImage(ctx microservice.IContext) error {
 	// }
 
 	shopId := ctx.Param("shopid")
-	itemguid := ctx.Param("itemguid")
+	itemguid := ctx.Param("item_guid")
 	imageIndex := ctx.Param("index")
 
 	if imageIndex == "" {

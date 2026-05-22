@@ -15,7 +15,7 @@ type DepositRefund struct {
 }
 type DepositRefundInfo struct {
 	models.DocIdentity `bson:"inline"`
-	DepositRefund      `bson:"inline"`
+	DepositRefund  `bson:"inline"`
 }
 
 func (DepositRefundInfo) CollectionName() string {
@@ -24,11 +24,11 @@ func (DepositRefundInfo) CollectionName() string {
 
 type DepositRefundData struct {
 	models.ShopIdentity `bson:"inline"`
-	DepositRefundInfo   `bson:"inline"`
+	DepositRefundInfo  `bson:"inline"`
 }
 
 type DepositRefundDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	DepositRefundData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -46,7 +46,7 @@ func (DepositRefundItemGuid) CollectionName() string {
 }
 
 type DepositRefundActivity struct {
-	DepositRefundData   `bson:"inline"`
+	DepositRefundData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

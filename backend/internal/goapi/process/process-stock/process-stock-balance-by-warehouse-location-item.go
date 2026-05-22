@@ -192,11 +192,11 @@ ORDER BY lc.whcode, lc.locationcode, lc.itemcode
 		whCode := mypg.GetStringValue(row, "whcode")
 		locationCode := mypg.GetStringValue(row, "locationcode")
 		itemCode := mypg.GetStringValue(row, "itemcode")
-		itemName := mypg.GetStringValue(row, "itemname")
+		itemName := mypg.GetStringValue(row, "item_name")
 		unitCode := mypg.GetStringValue(row, "unitcode")
-		unitName := mypg.GetStringValue(row, "unitname")
+		unitName := mypg.GetStringValue(row, "unit_name")
 		barcodeList := mypg.GetStringValue(row, "barcodelist")
-		balanceQty := mypg.GetFloat64Value(row, "balanceqty")
+		balanceQty := mypg.GetFloat64Value(row, "balance_qty")
 
 		var countpacking int64
 		if row["countpacking"] != nil {
@@ -291,7 +291,7 @@ ORDER BY lc.whcode, lc.locationcode, lc.itemcode
 	logger.Info("Total records to insert: %d", totalLine)
 
 	// Use bulk insert for PostgreSQL
-	columns := []string{"guid", "docdatetime", "linenumber", "datajson"}
+	columns := []string{"guid", "docdatetime", "line_number", "datajson"}
 	var records [][]any
 
 	for _, b := range wareHouseDataList {

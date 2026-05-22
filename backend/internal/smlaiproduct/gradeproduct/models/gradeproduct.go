@@ -10,13 +10,13 @@ const gradeproductCollectionName = "gradeProductMaster"
 
 type GradeProduct struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code                     string          `json:"code" bson:"code"`
-	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	Code string          `json:"code" bson:"code"`
+	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 }
 
 type GradeProductInfo struct {
 	models.DocIdentity `bson:"inline"`
-	GradeProduct       `bson:"inline"`
+	GradeProduct  `bson:"inline"`
 }
 
 func (GradeProductInfo) CollectionName() string {
@@ -25,12 +25,12 @@ func (GradeProductInfo) CollectionName() string {
 
 type GradeProductData struct {
 	models.ShopIdentity `bson:"inline"`
-	GradeProductInfo    `bson:"inline"`
+	GradeProductInfo  `bson:"inline"`
 }
 
 type GradeProductDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	GradeProductData   `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	GradeProductData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -47,7 +47,7 @@ func (GradeProductItemGuid) CollectionName() string {
 }
 
 type GradeProductActivity struct {
-	GradeProductData    `bson:"inline"`
+	GradeProductData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

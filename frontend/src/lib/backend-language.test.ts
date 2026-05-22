@@ -14,8 +14,12 @@ describe("backend language helpers", () => {
     expect(backendText({}, "system_settings", "ตั้งค่าระบบ")).toBe("ตั้งค่าระบบ");
   });
 
-  it("keeps missing translations visible as key ids after backend dictionary is ready", () => {
-    expect(backendText(markedDictionary({}, true), "missing_key", "fallback")).toBe("missing_key");
+  it("uses provided fallback text even after backend dictionary is ready", () => {
+    expect(backendText(markedDictionary({}, true), "missing_key", "fallback")).toBe("fallback");
+  });
+
+  it("keeps missing translations visible as key ids when no fallback is provided", () => {
+    expect(backendText(markedDictionary({}, true), "missing_key")).toBe("missing_key");
   });
 
   it("reads language readiness markers without exposing them as translations", () => {

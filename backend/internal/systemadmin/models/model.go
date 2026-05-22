@@ -6,5 +6,5 @@ type RequestReSyncTenant struct {
 
 type RequestReSyncTenantByDate struct {
 	ShopID string `json:"shopid"`
-	Date   string `json:"date"`
+	Date string `json:"date"`
 }

@@ -15,7 +15,7 @@ type SaleDebitNote struct {
 }
 type SaleDebitNoteInfo struct {
 	models.DocIdentity `bson:"inline"`
-	SaleDebitNote      `bson:"inline"`
+	SaleDebitNote  `bson:"inline"`
 }
 
 func (SaleDebitNoteInfo) CollectionName() string {
@@ -24,11 +24,11 @@ func (SaleDebitNoteInfo) CollectionName() string {
 
 type SaleDebitNoteData struct {
 	models.ShopIdentity `bson:"inline"`
-	SaleDebitNoteInfo   `bson:"inline"`
+	SaleDebitNoteInfo  `bson:"inline"`
 }
 
 type SaleDebitNoteDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	SaleDebitNoteData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -46,7 +46,7 @@ func (SaleDebitNoteItemGuid) CollectionName() string {
 }
 
 type SaleDebitNoteActivity struct {
-	SaleDebitNoteData   `bson:"inline"`
+	SaleDebitNoteData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

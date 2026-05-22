@@ -61,7 +61,7 @@ func NewPurchasepartialRepository(pst microservice.IPersisterMongo) *Purchasepar
 func (repo PurchasepartialRepository) FindLastDocNo(ctx context.Context, shopID string, prefixDocNo string) (models.PurchasepartialDoc, error) {
 	filters := bson.M{
 		"shopid": shopID,
-		"deletedat": bson.M{
+		"deleted_at": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

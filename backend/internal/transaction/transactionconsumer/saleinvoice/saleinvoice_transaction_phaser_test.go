@@ -111,15 +111,15 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 	giveInput := `{
 		"id": "000000000000000000000000",
 		"shopid": "2Eh6e3pfWvXTp0yV3CyFEhKPjdI",
-		"guidfixed": "2TKOzSqEElEKNuIacaMHxbc4GgU",
+		"guid_fixed": "2TKOzSqEElEKNuIacaMHxbc4GgU",
 		"docno": "a91d29f5-67af-4334-8999-8bc49ed73b4a",
 		"docdatetime": "2023-07-31T07:29:28.000Z",
 		"transflag": 12,
-		"guidref": "zzzzz",
+		"guid_ref": "zzzzz",
 		"docreftype": 4,
 		"docrefno": "REFNO",
 		"docrefdate": "0001-01-01T00:00:00Z",
-		"doctype": 1,
+		"doc_type": 1,
 		"branch": {
 			"code": "branch01",
 			"names": [
@@ -135,7 +135,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 		"taxdocdate": "2023-07-31T07:29:28.000Z",
 		"inquirytype": 1,
 		"vatrate": 7,
-		"vattype": 1,
+		"vat_type": 1,
 		"discountword": "100",
 		"totaldiscount": 100,
 		"totalvalue": 2000,
@@ -143,8 +143,8 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 		"totalaftervat": 2,
 		"totalvatvalue": 51.02678028444716,
 		"totalexceptvat": 1000,
-		"totalamount": 2000,
-		"totalcost": 0,
+		"total_amount": 2000,
+		"total_cost": 0,
 		"salecode": "",
 		"posid": "",
 		"salename": "",
@@ -161,9 +161,9 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 		"ispos": true,
 		"details": [
 			{
-				"linenumber": 1,
+				"line_number": 1,
 				"docdatetime": "2023-07-31T07:29:28.566Z",
-				"itemguid": "-",
+				"item_guid": "-",
 				"docref": "--",
 				"docrefdatetime": "0001-01-01T00:00:00Z",
 				"barcode": "8850086130359",
@@ -171,7 +171,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 				"whcode": "POSWH000",
 				"locationcode": "POSLC000",
 				"price": 6,
-				"itemtype": 0,
+				"item_type": 0,
 				"remark": "-",
 				"itemcode": "",
 				"priceexcludevat": 99,
@@ -179,12 +179,12 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 				"discount": "2",
 				"discountamount": 2,
 				"totalvaluevat": 75,
-				"sumamount": 1250,
+				"sum_amount": 1250,
 				"sumamountexcludevat": 1245,
 				"sumamountchoice":100,
 				"dividevalue": 1,
 				"standvalue": 1,
-				"vattype": 0,
+				"vat_type": 0,
 				"inquirytype": 0,
 				"towhcode": "",
 				"tolocationcode": "",
@@ -203,7 +203,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 				],
 				"whnames": [],
 				"averagecost": 0,
-				"taxtype": 0,
+				"tax_type": 0,
 				"laststatus": 0,
 				"ispos": 1,
 				"multiunit": false,
@@ -264,11 +264,11 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, get.ShopID, want.ShopID, "shopid")
-	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guidfixed")
+	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guid_fixed")
 	assert.Equal(t, get.TransFlag, want.TransFlag, "transflag")
 	assert.Equal(t, get.DocNo, want.DocNo, "docno")
 	assert.Equal(t, get.DocDate, want.DocDate, "docdate")
-	assert.Equal(t, get.GuidRef, want.GuidRef, "guidref")
+	assert.Equal(t, get.GuidRef, want.GuidRef, "guid_ref")
 	assert.Equal(t, get.DocRefType, want.DocRefType, "docreftype")
 	assert.Equal(t, get.DocRefNo, want.DocRefNo, "docrefno")
 	assert.Equal(t, get.DocRefDate, want.DocRefDate, "docrefdate")
@@ -277,7 +277,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 	assert.Equal(t, get.Description, want.Description, "description")
 	assert.Equal(t, get.InquiryType, want.InquiryType, "inquirytype")
 	assert.Equal(t, get.VatRate, want.VatRate, "vatrate")
-	assert.Equal(t, get.VatType, want.VatType, "vattype")
+	assert.Equal(t, get.VatType, want.VatType, "vat_type")
 	assert.Equal(t, get.DiscountWord, want.DiscountWord, "discountword")
 	assert.Equal(t, get.TotalDiscount, want.TotalDiscount, "totaldiscount")
 	assert.Equal(t, get.TotalValue, want.TotalValue, "totalvalue")
@@ -285,7 +285,7 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 	assert.Equal(t, get.TotalExceptVat, want.TotalExceptVat, "totalexceptvat")
 	assert.Equal(t, get.TotalVatValue, want.TotalVatValue, "totalvatvalue")
 	assert.Equal(t, get.TotalAfterVat, want.TotalAfterVat, "totalaftervat")
-	assert.Equal(t, get.TotalAmount, want.TotalAmount, "totalamount")
+	assert.Equal(t, get.TotalAmount, want.TotalAmount, "total_amount")
 
 	assert.Equal(t, get.DebtorCode, want.DebtorCode, "creditorcode")
 	assert.Equal(t, *get.DebtorNames[0].Name, "ลูกค้าทั่วไป", "creditorname")
@@ -341,19 +341,19 @@ func TestSaleInvoiceTransactionPhaser(t *testing.T) {
 func TestDataFromPOS(t *testing.T) {
 	rawData := `{
 		"shopid": "2Eh6e3pfWvXTp0yV3CyFEhKPjdI",
-		"guidfixed": "2TKOzSqEElEKNuIacaMHxbc4GgU",
+		"guid_fixed": "2TKOzSqEElEKNuIacaMHxbc4GgU",
 		"docno": "002240212-0009",
 		"docdatetime": "2024-02-12T07:51:56.336Z",
-		"guidref": "",
+		"guid_ref": "",
 		"transflag": 0,
 		"docreftype": 0,
 		"docrefno": "",
 		"docrefdate": "2024-02-12T07:51:56.336Z",
 		"taxdocdate": "2024-02-12T07:51:56.336Z",
 		"taxdocno": "002240212-0009",
-		"doctype": 0,
+		"doc_type": 0,
 		"inquirytype": 1,
-		"vattype": 3,
+		"vat_type": 3,
 		"vatrate": 7,
 		"custcode": "",
 		"custnames": [
@@ -372,8 +372,8 @@ func TestDataFromPOS(t *testing.T) {
 		"totalaftervat": 599,
 		"totalbeforevat": 599,
 		"totalvatvalue": 0,
-		"totalamount": 599,
-		"totalcost": 0,
+		"total_amount": 599,
+		"total_cost": 0,
 		"posid": "002",
 		"cashiercode": "001",
 		"salecode": "",
@@ -391,7 +391,7 @@ func TestDataFromPOS(t *testing.T) {
 		"paymentdetailraw": "[]",
 		"paycashamount": 600,
 		"branch": {
-		  "guidfixed": "",
+		  "guid_fixed": "",
 		  "code": "b01",
 		  "names": [
 			{
@@ -444,7 +444,7 @@ func TestDataFromPOS(t *testing.T) {
 		  {
 			"manufacturerguid": "",
 			"inquirytype": 0,
-			"linenumber": 1,
+			"line_number": 1,
 			"docdatetime": "2024-02-12T07:51:56.336Z",
 			"docref": "",
 			"docrefdatetime": "2024-02-12T07:51:56.336Z",
@@ -492,8 +492,8 @@ func TestDataFromPOS(t *testing.T) {
 				"isdelete": false
 			  }
 			],
-			"itemtype": 0,
-			"itemguid": "2Pxa9joPa9U9kjwpD5W6DAqSOfy",
+			"item_type": 0,
+			"item_guid": "2Pxa9joPa9U9kjwpD5W6DAqSOfy",
 			"qty": 1,
 			"totalqty": 1,
 			"price": 89,
@@ -501,18 +501,18 @@ func TestDataFromPOS(t *testing.T) {
 			"discountamount": 0,
 			"totalvaluevat": 0,
 			"priceexcludevat": 0,
-			"sumamount": 89,
+			"sum_amount": 89,
 			"sumamountexcludevat": 0,
 			"dividevalue": 1,
 			"standvalue": 1,
-			"vattype": 0,
+			"vat_type": 0,
 			"remark": "",
 			"multiunit": false,
 			"sumofcost": 0,
 			"averagecost": 0,
 			"laststatus": 0,
 			"ispos": 1,
-			"taxtype": 0,
+			"tax_type": 0,
 			"vatcal": 0,
 			"whcode": "00000",
 			"whnames": [
@@ -566,7 +566,7 @@ func TestDataFromPOS(t *testing.T) {
 		  {
 			"manufacturerguid": "",
 			"inquirytype": 0,
-			"linenumber": 2,
+			"line_number": 2,
 			"docdatetime": "2024-02-12T07:51:56.336Z",
 			"docref": "",
 			"docrefdatetime": "2024-02-12T07:51:56.336Z",
@@ -614,8 +614,8 @@ func TestDataFromPOS(t *testing.T) {
 				"isdelete": false
 			  }
 			],
-			"itemtype": 0,
-			"itemguid": "ztdahox00x0HofwplDPXykoCaq9",
+			"item_type": 0,
+			"item_guid": "ztdahox00x0HofwplDPXykoCaq9",
 			"qty": 1,
 			"totalqty": 1,
 			"price": 169,
@@ -623,18 +623,18 @@ func TestDataFromPOS(t *testing.T) {
 			"discountamount": 0,
 			"totalvaluevat": 0,
 			"priceexcludevat": 0,
-			"sumamount": 169,
+			"sum_amount": 169,
 			"sumamountexcludevat": 0,
 			"dividevalue": 1,
 			"standvalue": 1,
-			"vattype": 0,
+			"vat_type": 0,
 			"remark": "",
 			"multiunit": false,
 			"sumofcost": 0,
 			"averagecost": 0,
 			"laststatus": 0,
 			"ispos": 1,
-			"taxtype": 0,
+			"tax_type": 0,
 			"vatcal": 0,
 			"whcode": "00000",
 			"whnames": [
@@ -700,5 +700,5 @@ func TestDataFromPOS(t *testing.T) {
 	assert.Equal(t, "b01", get.BranchCode, "branch code")
 	assert.Equal(t, "สาขาที่ 1", *(get.BranchNames[0].Name), "branch name")
 
-	assert.Equal(t, "2TKOzSqEElEKNuIacaMHxbc4GgU", get.GuidFixed, "guidfixed")
+	assert.Equal(t, "2TKOzSqEElEKNuIacaMHxbc4GgU", get.GuidFixed, "guid_fixed")
 }

@@ -61,7 +61,7 @@ func NewBankTransferRecordRepository(pst microservice.IPersisterMongo) *BankTran
 func (repo BankTransferRecordRepository) FindLastDocNo(ctx context.Context, shopID string, prefixDocNo string) (models.BankTransferRecordDoc, error) {
 	filters := bson.M{
 		"shopid": shopID,
-		"deletedat": bson.M{
+		"deleted_at": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

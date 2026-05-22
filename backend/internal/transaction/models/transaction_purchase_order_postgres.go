@@ -12,9 +12,9 @@ import (
 // ใบสั่งซื้อ
 type PurchaseOrderTransactionPG struct {
 	TransactionPG `gorm:"embedded;"`
-	CreditorCode  string                              `json:"creditorcode" gorm:"column:creditorcode"`
+	CreditorCode string                              `json:"creditorcode" gorm:"column:creditorcode"`
 	CreditorNames pkgModels.JSONB                     `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
-	Items         *[]PurchaseOrderDetailTransactionPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	Items *[]PurchaseOrderDetailTransactionPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
 }
 
 // รายละเอียด ใบสั่งซื้อ

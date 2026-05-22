@@ -12,10 +12,10 @@ func TestPurchaseReceiveStockPhaser(t *testing.T) {
 	giveMsg := `{
 	"id": "000000000000000000000000",
 	"shopid": "30LbRx3l0SLaK84gLpcF0W4x9Z0",
-	"guidfixed": "32Y3x1r0sqYOww0mRXrh0ftiIxV",
+	"guid_fixed": "32Y3x1r0sqYOww0mRXrh0ftiIxV",
 	"docno": "PP2025091100001",
 	"docdatetime": "2025-09-11T09:44:52.81Z",
-	"guidref": "5335d4d3-66ff-4b5d-a2c4-b9fb67e4db7c",
+	"guid_ref": "5335d4d3-66ff-4b5d-a2c4-b9fb67e4db7c",
 	"shiftdocno": "",
 	"devicename": "",
 	"guidpos": "",
@@ -23,7 +23,7 @@ func TestPurchaseReceiveStockPhaser(t *testing.T) {
 	"docreftype": 0,
 	"docreferences": [
 		{
-			"guidfixed": "32Y3jQOpI9qn0tKdvaI38LBdERe",
+			"guid_fixed": "32Y3jQOpI9qn0tKdvaI38LBdERe",
 			"docno": "PO2025091100003",
 			"docdatetime": "2025-09-11T09:41:11.668Z"
 		}
@@ -32,10 +32,10 @@ func TestPurchaseReceiveStockPhaser(t *testing.T) {
 	"docrefdate": "2025-09-11T09:44:52.81Z",
 	"taxdocdate": "2025-09-11T09:44:52.81Z",
 	"taxdocno": "",
-	"doctype": 0,
+	"doc_type": 0,
 	"imageurl": "",
 	"inquirytype": 0,
-	"vattype": 0,
+	"vat_type": 0,
 	"vatrate": 7,
 	"custcode": "AP0004",
 	"custnames": [
@@ -57,8 +57,8 @@ func TestPurchaseReceiveStockPhaser(t *testing.T) {
 	"totalaftervat": 10.7,
 	"totalbeforevat": 10,
 	"totalvatvalue": 0.7,
-	"totalamount": 10.7,
-	"totalcost": 0,
+	"total_amount": 10.7,
+	"total_cost": 0,
 	"posid": "",
 	"cashiercode": "",
 	"salecode": "",
@@ -77,7 +77,7 @@ func TestPurchaseReceiveStockPhaser(t *testing.T) {
 	"paycashamount": 0,
 	"paypointamount": 0,
 	"branch": {
-		"guidfixed": "30LbS0SnNu5luOq9DWkLp3vvoZK",
+		"guid_fixed": "30LbS0SnNu5luOq9DWkLp3vvoZK",
 		"code": "00000",
 		"names": [
 			{
@@ -144,7 +144,7 @@ func TestPurchaseReceiveStockPhaser(t *testing.T) {
 	"details": [
 		{
 			"inquirytype": 0,
-			"linenumber": 1,
+			"line_number": 1,
 			"docdatetime": "2025-09-11T09:44:52.81Z",
 			"docref": "PO2025091100003",
 			"docrefdatetime": "2025-09-11T09:41:11.668Z",
@@ -174,8 +174,8 @@ func TestPurchaseReceiveStockPhaser(t *testing.T) {
 					"isdelete": false
 				}
 			],
-			"itemtype": 0,
-			"itemguid": "30LblYDognbOaiUNd79MFGPdbI0",
+			"item_type": 0,
+			"item_guid": "30LblYDognbOaiUNd79MFGPdbI0",
 			"imageurl": "",
 			"description": "",
 			"qty": 1,
@@ -187,12 +187,12 @@ func TestPurchaseReceiveStockPhaser(t *testing.T) {
 			"discountamount": 0,
 			"totalvaluevat": 0.7,
 			"priceexcludevat": 10,
-			"sumamount": 10,
+			"sum_amount": 10,
 			"sumamountexcludevat": 10,
 			"refguid": "",
 			"dividevalue": 1,
 			"standvalue": 1,
-			"vattype": 0,
+			"vat_type": 0,
 			"remark": "",
 			"multiunit": true,
 			"issumpoint": false,
@@ -202,7 +202,7 @@ func TestPurchaseReceiveStockPhaser(t *testing.T) {
 			"laststatus": 0,
 			"ischoice": 0,
 			"ispos": 0,
-			"taxtype": 0,
+			"tax_type": 0,
 			"vatcal": 0,
 			"whcode": "00000",
 			"whnames": [
@@ -241,8 +241,8 @@ func TestPurchaseReceiveStockPhaser(t *testing.T) {
 			"tolocationnames": [],
 			"sku": "",
 			"extrajson": "",
-			"groupcode": "",
-			"groupnames": null,
+			"group_code": "",
+			"group_names": null,
 			"manufacturerguid": "",
 			"manufacturercode": "",
 			"manufacturernames": null,

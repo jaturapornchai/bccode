@@ -208,10 +208,10 @@ LEFT JOIN (
 		whcode := mypg.GetStringValue(row, "whcode")
 		itemCode := mypg.GetStringValue(row, "itemcode")
 		barcodeList := mypg.GetStringValue(row, "barcodelist")
-		balanceqty := mypg.GetFloat64Value(row, "balanceqty")
-		itemName := mypg.GetStringValue(row, "itemname")
+		balanceqty := mypg.GetFloat64Value(row, "balance_qty")
+		itemName := mypg.GetStringValue(row, "item_name")
 		unitcode := mypg.GetStringValue(row, "unitcode")
-		unitname := mypg.GetStringValue(row, "unitname")
+		unitname := mypg.GetStringValue(row, "unit_name")
 
 		var countpacking int64
 		if row["countpacking"] != nil {
@@ -283,7 +283,7 @@ LEFT JOIN (
 	logger.Info("Warehouse report ready: total rows=%d (elapsed=%s)", totalLine, time.Since(startTime))
 
 	// Use bulk insert for PostgreSQL
-	columns := []string{"guid", "docdatetime", "linenumber", "datajson"}
+	columns := []string{"guid", "docdatetime", "line_number", "datajson"}
 	var records [][]any
 
 	bulkStart := time.Now()

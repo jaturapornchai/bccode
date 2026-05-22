@@ -1,19 +1,19 @@
 package models
 
 type LineVerify struct {
-	ClientID  string `json:"client_id"`
+	ClientID string `json:"client_id"`
 	ExpiresIn int    `json:"expires_in"`
-	Scope     string `json:"scope"`
+	Scope string `json:"scope"`
 }
 
 type LineProfile struct {
-	UserID        string `json:"userId" `
-	DisplayName   string `json:"displayName" `
-	StatusMessage string `json:"statusMessage" `
-	PictureUrl    string `json:"pictureUrl" `
+	UserID string `json:"user_id" `
+	DisplayName string `json:"display_name" `
+	StatusMessage string `json:"status_message" `
+	PictureUrl string `json:"picture_url" `
 }
 
 type LineAuthRequest struct {
-	ShopID          string `json:"shopid"`
+	ShopID string `json:"shopid"`
 	LineAccessToken string `json:"lineaccesstoken"`
 }

@@ -54,10 +54,10 @@ func (repo SmsTransactionRepository) FindFilterSms(ctx context.Context, shopID s
 	filters := bson.M{
 		"shopid":         shopID,
 		"storefrontguid": storefrontGUID,
-		"deletedat":      bson.M{"$exists": false},
+		"deleted_at":      bson.M{"$exists": false},
 		"address":        address,
 		"status":         0,
-		"createdat": bson.M{
+		"created_at": bson.M{
 			"$gte": startTime,
 			"$lte": endTime,
 		},

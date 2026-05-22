@@ -38,7 +38,7 @@ func (repo ActivityRepository[TCU, TDEL]) FindDeletedPage(ctx context.Context, s
 
 	filterQueries := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$gte": lastUpdatedDate},
+		"deleted_at": bson.M{"$gte": lastUpdatedDate},
 	}
 
 	extraFilterQueries := repo.generateExtraFilters(extraFilters)
@@ -60,10 +60,10 @@ func (repo ActivityRepository[TCU, TDEL]) FindCreatedOrUpdatedPage(ctx context.C
 
 	filterQueries := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$not": bson.M{"$gte": lastUpdatedDate}},
+		"deleted_at": bson.M{"$not": bson.M{"$gte": lastUpdatedDate}},
 		"$or": []interface{}{
-			bson.M{"createdat": bson.M{"$gte": lastUpdatedDate}},
-			bson.M{"updatedat": bson.M{"$gte": lastUpdatedDate}},
+			bson.M{"created_at": bson.M{"$gte": lastUpdatedDate}},
+			bson.M{"updated_at": bson.M{"$gte": lastUpdatedDate}},
 		},
 	}
 
@@ -100,7 +100,7 @@ func (repo ActivityRepository[TCU, TDEL]) FindDeletedStep(ctx context.Context, s
 
 	filterQueries := bson.M{
 		"shopid":    shopIDFilter,
-		"deletedat": bson.M{"$gte": lastUpdatedDate},
+		"deleted_at": bson.M{"$gte": lastUpdatedDate},
 	}
 
 	extraFilterQueries := repo.generateExtraFilters(extraFilters)
@@ -139,10 +139,10 @@ func (repo ActivityRepository[TCU, TDEL]) FindCreatedOrUpdatedStep(ctx context.C
 
 	filterQueries := bson.M{
 		"shopid":    shopIDFilter,
-		"deletedat": bson.M{"$not": bson.M{"$gte": lastUpdatedDate}},
+		"deleted_at": bson.M{"$not": bson.M{"$gte": lastUpdatedDate}},
 		"$or": []interface{}{
-			bson.M{"createdat": bson.M{"$gte": lastUpdatedDate}},
-			bson.M{"updatedat": bson.M{"$gte": lastUpdatedDate}},
+			bson.M{"created_at": bson.M{"$gte": lastUpdatedDate}},
+			bson.M{"updated_at": bson.M{"$gte": lastUpdatedDate}},
 		},
 	}
 

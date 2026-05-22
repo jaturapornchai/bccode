@@ -1,6 +1,7 @@
 package repositories_test
 
 import (
+	"os"
 	"smlcloudplatform/internal/config"
 	"smlcloudplatform/internal/stockprocess/repositories"
 	"smlcloudplatform/pkg/microservice"
@@ -9,15 +10,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var repo repositories.IStockProcessPGRepository
+func newRealDBRepository(t *testing.T) repositories.IStockProcessPGRepository {
+	t.Helper()
+	if os.Getenv("BC_REAL_DB_TESTS") != "1" {
+		t.Skip("set BC_REAL_DB_TESTS=1 to run PostgreSQL integration tests")
+	}
 
-func init() {
 	cfg := config.NewConfig()
 	persister := microservice.NewPersister(cfg.PersisterConfig())
-	repo = repositories.NewStockProcessPGRepository(persister)
+	return repositories.NewStockProcessPGRepository(persister)
 }
 
 func TestGetStockProcessList(t *testing.T) {
+	repo := newRealDBRepository(t)
 
 	stockLists, err := repo.GetStockTransactionList("2IZS0jFeRXWPidSupyXN7zQIlaS", "888555")
 	assert.Nil(t, err)
@@ -26,6 +31,8 @@ func TestGetStockProcessList(t *testing.T) {
 }
 
 func TestUpdateStockTransaction(t *testing.T) {
+	repo := newRealDBRepository(t)
+
 	stockLists, err := repo.GetStockTransactionList("2VsCV0xYjghds3Tjru425QKGkY1", "8851753098736")
 	assert.Nil(t, err)
 

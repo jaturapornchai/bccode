@@ -190,10 +190,10 @@ func (f *fallbackProvider) GenerateContent(ctx context.Context, req ChatRequest)
 
 // ProviderStatus สถานะของแต่ละ provider (สำหรับ health endpoint)
 type ProviderStatus struct {
-	Name          string  `json:"name"`
-	HasKey        bool    `json:"has_key"`
-	Status        string  `json:"status"` // "active", "cooldown", "no_key"
-	Model         string  `json:"model,omitempty"`
+	Name string  `json:"name"`
+	HasKey bool    `json:"has_key"`
+	Status string  `json:"status"` // "active", "cooldown", "no_key"
+	Model string  `json:"model,omitempty"`
 	CooldownUntil *string `json:"cooldown_until,omitempty"`
 }
 

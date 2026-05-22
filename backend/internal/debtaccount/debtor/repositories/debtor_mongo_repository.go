@@ -65,7 +65,7 @@ func (repo DebtorRepository) FindAuthByUsername(ctx context.Context, shopID stri
 
 	filter := bson.M{
 		"shopid":        shopID,
-		"deletedat":     bson.M{"$exists": false},
+		"deleted_at":     bson.M{"$exists": false},
 		"auth.username": username,
 	}
 

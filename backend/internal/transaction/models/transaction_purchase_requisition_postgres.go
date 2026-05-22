@@ -11,17 +11,17 @@ import (
 
 // ใบขอซื้อ (Purchase Requisition)
 type PurchaseRequisitionTransactionPG struct {
-	TransactionPG     `gorm:"embedded;"`
-	RequesterCode     string                                    `json:"requestercode" gorm:"column:requestercode"`
-	RequesterName     string                                    `json:"requestername" gorm:"column:requestername"`
-	DepartmentCode    string                                    `json:"departmentcode" gorm:"column:departmentcode"`
-	DepartmentNames   pkgModels.JSONB                           `json:"departmentnames" gorm:"column:departmentnames;type:jsonb"`
-	Purpose           string                                    `json:"purpose" gorm:"column:purpose"`
-	BudgetCode        string                                    `json:"budgetcode" gorm:"column:budgetcode"`
-	BudgetAmount      float64                                   `json:"budgetamount" gorm:"column:budgetamount"`
-	Urgency           int8                                      `json:"urgency" gorm:"column:urgency"`
-	ConversionStatus  string                                    `json:"conversionstatus" gorm:"column:conversionstatus"`
-	Items             *[]PurchaseRequisitionDetailTransactionPG  `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	TransactionPG  `gorm:"embedded;"`
+	RequesterCode string                                    `json:"requestercode" gorm:"column:requestercode"`
+	RequesterName string                                    `json:"requestername" gorm:"column:requestername"`
+	DepartmentCode string                                    `json:"departmentcode" gorm:"column:departmentcode"`
+	DepartmentNames pkgModels.JSONB                           `json:"departmentnames" gorm:"column:departmentnames;type:jsonb"`
+	Purpose string                                    `json:"purpose" gorm:"column:purpose"`
+	BudgetCode string                                    `json:"budgetcode" gorm:"column:budgetcode"`
+	BudgetAmount float64                                   `json:"budgetamount" gorm:"column:budgetamount"`
+	Urgency int8                                      `json:"urgency" gorm:"column:urgency"`
+	ConversionStatus string                                    `json:"conversionstatus" gorm:"column:conversionstatus"`
+	Items *[]PurchaseRequisitionDetailTransactionPG  `json:"items" gorm:"items;foreignKey:shopid,docno"`
 }
 
 // รายละเอียด ใบขอซื้อ

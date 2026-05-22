@@ -13,29 +13,29 @@ import (
 
 // DocumentMeta — minimal RAGFlow doc info we expose
 type DocumentMeta struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	Size       int64  `json:"size"`
+	ID string `json:"id"`
+	Name string `json:"name"`
+	Size int64  `json:"size"`
 	ChunkCount int    `json:"chunk_count"`
 	TokenCount int    `json:"token_count"`
 	CreateTime int64  `json:"create_time"`
 	UpdateTime int64  `json:"update_time"`
-	Status     string `json:"status"` // RAGFlow status (UNSTART/RUNNING/SUCCESS/FAIL)
-	Run        string `json:"run"`    // run state
+	Status string `json:"status"` // RAGFlow status (UNSTART/RUNNING/SUCCESS/FAIL)
+	Run string `json:"run"`    // run state
 }
 
 type uploadResponse struct {
-	Code    int            `json:"code"`
+	Code int            `json:"code"`
 	Message string         `json:"message"`
-	Data    []DocumentMeta `json:"data"`
+	Data []DocumentMeta `json:"data"`
 }
 
 type listDocsResponse struct {
-	Code    int    `json:"code"`
+	Code int    `json:"code"`
 	Message string `json:"message"`
 	Data    struct {
 		Total int            `json:"total"`
-		Docs  []DocumentMeta `json:"docs"`
+		Docs []DocumentMeta `json:"docs"`
 	} `json:"data"`
 }
 
@@ -70,7 +70,7 @@ func (c *Client) UploadDocument(datasetID, filename string, content io.Reader) (
 func (c *Client) ParseDocument(datasetID string, docIDs []string) error {
 	body := map[string]any{"document_ids": docIDs}
 	var resp struct {
-		Code    int    `json:"code"`
+		Code int    `json:"code"`
 		Message string `json:"message"`
 	}
 	path := fmt.Sprintf("/api/v1/datasets/%s/chunks", url.PathEscape(datasetID))
@@ -110,7 +110,7 @@ func (c *Client) ListDocuments(datasetID string, page, pageSize int) ([]Document
 func (c *Client) DeleteDocument(datasetID string, docIDs []string) error {
 	body := map[string]any{"ids": docIDs}
 	var resp struct {
-		Code    int    `json:"code"`
+		Code int    `json:"code"`
 		Message string `json:"message"`
 	}
 	path := fmt.Sprintf("/api/v1/datasets/%s/documents", url.PathEscape(datasetID))

@@ -197,7 +197,7 @@ func (svc ShiftHttpService) DeleteShiftByGUIDs(shopID string, authUsername strin
 	defer ctxCancel()
 
 	deleteFilterQuery := map[string]interface{}{
-		"guidfixed": bson.M{"$in": GUIDs},
+		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 	findDocs, err := svc.repo.FindByGuids(ctx, shopID, GUIDs)
 

@@ -30,126 +30,126 @@ const (
 
 // PurchaseOrderNameEntry ชื่อหลายภาษา
 type PurchaseOrderNameEntry struct {
-	Code     string `json:"code" bson:"code"`
-	Name     string `json:"name" bson:"name"`
-	IsAuto   bool   `json:"isauto" bson:"isauto"`
+	Code string `json:"code" bson:"code"`
+	Name string `json:"name" bson:"name"`
+	IsAuto bool   `json:"isauto" bson:"isauto"`
 	IsDelete bool   `json:"isdelete" bson:"isdelete"`
 }
 
 // PurchaseOrderDetail รายละเอียดสินค้าในใบสั่งซื้อ
 type PurchaseOrderDetail struct {
-	LineNumber          int                      `json:"linenumber" bson:"linenumber"`
-	DocDatetime         time.Time                `json:"docdatetime" bson:"docdatetime"`
-	Barcode             string                   `json:"barcode" bson:"barcode"`
-	ItemCode            string                   `json:"itemcode" bson:"itemcode"`
-	ItemNames           []PurchaseOrderNameEntry `json:"itemnames" bson:"itemnames"`
-	UnitCode            string                   `json:"unitcode" bson:"unitcode"`
-	UnitNames           []PurchaseOrderNameEntry `json:"unitnames" bson:"unitnames"`
-	ItemType            int8                     `json:"itemtype" bson:"itemtype"`
-	ItemGuid            string                   `json:"itemguid" bson:"itemguid"`
-	Qty                 float64                  `json:"qty" bson:"qty"`
-	Price               float64                  `json:"price" bson:"price"`
-	Discount            string                   `json:"discount" bson:"discount"`
-	DiscountAmount      float64                  `json:"discountamount" bson:"discountamount"`
-	SumAmount           float64                  `json:"sumamount" bson:"sumamount"`
+	LineNumber int                      `json:"line_number" bson:"line_number"`
+	DocDatetime time.Time                `json:"docdatetime" bson:"docdatetime"`
+	Barcode string                   `json:"barcode" bson:"barcode"`
+	ItemCode string                   `json:"itemcode" bson:"itemcode"`
+	ItemNames []PurchaseOrderNameEntry `json:"itemnames" bson:"itemnames"`
+	UnitCode string                   `json:"unitcode" bson:"unitcode"`
+	UnitNames []PurchaseOrderNameEntry `json:"unitnames" bson:"unitnames"`
+	ItemType int8                     `json:"item_type" bson:"item_type"`
+	ItemGuid string                   `json:"item_guid" bson:"item_guid"`
+	Qty float64                  `json:"qty" bson:"qty"`
+	Price float64                  `json:"price" bson:"price"`
+	Discount string                   `json:"discount" bson:"discount"`
+	DiscountAmount float64                  `json:"discountamount" bson:"discountamount"`
+	SumAmount float64                  `json:"sum_amount" bson:"sum_amount"`
 	SumAmountExcludeVat float64                  `json:"sumamountexcludevat" bson:"sumamountexcludevat"`
-	TotalValueVat       float64                  `json:"totalvaluevat" bson:"totalvaluevat"`
-	PriceExcludeVat     float64                  `json:"priceexcludevat" bson:"priceexcludevat"`
-	VatType             int8                     `json:"vattype" bson:"vattype"`
-	StandValue          float64                  `json:"standvalue" bson:"standvalue"`
-	DivideValue         float64                  `json:"dividevalue" bson:"dividevalue"`
-	WhCode              string                   `json:"whcode" bson:"whcode"`
-	WhNames             []PurchaseOrderNameEntry `json:"whnames" bson:"whnames"`
-	LocationCode        string                   `json:"locationcode" bson:"locationcode"`
-	LocationNames       []PurchaseOrderNameEntry `json:"locationnames" bson:"locationnames"`
-	Remark              string                   `json:"remark" bson:"remark"`
-	Description         string                   `json:"description" bson:"description"`
+	TotalValueVat float64                  `json:"totalvaluevat" bson:"totalvaluevat"`
+	PriceExcludeVat float64                  `json:"priceexcludevat" bson:"priceexcludevat"`
+	VatType int8                     `json:"vat_type" bson:"vat_type"`
+	StandValue float64                  `json:"standvalue" bson:"standvalue"`
+	DivideValue float64                  `json:"dividevalue" bson:"dividevalue"`
+	WhCode string                   `json:"whcode" bson:"whcode"`
+	WhNames []PurchaseOrderNameEntry `json:"whnames" bson:"whnames"`
+	LocationCode string                   `json:"locationcode" bson:"locationcode"`
+	LocationNames []PurchaseOrderNameEntry `json:"locationnames" bson:"locationnames"`
+	Remark string                   `json:"remark" bson:"remark"`
+	Description string                   `json:"description" bson:"description"`
 	// Document Currency fields
-	PriceDoc              float64 `json:"price_doc" bson:"price_doc,omitempty"`
-	SumAmountDoc          float64 `json:"sumamount_doc" bson:"sumamount_doc,omitempty"`
-	DiscountAmountDoc     float64 `json:"discountamount_doc" bson:"discountamount_doc,omitempty"`
-	PriceExcludeVatDoc    float64 `json:"priceexcludevat_doc" bson:"priceexcludevat_doc,omitempty"`
+	PriceDoc float64 `json:"price_doc" bson:"price_doc,omitempty"`
+	SumAmountDoc float64 `json:"sumamount_doc" bson:"sumamount_doc,omitempty"`
+	DiscountAmountDoc float64 `json:"discountamount_doc" bson:"discountamount_doc,omitempty"`
+	PriceExcludeVatDoc float64 `json:"priceexcludevat_doc" bson:"priceexcludevat_doc,omitempty"`
 	SumAmountExcludeVatDoc float64 `json:"sumamountexcludevat_doc" bson:"sumamountexcludevat_doc,omitempty"`
-	TotalValueVatDoc      float64 `json:"totalvaluevat_doc" bson:"totalvaluevat_doc,omitempty"`
+	TotalValueVatDoc float64 `json:"totalvaluevat_doc" bson:"totalvaluevat_doc,omitempty"`
 }
 
 // PurchaseOrderBranch สาขา
 type PurchaseOrderBranch struct {
-	GuidFixed string                   `json:"guidfixed" bson:"guidfixed"`
-	Code      string                   `json:"code" bson:"code"`
-	Names     []PurchaseOrderNameEntry `json:"names" bson:"names"`
+	GuidFixed string                   `json:"guid_fixed" bson:"guid_fixed"`
+	Code string                   `json:"code" bson:"code"`
+	Names []PurchaseOrderNameEntry `json:"names" bson:"names"`
 }
 
 // PurchaseOrderWHTEntry ภาษีหัก ณ ที่จ่าย
 type PurchaseOrderWHTEntry struct {
 	Description string  `json:"description" bson:"description"`
-	Rate        float64 `json:"rate" bson:"rate"`
-	TaxBase     float64 `json:"taxbase" bson:"taxbase"`
-	Amount      float64 `json:"amount" bson:"amount"`
-	Note        string  `json:"note,omitempty" bson:"note,omitempty"`
+	Rate float64 `json:"rate" bson:"rate"`
+	TaxBase float64 `json:"taxbase" bson:"taxbase"`
+	Amount float64 `json:"amount" bson:"amount"`
+	Note string  `json:"note,omitempty" bson:"note,omitempty"`
 }
 
 // PurchaseOrderDocument เอกสารใบสั่งซื้อใน MongoDB
 type PurchaseOrderDocument struct {
-	ID        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ShopID    string             `json:"shopid" bson:"shopid"`
-	GuidFixed string             `json:"guidfixed" bson:"guidfixed"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ShopID string             `json:"shopid" bson:"shopid"`
+	GuidFixed string             `json:"guid_fixed" bson:"guid_fixed"`
 	// Header
-	DocNo       string    `json:"docno" bson:"docno"`
+	DocNo string    `json:"docno" bson:"docno"`
 	DocDatetime time.Time `json:"docdatetime" bson:"docdatetime"`
-	TransFlag   int       `json:"transflag" bson:"transflag"`
-	DocType     int8      `json:"doctype" bson:"doctype"`
+	TransFlag int       `json:"transflag" bson:"transflag"`
+	DocType int8      `json:"doc_type" bson:"doc_type"`
 	// Creditor
-	CustCode  string                   `json:"custcode" bson:"custcode"`
+	CustCode string                   `json:"custcode" bson:"custcode"`
 	CustNames []PurchaseOrderNameEntry `json:"custnames" bson:"custnames"`
 	// Financial
-	Description      string  `json:"description" bson:"description"`
-	DiscountWord     string  `json:"discountword" bson:"discountword"`
-	TotalDiscount    float64 `json:"totaldiscount" bson:"totaldiscount"`
-	TotalValue       float64 `json:"totalvalue" bson:"totalvalue"`
-	TotalBeforeVat   float64 `json:"totalbeforevat" bson:"totalbeforevat"`
-	TotalAfterVat    float64 `json:"totalaftervat" bson:"totalaftervat"`
-	TotalVatValue    float64 `json:"totalvatvalue" bson:"totalvatvalue"`
-	TotalAmount      float64 `json:"totalamount" bson:"totalamount"`
-	TotalExceptVat   float64 `json:"totalexceptvat" bson:"totalexceptvat"`
-	VatType          int8    `json:"vattype" bson:"vattype"`
-	VatRate          float64 `json:"vatrate" bson:"vatrate"`
-	TotalQty         float64 `json:"totalqty" bson:"totalqty"`
-	RoundAmount      float64 `json:"roundamount" bson:"roundamount"`
-	IsManualAmount   bool    `json:"ismanualamount" bson:"ismanualamount"`
-	IsCancel         bool    `json:"iscancel" bson:"iscancel"`
-	Status           int8    `json:"status" bson:"status"`
+	Description string  `json:"description" bson:"description"`
+	DiscountWord string  `json:"discountword" bson:"discountword"`
+	TotalDiscount float64 `json:"totaldiscount" bson:"totaldiscount"`
+	TotalValue float64 `json:"totalvalue" bson:"totalvalue"`
+	TotalBeforeVat float64 `json:"totalbeforevat" bson:"totalbeforevat"`
+	TotalAfterVat float64 `json:"totalaftervat" bson:"totalaftervat"`
+	TotalVatValue float64 `json:"totalvatvalue" bson:"totalvatvalue"`
+	TotalAmount float64 `json:"total_amount" bson:"total_amount"`
+	TotalExceptVat float64 `json:"totalexceptvat" bson:"totalexceptvat"`
+	VatType int8    `json:"vat_type" bson:"vat_type"`
+	VatRate float64 `json:"vatrate" bson:"vatrate"`
+	TotalQty float64 `json:"totalqty" bson:"totalqty"`
+	RoundAmount float64 `json:"roundamount" bson:"roundamount"`
+	IsManualAmount bool    `json:"ismanualamount" bson:"ismanualamount"`
+	IsCancel bool    `json:"iscancel" bson:"iscancel"`
+	Status int8    `json:"status" bson:"status"`
 	// Branch
 	Branch PurchaseOrderBranch `json:"branch" bson:"branch"`
 	// Multi-Currency
-	Currency          string  `json:"currency" bson:"currency,omitempty"`
-	CurrencySymbol    string  `json:"currencysymbol" bson:"currencysymbol,omitempty"`
-	DocCurrency       string  `json:"doc_currency" bson:"doc_currency,omitempty"`
+	Currency string  `json:"currency" bson:"currency,omitempty"`
+	CurrencySymbol string  `json:"currencysymbol" bson:"currencysymbol,omitempty"`
+	DocCurrency string  `json:"doc_currency" bson:"doc_currency,omitempty"`
 	DocCurrencySymbol string  `json:"doc_currencysymbol" bson:"doc_currencysymbol,omitempty"`
-	ExchangeRate      float64 `json:"exchangerate" bson:"exchangerate"`
+	ExchangeRate float64 `json:"exchange_rate" bson:"exchange_rate"`
 	// Document Currency Totals
-	TotalValueDoc     float64 `json:"totalvalue_doc" bson:"totalvalue_doc,omitempty"`
-	TotalDiscountDoc  float64 `json:"totaldiscount_doc" bson:"totaldiscount_doc,omitempty"`
-	TotalVatValueDoc  float64 `json:"totalvatvalue_doc" bson:"totalvatvalue_doc,omitempty"`
+	TotalValueDoc float64 `json:"totalvalue_doc" bson:"totalvalue_doc,omitempty"`
+	TotalDiscountDoc float64 `json:"totaldiscount_doc" bson:"totaldiscount_doc,omitempty"`
+	TotalVatValueDoc float64 `json:"totalvatvalue_doc" bson:"totalvatvalue_doc,omitempty"`
 	TotalBeforeVatDoc float64 `json:"totalbeforevat_doc" bson:"totalbeforevat_doc,omitempty"`
-	TotalAfterVatDoc  float64 `json:"totalaftervat_doc" bson:"totalaftervat_doc,omitempty"`
-	TotalAmountDoc    float64 `json:"totalamount_doc" bson:"totalamount_doc,omitempty"`
+	TotalAfterVatDoc float64 `json:"totalaftervat_doc" bson:"totalaftervat_doc,omitempty"`
+	TotalAmountDoc float64 `json:"totalamount_doc" bson:"totalamount_doc,omitempty"`
 	// WHT
 	WHTEntries []PurchaseOrderWHTEntry `json:"wht_entries,omitempty" bson:"wht_entries"`
 	// Credit Terms
 	CreditDays int    `json:"creditdays,omitempty" bson:"creditdays"`
-	DueDate    string `json:"duedate,omitempty" bson:"duedate"`
+	DueDate string `json:"duedate,omitempty" bson:"duedate"`
 	// Purchase Type (for PO Approval)
-	PurchaseTypeCode  string                   `json:"purchasetypecode" bson:"purchasetypecode"`
+	PurchaseTypeCode string                   `json:"purchasetypecode" bson:"purchasetypecode"`
 	PurchaseTypeNames []PurchaseOrderNameEntry `json:"purchasetypenames" bson:"purchasetypenames"`
 	// Creator/Updater
 	CreatorCode string    `json:"creator_code" bson:"creatorcode"`
 	CreatorName string    `json:"creator_name" bson:"creatorname"`
-	CreatedAt   time.Time `json:"createdat" bson:"createdat"`
+	CreatedAt time.Time `json:"created_at" bson:"created_at"`
 	UpdaterCode string    `json:"modifier_code" bson:"updatercode"`
 	UpdaterName string    `json:"modifier_name" bson:"updatername"`
-	UpdatedAt   time.Time `json:"updatedat" bson:"updatedat"`
-	DeletedAt   time.Time `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
+	UpdatedAt time.Time `json:"updated_at" bson:"updated_at"`
+	DeletedAt time.Time `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
 	// Sale
 	SaleCode string `json:"salecode" bson:"salecode"`
 	SaleName string `json:"salename" bson:"salename"`
@@ -161,9 +161,9 @@ type PurchaseOrderDocument struct {
 
 type ListPurchaseOrdersResponse struct {
 	PurchaseOrders []PurchaseOrderDocument `json:"purchase_orders"`
-	Count          int                     `json:"count"`
-	Keyword        string                  `json:"keyword,omitempty"`
-	GeneratedAt    time.Time               `json:"generated_at"`
+	Count int                     `json:"count"`
+	Keyword string                  `json:"keyword,omitempty"`
+	GeneratedAt time.Time               `json:"generated_at"`
 }
 
 func ListPurchaseOrders(ctx context.Context, shopID, keyword string, limit int) (*ListPurchaseOrdersResponse, error) {
@@ -188,8 +188,8 @@ func ListPurchaseOrders(ctx context.Context, shopID, keyword string, limit int) 
 	filter := bson.M{
 		"shopid": shopID,
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 
@@ -237,12 +237,12 @@ func ListPurchaseOrders(ctx context.Context, shopID, keyword string, limit int) 
 // ==================== Create Purchase Order ====================
 
 type CreatePurchaseOrderResponse struct {
-	Success       bool                  `json:"success"`
-	Message       string                `json:"message"`
+	Success bool                  `json:"success"`
+	Message string                `json:"message"`
 	PurchaseOrder PurchaseOrderDocument `json:"purchase_order"`
-	KafkaSync     string                `json:"kafka_sync"`
-	KafkaError    string                `json:"kafka_error,omitempty"`
-	GeneratedAt   time.Time             `json:"generated_at"`
+	KafkaSync string                `json:"kafka_sync"`
+	KafkaError string                `json:"kafka_error,omitempty"`
+	GeneratedAt time.Time             `json:"generated_at"`
 }
 
 func CreatePurchaseOrder(ctx context.Context, shopID, docno, custcode, custnamesJSON, detailsJSON, description string, transflag int, vattype int8, vatrate float64, totalamount float64) (*CreatePurchaseOrderResponse, error) {
@@ -267,8 +267,8 @@ func CreatePurchaseOrder(ctx context.Context, shopID, docno, custcode, custnames
 		"shopid": shopID,
 		"docno":  docno,
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 	count, err := coll.CountDocuments(ctx, existFilter)
@@ -346,12 +346,12 @@ func CreatePurchaseOrder(ctx context.Context, shopID, docno, custcode, custnames
 // ==================== Update Purchase Order ====================
 
 type UpdatePurchaseOrderResponse struct {
-	Success       bool                  `json:"success"`
-	Message       string                `json:"message"`
+	Success bool                  `json:"success"`
+	Message string                `json:"message"`
 	PurchaseOrder PurchaseOrderDocument `json:"purchase_order"`
-	KafkaSync     string                `json:"kafka_sync"`
-	KafkaError    string                `json:"kafka_error,omitempty"`
-	GeneratedAt   time.Time             `json:"generated_at"`
+	KafkaSync string                `json:"kafka_sync"`
+	KafkaError string                `json:"kafka_error,omitempty"`
+	GeneratedAt time.Time             `json:"generated_at"`
 }
 
 func UpdatePurchaseOrder(ctx context.Context, shopID, guidfixed, custnamesJSON, detailsJSON, description string, totalamount float64, status int8) (*UpdatePurchaseOrderResponse, error) {
@@ -373,10 +373,10 @@ func UpdatePurchaseOrder(ctx context.Context, shopID, guidfixed, custnamesJSON, 
 
 	filter := bson.M{
 		"shopid":    shopID,
-		"guidfixed": guidfixed,
+		"guid_fixed": guidfixed,
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 
@@ -387,7 +387,7 @@ func UpdatePurchaseOrder(ctx context.Context, shopID, guidfixed, custnamesJSON, 
 	}
 
 	updateFields := bson.M{
-		"updatedat":   time.Now(),
+		"updated_at":   time.Now(),
 		"updatercode": "mcp-tool",
 		"updatername": "MCP Tool",
 	}
@@ -410,7 +410,7 @@ func UpdatePurchaseOrder(ctx context.Context, shopID, guidfixed, custnamesJSON, 
 		updateFields["description"] = description
 	}
 	if totalamount > 0 {
-		updateFields["totalamount"] = totalamount
+		updateFields["total_amount"] = totalamount
 	}
 	if status > 0 {
 		updateFields["status"] = status
@@ -447,12 +447,12 @@ func UpdatePurchaseOrder(ctx context.Context, shopID, guidfixed, custnamesJSON, 
 // ==================== Delete Purchase Order (Soft Delete) ====================
 
 type DeletePurchaseOrderResponse struct {
-	Success     bool      `json:"success"`
-	Message     string    `json:"message"`
-	GuidFixed   string    `json:"guidfixed"`
-	DocNo       string    `json:"docno"`
-	KafkaSync   string    `json:"kafka_sync"`
-	KafkaError  string    `json:"kafka_error,omitempty"`
+	Success bool      `json:"success"`
+	Message string    `json:"message"`
+	GuidFixed string    `json:"guid_fixed"`
+	DocNo string    `json:"docno"`
+	KafkaSync string    `json:"kafka_sync"`
+	KafkaError string    `json:"kafka_error,omitempty"`
 	GeneratedAt time.Time `json:"generated_at"`
 }
 
@@ -475,10 +475,10 @@ func DeletePurchaseOrder(ctx context.Context, shopID, guidfixed string) (*Delete
 
 	filter := bson.M{
 		"shopid":    shopID,
-		"guidfixed": guidfixed,
+		"guid_fixed": guidfixed,
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 
@@ -491,10 +491,10 @@ func DeletePurchaseOrder(ctx context.Context, shopID, guidfixed string) (*Delete
 	// Soft delete
 	now := time.Now()
 	_, err = coll.UpdateOne(ctx, filter, bson.M{"$set": bson.M{
-		"deletedat":   now,
+		"deleted_at":   now,
 		"updatercode": "mcp-tool",
 		"updatername": "MCP Tool",
-		"updatedat":   now,
+		"updated_at":   now,
 	}})
 	if err != nil {
 		return nil, fmt.Errorf("ลบใบสั่งซื้อล้มเหลว: %w", err)
@@ -530,38 +530,38 @@ func GetPurchaseOrderSchema() map[string]interface{} {
 		"fields": map[string]interface{}{
 			"_id":               "ObjectID — MongoDB auto-generated ID",
 			"shopid":            "string — Shop ID (tenant isolation)",
-			"guidfixed":         "string — UUID สำหรับอ้างอิงภายใน",
+			"guid_fixed":         "string — UUID สำหรับอ้างอิงภายใน",
 			"docno":             "string (required) — เลขที่เอกสาร เช่น PO-2026-0001",
 			"docdatetime":       "datetime — วันที่เอกสาร",
 			"transflag":         "int — ประเภท transaction (6=ใบสั่งซื้อ)",
-			"doctype":           "int8 — ประเภทเอกสาร",
+			"doc_type":           "int8 — ประเภทเอกสาร",
 			"custcode":          "string — รหัสเจ้าหนี้/ผู้ขาย",
 			"custnames":         "array — ชื่อเจ้าหนี้หลายภาษา [{code:'th', name:'บริษัท ABC'}]",
 			"description":       "string — คำอธิบาย/หมายเหตุ",
-			"vattype":           "int8 — ประเภท VAT (0=ไม่มี, 1=รวม, 2=แยก)",
+			"vat_type":           "int8 — ประเภท VAT (0=ไม่มี, 1=รวม, 2=แยก)",
 			"vatrate":           "float64 — อัตรา VAT %",
 			"totalvalue":        "float64 — มูลค่ารวมสินค้า",
 			"totaldiscount":     "float64 — ส่วนลดท้ายบิล",
 			"totalbeforevat":    "float64 — มูลค่าก่อน VAT",
 			"totalaftervat":     "float64 — มูลค่าหลัง VAT",
 			"totalvatvalue":     "float64 — มูลค่า VAT",
-			"totalamount":       "float64 — มูลค่ารวมทั้งหมด",
+			"total_amount":       "float64 — มูลค่ารวมทั้งหมด",
 			"totalqty":          "float64 — จำนวนรวม",
 			"status":            "int8 — สถานะ (0=ร่าง, 1=รออนุมัติ, 2=อนุมัติ, 3=ปฏิเสธ)",
 			"iscancel":          "bool — ยกเลิกแล้วหรือไม่",
 			"branch":            "object — สาขา {code, names}",
 			"currency":          "string — สกุลเงินหลัก (THB)",
 			"doc_currency":      "string — สกุลเงินเอกสาร (USD, JPY, etc.)",
-			"exchangerate":      "float64 — อัตราแลกเปลี่ยน",
+			"exchange_rate":      "float64 — อัตราแลกเปลี่ยน",
 			"wht_entries":       "array — ภาษีหัก ณ ที่จ่าย [{description, rate, taxbase, amount}]",
 			"creditdays":        "int — เครดิตเทอม (วัน)",
 			"duedate":           "string — วันครบกำหนดชำระ (YYYY-MM-DD)",
 			"purchasetypecode":  "string — ประเภทการจัดซื้อ (สำหรับ Approval)",
 			"details":           "array — รายละเอียดสินค้า [{barcode, itemcode, itemnames, qty, price, sumamount, ...}]",
 			"creatorcode":       "string — รหัสผู้สร้าง",
-			"createdat":         "datetime — วันที่สร้าง",
-			"updatedat":         "datetime — วันที่แก้ไขล่าสุด",
-			"deletedat":         "datetime — วันที่ลบ (soft delete, zero = active)",
+			"created_at":         "datetime — วันที่สร้าง",
+			"updated_at":         "datetime — วันที่แก้ไขล่าสุด",
+			"deleted_at":         "datetime — วันที่ลบ (soft delete, zero = active)",
 		},
 		"examples": []map[string]interface{}{
 			{
@@ -569,7 +569,7 @@ func GetPurchaseOrderSchema() map[string]interface{} {
 				"transflag": 6,
 				"custcode":  "CR-001",
 				"custnames": []map[string]string{{"code": "th", "name": "บริษัท สมาร์ท ซัพพลาย จำกัด"}},
-				"vattype":   1,
+				"vat_type":   1,
 				"vatrate":   7,
 				"details": []map[string]interface{}{
 					{
@@ -577,10 +577,10 @@ func GetPurchaseOrderSchema() map[string]interface{} {
 						"itemcode":  "SKU001",
 						"qty":       100,
 						"price":     50.0,
-						"sumamount": 5000.0,
+						"sum_amount": 5000.0,
 					},
 				},
-				"totalamount": 5350.0,
+				"total_amount": 5350.0,
 			},
 		},
 	}

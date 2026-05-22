@@ -48,7 +48,7 @@ func (m *MockJournalRepsitory) Get(shopID string, docNo string) (*models.Journal
 	return ret.Get(0).(*models.JournalPg), ret.Error(1)
 }
 
-func TestJournalConsumeServiceCreated(ms *microservice.Microservice, t *testing.T) {
+func TestJournalConsumeServiceCreated(t *testing.T) {
 
 	get := models.JournalPg{
 		ShopIdentity: common.ShopIdentity{
@@ -131,7 +131,7 @@ func TestJournalConsumeServiceCreated(ms *microservice.Microservice, t *testing.
 	assert.Nil(t, err, "Error should be nil")
 }
 
-func TestJournalConsumeServiceUpdate(ms *microservice.Microservice, t *testing.T) {
+func TestJournalConsumeServiceUpdate(t *testing.T) {
 
 	get := models.JournalPg{
 		JournalBody: models.JournalBody{
@@ -159,7 +159,7 @@ func TestJournalConsumeServiceUpdate(ms *microservice.Microservice, t *testing.T
 	assert.Nil(t, err, "Error should be nil")
 }
 
-func TestJournalConsumeServiceInsertWhenGetDataNotFound(ms *microservice.Microservice, t *testing.T) {
+func TestJournalConsumeServiceInsertWhenGetDataNotFound(t *testing.T) {
 
 	giveJournalMongoDB := models.JournalDoc{
 		JournalData: models.JournalData{
@@ -197,7 +197,7 @@ func TestJournalConsumeServiceInsertWhenGetDataNotFound(ms *microservice.Microse
 	assert.Equal(t, get, &giveJournalPG, "Failed After Upsert Consume Data")
 }
 
-func TestJournalConsumeServiceUpdateWhenFoundOldData(ms *microservice.Microservice, t *testing.T) {
+func TestJournalConsumeServiceUpdateWhenFoundOldData(t *testing.T) {
 	giveJournalMongoDB := models.JournalDoc{
 		JournalData: models.JournalData{
 			ShopIdentity: common.ShopIdentity{
@@ -285,13 +285,13 @@ func TestJournalConsumeServiceUpdateWhenFoundOldData(ms *microservice.Microservi
 
 func TestConsumerServiceCreateDocFromJson(t *testing.T) {
 	jsonStr := `
-	{"id":"000000000000000000000000","shopid":"2E1NVOURRw9sxHxDFfdnmamPWXI","guidfixed":"2E4CzDZN07hcoq3mesUDWpI5upa","batchId":"","docno":"IV6506006","docdate":"2022-06-16T17:00:00Z","documentref":"","accountperiod":6,"accountyear":2565,"accountgroup":"0001","amount":8639.71,"accountdescription":"","bookcode":"01","vats":[],"taxes":[],"journaltype":0,"parid":"0000000","journaldetail":[{"accountcode":"115840","accountname":"ค่าภาษีเงินได้นิติบุคคลถูกหัก.-ณ.ที่จ่าย","debitamount":86.32,"creditamount":0},{"accountcode":"111110","accountname":"เงินสดในมือ","debitamount":8553.39,"creditamount":0},{"accountcode":"410010","accountname":"รายได้จากการขายสินค้า","debitamount":0,"creditamount":8521.21},{"accountcode":"410010","accountname":"รายได้จากการขายสินค้า","debitamount":0,"creditamount":29},{"accountcode":"410010","accountname":"รายได้จากการขายสินค้า","debitamount":0,"creditamount":81.75},{"accountcode":"215500","accountname":"ค่าภาษีขาย","debitamount":0,"creditamount":7.75}]}
+	{"id":"000000000000000000000000","shopid":"2E1NVOURRw9sxHxDFfdnmamPWXI","guid_fixed":"2E4CzDZN07hcoq3mesUDWpI5upa","batchId":"","docno":"IV6506006","docdate":"2022-06-16T17:00:00Z","documentref":"","accountperiod":6,"accountyear":2565,"accountgroup":"0001","amount":8639.71,"accountdescription":"","bookcode":"01","vats":[],"taxes":[],"journaltype":0,"parid":"0000000","journaldetail":[{"accountcode":"115840","accountname":"ค่าภาษีเงินได้นิติบุคคลถูกหัก.-ณ.ที่จ่าย","debitamount":86.32,"creditamount":0},{"accountcode":"111110","accountname":"เงินสดในมือ","debitamount":8553.39,"creditamount":0},{"accountcode":"410010","accountname":"รายได้จากการขายสินค้า","debitamount":0,"creditamount":8521.21},{"accountcode":"410010","accountname":"รายได้จากการขายสินค้า","debitamount":0,"creditamount":29},{"accountcode":"410010","accountname":"รายได้จากการขายสินค้า","debitamount":0,"creditamount":81.75},{"accountcode":"215500","accountname":"ค่าภาษีขาย","debitamount":0,"creditamount":7.75}]}
 	`
 
 	fmt.Print(jsonStr)
 }
 
-func TestConsumerServiceCreateFromJsonFailed(ms *microservice.Microservice, t *testing.T) {
+func TestConsumerServiceCreateFromJsonFailed(t *testing.T) {
 
 	persisterConfig := msmock.NewPersisterPostgresqlConfig()
 	pst := microservice.NewPersister(persisterConfig)
@@ -301,7 +301,7 @@ func TestConsumerServiceCreateFromJsonFailed(ms *microservice.Microservice, t *t
 		models.JournalDetailPg{},
 	)
 
-	jsonStr := `{"id":"63106c165ae33da0f2f6a1a2","shopid":"2BYWCndV194TYXVEO7NlRLuJYWY","guidfixed":"2E9vUVOMvjkg2QCJOV7tDB5GxyL","batchId":"","docno":"JO-20220901F9CC9F","docdate":"2017-12-30T17:00:00Z","documentref":"","accountperiod":12,"accountyear":2560,"accountgroup":"1","amount":2314735,"accountdescription":"ยอดยกมาปี 2560","bookcode":"1","vats":[],"taxes":[],"parid":"0000000","journaldetail":[{"accountcode":"11010","accountname":"เงินสด - บัญชี 1 (เงินล้าน) ","debitamount":7084,"creditamount":0},{"accountcode":"12111","accountname":"เงินฝากธนาคาร บัญชี 1 (เงินล้าน) ธนาคารออมสิน","debitamount":1428252,"creditamount":0},{"accountcode":"13010","accountname":"ลูกหนี้เงินกู้ - บัญชี 1 (เงินล้าน)","debitamount":879399,"creditamount":0},{"accountcode":"32010","accountname":"ทุน - บัญชี 1 (เงินล้าน)","debitamount":0,"creditamount":1000000},{"accountcode":"32020","accountname":"ทุน - โครงการ 3A","debitamount":0,"creditamount":200000},{"accountcode":"32030","accountname":"ทุน - เงินเพิ่มทุนระยะ 2","debitamount":0,"creditamount":1000000},{"accountcode":"33104","accountname":"เงินประกันความเสี่ยง - กำไรที่จัดสรร - บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":95400},{"accountcode":"33105","accountname":"เงินสมทบกองทุน - กำไรที่จัดสรร - บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":11050},{"accountcode":"34010","accountname":"กำไรสะสม (ขาดทุน) สะสม บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":0},{"accountcode":"35010","accountname":"กำไร ( ขาดทุน ) บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":0},{"accountcode":"41010","accountname":"รายได้ - ดอกเบี้ยเงินกู้ - บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":8200},{"accountcode":"45010","accountname":"รายได้ - ดอกเบี้ยเงินฝากธนาคาร -บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":85}]}`
+	jsonStr := `{"id":"63106c165ae33da0f2f6a1a2","shopid":"2BYWCndV194TYXVEO7NlRLuJYWY","guid_fixed":"2E9vUVOMvjkg2QCJOV7tDB5GxyL","batchId":"","docno":"JO-20220901F9CC9F","docdate":"2017-12-30T17:00:00Z","documentref":"","accountperiod":12,"accountyear":2560,"accountgroup":"1","amount":2314735,"accountdescription":"ยอดยกมาปี 2560","bookcode":"1","vats":[],"taxes":[],"parid":"0000000","journaldetail":[{"accountcode":"11010","accountname":"เงินสด - บัญชี 1 (เงินล้าน) ","debitamount":7084,"creditamount":0},{"accountcode":"12111","accountname":"เงินฝากธนาคาร บัญชี 1 (เงินล้าน) ธนาคารออมสิน","debitamount":1428252,"creditamount":0},{"accountcode":"13010","accountname":"ลูกหนี้เงินกู้ - บัญชี 1 (เงินล้าน)","debitamount":879399,"creditamount":0},{"accountcode":"32010","accountname":"ทุน - บัญชี 1 (เงินล้าน)","debitamount":0,"creditamount":1000000},{"accountcode":"32020","accountname":"ทุน - โครงการ 3A","debitamount":0,"creditamount":200000},{"accountcode":"32030","accountname":"ทุน - เงินเพิ่มทุนระยะ 2","debitamount":0,"creditamount":1000000},{"accountcode":"33104","accountname":"เงินประกันความเสี่ยง - กำไรที่จัดสรร - บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":95400},{"accountcode":"33105","accountname":"เงินสมทบกองทุน - กำไรที่จัดสรร - บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":11050},{"accountcode":"34010","accountname":"กำไรสะสม (ขาดทุน) สะสม บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":0},{"accountcode":"35010","accountname":"กำไร ( ขาดทุน ) บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":0},{"accountcode":"41010","accountname":"รายได้ - ดอกเบี้ยเงินกู้ - บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":8200},{"accountcode":"45010","accountname":"รายได้ - ดอกเบี้ยเงินฝากธนาคาร -บัญชี 1 (เงินล้าน) ","debitamount":0,"creditamount":85}]}`
 
 	var journalPg models.JournalDoc
 	json.Unmarshal([]byte(jsonStr), &journalPg)

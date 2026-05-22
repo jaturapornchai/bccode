@@ -72,7 +72,7 @@ func (repo SMLTransactionRepository) Create(collectionName string, doc map[strin
 func (repo SMLTransactionRepository) Update(collectionName string, shopID string, guid string, doc map[string]interface{}) error {
 	filterDoc := map[string]interface{}{
 		"shopid":    shopID,
-		"guidfixed": guid,
+		"guid_fixed": guid,
 	}
 
 	err := repo.pst.UpdateOne(context.Background(), &models.DynamicCollection{Collection: collectionName}, filterDoc, doc)
@@ -101,7 +101,7 @@ func (repo SMLTransactionRepository) CreateInBatch(collectionName string, docLis
 
 type Doc struct {
 	DocNo string `bson:"docno"`
-	Name  string `bson:"name"`
+	Name string `bson:"name"`
 }
 
 func (repo SMLTransactionRepository) FindByDocIndentityKey(collectionName string, shopID string, indentityField string, indentityValue interface{}) (map[string]interface{}, error) {
@@ -111,7 +111,7 @@ func (repo SMLTransactionRepository) FindByDocIndentityKey(collectionName string
 	err := repo.pst.FindOne(
 		context.Background(),
 		&models.DynamicCollection{Collection: collectionName},
-		bson.M{"shopid": shopID, "deletedat": bson.M{"$exists": false},
+		bson.M{"shopid": shopID, "deleted_at": bson.M{"$exists": false},
 			indentityField: indentityValue},
 		&doc,
 	)
@@ -127,7 +127,7 @@ func (repo SMLTransactionRepository) DeleteByGuidfixed(collectionName string, sh
 	err := repo.pst.SoftDelete(
 		context.Background(),
 		&models.DynamicCollection{Collection: collectionName},
-		username, bson.M{"guidfixed": guid, "shopid": shopID},
+		username, bson.M{"guid_fixed": guid, "shopid": shopID},
 	)
 
 	if err != nil {

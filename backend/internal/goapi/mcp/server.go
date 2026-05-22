@@ -27,18 +27,18 @@ type MCPServer struct {
 
 // ToolRequest represents a generic tool request
 type ToolRequest struct {
-	Tool   string                 `json:"tool"`
+	Tool string                 `json:"tool"`
 	Params map[string]interface{} `json:"params"`
 }
 
 // ToolResponse represents a generic tool response
 type ToolResponse struct {
-	Success   bool        `json:"success"`
-	Data      interface{} `json:"data,omitempty"`
-	Error     string      `json:"error,omitempty"`
+	Success bool        `json:"success"`
+	Data interface{} `json:"data,omitempty"`
+	Error string      `json:"error,omitempty"`
 	ErrorCode string      `json:"error_code,omitempty"`
 	Timestamp time.Time   `json:"timestamp"`
-	Tool      string      `json:"tool"`
+	Tool string      `json:"tool"`
 }
 
 // AvailableTools lists all available MCP tools
@@ -457,16 +457,16 @@ var AvailableTools = []map[string]interface{}{
 			"barcode":        "string (required) - Barcode e.g. 8859100001234",
 			"itemcode":       "string (required) - Item/product code e.g. SKU001",
 			"names":          "string (required) - JSON array [{\"code\":\"th\",\"name\":\"สินค้า A\"},{\"code\":\"en\",\"name\":\"Product A\"}]",
-			"itemunitcode":   "string (optional) - Unit code e.g. EA, BOX",
+			"item_unit_code":   "string (optional) - Unit code e.g. EA, BOX",
 			"itemunitnames":  "string (optional) - JSON array of unit names [{\"code\":\"th\",\"name\":\"ชิ้น\"}]",
 			"prices":         "string (optional) - JSON array of prices [{\"keynumber\":1,\"price\":100.00}]",
 			"standvalue":     "number (optional) - Unit conversion numerator (default: 1). e.g. BOX=24 means 1 BOX = 24 base units",
 			"dividevalue":    "number (optional) - Unit conversion denominator (default: 1)",
-			"ismainbarcode":  "boolean (optional) - Is main barcode? Auto-detected if not provided: true when standvalue=1 & dividevalue=1",
-			"groupcode":      "string (optional) - Product group code (กลุ่มสินค้า)",
-			"groupnames":     "string (optional) - JSON array of group names [{\"code\":\"th\",\"name\":\"อาหาร\"}]",
+			"is_main_barcode":  "boolean (optional) - Is main barcode? Auto-detected if not provided: true when standvalue=1 & dividevalue=1",
+			"group_code":      "string (optional) - Product group code (กลุ่มสินค้า)",
+			"group_names":     "string (optional) - JSON array of group names [{\"code\":\"th\",\"name\":\"อาหาร\"}]",
 			"categorycode":   "string (optional) - Product category guidfixed (หมวดสินค้า)",
-			"categorynames":  "string (optional) - JSON array of category names [{\"code\":\"th\",\"name\":\"เนื้อสัตว์\"}]",
+			"category_names":  "string (optional) - JSON array of category names [{\"code\":\"th\",\"name\":\"เนื้อสัตว์\"}]",
 		},
 	},
 	{
@@ -482,15 +482,15 @@ var AvailableTools = []map[string]interface{}{
 		"description": "Update an existing product barcode by guidfixed.",
 		"parameters": map[string]interface{}{
 			"shop_id":   "string (required) - Shop ID",
-			"guidfixed": "string (required) - GuidFixed of the barcode to update",
+			"guid_fixed": "string (required) - GuidFixed of the barcode to update",
 			"names":     "string (optional) - JSON array of language names [{\"code\":\"th\",\"name\":\"ชื่อใหม่\"}]",
-			"itemunitcode":   "string (optional) - New unit code",
+			"item_unit_code":   "string (optional) - New unit code",
 			"itemunitnames":  "string (optional) - JSON array of unit names",
 			"prices":         "string (optional) - JSON array of prices [{\"keynumber\":1,\"price\":150.00}]",
-			"groupcode":      "string (optional) - Product group code (กลุ่มสินค้า)",
-			"groupnames":     "string (optional) - JSON array of group names [{\"code\":\"th\",\"name\":\"อาหาร\"}]",
+			"group_code":      "string (optional) - Product group code (กลุ่มสินค้า)",
+			"group_names":     "string (optional) - JSON array of group names [{\"code\":\"th\",\"name\":\"อาหาร\"}]",
 			"categorycode":   "string (optional) - Product category guidfixed (หมวดสินค้า)",
-			"categorynames":  "string (optional) - JSON array of category names [{\"code\":\"th\",\"name\":\"เนื้อสัตว์\"}]",
+			"category_names":  "string (optional) - JSON array of category names [{\"code\":\"th\",\"name\":\"เนื้อสัตว์\"}]",
 		},
 	},
 	{
@@ -498,7 +498,7 @@ var AvailableTools = []map[string]interface{}{
 		"description": "Delete a product barcode by guidfixed.",
 		"parameters": map[string]interface{}{
 			"shop_id":   "string (required) - Shop ID",
-			"guidfixed": "string (required) - GuidFixed of the barcode to delete",
+			"guid_fixed": "string (required) - GuidFixed of the barcode to delete",
 		},
 	},
 	{
@@ -638,8 +638,8 @@ var AvailableTools = []map[string]interface{}{
 		"parameters": map[string]interface{}{
 			"shop_id":      "string (required) - Shop ID",
 			"names":        "string (required) - JSON array [{\"code\":\"th\",\"name\":\"เนื้อสัตว์\"},{\"code\":\"en\",\"name\":\"Meat\"}]",
-			"parentguid":   "string (optional) - Parent category guidfixed (for hierarchy)",
-			"groupnumber":  "number (optional) - Group/sort number",
+			"parent_guid":   "string (optional) - Parent category guidfixed (for hierarchy)",
+			"group_number":  "number (optional) - Group/sort number",
 		},
 	},
 	{
@@ -655,10 +655,10 @@ var AvailableTools = []map[string]interface{}{
 		"description": "Update an existing product category by guidfixed.",
 		"parameters": map[string]interface{}{
 			"shop_id":     "string (required) - Shop ID",
-			"guidfixed":   "string (required) - GuidFixed of the category to update",
+			"guid_fixed":   "string (required) - GuidFixed of the category to update",
 			"names":       "string (optional) - JSON array of multi-language names [{\"code\":\"th\",\"name\":\"เนื้อสัตว์\"}]",
-			"parentguid":  "string (optional) - New parent category guidfixed",
-			"groupnumber": "number (optional) - New group/sort number",
+			"parent_guid":  "string (optional) - New parent category guidfixed",
+			"group_number": "number (optional) - New group/sort number",
 		},
 	},
 	{
@@ -666,7 +666,7 @@ var AvailableTools = []map[string]interface{}{
 		"description": "Delete a product category by guidfixed.",
 		"parameters": map[string]interface{}{
 			"shop_id":   "string (required) - Shop ID",
-			"guidfixed": "string (required) - GuidFixed of the category to delete",
+			"guid_fixed": "string (required) - GuidFixed of the category to delete",
 		},
 	},
 	{
@@ -697,8 +697,8 @@ var AvailableTools = []map[string]interface{}{
 		"parameters": map[string]interface{}{
 			"code":              "string (required) — Creditor code e.g. 'CR-001'",
 			"names":             "string (required) — JSON array of names e.g. [{\"code\":\"th\",\"name\":\"บริษัท ABC\"}]",
-			"personaltype":      "number (optional) — 1=บุคคลธรรมดา, 2=นิติบุคคล (default: 0)",
-			"taxid":             "string (optional) — Tax ID",
+			"personal_type":      "number (optional) — 1=บุคคลธรรมดา, 2=นิติบุคคล (default: 0)",
+			"tax_id":             "string (optional) — Tax ID",
 			"email":             "string (optional) — Email",
 			"creditday":         "number (optional) — Credit days",
 			"addressforbilling": "string (optional) — JSON object {address, countrycode, provincecode, districtcode, subdistrictcode, zipcode, phoneprimary}",
@@ -715,9 +715,9 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "update_creditor",
 		"description": "Update an existing creditor by guidfixed.",
 		"parameters": map[string]interface{}{
-			"guidfixed":         "string (required) — GuidFixed of the creditor to update",
+			"guid_fixed":         "string (required) — GuidFixed of the creditor to update",
 			"names":             "string (optional) — JSON array of names",
-			"taxid":             "string (optional) — New tax ID",
+			"tax_id":             "string (optional) — New tax ID",
 			"email":             "string (optional) — New email",
 			"creditday":         "number (optional) — New credit days",
 			"addressforbilling": "string (optional) — JSON object for billing address",
@@ -727,7 +727,7 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "delete_creditor",
 		"description": "Delete a creditor by guidfixed (soft delete).",
 		"parameters": map[string]interface{}{
-			"guidfixed": "string (required) — GuidFixed of the creditor to delete",
+			"guid_fixed": "string (required) — GuidFixed of the creditor to delete",
 		},
 	},
 	{
@@ -757,8 +757,8 @@ var AvailableTools = []map[string]interface{}{
 		"parameters": map[string]interface{}{
 			"code":              "string (required) — Debtor code e.g. 'DB-001'",
 			"names":             "string (required) — JSON array of names e.g. [{\"code\":\"th\",\"name\":\"ร้าน XYZ\"}]",
-			"personaltype":      "number (optional) — 1=บุคคลธรรมดา, 2=นิติบุคคล (default: 0)",
-			"taxid":             "string (optional) — Tax ID",
+			"personal_type":      "number (optional) — 1=บุคคลธรรมดา, 2=นิติบุคคล (default: 0)",
+			"tax_id":             "string (optional) — Tax ID",
 			"email":             "string (optional) — Email",
 			"creditday":         "number (optional) — Credit days",
 			"addressforbilling": "string (optional) — JSON object {address, countrycode, provincecode, districtcode, subdistrictcode, zipcode, phoneprimary}",
@@ -775,9 +775,9 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "update_debtor",
 		"description": "Update an existing debtor by guidfixed.",
 		"parameters": map[string]interface{}{
-			"guidfixed":         "string (required) — GuidFixed of the debtor to update",
+			"guid_fixed":         "string (required) — GuidFixed of the debtor to update",
 			"names":             "string (optional) — JSON array of names",
-			"taxid":             "string (optional) — New tax ID",
+			"tax_id":             "string (optional) — New tax ID",
 			"email":             "string (optional) — New email",
 			"creditday":         "number (optional) — New credit days",
 			"addressforbilling": "string (optional) — JSON object for billing address",
@@ -787,7 +787,7 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "delete_debtor",
 		"description": "Delete a debtor by guidfixed (soft delete).",
 		"parameters": map[string]interface{}{
-			"guidfixed": "string (required) — GuidFixed of the debtor to delete",
+			"guid_fixed": "string (required) — GuidFixed of the debtor to delete",
 		},
 	},
 	{
@@ -821,20 +821,20 @@ var AvailableTools = []map[string]interface{}{
 			"details":     "string (optional) — JSON array of line items [{\"barcode\":\"123\",\"itemcode\":\"SKU1\",\"qty\":10,\"price\":100,\"sumamount\":1000}]",
 			"description": "string (optional) — Description/remark",
 			"transflag":   "number (optional) — Transaction flag (default: 0)",
-			"vattype":     "number (optional) — VAT type (0=none, 1=inclusive, 2=exclusive)",
+			"vat_type":     "number (optional) — VAT type (0=none, 1=inclusive, 2=exclusive)",
 			"vatrate":     "number (optional) — VAT rate %",
-			"totalamount": "number (optional) — Total amount",
+			"total_amount": "number (optional) — Total amount",
 		},
 	},
 	{
 		"name":        "update_purchase_order",
 		"description": "Update an existing purchase order by guidfixed.",
 		"parameters": map[string]interface{}{
-			"guidfixed":   "string (required) — GuidFixed of the purchase order to update",
+			"guid_fixed":   "string (required) — GuidFixed of the purchase order to update",
 			"custnames":   "string (optional) — JSON array of creditor names",
 			"details":     "string (optional) — JSON array of line items",
 			"description": "string (optional) — New description",
-			"totalamount": "number (optional) — New total amount",
+			"total_amount": "number (optional) — New total amount",
 			"status":      "number (optional) — New status (0=draft, 1=pending, 2=approved, 3=rejected)",
 		},
 	},
@@ -842,7 +842,7 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "delete_purchase_order",
 		"description": "Delete a purchase order by guidfixed (soft delete).",
 		"parameters": map[string]interface{}{
-			"guidfixed": "string (required) — GuidFixed of the purchase order to delete",
+			"guid_fixed": "string (required) — GuidFixed of the purchase order to delete",
 		},
 	},
 	{
@@ -875,14 +875,14 @@ var AvailableTools = []map[string]interface{}{
 			"requested_delivery_date": "string (optional) — Requested delivery date (YYYY-MM-DD)",
 			"details":                 "string (optional) — JSON array of items [{\"barcode\":\"123\",\"itemcode\":\"SKU1\",\"qty\":10,\"price\":100,\"sumamount\":1000}]",
 			"description":             "string (optional) — Description/remark",
-			"totalamount":             "number (optional) — Total amount",
+			"total_amount":             "number (optional) — Total amount",
 		},
 	},
 	{
 		"name":        "update_purchase_requisition",
 		"description": "Update an existing purchase requisition by guidfixed.",
 		"parameters": map[string]interface{}{
-			"guidfixed":               "string (required) — GuidFixed of the PR to update",
+			"guid_fixed":               "string (required) — GuidFixed of the PR to update",
 			"requester_code":          "string (optional) — New requester code",
 			"requester_name":          "string (optional) — New requester name",
 			"department_code":         "string (optional) — New department code",
@@ -894,7 +894,7 @@ var AvailableTools = []map[string]interface{}{
 			"requested_delivery_date": "string (optional) — New delivery date",
 			"details":                 "string (optional) — JSON array of items",
 			"description":             "string (optional) — New description",
-			"totalamount":             "number (optional) — New total amount",
+			"total_amount":             "number (optional) — New total amount",
 			"status":                  "number (optional) — New status (0=draft, 1=pending, 2=approved, 3=rejected)",
 			"conversion_status":       "string (optional) — none/converted_to_rfq/converted_to_po",
 		},
@@ -903,7 +903,7 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "delete_purchase_requisition",
 		"description": "Delete a purchase requisition by guidfixed (soft delete).",
 		"parameters": map[string]interface{}{
-			"guidfixed": "string (required) — GuidFixed of the PR to delete",
+			"guid_fixed": "string (required) — GuidFixed of the PR to delete",
 		},
 	},
 	{
@@ -2046,16 +2046,16 @@ func (s *MCPServer) invokeCreateBarcode(ctx context.Context, params map[string]i
 	barcode := getStringParam(params, "barcode")
 	itemCode := getStringParam(params, "itemcode")
 	names := getStringParam(params, "names")
-	itemUnitCode := getStringParam(params, "itemunitcode")
+	itemUnitCode := getStringParam(params, "item_unit_code")
 	itemUnitNames := getStringParam(params, "itemunitnames")
 	prices := getStringParam(params, "prices")
 	standValue := getFloatParam(params, "standvalue")
 	divideValue := getFloatParam(params, "dividevalue")
-	isMainBarcode := getBoolPtrParam(params, "ismainbarcode")
-	groupCode := getStringParam(params, "groupcode")
-	groupNames := getStringParam(params, "groupnames")
+	isMainBarcode := getBoolPtrParam(params, "is_main_barcode")
+	groupCode := getStringParam(params, "group_code")
+	groupNames := getStringParam(params, "group_names")
 	categoryCode := getStringParam(params, "categorycode")
-	categoryNames := getStringParam(params, "categorynames")
+	categoryNames := getStringParam(params, "category_names")
 	return tools.CreateBarcode(ctx, shopID, barcode, itemCode, names, itemUnitCode, itemUnitNames, prices, standValue, divideValue, isMainBarcode, groupCode, groupNames, categoryCode, categoryNames)
 }
 
@@ -2069,22 +2069,22 @@ func (s *MCPServer) invokeCreateBarcodes(ctx context.Context, params map[string]
 // invokeUpdateBarcode invokes the update barcode tool
 func (s *MCPServer) invokeUpdateBarcode(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	shopID := getStringParam(params, "shop_id")
-	guidFixed := getStringParam(params, "guidfixed")
+	guidFixed := getStringParam(params, "guid_fixed")
 	names := getStringParam(params, "names")
-	itemUnitCode := getStringParam(params, "itemunitcode")
+	itemUnitCode := getStringParam(params, "item_unit_code")
 	itemUnitNames := getStringParam(params, "itemunitnames")
 	prices := getStringParam(params, "prices")
-	groupCode := getStringParam(params, "groupcode")
-	groupNames := getStringParam(params, "groupnames")
+	groupCode := getStringParam(params, "group_code")
+	groupNames := getStringParam(params, "group_names")
 	categoryCode := getStringParam(params, "categorycode")
-	categoryNames := getStringParam(params, "categorynames")
+	categoryNames := getStringParam(params, "category_names")
 	return tools.UpdateBarcode(ctx, shopID, guidFixed, names, itemUnitCode, itemUnitNames, prices, groupCode, groupNames, categoryCode, categoryNames)
 }
 
 // invokeDeleteBarcode invokes the delete barcode tool
 func (s *MCPServer) invokeDeleteBarcode(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	shopID := getStringParam(params, "shop_id")
-	guidFixed := getStringParam(params, "guidfixed")
+	guidFixed := getStringParam(params, "guid_fixed")
 	return tools.DeleteBarcode(ctx, shopID, guidFixed)
 }
 
@@ -2201,8 +2201,8 @@ func (s *MCPServer) invokeListProductCategories(ctx context.Context, params map[
 func (s *MCPServer) invokeCreateProductCategory(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	shopID := getStringParam(params, "shop_id")
 	names := getStringParam(params, "names")
-	parentGUID := getStringParam(params, "parentguid")
-	groupNumber := getIntParam(params, "groupnumber")
+	parentGUID := getStringParam(params, "parent_guid")
+	groupNumber := getIntParam(params, "group_number")
 	return tools.CreateProductCategory(ctx, shopID, names, parentGUID, groupNumber)
 }
 
@@ -2214,16 +2214,16 @@ func (s *MCPServer) invokeCreateProductCategories(ctx context.Context, params ma
 
 func (s *MCPServer) invokeUpdateProductCategory(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	shopID := getStringParam(params, "shop_id")
-	guidFixed := getStringParam(params, "guidfixed")
+	guidFixed := getStringParam(params, "guid_fixed")
 	names := getStringParam(params, "names")
-	parentGUID := getStringParam(params, "parentguid")
-	groupNumber := getIntParam(params, "groupnumber")
+	parentGUID := getStringParam(params, "parent_guid")
+	groupNumber := getIntParam(params, "group_number")
 	return tools.UpdateProductCategory(ctx, shopID, guidFixed, names, parentGUID, groupNumber)
 }
 
 func (s *MCPServer) invokeDeleteProductCategory(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	shopID := getStringParam(params, "shop_id")
-	guidFixed := getStringParam(params, "guidfixed")
+	guidFixed := getStringParam(params, "guid_fixed")
 	return tools.DeleteProductCategory(ctx, shopID, guidFixed)
 }
 
@@ -2257,9 +2257,9 @@ func (s *MCPServer) invokeCreateCreditor(ctx context.Context, params map[string]
 	shopID := getStringParam(params, "shop_id")
 	code := getStringParam(params, "code")
 	names := getStringParam(params, "names")
-	taxid := getStringParam(params, "taxid")
+	taxid := getStringParam(params, "tax_id")
 	email := getStringParam(params, "email")
-	personaltype := int8(getIntParam(params, "personaltype"))
+	personaltype := int8(getIntParam(params, "personal_type"))
 	creditday := getIntParam(params, "creditday")
 	address := getStringParam(params, "addressforbilling")
 	return tools.CreateCreditor(ctx, shopID, code, names, taxid, email, personaltype, creditday, address)
@@ -2273,9 +2273,9 @@ func (s *MCPServer) invokeCreateCreditors(ctx context.Context, params map[string
 
 func (s *MCPServer) invokeUpdateCreditor(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	shopID := getStringParam(params, "shop_id")
-	guidfixed := getStringParam(params, "guidfixed")
+	guidfixed := getStringParam(params, "guid_fixed")
 	names := getStringParam(params, "names")
-	taxid := getStringParam(params, "taxid")
+	taxid := getStringParam(params, "tax_id")
 	email := getStringParam(params, "email")
 	creditday := getIntParam(params, "creditday")
 	address := getStringParam(params, "addressforbilling")
@@ -2284,7 +2284,7 @@ func (s *MCPServer) invokeUpdateCreditor(ctx context.Context, params map[string]
 
 func (s *MCPServer) invokeDeleteCreditor(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	shopID := getStringParam(params, "shop_id")
-	guidfixed := getStringParam(params, "guidfixed")
+	guidfixed := getStringParam(params, "guid_fixed")
 	return tools.DeleteCreditor(ctx, shopID, guidfixed)
 }
 
@@ -2318,9 +2318,9 @@ func (s *MCPServer) invokeCreateDebtor(ctx context.Context, params map[string]in
 	shopID := getStringParam(params, "shop_id")
 	code := getStringParam(params, "code")
 	names := getStringParam(params, "names")
-	taxid := getStringParam(params, "taxid")
+	taxid := getStringParam(params, "tax_id")
 	email := getStringParam(params, "email")
-	personaltype := int8(getIntParam(params, "personaltype"))
+	personaltype := int8(getIntParam(params, "personal_type"))
 	creditday := getIntParam(params, "creditday")
 	address := getStringParam(params, "addressforbilling")
 	return tools.CreateDebtor(ctx, shopID, code, names, taxid, email, personaltype, creditday, address)
@@ -2334,9 +2334,9 @@ func (s *MCPServer) invokeCreateDebtors(ctx context.Context, params map[string]i
 
 func (s *MCPServer) invokeUpdateDebtor(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	shopID := getStringParam(params, "shop_id")
-	guidfixed := getStringParam(params, "guidfixed")
+	guidfixed := getStringParam(params, "guid_fixed")
 	names := getStringParam(params, "names")
-	taxid := getStringParam(params, "taxid")
+	taxid := getStringParam(params, "tax_id")
 	email := getStringParam(params, "email")
 	creditday := getIntParam(params, "creditday")
 	address := getStringParam(params, "addressforbilling")
@@ -2345,7 +2345,7 @@ func (s *MCPServer) invokeUpdateDebtor(ctx context.Context, params map[string]in
 
 func (s *MCPServer) invokeDeleteDebtor(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	shopID := getStringParam(params, "shop_id")
-	guidfixed := getStringParam(params, "guidfixed")
+	guidfixed := getStringParam(params, "guid_fixed")
 	return tools.DeleteDebtor(ctx, shopID, guidfixed)
 }
 
@@ -2376,26 +2376,26 @@ func (s *MCPServer) invokeCreatePurchaseOrder(ctx context.Context, params map[st
 	details := getStringParam(params, "details")
 	description := getStringParam(params, "description")
 	transflag := getIntParam(params, "transflag")
-	vattype := int8(getIntParam(params, "vattype"))
+	vattype := int8(getIntParam(params, "vat_type"))
 	vatrate := getFloatParam(params, "vatrate")
-	totalamount := getFloatParam(params, "totalamount")
+	totalamount := getFloatParam(params, "total_amount")
 	return tools.CreatePurchaseOrder(ctx, shopID, docno, custcode, custnames, details, description, transflag, vattype, vatrate, totalamount)
 }
 
 func (s *MCPServer) invokeUpdatePurchaseOrder(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	shopID := getStringParam(params, "shop_id")
-	guidfixed := getStringParam(params, "guidfixed")
+	guidfixed := getStringParam(params, "guid_fixed")
 	custnames := getStringParam(params, "custnames")
 	details := getStringParam(params, "details")
 	description := getStringParam(params, "description")
-	totalamount := getFloatParam(params, "totalamount")
+	totalamount := getFloatParam(params, "total_amount")
 	status := int8(getIntParam(params, "status"))
 	return tools.UpdatePurchaseOrder(ctx, shopID, guidfixed, custnames, details, description, totalamount, status)
 }
 
 func (s *MCPServer) invokeDeletePurchaseOrder(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	shopID := getStringParam(params, "shop_id")
-	guidfixed := getStringParam(params, "guidfixed")
+	guidfixed := getStringParam(params, "guid_fixed")
 	return tools.DeletePurchaseOrder(ctx, shopID, guidfixed)
 }
 
@@ -2426,13 +2426,13 @@ func (s *MCPServer) invokeCreatePurchaseRequisition(ctx context.Context, params 
 	requestedDeliveryDate := getStringParam(params, "requested_delivery_date")
 	details := getStringParam(params, "details")
 	description := getStringParam(params, "description")
-	totalamount := getFloatParam(params, "totalamount")
+	totalamount := getFloatParam(params, "total_amount")
 	return tools.CreatePurchaseRequisition(ctx, shopID, docno, requesterCode, requesterName, departmentCode, departmentNames, purpose, budgetCode, budgetAmount, urgency, requestedDeliveryDate, details, description, totalamount)
 }
 
 func (s *MCPServer) invokeUpdatePurchaseRequisition(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	shopID := getStringParam(params, "shop_id")
-	guidfixed := getStringParam(params, "guidfixed")
+	guidfixed := getStringParam(params, "guid_fixed")
 	requesterCode := getStringParam(params, "requester_code")
 	requesterName := getStringParam(params, "requester_name")
 	departmentCode := getStringParam(params, "department_code")
@@ -2444,7 +2444,7 @@ func (s *MCPServer) invokeUpdatePurchaseRequisition(ctx context.Context, params 
 	requestedDeliveryDate := getStringParam(params, "requested_delivery_date")
 	details := getStringParam(params, "details")
 	description := getStringParam(params, "description")
-	totalamount := getFloatParam(params, "totalamount")
+	totalamount := getFloatParam(params, "total_amount")
 	status := int8(getIntParam(params, "status"))
 	conversionStatus := getStringParam(params, "conversion_status")
 	return tools.UpdatePurchaseRequisition(ctx, shopID, guidfixed, requesterCode, requesterName, departmentCode, departmentNames, purpose, budgetCode, budgetAmount, urgency, requestedDeliveryDate, details, description, totalamount, status, conversionStatus)
@@ -2452,7 +2452,7 @@ func (s *MCPServer) invokeUpdatePurchaseRequisition(ctx context.Context, params 
 
 func (s *MCPServer) invokeDeletePurchaseRequisition(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	shopID := getStringParam(params, "shop_id")
-	guidfixed := getStringParam(params, "guidfixed")
+	guidfixed := getStringParam(params, "guid_fixed")
 	return tools.DeletePurchaseRequisition(ctx, shopID, guidfixed)
 }
 

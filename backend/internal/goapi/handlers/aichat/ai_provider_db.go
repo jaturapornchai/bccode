@@ -20,19 +20,19 @@ const aiProviderCollection = "aiProviderConfigs"
 
 // AIProviderConfig — config ของ AI provider ต่อ shop
 type AIProviderConfig struct {
-	ShopID        string     `bson:"shopid" json:"shop_id"`
-	ProviderName  string     `bson:"providername" json:"provider_name"`
-	APIKey        string     `bson:"apikey" json:"api_key"`
-	BaseURL       string     `bson:"baseurl" json:"base_url"`
-	Model         string     `bson:"model" json:"model"`
-	Capabilities  []string   `bson:"capabilities" json:"capabilities"` // ["tools","vision","thinking"]
-	IsActive      bool       `bson:"isactive" json:"is_active"`
-	Priority      int        `bson:"priority" json:"priority"`
-	LastError     string     `bson:"lasterror" json:"last_error"`
-	LastErrorAt   *time.Time `bson:"lasterrorat" json:"last_error_at"`
+	ShopID string     `bson:"shopid" json:"shop_id"`
+	ProviderName string     `bson:"provider_name" json:"provider_name"`
+	APIKey string     `bson:"apikey" json:"api_key"`
+	BaseURL string     `bson:"baseurl" json:"base_url"`
+	Model string     `bson:"model" json:"model"`
+	Capabilities []string   `bson:"capabilities" json:"capabilities"` // ["tools","vision","thinking"]
+	IsActive bool       `bson:"isactive" json:"is_active"`
+	Priority int        `bson:"priority" json:"priority"`
+	LastError string     `bson:"lasterror" json:"last_error"`
+	LastErrorAt *time.Time `bson:"last_error_at" json:"last_error_at"`
 	CooldownUntil *time.Time `bson:"cooldownuntil" json:"cooldown_until"`
-	CreatedAt     time.Time  `bson:"createdat" json:"created_at"`
-	UpdatedAt     time.Time  `bson:"updatedat" json:"updated_at"`
+	CreatedAt time.Time  `bson:"created_at" json:"created_at"`
+	UpdatedAt time.Time  `bson:"updated_at" json:"updated_at"`
 }
 
 // getAIProviderCollection คืน MongoDB collection
@@ -54,7 +54,7 @@ func ensureAIProviderIndex(col *mongo.Collection) {
 	_, err := col.Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys: bson.D{
 			{Key: "shopid", Value: 1},
-			{Key: "providername", Value: 1},
+			{Key: "provider_name", Value: 1},
 		},
 		Options: options.Index().SetUnique(true),
 	})
@@ -105,14 +105,14 @@ func upsertAIProviderConfig(shopID string, cfg AIProviderConfig) error {
 	cfg.ShopID = shopID
 	cfg.UpdatedAt = now
 
-	filter := bson.M{"shopid": shopID, "providername": cfg.ProviderName}
+	filter := bson.M{"shopid": shopID, "provider_name": cfg.ProviderName}
 	setFields := bson.M{
 		"model":         cfg.Model,
 		"baseurl":       cfg.BaseURL,
 		"capabilities":  cfg.Capabilities,
 		"isactive":      cfg.IsActive,
 		"priority":      cfg.Priority,
-		"updatedat":     now,
+		"updated_at":     now,
 		"lasterror":     "",
 		"cooldownuntil": nil,
 	}
@@ -124,8 +124,8 @@ func upsertAIProviderConfig(shopID string, cfg AIProviderConfig) error {
 		"$set": setFields,
 		"$setOnInsert": bson.M{
 			"shopid":       shopID,
-			"providername": cfg.ProviderName,
-			"createdat":    now,
+			"provider_name": cfg.ProviderName,
+			"created_at":    now,
 		},
 	}
 
@@ -150,7 +150,7 @@ func deleteAIProviderConfig(shopID, providerName string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	result, err := col.DeleteOne(ctx, bson.M{"shopid": shopID, "providername": providerName})
+	result, err := col.DeleteOne(ctx, bson.M{"shopid": shopID, "provider_name": providerName})
 	if err != nil {
 		return fmt.Errorf("deleteAIProviderConfig: %w", err)
 	}
@@ -172,13 +172,13 @@ func updateAIProviderCooldown(shopID, providerName string, errMsg string, cooldo
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	filter := bson.M{"shopid": shopID, "providername": providerName}
+	filter := bson.M{"shopid": shopID, "provider_name": providerName}
 	update := bson.M{
 		"$set": bson.M{
 			"lasterror":     errMsg,
-			"lasterrorat":   time.Now(),
+			"last_error_at":   time.Now(),
 			"cooldownuntil": cooldownUntil,
-			"updatedat":     time.Now(),
+			"updated_at":     time.Now(),
 		},
 	}
 	_, err = col.UpdateOne(ctx, filter, update)
@@ -199,12 +199,12 @@ func clearAIProviderCooldown(shopID, providerName string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	filter := bson.M{"shopid": shopID, "providername": providerName}
+	filter := bson.M{"shopid": shopID, "provider_name": providerName}
 	update := bson.M{
 		"$set": bson.M{
 			"lasterror":     "",
 			"cooldownuntil": nil,
-			"updatedat":     time.Now(),
+			"updated_at":     time.Now(),
 		},
 		"$unset": bson.M{
 			"cooldownuntil": "",

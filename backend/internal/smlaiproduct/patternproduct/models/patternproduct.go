@@ -10,13 +10,13 @@ const patternproductCollectionName = "patternProductMaster"
 
 type PatternProduct struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code                     string          `json:"code" bson:"code"`
-	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	Code string          `json:"code" bson:"code"`
+	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 }
 
 type PatternProductInfo struct {
 	models.DocIdentity `bson:"inline"`
-	PatternProduct     `bson:"inline"`
+	PatternProduct  `bson:"inline"`
 }
 
 func (PatternProductInfo) CollectionName() string {
@@ -29,7 +29,7 @@ type PatternProductData struct {
 }
 
 type PatternProductDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	PatternProductData `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

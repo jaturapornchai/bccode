@@ -212,9 +212,9 @@ func (h FormTemplateHttp) SearchFormTemplatePage(ctx microservice.IContext) erro
 
 	// Support filtering by doctype
 	filters := map[string]interface{}{}
-	docType := ctx.QueryParam("doctype")
+	docType := ctx.QueryParam("doc_type")
 	if docType != "" {
-		filters["doctype"] = docType
+		filters["doc_type"] = docType
 	}
 
 	docList, pagination, err := h.svc.SearchFormTemplate(shopID, filters, pageable)

@@ -56,12 +56,12 @@ func (repo AccountPeriodMasterRepository) FindByDateRange(ctx context.Context, s
 
 	filterQuery := bson.D{
 		bson.E{Key: "$or", Value: bson.A{
-			bson.D{{"startdate", bson.D{{"$gte", startDate}}}},
-			bson.D{{"enddate", bson.D{{"$gte", startDate}}}},
+			bson.D{{"start_date", bson.D{{"$gte", startDate}}}},
+			bson.D{{"end_date", bson.D{{"$gte", startDate}}}},
 		}},
 		bson.E{Key: "$or", Value: bson.A{
-			bson.D{{"startdate", bson.D{{"$lt", endDate}}}},
-			bson.D{{"enddate", bson.D{{"$lt", endDate}}}},
+			bson.D{{"start_date", bson.D{{"$lt", endDate}}}},
+			bson.D{{"end_date", bson.D{{"$lt", endDate}}}},
 		}},
 	}
 
@@ -94,7 +94,7 @@ func (repo AccountPeriodMasterRepository) FindAll(ctx context.Context, shopID st
 	filterQuery := bson.M{
 		"shopid":     shopID,
 		"isdisabled": false,
-		"deletedat":  bson.M{"$exists": false},
+		"deleted_at":  bson.M{"$exists": false},
 	}
 
 	findDocList := []models.AccountPeriodMasterDoc{}

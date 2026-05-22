@@ -63,7 +63,7 @@ func (repo BomRepository) FindUseBOMByBarcode(ctx context.Context, shopID string
 		"shopid":       shopID,
 		"iscurrentuse": true,
 		"barcode":      barcode,
-		"deletedat":    bson.M{"$exists": false},
+		"deleted_at":    bson.M{"$exists": false},
 	}
 
 	doc := models.ProductBarcodeBOMViewDoc{}
@@ -88,7 +88,7 @@ func (repo BomRepository) ClearUseBOMByBarcode(ctx context.Context, shopID strin
 		"shopid":       shopID,
 		"barcode":      barcode,
 		"iscurrentuse": true,
-		"deletedat":    bson.M{"$exists": false},
+		"deleted_at":    bson.M{"$exists": false},
 	}
 
 	err := repo.pst.Update(ctx, models.ProductBarcodeBOMViewDoc{}, filters, bson.M{"$set": bson.M{"iscurrentuse": false}})

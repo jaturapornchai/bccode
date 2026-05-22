@@ -154,7 +154,7 @@ func (svc BranchHttpService) DeleteBranchByGUIDs(shopID string, authUsername str
 	defer ctxCancel()
 
 	deleteFilterQuery := map[string]interface{}{
-		"guidfixed": bson.M{"$in": GUIDs},
+		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
 	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
@@ -212,7 +212,7 @@ func (svc BranchHttpService) SearchBranchStep(shopID string, langCode string, pa
 	}
 
 	selectFields := map[string]interface{}{
-		"guidfixed": 1,
+		"guid_fixed": 1,
 		"code":      1,
 	}
 

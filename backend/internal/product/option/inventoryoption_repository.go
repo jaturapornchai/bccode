@@ -49,7 +49,7 @@ func (repo OptionRepository) Update(ctx context.Context, shopID string, guid str
 
 	filterDoc := map[string]interface{}{
 		"shopid":    shopID,
-		"guidfixed": guid,
+		"guid_fixed": guid,
 	}
 
 	err := repo.pst.UpdateOne(ctx, &models.InventoryOptionMainDoc{}, filterDoc, doc)
@@ -62,7 +62,7 @@ func (repo OptionRepository) Update(ctx context.Context, shopID string, guid str
 }
 
 func (repo OptionRepository) Delete(ctx context.Context, shopID string, guid string, username string) error {
-	err := repo.pst.SoftDelete(ctx, &models.InventoryOptionMainDoc{}, username, bson.M{"guidfixed": guid, "shopid": shopID})
+	err := repo.pst.SoftDelete(ctx, &models.InventoryOptionMainDoc{}, username, bson.M{"guid_fixed": guid, "shopid": shopID})
 
 	if err != nil {
 		return err
@@ -74,7 +74,7 @@ func (repo OptionRepository) Delete(ctx context.Context, shopID string, guid str
 func (repo OptionRepository) FindByGuid(ctx context.Context, shopID string, guid string) (models.InventoryOptionMainDoc, error) {
 
 	doc := &models.InventoryOptionMainDoc{}
-	err := repo.pst.FindOne(ctx, &models.InventoryOptionMainDoc{}, bson.M{"guidfixed": guid, "shopid": shopID, "deletedat": bson.M{"$exists": false}}, doc)
+	err := repo.pst.FindOne(ctx, &models.InventoryOptionMainDoc{}, bson.M{"guid_fixed": guid, "shopid": shopID, "deleted_at": bson.M{"$exists": false}}, doc)
 
 	if err != nil {
 		return models.InventoryOptionMainDoc{}, err
@@ -87,9 +87,9 @@ func (repo OptionRepository) FindPage(ctx context.Context, shopID string, pageab
 
 	filterQueries := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 		"$or": []interface{}{
-			bson.M{"guidfixed": bson.M{"$regex": primitive.Regex{
+			bson.M{"guid_fixed": bson.M{"$regex": primitive.Regex{
 				Pattern: ".*" + pageable.Query + ".*",
 				Options: "",
 			}}},

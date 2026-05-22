@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { persistLanguagePreferenceCookies } from "@/lib/backend-language-preload";
 import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
 import {
@@ -97,6 +98,7 @@ export function SettingsScreen() {
   const [importText, setImportText] = useState("");
   const [currentSetupPassword, setCurrentSetupPassword] = useState("");
   const [newSetupPassword, setNewSetupPassword] = useState("");
+  const { confirm, confirmationDialog } = useConfirmDialog();
 
   const canSaveBackend = useMemo(() => backendUrl.trim().length > 0, [backendUrl]);
   const isBusy = loadingAction !== "idle";
@@ -229,7 +231,15 @@ export function SettingsScreen() {
       return;
     }
 
-    if (!window.confirm("บันทึก config ไปที่ backend? ค่านี้จะเขียนทับ bootstrap.json")) {
+    const confirmed = await confirm({
+      title: "ยืนยันบันทึก Config",
+      description: "บันทึก config ไปที่ backend และเขียนทับ bootstrap.json",
+      details: "ตรวจสอบ Backend URL และค่าที่แก้ไขให้เรียบร้อยก่อนยืนยัน เพราะค่าเหล่านี้มีผลกับการเชื่อมต่อระบบ",
+      confirmLabel: "บันทึก Config",
+      cancelLabel: "ยกเลิก",
+      tone: "warning",
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -666,6 +676,7 @@ export function SettingsScreen() {
 
       {dialogMode === "import" ? renderImportDialog() : null}
       {dialogMode === "change-password" ? renderChangePasswordDialog() : null}
+      {confirmationDialog}
     </main>
   );
 

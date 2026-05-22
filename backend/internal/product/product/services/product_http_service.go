@@ -137,7 +137,7 @@ func (svc ProductHttpService) ProductList(shopID string, filters map[string]inte
 	searchInFields := []string{
 		"names.name",
 		"code",
-		"groupcode",
+		"group_code",
 		"groupnames.name",
 	}
 
@@ -249,7 +249,7 @@ func (svc ProductHttpService) Delete(shopID string, guid string, user string) er
 	}
 
 	deleteFilterQuery := map[string]interface{}{
-		"guidfixed": bson.M{"$in": guid},
+		"guid_fixed": bson.M{"$in": guid},
 	}
 	err := svc.repo.Delete(ctx, shopID, user, deleteFilterQuery)
 	if err != nil {

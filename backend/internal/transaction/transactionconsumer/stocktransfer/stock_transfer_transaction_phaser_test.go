@@ -83,11 +83,11 @@ func wantStockTransferTransactionPGStruct() models.StockTransferTransactionPG {
 func TestStockTransferTransactionPhaser(t *testing.T) {
 
 	giveInput := `{
-		"guidfixed": "2PxfUZwdpS0nnK99j72fx7rPenz",
+		"guid_fixed": "2PxfUZwdpS0nnK99j72fx7rPenz",
 		"shopid": "2PrIIqTWxoBXv16K310sNwfHmfY",
 		"docno": "PO2305201653B6B0",
 		"docdatetime": "1480-05-20T10:10:56.000Z",
-		"guidref": "2d69a300-ac8c-4a8f-999e-8aaa06ae1adc",
+		"guid_ref": "2d69a300-ac8c-4a8f-999e-8aaa06ae1adc",
 		"transflag": 72,
 		"docreftype": 0,
 		"docrefno": "",
@@ -105,9 +105,9 @@ func TestStockTransferTransactionPhaser(t *testing.T) {
 		},
 		"taxdocdate": "2023-05-18T09:53:30.000Z",
 		"taxdocno": "",
-		"doctype": 0,
+		"doc_type": 0,
 		"inquirytype": 0,
-		"vattype": 0,
+		"vat_type": 0,
 		"vatrate": 0,
 		"custcode": "",
 		"custnames": [],
@@ -119,8 +119,8 @@ func TestStockTransferTransactionPhaser(t *testing.T) {
 		"totalaftervat": 0,
 		"totalbeforevat": 0,
 		"totalvatvalue": 0,
-		"totalamount": 0,
-		"totalcost": 0,
+		"total_amount": 0,
+		"total_cost": 0,
 		"posid": "",
 		"cashiercode": "",
 		"salecode": "",
@@ -132,7 +132,7 @@ func TestStockTransferTransactionPhaser(t *testing.T) {
 		"details": [
 		  {
 			"inquirytype": 0,
-			"linenumber": 0,
+			"line_number": 0,
 			"docdatetime": "2023-05-18T09:53:35.096Z",
 			"docref": "",
 			"docrefdatetime": "0001-01-01T00:00:00Z",
@@ -140,8 +140,8 @@ func TestStockTransferTransactionPhaser(t *testing.T) {
 			"barcode": "BARCODE015",
 			"itemcode": "",
 			"unitcode": "PCE",
-			"itemtype": 0,
-			"itemguid": "2Pxcf33JyR8jRXiKpH2cNc9lH9v",
+			"item_type": 0,
+			"item_guid": "2Pxcf33JyR8jRXiKpH2cNc9lH9v",
 			"qty": 5,
 			"totalqty": 5,
 			"price": 0,
@@ -149,18 +149,18 @@ func TestStockTransferTransactionPhaser(t *testing.T) {
 			"discountamount": 0,
 			"totalvaluevat": 0,
 			"priceexcludevat": 0,
-			"sumamount": 0,
+			"sum_amount": 0,
 			"sumamountexcludevat": 0,
 			"dividevalue": 1,
 			"standvalue": 1,
-			"vattype": 0,
+			"vat_type": 0,
 			"remark": "",
 			"multiunit": false,
 			"sumofcost": 0,
 			"averagecost": 0,
 			"laststatus": 0,
 			"ispos": 0,
-			"taxtype": 0,
+			"tax_type": 0,
 			"vatcal": 0,
 			"whcode": "00000",
 			"shelfcode": "",
@@ -228,7 +228,7 @@ func TestStockTransferTransactionPhaser(t *testing.T) {
 		  },
 		  {
 			"inquirytype": 0,
-			"linenumber": 0,
+			"line_number": 0,
 			"docdatetime": "2023-05-18T09:53:35.096Z",
 			"docref": "",
 			"docrefdatetime": "0001-01-01T00:00:00Z",
@@ -236,8 +236,8 @@ func TestStockTransferTransactionPhaser(t *testing.T) {
 			"barcode": "BARCODE015",
 			"itemcode": "",
 			"unitcode": "PCE",
-			"itemtype": 0,
-			"itemguid": "2Pxcf33JyR8jRXiKpH2cNc9lH9v",
+			"item_type": 0,
+			"item_guid": "2Pxcf33JyR8jRXiKpH2cNc9lH9v",
 			"qty": 5,
 			"totalqty": 5,
 			"price": 0,
@@ -245,18 +245,18 @@ func TestStockTransferTransactionPhaser(t *testing.T) {
 			"discountamount": 0,
 			"totalvaluevat": 0,
 			"priceexcludevat": 0,
-			"sumamount": 0,
+			"sum_amount": 0,
 			"sumamountexcludevat": 0,
 			"dividevalue": 1,
 			"standvalue": 1,
-			"vattype": 0,
+			"vat_type": 0,
 			"remark": "",
 			"multiunit": false,
 			"sumofcost": 0,
 			"averagecost": 0,
 			"laststatus": 0,
 			"ispos": 0,
-			"taxtype": 0,
+			"tax_type": 0,
 			"vatcal": 0,
 			"whcode": "00001",
 			"shelfcode": "",
@@ -333,11 +333,11 @@ func TestStockTransferTransactionPhaser(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, get.ShopID, want.ShopID, "shopid")
-	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guidfixed")
+	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guid_fixed")
 	assert.Equal(t, get.TransFlag, want.TransFlag, "transflag")
 	assert.Equal(t, get.DocNo, want.DocNo, "docno")
 	assert.Equal(t, get.DocDate, want.DocDate, "docdate")
-	assert.Equal(t, get.GuidRef, want.GuidRef, "guidref")
+	assert.Equal(t, get.GuidRef, want.GuidRef, "guid_ref")
 	assert.Equal(t, get.DocRefType, want.DocRefType, "docreftype")
 	assert.Equal(t, get.DocRefNo, want.DocRefNo, "docrefno")
 	assert.Equal(t, get.DocRefDate, want.DocRefDate, "docrefdate")
@@ -346,7 +346,7 @@ func TestStockTransferTransactionPhaser(t *testing.T) {
 	assert.Equal(t, get.Description, want.Description, "description")
 	assert.Equal(t, get.InquiryType, want.InquiryType, "inquirytype")
 	assert.Equal(t, get.VatRate, want.VatRate, "vatrate")
-	assert.Equal(t, get.VatType, want.VatType, "vattype")
+	assert.Equal(t, get.VatType, want.VatType, "vat_type")
 	assert.Equal(t, get.DiscountWord, want.DiscountWord, "discountword")
 	assert.Equal(t, get.TotalDiscount, want.TotalDiscount, "totaldiscount")
 	assert.Equal(t, get.TotalValue, want.TotalValue, "totalvalue")
@@ -354,7 +354,7 @@ func TestStockTransferTransactionPhaser(t *testing.T) {
 	assert.Equal(t, get.TotalExceptVat, want.TotalExceptVat, "totalexceptvat")
 	assert.Equal(t, get.TotalVatValue, want.TotalVatValue, "totalvatvalue")
 	assert.Equal(t, get.TotalAfterVat, want.TotalAfterVat, "totalaftervat")
-	assert.Equal(t, get.TotalAmount, want.TotalAmount, "totalamount")
+	assert.Equal(t, get.TotalAmount, want.TotalAmount, "total_amount")
 
 	// detail
 	assert.Equal(t, (*get.Items)[0].GuidFixed, (*want.Items)[0].GuidFixed, "item.guidfixed")

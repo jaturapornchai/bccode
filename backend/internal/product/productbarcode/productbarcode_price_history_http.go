@@ -88,8 +88,8 @@ func (h ProductBarcodeHttp) priceHistoryFilter(queryParam func(string) string) m
 			Type:  requestfilter.FieldTypeString,
 		},
 		{
-			Param: "keynumber",
-			Field: "keynumber",
+			Param: "key_number",
+			Field: "key_number",
 			Type:  requestfilter.FieldTypeString,
 		},
 		{
@@ -107,17 +107,17 @@ func (h ProductBarcodeHttp) priceHistoryFilter(queryParam func(string) string) m
 	// Date range filters
 	if fromDate := queryParam("fromdate"); fromDate != "" {
 		if toDate := queryParam("todate"); toDate != "" {
-			filters["createdat"] = map[string]interface{}{
+			filters["created_at"] = map[string]interface{}{
 				"$gte": fromDate + "T00:00:00Z",
 				"$lte": toDate + "T23:59:59Z",
 			}
 		} else {
-			filters["createdat"] = map[string]interface{}{
+			filters["created_at"] = map[string]interface{}{
 				"$gte": fromDate + "T00:00:00Z",
 			}
 		}
 	} else if toDate := queryParam("todate"); toDate != "" {
-		filters["createdat"] = map[string]interface{}{
+		filters["created_at"] = map[string]interface{}{
 			"$lte": toDate + "T23:59:59Z",
 		}
 	}

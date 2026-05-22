@@ -28,22 +28,22 @@ import (
 // ToolObservationEnvelope — JSON envelope ที่ห่อ tool result ก่อนส่งให้ AI
 // ตรงตาม spec OpenClaw + เพิ่ม field สำหรับ ReAct
 type ToolObservationEnvelope struct {
-	Tool            string                 `json:"tool"`
-	SessionKey      string                 `json:"sessionKey,omitempty"` // OpenClaw session_key
-	Params          map[string]interface{} `json:"params,omitempty"`
-	TookMs          int64                  `json:"tookMs"`
-	Iteration       int                    `json:"iteration,omitempty"`
-	ExternalContent ExternalContentMeta    `json:"externalContent"`
-	Data            interface{}            `json:"data,omitempty"`
-	Error           string                 `json:"error,omitempty"`
+	Tool string                 `json:"tool"`
+	SessionKey string                 `json:"session_key,omitempty"` // OpenClaw session_key
+	Params map[string]interface{} `json:"params,omitempty"`
+	TookMs int64                  `json:"took_ms"`
+	Iteration int                    `json:"iteration,omitempty"`
+	ExternalContent ExternalContentMeta    `json:"external_content"`
+	Data interface{}            `json:"data,omitempty"`
+	Error string                 `json:"error,omitempty"`
 }
 
 // ExternalContentMeta — metadata บอก AI ว่า data ภายในเป็น untrusted
 type ExternalContentMeta struct {
 	Untrusted bool   `json:"untrusted"`
-	Source    string `json:"source"`   // "mcp", "web_search", "custom_query", "user_upload"
-	Provider  string `json:"provider"` // ชื่อ tool หรือ external service
-	Wrapped   bool   `json:"wrapped"`
+	Source string `json:"source"`   // "mcp", "web_search", "custom_query", "user_upload"
+	Provider string `json:"provider"` // ชื่อ tool หรือ external service
+	Wrapped bool   `json:"wrapped"`
 }
 
 // untrustedSecurityNotice — banner เตือน AI ที่นำหน้า wrapped content เสมอ

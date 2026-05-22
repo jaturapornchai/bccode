@@ -14,15 +14,15 @@ import (
 
 // SalesReportRequest - request สำหรับรายงานขาย
 type SalesReportRequest struct {
-	ShopID       string   `json:"shop_id"`
-	FromDate     string   `json:"from_date"`
-	ToDate       string   `json:"to_date"`
-	BranchCodes  []string `json:"branch_codes,omitempty"`
+	ShopID string   `json:"shop_id"`
+	FromDate string   `json:"from_date"`
+	ToDate string   `json:"to_date"`
+	BranchCodes []string `json:"branch_codes,omitempty"`
 	ProductCodes []string `json:"product_codes,omitempty"`
 	SortAscending bool    `json:"sort_ascending"`
-	ReportType   string   `json:"report_type"` // "header" or "detail"
-	Limit        int      `json:"limit,omitempty"`
-	Offset       int      `json:"offset,omitempty"`
+	ReportType string   `json:"report_type"` // "header" or "detail"
+	Limit int      `json:"limit,omitempty"`
+	Offset int      `json:"offset,omitempty"`
 }
 
 // SalesReportByDocumentHandler - รายงานขายแยกตามเอกสาร (ปลอดภัยจาก SQL injection)

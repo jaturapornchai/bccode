@@ -1,6 +1,6 @@
 package models
 
 type DebtorProcessRequest struct {
-	ShopID     string `json:"shopId" `
-	DebtorCode string `json:"debtorCode"  `
+	ShopID string `json:"shop_id" `
+	DebtorCode string `json:"debtor_code"  `
 }

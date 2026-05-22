@@ -22,33 +22,33 @@ const productGroupCollection = "productGroups"
 
 // ProductGroupNameEntry ชื่อกลุ่มสินค้าแต่ละภาษา
 type ProductGroupNameEntry struct {
-	Code     string `json:"code" bson:"code"`
-	Name     string `json:"name" bson:"name"`
-	IsAuto   bool   `json:"isauto" bson:"isauto"`
+	Code string `json:"code" bson:"code"`
+	Name string `json:"name" bson:"name"`
+	IsAuto bool   `json:"isauto" bson:"isauto"`
 	IsDelete bool   `json:"isdelete" bson:"isdelete"`
 }
 
 // ProductGroupDocument เอกสารกลุ่มสินค้าใน MongoDB
 type ProductGroupDocument struct {
-	ID        primitive.ObjectID      `json:"id" bson:"_id,omitempty"`
-	ShopID    string                  `json:"shopid" bson:"shopid"`
-	GuidFixed string                  `json:"guidfixed" bson:"guidfixed"`
-	Code      string                  `json:"code" bson:"code"`
-	Names     []ProductGroupNameEntry `json:"names" bson:"names"`
+	ID primitive.ObjectID      `json:"id" bson:"_id,omitempty"`
+	ShopID string                  `json:"shopid" bson:"shopid"`
+	GuidFixed string                  `json:"guid_fixed" bson:"guid_fixed"`
+	Code string                  `json:"code" bson:"code"`
+	Names []ProductGroupNameEntry `json:"names" bson:"names"`
 	CreatedBy string                  `json:"createdby" bson:"createdby"`
-	CreatedAt time.Time               `json:"createdat" bson:"createdat"`
+	CreatedAt time.Time               `json:"created_at" bson:"created_at"`
 	UpdatedBy string                  `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
-	UpdatedAt time.Time               `json:"updatedat,omitempty" bson:"updatedat,omitempty"`
-	DeletedAt time.Time               `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
+	UpdatedAt time.Time               `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
+	DeletedAt time.Time               `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
 }
 
 // ==================== List Product Groups ====================
 
 // ListProductGroupsResponse ผลลัพธ์จากการดึง/ค้นหากลุ่มสินค้า
 type ListProductGroupsResponse struct {
-	Groups      []ProductGroupDocument `json:"groups"`
-	Count       int                    `json:"count"`
-	Keyword     string                 `json:"keyword,omitempty"`
+	Groups []ProductGroupDocument `json:"groups"`
+	Count int                    `json:"count"`
+	Keyword string                 `json:"keyword,omitempty"`
 	GeneratedAt time.Time              `json:"generated_at"`
 }
 
@@ -76,8 +76,8 @@ func ListProductGroups(ctx context.Context, shopID, keyword string, limit int) (
 	filter := bson.M{
 		"shopid": shopID,
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 
@@ -125,11 +125,11 @@ func ListProductGroups(ctx context.Context, shopID, keyword string, limit int) (
 
 // CreateProductGroupResponse ผลลัพธ์จากการสร้างกลุ่มสินค้า
 type CreateProductGroupResponse struct {
-	Success     bool                 `json:"success"`
-	Message     string               `json:"message"`
-	Group       ProductGroupDocument `json:"group"`
-	KafkaSync   string               `json:"kafka_sync"`
-	KafkaError  string               `json:"kafka_error,omitempty"`
+	Success bool                 `json:"success"`
+	Message string               `json:"message"`
+	Group ProductGroupDocument `json:"group"`
+	KafkaSync string               `json:"kafka_sync"`
+	KafkaError string               `json:"kafka_error,omitempty"`
 	GeneratedAt time.Time            `json:"generated_at"`
 }
 
@@ -156,8 +156,8 @@ func CreateProductGroup(ctx context.Context, shopID, code, namesJSON string) (*C
 		"shopid": shopID,
 		"code":   code,
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 	count, err := coll.CountDocuments(ctx, existFilter)
@@ -221,20 +221,20 @@ func CreateProductGroup(ctx context.Context, shopID, code, namesJSON string) (*C
 // ==================== Create Product Groups (Bulk) ====================
 
 type CreateProductGroupsItem struct {
-	Code  string                  `json:"code"`
+	Code string                  `json:"code"`
 	Names []ProductGroupNameEntry `json:"names"`
 }
 
 type CreateProductGroupsResponse struct {
-	Success      bool                   `json:"success"`
-	Message      string                 `json:"message"`
-	Created      []ProductGroupDocument `json:"created"`
-	Skipped      []string               `json:"skipped,omitempty"`
+	Success bool                   `json:"success"`
+	Message string                 `json:"message"`
+	Created []ProductGroupDocument `json:"created"`
+	Skipped []string               `json:"skipped,omitempty"`
 	CreatedCount int                    `json:"created_count"`
 	SkippedCount int                    `json:"skipped_count"`
-	KafkaSync    string                 `json:"kafka_sync"`
-	KafkaError   string                 `json:"kafka_error,omitempty"`
-	GeneratedAt  time.Time              `json:"generated_at"`
+	KafkaSync string                 `json:"kafka_sync"`
+	KafkaError string                 `json:"kafka_error,omitempty"`
+	GeneratedAt time.Time              `json:"generated_at"`
 }
 
 func CreateProductGroups(ctx context.Context, shopID, groupsJSON string) (*CreateProductGroupsResponse, error) {
@@ -274,8 +274,8 @@ func CreateProductGroups(ctx context.Context, shopID, groupsJSON string) (*Creat
 		"shopid": shopID,
 		"code":   bson.M{"$in": codes},
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 	cursor, err := coll.Find(ctx, existFilter)
@@ -361,11 +361,11 @@ func CreateProductGroups(ctx context.Context, shopID, groupsJSON string) (*Creat
 // ==================== Update Product Group ====================
 
 type UpdateProductGroupResponse struct {
-	Success     bool                 `json:"success"`
-	Message     string               `json:"message"`
-	Group       ProductGroupDocument `json:"group"`
-	KafkaSync   string               `json:"kafka_sync"`
-	KafkaError  string               `json:"kafka_error,omitempty"`
+	Success bool                 `json:"success"`
+	Message string               `json:"message"`
+	Group ProductGroupDocument `json:"group"`
+	KafkaSync string               `json:"kafka_sync"`
+	KafkaError string               `json:"kafka_error,omitempty"`
 	GeneratedAt time.Time            `json:"generated_at"`
 }
 
@@ -390,8 +390,8 @@ func UpdateProductGroup(ctx context.Context, shopID, code, namesJSON string) (*U
 		"shopid": shopID,
 		"code":   code,
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 
@@ -402,7 +402,7 @@ func UpdateProductGroup(ctx context.Context, shopID, code, namesJSON string) (*U
 	}
 
 	updateFields := bson.M{
-		"updatedat": time.Now(),
+		"updated_at": time.Now(),
 		"updatedby": "mcp-tool",
 	}
 	if namesJSON != "" {
@@ -444,11 +444,11 @@ func UpdateProductGroup(ctx context.Context, shopID, code, namesJSON string) (*U
 // ==================== Delete Product Group ====================
 
 type DeleteProductGroupResponse struct {
-	Success     bool      `json:"success"`
-	Message     string    `json:"message"`
-	Code        string    `json:"code"`
-	KafkaSync   string    `json:"kafka_sync"`
-	KafkaError  string    `json:"kafka_error,omitempty"`
+	Success bool      `json:"success"`
+	Message string    `json:"message"`
+	Code string    `json:"code"`
+	KafkaSync string    `json:"kafka_sync"`
+	KafkaError string    `json:"kafka_error,omitempty"`
 	GeneratedAt time.Time `json:"generated_at"`
 }
 
@@ -513,15 +513,15 @@ func DeleteProductGroup(ctx context.Context, shopID, code string) (*DeleteProduc
 // ==================== Delete Product Groups (Bulk) ====================
 
 type DeleteProductGroupsResponse struct {
-	Success       bool      `json:"success"`
-	Message       string    `json:"message"`
-	Deleted       []string  `json:"deleted"`
-	NotFound      []string  `json:"not_found,omitempty"`
-	DeletedCount  int       `json:"deleted_count"`
+	Success bool      `json:"success"`
+	Message string    `json:"message"`
+	Deleted []string  `json:"deleted"`
+	NotFound []string  `json:"not_found,omitempty"`
+	DeletedCount int       `json:"deleted_count"`
 	NotFoundCount int       `json:"not_found_count"`
-	KafkaSync     string    `json:"kafka_sync"`
-	KafkaError    string    `json:"kafka_error,omitempty"`
-	GeneratedAt   time.Time `json:"generated_at"`
+	KafkaSync string    `json:"kafka_sync"`
+	KafkaError string    `json:"kafka_error,omitempty"`
+	GeneratedAt time.Time `json:"generated_at"`
 }
 
 func DeleteProductGroups(ctx context.Context, shopID, codesJSON string) (*DeleteProductGroupsResponse, error) {
@@ -644,14 +644,14 @@ func GetProductGroupSchema() map[string]interface{} {
 		"fields": map[string]interface{}{
 			"_id":       "ObjectID — MongoDB auto-generated ID",
 			"shopid":    "string — Shop ID (tenant isolation)",
-			"guidfixed": "string — UUID สำหรับอ้างอิงภายใน",
+			"guid_fixed": "string — UUID สำหรับอ้างอิงภายใน",
 			"code":      "string (required, unique per shop) — รหัสกลุ่มสินค้า เช่น FOOD, DRINK, TOOL",
 			"names":     "array (required) — ชื่อหลายภาษา [{code:'th', name:'อาหาร'}, {code:'en', name:'Food'}]",
 			"createdby": "string — ผู้สร้าง",
-			"createdat": "datetime — วันที่สร้าง",
+			"created_at": "datetime — วันที่สร้าง",
 			"updatedby": "string — ผู้แก้ไขล่าสุด",
-			"updatedat": "datetime — วันที่แก้ไขล่าสุด",
-			"deletedat": "datetime — วันที่ลบ (soft delete)",
+			"updated_at": "datetime — วันที่แก้ไขล่าสุด",
+			"deleted_at": "datetime — วันที่ลบ (soft delete)",
 		},
 		"indexes": []string{
 			"shopid + code (unique per shop)",

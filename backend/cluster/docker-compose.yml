@@ -7,8 +7,8 @@ services:
       - 8080
     environment:
       - ENVIRONMENT=production
-      - MONGODB_URI=mongodb://localhost:27017/
-      - MONGODB_DB=smldev
+      - MONGODB_PRO_URI=${MONGODB_PRO_URI:-}
+      - MONGODB_PRO_DB=${MONGODB_PRO_DB:-}
       - REDIS_CACHE_URI=localhost:6379
     networks:
       - frontend

@@ -9,39 +9,39 @@ import (
 const employeeCollectionName = "employees"
 
 type Employee struct {
-	Code           string            `json:"code" bson:"code"`
-	Email          string            `json:"email" bson:"email"`
-	Name           string            `json:"name" bson:"name"`
+	Code string            `json:"code" bson:"code"`
+	Email string            `json:"email" bson:"email"`
+	Name string            `json:"name" bson:"name"`
 	ProfilePicture string            `json:"profilepicture" bson:"profilepicture"`
-	Roles          *[]string         `json:"roles" bson:"roles"`
-	IsEnabled      bool              `json:"isenabled" bson:"isenabled"`
-	IsUsePOS       bool              `json:"isusepos" bson:"isusepos"`
-	Contact        EmployeeContact   `json:"contact" bson:"contact"`
-	PinCode        string            `json:"pincode" bson:"pincode"`
-	Branches       *[]EmployeeBranch `json:"branches" bson:"branches"`
+	Roles *[]string         `json:"roles" bson:"roles"`
+	IsEnabled bool              `json:"isenabled" bson:"isenabled"`
+	IsUsePOS bool              `json:"isusepos" bson:"isusepos"`
+	Contact EmployeeContact   `json:"contact" bson:"contact"`
+	PinCode string            `json:"pincode" bson:"pincode"`
+	Branches *[]EmployeeBranch `json:"branches" bson:"branches"`
 }
 
 type EmployeeBranch struct {
 	models.DocIdentity `bson:"inline"`
-	Code               string          `json:"code" bson:"code"`
-	Names              *[]models.NameX `json:"names" bson:"names"`
+	Code string          `json:"code" bson:"code"`
+	Names *[]models.NameX `json:"names" bson:"names"`
 }
 
 type EmployeeContact struct {
-	Address         string  `json:"address" bson:"address"`
-	CountryCode     string  `json:"countrycode" bson:"countrycode"`
-	ProvinceCode    string  `json:"provincecode" bson:"provincecode"`
-	DistrictCode    string  `json:"districtcode" bson:"districtcode"`
-	SubDistrictCode string  `json:"subdistrictcode" bson:"subdistrictcode"`
-	ZipCode         string  `json:"zipcode" bson:"zipcode"`
-	PhoneNumber     string  `json:"phonenumber" bson:"phonenumber"`
-	Latitude        float64 `json:"latitude" bson:"latitude"`
-	Longitude       float64 `json:"longitude" bson:"longitude"`
+	Address string  `json:"address" bson:"address"`
+	CountryCode string  `json:"country_code" bson:"country_code"`
+	ProvinceCode string  `json:"province_code" bson:"province_code"`
+	DistrictCode string  `json:"district_code" bson:"district_code"`
+	SubDistrictCode string  `json:"sub_district_code" bson:"sub_district_code"`
+	ZipCode string  `json:"zip_code" bson:"zip_code"`
+	PhoneNumber string  `json:"phone_number" bson:"phone_number"`
+	Latitude float64 `json:"latitude" bson:"latitude"`
+	Longitude float64 `json:"longitude" bson:"longitude"`
 }
 
 type EmployeeInfo struct {
 	models.DocIdentity `bson:"inline"`
-	Employee           `bson:"inline"`
+	Employee  `bson:"inline"`
 }
 
 func (EmployeeInfo) CollectionName() string {
@@ -50,14 +50,14 @@ func (EmployeeInfo) CollectionName() string {
 
 type EmployeeData struct {
 	models.ShopIdentity `bson:"inline"`
-	EmployeeInfo        `bson:"inline"`
+	EmployeeInfo  `bson:"inline"`
 }
 
 type EmployeeDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	EmployeeData       `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	EmployeeData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
-	EmployeePassword   `bson:"inline" gorm:"embedded;"`
+	EmployeePassword  `bson:"inline" gorm:"embedded;"`
 }
 
 func (EmployeeDoc) CollectionName() string {
@@ -73,7 +73,7 @@ func (EmployeeItemGuid) CollectionName() string {
 }
 
 type EmployeeActivity struct {
-	EmployeeData        `bson:"inline"`
+	EmployeeData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 
@@ -91,13 +91,13 @@ func (EmployeeDeleteActivity) CollectionName() string {
 }
 
 type EmployeeRequestRegister struct {
-	Employee         `bson:"inline" gorm:"embedded;"`
+	Employee  `bson:"inline" gorm:"embedded;"`
 	EmployeePassword `bson:"inline" gorm:"embedded;"`
 }
 
 type EmployeeRequestLogin struct {
 	models.ShopIdentity
-	Code     string `json:"code" bson:"code"`
+	Code string `json:"code" bson:"code"`
 	Password string `json:"password" bson:"password"`
 }
 
@@ -106,9 +106,9 @@ type EmployeeRequestUpdate struct {
 }
 
 type EmployeeRequestPassword struct {
-	Code            string `json:"code" bson:"code"`
+	Code string `json:"code" bson:"code"`
 	CurrentPassword string `json:"currentpassword" bson:"currentpassword"`
-	NewPassword     string `json:"newpassword" bson:"newpassword"`
+	NewPassword string `json:"newpassword" bson:"newpassword"`
 }
 
 type EmployeePassword struct {

@@ -63,7 +63,7 @@ func (svc CustomerGroupHttpService) CreateCustomerGroup(shopID string, authUsern
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "groupcode", doc.GroupCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "group_code", doc.GroupCode)
 
 	if err != nil {
 		return "", err
@@ -154,7 +154,7 @@ func (svc CustomerGroupHttpService) DeleteCustomerGroupByGUIDs(shopID string, au
 	defer ctxCancel()
 
 	deleteFilterQuery := map[string]interface{}{
-		"guidfixed": bson.M{"$in": GUIDs},
+		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
 	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
@@ -188,7 +188,7 @@ func (svc CustomerGroupHttpService) SearchCustomerGroup(shopID string, filters m
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"groupcode",
+		"group_code",
 		"names.name",
 	}
 
@@ -206,7 +206,7 @@ func (svc CustomerGroupHttpService) SearchCustomerGroupStep(shopID string, langC
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"groupcode",
+		"group_code",
 		"names.name",
 	}
 
@@ -232,7 +232,7 @@ func (svc CustomerGroupHttpService) SaveInBatch(shopID string, authUsername stri
 		itemCodeGuidList = append(itemCodeGuidList, doc.GroupCode)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "groupcode", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "group_code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -271,7 +271,7 @@ func (svc CustomerGroupHttpService) SaveInBatch(shopID string, authUsername stri
 		duplicateDataList,
 		svc.getDocIDKey,
 		func(shopID string, guid string) (models.CustomerGroupDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "groupcode", guid)
+			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "group_code", guid)
 		},
 		func(doc models.CustomerGroupDoc) bool {
 			return doc.GroupCode != ""

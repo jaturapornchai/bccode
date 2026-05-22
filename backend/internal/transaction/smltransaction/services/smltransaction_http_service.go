@@ -128,15 +128,15 @@ func (svc SMLTransactionHttpService) save(shopID string, authUsername string, sm
 func (svc SMLTransactionHttpService) update(shopID string, authUsername string, findDoc map[string]interface{}, smlRequest models.SMLTransactionRequest) (string, error) {
 	collectionName := svc.getCollectionName(smlRequest.Collection)
 
-	guidFixed := fmt.Sprintf("%v", findDoc["guidfixed"])
+	guidFixed := fmt.Sprintf("%v", findDoc["guid_fixed"])
 	docData := smlRequest.Body
 	docData["shopid"] = findDoc["shopid"]
-	docData["guidfixed"] = guidFixed
+	docData["guid_fixed"] = guidFixed
 	docData["createdby"] = findDoc["createdby"]
-	docData["createdat"] = findDoc["createdat"]
+	docData["created_at"] = findDoc["created_at"]
 
 	docData["updatedby"] = authUsername
-	docData["updatedat"] = time.Now()
+	docData["updated_at"] = time.Now()
 
 	err := svc.repo.Update(collectionName, shopID, guidFixed, docData)
 
@@ -154,9 +154,9 @@ func (svc SMLTransactionHttpService) create(shopID string, authUsername string, 
 	newGuidFixed := utils.NewGUID()
 
 	docData["shopid"] = shopID
-	docData["guidfixed"] = newGuidFixed
+	docData["guid_fixed"] = newGuidFixed
 	docData["createdby"] = authUsername
-	docData["createdat"] = time.Now()
+	docData["created_at"] = time.Now()
 
 	_, err := svc.repo.Create(collectionName, docData)
 
@@ -173,9 +173,9 @@ func (svc SMLTransactionHttpService) createBody(shopID string, authUsername stri
 	newGuidFixed := utils.NewGUID()
 
 	docData["shopid"] = shopID
-	docData["guidfixed"] = newGuidFixed
+	docData["guid_fixed"] = newGuidFixed
 	docData["createdby"] = authUsername
-	docData["createdat"] = time.Now()
+	docData["created_at"] = time.Now()
 
 	return docData
 }

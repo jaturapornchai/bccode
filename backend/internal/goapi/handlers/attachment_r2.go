@@ -23,10 +23,23 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// AttachmentUploadHandler - อัปโหลดไฟล์แนบเอกสารไปยัง R2 และบันทึก metadata ใน MongoDB Atlas
+// AttachmentUploadHandler - อัปโหลดไฟล์แนบเอกสารไปยัง R2 และบันทึก metadata ใน MongoDB
 // POST /api/attachment/upload
 // Form data: file, shopid, screen_type, docno, guidfixed, description, uploaded_by, uploaded_name
 func AttachmentUploadHandler(c echo.Context) error {
+	shopID, authStatus := storageAuthorizedShopID(c, c.FormValue("shopid"))
+	if authStatus != http.StatusOK {
+		message := "shop not selected"
+		if authStatus == http.StatusForbidden {
+			message = "Forbidden"
+		}
+		return c.JSON(authStatus, map[string]interface{}{
+			"status":  "error",
+			"code":    authStatus,
+			"message": message,
+		})
+	}
+
 	// Check R2 client
 	client, err := GetR2Client()
 	if err != nil || client == nil {
@@ -38,20 +51,19 @@ func AttachmentUploadHandler(c echo.Context) error {
 		})
 	}
 
-	// Check MongoDB Atlas
+	// Check MongoDB
 	if atlasClient == nil {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "error",
 			"code":    503,
-			"message": "MongoDB Atlas is not connected",
+			"message": "MongoDB is not connected",
 		})
 	}
 
 	// Get required fields from form
-	shopID := c.FormValue("shopid")
 	screenType := c.FormValue("screen_type")
 	docNo := c.FormValue("docno")
-	guidFixed := c.FormValue("guidfixed")
+	guidFixed := c.FormValue("guid_fixed")
 	uploadedBy := c.FormValue("uploaded_by")
 	uploadedName := c.FormValue("uploaded_name")
 
@@ -177,7 +189,7 @@ func AttachmentUploadHandler(c echo.Context) error {
 		})
 	}
 
-	// Save metadata to MongoDB Atlas
+	// Save metadata to MongoDB
 	now := time.Now()
 	attachmentDoc := models.AttachmentMetadata{
 		ShopID:       shopID,
@@ -232,7 +244,7 @@ func AttachmentListHandler(c echo.Context) error {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "error",
 			"code":    503,
-			"message": "MongoDB Atlas is not connected",
+			"message": "MongoDB is not connected",
 		})
 	}
 
@@ -245,16 +257,21 @@ func AttachmentListHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+	shopID, authStatus := storageAuthorizedShopID(c, req.ShopID)
+	if authStatus != http.StatusOK {
+		message := "shop not selected"
+		if authStatus == http.StatusForbidden {
+			message = "Forbidden"
+		}
+		return c.JSON(authStatus, map[string]interface{}{
 			"status":  "error",
-			"code":    400,
-			"message": "shopid is required",
+			"code":    authStatus,
+			"message": message,
 		})
 	}
 
 	// Build filter
-	filter := bson.M{"shopid": req.ShopID}
+	filter := bson.M{"shopid": shopID}
 	if req.ScreenType != "" {
 		filter["screen_type"] = req.ScreenType
 	}
@@ -262,7 +279,7 @@ func AttachmentListHandler(c echo.Context) error {
 		filter["docno"] = req.DocNo
 	}
 	if req.GuidFixed != "" {
-		filter["guidfixed"] = req.GuidFixed
+		filter["guid_fixed"] = req.GuidFixed
 	}
 
 	// Query options
@@ -331,8 +348,8 @@ func AttachmentListHandler(c echo.Context) error {
 			UpdatedAt:    att.UpdatedAt,
 		}
 
-		// สร้าง Presigned URL (private, หมดอายุใน 60 นาที)
-		if client != nil && att.R2Key != "" {
+		// สร้าง private backend URL สำหรับ stream ผ่าน goapi เฉพาะไฟล์ใต้ shopid เดียวกัน
+		if client != nil && att.R2Key != "" && storageObjectBelongsToShop(att.R2Key, att.ShopID) {
 			url, err := getPresignedURL(client, att.R2Key, 60)
 			if err == nil {
 				item.URL = url
@@ -368,7 +385,7 @@ func AttachmentDeleteHandler(c echo.Context) error {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "error",
 			"code":    503,
-			"message": "MongoDB Atlas is not connected",
+			"message": "MongoDB is not connected",
 		})
 	}
 
@@ -381,11 +398,16 @@ func AttachmentDeleteHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+	shopID, authStatus := storageAuthorizedShopID(c, req.ShopID)
+	if authStatus != http.StatusOK {
+		message := "shop not selected"
+		if authStatus == http.StatusForbidden {
+			message = "Forbidden"
+		}
+		return c.JSON(authStatus, map[string]interface{}{
 			"status":  "error",
-			"code":    400,
-			"message": "shopid is required",
+			"code":    authStatus,
+			"message": message,
 		})
 	}
 
@@ -403,7 +425,7 @@ func AttachmentDeleteHandler(c echo.Context) error {
 	collection := atlasDB.Collection("attachments")
 
 	// Build filter
-	filter := bson.M{"shopid": req.ShopID}
+	filter := bson.M{"shopid": shopID}
 	if req.AttachmentID != "" {
 		oid, err := primitive.ObjectIDFromHex(req.AttachmentID)
 		if err != nil {
@@ -415,7 +437,7 @@ func AttachmentDeleteHandler(c echo.Context) error {
 		}
 		filter["_id"] = oid
 	} else {
-		filter["filename"] = req.FileName
+		filter["file_name"] = req.FileName
 	}
 
 	// Find the attachment first to get R2 key
@@ -426,6 +448,15 @@ func AttachmentDeleteHandler(c echo.Context) error {
 			"status":  "error",
 			"code":    404,
 			"message": "Attachment not found",
+		})
+	}
+
+	if !storageObjectBelongsToShop(attachmentDoc.R2Key, shopID) {
+		logger.Warn("Attachment delete blocked: requested_shop=%s object_shop=%s", shopID, storageObjectShopID(attachmentDoc.R2Key))
+		return c.JSON(http.StatusForbidden, map[string]interface{}{
+			"status":  "error",
+			"code":    403,
+			"message": "Forbidden",
 		})
 	}
 
@@ -450,7 +481,7 @@ func AttachmentDeleteHandler(c echo.Context) error {
 		})
 	}
 
-	logger.Success("Attachment deleted: %s (shop: %s, doc: %s)", attachmentDoc.FileName, req.ShopID, attachmentDoc.DocNo)
+	logger.Success("Attachment deleted: %s (shop: %s, doc: %s)", attachmentDoc.FileName, shopID, attachmentDoc.DocNo)
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"status":  "success",
@@ -459,9 +490,31 @@ func AttachmentDeleteHandler(c echo.Context) error {
 	})
 }
 
-// AttachmentDownloadHandler - ดาวน์โหลดไฟล์แนบโดยตรง (redirect to presigned URL)
+// AttachmentDownloadHandler - ดาวน์โหลดไฟล์แนบโดยตรงผ่าน private backend stream
 // GET /api/attachment/download/:id?shopid=xxx
 func AttachmentDownloadHandler(c echo.Context) error {
+	attachmentID := c.Param("id")
+	if attachmentID == "" {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  "error",
+			"code":    400,
+			"message": "attachment id is required",
+		})
+	}
+
+	shopID, authStatus := storageAuthorizedShopID(c, c.QueryParam("shopid"))
+	if authStatus != http.StatusOK {
+		message := "shop not selected"
+		if authStatus == http.StatusForbidden {
+			message = "Forbidden"
+		}
+		return c.JSON(authStatus, map[string]interface{}{
+			"status":  "error",
+			"code":    authStatus,
+			"message": message,
+		})
+	}
+
 	client, err := GetR2Client()
 	if err != nil || client == nil {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
@@ -475,18 +528,7 @@ func AttachmentDownloadHandler(c echo.Context) error {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "error",
 			"code":    503,
-			"message": "MongoDB Atlas is not connected",
-		})
-	}
-
-	attachmentID := c.Param("id")
-	shopID := c.QueryParam("shopid")
-
-	if attachmentID == "" || shopID == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"status":  "error",
-			"code":    400,
-			"message": "attachment id and shopid are required",
+			"message": "MongoDB is not connected",
 		})
 	}
 
@@ -518,17 +560,14 @@ func AttachmentDownloadHandler(c echo.Context) error {
 		})
 	}
 
-	// สร้าง Presigned URL (หมดอายุใน 5 นาที)
-	presignedURL, err := getPresignedURL(client, attachmentDoc.R2Key, 5)
-	if err != nil {
-		logger.Error("Failed to generate presigned URL: %v", err)
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+	if !storageObjectBelongsToShop(attachmentDoc.R2Key, shopID) {
+		logger.Warn("Attachment download blocked: requested_shop=%s object_shop=%s", shopID, storageObjectShopID(attachmentDoc.R2Key))
+		return c.JSON(http.StatusForbidden, map[string]interface{}{
 			"status":  "error",
-			"code":    500,
-			"message": "Failed to generate download link",
+			"code":    403,
+			"message": "Forbidden",
 		})
 	}
 
-	// Redirect ไปยัง presigned URL
-	return c.Redirect(http.StatusTemporaryRedirect, presignedURL)
+	return streamStorageObject(c, client, attachmentDoc.R2Key, attachmentDoc.OriginalName)
 }

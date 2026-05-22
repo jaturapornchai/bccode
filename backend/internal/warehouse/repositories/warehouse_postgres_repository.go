@@ -53,7 +53,7 @@ func (repo WarehousePGRepository) Update(shopID string, guidFixed string, doc mo
 
 	err := repo.pst.Update(&doc, map[string]interface{}{
 		"shopid":    shopID,
-		"guidfixed": guidFixed,
+		"guid_fixed": guidFixed,
 	})
 
 	if err != nil {
@@ -66,7 +66,7 @@ func (repo *WarehousePGRepository) Delete(shopID string, guidFixed string) error
 
 	err := repo.pst.Delete(models.WarehousePG{}, map[string]interface{}{
 		"shopid":    shopID,
-		"guidfixed": guidFixed,
+		"guid_fixed": guidFixed,
 	})
 
 	if err != nil {

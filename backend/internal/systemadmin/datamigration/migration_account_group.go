@@ -46,35 +46,35 @@ func masterAccountGroup() *[]accountGroupModels.AccountGroupDoc {
 	data := `[
 		{
 			"shopid": "999999999",
-			"guidfixed": "1",
+			"guid_fixed": "1",
 			"code": "1",
 			"name1": "เงินทุนที่ได้การสนับสนุนจากรัฐบาล (เงินล้าน)",
 			"iscentergroup" : true
 		},
 		{
 			"shopid": "999999999",
-			"guidfixed": "2",
+			"guid_fixed": "2",
 			"code": "2",
 			"name1": "เงินทุนจาก เงินออม เงินสัจจะ และ เงินหุ้น",
 			"iscentergroup" : true
 		},
 		{
 			"shopid": "999999999",
-			"guidfixed": "3",
+			"guid_fixed": "3",
 			"code": "3",
 			"name1": "เงินทุนจากการกู้ยืมธนาคารพาณิชย์",
 			"iscentergroup" : true
 		},
 		{
 			"shopid": "999999999",
-			"guidfixed": "4",
+			"guid_fixed": "4",
 			"code": "4",
 			"name1": "เงินทุนจากกิจกรรมสถาบันการเงินชุมชนและเงินอื่นๆ",
 			"iscentergroup" : true
 		},
 		{
 			"shopid": "999999999",
-			"guidfixed": "5",
+			"guid_fixed": "5",
 			"code": "5",
 			"name1": "ร้านค้าชุมชนตามโครงการประชารัฐ",
 			"iscentergroup" : true

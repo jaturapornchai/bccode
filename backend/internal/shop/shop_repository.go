@@ -39,7 +39,7 @@ func (repo ShopRepository) Create(ctx context.Context, shop models.ShopDoc) (str
 
 func (repo ShopRepository) Update(ctx context.Context, guid string, shop models.ShopDoc) error {
 	filterDoc := map[string]interface{}{
-		"guidfixed": guid,
+		"guid_fixed": guid,
 	}
 	err := repo.pst.UpdateOne(ctx, &models.ShopDoc{}, filterDoc, shop)
 
@@ -52,7 +52,7 @@ func (repo ShopRepository) Update(ctx context.Context, guid string, shop models.
 
 func (repo ShopRepository) FindByGuid(ctx context.Context, guid string) (models.ShopDoc, error) {
 	findShop := &models.ShopDoc{}
-	err := repo.pst.FindOne(ctx, &models.ShopDoc{}, bson.M{"guidfixed": guid, "deletedat": bson.M{"$exists": false}}, findShop)
+	err := repo.pst.FindOne(ctx, &models.ShopDoc{}, bson.M{"guid_fixed": guid, "deleted_at": bson.M{"$exists": false}}, findShop)
 
 	if err != nil {
 		return models.ShopDoc{}, err
@@ -62,7 +62,7 @@ func (repo ShopRepository) FindByGuid(ctx context.Context, guid string) (models.
 
 func (repo ShopRepository) FindPage(ctx context.Context, pageable micromodels.Pageable) ([]models.ShopInfo, mongopagination.PaginationData, error) {
 	filterQueries := bson.M{
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 		"name1": bson.M{"$regex": primitive.Regex{
 			Pattern: ".*" + pageable.Query + ".*",
 			Options: "",

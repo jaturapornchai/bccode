@@ -61,7 +61,7 @@ func NewChequeChangeRepository(pst microservice.IPersisterMongo) *ChequeChangeRe
 func (repo ChequeChangeRepository) FindLastDocNo(ctx context.Context, shopID string, prefixDocNo string) (models.ChequeChangeDoc, error) {
 	filters := bson.M{
 		"shopid": shopID,
-		"deletedat": bson.M{
+		"deleted_at": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

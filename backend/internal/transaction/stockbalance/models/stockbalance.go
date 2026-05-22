@@ -15,7 +15,7 @@ type StockBalanceHeader struct {
 
 type StockBalance struct {
 	models.PartitionIdentity `bson:"inline"`
-	StockBalanceHeader       `bson:"inline"`
+	StockBalanceHeader  `bson:"inline"`
 	// Details                  *[]StockBalanceDetail `json:"details" bson:"details"`
 }
 
@@ -29,7 +29,7 @@ type StockBalanceMessage struct {
 
 type StockBalanceInfo struct {
 	models.DocIdentity `bson:"inline"`
-	StockBalance       `bson:"inline"`
+	StockBalance  `bson:"inline"`
 }
 
 func (StockBalanceInfo) CollectionName() string {
@@ -38,12 +38,12 @@ func (StockBalanceInfo) CollectionName() string {
 
 type StockBalanceData struct {
 	models.ShopIdentity `bson:"inline"`
-	StockBalanceInfo    `bson:"inline"`
+	StockBalanceInfo  `bson:"inline"`
 }
 
 type StockBalanceDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	StockBalanceData   `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	StockBalanceData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -60,7 +60,7 @@ func (StockBalanceItemGuid) CollectionName() string {
 }
 
 type StockBalanceActivity struct {
-	StockBalanceData    `bson:"inline"`
+	StockBalanceData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

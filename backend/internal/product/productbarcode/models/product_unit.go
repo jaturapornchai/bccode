@@ -3,8 +3,8 @@ package models
 import "smlcloudplatform/internal/models"
 
 type ProductUnit struct {
-	UnitCode string          `json:"unitCode" bson:"unitCode"`
-	Names    *[]models.NameX `json:"names" bson:"names"`
+	UnitCode string          `json:"unit_code" bson:"unit_code"`
+	Names *[]models.NameX `json:"names" bson:"names"`
 }
 
 type ProductUnitMessageQueueRequest struct {

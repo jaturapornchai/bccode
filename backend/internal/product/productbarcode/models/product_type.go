@@ -4,8 +4,8 @@ import "smlcloudplatform/internal/models"
 
 type ProductType struct {
 	models.DocIdentity `bson:"inline"`
-	Code               string          `json:"code" bson:"code"`
-	Names              *[]models.NameX `json:"names" bson:"names"`
+	Code string          `json:"code" bson:"code"`
+	Names *[]models.NameX `json:"names" bson:"names"`
 }
 
 type ProductTypeMessageQueueRequest struct {

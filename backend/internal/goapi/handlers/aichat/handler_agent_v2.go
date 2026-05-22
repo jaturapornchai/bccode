@@ -145,7 +145,7 @@ func ChatAgentV2Sync(c echo.Context) error {
 // POST /api/v1/chatbot/clear-session
 func ClearChatSession(c echo.Context) error {
 	var req struct {
-		ShopID    string `json:"shop_id"`
+		ShopID string `json:"shop_id"`
 		SessionID string `json:"session_id"`
 	}
 	if err := c.Bind(&req); err != nil {

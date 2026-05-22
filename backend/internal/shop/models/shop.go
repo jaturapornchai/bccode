@@ -28,7 +28,7 @@ type Shop struct {
 	PosProductCenterType int8           `json:"posproductcentertype" bson:"posproductcentertype"`
 	ProductCenterType    int8           `json:"productcentertype" bson:"productcentertype"`
 	DebtorCenterType     int8           `json:"debtorcentertype" bson:"debtorcentertype"`
-	MainShopId           string         `json:"mainshopid" bson:"mainshopid"`
+	MainShopId           string         `json:"main_shop_id" bson:"main_shop_id"`
 	Address              []models.NameX `json:"address" bson:"address"`
 	Images               []ShopImage    `json:"images" bson:"images"`
 	Logo                 string         `json:"logo" bson:"logo"`
@@ -44,9 +44,9 @@ type ShopImage struct {
 }
 
 type ShopSettings struct {
-	TaxID                 string           `json:"taxid" bson:"taxid"`
+	TaxID                 string           `json:"tax_id" bson:"tax_id"`
 	CompanyRegistrationNo string           `json:"company_registration_no" bson:"company_registration_no"`
-	CountryCode           string           `json:"countrycode" bson:"countrycode"`
+	CountryCode           string           `json:"country_code" bson:"country_code"`
 	Language              string           `json:"language" bson:"language"`
 	EmailOwners           []string         `json:"emailowners" bson:"emailowners"`
 	EmailStaffs           []string         `json:"emailstaffs" bson:"emailstaffs"`
@@ -64,8 +64,8 @@ type ShopSettings struct {
 	LanguageConfigs       []LanguageConfig `json:"languageconfigs" bson:"languageconfigs"`
 	BaseCurrency          string           `json:"base_currency" bson:"base_currency"` // สกุลเงินหลักของบริษัท (เช่น THB, USD)
 	Timezone              string           `json:"timezone" bson:"timezone"`
-	TimezoneLabel         string           `json:"timezonelabel" bson:"timezonelabel"`
-	TimezoneOffset        string           `json:"timezoneoffset" bson:"timezoneoffset"`
+	TimezoneLabel         string           `json:"timezone_label" bson:"timezone_label"`
+	TimezoneOffset        string           `json:"timezone_offset" bson:"timezone_offset"`
 	DateFormat            string           `json:"date_format" bson:"date_format"`
 	DecimalQuantity       int8             `json:"decimal_quantity" bson:"decimal_quantity"`
 	DecimalPrice          int8             `json:"decimal_price" bson:"decimal_price"`
@@ -76,7 +76,7 @@ type LanguageConfig struct {
 	Code           string `json:"code" bson:"code"`
 	CodeTranslator string `json:"codetranslator" bson:"codetranslator"`
 	Name           string `json:"name" bson:"name"`
-	IsUse          bool   `json:"isuse" bson:"isuse"`
+	IsUse          bool   `json:"is_use" bson:"is_use"`
 	IsDefault      bool   `json:"isdefault" bson:"isdefault"`
 }
 

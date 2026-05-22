@@ -544,7 +544,7 @@ func (h DebtorHttp) RecalPointByPointsCode(ctx microservice.IContext) error {
 	shopID := userInfo.ShopID
 	authUsername := userInfo.Username
 
-	pointsCode := ctx.Param("pointscode")
+	pointsCode := ctx.Param("points_code")
 
 	if pointsCode == "" {
 		ctx.ResponseError(http.StatusBadRequest, "pointscode is required")
@@ -581,7 +581,7 @@ func (h DebtorHttp) AddPointManually(ctx microservice.IContext) error {
 	shopID := userInfo.ShopID
 	authUsername := userInfo.Username
 
-	pointsCode := ctx.Param("pointscode")
+	pointsCode := ctx.Param("points_code")
 
 	if pointsCode == "" {
 		ctx.ResponseError(http.StatusBadRequest, "pointscode is required")
@@ -677,7 +677,7 @@ func (h DebtorHttp) DeleteManualPointTransaction(ctx microservice.IContext) erro
 	authUsername := userInfo.Username
 
 	// Get parameters from URL
-	pointsCode := ctx.Param("pointscode")
+	pointsCode := ctx.Param("points_code")
 	docNo := ctx.Param("docno")
 
 	// Validate inputs

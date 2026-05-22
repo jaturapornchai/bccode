@@ -22,12 +22,12 @@ var jsForbiddenSQL = []string{
 
 // JSExecResponse — ผลลัพธ์จากการรัน JS
 type JSExecResponse struct {
-	Success     bool        `json:"success"`
-	Result      interface{} `json:"result,omitempty"`
-	Logs        []string    `json:"logs,omitempty"`
-	Error       string      `json:"error,omitempty"`
+	Success bool        `json:"success"`
+	Result interface{} `json:"result,omitempty"`
+	Logs []string    `json:"logs,omitempty"`
+	Error string      `json:"error,omitempty"`
 	ExecutionMs int64       `json:"execution_ms"`
-	QueriesRun  int         `json:"queries_run"`
+	QueriesRun int         `json:"queries_run"`
 }
 
 // ExecuteJS รัน JavaScript code ใน Goja sandbox (readonly)

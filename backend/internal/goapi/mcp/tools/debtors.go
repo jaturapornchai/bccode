@@ -24,53 +24,53 @@ const debtorCollection = "debtors"
 
 // DebtorNameEntry ชื่อลูกหนี้แต่ละภาษา
 type DebtorNameEntry struct {
-	Code     string `json:"code" bson:"code"`
-	Name     string `json:"name" bson:"name"`
-	IsAuto   bool   `json:"isauto" bson:"isauto"`
+	Code string `json:"code" bson:"code"`
+	Name string `json:"name" bson:"name"`
+	IsAuto bool   `json:"isauto" bson:"isauto"`
 	IsDelete bool   `json:"isdelete" bson:"isdelete"`
 }
 
 // DebtorAddress ที่อยู่ลูกหนี้
 type DebtorAddress struct {
-	GUID            string            `json:"guid" bson:"guid"`
-	Address         []string          `json:"address" bson:"address"`
-	CountryCode     string            `json:"countrycode" bson:"countrycode"`
-	ProvinceCode    string            `json:"provincecode" bson:"provincecode"`
-	DistrictCode    string            `json:"districtcode" bson:"districtcode"`
-	SubDistrictCode string            `json:"subdistrictcode" bson:"subdistrictcode"`
-	ZipCode         string            `json:"zipcode" bson:"zipcode"`
-	ContactNames    []DebtorNameEntry `json:"contactnames" bson:"contactnames"`
-	PhonePrimary    string            `json:"phoneprimary" bson:"phoneprimary"`
-	PhoneSecondary  string            `json:"phonesecondary" bson:"phonesecondary"`
+	GUID string            `json:"guid" bson:"guid"`
+	Address []string          `json:"address" bson:"address"`
+	CountryCode string            `json:"country_code" bson:"country_code"`
+	ProvinceCode string            `json:"province_code" bson:"province_code"`
+	DistrictCode string            `json:"district_code" bson:"district_code"`
+	SubDistrictCode string            `json:"sub_district_code" bson:"sub_district_code"`
+	ZipCode string            `json:"zip_code" bson:"zip_code"`
+	ContactNames []DebtorNameEntry `json:"contactnames" bson:"contactnames"`
+	PhonePrimary string            `json:"phone_primary" bson:"phone_primary"`
+	PhoneSecondary string            `json:"phone_secondary" bson:"phone_secondary"`
 }
 
 // DebtorDocument เอกสารลูกหนี้ใน MongoDB
 type DebtorDocument struct {
-	ID                primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ShopID            string             `json:"shopid" bson:"shopid"`
-	GuidFixed         string             `json:"guidfixed" bson:"guidfixed"`
-	Code              string             `json:"code" bson:"code"`
-	PersonalType      int8               `json:"personaltype" bson:"personaltype"`
-	Names             []DebtorNameEntry  `json:"names" bson:"names"`
-	TaxId             string             `json:"taxid" bson:"taxid"`
-	Email             string             `json:"email" bson:"email"`
-	CreditDay         int                `json:"creditday" bson:"creditday"`
-	BranchNumber      string             `json:"branchnumber" bson:"branchnumber"`
-	IsMember          bool               `json:"ismember" bson:"ismember"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ShopID string             `json:"shopid" bson:"shopid"`
+	GuidFixed string             `json:"guid_fixed" bson:"guid_fixed"`
+	Code string             `json:"code" bson:"code"`
+	PersonalType int8               `json:"personal_type" bson:"personal_type"`
+	Names []DebtorNameEntry  `json:"names" bson:"names"`
+	TaxId string             `json:"tax_id" bson:"tax_id"`
+	Email string             `json:"email" bson:"email"`
+	CreditDay int                `json:"creditday" bson:"creditday"`
+	BranchNumber string             `json:"branch_number" bson:"branch_number"`
+	IsMember bool               `json:"ismember" bson:"ismember"`
 	AddressForBilling DebtorAddress      `json:"addressforbilling" bson:"addressforbilling"`
-	CreatedBy         string             `json:"createdby" bson:"createdby"`
-	CreatedAt         time.Time          `json:"createdat" bson:"createdat"`
-	UpdatedBy         string             `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
-	UpdatedAt         time.Time          `json:"updatedat,omitempty" bson:"updatedat,omitempty"`
-	DeletedAt         time.Time          `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
+	CreatedBy string             `json:"createdby" bson:"createdby"`
+	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
+	UpdatedBy string             `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
+	UpdatedAt time.Time          `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
+	DeletedAt time.Time          `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
 }
 
 // ==================== List Debtors ====================
 
 type ListDebtorsResponse struct {
-	Debtors     []DebtorDocument `json:"debtors"`
-	Count       int              `json:"count"`
-	Keyword     string           `json:"keyword,omitempty"`
+	Debtors []DebtorDocument `json:"debtors"`
+	Count int              `json:"count"`
+	Keyword string           `json:"keyword,omitempty"`
 	GeneratedAt time.Time        `json:"generated_at"`
 }
 
@@ -96,8 +96,8 @@ func ListDebtors(ctx context.Context, shopID, keyword string, limit int) (*ListD
 	filter := bson.M{
 		"shopid": shopID,
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 
@@ -106,7 +106,7 @@ func ListDebtors(ctx context.Context, shopID, keyword string, limit int) (*ListD
 			"$or": []bson.M{
 				{"code": bson.M{"$regex": keyword, "$options": "i"}},
 				{"names.name": bson.M{"$regex": keyword, "$options": "i"}},
-				{"taxid": bson.M{"$regex": keyword, "$options": "i"}},
+				{"tax_id": bson.M{"$regex": keyword, "$options": "i"}},
 			},
 		}
 		filter = bson.M{"$and": []bson.M{filter, keywordFilter}}
@@ -234,10 +234,10 @@ func mergeDebtors(existing, extra []DebtorDocument, limit int) []DebtorDocument 
 
 // SearchDebtorsResponse — result สำหรับ search_debtors MCP tool
 type SearchDebtorsResponse struct {
-	Debtors     []DebtorDocument `json:"debtors"`
-	Count       int              `json:"count"`
-	Keyword     string           `json:"keyword"`
-	SearchMode  string           `json:"search_mode"` // "vector", "regex", "combined"
+	Debtors []DebtorDocument `json:"debtors"`
+	Count int              `json:"count"`
+	Keyword string           `json:"keyword"`
+	SearchMode string           `json:"search_mode"` // "vector", "regex", "combined"
 	GeneratedAt time.Time        `json:"generated_at"`
 }
 
@@ -286,11 +286,11 @@ func SearchDebtors(ctx context.Context, shopID, keyword string, limit int) (*Sea
 	baseFilter := bson.M{
 		"shopid": shopID,
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
-	keywordFilter := BuildEntityKeywordFilter(keyword, []string{"code", "names.name", "taxid"})
+	keywordFilter := BuildEntityKeywordFilter(keyword, []string{"code", "names.name", "tax_id"})
 	logger.Info("[SearchEntity] search_debtors tokens=%v", TokenizeEntityKeyword(keyword))
 	filter := bson.M{"$and": []bson.M{baseFilter, keywordFilter}}
 
@@ -323,11 +323,11 @@ func SearchDebtors(ctx context.Context, shopID, keyword string, limit int) (*Sea
 // ==================== Create Debtor ====================
 
 type CreateDebtorResponse struct {
-	Success     bool           `json:"success"`
-	Message     string         `json:"message"`
-	Debtor      DebtorDocument `json:"debtor"`
-	KafkaSync   string         `json:"kafka_sync"`
-	KafkaError  string         `json:"kafka_error,omitempty"`
+	Success bool           `json:"success"`
+	Message string         `json:"message"`
+	Debtor DebtorDocument `json:"debtor"`
+	KafkaSync string         `json:"kafka_sync"`
+	KafkaError string         `json:"kafka_error,omitempty"`
 	GeneratedAt time.Time      `json:"generated_at"`
 }
 
@@ -353,8 +353,8 @@ func CreateDebtor(ctx context.Context, shopID, code, namesJSON, taxid, email str
 		"shopid": shopID,
 		"code":   code,
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 	count, err := coll.CountDocuments(ctx, existFilter)
@@ -432,25 +432,25 @@ func CreateDebtor(ctx context.Context, shopID, code, namesJSON, taxid, email str
 // ==================== Create Debtors (Bulk) ====================
 
 type CreateDebtorsItem struct {
-	Code              string            `json:"code"`
-	Names             []DebtorNameEntry `json:"names"`
-	PersonalType      int8              `json:"personaltype"`
-	TaxId             string            `json:"taxid"`
-	Email             string            `json:"email"`
-	CreditDay         int               `json:"creditday"`
+	Code string            `json:"code"`
+	Names []DebtorNameEntry `json:"names"`
+	PersonalType int8              `json:"personal_type"`
+	TaxId string            `json:"tax_id"`
+	Email string            `json:"email"`
+	CreditDay int               `json:"creditday"`
 	AddressForBilling DebtorAddress     `json:"addressforbilling"`
 }
 
 type CreateDebtorsResponse struct {
-	Success      bool             `json:"success"`
-	Message      string           `json:"message"`
-	Created      []DebtorDocument `json:"created"`
-	Skipped      []string         `json:"skipped,omitempty"`
+	Success bool             `json:"success"`
+	Message string           `json:"message"`
+	Created []DebtorDocument `json:"created"`
+	Skipped []string         `json:"skipped,omitempty"`
 	CreatedCount int              `json:"created_count"`
 	SkippedCount int              `json:"skipped_count"`
-	KafkaSync    string           `json:"kafka_sync"`
-	KafkaError   string           `json:"kafka_error,omitempty"`
-	GeneratedAt  time.Time        `json:"generated_at"`
+	KafkaSync string           `json:"kafka_sync"`
+	KafkaError string           `json:"kafka_error,omitempty"`
+	GeneratedAt time.Time        `json:"generated_at"`
 }
 
 func CreateDebtors(ctx context.Context, shopID, debtorsJSON string) (*CreateDebtorsResponse, error) {
@@ -490,8 +490,8 @@ func CreateDebtors(ctx context.Context, shopID, debtorsJSON string) (*CreateDebt
 		"shopid": shopID,
 		"code":   bson.M{"$in": codes},
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 	cursor, err := coll.Find(ctx, existFilter)
@@ -587,11 +587,11 @@ func CreateDebtors(ctx context.Context, shopID, debtorsJSON string) (*CreateDebt
 // ==================== Update Debtor ====================
 
 type UpdateDebtorResponse struct {
-	Success     bool           `json:"success"`
-	Message     string         `json:"message"`
-	Debtor      DebtorDocument `json:"debtor"`
-	KafkaSync   string         `json:"kafka_sync"`
-	KafkaError  string         `json:"kafka_error,omitempty"`
+	Success bool           `json:"success"`
+	Message string         `json:"message"`
+	Debtor DebtorDocument `json:"debtor"`
+	KafkaSync string         `json:"kafka_sync"`
+	KafkaError string         `json:"kafka_error,omitempty"`
 	GeneratedAt time.Time      `json:"generated_at"`
 }
 
@@ -614,10 +614,10 @@ func UpdateDebtor(ctx context.Context, shopID, guidfixed, namesJSON, taxid, emai
 
 	filter := bson.M{
 		"shopid":    shopID,
-		"guidfixed": guidfixed,
+		"guid_fixed": guidfixed,
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 
@@ -628,7 +628,7 @@ func UpdateDebtor(ctx context.Context, shopID, guidfixed, namesJSON, taxid, emai
 	}
 
 	updateFields := bson.M{
-		"updatedat": time.Now(),
+		"updated_at": time.Now(),
 		"updatedby": "mcp-tool",
 	}
 
@@ -640,7 +640,7 @@ func UpdateDebtor(ctx context.Context, shopID, guidfixed, namesJSON, taxid, emai
 		updateFields["names"] = names
 	}
 	if taxid != "" {
-		updateFields["taxid"] = taxid
+		updateFields["tax_id"] = taxid
 	}
 	if email != "" {
 		updateFields["email"] = email
@@ -693,12 +693,12 @@ func UpdateDebtor(ctx context.Context, shopID, guidfixed, namesJSON, taxid, emai
 // ==================== Delete Debtor (Soft Delete) ====================
 
 type DeleteDebtorResponse struct {
-	Success     bool      `json:"success"`
-	Message     string    `json:"message"`
-	GuidFixed   string    `json:"guidfixed"`
-	Code        string    `json:"code"`
-	KafkaSync   string    `json:"kafka_sync"`
-	KafkaError  string    `json:"kafka_error,omitempty"`
+	Success bool      `json:"success"`
+	Message string    `json:"message"`
+	GuidFixed string    `json:"guid_fixed"`
+	Code string    `json:"code"`
+	KafkaSync string    `json:"kafka_sync"`
+	KafkaError string    `json:"kafka_error,omitempty"`
 	GeneratedAt time.Time `json:"generated_at"`
 }
 
@@ -721,10 +721,10 @@ func DeleteDebtor(ctx context.Context, shopID, guidfixed string) (*DeleteDebtorR
 
 	filter := bson.M{
 		"shopid":    shopID,
-		"guidfixed": guidfixed,
+		"guid_fixed": guidfixed,
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 
@@ -736,9 +736,9 @@ func DeleteDebtor(ctx context.Context, shopID, guidfixed string) (*DeleteDebtorR
 
 	now := time.Now()
 	_, err = coll.UpdateOne(ctx, filter, bson.M{"$set": bson.M{
-		"deletedat": now,
+		"deleted_at": now,
 		"updatedby": "mcp-tool",
-		"updatedat": now,
+		"updated_at": now,
 	}})
 	if err != nil {
 		return nil, fmt.Errorf("ลบลูกหนี้ล้มเหลว: %w", err)
@@ -768,15 +768,15 @@ func DeleteDebtor(ctx context.Context, shopID, guidfixed string) (*DeleteDebtorR
 // ==================== Delete Debtors (Bulk Soft Delete) ====================
 
 type DeleteDebtorsResponse struct {
-	Success       bool      `json:"success"`
-	Message       string    `json:"message"`
-	Deleted       []string  `json:"deleted"`
-	NotFound      []string  `json:"not_found,omitempty"`
-	DeletedCount  int       `json:"deleted_count"`
+	Success bool      `json:"success"`
+	Message string    `json:"message"`
+	Deleted []string  `json:"deleted"`
+	NotFound []string  `json:"not_found,omitempty"`
+	DeletedCount int       `json:"deleted_count"`
 	NotFoundCount int       `json:"not_found_count"`
-	KafkaSync     string    `json:"kafka_sync"`
-	KafkaError    string    `json:"kafka_error,omitempty"`
-	GeneratedAt   time.Time `json:"generated_at"`
+	KafkaSync string    `json:"kafka_sync"`
+	KafkaError string    `json:"kafka_error,omitempty"`
+	GeneratedAt time.Time `json:"generated_at"`
 }
 
 func DeleteDebtors(ctx context.Context, shopID, guidfixedsJSON string) (*DeleteDebtorsResponse, error) {
@@ -809,10 +809,10 @@ func DeleteDebtors(ctx context.Context, shopID, guidfixedsJSON string) (*DeleteD
 
 	existFilter := bson.M{
 		"shopid":    shopID,
-		"guidfixed": bson.M{"$in": guidfixeds},
+		"guid_fixed": bson.M{"$in": guidfixeds},
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 	cursor, err := coll.Find(ctx, existFilter)
@@ -848,12 +848,12 @@ func DeleteDebtors(ctx context.Context, shopID, guidfixedsJSON string) (*DeleteD
 		now := time.Now()
 		updateFilter := bson.M{
 			"shopid":    shopID,
-			"guidfixed": bson.M{"$in": deleted},
+			"guid_fixed": bson.M{"$in": deleted},
 		}
 		_, err = coll.UpdateMany(ctx, updateFilter, bson.M{"$set": bson.M{
-			"deletedat": now,
+			"deleted_at": now,
 			"updatedby": "mcp-tool",
-			"updatedat": now,
+			"updated_at": now,
 		}})
 		if err != nil {
 			return nil, fmt.Errorf("ลบลูกหนี้ล้มเหลว: %w", err)
@@ -893,20 +893,20 @@ func GetDebtorSchema() map[string]interface{} {
 		"fields": map[string]interface{}{
 			"_id":               "ObjectID — MongoDB auto-generated ID",
 			"shopid":            "string — Shop ID (tenant isolation)",
-			"guidfixed":         "string — UUID สำหรับอ้างอิงภายใน",
+			"guid_fixed":         "string — UUID สำหรับอ้างอิงภายใน",
 			"code":              "string (required) — รหัสลูกหนี้ เช่น DB-001",
-			"personaltype":      "int8 — ประเภท: 1=บุคคลธรรมดา, 2=นิติบุคคล",
+			"personal_type":      "int8 — ประเภท: 1=บุคคลธรรมดา, 2=นิติบุคคล",
 			"names":             "array (required) — ชื่อหลายภาษา [{code:'th', name:'ร้าน XYZ'}]",
-			"taxid":             "string — เลขผู้เสียภาษี",
+			"tax_id":             "string — เลขผู้เสียภาษี",
 			"email":             "string — อีเมล",
 			"creditday":         "int — วงเงินเครดิต (วัน)",
-			"branchnumber":      "string — เลขที่สาขา",
+			"branch_number":      "string — เลขที่สาขา",
 			"ismember":          "bool — เป็นสมาชิกหรือไม่",
 			"addressforbilling": "object — ที่อยู่สำหรับออกบิล {address, countrycode, provincecode, districtcode, subdistrictcode, zipcode, phoneprimary}",
 			"createdby":         "string — ผู้สร้าง",
-			"createdat":         "datetime — วันที่สร้าง",
-			"updatedat":         "datetime — วันที่แก้ไขล่าสุด",
-			"deletedat":         "datetime — วันที่ลบ (soft delete, zero = active)",
+			"created_at":         "datetime — วันที่สร้าง",
+			"updated_at":         "datetime — วันที่แก้ไขล่าสุด",
+			"deleted_at":         "datetime — วันที่ลบ (soft delete, zero = active)",
 		},
 		"indexes": []string{
 			"shopid + code (unique per shop)",
@@ -915,9 +915,9 @@ func GetDebtorSchema() map[string]interface{} {
 		"examples": []map[string]interface{}{
 			{
 				"code":         "DB-001",
-				"personaltype": 1,
+				"personal_type": 1,
 				"names":        []map[string]string{{"code": "th", "name": "ร้านค้า สมชาย"}, {"code": "en", "name": "Somchai Shop"}},
-				"taxid":        "1234567890123",
+				"tax_id":        "1234567890123",
 				"creditday":    15,
 			},
 		},

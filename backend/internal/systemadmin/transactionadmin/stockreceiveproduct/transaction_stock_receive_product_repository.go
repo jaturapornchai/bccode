@@ -29,7 +29,7 @@ func (r *StockReceiveTransactionAdminRepository) FindStockReceiveDocByShopID(ctx
 	err := r.pst.Find(ctx, &stockReceiveProductModels.StockReceiveProductDoc{},
 		bson.M{
 			"shopid":    shopID,
-			"deletedat": bson.M{"$exists": false},
+			"deleted_at": bson.M{"$exists": false},
 		},
 		&docList)
 	if err != nil {
@@ -45,7 +45,7 @@ func (r *StockReceiveTransactionAdminRepository) FindStockReceiveDeleteDocByShop
 	err := r.pst.Find(ctx, &stockReceiveProductModels.StockReceiveProductDoc{},
 		bson.M{
 			"shopid":    shopID,
-			"deletedat": bson.M{"$exists": true},
+			"deleted_at": bson.M{"$exists": true},
 		},
 		&docList)
 	if err != nil {

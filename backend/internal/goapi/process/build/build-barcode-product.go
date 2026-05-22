@@ -20,9 +20,9 @@ import (
 func ProcessInsertBarCodeListForPostgres(db *sql.DB, barcodes *[]models.BarcodeModel) {
 	// เตรียม columns สำหรับ COPY FROM
 	columns := []string{
-		"barcode", "barcoderef", "itemcode", "name0", "unitcode", "unitname",
-		"groupcode", "groupnames", "price1", "price_retail", "barcoderefunitstand", "barcoderefunitdivide",
-		"isstock", "itemtype", "checksum", "imageuri",
+		"barcode", "barcoderef", "itemcode", "name0", "unitcode", "unit_name",
+		"group_code", "group_names", "price1", "price_retail", "barcoderefunitstand", "barcoderefunitdivide",
+		"isstock", "item_type", "checksum", "imageuri",
 	}
 
 	// แปลงข้อมูลเป็น format สำหรับ COPY FROM
@@ -167,7 +167,7 @@ func ProcessBarcodeRebuildAll(shopId string) {
 	svcConfig := config.NewServiceConfig()
 	MongodbDatabaseName := svcConfig.MongodbDatabaseName()
 	collection := mongoClient.Database(MongodbDatabaseName).Collection("productBarcodes")
-	cur, err := collection.Find(context.Background(), bson.M{"shopid": shopId, "deletedby": bson.M{"$exists": false}})
+	cur, err := collection.Find(context.Background(), bson.M{"shopid": shopId, "deleted_by": bson.M{"$exists": false}})
 	logger.Info("Finding documents in MongoDB collection %s", MongodbDatabaseName)
 	if err != nil {
 		logger.Error("finding documents: %v", err)

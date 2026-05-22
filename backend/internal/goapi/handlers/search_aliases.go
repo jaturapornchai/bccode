@@ -14,17 +14,17 @@ import (
 
 // SearchAlias — model สำหรับ alias
 type SearchAlias struct {
-	ID        int    `json:"id"`
-	Alias     string `json:"alias"`
-	Target    string `json:"target"`
+	ID int    `json:"id"`
+	Alias string `json:"alias"`
+	Target string `json:"target"`
 	AliasType string `json:"alias_type"`
 }
 
 // SearchAliasCreateRequest — request body สำหรับสร้าง alias
 type SearchAliasCreateRequest struct {
-	ShopID    string `json:"shopid"`
-	Alias     string `json:"alias"`
-	Target    string `json:"target"`
+	ShopID string `json:"shopid"`
+	Alias string `json:"alias"`
+	Target string `json:"target"`
 	AliasType string `json:"alias_type"`
 }
 

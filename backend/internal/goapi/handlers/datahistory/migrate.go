@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	OldCollectionName = "datahistory"    // Collection เดิมที่ใช้ก่อนแยก
-	CollectionPrefix  = "datahistory_"   // Prefix สำหรับ collection ใหม่ตาม screen_type
+	OldCollectionName = "datahistory"  // Collection เดิมที่ใช้ก่อนแยก
+	CollectionPrefix  = "datahistory_" // Prefix สำหรับ collection ใหม่ตาม screen_type
 )
 
 // MigrateHistoryHandler - API endpoint สำหรับย้ายข้อมูลจาก collection เดิมไปใหม่
@@ -34,7 +34,7 @@ func MigrateHistoryHandler(c echo.Context) error {
 		})
 	}
 
-	db := client.Database(DatabaseName)
+	db := client.Database(databaseName())
 	oldColl := db.Collection(OldCollectionName)
 
 	// นับจำนวน documents ใน collection เดิม

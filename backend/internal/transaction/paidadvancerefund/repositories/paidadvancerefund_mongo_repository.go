@@ -61,7 +61,7 @@ func NewPaidAdvanceRefundRepository(pst microservice.IPersisterMongo) *PaidAdvan
 func (repo PaidAdvanceRefundRepository) FindLastDocNo(ctx context.Context, shopID string, prefixDocNo string) (models.PaidAdvanceRefundDoc, error) {
 	filters := bson.M{
 		"shopid": shopID,
-		"deletedat": bson.M{
+		"deleted_at": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

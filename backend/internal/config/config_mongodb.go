@@ -1,9 +1,6 @@
 package config
 
-import (
-	"fmt"
-	"strings"
-)
+import "fmt"
 
 // IPersisterConfig is interface for persister
 type IPersisterMongoConfig interface {
@@ -19,45 +16,7 @@ func NewMongoPersisterConfig() *MongoPersisterConfig {
 }
 
 func (cfg *MongoPersisterConfig) MongodbURI() string {
-
-	uri := getEnv("MONGODB_URI", "") // mongodb://root:rootx@localhost:27017/
-	if uri != "" {
-		return uri
-	}
-
-	if cfg.MongodbServer() == "" {
-		return ""
-	}
-
-	userNamePassword := fmt.Sprintf("%s:%s@", cfg.MongodbUserName(), cfg.MongodbPassWord())
-	if userNamePassword == ":@" {
-		userNamePassword = ""
-	}
-
-	var connectionOptions []string
-
-	ssl := cfg.MongoConnectionSSL()
-	if ssl != "" {
-		connectionOptions = append(connectionOptions, ssl)
-	}
-	tlsCaFile := cfg.MongoTlsCaFile()
-	if ssl != "" {
-		connectionOptions = append(connectionOptions, tlsCaFile)
-	}
-
-	connetionOptional := ""
-	joinConnectionOption := strings.Join(connectionOptions[:], "&")
-	if joinConnectionOption != "" {
-		connetionOptional = "?" + joinConnectionOption
-	}
-
-	connectionUri := fmt.Sprintf("%s://%s%s%s/%s",
-		cfg.MongodbProtocal(),
-		userNamePassword, cfg.MongodbServer(),
-		cfg.MongodbPort(),
-		connetionOptional,
-	)
-	return connectionUri
+	return MongoURIForCurrentEnvironment()
 }
 
 func (cfg *MongoPersisterConfig) MongodbProtocal() string {
@@ -77,7 +36,7 @@ func (cfg *MongoPersisterConfig) MongodbPort() string {
 }
 
 func (cfg *MongoPersisterConfig) DB() string {
-	return getEnv("MONGODB_DB", "bcaiclouddb")
+	return MongoDatabaseForCurrentEnvironment("bcaiclouddb")
 }
 
 func (cfg *MongoPersisterConfig) MongodbUserName() string {

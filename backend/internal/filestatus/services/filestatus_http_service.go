@@ -56,7 +56,7 @@ func (svc FileStatusHttpService) CreateFileStatus(shopID string, authUsername st
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindOne(ctx, shopID, bson.M{"menu": doc.Menu, "username": authUsername, "jobid": doc.JobID})
+	findDoc, err := svc.repo.FindOne(ctx, shopID, bson.M{"menu": doc.Menu, "username": authUsername, "job_id": doc.JobID})
 
 	if err != nil {
 		return "", err
@@ -91,7 +91,7 @@ func (svc FileStatusHttpService) UpdateFileStatus(shopID string, guid string, au
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindOne(ctx, shopID, bson.M{"guidfixed": guid})
+	findDoc, err := svc.repo.FindOne(ctx, shopID, bson.M{"guid_fixed": guid})
 
 	if err != nil {
 		return err
@@ -160,7 +160,7 @@ func (svc FileStatusHttpService) DeleteFileStatusByGUIDs(shopID string, authUser
 	defer ctxCancel()
 
 	deleteFilterQuery := map[string]interface{}{
-		"guidfixed": bson.M{"$in": GUIDs},
+		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
 	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)

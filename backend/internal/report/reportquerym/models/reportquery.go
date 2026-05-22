@@ -10,13 +10,13 @@ const reportqueryCollectionName = "reportQueryMongo"
 
 type ReportQuery struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code                     string         `json:"code" bson:"code" validate:"required,min=1,max=50"`
-	Collection               string         `json:"collection"`
-	Filter                   string         `json:"filter"`
-	Fields                   *[]string      `json:"fields"`
-	Params                   *[]ReportParam `json:"params"`
-	IsApproved               bool           `json:"isapproved" bson:"isapproved"`
-	IsActived                bool           `json:"isactived" bson:"isactived"`
+	Code string         `json:"code" bson:"code" validate:"required,min=1,max=50"`
+	Collection string         `json:"collection"`
+	Filter string         `json:"filter"`
+	Fields *[]string      `json:"fields"`
+	Params *[]ReportParam `json:"params"`
+	IsApproved bool           `json:"isapproved" bson:"isapproved"`
+	IsActived bool           `json:"isactived" bson:"isactived"`
 }
 
 type ReportParam struct {
@@ -26,7 +26,7 @@ type ReportParam struct {
 
 type ReportQueryInfo struct {
 	models.DocIdentity `bson:"inline"`
-	ReportQuery        `bson:"inline"`
+	ReportQuery  `bson:"inline"`
 }
 
 func (ReportQueryInfo) CollectionName() string {
@@ -35,12 +35,12 @@ func (ReportQueryInfo) CollectionName() string {
 
 type ReportQueryData struct {
 	models.ShopIdentity `bson:"inline"`
-	ReportQueryInfo     `bson:"inline"`
+	ReportQueryInfo  `bson:"inline"`
 }
 
 type ReportQueryDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ReportQueryData    `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ReportQueryData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -57,7 +57,7 @@ func (ReportQueryItemGuid) CollectionName() string {
 }
 
 type ReportQueryActivity struct {
-	ReportQueryData     `bson:"inline"`
+	ReportQueryData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

@@ -61,7 +61,7 @@ func NewReceiveDepositRepository(pst microservice.IPersisterMongo) *ReceiveDepos
 func (repo ReceiveDepositRepository) FindLastDocNo(ctx context.Context, shopID string, prefixDocNo string) (models.ReceiveDepositDoc, error) {
 	filters := bson.M{
 		"shopid": shopID,
-		"deletedat": bson.M{
+		"deleted_at": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

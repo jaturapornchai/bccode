@@ -14,41 +14,41 @@ import (
 
 // RetrievalRequest matches RAGFlow's POST /api/v1/retrieval schema.
 type RetrievalRequest struct {
-	Question         string   `json:"question"`
-	DatasetIDs       []string `json:"dataset_ids"`
-	DocumentIDs      []string `json:"document_ids,omitempty"`
-	PageSize         int      `json:"page_size,omitempty"` // chunks per result (default 30)
+	Question string   `json:"question"`
+	DatasetIDs []string `json:"dataset_ids"`
+	DocumentIDs []string `json:"document_ids,omitempty"`
+	PageSize int      `json:"page_size,omitempty"` // chunks per result (default 30)
 	SimilarityThresh float64  `json:"similarity_threshold,omitempty"`
-	VectorWeight     float64  `json:"vector_similarity_weight,omitempty"`
-	TopK             int      `json:"top_k,omitempty"`
-	RerankID         string   `json:"rerank_id,omitempty"`
-	KeywordSearch    bool     `json:"keyword,omitempty"`
-	Highlight        bool     `json:"highlight,omitempty"`
+	VectorWeight float64  `json:"vector_similarity_weight,omitempty"`
+	TopK int      `json:"top_k,omitempty"`
+	RerankID string   `json:"rerank_id,omitempty"`
+	KeywordSearch bool     `json:"keyword,omitempty"`
+	Highlight bool     `json:"highlight,omitempty"`
 }
 
 // RetrievalChunk — one matched piece of a document
 type RetrievalChunk struct {
-	ID                string  `json:"id"`
-	Content           string  `json:"content"`
-	ContentLTKS       string  `json:"content_ltks"`
-	DocumentID        string  `json:"document_id"`
-	DocumentKeyword   string  `json:"document_keyword"`
-	Highlight         string  `json:"highlight"`
-	Img               string  `json:"img_id"`
+	ID string  `json:"id"`
+	Content string  `json:"content"`
+	ContentLTKS string  `json:"content_ltks"`
+	DocumentID string  `json:"document_id"`
+	DocumentKeyword string  `json:"document_keyword"`
+	Highlight string  `json:"highlight"`
+	Img string  `json:"img_id"`
 	ImportantKeywords []string `json:"important_keywords"`
-	KbID              string  `json:"kb_id"`
-	Similarity        float64 `json:"similarity"`
-	TermSimilarity    float64 `json:"term_similarity"`
-	VectorSimilarity  float64 `json:"vector_similarity"`
+	KbID string  `json:"kb_id"`
+	Similarity float64 `json:"similarity"`
+	TermSimilarity float64 `json:"term_similarity"`
+	VectorSimilarity float64 `json:"vector_similarity"`
 }
 
 type retrievalResponse struct {
-	Code    int    `json:"code"`
+	Code int    `json:"code"`
 	Message string `json:"message"`
 	Data    struct {
-		Chunks    []RetrievalChunk `json:"chunks"`
-		DocAggs   []map[string]any `json:"doc_aggs"`
-		Total     int              `json:"total"`
+		Chunks []RetrievalChunk `json:"chunks"`
+		DocAggs []map[string]any `json:"doc_aggs"`
+		Total int              `json:"total"`
 	} `json:"data"`
 }
 

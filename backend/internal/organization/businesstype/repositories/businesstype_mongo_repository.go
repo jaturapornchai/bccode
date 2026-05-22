@@ -64,7 +64,7 @@ func (repo BusinessTypeRepository) ClearDefault(ctx context.Context, shopID stri
 
 	filter := bson.M{
 		"shopid": shopID,
-		"deletedat": bson.M{
+		"deleted_at": bson.M{
 			"$exists": false,
 		},
 		"isdefault": true,
@@ -83,7 +83,7 @@ func (repo BusinessTypeRepository) GetDefault(ctx context.Context, shopID string
 
 	filter := bson.M{
 		"shopid": shopID,
-		"deletedat": bson.M{
+		"deleted_at": bson.M{
 			"$exists": false,
 		},
 		"isdefault": true,

@@ -174,13 +174,13 @@ func (pc *ProductCache) Stats() map[string]any {
 
 // ProductSearchRequest - Request for product search
 type ProductSearchRequest struct {
-	ShopID           string `json:"shop_id"`
-	Search           string `json:"search"`
-	BranchCode       string `json:"branch_code"`
+	ShopID string `json:"shop_id"`
+	Search string `json:"search"`
+	BranchCode string `json:"branch_code"`
 	BusinessTypeCode string `json:"business_type_code"`
-	Limit            int    `json:"limit"`
-	Offset           int    `json:"offset"`
-	UseCache         bool   `json:"use_cache"`
+	Limit int    `json:"limit"`
+	Offset int    `json:"offset"`
+	UseCache bool   `json:"use_cache"`
 }
 
 // generateCacheKey - Generate cache key from request
@@ -400,7 +400,7 @@ func ProductCacheClearHandler(c echo.Context) error {
 // ProductBarcodeSearchHandler - Search by barcode (optimized single lookup)
 func ProductBarcodeSearchHandler(c echo.Context) error {
 	var req struct {
-		ShopID  string `json:"shop_id"`
+		ShopID string `json:"shop_id"`
 		Barcode string `json:"barcode"`
 	}
 
@@ -491,14 +491,14 @@ LIMIT 1`
 	data := map[string]any{
 		"itemcode":     result.ItemCode,
 		"barcode":      result.Barcode,
-		"itemname":     result.ItemName,
+		"item_name":     result.ItemName,
 		"unitcode":     result.UnitCode,
-		"unitname":     result.UnitName,
+		"unit_name":     result.UnitName,
 		"price":        result.Price,
 		"unitstand":    result.UnitStand,
 		"unitdivide":   result.UnitDivide,
 		"categorycode": result.CategoryCode,
-		"vattype":      result.VatType,
+		"vat_type":      result.VatType,
 		"costprice":    result.CostPrice,
 	}
 

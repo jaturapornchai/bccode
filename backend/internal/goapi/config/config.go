@@ -1,20 +1,15 @@
 package config
 
 import (
-	"smlcloudplatform/internal/goapi/logger"
 	"os"
+	coreconfig "smlcloudplatform/internal/config"
+	"smlcloudplatform/internal/goapi/logger"
 )
 
 type IServiceConfig interface {
 	MongodbURI() string
 	MongodbDatabaseName() string
 
-	// MongoDB Dev Server Configuration
-	MongoServerIP() string
-	MongoServerPort() string
-	MongoUsername() string
-	MongoPassword() string
-	MongoAuthDB() string
 	MongoDBName() string
 
 	PostgresHost() string
@@ -61,16 +56,11 @@ func ValidateRequiredEnvVars() {
 }
 
 func (ServiceConfig) MongodbURI() string {
-	return getEnv("MONGODB_URI", "") // mongodb://localhost:27017
+	return coreconfig.MongoURIForCurrentEnvironment()
 }
 
 func (ServiceConfig) MongodbDatabaseName() string {
-	// ลำดับความสำคัญ: MONGO_DB_NAME (dev) > MONGODB_DB (cloud/production)
-	dbName := getEnv("MONGO_DB_NAME", "")
-	if dbName != "" {
-		return dbName
-	}
-	return getEnv("MONGODB_DB", "bcaiclouddb")
+	return coreconfig.MongoDatabaseForCurrentEnvironment("bcaiclouddb")
 }
 
 func (ServiceConfig) PostgresHost() string {
@@ -129,33 +119,6 @@ func (ServiceConfig) KafkaConsumerGroupVersion() string {
 	return getEnv("KAFKA_CONSUMER_GROUP_VERSION", "v1")
 }
 
-// MongoDB Dev Server Configuration Methods
-func (ServiceConfig) MongoServerIP() string {
-	return getEnv("MONGO_SERVER_IP", "")
-}
-
-func (ServiceConfig) MongoServerPort() string {
-	return getEnv("MONGO_SERVER_PORT", "27017")
-}
-
-func (ServiceConfig) MongoUsername() string {
-	return getEnv("MONGO_USERNAME", "")
-}
-
-func (ServiceConfig) MongoPassword() string {
-	return getEnv("MONGO_PASSWORD", "")
-}
-
-func (ServiceConfig) MongoAuthDB() string {
-	return getEnv("MONGO_AUTH_DB", "admin")
-}
-
 func (ServiceConfig) MongoDBName() string {
-	// ลำดับความสำคัญ: MONGO_DB_NAME (dev) > MONGODB_DB (cloud/production)
-	dbName := getEnv("MONGO_DB_NAME", "")
-	if dbName != "" {
-		return dbName
-	}
-	return getEnv("MONGODB_DB", "bcaiclouddb")
+	return coreconfig.MongoDatabaseForCurrentEnvironment("bcaiclouddb")
 }
-

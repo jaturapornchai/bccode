@@ -122,10 +122,10 @@ const maxIterationsV2 = 12
 
 // AgentV2Request — request สำหรับ น้องกุ้ง agent v2
 type AgentV2Request struct {
-	ShopID    string   `json:"shop_id" validate:"required"`
+	ShopID string   `json:"shop_id" validate:"required"`
 	SessionID string   `json:"session_id"`
-	Question  string   `json:"question" validate:"required"`
-	Images    []string `json:"images,omitempty"` // base64 encoded images
+	Question string   `json:"question" validate:"required"`
+	Images []string `json:"images,omitempty"` // base64 encoded images
 	// OutputFormat — "html" or "markdown" (default markdown).
 	// Flutter น้องกุ้ง overlay sets "html" (rendered by flutter_html).
 	// OpenClaw / external OpenAI-compatible clients use "markdown".
@@ -134,7 +134,7 @@ type AgentV2Request struct {
 	// Flutter ส่งค่าจาก checkbox ที่ user เลือก
 	// OpenClaw / clients ที่ไม่ส่ง = ค้นหาทั้งหมดเสมอ
 	SearchDatabase *bool `json:"search_database,omitempty"`
-	SearchKB       *bool `json:"search_kb,omitempty"`
+	SearchKB *bool `json:"search_kb,omitempty"`
 	SearchInternet *bool `json:"search_internet,omitempty"`
 }
 

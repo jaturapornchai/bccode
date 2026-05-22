@@ -9,19 +9,19 @@ import (
 // ==================== get_api_spec ====================
 
 type APISpecRequest struct {
-	Path   string `json:"path"`
+	Path string `json:"path"`
 	Method string `json:"method"`
 }
 
 type APISpecResponse struct {
 	Endpoints []APISpecDetail `json:"endpoints"`
-	Count     int             `json:"count"`
+	Count int             `json:"count"`
 }
 
 type APISpecDetail struct {
 	APIEndpoint
 	CurlExample string `json:"curl_example"`
-	Notes       string `json:"notes,omitempty"`
+	Notes string `json:"notes,omitempty"`
 }
 
 func GetAPISpec(req APISpecRequest) (*APISpecResponse, error) {
@@ -121,18 +121,18 @@ func generateNotes(ep APIEndpoint) string {
 // ==================== get_api_example ====================
 
 type APIExampleRequest struct {
-	Path   string `json:"path"`
+	Path string `json:"path"`
 	Method string `json:"method"`
 }
 
 type APIExampleResponse struct {
-	Path              string                 `json:"path"`
-	Method            string                 `json:"method"`
-	Description       string                 `json:"description"`
-	CurlCommand       string                 `json:"curl_command"`
-	RequestExample    map[string]interface{} `json:"request_example,omitempty"`
-	ResponseExample   map[string]interface{} `json:"response_example,omitempty"`
-	DartExample       string                 `json:"dart_example"`
+	Path string                 `json:"path"`
+	Method string                 `json:"method"`
+	Description string                 `json:"description"`
+	CurlCommand string                 `json:"curl_command"`
+	RequestExample map[string]interface{} `json:"request_example,omitempty"`
+	ResponseExample map[string]interface{} `json:"response_example,omitempty"`
+	DartExample string                 `json:"dart_example"`
 	TypeScriptExample string                 `json:"typescript_example"`
 }
 
@@ -223,7 +223,7 @@ func getHardcodedExample(path, method string) (req map[string]interface{}, resp 
 		},
 		"POST /goapi/get": {
 			{"shopid": "SHOP001", "sql": "SELECT docno, docdate, totalamount FROM saleinvoice ORDER BY docdate DESC LIMIT 10"},
-			{"success": true, "data": []map[string]interface{}{{"docno": "INV-001", "docdate": "2025-01-15", "totalamount": 15000}}},
+			{"success": true, "data": []map[string]interface{}{{"docno": "INV-001", "docdate": "2025-01-15", "total_amount": 15000}}},
 		},
 		"POST /goapi/genpdf": {
 			{"shopid": "SHOP001", "docno": "INV-001", "template": "invoice"},

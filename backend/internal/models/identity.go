@@ -1,8 +1,8 @@
 package models
 
 type Identity struct {
-	ShopID    string `json:"shopid" bson:"shopid" gorm:"column:shopid;primaryKey"`
-	GuidFixed string `json:"guidfixed" bson:"guidfixed" gorm:"column:guidfixed;primaryKey"`
+	ShopID string `json:"shopid" bson:"shopid" gorm:"column:shopid;primaryKey"`
+	GuidFixed string `json:"guid_fixed" bson:"guid_fixed" gorm:"column:guid_fixed;primaryKey"`
 }
 
 type ShopIdentity struct {
@@ -10,7 +10,7 @@ type ShopIdentity struct {
 }
 
 type DocIdentity struct {
-	GuidFixed string `json:"guidfixed" bson:"guidfixed" gorm:"column:guidfixed;primaryKey" `
+	GuidFixed string `json:"guid_fixed" bson:"guid_fixed" gorm:"column:guid_fixed;primaryKey" `
 }
 
 type PartitionIdentity struct {

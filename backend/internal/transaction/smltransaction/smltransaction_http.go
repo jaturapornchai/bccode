@@ -49,7 +49,7 @@ func (h SMLTransactionHttp) RegisterHttp() {
 }
 
 type Data struct {
-	DocNo       string                 `json:"docno"`
+	DocNo string                 `json:"docno"`
 	DynamicData map[string]interface{} `json:",inline"`
 }
 

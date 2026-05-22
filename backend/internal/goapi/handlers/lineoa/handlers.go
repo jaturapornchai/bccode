@@ -25,7 +25,7 @@ func Init(client *mongo.Client, db *mongo.Database) {
 	atlasDB = db
 }
 
-// IsConnected returns true if MongoDB Atlas is connected
+// IsConnected returns true if MongoDB is connected
 func IsConnected() bool {
 	return atlasClient != nil && atlasDB != nil
 }
@@ -42,7 +42,7 @@ func getCollection(name string) *mongo.Collection {
 func checkConnection(c echo.Context) error {
 	if !IsConnected() {
 		return c.JSON(http.StatusServiceUnavailable, map[string]string{
-			"error": "MongoDB Atlas is not connected",
+			"error": "MongoDB is not connected",
 			"code":  "MONGO_NOT_CONNECTED",
 		})
 	}

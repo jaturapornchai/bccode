@@ -35,7 +35,7 @@ func (r ChartOfAccountAdminRepository) FindChartOfAccountDocByShopID(ctx context
 
 	queryFilters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": isDeleted},
+		"deleted_at": bson.M{"$exists": isDeleted},
 	}
 
 	pagination, err := r.pst.FindPage(ctx, &chartOfAccountModels.ChartOfAccountDoc{}, queryFilters, pageable, &docList)

@@ -23,31 +23,31 @@ const (
 // JSONRPCRequest represents a JSON-RPC 2.0 request
 type JSONRPCRequest struct {
 	JSONRPC string          `json:"jsonrpc"`
-	ID      interface{}     `json:"id,omitempty"`
-	Method  string          `json:"method"`
-	Params  json.RawMessage `json:"params,omitempty"`
+	ID interface{}     `json:"id,omitempty"`
+	Method string          `json:"method"`
+	Params json.RawMessage `json:"params,omitempty"`
 }
 
 // JSONRPCResponse represents a JSON-RPC 2.0 response
 type JSONRPCResponse struct {
 	JSONRPC string        `json:"jsonrpc"`
-	ID      interface{}   `json:"id,omitempty"`
-	Result  interface{}   `json:"result,omitempty"`
-	Error   *JSONRPCError `json:"error,omitempty"`
+	ID interface{}   `json:"id,omitempty"`
+	Result interface{}   `json:"result,omitempty"`
+	Error *JSONRPCError `json:"error,omitempty"`
 }
 
 // JSONRPCError represents a JSON-RPC 2.0 error
 type JSONRPCError struct {
-	Code    int         `json:"code"`
+	Code int         `json:"code"`
 	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+	Data interface{} `json:"data,omitempty"`
 }
 
 // MCP Tool Definition
 type MCPToolDef struct {
-	Name        string                 `json:"name"`
+	Name string                 `json:"name"`
 	Description string                 `json:"description,omitempty"`
-	InputSchema map[string]interface{} `json:"inputSchema"`
+	InputSchema map[string]interface{} `json:"input_schema"`
 }
 
 // SSE Session represents an active SSE connection
@@ -1124,7 +1124,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "JSON array of multi-language names e.g. [{\"code\":\"th\",\"name\":\"สินค้า A\"},{\"code\":\"en\",\"name\":\"Product A\"}]",
 					},
-					"itemunitcode": map[string]interface{}{
+					"item_unit_code": map[string]interface{}{
 						"type":        "string",
 						"description": "Unit code (e.g., 'EA', 'BOX')",
 					},
@@ -1144,11 +1144,11 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "number",
 						"description": "Unit conversion denominator (default: 1)",
 					},
-					"ismainbarcode": map[string]interface{}{
+					"is_main_barcode": map[string]interface{}{
 						"type":        "boolean",
 						"description": "Is main barcode? Auto-detected if not provided: true when standvalue=1 & dividevalue=1, false otherwise",
 					},
-					"groupcode": map[string]interface{}{
+					"group_code": map[string]interface{}{
 						"type":        "string",
 						"description": "Product group code (e.g., 'GRP-ELEC'). Auto-fills groupnames from productGroups collection.",
 					},
@@ -1180,7 +1180,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"guidfixed": map[string]interface{}{
+					"guid_fixed": map[string]interface{}{
 						"type":        "string",
 						"description": "GuidFixed of the barcode to update",
 					},
@@ -1188,7 +1188,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "JSON array of multi-language names [{\"code\":\"th\",\"name\":\"ชื่อใหม่\"}]",
 					},
-					"itemunitcode": map[string]interface{}{
+					"item_unit_code": map[string]interface{}{
 						"type":        "string",
 						"description": "New unit code",
 					},
@@ -1200,7 +1200,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "JSON array of prices [{\"keynumber\":1,\"price\":150.00}]",
 					},
-					"groupcode": map[string]interface{}{
+					"group_code": map[string]interface{}{
 						"type":        "string",
 						"description": "Product group code. Auto-fills groupnames from productGroups collection.",
 					},
@@ -1209,7 +1209,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"description": "Product category code. Auto-fills categorynames from productCategories collection.",
 					},
 				},
-				"required": []string{"guidfixed"},
+				"required": []string{"guid_fixed"},
 			},
 		},
 		{
@@ -1218,12 +1218,12 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"guidfixed": map[string]interface{}{
+					"guid_fixed": map[string]interface{}{
 						"type":        "string",
 						"description": "GuidFixed of the barcode to delete",
 					},
 				},
-				"required": []string{"guidfixed"},
+				"required": []string{"guid_fixed"},
 			},
 		},
 		{
@@ -1318,7 +1318,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "JSON array of units. Each needs barcode, itemunitcode, standvalue. e.g. [{\"barcode\":\"EA-001\",\"itemunitcode\":\"EA\",\"standvalue\":1,\"dividevalue\":1},{\"barcode\":\"BOX-001\",\"itemunitcode\":\"BOX\",\"standvalue\":24,\"dividevalue\":1}]",
 					},
-					"groupcode": map[string]interface{}{
+					"group_code": map[string]interface{}{
 						"type":        "string",
 						"description": "Product group code (shared for all units). Auto-fills groupnames.",
 					},
@@ -1462,11 +1462,11 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "JSON array of multi-language names e.g. [{\"code\":\"th\",\"name\":\"เนื้อสัตว์\"},{\"code\":\"en\",\"name\":\"Meat\"}]",
 					},
-					"parentguid": map[string]interface{}{
+					"parent_guid": map[string]interface{}{
 						"type":        "string",
 						"description": "Parent category guidfixed (for hierarchy)",
 					},
-					"groupnumber": map[string]interface{}{
+					"group_number": map[string]interface{}{
 						"type":        "number",
 						"description": "Group/sort number",
 					},
@@ -1494,7 +1494,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"guidfixed": map[string]interface{}{
+					"guid_fixed": map[string]interface{}{
 						"type":        "string",
 						"description": "GuidFixed of the category to update",
 					},
@@ -1502,16 +1502,16 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "JSON array of multi-language names [{\"code\":\"th\",\"name\":\"เนื้อสัตว์\"}]",
 					},
-					"parentguid": map[string]interface{}{
+					"parent_guid": map[string]interface{}{
 						"type":        "string",
 						"description": "New parent category guidfixed",
 					},
-					"groupnumber": map[string]interface{}{
+					"group_number": map[string]interface{}{
 						"type":        "number",
 						"description": "New group/sort number",
 					},
 				},
-				"required": []string{"guidfixed"},
+				"required": []string{"guid_fixed"},
 			},
 		},
 		{
@@ -1520,12 +1520,12 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"guidfixed": map[string]interface{}{
+					"guid_fixed": map[string]interface{}{
 						"type":        "string",
 						"description": "GuidFixed of the category to delete",
 					},
 				},
-				"required": []string{"guidfixed"},
+				"required": []string{"guid_fixed"},
 			},
 		},
 		{
@@ -1582,7 +1582,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "JSON array of multi-language names e.g. [{\"code\":\"th\",\"name\":\"บริษัท ABC\"},{\"code\":\"en\",\"name\":\"ABC Co.\"}]",
 					},
-					"taxid": map[string]interface{}{
+					"tax_id": map[string]interface{}{
 						"type":        "string",
 						"description": "Tax ID (optional)",
 					},
@@ -1590,7 +1590,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "Email (optional)",
 					},
-					"personaltype": map[string]interface{}{
+					"personal_type": map[string]interface{}{
 						"type":        "number",
 						"description": "Personal type: 0=company, 1=individual (default: 0)",
 					},
@@ -1626,7 +1626,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"guidfixed": map[string]interface{}{
+					"guid_fixed": map[string]interface{}{
 						"type":        "string",
 						"description": "GuidFixed of the creditor to update",
 					},
@@ -1634,7 +1634,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "JSON array of multi-language names",
 					},
-					"taxid": map[string]interface{}{
+					"tax_id": map[string]interface{}{
 						"type":        "string",
 						"description": "New tax ID",
 					},
@@ -1651,7 +1651,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"description": "JSON object for billing address",
 					},
 				},
-				"required": []string{"guidfixed"},
+				"required": []string{"guid_fixed"},
 			},
 		},
 		{
@@ -1660,12 +1660,12 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"guidfixed": map[string]interface{}{
+					"guid_fixed": map[string]interface{}{
 						"type":        "string",
 						"description": "GuidFixed of the creditor to delete",
 					},
 				},
-				"required": []string{"guidfixed"},
+				"required": []string{"guid_fixed"},
 			},
 		},
 		{
@@ -1722,7 +1722,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "JSON array of multi-language names e.g. [{\"code\":\"th\",\"name\":\"ร้าน ABC\"},{\"code\":\"en\",\"name\":\"ABC Shop\"}]",
 					},
-					"taxid": map[string]interface{}{
+					"tax_id": map[string]interface{}{
 						"type":        "string",
 						"description": "Tax ID (optional)",
 					},
@@ -1730,7 +1730,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "Email (optional)",
 					},
-					"personaltype": map[string]interface{}{
+					"personal_type": map[string]interface{}{
 						"type":        "number",
 						"description": "Personal type: 0=company, 1=individual (default: 0)",
 					},
@@ -1766,7 +1766,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"guidfixed": map[string]interface{}{
+					"guid_fixed": map[string]interface{}{
 						"type":        "string",
 						"description": "GuidFixed of the debtor to update",
 					},
@@ -1774,7 +1774,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"type":        "string",
 						"description": "JSON array of multi-language names",
 					},
-					"taxid": map[string]interface{}{
+					"tax_id": map[string]interface{}{
 						"type":        "string",
 						"description": "New tax ID",
 					},
@@ -1791,7 +1791,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 						"description": "JSON object for billing address",
 					},
 				},
-				"required": []string{"guidfixed"},
+				"required": []string{"guid_fixed"},
 			},
 		},
 		{
@@ -1800,12 +1800,12 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"guidfixed": map[string]interface{}{
+					"guid_fixed": map[string]interface{}{
 						"type":        "string",
 						"description": "GuidFixed of the debtor to delete",
 					},
 				},
-				"required": []string{"guidfixed"},
+				"required": []string{"guid_fixed"},
 			},
 		},
 		{
@@ -1882,7 +1882,7 @@ func (s *MCPServer) handleToolsListFiltered(session *SSESession) map[string]inte
 // handleToolCall handles tool invocation
 func (s *MCPServer) handleToolCall(ctx context.Context, session *SSESession, params json.RawMessage) (interface{}, error) {
 	var callParams struct {
-		Name      string                 `json:"name"`
+		Name string                 `json:"name"`
 		Arguments map[string]interface{} `json:"arguments"`
 	}
 

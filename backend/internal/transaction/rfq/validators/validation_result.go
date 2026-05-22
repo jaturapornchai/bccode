@@ -21,8 +21,8 @@ type ValidationError struct {
 }
 
 type ValidationErrorItem struct {
-	Field   string `json:"field"`
-	Code    string `json:"code"`
+	Field string `json:"field"`
+	Code string `json:"code"`
 	Message string `json:"message"`
 }
 
@@ -66,10 +66,10 @@ func (r *ValidationResult) AddErrorf(field, code, thFormat, enFormat string, arg
 }
 
 type ValidationErrorResponse struct {
-	Success    bool                  `json:"success"`
-	ErrorCode  string                `json:"error_code"`
-	Message    string                `json:"message"`
-	Errors     []ValidationErrorItem `json:"errors"`
+	Success bool                  `json:"success"`
+	ErrorCode string                `json:"error_code"`
+	Message string                `json:"message"`
+	Errors []ValidationErrorItem `json:"errors"`
 	ErrorCount int                   `json:"error_count"`
 }
 
@@ -108,8 +108,8 @@ func (r *ValidationResult) ToUpdateErrorResponse(lang string) ValidationErrorRes
 
 type RFQSuccessResponse struct {
 	Success bool   `json:"success"`
-	ID      string `json:"id,omitempty"`
-	DocNo   string `json:"docno,omitempty"`
+	ID string `json:"id,omitempty"`
+	DocNo string `json:"docno,omitempty"`
 	Message string `json:"message"`
 }
 

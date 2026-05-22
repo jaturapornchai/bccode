@@ -362,7 +362,7 @@ func productBarcodeBulkUpdateInternalWithLogging(ctx context.Context, db *sql.DB
 	// Use COPY FROM for bulk insert (PostgreSQL)
 	columns := []string{
 		"barcode", "itemcode", "name0", "checksum",
-		"groupcode", "groupnames", "unitcode", "unitname", "price1",
+		"group_code", "group_names", "unitcode", "unit_name", "price1",
 		"barcoderefunitstand", "barcoderefunitdivide",
 	}
 

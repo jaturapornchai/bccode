@@ -49,7 +49,7 @@ func (svc ProductAdminService) ReSyncProductBarcode(shopID string) error {
 		Page:  1,
 		Sorts: []msModels.KeyInt{
 			{
-				Key:   "guidfixed",
+				Key:   "guid_fixed",
 				Value: -1,
 			},
 		},
@@ -147,7 +147,7 @@ func (svc ProductAdminService) DeleteProductBarcodeAll(shopID string, userName s
 		Page:  1,
 		Sorts: []msModels.KeyInt{
 			{
-				Key:   "guidfixed",
+				Key:   "guid_fixed",
 				Value: -1,
 			},
 		},

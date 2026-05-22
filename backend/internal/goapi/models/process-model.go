@@ -6,32 +6,32 @@ import (
 )
 
 type ProcessStockMovementStruct struct {
-	ItemCode string                             `json:"itemCode" bson:"itemCode"`
+	ItemCode string                             `json:"item_code" bson:"item_code"`
 	Name     string                             `json:"name" bson:"name"`
-	UnitCode string                             `json:"unitCode" bson:"unitCode"`
-	UnitName string                             `json:"unitName" bson:"unitName"`
+	UnitCode string                             `json:"unit_code" bson:"unit_code"`
+	UnitName string                             `json:"unit_name" bson:"unit_name"`
 	Details  []ProcessStockMovementDetailStruct `json:"details" bson:"details"`
 }
 
 type ProcessStockMovementDetailStruct struct {
-	IsExtra       bool      `json:"isExtra" bson:"isExtra"`
-	DocDateTime   time.Time `json:"docDateTime" bson:"docDateTime"`
-	DocNo         string    `json:"docNo" bson:"docNo"`
-	ItemCode      string    `json:"itemCode" bson:"itemCode"`
-	TransFlag     int       `json:"transFlag" bson:"transFlag"`
-	UnitCode      string    `json:"unitCode" bson:"unitCode"`
-	WhCode        string    `json:"whCode" bson:"whCode"`
-	LocationCode  string    `json:"locationCode" bson:"locationCode"`
-	TotalQty      float64   `json:"totalQty" bson:"totalQty"`
+	IsExtra       bool      `json:"is_extra" bson:"is_extra"`
+	DocDateTime   time.Time `json:"doc_date_time" bson:"doc_date_time"`
+	DocNo         string    `json:"doc_no" bson:"doc_no"`
+	ItemCode      string    `json:"item_code" bson:"item_code"`
+	TransFlag     int       `json:"trans_flag" bson:"trans_flag"`
+	UnitCode      string    `json:"unit_code" bson:"unit_code"`
+	WhCode        string    `json:"wh_code" bson:"wh_code"`
+	LocationCode  string    `json:"location_code" bson:"location_code"`
+	TotalQty      float64   `json:"total_qty" bson:"total_qty"`
 	Price         float64   `json:"price" bson:"price"`
-	UnitStand     float64   `json:"unitStand" bson:"unitStand"`
-	UnitDivide    float64   `json:"unitDivide" bson:"unitDivide"`
-	AverageCost   float64   `json:"averageCost" bson:"averageCost"`
-	CalcAmount    float64   `json:"calcAmount" bson:"calcAmount"`
-	BalanceAmount float64   `json:"balanceAmount" bson:"balanceAmount"`
-	BalanceQty    float64   `json:"balanceQty" bson:"balanceQty"`
-	UnitCost      float64   `json:"unitCost" bson:"unitCost"`
-	DocRef        string    `json:"docRef" bson:"docRef"`
+	UnitStand     float64   `json:"unit_stand" bson:"unit_stand"`
+	UnitDivide    float64   `json:"unit_divide" bson:"unit_divide"`
+	AverageCost   float64   `json:"average_cost" bson:"average_cost"`
+	CalcAmount    float64   `json:"calc_amount" bson:"calc_amount"`
+	BalanceAmount float64   `json:"balance_amount" bson:"balance_amount"`
+	BalanceQty    float64   `json:"balance_qty" bson:"balance_qty"`
+	UnitCost      float64   `json:"unit_cost" bson:"unit_cost"`
+	DocRef        string    `json:"doc_ref" bson:"doc_ref"`
 }
 
 type ProcessStockCostDetailStruct struct {
@@ -170,14 +170,14 @@ type PayLoadCommandStruct struct {
 type WarehouseListItemStruct struct {
 	Code       string               `json:"code"`
 	Title      string               `json:"title"`
-	IsSelected bool                 `json:"isSelected"`
+	IsSelected bool                 `json:"is_selected"`
 	Locations  []LocationItemStruct `json:"locations,omitempty"`
 }
 
 type LocationItemStruct struct {
 	Code       string `json:"code"`
 	Title      string `json:"title"`
-	IsSelected bool   `json:"isSelected"`
+	IsSelected bool   `json:"is_selected"`
 }
 
 type ProductBalanceByWareHouseAndBarcodeStruct struct {
@@ -219,6 +219,8 @@ type StockTransactionStruct struct {
 }
 
 type PayLoadCopyMongoStruct struct {
-	SourceShopID string `json:"source_shop_id"`
-	TargetShopID string `json:"target_shop_id"`
+	SourceShopID      string `json:"source_shop_id"`
+	TargetShopID      string `json:"target_shop_id"`
+	SourceEnvironment string `json:"source_environment"`
+	TargetEnvironment string `json:"target_environment"`
 }

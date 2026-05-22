@@ -12,9 +12,9 @@ import (
 // คืนเงินมัดจำลูกหนี้
 type ARDepositPaymentRefundTransactionPG struct {
 	GeneralTransactionPG `gorm:"embedded;"`
-	CreditorCode         string                                       `json:"creditorcode" gorm:"column:creditorcode"`
-	CreditorNames        pkgModels.JSONB                              `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
-	Items                *[]ARDepositPaymentRefundTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	CreditorCode string                                       `json:"creditorcode" gorm:"column:creditorcode"`
+	CreditorNames pkgModels.JSONB                              `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
+	Items *[]ARDepositPaymentRefundTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
 }
 
 // รายละเอียด คืนเงินมัดจำลูกหนี้

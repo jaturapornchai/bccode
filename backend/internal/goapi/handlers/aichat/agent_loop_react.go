@@ -423,7 +423,7 @@ func RunAgentReAct(ctx context.Context, req AgentV2Request, emitSSE func(SSEEven
 		// ถ้า final_answer → parse และ return
 		if action == "final_answer" {
 			var finalData struct {
-				Answer             string   `json:"answer"`
+				Answer string   `json:"answer"`
 				SuggestedQuestions []string `json:"suggested_questions"`
 			}
 

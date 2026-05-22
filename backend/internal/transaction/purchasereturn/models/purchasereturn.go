@@ -14,13 +14,13 @@ type PurchaseReturn struct {
 	transmodels.Transaction  `bson:"inline"`
 
 	RefTotalOriginal float64 `json:"reftotaloriginal" bson:"reftotaloriginal"` // มูลค่าตามใบกำกับเดิม
-	RefTotalCorrect  float64 `json:"reftotalcorrect" bson:"reftotalcorrect"`   // มูลค่าที่ถูกต้อง
-	RefTotalDiff     float64 `json:"reftotaldiff" bson:"reftotaldiff"`         // ผลต่าง
+	RefTotalCorrect float64 `json:"reftotalcorrect" bson:"reftotalcorrect"`   // มูลค่าที่ถูกต้อง
+	RefTotalDiff float64 `json:"reftotaldiff" bson:"reftotaldiff"`         // ผลต่าง
 }
 
 type PurchaseReturnInfo struct {
 	models.DocIdentity `bson:"inline"`
-	PurchaseReturn     `bson:"inline"`
+	PurchaseReturn  `bson:"inline"`
 }
 
 func (PurchaseReturnInfo) CollectionName() string {
@@ -33,7 +33,7 @@ type PurchaseReturnData struct {
 }
 
 type PurchaseReturnDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	PurchaseReturnData `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

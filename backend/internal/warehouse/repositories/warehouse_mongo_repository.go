@@ -75,7 +75,7 @@ func (repo WarehouseRepository) FindLocationPage(ctx context.Context, shopID str
 	mainQuery := bson.M{
 		"$match": bson.M{
 			"shopid":    shopID,
-			"deletedat": bson.M{"$exists": false},
+			"deleted_at": bson.M{"$exists": false},
 		},
 	}
 	criteria = append(criteria, mainQuery)
@@ -91,7 +91,7 @@ func (repo WarehouseRepository) FindLocationPage(ctx context.Context, shopID str
 	criteria = append(criteria, unwindQuery)
 
 	projectQuery := bson.M{"$project": bson.M{
-		"guidfixed":      "$guidfixed",
+		"guid_fixed":      "$guidfixed",
 		"warehousecode":  "$code",
 		"warehousenames": "$names",
 		"locationcode":   "$location.code",
@@ -122,7 +122,7 @@ func (repo WarehouseRepository) FindShelfPage(ctx context.Context, shopID string
 	mainQuery := bson.M{
 		"$match": bson.M{
 			"shopid":    shopID,
-			"deletedat": bson.M{"$exists": false},
+			"deleted_at": bson.M{"$exists": false},
 		},
 	}
 	criteria = append(criteria, mainQuery)
@@ -141,7 +141,7 @@ func (repo WarehouseRepository) FindShelfPage(ctx context.Context, shopID string
 	criteria = append(criteria, unwindQueryLevel2)
 
 	projectQuery := bson.M{"$project": bson.M{
-		"guidfixed":      "$guidfixed",
+		"guid_fixed":      "$guidfixed",
 		"warehousecode":  "$code",
 		"warehousenames": "$names",
 		"locationcode":   "$location.code",

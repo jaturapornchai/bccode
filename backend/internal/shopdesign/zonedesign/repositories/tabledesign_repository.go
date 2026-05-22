@@ -29,7 +29,7 @@ func (repo TableDesignRepository) Create(ctx context.Context, zoneGuidfixed stri
 		ctx,
 		doc,
 		map[string]interface{}{
-			"guidfixed":    zoneGuidfixed,
+			"guid_fixed":    zoneGuidfixed,
 			"tables.index": tableIndex,
 		}, doc)
 }

@@ -30,7 +30,7 @@ func (r SaleInvoiceReturnTransactionAdminRepositories) FindSaleInvoiceReturnDocB
 	err := r.pst.Find(ctx, &saleInvoiceReturnModels.SaleInvoiceReturnDoc{},
 		bson.M{
 			"shopid":    shopID,
-			"deletedat": bson.M{"$exists": false},
+			"deleted_at": bson.M{"$exists": false},
 		},
 		&docList)
 	if err != nil {
@@ -46,7 +46,7 @@ func (r SaleInvoiceReturnTransactionAdminRepositories) FindSaleInvoiceReturnDele
 	err := r.pst.Find(ctx, &saleInvoiceReturnModels.SaleInvoiceReturnDoc{},
 		bson.M{
 			"shopid":    shopID,
-			"deletedat": bson.M{"$exists": true},
+			"deleted_at": bson.M{"$exists": true},
 		},
 		&docList)
 	if err != nil {

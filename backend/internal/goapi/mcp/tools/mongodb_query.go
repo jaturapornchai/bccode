@@ -19,20 +19,20 @@ import (
 
 // MongoQueryRequest คำขอ query MongoDB
 type MongoQueryRequest struct {
-	ShopID     string `json:"shop_id"`
-	Database   string `json:"database"`   // ถ้าไม่ระบุจะใช้ค่า default จาก config
+	ShopID string `json:"shop_id"`
+	Database string `json:"database"`   // ถ้าไม่ระบุจะใช้ค่า default จาก config
 	Collection string `json:"collection"` // ชื่อ collection ที่ต้องการ query
-	Filter     string `json:"filter"`     // JSON filter (bson.M format)
-	Limit      int    `json:"limit"`      // จำนวน documents สูงสุด (default=20, max=100)
+	Filter string `json:"filter"`     // JSON filter (bson.M format)
+	Limit int    `json:"limit"`      // จำนวน documents สูงสุด (default=20, max=100)
 }
 
 // MongoQueryResponse ผลลัพธ์จาก query MongoDB
 type MongoQueryResponse struct {
-	Database    string                   `json:"database"`
-	Collection  string                   `json:"collection"`
-	Documents   []map[string]interface{} `json:"documents"`
-	Count       int                      `json:"count"`
-	Truncated   bool                     `json:"truncated"`
+	Database string                   `json:"database"`
+	Collection string                   `json:"collection"`
+	Documents []map[string]interface{} `json:"documents"`
+	Count int                      `json:"count"`
+	Truncated bool                     `json:"truncated"`
 	ExecutionMs int64                    `json:"execution_ms"`
 	GeneratedAt time.Time                `json:"generated_at"`
 }
@@ -122,9 +122,9 @@ func QueryMongoDB(ctx context.Context, shopID, database, collection, filterJSON 
 
 // MongoListCollectionsResponse ผลลัพธ์รายการ collections
 type MongoListCollectionsResponse struct {
-	Database    string           `json:"database"`
+	Database string           `json:"database"`
 	Collections []CollectionInfo `json:"collections"`
-	Count       int              `json:"count"`
+	Count int              `json:"count"`
 	GeneratedAt time.Time        `json:"generated_at"`
 }
 
@@ -175,11 +175,11 @@ func ListMongoDBCollections(ctx context.Context, database string) (*MongoListCol
 
 // MongoAggregateRequest คำขอ aggregation pipeline
 type MongoAggregateRequest struct {
-	ShopID     string `json:"shop_id"`
-	Database   string `json:"database"`
+	ShopID string `json:"shop_id"`
+	Database string `json:"database"`
 	Collection string `json:"collection"`
-	Pipeline   string `json:"pipeline"` // JSON array ของ pipeline stages
-	Limit      int    `json:"limit"`
+	Pipeline string `json:"pipeline"` // JSON array ของ pipeline stages
+	Limit int    `json:"limit"`
 }
 
 // AggregateMongoDB รัน aggregation pipeline บน collection (readonly)

@@ -926,10 +926,10 @@ func (svc ProductBarcodeHttpService) SearchProductBarcode(shopID string, filters
 		"barcode",
 		"names.name",
 		"itemcode",
-		"groupcode",
+		"group_code",
 		"groupnames.name",
 		"itemunitnames.name",
-		"brandcode",
+		"brand_code",
 		"brandnames.name",
 		"designcode",
 		"designnames.name",
@@ -1024,7 +1024,7 @@ func (svc ProductBarcodeHttpService) SearchProductBarcodeStep(shopID string, lan
 		"barcode",
 		"names.name",
 		"itemcode",
-		"groupcode",
+		"group_code",
 		"groupnames.name",
 		"itemunitnames.name",
 	}
@@ -1047,7 +1047,7 @@ func (svc ProductBarcodeHttpService) SearchProductBarcodeStepMultiShops(langCode
 		"barcode",
 		"names.name",
 		"itemcode",
-		"groupcode",
+		"group_code",
 		"groupnames.name",
 		"itemunitnames.name",
 	}
@@ -1333,7 +1333,7 @@ func (svc ProductBarcodeHttpService) DeleteProductBarcodeByGUIDs(shopID string, 
 	}
 
 	deleteFilterQuery := map[string]interface{}{
-		"guidfixed": bson.M{"$in": GUIDs},
+		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
 	err = svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
@@ -1413,12 +1413,12 @@ func (svc ProductBarcodeHttpService) Export(shopID string, languageCode string, 
 		"barcode",        //บาร์โค้ด",
 		"productname",    //"ชื่อสินค้า",
 		"unitcode",       //"หน่วยนับ",
-		"unitname",       //"ชื่อหน่วยนับ",
+		"unit_name",       //"ชื่อหน่วยนับ",
 		"price",          //ราคาขาย",
 		"price member",   //ราคาขาย",
 		"price delivery", //ราคาขาย",
-		"itemtype",       //ประเภทสินค้า",
-		"groupcode",      //กลุ่มสินค้า",
+		"item_type",       //ประเภทสินค้า",
+		"group_code",      //กลุ่มสินค้า",
 	}
 
 	headerRow := []string{}
@@ -1935,9 +1935,9 @@ func (s ProductBarcodeHttpService) processBatchRefBarcodeUpdate(shopID, authUser
 		updateData := bson.M{
 			"$set": bson.M{
 				"refbarcodes":      []models.RefProductBarcode{refBarcode},
-				"ismainbarcode":    false,
+				"is_main_barcode":    false,
 				"updatedby":        authUsername,
-				"updatedat":        time.Now(),
+				"updated_at":        time.Now(),
 				"isusesubbarcodes": true,
 			},
 		}

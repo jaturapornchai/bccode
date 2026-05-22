@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"reflect"
 	"time"
 
+	"smlcloudplatform/internal/goapi/config"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/myglobal"
 
@@ -22,16 +22,9 @@ const (
 	CollectionName = "datahistory"
 )
 
-// DatabaseName - ชื่อ MongoDB database อ่านจาก env (MONGO_DB_NAME > MONGODB_DB > bcaiclouddb)
-var DatabaseName = func() string {
-	if name := os.Getenv("MONGO_DB_NAME"); name != "" {
-		return name
-	}
-	if name := os.Getenv("MONGODB_DB"); name != "" {
-		return name
-	}
-	return "bcaiclouddb"
-}()
+func databaseName() string {
+	return config.NewServiceConfig().MongodbDatabaseName()
+}
 
 // ActionType - ประเภทการกระทำ
 type ActionType string
@@ -67,7 +60,7 @@ type DataHistory struct {
 	ScreenType ScreenType             `json:"screen_type" bson:"screen_type"`
 	Action     ActionType             `json:"action" bson:"action"`
 	DocNo      string                 `json:"docno" bson:"docno"`
-	GuidFixed  string                 `json:"guidfixed" bson:"guidfixed"`
+	GuidFixed  string                 `json:"guid_fixed" bson:"guid_fixed"`
 	UserCode   string                 `json:"user_code" bson:"user_code"`
 	UserName   string                 `json:"user_name" bson:"user_name"`
 	Timestamp  time.Time              `json:"timestamp" bson:"timestamp"`
@@ -82,7 +75,7 @@ func getCollection() (*mongo.Collection, error) {
 	if err != nil {
 		return nil, err
 	}
-	return client.Database(DatabaseName).Collection(CollectionName), nil
+	return client.Database(databaseName()).Collection(CollectionName), nil
 }
 
 // SaveHistory - บันทึก history ลง MongoDB
@@ -127,7 +120,7 @@ func HasPOHistory(shopID, guidFixed string) bool {
 	filter := bson.M{
 		"shopid":      shopID,
 		"screen_type": ScreenPurchaseOrder,
-		"guidfixed":   guidFixed,
+		"guid_fixed":  guidFixed,
 	}
 
 	count, err := collection.CountDocuments(ctx, filter)
@@ -152,7 +145,7 @@ func GetLastPOSnapshot(shopID, guidFixed string) map[string]interface{} {
 	filter := bson.M{
 		"shopid":      shopID,
 		"screen_type": ScreenPurchaseOrder,
-		"guidfixed":   guidFixed,
+		"guid_fixed":  guidFixed,
 	}
 
 	opts := options.FindOne().SetSort(bson.D{{Key: "timestamp", Value: -1}})
@@ -169,10 +162,10 @@ func GetLastPOSnapshot(shopID, guidFixed string) map[string]interface{} {
 // poKeyFields - fields สำคัญที่ใช้เปรียบเทียบว่ามีการแก้ไขจริงหรือไม่
 var poKeyFields = []string{
 	"docno", "docdatetime", "custcode", "description", "discountword",
-	"totaldiscount", "totalvalue", "totalamount", "totalvatvalue",
-	"totalbeforevat", "totalaftervat", "vatrate", "vattype",
+	"totaldiscount", "totalvalue", "total_amount", "totalvatvalue",
+	"totalbeforevat", "totalaftervat", "vatrate", "vat_type",
 	"iscancel", "cancelreason",
-	"doc_currency", "exchangerate", "totalamount_doc",
+	"doc_currency", "exchange_rate", "totalamount_doc",
 	"purchasetypecode",
 }
 
@@ -207,7 +200,7 @@ func HasMeaningfulChanges(oldData, newData map[string]interface{}) bool {
 			return true
 		}
 		// เปรียบเทียบ fields สำคัญของรายการสินค้า
-		detailFields := []string{"itemcode", "qty", "price", "sumamount", "unitcode", "whcode", "locationcode", "discount", "discountamount"}
+		detailFields := []string{"itemcode", "qty", "price", "sum_amount", "unitcode", "whcode", "locationcode", "discount", "discountamount"}
 		for _, f := range detailFields {
 			if !compareValues(oldItem[f], newItem[f]) {
 				logger.Debug("[DataHistory] Detail[%d].%s changed", i, f)

@@ -3,9 +3,9 @@ package approval
 import (
 	"context"
 	"fmt"
-	"smlcloudplatform/internal/goapi/logger"
 	"net/http"
 	"os"
+	"smlcloudplatform/internal/goapi/logger"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -24,7 +24,7 @@ const (
 var (
 	atlasClient *mongo.Client
 	atlasDB     *mongo.Database
-	// MongoDB Atlas Cloud สำหรับ approval tokens (ใช้ร่วมกับ lineoa-liff)
+	// MongoDB สำหรับ approval tokens (ใช้ร่วมกับ lineoa-liff)
 	tokenAtlasClient *mongo.Client
 	tokenAtlasDB     *mongo.Database
 )
@@ -34,16 +34,15 @@ func Init(client *mongo.Client, db *mongo.Database) {
 	atlasClient = client
 	atlasDB = db
 
-	// เชื่อมต่อ MongoDB Atlas Cloud สำหรับ tokens (ใช้ร่วมกับ lineoa-liff)
+	// เชื่อมต่อ MongoDB สำหรับ tokens (ใช้ร่วมกับ lineoa-liff)
 	initTokenAtlas()
 }
 
-// initTokenAtlas เชื่อมต่อ MongoDB Atlas Cloud สำหรับ approval tokens
+// initTokenAtlas เชื่อมต่อ MongoDB สำหรับ approval tokens
 func initTokenAtlas() {
-	// ใช้ MONGODB_TOKEN_ATLAS_URI หรือ fallback ไป MONGODB_ATLAS_URI
-	tokenURI := os.Getenv("MONGODB_TOKEN_ATLAS_URI")
+	tokenURI := firstNonEmptyEnv("MONGODB_TOKEN_URI", "MONGODB_TOKEN_ATLAS_URI")
 	if tokenURI == "" {
-		logger.Warn("[TokenAtlas] MONGODB_TOKEN_ATLAS_URI not set, tokens will use main Atlas connection")
+		logger.Warn("[TokenAtlas] MONGODB_TOKEN_URI not set, tokens will use main MongoDB connection")
 		tokenAtlasClient = atlasClient
 		tokenAtlasDB = atlasDB
 		return
@@ -56,7 +55,7 @@ func initTokenAtlas() {
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		logger.Error("[TokenAtlas] Failed to connect: %v", err)
-		// Fallback to main Atlas
+		// Fallback to main MongoDB connection.
 		tokenAtlasClient = atlasClient
 		tokenAtlasDB = atlasDB
 		return
@@ -73,16 +72,25 @@ func initTokenAtlas() {
 	tokenAtlasClient = client
 
 	// Database name from env or default
-	dbName := os.Getenv("MONGODB_TOKEN_ATLAS_DBNAME")
+	dbName := firstNonEmptyEnv("MONGODB_TOKEN_DB", "MONGODB_TOKEN_DBNAME", "MONGODB_TOKEN_ATLAS_DBNAME")
 	if dbName == "" {
 		dbName = "bcai_documents"
 	}
 	tokenAtlasDB = client.Database(dbName)
 
-	logger.Success("[TokenAtlas] ✅ Connected to MongoDB Atlas Cloud for tokens (DB: %s)", dbName)
+	logger.Success("[TokenAtlas] ✅ Connected to MongoDB for tokens (DB: %s)", dbName)
 }
 
-// getTokenCollection returns a MongoDB collection for approval tokens (from Atlas Cloud)
+func firstNonEmptyEnv(keys ...string) string {
+	for _, key := range keys {
+		if value := os.Getenv(key); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+// getTokenCollection returns a MongoDB collection for approval tokens.
 func getTokenCollection(name string) *mongo.Collection {
 	if tokenAtlasDB == nil {
 		return nil
@@ -90,7 +98,7 @@ func getTokenCollection(name string) *mongo.Collection {
 	return tokenAtlasDB.Collection(name)
 }
 
-// IsConnected returns true if MongoDB Atlas is connected
+// IsConnected returns true if MongoDB is connected
 func IsConnected() bool {
 	return atlasClient != nil && atlasDB != nil
 }
@@ -108,7 +116,7 @@ func checkConnection(c echo.Context) error {
 	if !IsConnected() {
 		return c.JSON(http.StatusServiceUnavailable, map[string]any{
 			"success": false,
-			"message": "MongoDB Atlas is not connected",
+			"message": "MongoDB is not connected",
 		})
 	}
 	return nil
@@ -405,49 +413,49 @@ const POApprovalStatusCollection = "po_approval_status"
 
 // ApprovalHistory ประวัติการอนุมัติ
 type ApprovalHistory struct {
-	Action       string    `bson:"action" json:"action"`               // submit, approve, reject
-	ActionBy     string    `bson:"action_by" json:"action_by"`         // รหัสผู้ดำเนินการ
-	ActionByName string    `bson:"action_by_name" json:"action_by_name"` // ชื่อผู้ดำเนินการ
-	Level        int       `bson:"level" json:"level"`                 // ระดับการอนุมัติ
+	Action       string    `bson:"action" json:"action"`                       // submit, approve, reject
+	ActionBy     string    `bson:"action_by" json:"action_by"`                 // รหัสผู้ดำเนินการ
+	ActionByName string    `bson:"action_by_name" json:"action_by_name"`       // ชื่อผู้ดำเนินการ
+	Level        int       `bson:"level" json:"level"`                         // ระดับการอนุมัติ
 	Comment      string    `bson:"comment,omitempty" json:"comment,omitempty"` // หมายเหตุ
-	ActionAt     time.Time `bson:"action_at" json:"action_at"`         // เวลาดำเนินการ (UTC)
-	Source       string    `bson:"source,omitempty" json:"source,omitempty"` // ช่องทาง: line, email, app
+	ActionAt     time.Time `bson:"action_at" json:"action_at"`                 // เวลาดำเนินการ (UTC)
+	Source       string    `bson:"source,omitempty" json:"source,omitempty"`   // ช่องทาง: line, email, app
 }
 
 // POApprovalStatusItem รายการสินค้าใน PO สำหรับแสดงใน LIFF
 type POApprovalStatusItem struct {
-	LineNumber int     `bson:"linenumber" json:"linenumber"`
+	LineNumber int     `bson:"line_number" json:"line_number"`
 	ItemCode   string  `bson:"itemcode" json:"itemcode"`
-	ItemName   string  `bson:"itemname" json:"itemname"`
+	ItemName   string  `bson:"item_name" json:"item_name"`
 	Qty        float64 `bson:"qty" json:"qty"`
-	UnitName   string  `bson:"unitname" json:"unitname"`
+	UnitName   string  `bson:"unit_name" json:"unit_name"`
 	Price      float64 `bson:"price" json:"price"`
-	SumAmount  float64 `bson:"sumamount" json:"sumamount"`
+	SumAmount  float64 `bson:"sum_amount" json:"sum_amount"`
 }
 
 // POApprovalStatus สถานะการอนุมัติ PO
 type POApprovalStatus struct {
-	ID                   primitive.ObjectID     `bson:"_id,omitempty" json:"guid,omitempty"`
-	ShopID               string                 `bson:"shop_id" json:"shop_id"`
-	DocNo                string                 `bson:"docno" json:"docno"`
-	GuidFixed            string                 `bson:"guidfixed" json:"guidfixed"`
-	SourceDocNo          string                 `bson:"source_docno,omitempty" json:"source_docno,omitempty"`     // เลขที่เอกสารต้นแบบ
-	SourceGuidFixed      string                 `bson:"source_guidfixed,omitempty" json:"source_guidfixed,omitempty"` // GUID ต้นแบบ
-	PurchaseTypeCode     string                 `bson:"purchase_type_code" json:"purchase_type_code"`
-	PurchaseTypeName     string                 `bson:"purchase_type_name" json:"purchase_type_name"`
-	TotalAmount          float64                `bson:"total_amount" json:"total_amount"`
-	RequiredLevel        int                    `bson:"required_level" json:"required_level"`
-	RequiredLevelName    string                 `bson:"required_level_name" json:"required_level_name"`
-	CurrentApprovedLevel int                    `bson:"current_approved_level" json:"current_approved_level"`
-	Status               string                 `bson:"status" json:"status"` // draft, auto_approved, pending, approved, rejected
-	CreatedBy            string                 `bson:"created_by" json:"created_by"`
-	CreatedByName        string                 `bson:"created_by_name" json:"created_by_name"`
-	History              []ApprovalHistory      `bson:"history" json:"history"`
-	LastComment          string                 `bson:"last_comment,omitempty" json:"last_comment,omitempty"`
+	ID                   primitive.ObjectID `bson:"_id,omitempty" json:"guid,omitempty"`
+	ShopID               string             `bson:"shop_id" json:"shop_id"`
+	DocNo                string             `bson:"docno" json:"docno"`
+	GuidFixed            string             `bson:"guid_fixed" json:"guid_fixed"`
+	SourceDocNo          string             `bson:"source_docno,omitempty" json:"source_docno,omitempty"`         // เลขที่เอกสารต้นแบบ
+	SourceGuidFixed      string             `bson:"source_guidfixed,omitempty" json:"source_guidfixed,omitempty"` // GUID ต้นแบบ
+	PurchaseTypeCode     string             `bson:"purchase_type_code" json:"purchase_type_code"`
+	PurchaseTypeName     string             `bson:"purchase_type_name" json:"purchase_type_name"`
+	TotalAmount          float64            `bson:"total_amount" json:"total_amount"`
+	RequiredLevel        int                `bson:"required_level" json:"required_level"`
+	RequiredLevelName    string             `bson:"required_level_name" json:"required_level_name"`
+	CurrentApprovedLevel int                `bson:"current_approved_level" json:"current_approved_level"`
+	Status               string             `bson:"status" json:"status"` // draft, auto_approved, pending, approved, rejected
+	CreatedBy            string             `bson:"created_by" json:"created_by"`
+	CreatedByName        string             `bson:"created_by_name" json:"created_by_name"`
+	History              []ApprovalHistory  `bson:"history" json:"history"`
+	LastComment          string             `bson:"last_comment,omitempty" json:"last_comment,omitempty"`
 	// Transaction details for LIFF display (copy from transactiondb)
 	DocDatetime string                 `bson:"docdatetime,omitempty" json:"docdatetime,omitempty"`
 	CustCode    string                 `bson:"custcode,omitempty" json:"custcode,omitempty"`
-	CustName    string                 `bson:"custname,omitempty" json:"custname,omitempty"`
+	CustName    string                 `bson:"cust_name,omitempty" json:"cust_name,omitempty"`
 	Items       []POApprovalStatusItem `bson:"items,omitempty" json:"items,omitempty"`
 	CreatedAt   time.Time              `bson:"created_at" json:"created_at"`
 	UpdatedAt   time.Time              `bson:"updated_at" json:"updated_at"`
@@ -455,22 +463,22 @@ type POApprovalStatus struct {
 
 // POApprovalStatusRequestItem รายการสินค้าใน request
 type POApprovalStatusRequestItem struct {
-	LineNumber int     `json:"linenumber"`
+	LineNumber int     `json:"line_number"`
 	ItemCode   string  `json:"itemcode"`
-	ItemName   string  `json:"itemname"`
+	ItemName   string  `json:"item_name"`
 	Qty        float64 `json:"qty"`
-	UnitName   string  `json:"unitname"`
+	UnitName   string  `json:"unit_name"`
 	Price      float64 `json:"price"`
-	SumAmount  float64 `json:"sumamount"`
+	SumAmount  float64 `json:"sum_amount"`
 }
 
 // POApprovalStatusRequest request สำหรับจัดการสถานะการอนุมัติ
 type POApprovalStatusRequest struct {
 	ShopID           string  `json:"shop_id"`
 	DocNo            string  `json:"docno"`
-	GuidFixed        string  `json:"guidfixed"`
-	SourceDocNo      string  `json:"source_docno"`      // เลขที่เอกสารต้นแบบ
-	SourceGuidFixed  string  `json:"source_guidfixed"`  // GUID ต้นแบบ
+	GuidFixed        string  `json:"guid_fixed"`
+	SourceDocNo      string  `json:"source_docno"`     // เลขที่เอกสารต้นแบบ
+	SourceGuidFixed  string  `json:"source_guidfixed"` // GUID ต้นแบบ
 	PurchaseTypeCode string  `json:"purchase_type_code"`
 	PurchaseTypeName string  `json:"purchase_type_name"`
 	TotalAmount      float64 `json:"total_amount"`
@@ -483,7 +491,7 @@ type POApprovalStatusRequest struct {
 	// Transaction details for LIFF display
 	DocDatetime string                        `json:"docdatetime,omitempty"`
 	CustCode    string                        `json:"custcode,omitempty"`
-	CustName    string                        `json:"custname,omitempty"`
+	CustName    string                        `json:"cust_name,omitempty"`
 	Items       []POApprovalStatusRequestItem `json:"items,omitempty"`
 }
 
@@ -539,8 +547,8 @@ func GetPOApprovalStatusHandler(c echo.Context) error {
 
 // GetBatchPOApprovalStatusRequest request สำหรับดึงสถานะหลายเอกสาร
 type GetBatchPOApprovalStatusRequest struct {
-	ShopID  string   `json:"shop_id"`
-	DocNos  []string `json:"docnos"`
+	ShopID string   `json:"shop_id"`
+	DocNos []string `json:"docnos"`
 }
 
 // GetBatchPOApprovalStatusHandler - ดึงสถานะการอนุมัติ PO หลายเอกสารพร้อมกัน
@@ -824,7 +832,7 @@ func SubmitPOApprovalHandler(c echo.Context) error {
 	filter := bson.M{"shop_id": req.ShopID, "docno": req.DocNo}
 	update := bson.M{
 		"$set": bson.M{
-			"guidfixed":              req.GuidFixed,
+			"guid_fixed":             req.GuidFixed,
 			"source_docno":           req.SourceDocNo,
 			"source_guidfixed":       req.SourceGuidFixed,
 			"purchase_type_code":     req.PurchaseTypeCode,
@@ -842,7 +850,7 @@ func SubmitPOApprovalHandler(c echo.Context) error {
 			// Transaction details for LIFF display
 			"docdatetime": req.DocDatetime,
 			"custcode":    req.CustCode,
-			"custname":    req.CustName,
+			"cust_name":   req.CustName,
 			"items":       items,
 		},
 		"$setOnInsert": bson.M{
@@ -885,7 +893,7 @@ func SubmitPOApprovalHandler(c echo.Context) error {
 			}
 			return "ส่งขออนุมัติสำเร็จ"
 		}(),
-		"data":              savedStatus,
+		"data":               savedStatus,
 		"notifications_sent": notificationSent,
 	})
 }
@@ -1568,7 +1576,7 @@ type NotificationLog struct {
 	ID               primitive.ObjectID `bson:"_id,omitempty" json:"guid,omitempty"`
 	ShopID           string             `bson:"shop_id" json:"shop_id"`
 	DocNo            string             `bson:"docno" json:"docno"`
-	GuidFixed        string             `bson:"guidfixed" json:"guidfixed"`
+	GuidFixed        string             `bson:"guid_fixed" json:"guid_fixed"`
 	ApproverCode     string             `bson:"approver_code" json:"approver_code"`
 	ApproverName     string             `bson:"approver_name" json:"approver_name"`
 	NotificationType string             `bson:"notification_type" json:"notification_type"` // email, line
@@ -1587,7 +1595,7 @@ type NotificationLog struct {
 type NotificationRequest struct {
 	ShopID       string `json:"shop_id"`
 	DocNo        string `json:"docno"`
-	GuidFixed    string `json:"guidfixed"`
+	GuidFixed    string `json:"guid_fixed"`
 	ApproverCode string `json:"approver_code"`
 	CheckOnly    bool   `json:"check_only"` // true = ตรวจสอบอย่างเดียว ไม่ส่งจริง
 }
@@ -2030,7 +2038,7 @@ func GetNotificationLogsHandler(c echo.Context) error {
 type MarkOpenedRequest struct {
 	ShopID       string `json:"shop_id"`
 	DocNo        string `json:"docno"`
-	GuidFixed    string `json:"guidfixed"`
+	GuidFixed    string `json:"guid_fixed"`
 	ApproverCode string `json:"approver_code"`
 	OpenedFrom   string `json:"opened_from"` // email, line, liff
 }
@@ -2150,11 +2158,11 @@ func MarkNotificationOpenedHandler(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, map[string]any{
-		"success":        true,
-		"message":        "บันทึกการเปิดอ่านสำเร็จ",
-		"updated_count":  result.ModifiedCount,
-		"opened_at":      now.Format("2006-01-02 15:04:05"),
-		"opened_from":    req.OpenedFrom,
+		"success":       true,
+		"message":       "บันทึกการเปิดอ่านสำเร็จ",
+		"updated_count": result.ModifiedCount,
+		"opened_at":     now.Format("2006-01-02 15:04:05"),
+		"opened_from":   req.OpenedFrom,
 	})
 }
 
@@ -2164,22 +2172,22 @@ func MarkNotificationOpenedHandler(c echo.Context) error {
 
 // TimelineItem รายการใน timeline
 type TimelineItem struct {
-	Action       string    `json:"action"`                  // submit, modify, approve, reject, notification_sent, notification_opened
-	ActionBy     string    `json:"action_by,omitempty"`     // รหัสผู้ดำเนินการ
+	Action       string    `json:"action"`                   // submit, modify, approve, reject, notification_sent, notification_opened
+	ActionBy     string    `json:"action_by,omitempty"`      // รหัสผู้ดำเนินการ
 	ActionByName string    `json:"action_by_name,omitempty"` // ชื่อผู้ดำเนินการ
-	ActionAt     time.Time `json:"action_at"`               // เวลาดำเนินการ
-	Detail       string    `json:"detail,omitempty"`        // รายละเอียดเพิ่มเติม
-	Comment      string    `json:"comment,omitempty"`       // หมายเหตุ
-	Level        int       `json:"level,omitempty"`         // ระดับการอนุมัติ
-	Type         string    `json:"type,omitempty"`          // ประเภท notification: email, line
-	Recipient    string    `json:"recipient,omitempty"`     // ผู้รับ notification
+	ActionAt     time.Time `json:"action_at"`                // เวลาดำเนินการ
+	Detail       string    `json:"detail,omitempty"`         // รายละเอียดเพิ่มเติม
+	Comment      string    `json:"comment,omitempty"`        // หมายเหตุ
+	Level        int       `json:"level,omitempty"`          // ระดับการอนุมัติ
+	Type         string    `json:"type,omitempty"`           // ประเภท notification: email, line
+	Recipient    string    `json:"recipient,omitempty"`      // ผู้รับ notification
 }
 
 // TimelineRequest request สำหรับดึง timeline
 type TimelineRequest struct {
 	ShopID    string `json:"shop_id"`
 	DocNo     string `json:"docno"`
-	GuidFixed string `json:"guidfixed"`
+	GuidFixed string `json:"guid_fixed"`
 }
 
 // GetApprovalTimelineHandler - ดึงประวัติรวมทั้งหมด (submit, approve, reject, notification sent/opened)
@@ -2316,7 +2324,7 @@ func GetApprovalTimelineHandler(c echo.Context) error {
 	if err == nil || poStatus.DocNo != "" {
 		statusInfo = map[string]any{
 			"docno":                  poStatus.DocNo,
-			"guidfixed":              poStatus.GuidFixed,
+			"guid_fixed":             poStatus.GuidFixed,
 			"status":                 poStatus.Status,
 			"total_amount":           poStatus.TotalAmount,
 			"purchase_type_name":     poStatus.PurchaseTypeName,
@@ -2345,7 +2353,7 @@ func GetApprovalTimelineHandler(c echo.Context) error {
 // ฟังก์ชันนี้ถูกเรียกจาก Kafka consumer เมื่อมีการยกเลิก PO
 func UpdatePOApprovalStatusToCancelled(shopID, docNo, cancelReason, cancelUserCode, cancelUserName string) error {
 	if tokenAtlasDB == nil {
-		return fmt.Errorf("MongoDB Atlas not connected")
+		return fmt.Errorf("MongoDB not connected")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

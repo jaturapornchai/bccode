@@ -14,12 +14,12 @@ import (
 
 // ManualClosePORequest — request สำหรับปิด/เปิดเอกสารใบสั่งซื้อด้วยมือ
 type ManualClosePORequest struct {
-	ShopID       string `json:"shop_id"`
-	DocNo        string `json:"docno"`
-	Action       string `json:"action"`         // "close" หรือ "open"
+	ShopID string `json:"shop_id"`
+	DocNo string `json:"docno"`
+	Action string `json:"action"`         // "close" หรือ "open"
 	ActionByCode string `json:"action_by_code"` // รหัสผู้กระทำ
 	ActionByName string `json:"action_by_name"` // ชื่อผู้กระทำ
-	Reason       string `json:"reason"`         // เหตุผล (ต้องกรอก)
+	Reason string `json:"reason"`         // เหตุผล (ต้องกรอก)
 }
 
 // ManualClosePOHandler — ปิด/เปิดเอกสารใบสั่งซื้อด้วยมือ

@@ -11,11 +11,11 @@ import (
 
 // QueryIntent represents AI's interpretation of the question
 type QueryIntent struct {
-	QueryType    string `json:"query_type"`    // "count", "list", "search", "stat", "general"
-	SQL          string `json:"sql"`           // Generated SQL query
-	NeedsData    bool   `json:"needs_data"`    // Whether to execute query
+	QueryType string `json:"query_type"`    // "count", "list", "search", "stat", "general"
+	SQL string `json:"sql"`           // Generated SQL query
+	NeedsData bool   `json:"needs_data"`    // Whether to execute query
 	DirectAnswer string `json:"direct_answer"` // If no query needed
-	Limit        int    `json:"limit"`         // Result limit
+	Limit int    `json:"limit"`         // Result limit
 }
 
 // GenerateQueryFromQuestion uses AI to interpret question and generate SQL

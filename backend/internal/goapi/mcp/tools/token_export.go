@@ -63,13 +63,13 @@ func getTokenS3Client() (*s3.Client, string, error) {
 
 // TokenExportData โครงสร้างข้อมูล export สำหรับ MCP client config
 type TokenExportData struct {
-	APIKey             string                 `json:"api_key"`
-	ShopID             string                 `json:"shop_id"`
-	Name               string                 `json:"name"`
-	ExpiresAt          *string                `json:"expires_at,omitempty"`
-	CreatedAt          string                 `json:"created_at"`
+	APIKey string                 `json:"api_key"`
+	ShopID string                 `json:"shop_id"`
+	Name string                 `json:"name"`
+	ExpiresAt *string                `json:"expires_at,omitempty"`
+	CreatedAt string                 `json:"created_at"`
 	ClaudeDesktopConfig map[string]interface{} `json:"claude_desktop_config"`
-	ClaudeCodeConfig   map[string]interface{} `json:"claude_code_config"`
+	ClaudeCodeConfig map[string]interface{} `json:"claude_code_config"`
 }
 
 // GenerateTokenExport สร้าง export data สำหรับ MCP client

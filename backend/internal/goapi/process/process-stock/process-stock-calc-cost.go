@@ -207,9 +207,9 @@ func ProductCalcCostWithOptions(db *sql.DB, shopId string, itemCodeForProcess st
 
 			// ใช้ bulk insert สำหรับ PostgreSQL
 			columns := []string{
-				"docdatetime", "docno", "linenumber", "transflag", "itemcode", "barcode",
+				"docdatetime", "docno", "line_number", "transflag", "itemcode", "barcode",
 				"unitcode", "whcode", "locationcode", "totalqty", "price", "unitstand",
-				"unitdivide", "averagecost", "calcamount", "balanceamount", "balanceqty",
+				"unitdivide", "averagecost", "calcamount", "balanceamount", "balance_qty",
 				"guid", "unitcost", "docref",
 			}
 
@@ -313,7 +313,7 @@ func ProductCalcCostWithOptions(db *sql.DB, shopId string, itemCodeForProcess st
 			PriceExcludeVat: mypg.GetFloat64Value(row, "priceexcludevat"),
 			UnitStand:       mypg.GetFloat64Value(row, "unitstand"),
 			UnitDivide:      mypg.GetFloat64Value(row, "unitdivide"),
-			SumAmount:       mypg.GetFloat64Value(row, "sumamount"),
+			SumAmount:       mypg.GetFloat64Value(row, "sum_amount"),
 			AverageCost:     0.0,
 			UnitCost:        0.0,
 			CalcAmount:      0.0,
@@ -474,9 +474,9 @@ func ProductCalcCostWithOptions(db *sql.DB, shopId string, itemCodeForProcess st
 				batchLots := lots[start:end]
 
 				columns := []string{
-					"docdatetime", "lotnumber", "docno", "transflag", "itemcode",
+					"docdatetime", "lot_number", "docno", "transflag", "itemcode",
 					"unitcode", "whcode", "locationcode", "qty", "price", "unitstand",
-					"unitdivide", "cost", "balanceamount", "balanceqty", "guidref",
+					"unitdivide", "cost", "balanceamount", "balance_qty", "guid_ref",
 				}
 
 				var records [][]any

@@ -10,14 +10,14 @@ const bankmasterCollectionName = "bankMaster"
 
 type BankMaster struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code                     string          `json:"code" bson:"code"`
-	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
-	Logo                     *string         `json:"logo" bson:"logo"`
+	Code string          `json:"code" bson:"code"`
+	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	Logo *string         `json:"logo" bson:"logo"`
 }
 
 type BankMasterInfo struct {
 	models.DocIdentity `bson:"inline"`
-	BankMaster         `bson:"inline"`
+	BankMaster  `bson:"inline"`
 }
 
 func (BankMasterInfo) CollectionName() string {
@@ -26,12 +26,12 @@ func (BankMasterInfo) CollectionName() string {
 
 type BankMasterData struct {
 	models.ShopIdentity `bson:"inline"`
-	BankMasterInfo      `bson:"inline"`
+	BankMasterInfo  `bson:"inline"`
 }
 
 type BankMasterDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	BankMasterData     `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	BankMasterData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -48,7 +48,7 @@ func (BankMasterItemGuid) CollectionName() string {
 }
 
 type BankMasterActivity struct {
-	BankMasterData      `bson:"inline"`
+	BankMasterData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

@@ -130,7 +130,7 @@ func (svc ZoneDesignService) SearchZoneDesign(shopID string, pageable micromodel
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"guidfixed",
+		"guid_fixed",
 	}
 
 	for i := range [5]bool{} {

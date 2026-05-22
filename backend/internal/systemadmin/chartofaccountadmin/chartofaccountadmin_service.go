@@ -35,7 +35,7 @@ func (s *ChartOfAccountAdminService) ReSyncChartOfAccountDoc(shopID string) erro
 		Page:  1,
 		Sorts: []msModels.KeyInt{
 			{
-				Key:   "guidfixed",
+				Key:   "guid_fixed",
 				Value: -1,
 			},
 		},

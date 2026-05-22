@@ -71,7 +71,7 @@ func (repo *TaskRepository) FindTaskChild(ctx context.Context, shopID string, re
 
 	queryFilters := bson.M{
 		"shopid":             shopID,
-		"deletedat":          bson.M{"$exists": false},
+		"deleted_at":          bson.M{"$exists": false},
 		"rejectfromtaskguid": rejectFromTaskGUID,
 	}
 
@@ -93,7 +93,7 @@ func (repo *TaskRepository) FindLastTaskByCode(ctx context.Context, shopID strin
 
 	queryFilters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 		"code": bson.M{"$regex": primitive.Regex{
 			Pattern: codeFormat + ".*",
 			Options: "i",
@@ -119,7 +119,7 @@ func (repo *TaskRepository) CountTaskParent(ctx context.Context, shopID string, 
 
 	queryFilters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 	}
 
 	queryFilters["parentguidfixed"] = taskGUID
@@ -137,11 +137,11 @@ func (repo *TaskRepository) UpdateTotalDocumentImageGroup(ctx context.Context, s
 
 	queryFilters := bson.M{
 		"shopid":    shopID,
-		"guidfixed": taskGUID,
-		"deletedat": bson.M{"$exists": false},
+		"guid_fixed": taskGUID,
+		"deleted_at": bson.M{"$exists": false},
 	}
 
-	queryFilters["guidfixed"] = taskGUID
+	queryFilters["guid_fixed"] = taskGUID
 
 	err := repo.pst.UpdateOne(ctx, models.TaskDocumentTotal{}, queryFilters, models.TaskDocumentTotal{TotalDocument: totalDoc, TotalDocumentStatus: &totalDocStatus, BillCount: billCount, ReferenceCount: referenceCount, ReferenceBalance: referenceBalance})
 
@@ -156,11 +156,11 @@ func (repo *TaskRepository) UpdateTotalRejectDocumentImageGroup(ctx context.Cont
 
 	queryFilters := bson.M{
 		"shopid":    shopID,
-		"guidfixed": taskGUID,
-		"deletedat": bson.M{"$exists": false},
+		"guid_fixed": taskGUID,
+		"deleted_at": bson.M{"$exists": false},
 	}
 
-	queryFilters["guidfixed"] = taskGUID
+	queryFilters["guid_fixed"] = taskGUID
 
 	err := repo.pst.UpdateOne(ctx, models.TaskTotalReject{}, queryFilters, models.TaskTotalReject{ToTalReject: total})
 
@@ -175,7 +175,7 @@ func (repo *TaskRepository) FindPageByTaskReject(ctx context.Context, shopID str
 
 	queryFilters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 	}
 
 	if len(module) > 0 {
@@ -199,7 +199,7 @@ func (repo *TaskRepository) FindOneTaskByCode(ctx context.Context, shopID string
 
 	queryFilters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 		"code":      taskCode,
 	}
 
@@ -233,7 +233,7 @@ func (repo *TaskRepository) FindPageTask(ctx context.Context, shopID string, mod
 
 	queryFilters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 	}
 
 	if len(module) > 0 {
@@ -248,7 +248,7 @@ func (repo *TaskRepository) FindPageTask(ctx context.Context, shopID string, mod
 		queryFilters["$and"] = matchFilterList
 	}
 
-	pageable.Sorts = append(pageable.Sorts, micromodels.KeyInt{Key: "guidfixed", Value: 1})
+	pageable.Sorts = append(pageable.Sorts, micromodels.KeyInt{Key: "guid_fixed", Value: 1})
 
 	matchQuery := bson.M{
 		"$match": queryFilters,

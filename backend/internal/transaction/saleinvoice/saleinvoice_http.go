@@ -618,11 +618,11 @@ func (h SaleInvoiceHttp) Export(ctx microservice.IContext) error {
 		"barcode",        //บาร์โค้ด",
 		"productname",    //"ชื่อสินค้า",
 		"unitcode",       //"หน่วยนับ",
-		"unitname",       //"ชื่อหน่วยนับ",
+		"unit_name",       //"ชื่อหน่วยนับ",
 		"qty",            //"จำนวน",
 		"price",          //ราคา",
 		"discountamount", // "มูลค่าส่วนลด",
-		"sumamount",      //"มูลค่าสินค้า",
+		"sum_amount",      //"มูลค่าสินค้า",
 	}
 
 	languageHeader := map[string]string{}

@@ -3,11 +3,11 @@ package setupconfig
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/myclickhouse"
 	"smlcloudplatform/internal/goapi/mydb"
-	"net/http"
-	"os"
 	"sort"
 	"strings"
 	"time"
@@ -17,6 +17,9 @@ import (
 // Redis และ Kafka ไม่อยู่ใน bootstrap.json — ใช้ค่า default (redis:6379, kafka:9092)
 type bootstrapConfig struct {
 	MongoDB      map[string]string `json:"mongodb"`
+	MongoDBDev   map[string]string `json:"mongodb_dev"`
+	MongoDBUAT   map[string]string `json:"mongodb_uat"`
+	MongoDBPRO   map[string]string `json:"mongodb_pro"`
 	PostgreSQL   map[string]string `json:"postgresql"`
 	ClickHouse   map[string]string `json:"clickhouse"`
 	Service      map[string]string `json:"service"`
@@ -49,10 +52,18 @@ var configMapping = map[string]map[string][]string{
 	"mongodb": {
 		"uri":      {"MONGODB_URI"},
 		"database": {"MONGODB_DB", "MONGO_DB_NAME"}, // ใช้ "database" เท่านั้น (ไม่ใช้ "database_name" เพราะซ้ำ)
-		"host":     {"MONGO_SERVER_IP"},
-		"port":     {"MONGO_SERVER_PORT"},
-		"username": {"MONGO_USERNAME"},
-		"password": {"MONGO_PASSWORD"},
+	},
+	"mongodb_dev": {
+		"uri":      {"MONGODB_DEV_URI"},
+		"database": {"MONGODB_DEV_DB"},
+	},
+	"mongodb_uat": {
+		"uri":      {"MONGODB_UAT_URI"},
+		"database": {"MONGODB_UAT_DB"},
+	},
+	"mongodb_pro": {
+		"uri":      {"MONGODB_PRO_URI", "MONGODB_PRODUCTION_URI"},
+		"database": {"MONGODB_PRO_DB", "MONGODB_PRODUCTION_DB"},
 	},
 	"postgresql": {
 		"host":         {"POSTGRES_HOST"},
@@ -72,18 +83,18 @@ var configMapping = map[string]map[string][]string{
 		"database_name": {"CH_DATABASE_NAME"},
 	},
 	"service": {
-		"enable_kafka":                {"ENABLE_KAFKA"},
+		"enable_kafka":                 {"ENABLE_KAFKA"},
 		"kafka_consumer_group_version": {"KAFKA_CONSUMER_GROUP_VERSION"},
-		"enable_clone_clickhouse":     {"ENABLE_CLONE_CLICKHOUSE"},
-		"log_level":                   {"LOG_LEVEL"},
-		"jwt_secret_key":              {"JWT_SECRET_KEY"},
-		"dev_api_mode":                {"DEV_API_MODE"},
-		"service_port":                {"SERVICE_PORT"},
-		"host_api":                    {"HOST_API"},
-		"mode":                        {"MODE"},
-		"http_cors":                   {"HTTP_CORS"},
-		"cors_allowed_origins":        {"CORS_ALLOWED_ORIGINS"},
-		"firebase_project_id":         {"FIREBASE_PROJECT_ID"},
+		"enable_clone_clickhouse":      {"ENABLE_CLONE_CLICKHOUSE"},
+		"log_level":                    {"LOG_LEVEL"},
+		"jwt_secret_key":               {"JWT_SECRET_KEY"},
+		"dev_api_mode":                 {"DEV_API_MODE"},
+		"service_port":                 {"SERVICE_PORT"},
+		"host_api":                     {"HOST_API"},
+		"mode":                         {"MODE"},
+		"http_cors":                    {"HTTP_CORS"},
+		"cors_allowed_origins":         {"CORS_ALLOWED_ORIGINS"},
+		"firebase_project_id":          {"FIREBASE_PROJECT_ID"},
 	},
 	"integrations": {
 		"ai_provider":          {"AI_PROVIDER"}, // "gemini" | "openrouter" | "groq" | "deepseek"
@@ -122,23 +133,23 @@ var configMapping = map[string]map[string][]string{
 		"azure_tenant_id":      {"AZURE_TENANT_ID"},
 	},
 	"mongodb_production": {
-		"uri":      {"MONGODB_PRODUCTION_URI"},
-		"database": {"MONGODB_PRODUCTION_DB"},
+		"uri":      {"MONGODB_PRO_URI", "MONGODB_PRODUCTION_URI"},
+		"database": {"MONGODB_PRO_DB", "MONGODB_PRODUCTION_DB"},
 	},
 }
 
 // secretKeys รายชื่อ key ที่ต้อง mask ใน log
 var secretKeys = map[string]bool{
-	"password":            true,
-	"secret_access_key":   true,
-	"account_key":         true,
-	"azure_account_key":   true,
-	"jwt_secret_key":      true,
-	"gemini_api_key":      true,
-	"thunder_api_key":     true,
-	"brevo_api_key":       true,
-	"r2_secret_access_key":  true,
-	"s3_secret_access_key":  true,
+	"password":             true,
+	"secret_access_key":    true,
+	"account_key":          true,
+	"azure_account_key":    true,
+	"jwt_secret_key":       true,
+	"gemini_api_key":       true,
+	"thunder_api_key":      true,
+	"brevo_api_key":        true,
+	"r2_secret_access_key": true,
+	"s3_secret_access_key": true,
 }
 
 // bootstrapPaths ลำดับความสำคัญในการหา bootstrap.json
@@ -150,7 +161,7 @@ var bootstrapPaths = []string{
 }
 
 // LoadBootstrapConfig อ่าน bootstrap.json แล้ว set env vars ทุก section
-// เรียกก่อน MongoDB connect เพื่อให้ได้ MONGODB_URI จาก file
+// เรียกก่อน MongoDB connect เพื่อให้ได้ MongoDB URI จาก file
 // และก่อน init database connections ทั้งหมด
 func LoadBootstrapConfig() {
 	logger.Info("[Bootstrap] กำลังค้นหา bootstrap.json...")
@@ -185,6 +196,9 @@ func LoadBootstrapConfig() {
 
 	// โหลดทุก section ที่มีใน bootstrap.json ตาม configMapping
 	overrideCount += applyBootstrapSection("mongodb", cfg.MongoDB)
+	overrideCount += applyBootstrapSection("mongodb_dev", cfg.MongoDBDev)
+	overrideCount += applyBootstrapSection("mongodb_uat", cfg.MongoDBUAT)
+	overrideCount += applyBootstrapSection("mongodb_pro", cfg.MongoDBPRO)
 	overrideCount += applyBootstrapSection("postgresql", cfg.PostgreSQL)
 	overrideCount += applyBootstrapSection("clickhouse", cfg.ClickHouse)
 	overrideCount += applyBootstrapSection("service", cfg.Service)
@@ -267,9 +281,9 @@ func composeClickHouseAddress() {
 // ค่าเหล่านี้ไม่ต้องอยู่ใน bootstrap.json — ใช้ค่า default ที่ตรงกับ Docker network
 func setDefaultEnvVars() {
 	defaults := map[string]string{
-		"REDIS_HOST":      "redis",
-		"REDIS_PORT":      "6379",
-		"REDIS_CACHE_URI": "redis:6379",
+		"REDIS_HOST":       "redis",
+		"REDIS_PORT":       "6379",
+		"REDIS_CACHE_URI":  "redis:6379",
 		"KAFKA_SERVER_URL": "kafka:9092",
 	}
 	for envVar, defaultVal := range defaults {

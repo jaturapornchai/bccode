@@ -28,7 +28,7 @@ func (r *StockBalanceTransactionAdminRepository) FindStockBalanceDocByShopID(ctx
 
 	err := r.pst.Find(ctx, &stockBalanceProductModels.StockBalanceDoc{},
 		bson.M{"shopid": shopID,
-			"deletedat": bson.M{"$exists": false},
+			"deleted_at": bson.M{"$exists": false},
 		},
 		&docList)
 	if err != nil {
@@ -43,7 +43,7 @@ func (r *StockBalanceTransactionAdminRepository) FindStockBalanceDocDeleteByShop
 
 	err := r.pst.Find(ctx, &stockBalanceProductModels.StockBalanceDoc{},
 		bson.M{"shopid": shopID,
-			"deletedat": bson.M{"$exists": true},
+			"deleted_at": bson.M{"$exists": true},
 		},
 		&docList)
 	if err != nil {

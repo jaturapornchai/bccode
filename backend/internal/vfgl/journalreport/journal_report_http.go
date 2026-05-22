@@ -74,8 +74,8 @@ func (r JournalReportHttp) ProcessReportTrialBalanceSheet(ctx microservice.ICont
 
 	layout := "2006-01-02 -0700" //
 	accountGroup := ctx.QueryParam("accountgroup")
-	startDateStr := ctx.QueryParam("startdate")
-	endDateStr := ctx.QueryParam("enddate")
+	startDateStr := ctx.QueryParam("start_date")
+	endDateStr := ctx.QueryParam("end_date")
 	timeZone := ctx.QueryParam("timezone") // +07
 
 	if timeZone != "" {
@@ -142,7 +142,7 @@ func (r JournalReportHttp) ProcessBalanceSheetReport(ctx microservice.IContext) 
 	shopID := userInfo.ShopID
 
 	layout := "2006-01-02 -0700" //
-	endDateStr := ctx.QueryParam("enddate")
+	endDateStr := ctx.QueryParam("end_date")
 	accountGroup := ctx.QueryParam("accountgroup")
 	includeCloseAccountMode := ctx.QueryParam("ica") == "1"
 
@@ -204,8 +204,8 @@ func (r JournalReportHttp) ProcessProfitAndLossReport(ctx microservice.IContext)
 
 	layout := "2006-01-02 -0700" //
 	accountGroup := ctx.QueryParam("accountgroup")
-	startDateStr := ctx.QueryParam("startdate")
-	endDateStr := ctx.QueryParam("enddate")
+	startDateStr := ctx.QueryParam("start_date")
+	endDateStr := ctx.QueryParam("end_date")
 	includeCloseAccountMode := ctx.QueryParam("ica") == "1"
 
 	timeZone := ctx.QueryParam("timezone") // +07
@@ -275,8 +275,8 @@ func (r JournalReportHttp) ProcessReportLedgerAccount(ctx microservice.IContext)
 	shopID := userInfo.ShopID
 
 	layout := "2006-01-02 -0700" //
-	startDateStr := ctx.QueryParam("startdate")
-	endDateStr := ctx.QueryParam("enddate")
+	startDateStr := ctx.QueryParam("start_date")
+	endDateStr := ctx.QueryParam("end_date")
 	timeZone := ctx.QueryParam("timezone") // +07
 	bookCode := ctx.QueryParam("bookcode")
 
@@ -364,8 +364,8 @@ func (r JournalReportHttp) ProcessMultiShopDashboard(ctx microservice.IContext) 
 	username := userInfo.Username
 
 	layout := "2006-01-02 -0700"
-	startDateStr := ctx.QueryParam("startdate")
-	endDateStr := ctx.QueryParam("enddate")
+	startDateStr := ctx.QueryParam("start_date")
+	endDateStr := ctx.QueryParam("end_date")
 	timeZone := ctx.QueryParam("timezone")
 	shopIDsParam := ctx.QueryParam("shopids")
 

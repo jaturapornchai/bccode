@@ -44,13 +44,13 @@ export type FieldControl =
   | { type: "checkbox" }
   | { type: "radio"; options: FieldOption[] };
 
-const hiddenCategoryIds = new Set(["mongodb_production"]);
+const hiddenCategoryIds = new Set(["mongodb", "mongodb_uat", "mongodb_pro", "mongodb_production"]);
 
 export const SETUP_CATEGORY_DEFS: CategoryDef[] = [
   {
     id: "mongodb",
     title: "MongoDB",
-    description: "ฐานข้อมูลหลักของ GoAPI และ system_config",
+    description: "ฐานข้อมูล MongoDB fallback/legacy สำหรับ DEV เท่านั้น",
     testType: "mongodb",
     items: [
       setupItem("mongodb", "uri", true, "MongoDB Connection URI"),
@@ -59,6 +59,36 @@ export const SETUP_CATEGORY_DEFS: CategoryDef[] = [
       setupItem("mongodb", "port", false, "MongoDB port"),
       setupItem("mongodb", "username", false, "MongoDB username"),
       setupItem("mongodb", "password", true, "MongoDB password"),
+    ],
+  },
+  {
+    id: "mongodb_dev",
+    title: "MongoDB DEV (Local)",
+    description: "MongoDB สำหรับ run บน local ระหว่างพัฒนา; UAT/PRO จะตั้งค่าบน internet ภายหลัง",
+    testType: "mongodb",
+    items: [
+      setupItem("mongodb_dev", "uri", true, "MongoDB DEV Local Connection URI"),
+      setupItem("mongodb_dev", "database", false, "MongoDB DEV Local Database Name"),
+    ],
+  },
+  {
+    id: "mongodb_uat",
+    title: "MongoDB UAT",
+    description: "MongoDB UAT สำหรับทดสอบกับ user แยกจาก DEV และ PRO",
+    testType: "mongodb",
+    items: [
+      setupItem("mongodb_uat", "uri", true, "MongoDB UAT Connection URI"),
+      setupItem("mongodb_uat", "database", false, "MongoDB UAT Database Name"),
+    ],
+  },
+  {
+    id: "mongodb_pro",
+    title: "MongoDB PRO",
+    description: "MongoDB PRO สำหรับใช้งานจริง แยกจาก DEV และ UAT",
+    testType: "mongodb",
+    items: [
+      setupItem("mongodb_pro", "uri", true, "MongoDB PRO Connection URI"),
+      setupItem("mongodb_pro", "database", false, "MongoDB PRO Database Name"),
     ],
   },
   {
@@ -305,10 +335,12 @@ type BackendConfigEntry = {
 
 export function createDefaultConfigMap(): ConfigMap {
   return Object.fromEntries(
-    SETUP_CATEGORY_DEFS.map((category) => [
-      category.id,
-      category.items.map((item) => ({ ...item, value: "" })),
-    ]),
+    SETUP_CATEGORY_DEFS
+      .filter((category) => !hiddenCategoryIds.has(category.id))
+      .map((category) => [
+        category.id,
+        category.items.map((item) => ({ ...item, value: "" })),
+      ]),
   );
 }
 

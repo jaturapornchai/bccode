@@ -38,6 +38,7 @@ describe("i18n helpers", () => {
       "popupBlocked",
       "googleLoginTimeout",
       "signUp",
+      "signUpWithEmail",
       "signUpDescription",
       "displayName",
       "confirmPassword",

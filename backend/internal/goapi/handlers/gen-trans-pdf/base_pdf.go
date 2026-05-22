@@ -527,7 +527,7 @@ func RenderDetailsTable(pdf *gofpdf.Fpdf, doc map[string]interface{}, payload Ge
 	sortedDetails := make([]detailItem, 0, len(details))
 	for _, d := range details {
 		if detailMap, ok := d.(map[string]interface{}); ok {
-			lineNum := GetIntValue(detailMap, "linenumber")
+			lineNum := GetIntValue(detailMap, "line_number")
 			sortedDetails = append(sortedDetails, detailItem{lineNumber: lineNum, data: detailMap})
 		}
 	}
@@ -559,7 +559,7 @@ func RenderDetailsTable(pdf *gofpdf.Fpdf, doc map[string]interface{}, payload Ge
 		unitCode := GetStringValue(detail, "unitcode")
 		qty := GetFloatValue(detail, "qty")
 		price := GetFloatValue(detail, "price")
-		sumAmount := GetFloatValue(detail, "sumamount")
+		sumAmount := GetFloatValue(detail, "sum_amount")
 
 		// Calculate number of lines needed for item name
 		itemNameLines := WrapThaiText(pdf, itemName, colWidths[2]-2*styleConfig.CellPadding)
@@ -652,7 +652,7 @@ func RenderDetailsTable(pdf *gofpdf.Fpdf, doc map[string]interface{}, payload Ge
 // RenderSummarySignature - แสดงส่วนสรุป (รองรับหลาย layouts)
 func RenderSummarySignature(pdf *gofpdf.Fpdf, doc map[string]interface{}, payload GenPDFPayload, fontFamily string, contentWidth float64, theme Theme, fontSizes FontSizes, template Template) {
 	// Calculate totals from document
-	totalAmount := GetFloatValue(doc, "totalamount")
+	totalAmount := GetFloatValue(doc, "total_amount")
 	totalDiscount := GetFloatValue(doc, "totaldiscount")
 	totalVat := GetFloatValue(doc, "totalvatvalue")
 	totalAfterVat := GetFloatValue(doc, "totalaftervat")
@@ -663,7 +663,7 @@ func RenderSummarySignature(pdf *gofpdf.Fpdf, doc map[string]interface{}, payloa
 		if details, ok := doc["details"].(primitive.A); ok {
 			for _, d := range details {
 				if detailMap, ok := d.(map[string]interface{}); ok {
-					totalAmount += GetFloatValue(detailMap, "sumamount")
+					totalAmount += GetFloatValue(detailMap, "sum_amount")
 				}
 			}
 		}

@@ -132,7 +132,7 @@ func (r AuthenticationMongoCacheRepository) FindByLineUserID(ctx context.Context
 func (r AuthenticationMongoCacheRepository) FindByPhonenumber(ctx context.Context, phonenumber models.PhoneNumberField) (*models.UserDoc, error) {
 
 	findUser := &models.UserDoc{}
-	err := r.pst.FindOne(ctx, &models.UserDoc{}, bson.M{"countrycode": phonenumber.CountryCode, "phonenumber": phonenumber.PhoneNumber}, findUser)
+	err := r.pst.FindOne(ctx, &models.UserDoc{}, bson.M{"country_code": phonenumber.CountryCode, "phone_number": phonenumber.PhoneNumber}, findUser)
 
 	if err != nil {
 		return nil, err

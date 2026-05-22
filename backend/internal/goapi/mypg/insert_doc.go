@@ -73,10 +73,10 @@ func insertDocListWithTx(ctx context.Context, tx *sql.Tx, data []models.DocStruc
 			// เตรียม columns สำหรับ COPY doc
 			columns := []string{
 				"transflag", "docno", "custcode", "docdatetime", "perioddatetime", "taxdocno",
-				"totalamount", "roundamount", "paytype", "paycashamount", "paycashchange",
-				"paycashbalance", "deliverycode", "checksum", "branchid", "slipurl",
+				"total_amount", "roundamount", "paytype", "paycashamount", "paycashchange",
+				"paycashbalance", "deliverycode", "checksum", "branch_id", "slipurl",
 				"salechannelcode", "deliveryamount", "iscancel", "cancelreason",
-				"guidpos", "guidbranch", "guidfixed",
+				"guidpos", "guidbranch", "guid_fixed",
 				"creator_code", "creator_name", "created_at",
 				// Multi-Currency Fields
 				"currency", "currency_symbol",
@@ -224,8 +224,8 @@ func insertDocListWithTx(ctx context.Context, tx *sql.Tx, data []models.DocStruc
 		if len(validPaymentData) > 0 {
 			// เตรียม columns สำหรับ COPY doc payment
 			columns := []string{
-				"branchid", "docdatetime", "perioddatetime", "providername", "amount",
-				"description", "docno", "transflag", "guidfixed", "guidbranch",
+				"branch_id", "docdatetime", "perioddatetime", "provider_name", "amount",
+				"description", "docno", "transflag", "guid_fixed", "guidbranch",
 			}
 
 			// แปลง DocPayment เป็น [][]any สำหรับ COPY
@@ -305,10 +305,10 @@ func insertDocDetailListWithTx(ctx context.Context, tx *sql.Tx, shopId string, d
 	}
 
 	columns := []string{
-		"docdatetime", "docno", "linenumber", "transflag", "calcflag", "calcseq",
+		"docdatetime", "docno", "line_number", "transflag", "calcflag", "calcseq",
 		"itemcode", "description", "barcodemain", "barcode", "unitcode",
 		"whcode", "locationcode", "totalqty", "price", "priceexcludevat",
-		"unitstand", "unitdivide", "docref", "sumamount", "iscancel",
+		"unitstand", "unitdivide", "docref", "sum_amount", "iscancel",
 		"price_doc", "sumamount_doc",
 		"discountamount_doc", "priceexcludevat_doc", "sumamountexcludevat_doc", "totalvaluevat_doc",
 	}

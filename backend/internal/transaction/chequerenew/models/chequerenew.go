@@ -15,7 +15,7 @@ type ChequeRenew struct {
 }
 type ChequeRenewInfo struct {
 	models.DocIdentity `bson:"inline"`
-	ChequeRenew        `bson:"inline"`
+	ChequeRenew  `bson:"inline"`
 }
 
 func (ChequeRenewInfo) CollectionName() string {
@@ -24,12 +24,12 @@ func (ChequeRenewInfo) CollectionName() string {
 
 type ChequeRenewData struct {
 	models.ShopIdentity `bson:"inline"`
-	ChequeRenewInfo     `bson:"inline"`
+	ChequeRenewInfo  `bson:"inline"`
 }
 
 type ChequeRenewDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ChequeRenewData    `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ChequeRenewData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -46,7 +46,7 @@ func (ChequeRenewItemGuid) CollectionName() string {
 }
 
 type ChequeRenewActivity struct {
-	ChequeRenewData     `bson:"inline"`
+	ChequeRenewData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

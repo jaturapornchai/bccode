@@ -15,28 +15,28 @@ import (
 
 // DocumentAnalysisRequest represents the request for document analysis
 type DocumentAnalysisRequest struct {
-	ShopID       string                 `json:"shop_id" validate:"required"`
+	ShopID string                 `json:"shop_id" validate:"required"`
 	DocumentType string                 `json:"document_type" validate:"required"` // ประเภทเอกสาร
 	DocumentData map[string]interface{} `json:"document_data" validate:"required"` // ข้อมูลเอกสาร
 }
 
 // DocumentAnalysisResponse represents the response
 type DocumentAnalysisResponse struct {
-	Success    bool                  `json:"success"`
-	Message    string                `json:"message"`
-	Analysis   *DocumentAnalysisData `json:"analysis,omitempty"`
-	Error      string                `json:"error,omitempty"`
-	Timestamp  time.Time             `json:"timestamp"`
+	Success bool                  `json:"success"`
+	Message string                `json:"message"`
+	Analysis *DocumentAnalysisData `json:"analysis,omitempty"`
+	Error string                `json:"error,omitempty"`
+	Timestamp time.Time             `json:"timestamp"`
 	TokenUsage *TokenUsage           `json:"token_usage,omitempty"`
 }
 
 // DocumentAnalysisData contains the analysis result
 type DocumentAnalysisData struct {
-	Strengths       []string `json:"strengths"`        // จุดแข็ง
-	Weaknesses      []string `json:"weaknesses"`       // จุดอ่อน
+	Strengths []string `json:"strengths"`        // จุดแข็ง
+	Weaknesses []string `json:"weaknesses"`       // จุดอ่อน
 	Recommendations []string `json:"recommendations"`  // คำแนะนำ
 	AdditionalCheck []string `json:"additional_check"` // ข้อมูลที่ควรตรวจสอบเพิ่มเติม
-	Summary         string   `json:"summary"`          // สรุปภาพรวม
+	Summary string   `json:"summary"`          // สรุปภาพรวม
 }
 
 // AnalyzeDocument handles document analysis requests
@@ -296,11 +296,11 @@ func parseAnalysisResponse(response string) *DocumentAnalysisData {
 
 	// Parse JSON response
 	var parsed struct {
-		Strengths       []string `json:"strengths"`
-		Weaknesses      []string `json:"weaknesses"`
+		Strengths []string `json:"strengths"`
+		Weaknesses []string `json:"weaknesses"`
 		Recommendations []string `json:"recommendations"`
 		AdditionalCheck []string `json:"additional_check"`
-		Summary         string   `json:"summary"`
+		Summary string   `json:"summary"`
 	}
 
 	if err := json.Unmarshal([]byte(jsonStr), &parsed); err != nil {

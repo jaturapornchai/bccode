@@ -45,7 +45,7 @@ func (repo *JobProjectPGRepository) Create(doc models.JobProjectPg) error {
 func (repo *JobProjectPGRepository) Update(shopID string, guidFixed string, doc models.JobProjectPg) error {
 	err := repo.pst.Update(&doc, map[string]interface{}{
 		"shopid":    shopID,
-		"guidfixed": guidFixed,
+		"guid_fixed": guidFixed,
 	})
 	if err != nil {
 		return err
@@ -56,7 +56,7 @@ func (repo *JobProjectPGRepository) Update(shopID string, guidFixed string, doc 
 func (repo *JobProjectPGRepository) Delete(shopID string, guidFixed string) error {
 	err := repo.pst.Delete(&models.JobProjectPg{}, map[string]interface{}{
 		"shopid":    shopID,
-		"guidfixed": guidFixed,
+		"guid_fixed": guidFixed,
 	})
 	if err != nil {
 		return err

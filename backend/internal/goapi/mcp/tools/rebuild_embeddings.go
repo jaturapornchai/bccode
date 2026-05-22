@@ -21,15 +21,15 @@ const embeddingBatchSize = 50
 
 // RebuildEmbeddingsResponse ผลลัพธ์
 type RebuildEmbeddingsResponse struct {
-	Success     bool      `json:"success"`
-	Message     string    `json:"message"`
-	ShopID      string    `json:"shop_id"`
-	EntityType  string    `json:"entity_type"`
-	Total       int       `json:"total"`
-	Updated     int       `json:"updated"`
-	Skipped     int       `json:"skipped"`
-	Errors      int       `json:"errors"`
-	Duration    string    `json:"duration"`
+	Success bool      `json:"success"`
+	Message string    `json:"message"`
+	ShopID string    `json:"shop_id"`
+	EntityType string    `json:"entity_type"`
+	Total int       `json:"total"`
+	Updated int       `json:"updated"`
+	Skipped int       `json:"skipped"`
+	Errors int       `json:"errors"`
+	Duration string    `json:"duration"`
 	GeneratedAt time.Time `json:"generated_at"`
 }
 
@@ -150,7 +150,7 @@ func RebuildEmbeddings(ctx context.Context, shopID string, forceAll bool, entity
 
 type entityConfig struct {
 	tableName string
-	keyColumn string // column ที่ใช้เป็น key: "id" for product/customer, "guidfixed" for debtor/creditor
+	keyColumn string // column ที่ใช้เป็น key: "id" for product/customer, "guid_fixed" for debtor/creditor
 	query     string // SQL: SELECT key, text ... WHERE name_embedding IS NULL
 	queryAll  string // SQL: SELECT key, text ... (force all)
 }
@@ -174,7 +174,7 @@ func getEntityConfig(entityType string) (*entityConfig, error) {
 	case "debtor":
 		return &entityConfig{
 			tableName: "debtor",
-			keyColumn: "guidfixed",
+			keyColumn: "guid_fixed",
 			query: `SELECT d.guidfixed, CONCAT_WS(' | ', d.code, string_agg(n.elem->>'name', ' / '))
 				FROM debtor d, jsonb_array_elements(d.names) AS n(elem)
 				WHERE d.names IS NOT NULL AND jsonb_array_length(d.names) > 0 AND d.name_embedding IS NULL
@@ -188,7 +188,7 @@ func getEntityConfig(entityType string) (*entityConfig, error) {
 	case "creditor":
 		return &entityConfig{
 			tableName: "creditor",
-			keyColumn: "guidfixed",
+			keyColumn: "guid_fixed",
 			query: `SELECT d.guidfixed, CONCAT_WS(' | ', d.code, string_agg(n.elem->>'name', ' / '))
 				FROM creditor d, jsonb_array_elements(d.names) AS n(elem)
 				WHERE d.names IS NOT NULL AND jsonb_array_length(d.names) > 0 AND d.name_embedding IS NULL

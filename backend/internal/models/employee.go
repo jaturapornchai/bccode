@@ -13,18 +13,18 @@ type EmployeePassword struct {
 }
 
 type Employee struct {
-	Code  string `json:"code" bson:"code"`
+	Code string `json:"code" bson:"code"`
 	Email string `json:"email" bson:"email"`
 	// Username       string    `json:"username" bson:"username"`
-	Name           string    `json:"name" bson:"name"`
+	Name string    `json:"name" bson:"name"`
 	ProfilePicture string    `json:"profilepicture" bson:"profilepicture"`
-	Roles          *[]string `json:"roles" bson:"roles"`
-	IsEnabled      bool      `json:"isenabled" bson:"isenabled"`
+	Roles *[]string `json:"roles" bson:"roles"`
+	IsEnabled bool      `json:"isenabled" bson:"isenabled"`
 }
 
 type EmployeeInfo struct {
 	DocIdentity `bson:"inline" gorm:"embedded;"`
-	Employee    `bson:"inline" gorm:"embedded;"`
+	Employee  `bson:"inline" gorm:"embedded;"`
 }
 
 func (EmployeeInfo) CollectionName() string {
@@ -37,9 +37,9 @@ type EmployeeData struct {
 }
 
 type EmployeeDoc struct {
-	ID               primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	EmployeeData     `bson:"inline"`
-	ActivityDoc      `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	EmployeeData  `bson:"inline"`
+	ActivityDoc  `bson:"inline"`
 	EmployeePassword `bson:"inline" gorm:"embedded;"`
 }
 
@@ -48,13 +48,13 @@ func (EmployeeDoc) CollectionName() string {
 }
 
 type EmployeeRequestRegister struct {
-	Employee         `bson:"inline" gorm:"embedded;"`
+	Employee  `bson:"inline" gorm:"embedded;"`
 	EmployeePassword `bson:"inline" gorm:"embedded;"`
 }
 
 type EmployeeRequestLogin struct {
 	ShopIdentity
-	Code     string `json:"code" bson:"code"`
+	Code string `json:"code" bson:"code"`
 	Password string `json:"password" bson:"password"`
 }
 
@@ -63,21 +63,21 @@ type EmployeeRequestUpdate struct {
 }
 
 type EmployeeRequestPassword struct {
-	Code     string `json:"code" bson:"code"`
+	Code string `json:"code" bson:"code"`
 	Password string `json:"password" bson:"password"`
 }
 
 type EmployeePageResponse struct {
-	Success    bool                   `json:"success"`
-	Data       []EmployeeInfo         `json:"data,omitempty"`
+	Success bool                   `json:"success"`
+	Data []EmployeeInfo         `json:"data,omitempty"`
 	Pagination PaginationDataResponse `json:"pagination,omitempty"`
 }
 
 type EmployeeActivity struct {
 	EmployeeData `bson:"inline"`
-	CreatedAt    *time.Time `json:"createdat,omitempty" bson:"createdat,omitempty"`
-	UpdatedAt    *time.Time `json:"updatedat,omitempty" bson:"updatedat,omitempty"`
-	DeletedAt    *time.Time `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
+	CreatedAt *time.Time `json:"created_at,omitempty" bson:"created_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
+	DeletedAt *time.Time `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
 }
 
 func (EmployeeActivity) CollectionName() string {
@@ -86,9 +86,9 @@ func (EmployeeActivity) CollectionName() string {
 
 type EmployeeDeleteActivity struct {
 	Identity  `bson:"inline"`
-	CreatedAt *time.Time `json:"createdat,omitempty" bson:"createdat,omitempty"`
-	UpdatedAt *time.Time `json:"updatedat,omitempty" bson:"updatedat,omitempty"`
-	DeletedAt *time.Time `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
+	CreatedAt *time.Time `json:"created_at,omitempty" bson:"created_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
+	DeletedAt *time.Time `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
 }
 
 func (EmployeeDeleteActivity) CollectionName() string {

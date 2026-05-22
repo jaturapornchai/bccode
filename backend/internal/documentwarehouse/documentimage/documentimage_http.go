@@ -179,10 +179,10 @@ func (h DocumentImageHttp) SearchDocumentImage(ctx microservice.IContext) error 
 		matchFilters["references.module"] = module
 	}
 
-	docGuidRef := strings.TrimSpace(ctx.QueryParam("docguidref"))
+	docGuidRef := strings.TrimSpace(ctx.QueryParam("doc_guid_ref"))
 
 	if len(docGuidRef) > 0 {
-		matchFilters["docguidref"] = docGuidRef
+		matchFilters["doc_guid_ref"] = docGuidRef
 	}
 
 	documentRef := strings.TrimSpace(ctx.QueryParam("documentref"))
@@ -574,7 +574,7 @@ func (h DocumentImageHttp) ListDocumentImageGroup(ctx microservice.IContext) err
 	statusReq := strings.TrimSpace(ctx.QueryParam("status"))
 	isref := strings.TrimSpace(ctx.QueryParam("ref"))
 	path := strings.TrimSpace(ctx.QueryParam("pathtask"))
-	folder := strings.TrimSpace(ctx.QueryParam("taskguid"))
+	folder := strings.TrimSpace(ctx.QueryParam("task_guid"))
 
 	fromDateStr := strings.TrimSpace(ctx.QueryParam("fromdate"))
 	toDateStr := strings.TrimSpace(ctx.QueryParam("todate"))
@@ -600,7 +600,7 @@ func (h DocumentImageHttp) ListDocumentImageGroup(ctx microservice.IContext) err
 		}
 	}
 
-	documentImageGUID := strings.TrimSpace(ctx.QueryParam("documentimageguid"))
+	documentImageGUID := strings.TrimSpace(ctx.QueryParam("document_image_guid"))
 
 	if len(documentImageGUID) > 0 {
 		matchFilters["imagereferences.documentimageguid"] = documentImageGUID
@@ -617,10 +617,10 @@ func (h DocumentImageHttp) ListDocumentImageGroup(ctx microservice.IContext) err
 
 			if err == nil && len(docRef) > 0 {
 				// User นี้ select เอกสารไว้ -> แสดงเฉพาะเอกสารนั้น
-				matchFilters["guidfixed"] = docRef
+				matchFilters["guid_fixed"] = docRef
 			} else {
 				// ✅ User นี้ยังไม่ได้ select -> ไม่แสดงอะไรเลย (empty result)
-				matchFilters["guidfixed"] = "" // force empty result
+				matchFilters["guid_fixed"] = "" // force empty result
 			}
 		} else {
 			// ✅ Filter ทั้ง shop (reserveby=0 หรือไม่ส่ง) - แสดงเฉพาะที่ยังไม่มีใคร select
@@ -631,7 +631,7 @@ func (h DocumentImageHttp) ListDocumentImageGroup(ctx microservice.IContext) err
 				for docRef := range docRefPoolList {
 					docRefList = append(docRefList, docRef)
 				}
-				matchFilters["guidfixed"] = bson.M{"$nin": docRefList}
+				matchFilters["guid_fixed"] = bson.M{"$nin": docRefList}
 			}
 		}
 
@@ -642,7 +642,7 @@ func (h DocumentImageHttp) ListDocumentImageGroup(ctx microservice.IContext) err
 		toDate, err2 := time.Parse("2006-01-02", toDateStr)
 
 		if err1 == nil && err2 == nil {
-			matchFilters["uploadedat"] = bson.M{
+			matchFilters["uploaded_at"] = bson.M{
 				"$gte": fromDate,
 				"$lt":  toDate.AddDate(0, 0, 1),
 			}
@@ -654,7 +654,7 @@ func (h DocumentImageHttp) ListDocumentImageGroup(ctx microservice.IContext) err
 	}
 
 	if len(folder) > 0 {
-		matchFilters["taskguid"] = folder
+		matchFilters["task_guid"] = folder
 	}
 
 	docList, pagination, err := h.service.ListDocumentImageGroup(shopID, matchFilters, pageable)
@@ -974,7 +974,7 @@ func (h DocumentImageHttp) UpdateStatusDocumentImageGroupByTask(ctx microservice
 	shopID := userInfo.ShopID
 	authUsername := userInfo.Username
 
-	taskGUID := ctx.Param("taskguid")
+	taskGUID := ctx.Param("task_guid")
 
 	input := ctx.ReadInput()
 
@@ -1014,7 +1014,7 @@ func (h DocumentImageHttp) ReCountStatusDocumentImageGroupByTask(ctx microservic
 	shopID := userInfo.ShopID
 	authUsername := userInfo.Username
 
-	docImageGroupGUID := ctx.Param("taskguid")
+	docImageGroupGUID := ctx.Param("task_guid")
 
 	err := h.service.ReCountStatusDocumentImageGroupByTask(shopID, authUsername, docImageGroupGUID)
 	if err != nil {
@@ -1192,7 +1192,7 @@ func (h DocumentImageHttp) UpdateXSort(ctx microservice.IContext) error {
 
 	input := ctx.ReadInput()
 
-	taskGUID := ctx.Param("taskguid")
+	taskGUID := ctx.Param("task_guid")
 
 	if len(taskGUID) < 1 {
 		ctx.ResponseError(http.StatusBadRequest, "taskguid is required")

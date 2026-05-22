@@ -40,16 +40,16 @@ import (
 
 // QueryPlanItem — 1 query ที่จะยิงใน Phase 2
 type QueryPlanItem struct {
-	Tool  string         `json:"tool"`
-	Args  map[string]any `json:"args"`
+	Tool string         `json:"tool"`
+	Args map[string]any `json:"args"`
 	Label string         `json:"label,omitempty"`
 }
 
 // QueryPlan — output ของ Phase 1 (Planner)
 type QueryPlan struct {
 	IntentSummary string          `json:"intent_summary"`
-	Queries       []QueryPlanItem `json:"queries"`
-	DirectAnswer  string          `json:"direct_answer,omitempty"`
+	Queries []QueryPlanItem `json:"queries"`
+	DirectAnswer string          `json:"direct_answer,omitempty"`
 }
 
 // ExecutedQuery — ผลลัพธ์ของ query 1 ตัวใน Phase 2

@@ -20,7 +20,7 @@ const (
 
 // DatasetMeta — minimal RAGFlow dataset info we care about
 type DatasetMeta struct {
-	ID   string `json:"id"`
+	ID string `json:"id"`
 	Name string `json:"name"`
 }
 
@@ -35,21 +35,21 @@ type DatasetMeta struct {
 // which depends on which provider+model the admin set up in the Web UI —
 // hard to hardcode here, so leave it to tenant default.
 type CreateDatasetRequest struct {
-	Name           string `json:"name"`
+	Name string `json:"name"`
 	EmbeddingModel string `json:"embedding_model,omitempty"`
-	ChunkMethod    string `json:"chunk_method,omitempty"`
+	ChunkMethod string `json:"chunk_method,omitempty"`
 }
 
 type createDatasetResponse struct {
-	Code    int          `json:"code"`
+	Code int          `json:"code"`
 	Message string       `json:"message"`
-	Data    *DatasetMeta `json:"data"`
+	Data *DatasetMeta `json:"data"`
 }
 
 type listDatasetsResponse struct {
-	Code    int           `json:"code"`
+	Code int           `json:"code"`
 	Message string        `json:"message"`
-	Data    []DatasetMeta `json:"data"`
+	Data []DatasetMeta `json:"data"`
 }
 
 // ====== In-memory cache: shopID → datasetID ======
@@ -175,7 +175,7 @@ func (c *Client) CreateDataset(name string) (*DatasetMeta, error) {
 func (c *Client) DeleteDataset(datasetID string) error {
 	body := map[string]any{"ids": []string{datasetID}}
 	var resp struct {
-		Code    int    `json:"code"`
+		Code int    `json:"code"`
 		Message string `json:"message"`
 	}
 	if err := c.doJSON("DELETE", "/api/v1/datasets", body, &resp); err != nil {

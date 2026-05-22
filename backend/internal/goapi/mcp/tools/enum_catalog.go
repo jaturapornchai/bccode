@@ -9,27 +9,27 @@ import (
 
 type EnumCatalogRequest struct {
 	Category string `json:"category"`
-	Keyword  string `json:"keyword"`
+	Keyword string `json:"keyword"`
 }
 
 type EnumCatalogResponse struct {
-	Enums       []EnumGroup `json:"enums"`
+	Enums []EnumGroup `json:"enums"`
 	TotalGroups int         `json:"total_groups"`
-	Categories  []string    `json:"categories"`
+	Categories []string    `json:"categories"`
 	GeneratedAt time.Time   `json:"generated_at"`
 }
 
 type EnumGroup struct {
-	Name        string      `json:"name"`
+	Name string      `json:"name"`
 	Description string      `json:"description"`
-	Category    string      `json:"category"`
-	GoSource    string      `json:"go_source"`
-	Values      []EnumValue `json:"values"`
+	Category string      `json:"category"`
+	GoSource string      `json:"go_source"`
+	Values []EnumValue `json:"values"`
 }
 
 type EnumValue struct {
-	Key         interface{} `json:"key"`
-	Label       string      `json:"label"`
+	Key interface{} `json:"key"`
+	Label string      `json:"label"`
 	Description string      `json:"description"`
 }
 

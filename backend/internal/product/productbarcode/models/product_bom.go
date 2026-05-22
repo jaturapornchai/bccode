@@ -11,9 +11,9 @@ const productBarcodeBOMCollectionName = "productBarcodeBOMs"
 // type ProductBarcodeBOM struct {
 // 	Level         int             `json:"level" gorm:"column:level"`
 // 	MainBarcode   string          `json:"mainbarcode" gorm:"column:mainbarcode"`
-// 	GuidFixed     string          `json:"guidfixed" gorm:"column:guidfixed"`
+// 	GuidFixed     string          `json:"guid_fixed" gorm:"column:guidfixed"`
 // 	Names         *[]models.NameX `json:"names" gorm:"column:names"`
-// 	ItemUnitCode  string          `json:"itemunitcode" gorm:"column:itemunitcode"`
+// 	ItemUnitCode  string          `json:"item_unit_code" gorm:"column:itemunitcode"`
 // 	ItemUnitNames *[]models.NameX `json:"itemunitnames" gorm:"column:itemunitnames"`
 // 	Barcode       string          `json:"barcode" gorm:"column:barcode"`
 // 	Condition     bool            `json:"condition" gorm:"column:condition"`
@@ -23,28 +23,28 @@ const productBarcodeBOMCollectionName = "productBarcodeBOMs"
 // }
 
 type BOMProductBarcode struct {
-	BarcodeGuidFixed string          `json:"guidfixed" bson:"guidfixed"`
-	Level            int             `json:"level" bson:"level"`
-	Names            *[]models.NameX `json:"names" bson:"names"`
-	ItemUnitCode     string          `json:"itemunitcode" bson:"itemunitcode"`
-	ItemUnitNames    *[]models.NameX `json:"itemunitnames" bson:"itemunitnames"`
-	Barcode          string          `json:"barcode" bson:"barcode" validate:"required,min=1"`
-	Condition        bool            `json:"condition" bson:"condition"`
-	DivideValue      float64         `json:"dividevalue" bson:"dividevalue"`
-	StandValue       float64         `json:"standvalue" bson:"standvalue"`
-	Qty              float64         `json:"qty" bson:"qty"`
+	BarcodeGuidFixed string          `json:"guid_fixed" bson:"guid_fixed"`
+	Level int             `json:"level" bson:"level"`
+	Names *[]models.NameX `json:"names" bson:"names"`
+	ItemUnitCode string          `json:"item_unit_code" bson:"item_unit_code"`
+	ItemUnitNames *[]models.NameX `json:"itemunitnames" bson:"itemunitnames"`
+	Barcode string          `json:"barcode" bson:"barcode" validate:"required,min=1"`
+	Condition bool            `json:"condition" bson:"condition"`
+	DivideValue float64         `json:"dividevalue" bson:"dividevalue"`
+	StandValue float64         `json:"standvalue" bson:"standvalue"`
+	Qty float64         `json:"qty" bson:"qty"`
 }
 
 type ProductBarcodeBOMView struct {
 	BOMProductBarcode `bson:"inline"`
-	ImageURI          string                  `json:"imageuri" bson:"imageuri"`
-	BOM               []ProductBarcodeBOMView `json:"bom" bson:"bom"`
+	ImageURI string                  `json:"imageuri" bson:"imageuri"`
+	BOM []ProductBarcodeBOMView `json:"bom" bson:"bom"`
 }
 
 type ProductBarcodeBOMViewInfo struct {
 	models.DocIdentity    `bson:"inline"`
 	ProductBarcodeBOMView `bson:"inline"`
-	CheckSum              string `json:"checksum" bson:"checksum"`
+	CheckSum string `json:"checksum" bson:"checksum"`
 }
 
 func (ProductBarcodeBOMViewInfo) CollectionName() string {
@@ -57,7 +57,7 @@ type ProductBarcodeBOMViewData struct {
 }
 
 type ProductBarcodeBOMViewDoc struct {
-	ID                        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	ProductBarcodeBOMViewData `bson:"inline"`
 	models.ActivityDoc        `bson:"inline"`
 }

@@ -28,60 +28,60 @@ const (
 
 // ProductPrepareSession - session การประมวลผล
 type ProductPrepareSession struct {
-	ShopID        string                 `json:"shopId"`
-	FileName      string                 `json:"fileName"`
-	FilePath      string                 `json:"filePath"`
-	JSONFilePath  string                 `json:"jsonFilePath"` // เพิ่ม: path ของ JSON result file
-	JSONFileName  string                 `json:"jsonFileName"` // เพิ่ม: ชื่อไฟล์ JSON
-	Status        ProductPrepareStatus   `json:"status"`
-	Progress      float64                `json:"progress"`
-	TotalRows     int                    `json:"totalRows"`
-	ProcessedRows int                    `json:"processedRows"`
-	SuccessCount  int                    `json:"successCount"`
-	ErrorCount    int                    `json:"errorCount"`
-	StartTime     time.Time              `json:"startTime"`
-	EndTime       *time.Time             `json:"endTime,omitempty"`
-	Result        []ProductPrepareResult `json:"result,omitempty"`
-	ErrorMessage  string                 `json:"errorMessage,omitempty"`
-	Mutex         sync.RWMutex           `json:"-"`
+	ShopID string                 `json:"shop_id"`
+	FileName string                 `json:"file_name"`
+	FilePath string                 `json:"file_path"`
+	JSONFilePath string                 `json:"json_file_path"` // เพิ่ม: path ของ JSON result file
+	JSONFileName string                 `json:"json_file_name"` // เพิ่ม: ชื่อไฟล์ JSON
+	Status ProductPrepareStatus   `json:"status"`
+	Progress float64                `json:"progress"`
+	TotalRows int                    `json:"total_rows"`
+	ProcessedRows int                    `json:"processed_rows"`
+	SuccessCount int                    `json:"success_count"`
+	ErrorCount int                    `json:"error_count"`
+	StartTime time.Time              `json:"start_time"`
+	EndTime *time.Time             `json:"end_time,omitempty"`
+	Result []ProductPrepareResult `json:"result,omitempty"`
+	ErrorMessage string                 `json:"error_message,omitempty"`
+	Mutex sync.RWMutex           `json:"-"`
 }
 
 // ProductPrepareResult - ผลลัพธ์แต่ละแถว
 type ProductPrepareResult struct {
-	RowNumber       int                    `json:"rowNumber"`
-	Barcode         string                 `json:"barcode"`
-	Name            string                 `json:"name"`
-	UnitCode        string                 `json:"unitCode"`
-	ProductType     string                 `json:"productType"`
-	TaxType         string                 `json:"taxType"`
-	Code            string                 `json:"code"`
-	Price           float64                `json:"price"`
-	PriceMember     float64                `json:"priceMember"`
-	PriceDelivery   float64                `json:"priceDelivery"`
-	PriceOne        float64                `json:"priceOne"`
-	PriceTwo        float64                `json:"priceTwo"`
-	PriceThree      float64                `json:"priceThree"`
-	PriceFour       float64                `json:"priceFour"`
-	PriceFive       float64                `json:"priceFive"`
-	PriceSix        float64                `json:"priceSix"`
-	PriceSeven      float64                `json:"priceSeven"`
-	PriceEight      float64                `json:"priceEight"`
-	PriceNine       float64                `json:"priceNine"`
-	GroupCode       string                 `json:"groupCode"`
-	GroupsuboneCode string                 `json:"groupsuboneCode"`
-	GroupsubtwoCode string                 `json:"groupsubtwoCode"`
-	BrandCode       string                 `json:"brandCode"`
-	DesignCode      string                 `json:"designCode"`
-	ModelCode       string                 `json:"modelCode"`
-	PatternCode     string                 `json:"patternCode"`
-	GradeCode       string                 `json:"gradeCode"`
-	CategoryCode    string                 `json:"categoryCode"`
-	ClassCode       string                 `json:"classCode"`
-	StandValue      float64                `json:"standValue"`
-	DivideValue     float64                `json:"divideValue"`
-	Status          string                 `json:"status"` // "success", "error", "warning"
-	Message         string                 `json:"message"`
-	Data            map[string]interface{} `json:"data,omitempty"`
+	RowNumber int                    `json:"row_number"`
+	Barcode string                 `json:"barcode"`
+	Name string                 `json:"name"`
+	UnitCode string                 `json:"unit_code"`
+	ProductType string                 `json:"product_type"`
+	TaxType string                 `json:"tax_type"`
+	Code string                 `json:"code"`
+	Price float64                `json:"price"`
+	PriceMember float64                `json:"price_member"`
+	PriceDelivery float64                `json:"price_delivery"`
+	PriceOne float64                `json:"price_one"`
+	PriceTwo float64                `json:"price_two"`
+	PriceThree float64                `json:"price_three"`
+	PriceFour float64                `json:"price_four"`
+	PriceFive float64                `json:"price_five"`
+	PriceSix float64                `json:"price_six"`
+	PriceSeven float64                `json:"price_seven"`
+	PriceEight float64                `json:"price_eight"`
+	PriceNine float64                `json:"price_nine"`
+	GroupCode string                 `json:"group_code"`
+	GroupsuboneCode string                 `json:"groupsubone_code"`
+	GroupsubtwoCode string                 `json:"groupsubtwo_code"`
+	BrandCode string                 `json:"brand_code"`
+	DesignCode string                 `json:"design_code"`
+	ModelCode string                 `json:"model_code"`
+	PatternCode string                 `json:"pattern_code"`
+	GradeCode string                 `json:"grade_code"`
+	CategoryCode string                 `json:"category_code"`
+	ClassCode string                 `json:"class_code"`
+	StandValue float64                `json:"stand_value"`
+	DivideValue float64                `json:"divide_value"`
+	Status string                 `json:"status"` // "success", "error", "warning"
+	Message string                 `json:"message"`
+	Data map[string]interface{} `json:"data,omitempty"`
 }
 
 var (

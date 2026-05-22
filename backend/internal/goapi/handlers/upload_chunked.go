@@ -46,9 +46,9 @@ var (
 // Returns: { "uploadID": "uuid", "chunkSize": 5242880, "totalChunks": 205 }
 func InitChunkedUploadHandler(c echo.Context) error {
 	var req struct {
-		FileName  string `json:"fileName"`
-		TotalSize int64  `json:"totalSize"`
-		ChunkSize int64  `json:"chunkSize"`
+		FileName  string `json:"file_name"`
+		TotalSize int64  `json:"total_size"`
+		ChunkSize int64  `json:"chunk_size"`
 	}
 
 	if err := c.Bind(&req); err != nil {
@@ -236,7 +236,7 @@ func UploadChunkHandler(c echo.Context) error {
 // Returns: { "success": true, "fileName": "guid.ext", "fileUrl": "presigned", "checksum": "md5hash" }
 func MergeChunksHandler(c echo.Context) error {
 	var req struct {
-		UploadID string `json:"uploadID"`
+		UploadID string `json:"upload_id"`
 		ShopID   string `json:"shopid"`
 	}
 
@@ -335,12 +335,13 @@ func MergeChunksHandler(c echo.Context) error {
 		})
 	}
 
-	var objectKey string
-	if req.ShopID != "" {
-		objectKey = fmt.Sprintf("%s/uploads/%s/%s", req.ShopID, time.Now().Format("20060102"), finalFilename)
-	} else {
-		objectKey = fmt.Sprintf("uploads/%s/%s", time.Now().Format("20060102"), finalFilename)
+	shopID, authStatus := storageAuthorizedShopID(c, req.ShopID)
+	if authStatus != http.StatusOK {
+		return c.JSON(authStatus, map[string]interface{}{
+			"error": "shop not selected or forbidden",
+		})
 	}
+	objectKey := fmt.Sprintf("%s/uploads/%s/%s", shopID, time.Now().Format("20060102"), finalFilename)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()

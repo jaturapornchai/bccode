@@ -60,7 +60,7 @@ func (repo *JournalRepository) IsAccountCodeUsed(ctx context.Context, shopID str
 	filters := bson.M{
 		"shopid":                    shopID,
 		"journaldetail.accountcode": accountCode,
-		"deletedat":                 bson.M{"$exists": false},
+		"deleted_at":                 bson.M{"$exists": false},
 	}
 
 	err := repo.pst.FindOne(ctx, models.JournalDoc{}, filters, &findDoc)
@@ -79,7 +79,7 @@ func (repo *JournalRepository) FindLastDocno(ctx context.Context, shopID string,
 
 	filters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 	}
 
 	if len(docFormat) < 1 {
@@ -114,7 +114,7 @@ func (repo *JournalRepository) FindGUIDEmptyAll() ([]models.JournalDoc, error) {
 	findDocList := []models.JournalDoc{}
 
 	filters := bson.M{
-		"guidfixed": "",
+		"guid_fixed": "",
 	}
 
 	err := repo.pst.Find(context.Background(), models.JournalDoc{}, filters, &findDocList)
@@ -128,7 +128,7 @@ func (repo *JournalRepository) FindGUIDEmptyAll() ([]models.JournalDoc, error) {
 
 func (repo *JournalRepository) UpdateGuidEmpty(ctx context.Context, id primitive.ObjectID, guidfixed string) error {
 
-	err := repo.pst.UpdateOne(ctx, models.JournalDoc{}, bson.M{"_id": id}, bson.M{"guidfixed": guidfixed})
+	err := repo.pst.UpdateOne(ctx, models.JournalDoc{}, bson.M{"_id": id}, bson.M{"guid_fixed": guidfixed})
 
 	if err != nil {
 		return err
@@ -144,7 +144,7 @@ func (repo *JournalRepository) GetDuplicateDocNos(ctx context.Context, shopID st
 		// Match documents for this shop that are not deleted
 		bson.M{"$match": bson.M{
 			"shopid":    shopID,
-			"deletedat": bson.M{"$exists": false},
+			"deleted_at": bson.M{"$exists": false},
 		}},
 		// Group by docno and count occurrences
 		bson.M{"$group": bson.M{
@@ -187,7 +187,7 @@ func (repo *JournalRepository) CheckVatDocNoExists(ctx context.Context, shopID s
 
 	filter := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 		codeField:   code,
 		"vats": bson.M{
 			"$elemMatch": bson.M{
@@ -213,7 +213,7 @@ func (repo *JournalRepository) CheckTaxDocNoExists(ctx context.Context, shopID s
 
 	filter := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 		codeField:   code,
 		"taxes": bson.M{
 			"$elemMatch": bson.M{

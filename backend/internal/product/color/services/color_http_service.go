@@ -201,7 +201,7 @@ func (svc ColorHttpService) SearchColorStep(shopID string, langCode string, page
 	}
 
 	selectFields := map[string]interface{}{
-		"guidfixed":      1,
+		"guid_fixed":      1,
 		"code":           1,
 		"colorselect":    1,
 		"colorsystem":    1,

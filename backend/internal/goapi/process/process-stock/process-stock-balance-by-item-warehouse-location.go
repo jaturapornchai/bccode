@@ -142,10 +142,10 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(shopId strin
 
 			itemCodeMainList = append(itemCodeMainList, models.ProductBalanceByCodeStruct{
 				ItemCode:      mypg.GetStringValue(row, "itemcode"),
-				ItemName:      mypg.GetStringValue(row, "itemname"),
+				ItemName:      mypg.GetStringValue(row, "item_name"),
 				BarcodeList:   mypg.GetStringValue(row, "barcodelist"),
 				UnitCode:      mypg.GetStringValue(row, "unitcode"),
-				UnitName:      mypg.GetStringValue(row, "unitname"),
+				UnitName:      mypg.GetStringValue(row, "unit_name"),
 				BalanceQty:    0,
 				AverageCost:   0,
 				BalanceAmount: 0,
@@ -216,7 +216,7 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(shopId strin
 				itemCode := mypg.GetStringValue(row, "itemcode")
 				whcode := mypg.GetStringValue(row, "whcode")
 				averagecost := mypg.GetFloat64Value(row, "averagecost")
-				balanceqty := mypg.GetFloat64Value(row, "balanceqty")
+				balanceqty := mypg.GetFloat64Value(row, "balance_qty")
 				balanceamount := mypg.GetFloat64Value(row, "balanceamount")
 
 				found := false
@@ -301,7 +301,7 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(shopId strin
 				itemcode := mypg.GetStringValue(row, "itemcode")
 				whcode := mypg.GetStringValue(row, "whcode")
 				locationcode := mypg.GetStringValue(row, "locationcode")
-				balanceqty := mypg.GetFloat64Value(row, "balanceqty")
+				balanceqty := mypg.GetFloat64Value(row, "balance_qty")
 
 				// ค้นหาคลังสินค้า + location
 				found := false
@@ -378,7 +378,7 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(shopId strin
 		for _, row := range rows {
 			itemCode := mypg.GetStringValue(row, "itemcode")
 			averagecost := mypg.GetFloat64Value(row, "averagecost")
-			balanceqty := mypg.GetFloat64Value(row, "balanceqty")
+			balanceqty := mypg.GetFloat64Value(row, "balance_qty")
 			balanceamount := mypg.GetFloat64Value(row, "balanceamount")
 
 			index := -1
@@ -537,7 +537,7 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(shopId strin
 	logger.Info("Prepared %d rows for bulk insert (elapsed=%s)", totalLine, time.Since(overallStart))
 
 	// Use bulk insert for PostgreSQL
-	columns := []string{"guid", "docdatetime", "linenumber", "datajson"}
+	columns := []string{"guid", "docdatetime", "line_number", "datajson"}
 	var records [][]any
 
 	bulkStart := time.Now()

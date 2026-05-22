@@ -10,7 +10,7 @@ import (
 type StockPickUpTransactionPG struct {
 	TransactionPG `gorm:"embedded;"`
 	// CreditorCode     string                            `json:"creditorcode" gorm:"column:creditorcode"`
-	// VatType          int8                              `json:"vattype" gorm:"column:vattype" `
+	// VatType          int8                              `json:"vat_type" gorm:"column:vattype" `
 	// VatRate          float64                           `json:"vatrate" gorm:"column:vatrate"`
 	// DocRefNo         string                            `json:"docrefno" gorm:"column:docrefno"`
 	// DocRefDate       time.Time                         `json:"docrefdate" gorm:"column:docrefdate"`
@@ -23,7 +23,7 @@ type StockPickUpTransactionPG struct {
 	// TotalVatValue    float64                           `json:"totalvatvalue" gorm:"column:totalvatvalue"`
 	// TotalAfterVat    float64                           `json:"totalaftervat" gorm:"column:totalaftervat"`
 	// TotalExceptVat   float64                           `json:"totalexceptvat" gorm:"column:totalexceptvat"`
-	// TotalAmount      float64                           `json:"totalamount" gorm:"column:totalamount"`
+	// TotalAmount      float64                           `json:"total_amount" gorm:"column:totalamount"`
 	// TotalPayCash     float64                           `json:"totalpaycash" gorm:"column:totalpaycash"`
 	// TotalPayTransfer float64                           `json:"totalpaytransfer" gorm:"column:totalpaytransfer"`
 	// TotalPayCredit   float64                           `json:"totalpaycredit" gorm:"column:totalpaycredit"`
@@ -38,7 +38,7 @@ type StockPickUpTransactionDetailPG struct {
 	// Price               float64 `json:"price" gorm:"column:price"`
 	// Discount            string  `json:"discount" gorm:"column:discount"`
 	// DiscountAmount      float64 `json:"discountamount" gorm:"column:discountamount"`
-	// SumAmount           float64 `json:"sumamount" gorm:"column:sumamount"`
+	// SumAmount           float64 `json:"sum_amount" gorm:"column:sumamount"`
 }
 
 func (StockPickUpTransactionPG) TableName() string {

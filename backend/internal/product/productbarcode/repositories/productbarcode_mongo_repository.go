@@ -124,11 +124,11 @@ func (repo ProductBarcodeRepository) CountByBOMGuids(ctx context.Context, shopID
 }
 
 func (repo ProductBarcodeRepository) CountByUnitCodes(ctx context.Context, shopID string, unitCodes []string) (int, error) {
-	return repo.CountByInKeys(ctx, shopID, "itemunitcode", unitCodes)
+	return repo.CountByInKeys(ctx, shopID, "item_unit_code", unitCodes)
 }
 
 func (repo ProductBarcodeRepository) CountByGroupCodes(ctx context.Context, shopID string, unitCodes []string) (int, error) {
-	return repo.CountByInKeys(ctx, shopID, "groupcode", unitCodes)
+	return repo.CountByInKeys(ctx, shopID, "group_code", unitCodes)
 }
 
 func (repo ProductBarcodeRepository) CountByOrderTypes(ctx context.Context, shopID string, GUIDs []string) (int, error) {
@@ -139,7 +139,7 @@ func (repo ProductBarcodeRepository) FindByItemCode(ctx context.Context, shopID 
 
 	filters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 		"itemcode":  itemcode,
 	}
 
@@ -192,11 +192,11 @@ func (repo ProductBarcodeRepository) UpdateParentGuidByGuids(ctx context.Context
 
 	filters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
-		"guidfixed": bson.M{"$in": guids},
+		"deleted_at": bson.M{"$exists": false},
+		"guid_fixed": bson.M{"$in": guids},
 	}
 
-	return repo.pst.Update(ctx, models.ProductBarcodeDoc{}, filters, bson.M{"$set": bson.M{"parentguid": parentGUID}})
+	return repo.pst.Update(ctx, models.ProductBarcodeDoc{}, filters, bson.M{"$set": bson.M{"parent_guid": parentGUID}})
 }
 
 func (repo ProductBarcodeRepository) Find(ctx context.Context, shopID string, filters interface{}, opts ...*options.FindOptions) ([]models.ProductBarcodeDoc, error) {
@@ -207,7 +207,7 @@ func (repo ProductBarcodeRepository) Find(ctx context.Context, shopID string, fi
 	case bson.M:
 		tempQuery := filterType
 		tempQuery["shopid"] = shopID
-		tempQuery["deletedat"] = bson.M{"$exists": false}
+		tempQuery["deleted_at"] = bson.M{"$exists": false}
 		filterQuery = tempQuery
 	default:
 		return nil, errors.New("invalid query filter type")
@@ -256,8 +256,8 @@ func (repo ProductBarcodeRepository) FindByRefBarcode(ctx context.Context, shopI
 	filters := bson.M{
 		"shopid":              shopID,
 		"refbarcodes.barcode": barcode,
-		"itemtype":            bson.M{"$ne": 2},
-		"deletedat":           bson.M{"$exists": false},
+		"item_type":            bson.M{"$ne": 2},
+		"deleted_at":           bson.M{"$exists": false},
 	}
 
 	err := repo.pst.Find(ctx, models.ProductBarcodeDoc{}, filters, &docList)
@@ -276,8 +276,8 @@ func (repo ProductBarcodeRepository) FindByBOMBarcode(ctx context.Context, shopI
 	filters := bson.M{
 		"shopid":      shopID,
 		"bom.barcode": barcode,
-		"itemtype":    bson.M{"$ne": 2},
-		"deletedat":   bson.M{"$exists": false},
+		"item_type":    bson.M{"$ne": 2},
+		"deleted_at":   bson.M{"$exists": false},
 	}
 
 	err := repo.pst.Find(ctx, models.ProductBarcodeDoc{}, filters, &docList)
@@ -308,7 +308,7 @@ func (repo ProductBarcodeRepository) FindByBarcode(ctx context.Context, shopID s
 
 	filters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 		"barcode":   barcode,
 	}
 
@@ -325,7 +325,7 @@ func (repo ProductBarcodeRepository) FindByBarcodes(ctx context.Context, shopID 
 
 	filters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 		"barcode":   bson.M{"$in": barcodes},
 	}
 
@@ -343,10 +343,10 @@ func (repo ProductBarcodeRepository) FindPageByUnits(ctx context.Context, shopID
 
 	filters := bson.M{
 		"shopid": shopID,
-		"deletedat": bson.M{
+		"deleted_at": bson.M{
 			"$exists": false,
 		},
-		"itemunitcode": bson.M{
+		"item_unit_code": bson.M{
 			"$in": unitCodes,
 		},
 	}
@@ -365,10 +365,10 @@ func (repo ProductBarcodeRepository) FindPageByGroups(ctx context.Context, shopI
 
 	filters := bson.M{
 		"shopid": shopID,
-		"deletedat": bson.M{
+		"deleted_at": bson.M{
 			"$exists": false,
 		},
-		"groupcode": bson.M{
+		"group_code": bson.M{
 			"$in": groupCodes,
 		},
 	}
@@ -387,7 +387,7 @@ func (repo ProductBarcodeRepository) UpdateRefBarcodeByGUID(ctx context.Context,
 
 	filters := bson.M{
 		"shopid":                shopID,
-		"deletedat":             bson.M{"$exists": false},
+		"deleted_at":             bson.M{"$exists": false},
 		"refbarcodes.guidfixed": guid,
 	}
 
@@ -409,7 +409,7 @@ func (repo ProductBarcodeRepository) UpdateRefBarcodeByGUID(ctx context.Context,
 func (repo ProductBarcodeRepository) UpdateAllProductTypeByGUID(ctx context.Context, shopID string, guid string, doc models.ProductType) error {
 	filters := bson.M{
 		"shopid":                shopID,
-		"deletedat":             bson.M{"$exists": false},
+		"deleted_at":             bson.M{"$exists": false},
 		"producttype.guidfixed": guid,
 	}
 
@@ -426,14 +426,14 @@ func (repo ProductBarcodeRepository) UpdateAllProductTypeByGUID(ctx context.Cont
 func (repo ProductBarcodeRepository) UpdateAllProductGroupByCode(ctx context.Context, shopID string, doc models.ProductGroup) error {
 	filters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
-		"groupcode": doc.Code,
+		"deleted_at": bson.M{"$exists": false},
+		"group_code": doc.Code,
 	}
 
 	update := bson.M{
 		"$set": bson.M{
-			"groupcode":  doc.Code,
-			"groupnames": doc.Names,
+			"group_code":  doc.Code,
+			"group_names": doc.Names,
 		},
 	}
 
@@ -443,13 +443,13 @@ func (repo ProductBarcodeRepository) UpdateAllProductGroupByCode(ctx context.Con
 func (repo ProductBarcodeRepository) UpdateAllProductUnitByCode(ctx context.Context, shopID string, doc models.ProductUnit) error {
 	filters := bson.M{
 		"shopid":       shopID,
-		"deletedat":    bson.M{"$exists": false},
-		"itemunitcode": doc.UnitCode,
+		"deleted_at":    bson.M{"$exists": false},
+		"item_unit_code": doc.UnitCode,
 	}
 
 	update := bson.M{
 		"$set": bson.M{
-			"itemunitcode":  doc.UnitCode,
+			"item_unit_code":  doc.UnitCode,
 			"itemunitnames": doc.Names,
 		},
 	}
@@ -460,7 +460,7 @@ func (repo ProductBarcodeRepository) UpdateAllProductUnitByCode(ctx context.Cont
 func (repo ProductBarcodeRepository) UpdateAllProductOrderTypeByGUID(ctx context.Context, shopID string, guid string, doc models.ProductOrderType) error {
 	filters := bson.M{
 		"shopid":               shopID,
-		"deletedat":            bson.M{"$exists": false},
+		"deleted_at":            bson.M{"$exists": false},
 		"ordertypes.guidfixed": guid,
 	}
 
@@ -478,8 +478,8 @@ func (repo ProductBarcodeRepository) UpdateAllProductOrderTypeByGUID(ctx context
 func (repo ProductBarcodeRepository) UpdateBranch(ctx context.Context, shopID string, branch models.ProductBarcodeBranch, productBarcodeGUIDFixedes []string) error {
 	filters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
-		"guidfixed": bson.M{"$in": productBarcodeGUIDFixedes},
+		"deleted_at": bson.M{"$exists": false},
+		"guid_fixed": bson.M{"$in": productBarcodeGUIDFixedes},
 		"branches.code": bson.M{
 			"$ne": branch.Code,
 		},
@@ -497,8 +497,8 @@ func (repo ProductBarcodeRepository) UpdateBranch(ctx context.Context, shopID st
 func (repo ProductBarcodeRepository) UpdateBusinessType(ctx context.Context, shopID string, businessType models.ProductBarcodeBusinessType, productBarcodeGUIDFixedes []string) error {
 	filters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
-		"guidfixed": bson.M{"$in": productBarcodeGUIDFixedes},
+		"deleted_at": bson.M{"$exists": false},
+		"guid_fixed": bson.M{"$in": productBarcodeGUIDFixedes},
 		"branches.code": bson.M{
 			"$ne": businessType.Code,
 		},
@@ -517,7 +517,7 @@ func (repo ProductBarcodeRepository) FindByBarcodesMap(shopID string, barcodes [
 	filter := bson.M{
 		"shopid":    shopID,
 		"barcode":   bson.M{"$in": barcodes},
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 	}
 
 	var docs []models.ProductBarcodeInfo
@@ -536,8 +536,8 @@ func (repo ProductBarcodeRepository) FindByBarcodesMap(shopID string, barcodes [
 
 func (repo ProductBarcodeRepository) UpdateByID(id string, updateData bson.M) error {
 	filter := bson.M{
-		"guidfixed": id,
-		"deletedat": bson.M{"$exists": false},
+		"guid_fixed": id,
+		"deleted_at": bson.M{"$exists": false},
 	}
 	return repo.pst.Update(context.Background(), models.ProductBarcodeDoc{}, filter, updateData)
 }

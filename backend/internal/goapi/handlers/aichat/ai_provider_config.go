@@ -40,27 +40,27 @@ type listAIProvidersReq struct {
 }
 
 type saveAIProviderReq struct {
-	ShopID       string   `json:"shop_id"`
+	ShopID string   `json:"shop_id"`
 	ProviderName string   `json:"provider_name"`
-	APIKey       string   `json:"api_key"`
-	BaseURL      string   `json:"base_url"`
-	Model        string   `json:"model"`
+	APIKey string   `json:"api_key"`
+	BaseURL string   `json:"base_url"`
+	Model string   `json:"model"`
 	Capabilities []string `json:"capabilities"`
-	IsActive     bool     `json:"is_active"`
-	Priority     int      `json:"priority"`
+	IsActive bool     `json:"is_active"`
+	Priority int      `json:"priority"`
 }
 
 type deleteAIProviderReq struct {
-	ShopID       string `json:"shop_id"`
+	ShopID string `json:"shop_id"`
 	ProviderName string `json:"provider_name"`
 }
 
 type testAIProviderReq struct {
-	ShopID       string `json:"shop_id"`
+	ShopID string `json:"shop_id"`
 	ProviderName string `json:"provider_name"`
-	APIKey       string `json:"api_key"`
-	BaseURL      string `json:"base_url"`
-	Model        string `json:"model"`
+	APIKey string `json:"api_key"`
+	BaseURL string `json:"base_url"`
+	Model string `json:"model"`
 }
 
 type aiProviderStatusReq struct {
@@ -564,8 +564,8 @@ func testRequest(ctx context.Context, chatURL, apiKey string, reqBody map[string
 
 type listModelsReq struct {
 	ProviderName string `json:"provider_name"`
-	APIKey       string `json:"api_key"`
-	BaseURL      string `json:"base_url"`
+	APIKey string `json:"api_key"`
+	BaseURL string `json:"base_url"`
 }
 
 // ListAIModels — POST /api/v1/ai-provider/models
@@ -653,8 +653,8 @@ func ListAIModels(c echo.Context) error {
 
 	var modelsResp struct {
 		Data []struct {
-			ID      string `json:"id"`
-			Object  string `json:"object"`
+			ID string `json:"id"`
+			Object string `json:"object"`
 			OwnedBy string `json:"owned_by"`
 		} `json:"data"`
 	}
@@ -710,8 +710,8 @@ func listGeminiModels(c echo.Context, ctx context.Context, apiKey string) error 
 
 	var geminiResp struct {
 		Models []struct {
-			Name        string `json:"name"`
-			DisplayName string `json:"displayName"`
+			Name string `json:"name"`
+			DisplayName string `json:"display_name"`
 		} `json:"models"`
 	}
 	if err := json.Unmarshal(body, &geminiResp); err != nil {

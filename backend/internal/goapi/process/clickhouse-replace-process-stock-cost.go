@@ -14,13 +14,13 @@ import (
 
 // ReplacePartitionResult ผลลัพธ์การ replace
 type ReplacePartitionResult struct {
-	Success  bool    `json:"success"`
-	ShopID   string  `json:"shopid"`
+	Success bool    `json:"success"`
+	ShopID string  `json:"shopid"`
 	ItemCode string  `json:"itemcode"`
-	Rows     int64   `json:"rows"`
+	Rows int64   `json:"rows"`
 	Duration float64 `json:"duration"`
-	Message  string  `json:"message"`
-	Error    string  `json:"error,omitempty"`
+	Message string  `json:"message"`
+	Error string  `json:"error,omitempty"`
 }
 
 // ReplaceProcessStockCostPartition replace partition ของ processstockcost table โดยส่ง array ข้อมูลเข้ามาโดยตรง

@@ -27,7 +27,7 @@ func (repo SearchRepository[T]) Find(ctx context.Context, shopID string, searchI
 
 	filterQuery := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 	}
 
 	searchFilterQuery := search.CreateTextFilter(searchInFields, q)
@@ -54,7 +54,7 @@ func (repo SearchRepository[T]) FindStep(ctx context.Context, shopID string, fil
 
 	filterQuery := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 	}
 
 	matchFilterList := []interface{}{}
@@ -97,7 +97,7 @@ func (repo SearchRepository[T]) FindStep(ctx context.Context, shopID string, fil
 	}
 
 	if len(pageableStep.Sorts) < 1 {
-		tempOptions.SetSort(bson.M{"createdat": -1})
+		tempOptions.SetSort(bson.M{"created_at": -1})
 	}
 
 	docList := []T{}
@@ -119,7 +119,7 @@ func (repo SearchRepository[T]) FindStep(ctx context.Context, shopID string, fil
 func (repo SearchRepository[T]) FindStepNoShopid(ctx context.Context, filters map[string]interface{}, searchInFields []string, projects map[string]interface{}, pageableStep models.PageableStep) ([]T, int, error) {
 
 	filterQuery := bson.M{
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 	}
 
 	matchFilterList := []interface{}{}
@@ -162,7 +162,7 @@ func (repo SearchRepository[T]) FindStepNoShopid(ctx context.Context, filters ma
 	}
 
 	if len(pageableStep.Sorts) < 1 {
-		tempOptions.SetSort(bson.M{"createdat": -1})
+		tempOptions.SetSort(bson.M{"created_at": -1})
 	}
 
 	docList := []T{}
@@ -185,7 +185,7 @@ func (repo SearchRepository[T]) FindPage(ctx context.Context, shopID string, sea
 
 	filterQuery := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 	}
 
 	searchFilterQuery := search.CreateTextFilter(searchInFields, pageable.Query)
@@ -199,7 +199,7 @@ func (repo SearchRepository[T]) FindPage(ctx context.Context, shopID string, sea
 	}
 
 	if len(pageable.Sorts) < 1 {
-		pageable.Sorts = append(pageable.Sorts, models.KeyInt{Key: "createdat", Value: 1})
+		pageable.Sorts = append(pageable.Sorts, models.KeyInt{Key: "created_at", Value: 1})
 	}
 
 	docList := []T{}
@@ -226,7 +226,7 @@ func (repo SearchRepository[T]) FindPageFilter(ctx context.Context, shopID strin
 
 	queryFilters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 	}
 
 	if len(matchFilterList) > 0 {
@@ -234,7 +234,7 @@ func (repo SearchRepository[T]) FindPageFilter(ctx context.Context, shopID strin
 	}
 
 	if len(pageable.Sorts) < 1 {
-		pageable.Sorts = append(pageable.Sorts, models.KeyInt{Key: "createdat", Value: 1})
+		pageable.Sorts = append(pageable.Sorts, models.KeyInt{Key: "created_at", Value: 1})
 	}
 
 	if len(searchFilterQuery) > 0 {
@@ -268,7 +268,7 @@ func (repo SearchRepository[T]) FindPageFilterNoShopid(ctx context.Context, filt
 	// matchFilterList = append(matchFilterList, searchFilterQuery...)
 
 	queryFilters := bson.M{
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 	}
 
 	if len(matchFilterList) > 0 {
@@ -276,7 +276,7 @@ func (repo SearchRepository[T]) FindPageFilterNoShopid(ctx context.Context, filt
 	}
 
 	if len(pageable.Sorts) < 1 {
-		pageable.Sorts = append(pageable.Sorts, models.KeyInt{Key: "createdat", Value: 1})
+		pageable.Sorts = append(pageable.Sorts, models.KeyInt{Key: "created_at", Value: 1})
 	}
 
 	if len(searchFilterQuery) > 0 {
@@ -302,7 +302,7 @@ func (repo SearchRepository[T]) FindAggregatePage(ctx context.Context, shopID st
 	mainFilter := bson.M{
 		"$match": bson.M{
 			"shopid":    shopID,
-			"deletedat": bson.M{"$exists": false},
+			"deleted_at": bson.M{"$exists": false},
 		},
 	}
 

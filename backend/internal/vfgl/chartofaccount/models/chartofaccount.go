@@ -40,7 +40,7 @@ func (ChartOfAccountIndentityId) CollectionName() string {
 
 type ChartOfAccountInfo struct {
 	models.DocIdentity `bson:"inline" gorm:"embedded;"`
-	ChartOfAccount     `bson:"inline" gorm:"embedded;"`
+	ChartOfAccount  `bson:"inline" gorm:"embedded;"`
 }
 
 func (ChartOfAccountInfo) CollectionName() string {
@@ -53,7 +53,7 @@ type ChartOfAccountData struct {
 }
 
 type ChartOfAccountDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	ChartOfAccountData `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 	models.LastUpdate  `bson:"inline"`
@@ -65,9 +65,9 @@ func (ChartOfAccountDoc) CollectionName() string {
 
 type ChartOfAccountActivity struct {
 	ChartOfAccountData `bson:"inline"`
-	CreatedAt          *time.Time `json:"createdat,omitempty" bson:"createdat,omitempty"`
-	UpdatedAt          *time.Time `json:"updatedat,omitempty" bson:"updatedat,omitempty"`
-	DeletedAt          *time.Time `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
+	CreatedAt *time.Time `json:"created_at,omitempty" bson:"created_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
+	DeletedAt *time.Time `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
 }
 
 func (ChartOfAccountActivity) CollectionName() string {
@@ -75,14 +75,14 @@ func (ChartOfAccountActivity) CollectionName() string {
 }
 
 type ChartOfAccountPageResponse struct {
-	Success    bool                          `json:"success"`
-	Data       []ChartOfAccountInfo          `json:"data,omitempty"`
+	Success bool                          `json:"success"`
+	Data []ChartOfAccountInfo          `json:"data,omitempty"`
 	Pagination models.PaginationDataResponse `json:"pagination,omitempty"`
 }
 
 type ChartOfAccountInfoResponse struct {
 	Success bool               `json:"success"`
-	Data    ChartOfAccountInfo `json:"data,omitempty"`
+	Data ChartOfAccountInfo `json:"data,omitempty"`
 }
 
 type ChartOfAccountPG struct {

@@ -1,6 +1,7 @@
 package creditorpayment_test
 
 import (
+	"os"
 	"smlcloudplatform/internal/config"
 	pkgModels "smlcloudplatform/internal/models"
 	models "smlcloudplatform/internal/transaction/models"
@@ -11,21 +12,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var repo creditorpayment.ICreditorPaymentTransactionPGRepository
+func newRealDBRepository(t *testing.T) creditorpayment.ICreditorPaymentTransactionPGRepository {
+	t.Helper()
+	if os.Getenv("BC_REAL_DB_TESTS") != "1" {
+		t.Skip("set BC_REAL_DB_TESTS=1 to run PostgreSQL integration tests")
+	}
 
-func init() {
 	config := config.NewConfig()
 	pst := microservice.NewPersister(config.PersisterConfig())
-	repo = creditorpayment.NewCreditorPaymentTransactionPGRepository(pst)
+	return creditorpayment.NewCreditorPaymentTransactionPGRepository(pst)
 }
 
 func TestMigrationDB(t *testing.T) {
+	repo := newRealDBRepository(t)
 
 	err := repo.MigrationDatabase()
 	assert.Nil(t, err)
 }
 
 func TestInsertData(t *testing.T) {
+	repo := newRealDBRepository(t)
+
 	giveDoc := wantDataCreditPayment()
 	err := repo.Create(*giveDoc)
 	assert.Nil(t, err)
@@ -42,6 +49,8 @@ func TestInsertData(t *testing.T) {
 }
 
 func TestDeleteDoc(t *testing.T) {
+	repo := newRealDBRepository(t)
+
 	giveDoc := wantDataCreditPayment()
 	err := repo.Delete(giveDoc.ShopID, giveDoc.DocNo, models.CreditorPaymentTransactionPG{
 		ShopIdentity: pkgModels.ShopIdentity{

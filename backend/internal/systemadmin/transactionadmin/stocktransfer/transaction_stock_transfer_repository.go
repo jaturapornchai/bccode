@@ -29,7 +29,7 @@ func (r *StockTransferTransactionAdminRepository) FindStockTransferDocByShopID(c
 	err := r.pst.Find(ctx, &stocktransfermodels.StockTransferDoc{},
 		bson.M{
 			"shopid":    shopID,
-			"deletedat": bson.M{"$exists": false},
+			"deleted_at": bson.M{"$exists": false},
 		},
 		&docList)
 	if err != nil {
@@ -44,7 +44,7 @@ func (r *StockTransferTransactionAdminRepository) FindStockTransferDocDeleteBySh
 
 	err := r.pst.Find(ctx, &stocktransfermodels.StockTransferDoc{},
 		bson.M{"shopid": shopID,
-			"deletedat": bson.M{"$exists": true},
+			"deleted_at": bson.M{"$exists": true},
 		},
 		&docList)
 	if err != nil {

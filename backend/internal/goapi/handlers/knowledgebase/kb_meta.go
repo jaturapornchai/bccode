@@ -26,22 +26,22 @@ const kbMetaCollection = "kbDocumentMetadata"
 
 // KBDocMeta — bccaccount-specific metadata that lives outside RAGFlow
 type KBDocMeta struct {
-	ShopID        string    `bson:"shopid" json:"shop_id"`
-	RagflowDocID  string    `bson:"ragflowdocid" json:"ragflow_doc_id"`
-	Filename      string    `bson:"filename" json:"filename"`
-	BranchID      string    `bson:"branchid" json:"branch_id"`
-	ContentType   string    `bson:"contenttype" json:"content_type"`
-	Size          int64     `bson:"size" json:"size"`
-	UploadedBy    string    `bson:"uploadedby" json:"uploaded_by"`
-	Description   string    `bson:"description" json:"description"`
-	Tags          []string  `bson:"tags" json:"tags"`
-	Status        bool      `bson:"status" json:"status"`     // enabled?
-	AllDay        bool      `bson:"allday" json:"all_day"`    // active 24/7?
-	StartDateTime *string   `bson:"startdatetime,omitempty" json:"start_date_time,omitempty"`
-	EndDateTime   *string   `bson:"enddatetime,omitempty" json:"end_date_time,omitempty"`
-	Version       int       `bson:"version" json:"version"`
-	UploadedAt    time.Time `bson:"uploadedat" json:"uploaded_at"`
-	UpdatedAt     time.Time `bson:"updatedat" json:"updated_at"`
+	ShopID string    `bson:"shopid" json:"shop_id"`
+	RagflowDocID string    `bson:"ragflow_doc_id" json:"ragflow_doc_id"`
+	Filename string    `bson:"file_name" json:"file_name"`
+	BranchID string    `bson:"branch_id" json:"branch_id"`
+	ContentType string    `bson:"content_type" json:"content_type"`
+	Size int64     `bson:"size" json:"size"`
+	UploadedBy string    `bson:"uploaded_by" json:"uploaded_by"`
+	Description string    `bson:"description" json:"description"`
+	Tags []string  `bson:"tags" json:"tags"`
+	Status bool      `bson:"status" json:"status"`     // enabled?
+	AllDay bool      `bson:"allday" json:"all_day"`    // active 24/7?
+	StartDateTime *string   `bson:"start_date_time,omitempty" json:"start_date_time,omitempty"`
+	EndDateTime *string   `bson:"end_date_time,omitempty" json:"end_date_time,omitempty"`
+	Version int       `bson:"version" json:"version"`
+	UploadedAt time.Time `bson:"uploaded_at" json:"uploaded_at"`
+	UpdatedAt time.Time `bson:"updated_at" json:"updated_at"`
 }
 
 var (
@@ -61,7 +61,7 @@ func getCollection() (*mongo.Collection, error) {
 		_, err := col.Indexes().CreateOne(ctx, mongo.IndexModel{
 			Keys: bson.D{
 				{Key: "shopid", Value: 1},
-				{Key: "ragflowdocid", Value: 1},
+				{Key: "ragflow_doc_id", Value: 1},
 			},
 			Options: options.Index().SetUnique(true),
 		})
@@ -87,7 +87,7 @@ func UpsertMeta(meta *KBDocMeta) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	filter := bson.M{"shopid": meta.ShopID, "ragflowdocid": meta.RagflowDocID}
+	filter := bson.M{"shopid": meta.ShopID, "ragflow_doc_id": meta.RagflowDocID}
 	_, err = col.ReplaceOne(ctx, filter, meta, options.Replace().SetUpsert(true))
 	return err
 }
@@ -103,7 +103,7 @@ func GetMetaByShop(shopID, branchID string) ([]KBDocMeta, error) {
 	defer cancel()
 	filter := bson.M{"shopid": shopID}
 	if branchID != "" && branchID != "*" {
-		filter["branchid"] = bson.M{"$in": []string{branchID, "*"}}
+		filter["branch_id"] = bson.M{"$in": []string{branchID, "*"}}
 	}
 	cur, err := col.Find(ctx, filter)
 	if err != nil {
@@ -126,7 +126,7 @@ func FindByFilename(shopID, filename string) (*KBDocMeta, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	var meta KBDocMeta
-	err = col.FindOne(ctx, bson.M{"shopid": shopID, "filename": filename}).Decode(&meta)
+	err = col.FindOne(ctx, bson.M{"shopid": shopID, "file_name": filename}).Decode(&meta)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
@@ -144,9 +144,9 @@ func UpdateFields(shopID, filename string, set bson.M) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	set["updatedat"] = time.Now()
+	set["updated_at"] = time.Now()
 	_, err = col.UpdateOne(ctx,
-		bson.M{"shopid": shopID, "filename": filename},
+		bson.M{"shopid": shopID, "file_name": filename},
 		bson.M{"$set": set},
 	)
 	return err
@@ -160,6 +160,6 @@ func DeleteMeta(shopID, ragflowDocID string) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	_, err = col.DeleteOne(ctx, bson.M{"shopid": shopID, "ragflowdocid": ragflowDocID})
+	_, err = col.DeleteOne(ctx, bson.M{"shopid": shopID, "ragflow_doc_id": ragflowDocID})
 	return err
 }

@@ -81,7 +81,6 @@ func initCollection(mt *mtest.T, coll *mongo.Collection) {
 
 func TestMongoPersisterCountWithmtest(t *testing.T) {
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mt.Close()
 	mt.Run("Success", func(mt *mtest.T) {
 
 		first := mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
@@ -111,7 +110,6 @@ func TestMongoPersisterCountWithmtest(t *testing.T) {
 func TestMongodbCreate(t *testing.T) {
 
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mt.Close()
 	mt.Run("Success", func(mt *mtest.T) {
 		mt.AddMockResponses(mtest.CreateSuccessResponse())
 
@@ -131,7 +129,6 @@ func TestMongodbCreate(t *testing.T) {
 
 func TestMongodbCreateInBatchWithMtest(t *testing.T) {
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mt.Close()
 	mt.Run("Success", func(mt *mtest.T) {
 		mt.AddMockResponses(mtest.CreateSuccessResponse())
 
@@ -155,7 +152,6 @@ func TestMongodbCreateInBatchWithMtest(t *testing.T) {
 
 func TestMongoDBFindMockData(t *testing.T) {
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mt.Close()
 	mt.Run("Success", func(mt *mtest.T) {
 
 		id1 := primitive.NewObjectID()
@@ -197,7 +193,6 @@ func TestMongoDBFindMockData(t *testing.T) {
 func TestMongodbFindPage(t *testing.T) {
 
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mt.Close()
 
 	// // registryOpts := options.Client().
 	// // 	SetRegistry(bson.NewRegistryBuilder().RegisterCodec(reflect.TypeOf(int64(0)), &negateCodec{}).Build())

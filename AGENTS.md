@@ -4,6 +4,9 @@
 - Communicate with Jead in Thai.
 - Address the user as `ลุงจืด` unless asked otherwise.
 - Keep answers concise and backed by source, diff, command output, logs, or tests.
+- **English Rule for Agent Assets**: Create and maintain all new guidelines, rules, planning artifacts (`implementation_plan.md`, `task.md`, `walkthrough.md`), instructions, and custom skills in English to save tokens and improve execution speed.
+- Any new or updated skill, rule, agent prompt, handoff, checklist, workflow document, or reusable AI instruction that may consume recurring context must be written in English unless Jead explicitly requests Thai output for end users.
+
 
 ## Source Of Truth
 - Read active project files first: `AGENTS.md`, `CLAUDE.md`, README, source code, tests, and local docs.
@@ -43,17 +46,24 @@
 - Feature docs must include objective, workflow, config, dependency, usage example, and limitation. Do not duplicate changelog/version history.
 - For substantial task closeouts, always end with: `✅ Pros`, `⚠️ Cons / Risks`, and `💡 Recommendations`.
 
+## No Mock Data Rule
+- Do not create or rely on mock, fake, dummy, demo, sample, placeholder, or invented business data when testing workflows, screens, API behavior, ERP logic, permissions, approvals, reports, tenant isolation, or database behavior.
+- Use real data from the selected DEV database for development verification. For UAT or PRO, read or write data only when the task explicitly allows that environment and the action is safe under the environment rules.
+- If a test needs temporary records, create them in the real DEV database through the real application/API flow, mark them with a clear test prefix, verify the behavior, and clean them up before completion.
+- Do not replace real integration checks with mocked API responses for feature completion claims. Mocking low-level technical failures is allowed only for isolated unit tests where no business data or ERP behavior is being validated.
+- Final reports must distinguish real database verification from unit tests or static checks.
+
 ## Context Budget Rule
 - Keep Codex/agent context small by default. Start from the requested module, current source, tests, and narrow runtime evidence; do not scan or load the whole repo unless explicitly requested.
 - Start each coding task from `AI_INDEX.md` when available. Use it as the routing map, then open only the listed files for the task area.
 - Use `rg` and `rg --files` so root `.ignore` is respected. Do not use broad recursive `Get-ChildItem`/full-tree reads unless a task specifically requires inventory.
-- Do not read generated or bulky files into context by default: `backend/docs/docs.go`, `backend/docs/swagger.json`, `backend/docs/swagger.yaml`, `backend/api/swagger/swagger.json`, `backend/assets/fonts/**`, `backend/tdict-std.txt`, lockfiles, screenshots/images, `manual/*.json`, build outputs, dependency folders, or legacy Flutter/reference trees.
+- Do not read generated or bulky files into context by default: `backend/docs/**`, `backend/api/swagger/**`, `backend/assets/fonts/**`, `backend/tdict-std.txt`, lockfiles, screenshots/images, `.playwright-mcp/**`, `manual/*.json`, build outputs, runtime logs, dependency folders, duplicate skill packs, or legacy Flutter/reference trees, except when the task is explicitly a frontend migration/clone/reference-screen task.
 - For `backend/assets/language/languages.tsv`, never open the full file. Query exact keys only, for example `rg -n "^permission_link\t|^new_item\t" backend/assets/language/languages.tsv`.
 - During fast UI iteration, do not edit `languages.tsv` for every small label change. Use stable language keys with local fallback text, then record missing or provisional keys under `backend/prompts/language_requests/` for later batch translation.
 - For API behavior, read handlers/services/tests first. Use generated Swagger only when the task is specifically about OpenAPI docs.
-- Use project-local root skills under `D:\bccode\.agents` only. Ignore duplicate backend skill bundles under `.claude`, `.cline`, `.roo`, `.kiro`, and `.kilocode` unless explicitly requested.
+- Use project-local root skills under `D:\bccode\.agents` only. Ignore duplicate skill bundles under `backend/.agents`, `.claude`, `.cline`, `.roo`, `.kiro`, `.kilocode`, and `bcai-claude-skills` unless explicitly requested.
 - Prefer line-range reads and symbol/function-level inspection for files over 50 KB. Files currently known to be large include `frontend/src/app/system-settings/system-settings-screen.tsx` and `frontend/src/app/menu/main-menu-screen.tsx`.
-- For routine git checks, avoid dumping legacy deletion noise. Prefer `git status --short -- . ':!clone-skills' ':!frontend/bcaiaccount' ':!frontend/bclms'` unless the task is specifically about those legacy trees.
+- For routine git checks, avoid broad `git status` or `git diff` in a dirty tree. Use exact paths or module scopes, report counts when the output would exceed 50 lines, and never paste long status/diff output into chat unless requested.
 
 ## AI Agent Speed Rule
 - Default to fast, narrow execution: route by `AI_INDEX.md`, inspect exact files/functions, patch the smallest scope, and verify with focused commands.
@@ -70,6 +80,9 @@
 - Target frontend implementation is Next.js under `D:\bccode\frontend`.
 - Do not recreate or copy Flutter/Dart/native platform scaffolds into `D:\bccode\frontend`.
 - When migrating a screen or workflow, read the Flutter source first for behavior, labels, layout intent, validation, and API usage, then implement the equivalent in Next.js.
+- When Jead asks to clone, migrate, redesign, or fix a legacy BC screen, always use the old Flutter screen and any user-provided screenshot/reference screen as the primary visual and workflow reference before editing Next.js.
+- The Next.js screen should preserve the Flutter screen's user-facing intent: menu hierarchy, route purpose, labels, core actions, form fields, validation behavior, empty/loading/error states, permission behavior, and data/API flow. Improve implementation quality and responsive behavior, but do not invent a different workflow unless Jead explicitly approves it.
+- If the matching Flutter screen cannot be found, state what was searched and treat the implementation as blocked or provisional instead of guessing.
 - Preserve BC Ai Account business rules and multi-tenant constraints while migrating.
 - If a required backend API is missing or unclear, create/update an API spec prompt under `backend/prompts/api_requests/` instead of guessing backend behavior.
 
@@ -90,6 +103,17 @@
 - Cross-tenant queries are forbidden by default. Admin/support cross-tenant access must be explicit, audited, and read-only unless approved.
 - High-scale MongoDB -> Kafka -> PostgreSQL -> Kafka -> ClickHouse design must follow `backend/architecture/high-scale-multitenant-bi.md`.
 - Admin, owner, company, tenant, and branch access must follow `backend/architecture/admin-access-control.md`: first admin/bootstrap can assign admin emails, owner emails map to `company_group_id`, and every data request must resolve authorized `tenant_id`/`branch_id` from backend policy.
+
+## Environment Database Isolation Rule
+- DEV, UAT, and PRO must use separate database instances, databases, credentials, object storage scopes, Kafka topics/groups, cache prefixes/databases, ClickHouse databases, and configuration values.
+- DEV means active development, UAT means user acceptance testing, and PRO means real production usage. Data in these environments must not be treated as shared or interchangeable.
+- Runtime code must never silently mix DEV/UAT/PRO data sources. Any environment-to-environment data movement must be an explicit, audited, development-only tool.
+- MongoDB location is configurable because this is a private system. DEV/UAT/PRO must still use separate MongoDB URIs, databases, credentials, and access scopes, whether the location is MongoDB Atlas, a private MongoDB server, or another approved MongoDB deployment.
+- MongoDB rollout starts with fresh DEV/UAT/PRO databases. Do not migrate or upload old MongoDB data unless Jead explicitly approves a separate migration task with source, target, backup, and rollback plan.
+- Copying data from UAT or PRO into DEV is allowed only when the running environment is DEV/development/local and the target environment is DEV. Copying from DEV into UAT/PRO, UAT into PRO, PRO into UAT, or any write into UAT/PRO from a copy tool is forbidden by default.
+- Production mode must disable development copy tools even if the route is reachable or a user has a valid token.
+- DEV mode should emit detailed console/server logs for environment, route, source, target, tenant/shop id, counts, and safe masked connection metadata to make debugging easy. PRO must avoid noisy logs and must not log secrets, tokens, passwords, or full connection strings.
+- Environment names in APIs/config should be normalized to `dev`, `uat`, and `pro`. Legacy aliases such as `development`, `local`, `production`, and `prod` may be accepted only after explicit normalization.
 
 ## ERP Language Source Of Truth Rule
 - Supported UI languages for the whole system are exactly: Thai (`th`), English (`en`), Chinese (`cn`), Japanese (`ja`), Korean (`ko`), Lao (`lo`), Myanmar/Burmese (`my`), Khmer (`km`), Vietnamese (`vi`), Malay (`ms`), Indonesian (`id`), and Filipino (`fil`).
@@ -135,7 +159,7 @@
 
 ## Frontend Manual Rule
 - Hard rule: do not auto-create, auto-update, regenerate, or bulk-generate manuals during normal feature work, bug fixes, migrations, UI changes, or screen creation.
-- Create or update files under `D:\bccode\manual` only when Jead explicitly asks to create a manual for a screen/menu, or when Jead says the project is ready for final manual generation at the end of the project.
+- Create or update files under `D:\bccode\manual` only when Jead explicitly asks for that manual. Do not assume the final project phase requires manual generation; wait for Jead's direct instruction.
 - When a manual is requested, write it for non-technical end users with step-by-step workflow, field/button explanations, expected results, common mistakes, troubleshooting, limitations, and next steps.
 - Existing manual pages and manual links may remain, but new screens do not need a manual/help link unless a manual exists or Jead asks for that screen's manual.
 - Manual pages that are created on request must still support configured UI languages and light/dark theme.

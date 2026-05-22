@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { validateBackendUrl } from "@/lib/backend-url";
+import { getJwtClaimShopId, verifyHs256Jwt } from "@/lib/server-jwt";
 import {
   extractMessage,
   isRecord,
@@ -40,8 +41,11 @@ export async function POST(request: Request) {
   const shopId = (body.shopId ?? body.shop_id ?? "").trim();
   const username = body.username?.trim() ?? "";
   if (!shopId || !username) {
-    return NextResponse.json({ success: false, message: "ไม่พบข้อมูลกิจการหรือผู้ใช้" }, { status: 400 });
+    return NextResponse.json({ success: false, message: "ไม่พบข้อมูลบริษัทหรือผู้ใช้" }, { status: 400 });
   }
+
+  const tenantResponse = validateTenantAccess(authorization, shopId);
+  if (tenantResponse) return tenantResponse;
 
   let goApiUrl: string;
   try {
@@ -90,4 +94,18 @@ export async function POST(request: Request) {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function validateTenantAccess(authorization: string, requestedShopId: string): NextResponse | null {
+  if (!process.env.JWT_SECRET_KEY?.trim()) return null;
+
+  const jwt = verifyHs256Jwt(authorization);
+  if (!jwt.ok) return NextResponse.json({ success: false, message: jwt.message }, { status: jwt.status });
+
+  const claimShopId = getJwtClaimShopId(jwt.claims);
+  if (!claimShopId) return NextResponse.json({ success: false, message: "token ไม่มีรหัสบริษัท" }, { status: 401 });
+  if (claimShopId !== requestedShopId) {
+    return NextResponse.json({ success: false, message: "ไม่มีสิทธิ์เข้าถึงข้อมูลบริษัทนี้" }, { status: 403 });
+  }
+  return null;
 }

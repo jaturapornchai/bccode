@@ -67,7 +67,10 @@ Dark theme must be derived through project CSS variables, not by hardcoding a se
 ## Density And Layout
 
 - Default to compact ERP spacing: 8px rhythm, 8-16px gaps.
+- Reduce page margins, section padding, toolbar gaps, form row spacing, table/list row height, and control height as far as practical while preserving readability and tap safety.
+- Apply density globally or through shared screen tokens before adding page-specific overrides.
 - Use full-width, wrap-first layouts.
+- Popups, dropdowns, menus, and combobox panels must calculate width/position from the trigger and current viewport/container before showing, then clamp to the visible area instead of overflowing to the right.
 - Keep controls compact but touch-safe on mobile.
 - Desktop: sidebar/tree menu + topbar + tab strip + dense content canvas.
 - Tablet/mobile: collapse navigation, wrap action bars, stack forms, keep tables scroll-contained or card-based.

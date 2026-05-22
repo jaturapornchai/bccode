@@ -61,7 +61,7 @@ func NewDepositRefundRepository(pst microservice.IPersisterMongo) *DepositRefund
 func (repo DepositRefundRepository) FindLastDocNo(ctx context.Context, shopID string, prefixDocNo string) (models.DepositRefundDoc, error) {
 	filters := bson.M{
 		"shopid": shopID,
-		"deletedat": bson.M{
+		"deleted_at": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

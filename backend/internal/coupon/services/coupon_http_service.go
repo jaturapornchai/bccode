@@ -206,7 +206,7 @@ func (svc CouponHttpService) CreateCoupon(shopID string, authUsername string, do
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "couponcode", doc.CouponCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "coupon_code", doc.CouponCode)
 
 	if err != nil {
 		return "", err
@@ -311,7 +311,7 @@ func (svc CouponHttpService) InfoCouponByCode(couponCode string, shopID string) 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "couponcode", couponCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "coupon_code", couponCode)
 
 	if err != nil {
 		return models.CouponInfo{}, err
@@ -331,8 +331,8 @@ func (svc CouponHttpService) SearchCoupon(shopID string, q string) ([]models.Cou
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"guidfixed",
-		"couponcode",
+		"guid_fixed",
+		"coupon_code",
 		"customercode",
 	}
 
@@ -357,7 +357,7 @@ func (svc CouponHttpService) SaveInBatch(shopID string, authUsername string, dat
 		itemCodeGuidList = append(itemCodeGuidList, doc.CouponCode)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "couponcode", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "coupon_code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -396,7 +396,7 @@ func (svc CouponHttpService) SaveInBatch(shopID string, authUsername string, dat
 		duplicateDataList,
 		svc.getDocIDKey,
 		func(shopID string, guid string) (models.CouponDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "couponcode", guid)
+			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "coupon_code", guid)
 		},
 		func(doc models.CouponDoc) bool {
 			return doc.CouponCode != ""
@@ -468,7 +468,7 @@ func (svc CouponHttpService) PreviewBulkImport(shopID string, dataList []models.
 	}
 
 	// ค้นหา CouponCode ที่มีอยู่ในระบบ
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "couponcode", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "coupon_code", itemCodeGuidList)
 	if err != nil {
 		return common.BulkPreviewData{}, err
 	}
@@ -517,7 +517,7 @@ func (svc CouponHttpService) CheckCouponAvailability(couponCode, shopID, custome
 	defer ctxCancel()
 
 	// หาข้อมูลคูปองจาก CouponCode
-	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "couponcode", couponCode)
+	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "coupon_code", couponCode)
 	if err != nil {
 		return nil, err
 	}
@@ -666,7 +666,7 @@ func (svc CouponHttpService) CheckCouponAvailabilityAdvanced(couponCode, shopID 
 	}
 
 	// 2. หาข้อมูลคูปองจาก CouponCode
-	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "couponcode", couponCode)
+	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "coupon_code", couponCode)
 	if err != nil {
 		return nil, err
 	}
@@ -809,7 +809,7 @@ func (svc CouponHttpService) ReserveCoupon(couponCode, shopID string, req models
 	defer ctxCancel()
 
 	// 1. ตรวจสอบคูปองจาก CouponCode
-	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "couponcode", couponCode)
+	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "coupon_code", couponCode)
 	if err != nil {
 		return nil, err
 	}
@@ -947,7 +947,7 @@ func (svc CouponHttpService) UseCoupon(couponCode, shopID, authUsername string, 
 	}
 
 	// 2. ตรวจสอบคูปองจาก CouponCode
-	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "couponcode", couponCode)
+	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "coupon_code", couponCode)
 	if err != nil {
 		return nil, err
 	}
@@ -1202,7 +1202,7 @@ func (svc CouponHttpService) CalculateCoupons(shopID string, req models.Calculat
 // คำนวนคูปองแต่ละตัว
 func (svc CouponHttpService) calculateSingleCoupon(ctx context.Context, shopID string, orderAmount float64, couponReq models.CalculateCouponItemRequest, customerID string) (*models.CalculateCouponItemResponse, error) {
 	// ค้นหาคูปอง
-	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "couponcode", couponReq.CouponCode)
+	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "coupon_code", couponReq.CouponCode)
 	if err != nil {
 		return nil, err
 	}
@@ -1372,7 +1372,7 @@ func (svc CouponHttpService) calculateSingleCoupon(ctx context.Context, shopID s
 // คำนวนคูปองแต่ละตัวแบบขั้นสูง (รวม Product Condition และ Branch Exclusion)
 func (svc CouponHttpService) calculateSingleCouponAdvanced(ctx context.Context, shopID string, orderAmount float64, items []models.CouponCheckItem, branchCode string, couponReq models.CalculateCouponItemRequest, customerID string) (*models.CalculateCouponItemResponse, error) {
 	// ค้นหาคูปอง
-	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "couponcode", couponReq.CouponCode)
+	coupon, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "coupon_code", couponReq.CouponCode)
 	if err != nil {
 		return nil, err
 	}
@@ -1836,10 +1836,10 @@ func (svc CouponHttpService) LookupReservationDetails(shopID string, req models.
 			Reservations:  []models.ReservationInfo{},
 			Summary: struct {
 				TotalReservations int `json:"total_reservations"`
-				ActiveCount       int `json:"active_count"`
-				UsedCount         int `json:"used_count"`
-				ExpiredCount      int `json:"expired_count"`
-				CancelledCount    int `json:"cancelled_count"`
+				ActiveCount int `json:"active_count"`
+				UsedCount int `json:"used_count"`
+				ExpiredCount int `json:"expired_count"`
+				CancelledCount int `json:"cancelled_count"`
 			}{
 				TotalReservations: 0,
 				ActiveCount:       0,
@@ -1871,10 +1871,10 @@ func (svc CouponHttpService) LookupReservationDetails(shopID string, req models.
 	var reservations []models.ReservationInfo
 	var summary struct {
 		TotalReservations int `json:"total_reservations"`
-		ActiveCount       int `json:"active_count"`
-		UsedCount         int `json:"used_count"`
-		ExpiredCount      int `json:"expired_count"`
-		CancelledCount    int `json:"cancelled_count"`
+		ActiveCount int `json:"active_count"`
+		UsedCount int `json:"used_count"`
+		ExpiredCount int `json:"expired_count"`
+		CancelledCount int `json:"cancelled_count"`
 	}
 
 	if shouldInclude {

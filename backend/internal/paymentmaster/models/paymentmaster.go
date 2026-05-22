@@ -10,18 +10,18 @@ const paymentmasterCollectionName = "paymentMaster"
 
 type PaymentMaster struct {
 	models.PartitionIdentity `bson:"inline"`
-	PaymentCode              string  `json:"paymentcode" bson:"paymentcode"`
-	CountryCode              string  `json:"countrycode" bson:"countrycode"`
-	PaymentLogo              string  `json:"paymentlogo" bson:"paymentlogo"`
-	PaymentType              int8    `json:"paymenttype" bson:"paymenttype"`
-	FeeRate                  float64 `json:"feerate" bson:"feerate"`
-	WalletPayType            int16   `json:"wallettype" bson:"wallettype"`
+	PaymentCode string  `json:"paymentcode" bson:"paymentcode"`
+	CountryCode string  `json:"country_code" bson:"country_code"`
+	PaymentLogo string  `json:"paymentlogo" bson:"paymentlogo"`
+	PaymentType int8    `json:"paymenttype" bson:"paymenttype"`
+	FeeRate float64 `json:"feerate" bson:"feerate"`
+	WalletPayType int16   `json:"wallettype" bson:"wallettype"`
 	models.Name              `bson:"inline"`
 }
 
 type PaymentMasterInfo struct {
 	models.DocIdentity `bson:"inline"`
-	PaymentMaster      `bson:"inline"`
+	PaymentMaster  `bson:"inline"`
 }
 
 func (PaymentMasterInfo) CollectionName() string {
@@ -30,11 +30,11 @@ func (PaymentMasterInfo) CollectionName() string {
 
 type PaymentMasterData struct {
 	models.ShopIdentity `bson:"inline"`
-	PaymentMasterInfo   `bson:"inline"`
+	PaymentMasterInfo  `bson:"inline"`
 }
 
 type PaymentMasterDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	PaymentMasterData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -52,7 +52,7 @@ func (PaymentMasterItemGuid) CollectionName() string {
 }
 
 type PaymentMasterActivity struct {
-	PaymentMasterData   `bson:"inline"`
+	PaymentMasterData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 
@@ -71,11 +71,11 @@ func (PaymentMasterDeleteActivity) CollectionName() string {
 
 type PaymentMasterInfoResponse struct {
 	Success bool              `json:"success"`
-	Data    PaymentMasterInfo `json:"data,omitempty"`
+	Data PaymentMasterInfo `json:"data,omitempty"`
 }
 
 type PaymentMasterPageResponse struct {
-	Success    bool                          `json:"success"`
-	Data       []PaymentMasterInfo           `json:"data,omitempty"`
+	Success bool                          `json:"success"`
+	Data []PaymentMasterInfo           `json:"data,omitempty"`
 	Pagination models.PaginationDataResponse `json:"pagination,omitempty"`
 }

@@ -47,3 +47,9 @@ node_modules/
 __pycache__/
 *.pyc
 generated-images/
+
+# Runtime logs and temporary screenshots
+backend/internal/**/logs/
+*.log
+/page-*.png
+/*-check.png

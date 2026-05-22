@@ -63,7 +63,7 @@ func (repo ProductRepository) FindOneByCode(ctx context.Context, shopID string, 
 		models.ProductDoc{},
 		bson.M{
 			"shopid":    shopID,
-			"deletedat": bson.M{"$exists": false},
+			"deleted_at": bson.M{"$exists": false},
 			"code":      code,
 		}, &doc)
 

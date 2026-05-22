@@ -61,7 +61,7 @@ func NewPurchaseDebitNoteRepository(pst microservice.IPersisterMongo) *PurchaseD
 func (repo PurchaseDebitNoteRepository) FindLastDocNo(ctx context.Context, shopID string, prefixDocNo string) (models.PurchaseDebitNoteDoc, error) {
 	filters := bson.M{
 		"shopid": shopID,
-		"deletedat": bson.M{
+		"deleted_at": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

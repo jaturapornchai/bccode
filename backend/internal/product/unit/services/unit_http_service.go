@@ -430,7 +430,7 @@ func (svc UnitHttpService) DeleteUnitByGUIDs(shopID, authUsername string, GUIDs 
 	}
 
 	deleteFilterQuery := map[string]interface{}{
-		"guidfixed": bson.M{"$in": GUIDs},
+		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
 	err = svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
@@ -585,7 +585,7 @@ func (svc UnitHttpService) SearchUnitLimit(shopID string, langCode string, codeF
 	}
 
 	selectFields := map[string]interface{}{
-		"guidfixed": 1,
+		"guid_fixed": 1,
 		"unitcode":  1,
 	}
 

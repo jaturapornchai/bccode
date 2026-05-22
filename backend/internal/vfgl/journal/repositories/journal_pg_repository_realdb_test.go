@@ -17,7 +17,7 @@ import (
 var journal_json string = `{
 	"id": "000000000000000000000000",
 	"shopid": "27dcEdktOoaSBYFmnN6G6ett4Jb",
-	"guidfixed": "2ABh7CJyA7RbeZ1WmdwXWvs0GQa",
+	"guid_fixed": "2ABh7CJyA7RbeZ1WmdwXWvs0GQa",
 	"parid": "0000000",
 	"batchId": "",
 	"docno": "JO-202206067CFB22",
@@ -44,28 +44,29 @@ var journal_json string = `{
 	"bookcode": ""
 }`
 
-var repo repositories.JournalPgRepository
-
-func init() {
+func newRealDBRepository(t *testing.T) repositories.JournalPgRepository {
+	t.Helper()
+	if os.Getenv("BC_REAL_DB_TESTS") != "1" {
+		t.Skip("set BC_REAL_DB_TESTS=1 to run PostgreSQL integration tests")
+	}
 
 	logger.NewAppLogger(config.NewLoggerConfig())
 
 	persisterConfig := mock.NewPersisterPostgresqlConfig()
 	pst := microservice.NewPersister(persisterConfig)
-	repo = repositories.NewJournalPgRepository(pst)
+	repo := repositories.NewJournalPgRepository(pst)
 	pst.AutoMigrate(
 		models.JournalPg{},
 		models.JournalDetailPg{},
 		models.JournalVatPg{},
 		models.JournalTaxPg{},
 	)
+	return repo
 }
 
 func TestJournalRepositoryRealDBCreate(t *testing.T) {
+	repo := newRealDBRepository(t)
 
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
-	}
 	assert.NotNil(t, repo, "Failed to Init Repo")
 	doc := models.JournalPg{}
 	err := json.Unmarshal([]byte(journal_json), &doc)
@@ -78,10 +79,8 @@ func TestJournalRepositoryRealDBCreate(t *testing.T) {
 }
 
 func TestJournalRepositoryRealDBGetAssertErrNotFound(t *testing.T) {
+	repo := newRealDBRepository(t)
 
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
-	}
 	assert.NotNil(t, repo, "Failed to Init Repo")
 
 	_, err := repo.Get("TESTSHOP", "DOC01")
@@ -89,14 +88,12 @@ func TestJournalRepositoryRealDBGetAssertErrNotFound(t *testing.T) {
 }
 
 func TestCreateAndDeleteJournal(t *testing.T) {
+	repo := newRealDBRepository(t)
 
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
-	}
 	json_str := `{
 		"id": "62cdc14ca3f6ef3ca30543e8",
 		"shopid": "2BYWCndV194TYXVEO7NlRLuJYWY",
-		"guidfixed": "2Br5noZ5LmgRuQLwYrpreUl2J9a",
+		"guid_fixed": "2Br5noZ5LmgRuQLwYrpreUl2J9a",
 		"batchId": "",
 		"docno": "JO-20220713014532831-1",
 		"docdate": "2022-07-12T18:45:32.068Z",
@@ -126,9 +123,6 @@ func TestCreateAndDeleteJournal(t *testing.T) {
 		]
 	  }	
 	`
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
-	}
 	assert.NotNil(t, repo, "Failed to Init Repo")
 
 	doc := models.JournalPg{}
@@ -144,15 +138,14 @@ func TestCreateAndDeleteJournal(t *testing.T) {
 }
 
 func TestJournalRepositoryRealDBCreateWithTaxAndVat(t *testing.T) {
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
-	}
+	repo := newRealDBRepository(t)
+
 	assert.NotNil(t, repo, "Failed to Init Repo")
 
 	jsonStr := `{
 	"id": "694cb8ec3586a1b47bb12de9",
 	"shopid": "2V5zu2gmRgd7sgWj3g6gu7mxYk0",
-	"guidfixed": "37Jz2mblpBhQzJFfOMRrmjgaUPs",
+	"guid_fixed": "37Jz2mblpBhQzJFfOMRrmjgaUPs",
 	"batchid": "",
 	"docno": "JO-20251225CB8F0D",
 	"docdate": "2025-12-25T21:00:00Z",
@@ -167,7 +160,7 @@ func TestJournalRepositoryRealDBCreateWithTaxAndVat(t *testing.T) {
 		{
 			"vatdocno": "JO-20251225CB8F0D",
 			"vatdate": "2025-12-26T08:07:55.078Z",
-			"vattype": 0,
+			"vat_type": 0,
 			"vatmode": 1,
 			"vatperiod": 12,
 			"vatyear": 2568,
@@ -178,7 +171,7 @@ func TestJournalRepositoryRealDBCreateWithTaxAndVat(t *testing.T) {
 			"vatsubmit": false,
 			"remark": "",
 			"custtaxid": "15399002684487",
-			"custname": "โก้ เทพ",
+			"cust_name": "โก้ เทพ",
 			"custtype": 0,
 			"organization": 0,
 			"branchcode": "00000",
@@ -189,10 +182,10 @@ func TestJournalRepositoryRealDBCreateWithTaxAndVat(t *testing.T) {
 		{
 			"taxdocno": "TAX1111",
 			"taxdate": "2025-12-25T21:00:00Z",
-			"taxtype": 1,
+			"tax_type": 1,
 			"taxamount": 0,
 			"custtaxid": "032156498231231",
-			"custname": "โก้ๆ",
+			"cust_name": "โก้ๆ",
 			"custtype": 0,
 			"organization": 0,
 			"branchcode": "",
@@ -220,47 +213,47 @@ func TestJournalRepositoryRealDBCreateWithTaxAndVat(t *testing.T) {
 	"appname": "",
 	"debtaccounttype": 0,
 	"creditor": {
-		"guidfixed": "",
+		"guid_fixed": "",
 		"code": "",
-		"personaltype": 0,
-		"customertype": 0,
-		"branchnumber": "",
-		"taxid": "",
+		"personal_type": 0,
+		"customer_type": 0,
+		"branch_number": "",
+		"tax_id": "",
 		"names": null,
 		"addressforbilling": {
 			"guid": "",
 			"address": null,
-			"countrycode": "",
-			"provincecode": "",
-			"districtcode": "",
-			"subdistrictcode": "",
-			"zipcode": "",
+			"country_code": "",
+			"province_code": "",
+			"district_code": "",
+			"sub_district_code": "",
+			"zip_code": "",
 			"contactnames": null,
-			"phoneprimary": "",
-			"phonesecondary": "",
+			"phone_primary": "",
+			"phone_secondary": "",
 			"latitude": 0,
 			"longitude": 0
 		}
 	},
 	"debtor": {
-		"guidfixed": "",
+		"guid_fixed": "",
 		"code": "",
-		"personaltype": 0,
-		"customertype": 0,
-		"branchnumber": "",
-		"taxid": "",
+		"personal_type": 0,
+		"customer_type": 0,
+		"branch_number": "",
+		"tax_id": "",
 		"names": null,
 		"addressforbilling": {
 			"guid": "",
 			"address": null,
-			"countrycode": "",
-			"provincecode": "",
-			"districtcode": "",
-			"subdistrictcode": "",
-			"zipcode": "",
+			"country_code": "",
+			"province_code": "",
+			"district_code": "",
+			"sub_district_code": "",
+			"zip_code": "",
 			"contactnames": null,
-			"phoneprimary": "",
-			"phonesecondary": "",
+			"phone_primary": "",
+			"phone_secondary": "",
 			"latitude": 0,
 			"longitude": 0
 		}
@@ -281,7 +274,7 @@ func TestJournalRepositoryRealDBCreateWithTaxAndVat(t *testing.T) {
 		}
 	],
 	"createdby": "",
-	"createdat": "0001-01-01T00:00:00Z"
+	"created_at": "0001-01-01T00:00:00Z"
 }`
 
 	doc := models.JournalPg{}

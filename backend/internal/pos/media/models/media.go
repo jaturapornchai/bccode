@@ -10,26 +10,26 @@ const mediaCollectionName = "posMedia"
 
 type Media struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code                     string           `json:"code" bson:"code"`
-	Description              *[]models.NameX  `json:"description" bson:"description"`
-	Resources                *[]MediaResource `json:"resources" bson:"resources"`
+	Code string           `json:"code" bson:"code"`
+	Description *[]models.NameX  `json:"description" bson:"description"`
+	Resources *[]MediaResource `json:"resources" bson:"resources"`
 }
 
 type MediaResource struct {
-	MediaType   int8            `json:"mediaType" bson:"mediaType"`
-	Uri         string          `json:"uri" bson:"uri"`
-	DaysOfWeek  []int8          `json:"daysofweek" bson:"daysofweek"`
-	FromDate    string          `json:"fromDate" bson:"fromDate"`
-	ToDate      string          `json:"toDate" bson:"toDate"`
-	FromTime    string          `json:"fromTime" bson:"fromTime"`
-	ToTime      string          `json:"toTime" bson:"toTime"`
+	MediaType int8            `json:"media_type" bson:"media_type"`
+	Uri string          `json:"uri" bson:"uri"`
+	DaysOfWeek []int8          `json:"daysofweek" bson:"daysofweek"`
+	FromDate string          `json:"from_date" bson:"from_date"`
+	ToDate string          `json:"to_date" bson:"to_date"`
+	FromTime string          `json:"from_time" bson:"from_time"`
+	ToTime string          `json:"to_time" bson:"to_time"`
 	Description *[]models.NameX `json:"description" bson:"description"`
 	DisplayTime int             `json:"displaytime" bson:"displaytime"`
 }
 
 type MediaInfo struct {
 	models.DocIdentity `bson:"inline"`
-	Media              `bson:"inline"`
+	Media  `bson:"inline"`
 }
 
 func (MediaInfo) CollectionName() string {
@@ -38,12 +38,12 @@ func (MediaInfo) CollectionName() string {
 
 type MediaData struct {
 	models.ShopIdentity `bson:"inline"`
-	MediaInfo           `bson:"inline"`
+	MediaInfo  `bson:"inline"`
 }
 
 type MediaDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	MediaData          `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	MediaData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -60,7 +60,7 @@ func (MediaItemGuid) CollectionName() string {
 }
 
 type MediaActivity struct {
-	MediaData           `bson:"inline"`
+	MediaData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

@@ -175,7 +175,7 @@ func (svc SmsTransactionHttpService) SearchSmsTransaction(shopID string, pageabl
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"guidfixed",
+		"guid_fixed",
 		"transid",
 	}
 

@@ -21,15 +21,15 @@ type GeminiClient struct {
 
 // GeminiRequest represents the request structure for Gemini API
 type GeminiRequest struct {
-	Contents          []Content          `json:"contents"`
-	GenerationConfig  GenerationConfig   `json:"generationConfig,omitempty"`
-	SystemInstruction *SystemInstruction `json:"systemInstruction,omitempty"`
-	CachedContent     string             `json:"cachedContent,omitempty"`
+	Contents []Content          `json:"contents"`
+	GenerationConfig GenerationConfig   `json:"generation_config,omitempty"`
+	SystemInstruction *SystemInstruction `json:"system_instruction,omitempty"`
+	CachedContent string             `json:"cached_content,omitempty"`
 }
 
 // Content represents message content
 type Content struct {
-	Role  string `json:"role"`
+	Role string `json:"role"`
 	Parts []Part `json:"parts"`
 }
 
@@ -45,37 +45,37 @@ type SystemInstruction struct {
 
 // GenerationConfig represents generation parameters
 type GenerationConfig struct {
-	Temperature     float64 `json:"temperature,omitempty"`
-	TopP            float64 `json:"topP,omitempty"`
-	TopK            int     `json:"topK,omitempty"`
-	MaxOutputTokens int     `json:"maxOutputTokens,omitempty"`
+	Temperature float64 `json:"temperature,omitempty"`
+	TopP float64 `json:"top_p,omitempty"`
+	TopK int     `json:"top_k,omitempty"`
+	MaxOutputTokens int     `json:"max_output_tokens,omitempty"`
 }
 
 // GeminiResponse represents the response from Gemini API
 type GeminiResponse struct {
-	Candidates    []Candidate   `json:"candidates"`
-	UsageMetadata UsageMetadata `json:"usageMetadata,omitempty"`
+	Candidates []Candidate   `json:"candidates"`
+	UsageMetadata UsageMetadata `json:"usage_metadata,omitempty"`
 }
 
 // Candidate represents a response candidate
 type Candidate struct {
-	Content       Content        `json:"content"`
-	FinishReason  string         `json:"finishReason"`
-	SafetyRatings []SafetyRating `json:"safetyRatings"`
+	Content Content        `json:"content"`
+	FinishReason string         `json:"finish_reason"`
+	SafetyRatings []SafetyRating `json:"safety_ratings"`
 }
 
 // SafetyRating represents content safety rating
 type SafetyRating struct {
-	Category    string `json:"category"`
+	Category string `json:"category"`
 	Probability string `json:"probability"`
 }
 
 // UsageMetadata contains token usage information
 type UsageMetadata struct {
-	PromptTokenCount        int `json:"promptTokenCount"`
-	CandidatesTokenCount    int `json:"candidatesTokenCount"`
-	TotalTokenCount         int `json:"totalTokenCount"`
-	CachedContentTokenCount int `json:"cachedContentTokenCount,omitempty"`
+	PromptTokenCount int `json:"prompt_token_count"`
+	CandidatesTokenCount int `json:"candidates_token_count"`
+	TotalTokenCount int `json:"total_token_count"`
+	CachedContentTokenCount int `json:"cached_content_token_count,omitempty"`
 }
 
 // NewGeminiClient creates a new Gemini API client

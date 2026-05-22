@@ -248,9 +248,9 @@ func uploadPDFToR2AndSaveHistory(ctx context.Context, filePath string, payload g
 
 	logger.Success("PDF uploaded to R2: %s", r2Key)
 
-	// Save history to MongoDB Atlas
+	// Save history to MongoDB
 	if atlasClient == nil {
-		logger.Warn("MongoDB Atlas not connected, skipping history save")
+		logger.Warn("MongoDB not connected, skipping history save")
 		return nil
 	}
 
@@ -375,7 +375,7 @@ func extractTotalAmount(doc map[string]interface{}) float64 {
 		return amt
 	}
 	// ลอง totalamount
-	if amt, ok := doc["totalamount"].(float64); ok {
+	if amt, ok := doc["total_amount"].(float64); ok {
 		return amt
 	}
 	// ลอง grandtotal
@@ -399,24 +399,24 @@ type PdfHistorySimpleItem struct {
 	VendorName   string `json:"vendorname,omitempty"`   // ชื่อเจ้าหนี้/ผู้ขาย (AP)
 
 	// ข้อมูลยอดเงิน
-	TotalAmount     float64 `json:"totalamount"`     // ยอดรวม (ตัวเลข)
-	TotalAmountText string  `json:"totalamountText"` // ยอดรวม (format แล้ว)
+	TotalAmount     float64 `json:"total_amount"`     // ยอดรวม (ตัวเลข)
+	TotalAmountText string  `json:"totalamount_text"` // ยอดรวม (format แล้ว)
 
 	// ข้อมูล PDF
 	Theme        string `json:"theme"`            // theme ที่ใช้
 	Template     string `json:"template"`         // template ที่ใช้
-	PageSize     string `json:"pageSize"`         // A4, A3, etc.
+	PageSize     string `json:"page_size"`        // A4, A3, etc.
 	Orientation  string `json:"orientation"`      // P=Portrait, L=Landscape
 	Language     string `json:"language"`         // th, en, etc.
-	FileName     string `json:"filename"`         // ชื่อไฟล์ PDF
+	FileName     string `json:"file_name"`        // ชื่อไฟล์ PDF
 	FileSize     int64  `json:"filesize"`         // ขนาดไฟล์ (bytes)
-	FileSizeText string `json:"filesizeText"`     // ขนาดไฟล์ (format แล้ว)
+	FileSizeText string `json:"filesize_text"`    // ขนาดไฟล์ (format แล้ว)
 	PdfURL       string `json:"pdfurl,omitempty"` // Presigned URL
 
 	// ข้อมูลการพิมพ์
-	PrintedAt    string `json:"printedAt"`    // วันเวลาที่พิมพ์ (ISO format)
-	PrintedBy    string `json:"printedBy"`    // ผู้พิมพ์
-	ReprintCount int    `json:"reprintCount"` // จำนวนครั้งที่ reprint
+	PrintedAt    string `json:"printed_at"`    // วันเวลาที่พิมพ์ (ISO format)
+	PrintedBy    string `json:"printed_by"`    // ผู้พิมพ์
+	ReprintCount int    `json:"reprint_count"` // จำนวนครั้งที่ reprint
 }
 
 // formatFileSize - แปลงขนาดไฟล์เป็นรูปแบบที่อ่านง่าย
@@ -517,7 +517,7 @@ func PdfHistoryGetHandler(c echo.Context) error {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "error",
 			"code":    503,
-			"message": "MongoDB Atlas is not connected",
+			"message": "MongoDB is not connected",
 		})
 	}
 
@@ -599,7 +599,7 @@ func PdfHistoryListHandler(c echo.Context) error {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "error",
 			"code":    503,
-			"message": "MongoDB Atlas is not connected",
+			"message": "MongoDB is not connected",
 		})
 	}
 
@@ -752,7 +752,7 @@ func PdfReprintHandler(c echo.Context) error {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "error",
 			"code":    503,
-			"message": "MongoDB Atlas is not connected",
+			"message": "MongoDB is not connected",
 		})
 	}
 

@@ -95,7 +95,7 @@ func (repo UnitRepository) FindByUnitCodes(ctx context.Context, shopID string, u
 
 	filters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 		"unitcode":  bson.M{"$in": unitCodes},
 	}
 

@@ -15,7 +15,7 @@ type ReceiveDeposit struct {
 }
 type ReceiveDepositInfo struct {
 	models.DocIdentity `bson:"inline"`
-	ReceiveDeposit     `bson:"inline"`
+	ReceiveDeposit  `bson:"inline"`
 }
 
 func (ReceiveDepositInfo) CollectionName() string {
@@ -28,7 +28,7 @@ type ReceiveDepositData struct {
 }
 
 type ReceiveDepositDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	ReceiveDepositData `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

@@ -10,7 +10,7 @@ import (
 func TestCreditPaymentTransactionPhaser(t *testing.T) {
 
 	giveInput := `{
-		"guidfixed": "guid001",
+		"guid_fixed": "guid001",
 		"shopid": "shop001",
 		"code": "code001",
 		"names": [

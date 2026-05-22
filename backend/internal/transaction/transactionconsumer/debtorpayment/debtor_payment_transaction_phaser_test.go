@@ -52,10 +52,10 @@ func TestDebtorPaymentDocumentPhaser(t *testing.T) {
 	giveStr := `{
 		"id": "000000000000000000000000",
 		"shopid": "2IZS0jFeRXWPidSupyXN7zQIlaS",
-		"guidfixed": "2UIExOige65Ekkq6O2nj7F6BEez",
+		"guid_fixed": "2UIExOige65Ekkq6O2nj7F6BEez",
 		"docno": "EE2023062200001",
 		"docdatetime": "2023-06-22T06:48:15.000Z",
-		"doctype": 1,
+		"doc_type": 1,
 		"branch": {
 			"code": "branch01",
 			"names": [
@@ -92,7 +92,7 @@ func TestDebtorPaymentDocumentPhaser(t *testing.T) {
 		"salecode": "",
 		"salename": "",
 		"totalpaymentamount": 70,
-		"totalamount": 70,
+		"total_amount": 70,
 		"totalbalance": 348,
 		"totalvalue": 348,
 		"details": [
@@ -198,12 +198,12 @@ func TestDebtorPaymentDocumentPhaser(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	assert.Equal(t, want.GuidFixed, got.GuidFixed, "guidfixed")
+	assert.Equal(t, want.GuidFixed, got.GuidFixed, "guid_fixed")
 	assert.Equal(t, want.ShopID, got.ShopID, "shopid")
 	assert.Equal(t, want.DocNo, got.DocNo, "docno")
 	assert.Equal(t, want.DocDate, got.DocDate, "docdate")
 	assert.Equal(t, want.DebtorCode, got.DebtorCode, "debtorcode")
-	assert.Equal(t, want.TotalAmount, got.TotalAmount, "totalamount")
+	assert.Equal(t, want.TotalAmount, got.TotalAmount, "total_amount")
 	assert.Equal(t, want.TotalPayCash, got.TotalPayCash, "totalpaycash")
 	assert.Equal(t, want.TotalPayTransfer, got.TotalPayTransfer, "totalpaytransfer")
 	assert.Equal(t, want.TotalPayCredit, got.TotalPayCredit, "totalpaycredit")

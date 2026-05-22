@@ -44,7 +44,7 @@ func NewPointTransactionRepository(pst microservice.IPersisterMongo) *PointTrans
 }
 
 func (repo PointTransactionRepository) UpdateDebtorPointBalance(ctx context.Context, shopID string, customerCode string, pointAmount float64) error {
-	// This is a generic function that tries both "code" and "pointscode" fields
+	// This is a generic function that tries both "code" and "points_code" fields
 	// for backward compatibility and UsePoint/GetPoint scenarios
 	debtorRepo := NewDebtorRepository(repo.pst)
 
@@ -56,7 +56,7 @@ func (repo PointTransactionRepository) UpdateDebtorPointBalance(ctx context.Cont
 
 	// If not found by code, try by pointscode (for GetPoint - new point system)
 	if debtor.GuidFixed == "" {
-		debtor, err = debtorRepo.FindByDocIndentityGuid(ctx, shopID, "pointscode", customerCode)
+		debtor, err = debtorRepo.FindByDocIndentityGuid(ctx, shopID, "points_code", customerCode)
 		if err != nil {
 			return err
 		}
@@ -109,7 +109,7 @@ func (repo PointTransactionRepository) UpdateDebtorPointBalanceByPointsCode(ctx 
 	debtorRepo := NewDebtorRepository(repo.pst)
 
 	// Find debtor by pointscode (for GetPoint - new point system)
-	debtor, err := debtorRepo.FindByDocIndentityGuid(ctx, shopID, "pointscode", pointsCode)
+	debtor, err := debtorRepo.FindByDocIndentityGuid(ctx, shopID, "points_code", pointsCode)
 	if err != nil {
 		return err
 	}
@@ -145,7 +145,7 @@ func (repo PointTransactionRepository) FindPointTransactionsByDebtorCode(ctx con
 	// Add default sorting by TransactionDate in descending order (latest first) if no sorts are provided
 	if len(pageableStep.Sorts) == 0 {
 		pageableStep.Sorts = []micromodels.KeyInt{
-			{Key: "transactiondate", Value: -1},
+			{Key: "transaction_date", Value: -1},
 		}
 	}
 
@@ -160,7 +160,7 @@ func (repo PointTransactionRepository) FindPointTransactionsByDebtorCode(ctx con
 
 func (repo PointTransactionRepository) FindPointTransactionsByPointsCode(ctx context.Context, shopID string, pointsCode string, pageableStep micromodels.PageableStep) ([]models.PointTransactionInfo, int, error) {
 	filters := map[string]interface{}{
-		"pointscode": pointsCode,
+		"points_code": pointsCode,
 	}
 
 	searchInFields := []string{
@@ -173,7 +173,7 @@ func (repo PointTransactionRepository) FindPointTransactionsByPointsCode(ctx con
 	// Add default sorting by TransactionDate in descending order (latest first) if no sorts are provided
 	if len(pageableStep.Sorts) == 0 {
 		pageableStep.Sorts = []micromodels.KeyInt{
-			{Key: "transactiondate", Value: -1},
+			{Key: "transaction_date", Value: -1},
 		}
 	}
 
@@ -201,7 +201,7 @@ func (repo PointTransactionRepository) DeleteManualPointTransaction(ctx context.
 	// Find the transaction first to validate it's a manual transaction
 	filters := map[string]interface{}{
 		"transactiondocno": docNo,
-		"pointscode":       pointsCode,
+		"points_code":       pointsCode,
 	}
 
 	searchInFields := []string{}
@@ -247,7 +247,7 @@ func (repo PointTransactionRepository) RecalculatePointBalanceByPointsCode(ctx c
 	debtorRepo := NewDebtorRepository(repo.pst)
 
 	// Find debtor by pointscode
-	debtor, err := debtorRepo.FindByDocIndentityGuid(ctx, shopID, "pointscode", pointsCode)
+	debtor, err := debtorRepo.FindByDocIndentityGuid(ctx, shopID, "points_code", pointsCode)
 	if err != nil {
 		return err
 	}
@@ -262,7 +262,7 @@ func (repo PointTransactionRepository) RecalculatePointBalanceByPointsCode(ctx c
 		Skip:  0,
 		Limit: 10000, // Get all transactions (adjust if needed)
 		Sorts: []micromodels.KeyInt{
-			{Key: "transactiondate", Value: 1}, // Ascending order for calculation
+			{Key: "transaction_date", Value: 1}, // Ascending order for calculation
 		},
 	}
 

@@ -73,7 +73,7 @@ func validatePRHeader(pr *models.PurchaseRequisition, trans *transmodels.Transac
 
 	// vattype
 	if !validVatTypes[trans.TransactionHeader.VatType] {
-		result.AddErrorf("vattype", "INVALID_VALUE",
+		result.AddErrorf("vat_type", "INVALID_VALUE",
 			"ประเภทภาษี (vattype) ไม่ถูกต้อง: %d — ค่าที่รองรับ: 0, 1, 2, 3",
 			"Invalid VAT type: %d — allowed values: 0, 1, 2, 3.",
 			trans.TransactionHeader.VatType, trans.TransactionHeader.VatType)
@@ -117,7 +117,7 @@ func checkDetailNaN(index int, itemLabel string, detail *transmodels.Detail, res
 	fields := []fieldCheck{
 		{"qty", detail.Qty},
 		{"price", detail.Price},
-		{"sumamount", detail.SumAmount},
+		{"sum_amount", detail.SumAmount},
 	}
 	for _, f := range fields {
 		if math.IsNaN(f.value) || math.IsInf(f.value, 0) {
@@ -133,7 +133,7 @@ func validateMultiCurrency(trans *transmodels.Transaction, result *ValidationRes
 	header := &trans.TransactionHeader
 	if header.DocCurrency != "" {
 		if header.ExchangeRate <= 0 {
-			result.AddErrorf("exchangerate", "INVALID_EXCHANGE_RATE",
+			result.AddErrorf("exchange_rate", "INVALID_EXCHANGE_RATE",
 				"อัตราแลกเปลี่ยนต้องมากกว่า 0 เมื่อระบุสกุลเงินเอกสาร (%s) — ค่าปัจจุบัน: %.6f",
 				"Exchange rate must be greater than 0 when document currency (%s) is specified — current value: %.6f.",
 				header.DocCurrency, header.ExchangeRate, header.DocCurrency, header.ExchangeRate)
@@ -145,10 +145,10 @@ func validateMultiCurrency(trans *transmodels.Transaction, result *ValidationRes
 		value float64
 	}
 	headerFields := []headerFieldCheck{
-		{"exchangerate", header.ExchangeRate},
+		{"exchange_rate", header.ExchangeRate},
 		{"totalvalue", header.TotalValue},
 		{"totalaftervat", header.TotalAfterVat},
-		{"totalamount", header.TotalAmount},
+		{"total_amount", header.TotalAmount},
 	}
 	for _, f := range headerFields {
 		if math.IsNaN(f.value) || math.IsInf(f.value, 0) {

@@ -170,7 +170,7 @@ func (svc CurrencyHttpService) DeleteCurrencyByGUIDs(shopID string, authUsername
 	defer ctxCancel()
 
 	deleteFilterQuery := map[string]interface{}{
-		"guidfixed": bson.M{"$in": GUIDs},
+		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
 	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
@@ -209,7 +209,7 @@ func (svc CurrencyHttpService) SearchCurrency(shopID string, filters map[string]
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"guidfixed",
+		"guid_fixed",
 		"code",
 		"name",
 		"symbol",
@@ -230,7 +230,7 @@ func (svc CurrencyHttpService) SearchCurrencyStep(shopID string, filters map[str
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"guidfixed",
+		"guid_fixed",
 		"code",
 		"name",
 		"symbol",

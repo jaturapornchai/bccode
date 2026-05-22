@@ -31,70 +31,70 @@ import (
 // ====== request structs ======
 
 type listRequest struct {
-	ShopID   string `json:"shop_id"`
+	ShopID string `json:"shop_id"`
 	BranchID string `json:"branch_id"`
-	Limit    int    `json:"limit"`
-	Skip     int    `json:"skip"`
+	Limit int    `json:"limit"`
+	Skip int    `json:"skip"`
 }
 
 type uploadRequest struct {
-	ShopID      string   `json:"shop_id"`
-	BranchID    string   `json:"branch_id"`
-	Filename    string   `json:"filename"`
+	ShopID string   `json:"shop_id"`
+	BranchID string   `json:"branch_id"`
+	Filename string   `json:"file_name"`
 	ContentType string   `json:"content_type"`
-	Content     string   `json:"content"` // base64
-	UploadedBy  string   `json:"uploaded_by"`
+	Content string   `json:"content"` // base64
+	UploadedBy string   `json:"uploaded_by"`
 	Description string   `json:"description"`
-	Tags        []string `json:"tags"`
-	Status      bool     `json:"status"`
-	AllDay      bool     `json:"all_day"`
+	Tags []string `json:"tags"`
+	Status bool     `json:"status"`
+	AllDay bool     `json:"all_day"`
 }
 
 type deleteRequest struct {
-	ShopID   string `json:"shop_id"`
+	ShopID string `json:"shop_id"`
 	BranchID string `json:"branch_id"`
-	Filename string `json:"filename"`
+	Filename string `json:"file_name"`
 }
 
 type updateStatusRequest struct {
-	ShopID   string `json:"shop_id"`
+	ShopID string `json:"shop_id"`
 	BranchID string `json:"branch_id"`
-	Filename string `json:"filename"`
-	Status   bool   `json:"status"`
+	Filename string `json:"file_name"`
+	Status bool   `json:"status"`
 }
 
 type updateAllDayRequest struct {
-	ShopID   string `json:"shop_id"`
+	ShopID string `json:"shop_id"`
 	BranchID string `json:"branch_id"`
-	Filename string `json:"filename"`
-	AllDay   bool   `json:"all_day"`
+	Filename string `json:"file_name"`
+	AllDay bool   `json:"all_day"`
 }
 
 type updateScheduleRequest struct {
-	ShopID        string  `json:"shop_id"`
-	BranchID      string  `json:"branch_id"`
-	Filename      string  `json:"filename"`
+	ShopID string  `json:"shop_id"`
+	BranchID string  `json:"branch_id"`
+	Filename string  `json:"file_name"`
 	StartDateTime *string `json:"start_date_time"`
-	EndDateTime   *string `json:"end_date_time"`
+	EndDateTime *string `json:"end_date_time"`
 }
 
 // ====== response shape — matches Flutter DocumentModel ======
 
 type documentResponse struct {
-	ShopID        string   `json:"shop_id"`
-	BranchID      string   `json:"branch_id"`
-	Filename      string   `json:"filename"`
-	ContentType   string   `json:"content_type"`
-	Size          int64    `json:"size"`
-	UploadedAt    string   `json:"uploaded_at"`
-	UploadedBy    string   `json:"uploaded_by"`
-	Description   string   `json:"description"`
-	Tags          []string `json:"tags"`
-	Version       int      `json:"version"`
-	Status        bool     `json:"status"`
-	AllDay        bool     `json:"all_day"`
+	ShopID string   `json:"shop_id"`
+	BranchID string   `json:"branch_id"`
+	Filename string   `json:"file_name"`
+	ContentType string   `json:"content_type"`
+	Size int64    `json:"size"`
+	UploadedAt string   `json:"uploaded_at"`
+	UploadedBy string   `json:"uploaded_by"`
+	Description string   `json:"description"`
+	Tags []string `json:"tags"`
+	Version int      `json:"version"`
+	Status bool     `json:"status"`
+	AllDay bool     `json:"all_day"`
 	StartDateTime *string  `json:"start_date_time,omitempty"`
-	EndDateTime   *string  `json:"end_date_time,omitempty"`
+	EndDateTime *string  `json:"end_date_time,omitempty"`
 }
 
 func toResponse(meta KBDocMeta) documentResponse {
@@ -310,14 +310,14 @@ func UpdateSchedule(c echo.Context) error {
 	}
 	set := bson.M{}
 	if req.StartDateTime != nil && strings.TrimSpace(*req.StartDateTime) != "" {
-		set["startdatetime"] = *req.StartDateTime
+		set["start_date_time"] = *req.StartDateTime
 	} else {
-		set["startdatetime"] = nil
+		set["start_date_time"] = nil
 	}
 	if req.EndDateTime != nil && strings.TrimSpace(*req.EndDateTime) != "" {
-		set["enddatetime"] = *req.EndDateTime
+		set["end_date_time"] = *req.EndDateTime
 	} else {
-		set["enddatetime"] = nil
+		set["end_date_time"] = nil
 	}
 	if err := UpdateFields(req.ShopID, req.Filename, set); err != nil {
 		return errorJSON(c, http.StatusInternalServerError, err.Error())
@@ -366,8 +366,8 @@ func Health(c echo.Context) error {
 //   - Frontend "search KB" feature (separate from chat)
 type queryRequest struct {
 	ShopID string `json:"shop_id"`
-	Query  string `json:"query"`
-	TopK   int    `json:"top_k"`
+	Query string `json:"query"`
+	TopK int    `json:"top_k"`
 }
 
 func Query(c echo.Context) error {

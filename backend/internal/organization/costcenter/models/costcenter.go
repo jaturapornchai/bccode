@@ -10,13 +10,13 @@ const costCenterCollectionName = "organizationCostCenters"
 
 type CostCenter struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code                     string          `json:"code" bson:"code"`
-	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	Code string          `json:"code" bson:"code"`
+	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 }
 
 type CostCenterInfo struct {
 	models.DocIdentity `bson:"inline"`
-	CostCenter         `bson:"inline"`
+	CostCenter  `bson:"inline"`
 }
 
 func (CostCenterInfo) CollectionName() string {
@@ -25,12 +25,12 @@ func (CostCenterInfo) CollectionName() string {
 
 type CostCenterData struct {
 	models.ShopIdentity `bson:"inline"`
-	CostCenterInfo      `bson:"inline"`
+	CostCenterInfo  `bson:"inline"`
 }
 
 type CostCenterDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	CostCenterData     `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	CostCenterData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -47,7 +47,7 @@ func (CostCenterItemGuid) CollectionName() string {
 }
 
 type CostCenterActivity struct {
-	CostCenterData      `bson:"inline"`
+	CostCenterData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

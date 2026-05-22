@@ -139,7 +139,7 @@ func (svc ProductBarcodeConsumeService) ReSync(shopID string) error {
 		Page:  1,
 		Sorts: []msModels.KeyInt{
 			{
-				Key:   "guidfixed",
+				Key:   "guid_fixed",
 				Value: -1,
 			},
 		},

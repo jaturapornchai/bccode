@@ -30,20 +30,20 @@ func NewMCPAPIKeyHandler() *MCPAPIKeyHandler {
 
 // CreateAPIKeyRequest represents a request to create an API key
 type CreateAPIKeyRequest struct {
-	ShopID             string   `json:"shop_id"`
-	Name               string   `json:"name"`
-	Description        string   `json:"description"`
-	AllowedTools       []string `json:"allowed_tools"`
+	ShopID string   `json:"shop_id"`
+	Name string   `json:"name"`
+	Description string   `json:"description"`
+	AllowedTools []string `json:"allowed_tools"`
 	RateLimitPerMinute int      `json:"rate_limit_per_minute"`
-	ExpiresAt          *string  `json:"expires_at,omitempty"` // Format: YYYY-MM-DD
-	CreatedBy          string   `json:"created_by"`
+	ExpiresAt *string  `json:"expires_at,omitempty"` // Format: YYYY-MM-DD
+	CreatedBy string   `json:"created_by"`
 }
 
 // CreateAPIKeyResponse represents the response for creating an API key
 type CreateAPIKeyResponse struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	ShopID    string    `json:"shop_id"`
+	ID string    `json:"id"`
+	Name string    `json:"name"`
+	ShopID string    `json:"shop_id"`
 	CreatedAt time.Time `json:"created_at"`
 	ExpiresAt *string   `json:"expires_at,omitempty"`
 }
@@ -250,10 +250,10 @@ func (h *MCPAPIKeyHandler) DeleteAPIKeyHandler(c echo.Context) error {
 
 // UpdateAPIKeyRequest represents a request to update an API key
 type UpdateAPIKeyRequest struct {
-	Name               *string  `json:"name,omitempty"`
-	Description        *string  `json:"description,omitempty"`
-	IsActive           *bool    `json:"is_active,omitempty"`
-	AllowedTools       []string `json:"allowed_tools,omitempty"`
+	Name *string  `json:"name,omitempty"`
+	Description *string  `json:"description,omitempty"`
+	IsActive *bool    `json:"is_active,omitempty"`
+	AllowedTools []string `json:"allowed_tools,omitempty"`
 	RateLimitPerMinute *int     `json:"rate_limit_per_minute,omitempty"`
 }
 
@@ -635,9 +635,9 @@ func (h *MCPAPIKeyHandler) CreateAPIKeyWithExportHandler(c echo.Context) error {
 
 // ToolInfo describes a single MCP tool for the frontend catalog
 type ToolInfo struct {
-	Name     string `json:"name"`
+	Name string `json:"name"`
 	Category string `json:"category"`
-	IsWrite  bool   `json:"is_write"`
+	IsWrite bool   `json:"is_write"`
 }
 
 // GetAvailableToolsHandler returns all MCP tools grouped by category + write flag
@@ -722,7 +722,7 @@ func (h *MCPAPIKeyHandler) GetAvailableToolsHandler(c echo.Context) error {
 	// Build ordered response
 	type CategoryGroup struct {
 		Category string     `json:"category"`
-		Tools    []ToolInfo `json:"tools"`
+		Tools []ToolInfo `json:"tools"`
 	}
 	var groups []CategoryGroup
 	for _, cat := range categoryOrder {

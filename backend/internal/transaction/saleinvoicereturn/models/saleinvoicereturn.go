@@ -12,35 +12,35 @@ const saleinvoicereturnCollectionName = "transactionSaleInvoiceReturn"
 type SaleInvoiceReturn struct {
 	models.PartitionIdentity `bson:"inline"`
 	transmodels.Transaction  `bson:"inline"`
-	IsPOS                    bool `json:"ispos" bson:"ispos"`
+	IsPOS bool `json:"ispos" bson:"ispos"`
 
-	CouponNo          string  `json:"couponno" bson:"couponno"`
-	CouponAmount      float64 `json:"couponamount" bson:"couponamount"`
+	CouponNo string  `json:"couponno" bson:"couponno"`
+	CouponAmount float64 `json:"couponamount" bson:"couponamount"`
 	CouponDescription string  `json:"coupondescription" bson:"coupondescription"`
 
-	QRCode       string  `json:"qrcode" bson:"qrcode"`
+	QRCode string  `json:"qrcode" bson:"qrcode"`
 	QRCodeAmount float64 `json:"qrcodeamount" bson:"qrcodeamount"`
 
-	ChequeNo          string  `json:"chequeno" bson:"chequeno"`
-	ChequeBookNumber  string  `json:"chequebooknumber" bson:"chequebooknumber"`
-	ChequeBookCode    string  `json:"chequebookcode" bson:"chequebookcode"`
-	ChequeDueDate     string  `json:"chequeduedate" bson:"chequeduedate"`
-	ChequeAmount      float64 `json:"chequeamount" bson:"chequeamount"`
-	SaleChannelCode   string  `json:"salechannelcode" bson:"csalechannelode"`
-	SaleChannelGP     float64 `json:"salechannelgp" bson:"salechannelgp"`
+	ChequeNo string  `json:"chequeno" bson:"chequeno"`
+	ChequeBookNumber string  `json:"chequebooknumber" bson:"chequebooknumber"`
+	ChequeBookCode string  `json:"chequebookcode" bson:"chequebookcode"`
+	ChequeDueDate string  `json:"chequeduedate" bson:"chequeduedate"`
+	ChequeAmount float64 `json:"chequeamount" bson:"chequeamount"`
+	SaleChannelCode string  `json:"salechannelcode" bson:"csalechannelode"`
+	SaleChannelGP float64 `json:"salechannelgp" bson:"salechannelgp"`
 	SaleChannelGPType int8    `json:"salechannelgptype" bson:"salechannelgptype"`
-	PointsCode        string  `json:"pointscode" bson:"pointscode"`
+	PointsCode string  `json:"points_code" bson:"points_code"`
 
 	RefTotalOriginal float64 `json:"reftotaloriginal" bson:"reftotaloriginal"` // มูลค่าตามใบกำกับเดิม
-	RefTotalCorrect  float64 `json:"reftotalcorrect" bson:"reftotalcorrect"`   // มูลค่าที่ถูกต้อง
-	RefTotalDiff     float64 `json:"reftotaldiff" bson:"reftotaldiff"`         // ผลต่าง
+	RefTotalCorrect float64 `json:"reftotalcorrect" bson:"reftotalcorrect"`   // มูลค่าที่ถูกต้อง
+	RefTotalDiff float64 `json:"reftotaldiff" bson:"reftotaldiff"`         // ผลต่าง
 
-	SlipUrl            string   `json:"slipurl" bson:"slipurl"`
-	SlipQrUrl          string   `json:"slipqrurl" bson:"slipqrurl"`
-	SlipUrlHistories   []string `json:"slipurlhistories" bson:"slipurlhistories"`
+	SlipUrl string   `json:"slipurl" bson:"slipurl"`
+	SlipQrUrl string   `json:"slipqrurl" bson:"slipqrurl"`
+	SlipUrlHistories []string `json:"slipurlhistories" bson:"slipurlhistories"`
 	SlipQrUrlHistories []string `json:"slipqrurlhistories" bson:"slipqrurlhistories"`
 	// PosID              string   `json:"posid" bson:"posid"`
-	MachineCode     string `json:"machinecode" bson:"machinecode"`
+	MachineCode string `json:"machinecode" bson:"machinecode"`
 	ZoneGroupNumber string `json:"zonegroupnumber" bson:"zonegroupnumber"`
 }
 
@@ -59,7 +59,7 @@ type SaleInvoiceReturnData struct {
 }
 
 type SaleInvoiceReturnDoc struct {
-	ID                    primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	SaleInvoiceReturnData `bson:"inline"`
 	models.ActivityDoc    `bson:"inline"`
 }

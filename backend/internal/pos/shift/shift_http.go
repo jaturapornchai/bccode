@@ -358,8 +358,8 @@ func (h ShiftHttp) SearchShiftPage(ctx microservice.IContext) error {
 
 	filters := requestfilter.GenerateFilters(ctx.QueryParam, []requestfilter.FilterRequest{
 		{
-			Param: "doctype",
-			Field: "doctype",
+			Param: "doc_type",
+			Field: "doc_type",
 			Type:  requestfilter.FieldTypeInt,
 		},
 		{
@@ -417,7 +417,7 @@ func (h ShiftHttp) SearchShiftStep(ctx microservice.IContext) error {
 
 	filters := requestfilter.GenerateFilters(ctx.QueryParam, []requestfilter.FilterRequest{
 		{
-			Param: "doctype",
+			Param: "doc_type",
 			Type:  requestfilter.FieldTypeInt,
 		},
 	})

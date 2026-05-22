@@ -14,19 +14,19 @@ import (
 
 // ClickHouseQueryRequest คำขอ query ClickHouse
 type ClickHouseQueryRequest struct {
-	ShopID   string `json:"shop_id"`
+	ShopID string `json:"shop_id"`
 	Database string `json:"database"` // ถ้าไม่ระบุจะใช้ค่าจาก env CH_DATABASE_NAME
-	Query    string `json:"query"`    // SQL SELECT query
-	Limit    int    `json:"limit"`    // จำนวนแถวสูงสุด (default=100, max=1000)
+	Query string `json:"query"`    // SQL SELECT query
+	Limit int    `json:"limit"`    // จำนวนแถวสูงสุด (default=100, max=1000)
 }
 
 // ClickHouseQueryResponse ผลลัพธ์จาก query ClickHouse
 type ClickHouseQueryResponse struct {
-	Database    string                   `json:"database"`
-	Query       string                   `json:"query"`
-	Rows        []map[string]interface{} `json:"rows"`
-	RowCount    int                      `json:"row_count"`
-	Truncated   bool                     `json:"truncated"`
+	Database string                   `json:"database"`
+	Query string                   `json:"query"`
+	Rows []map[string]interface{} `json:"rows"`
+	RowCount int                      `json:"row_count"`
+	Truncated bool                     `json:"truncated"`
 	ExecutionMs int64                    `json:"execution_ms"`
 	GeneratedAt time.Time                `json:"generated_at"`
 }
@@ -125,17 +125,17 @@ func QueryClickHouse(ctx context.Context, shopID, database, query string, limit 
 
 // ClickHouseTableInfo ข้อมูล table
 type ClickHouseTableInfo struct {
-	Name       string `json:"name"`
-	Engine     string `json:"engine"`
-	TotalRows  int    `json:"total_rows"`
+	Name string `json:"name"`
+	Engine string `json:"engine"`
+	TotalRows int    `json:"total_rows"`
 	TotalBytes int    `json:"total_bytes"`
 }
 
 // ClickHouseListTablesResponse ผลลัพธ์รายการ tables
 type ClickHouseListTablesResponse struct {
-	Database    string                `json:"database"`
-	Tables      []ClickHouseTableInfo `json:"tables"`
-	Count       int                   `json:"count"`
+	Database string                `json:"database"`
+	Tables []ClickHouseTableInfo `json:"tables"`
+	Count int                   `json:"count"`
 	GeneratedAt time.Time             `json:"generated_at"`
 }
 

@@ -49,7 +49,7 @@ func (repo *ShiftPostgresRepository) Create(doc shiftModels.ShiftPG) error {
 func (repo *ShiftPostgresRepository) Update(shopID string, shiftCode string, doc shiftModels.ShiftPG) error {
 	err := repo.pst.Update(&doc, map[string]interface{}{
 		"shopid":    shopID,
-		"guidfixed": shiftCode,
+		"guid_fixed": shiftCode,
 	})
 
 	if err != nil {
@@ -61,7 +61,7 @@ func (repo *ShiftPostgresRepository) Update(shopID string, shiftCode string, doc
 func (repo *ShiftPostgresRepository) Delete(shopID string, shiftCode string) error {
 	err := repo.pst.Delete(&shiftModels.ShiftPG{}, map[string]interface{}{
 		"shopid":    shopID,
-		"guidfixed": shiftCode,
+		"guid_fixed": shiftCode,
 	})
 
 	if err != nil {

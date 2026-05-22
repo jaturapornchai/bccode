@@ -12,9 +12,9 @@ import (
 // คืนเงินล่วงหน้าลูกหนี้
 type ARAdvancePaymentRefundTransactionPG struct {
 	GeneralTransactionPG `gorm:"embedded;"`
-	CreditorCode         string                                       `json:"creditorcode" gorm:"column:creditorcode"`
-	CreditorNames        pkgModels.JSONB                              `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
-	Items                *[]ARAdvancePaymentRefundTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	CreditorCode string                                       `json:"creditorcode" gorm:"column:creditorcode"`
+	CreditorNames pkgModels.JSONB                              `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
+	Items *[]ARAdvancePaymentRefundTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
 }
 
 // รายละเอียด คืนเงินล่วงหน้าลูกหนี้

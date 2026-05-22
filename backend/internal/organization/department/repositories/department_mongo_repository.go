@@ -62,7 +62,7 @@ func (repo DepartmentRepository) FindOneByCode(ctx context.Context, shopID strin
 	doc := models.DepartmentDoc{}
 	filter := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 		"code":      departmentCode,
 	}
 	if branchCode != "" {

@@ -147,30 +147,30 @@ func fontWeightToStyle(weight string) string {
 // SummaryLevel โครงสร้างสำหรับแต่ละระดับของยอดรวม
 type SummaryLevel struct {
 	GroupByFields []string `json:"group_by_fields"` // เช่น ["docno"], ["docdate","docno"]
-	SumFields     []string `json:"sum_fields"`      // fields ที่จะ sum
-	TypeJSON      int      `json:"typejson"`        // ค่า typejson สำหรับระดับนี้ (1=level1, 2=level2, ...)
+	SumFields []string `json:"sum_fields"`      // fields ที่จะ sum
+	TypeJSON int      `json:"typejson"`        // ค่า typejson สำหรับระดับนี้ (1=level1, 2=level2, ...)
 }
 
 // SummaryConfig โครงสร้างสำหรับการกำหนดค่าสรุปยอดรวมของแต่ละ query
 type SummaryConfig struct {
-	Levels         []SummaryLevel `json:"levels"`           // ระดับยอดรวมหลายระดับ
-	GrandTotal     bool           `json:"grand_total"`      // มียอดรวมทั้งหมดหรือไม่
+	Levels []SummaryLevel `json:"levels"`           // ระดับยอดรวมหลายระดับ
+	GrandTotal bool           `json:"grand_total"`      // มียอดรวมทั้งหมดหรือไม่
 	GrandTotalType int            `json:"grand_total_type"` // typejson สำหรับยอดรวมทั้งหมด (default=99)
 }
 
 // LinkConfig ใข้กำหนดความสัมพันธ์ระหว่าง parent และ child query
 type LinkConfig struct {
 	ParentAlias string   `json:"parent_alias"`
-	ParentKeys  []string `json:"parent_keys"`
-	ChildKeys   []string `json:"child_keys"`
+	ParentKeys []string `json:"parent_keys"`
+	ChildKeys []string `json:"child_keys"`
 }
 
 // QueryItem โครงสร้างสำหรับ query พร้อม config ยอดรวมและ alias
 type QueryItem struct {
-	Alias         string         `json:"alias"`
-	Query         string         `json:"query"`          // SQL query
+	Alias string         `json:"alias"`
+	Query string         `json:"query"`          // SQL query
 	SummaryConfig *SummaryConfig `json:"summary_config"` // optional - config ยอดรวมสำหรับ query นี้
-	LinkConfig    *LinkConfig    `json:"link_config"`
+	LinkConfig *LinkConfig    `json:"link_config"`
 }
 
 // resultRowPayload เก็บข้อมูลชั่วคราวสำหรับการจัดเรียงผลลัพธ์ตามลำดับ parent-child
@@ -188,10 +188,10 @@ type resultRowPayload struct {
 const rootGroupKey = "__root__"
 
 type resultFromQueryPayload struct {
-	ShopID     string      `json:"shopid"`
+	ShopID string      `json:"shopid"`
 	QueryItems []QueryItem `json:"query_items"`
-	Queries    []QueryItem `json:"queries"`
-	Guid       string      `json:"guid"`
+	Queries []QueryItem `json:"queries"`
+	Guid string      `json:"guid"`
 }
 
 // ResultFromQueryHandler - รับ querys หลายตัวแล้วเก็บผลลัพธ์ใน result table พร้อม querynumber
@@ -304,7 +304,7 @@ func ResultFromQueryHandler(c echo.Context) error {
 		insertBatchSize = 500
 	)
 
-	columnsResult := []string{"guid", "docdatetime", "querynumber", "linenumber", "level", "typejson", "datajson"}
+	columnsResult := []string{"guid", "docdatetime", "querynumber", "line_number", "level", "typejson", "datajson"}
 	docDateTime := time.Now()
 	aliasSourceRows := make(map[string][]map[string]any)
 	aliasRowPayloads := make(map[string][]*resultRowPayload)
@@ -556,8 +556,8 @@ func ResultGetHandler(c echo.Context) error {
 	// รับ JSON payload จาก request body
 	var payload struct {
 		ShopID string `json:"shopid"`
-		Guid   string `json:"guid"`
-		Limit  int    `json:"limit"`
+		Guid string `json:"guid"`
+		Limit int    `json:"limit"`
 		Offset int    `json:"offset"`
 	}
 	if err := c.Bind(&payload); err != nil {
@@ -670,7 +670,7 @@ func ResultGetHandler(c echo.Context) error {
 			"typejson":    typeJSON,
 			"is_summary":  typeJSON != 0,
 			"querynumber": queryNumber,
-			"linenumber":  lineNumber,
+			"line_number":  lineNumber,
 			"data":        jsonData,
 		}
 
@@ -2455,28 +2455,28 @@ func marshalRowToJSON(row map[string]any, alias string, guid string, queryNum in
 
 // PDFConfig - โครงสร้างการตั้งค่า PDF
 type PDFConfig struct {
-	Title       string `json:"title"`       // ชื่อรายงาน
+	Title string `json:"title"`       // ชื่อรายงาน
 	Orientation string `json:"orientation"` // "P" (Portrait) หรือ "L" (Landscape)
-	PageSize    string `json:"page_size"`   // "A4", "A3", "Letter" เป็นต้น
+	PageSize string `json:"page_size"`   // "A4", "A3", "Letter" เป็นต้น
 }
 
 type PDFColumnConfig struct {
-	Field           string `json:"field"`
-	Label           string `json:"label"`
-	Flex            int    `json:"flex"`
-	Align           string `json:"align"`
-	Numeric         bool   `json:"numeric"`
+	Field string `json:"field"`
+	Label string `json:"label"`
+	Flex int    `json:"flex"`
+	Align string `json:"align"`
+	Numeric bool   `json:"numeric"`
 	HideWhenSummary bool   `json:"hide_when_summary"`
-	DecimalPlaces   *int   `json:"decimal_places"`
-	FormatNumber    string `json:"format_number"`
-	DataType        string `json:"data_type"`
-	Format          string `json:"format"`
+	DecimalPlaces *int   `json:"decimal_places"`
+	FormatNumber string `json:"format_number"`
+	DataType string `json:"data_type"`
+	Format string `json:"format"`
 	UseBuddhistYear bool   `json:"use_buddhist_year"`
 }
 
 type PDFSectionConfig struct {
-	Alias   string            `json:"alias"`
-	Title   string            `json:"title"`
+	Alias string            `json:"alias"`
+	Title string            `json:"title"`
 	RowType string            `json:"row_type"`
 	Visible *bool             `json:"visible"`
 	Columns []PDFColumnConfig `json:"columns"`
@@ -2484,50 +2484,50 @@ type PDFSectionConfig struct {
 
 type PDFStyleBlockConfig struct {
 	Background string `json:"background"`
-	Text       string `json:"text"`
-	Border     string `json:"border"`
+	Text string `json:"text"`
+	Border string `json:"border"`
 	FontWeight string `json:"font_weight"`
 }
 
 type PDFTableStyleConfig struct {
-	RowSpacing    float64 `json:"row_spacing"`
+	RowSpacing float64 `json:"row_spacing"`
 	ColumnSpacing float64 `json:"column_spacing"`
-	GridColor     string  `json:"grid_color"`
+	GridColor string  `json:"grid_color"`
 }
 
 type PDFStyles struct {
 	Palette string              `json:"palette"`
 	UseFill bool                `json:"use_fill"`
-	Header  PDFStyleBlockConfig `json:"header"`
-	Detail  PDFStyleBlockConfig `json:"detail"`
+	Header PDFStyleBlockConfig `json:"header"`
+	Detail PDFStyleBlockConfig `json:"detail"`
 	Summary PDFStyleBlockConfig `json:"summary"`
-	Table   PDFTableStyleConfig `json:"table"`
+	Table PDFTableStyleConfig `json:"table"`
 }
 
 type PDFColumnSchema struct {
-	Label           string `json:"label"`
-	Flex            int    `json:"flex"`
-	Align           string `json:"align"`
-	DataType        string `json:"data_type"`
-	Format          string `json:"format"`
+	Label string `json:"label"`
+	Flex int    `json:"flex"`
+	Align string `json:"align"`
+	DataType string `json:"data_type"`
+	Format string `json:"format"`
 	HideWhenSummary bool   `json:"hide_when_summary"`
 	UseBuddhistYear bool   `json:"use_buddhist_year"`
 }
 
 type PDFLayoutConfig struct {
 	SchemaVersion int                        `json:"schema_version"`
-	Sections      []PDFSectionConfig         `json:"sections"`
-	Styles        PDFStyles                  `json:"styles"`
-	ColumnSchema  map[string]PDFColumnSchema `json:"column_schema"`
+	Sections []PDFSectionConfig         `json:"sections"`
+	Styles PDFStyles                  `json:"styles"`
+	ColumnSchema map[string]PDFColumnSchema `json:"column_schema"`
 	NumberFormats map[string]string          `json:"number_formats"`
 }
 
 type resultToPDFPayload struct {
-	ShopID       string            `json:"shopid"`
-	Guid         string            `json:"guid"`
-	PDFConfig    PDFConfig         `json:"pdf_config"`
-	ColumnOrder  []string          `json:"column_order"`
-	ColumnNames  map[string]string `json:"column_names"`
+	ShopID string            `json:"shopid"`
+	Guid string            `json:"guid"`
+	PDFConfig PDFConfig         `json:"pdf_config"`
+	ColumnOrder []string          `json:"column_order"`
+	ColumnNames map[string]string `json:"column_names"`
 	LayoutConfig PDFLayoutConfig   `json:"layout_config"`
 }
 

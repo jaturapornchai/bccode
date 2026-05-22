@@ -66,7 +66,7 @@ func (repo NotifyRepository) Find(ctx context.Context, shopID string, filters ma
 
 	queryFilters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 	}
 
 	if len(matchFilterList) > 0 {

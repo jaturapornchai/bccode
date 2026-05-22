@@ -213,7 +213,7 @@ func (svc FormTemplateHttpService) DeleteFormTemplateByGUIDs(shopID, authUsernam
 	defer ctxCancel()
 
 	deleteFilterQuery := map[string]interface{}{
-		"guidfixed": bson.M{"$in": GUIDs},
+		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
 	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
@@ -252,7 +252,7 @@ func (svc FormTemplateHttpService) SearchFormTemplate(shopID string, filters map
 	searchInFields := []string{
 		"code",
 		"names.name",
-		"doctype",
+		"doc_type",
 	}
 
 	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
@@ -272,7 +272,7 @@ func (svc FormTemplateHttpService) SearchFormTemplateStep(shopID string, langCod
 	searchInFields := []string{
 		"code",
 		"names.name",
-		"doctype",
+		"doc_type",
 	}
 
 	selectFields := map[string]interface{}{}

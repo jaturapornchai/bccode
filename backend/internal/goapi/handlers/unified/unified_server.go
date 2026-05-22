@@ -14,60 +14,60 @@ import (
 
 // UnifiedQueryRequest แทนคำขอ unified query
 type UnifiedQueryRequest struct {
-	ShopID           string                 `json:"shop_id"`
-	Question         string                 `json:"question"`
-	QueryType        string                 `json:"query_type"` // "chat", "search", "stock", "document", "unified"
-	IncludeRealTime  bool                   `json:"include_real_time"`
-	Filters          map[string]interface{} `json:"filters"`
-	Context          map[string]interface{} `json:"context"`
+	ShopID string                 `json:"shop_id"`
+	Question string                 `json:"question"`
+	QueryType string                 `json:"query_type"` // "chat", "search", "stock", "document", "unified"
+	IncludeRealTime bool                   `json:"include_real_time"`
+	Filters map[string]interface{} `json:"filters"`
+	Context map[string]interface{} `json:"context"`
 }
 
 // UnifiedQueryResponse แทนคำตอบ unified query
 type UnifiedQueryResponse struct {
-	Success          bool                   `json:"success"`
-	ResponseType     string                 `json:"response_type"`
-	Data             map[string]interface{} `json:"data"`
-	AIResponse       string                 `json:"ai_response"`
-	SearchResults    []SearchResult         `json:"search_results"`
-	StockData        *StockData             `json:"stock_data"`
-	RealTimeData     interface{}            `json:"real_time_data"`
-	CacheStatus      string                 `json:"cache_status"` // "hit", "miss", "partial"
-	ProcessingTime   time.Duration          `json:"processing_time"`
-	TokenUsage       *TokenUsage            `json:"token_usage"`
-	Timestamp        time.Time              `json:"timestamp"`
+	Success bool                   `json:"success"`
+	ResponseType string                 `json:"response_type"`
+	Data map[string]interface{} `json:"data"`
+	AIResponse string                 `json:"ai_response"`
+	SearchResults []SearchResult         `json:"search_results"`
+	StockData *StockData             `json:"stock_data"`
+	RealTimeData interface{}            `json:"real_time_data"`
+	CacheStatus string                 `json:"cache_status"` // "hit", "miss", "partial"
+	ProcessingTime time.Duration          `json:"processing_time"`
+	TokenUsage *TokenUsage            `json:"token_usage"`
+	Timestamp time.Time              `json:"timestamp"`
 }
 
 // SearchResult แทนผลการค้นหา
 type SearchResult struct {
-	ItemCode         string  `json:"item_code"`
-	Name             string  `json:"name"`
-	Barcode          string  `json:"barcode"`
-	Unit             string  `json:"unit"`
-	ImageURL         string  `json:"image_url"`
-	RelevanceScore   float64 `json:"relevance_score"`
-	CurrentStock     float64 `json:"current_stock"`
-	Warehouse        string  `json:"warehouse"`
-	Location         string  `json:"location"`
+	ItemCode string  `json:"item_code"`
+	Name string  `json:"name"`
+	Barcode string  `json:"barcode"`
+	Unit string  `json:"unit"`
+	ImageURL string  `json:"image_url"`
+	RelevanceScore float64 `json:"relevance_score"`
+	CurrentStock float64 `json:"current_stock"`
+	Warehouse string  `json:"warehouse"`
+	Location string  `json:"location"`
 }
 
 // StockData แทนข้อมูลสต็อก
 type StockData struct {
-	CurrentBalance   float64   `json:"current_balance"`
-	Warehouse        string    `json:"warehouse"`
-	Location         string    `json:"location"`
-	LastUpdated      time.Time `json:"last_updated"`
-	MovementType     string    `json:"movement_type"` // "increase", "decrease", "transfer"
-	ChangeQuantity   float64   `json:"change_quantity"`
+	CurrentBalance float64   `json:"current_balance"`
+	Warehouse string    `json:"warehouse"`
+	Location string    `json:"location"`
+	LastUpdated time.Time `json:"last_updated"`
+	MovementType string    `json:"movement_type"` // "increase", "decrease", "transfer"
+	ChangeQuantity float64   `json:"change_quantity"`
 }
 
 // TokenUsage แทนการใช้งาน token
 type TokenUsage struct {
-	PromptTokens     int     `json:"prompt_tokens"`
+	PromptTokens int     `json:"prompt_tokens"`
 	CompletionTokens int     `json:"completion_tokens"`
-	TotalTokens      int     `json:"total_tokens"`
-	CostUSD          float64 `json:"cost_usd"`
-	CostTHB          float64 `json:"cost_thb"`
-	Model            string  `json:"model"`
+	TotalTokens int     `json:"total_tokens"`
+	CostUSD float64 `json:"cost_usd"`
+	CostTHB float64 `json:"cost_thb"`
+	Model string  `json:"model"`
 }
 
 // UnifiedAPIServer แทน unified API server

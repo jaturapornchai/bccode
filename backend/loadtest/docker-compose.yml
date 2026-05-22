@@ -6,8 +6,8 @@ services:
       - SERVICE_PORT=8080
       - PUBLIC_KEY_PATH=./config/public.key
       - PRIVATE_KEY_PATH=./config/private.key
-      - MONGO_URI=mongodb://root:rootx@mongox:27017/
-      - MONGO_DB=smldev
+      - MONGO_URI=${MONGODB_DEV_URI:-}
+      - MONGO_DB=${MONGODB_DEV_DB:-}
     ports:
       - "8085:8080"
     volumes:
@@ -22,8 +22,8 @@ services:
       - SERVICE_PORT=8080
       - PUBLIC_KEY_PATH=./config/public.key
       - PRIVATE_KEY_PATH=./config/private.key
-      - MONGO_URI=mongodb://root:rootx@mongox:27017/
-      - MONGO_DB=smldev
+      - MONGO_URI=${MONGODB_DEV_URI:-}
+      - MONGO_DB=${MONGODB_DEV_DB:-}
     ports:
       - "8086:8080"
     volumes:
@@ -37,8 +37,8 @@ services:
       - SERVICE_PORT=8080
       - PUBLIC_KEY_PATH=./config/public.key
       - PRIVATE_KEY_PATH=./config/private.key
-      - MONGO_URI=mongodb://root:rootx@mongox:27017/
-      - MONGO_DB=smldev
+      - MONGO_URI=${MONGODB_DEV_URI:-}
+      - MONGO_DB=${MONGODB_DEV_DB:-}
     ports:
       - "8087:8080"
     volumes:

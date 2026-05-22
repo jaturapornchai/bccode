@@ -3,11 +3,13 @@ package handlers
 import (
 	"context"
 	"net/http"
-	"os"
+	"strings"
 	"time"
 
+	"smlcloudplatform/internal/goapi/config"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/myglobal"
+	msmodels "smlcloudplatform/pkg/microservice/models"
 
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
@@ -20,9 +22,8 @@ var (
 	atlasDB     *mongo.Database
 )
 
-// InitMongoAtlas เชื่อมต่อ MongoDB โดยใช้ myglobal.MongoConnect() (ใช้ MONGO_* env vars)
+// InitMongoAtlas เชื่อมต่อ MongoDB โดยใช้ myglobal.MongoConnect()
 func InitMongoAtlas() error {
-	// ใช้ myglobal.MongoConnect() แทน MONGODB_ATLAS_URI
 	client, err := myglobal.MongoConnect()
 	if err != nil {
 		logger.Error("Failed to connect to MongoDB: %v", err)
@@ -31,11 +32,7 @@ func InitMongoAtlas() error {
 
 	atlasClient = client
 
-	// ใช้ MONGO_DB_NAME หรือ default เป็น bcaiclouddb
-	dbName := os.Getenv("MONGO_DB_NAME")
-	if dbName == "" {
-		dbName = "bcaiclouddb"
-	}
+	dbName := config.NewServiceConfig().MongodbDatabaseName()
 	atlasDB = client.Database(dbName)
 
 	logger.Success("✅ MongoDB connected for handlers (DB: %s)", dbName)
@@ -57,26 +54,62 @@ func getDatabase(dbName string) *mongo.Database {
 	return atlasDB
 }
 
-// GetAtlasConnection returns the MongoDB Atlas client and database for use by other packages
+// GetAtlasConnection returns the shared MongoDB client and database for use by other packages
 func GetAtlasConnection() (*mongo.Client, *mongo.Database) {
 	return atlasClient, atlasDB
 }
 
+func normalizedAtlasShopID(shopid string, shopID string) string {
+	if strings.TrimSpace(shopid) != "" {
+		return strings.TrimSpace(shopid)
+	}
+	return strings.TrimSpace(shopID)
+}
+
+func validateAtlasTenant(c echo.Context, requestShopID string) error {
+	userInfo, ok := c.Get("UserInfo").(msmodels.UserInfo)
+	if !ok || userInfo.ShopID == "" {
+		logger.Warn("MongoDB tenant check failed: missing authenticated user info")
+		return c.JSON(http.StatusUnauthorized, map[string]interface{}{
+			"status":  "error",
+			"code":    401,
+			"message": "Unauthorized",
+		})
+	}
+	if strings.TrimSpace(requestShopID) == "" {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  "error",
+			"code":    400,
+			"message": "shopid is required",
+		})
+	}
+	if requestShopID != userInfo.ShopID {
+		logger.Warn("MongoDB tenant mismatch: token_shop=%s request_shop=%s", userInfo.ShopID, requestShopID)
+		return c.JSON(http.StatusForbidden, map[string]interface{}{
+			"status":  "error",
+			"code":    403,
+			"message": "Forbidden",
+		})
+	}
+	return nil
+}
+
 // MongoAtlasUpdateHandler - Update/Insert (Upsert) document
 func MongoAtlasUpdateHandler(c echo.Context) error {
-	// Check if MongoDB Atlas is connected
+	// Check if MongoDB is connected
 	if atlasClient == nil {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "error",
 			"code":    503,
-			"message": "MongoDB Atlas is not connected. Please set MONGODB_ATLAS_URI environment variable.",
+			"message": "MongoDB is not connected. Please set the environment-specific MongoDB URI.",
 		})
 	}
 
 	var reqBody struct {
-		Database   string                 `json:"database"`   // optional - ถ้าไม่ระบุจะใช้ default
+		Database   string                 `json:"database"` // optional - ถ้าไม่ระบุจะใช้ default
 		Collection string                 `json:"collection"`
 		ShopId     string                 `json:"shopid"`
+		ShopIDAlt  string                 `json:"shop_id"`
 		Email      string                 `json:"email"`
 		CartId     string                 `json:"cartid"`
 		Data       map[string]interface{} `json:"data"`
@@ -99,6 +132,11 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 			"code":    400,
 			"message": "Collection name is required",
 		})
+	}
+
+	reqBody.ShopId = normalizedAtlasShopID(reqBody.ShopId, reqBody.ShopIDAlt)
+	if err := validateAtlasTenant(c, reqBody.ShopId); err != nil {
+		return err
 	}
 
 	// Validate identifiers - ต้องไม่ว่าง
@@ -159,7 +197,7 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 
 	result, err := collection.UpdateOne(ctx, filter, update, opts)
 	if err != nil {
-		logger.Error("MongoDB Atlas update error: %v", err)
+		logger.Error("MongoDB update error: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
 			"status":  "error",
 			"code":    500,
@@ -179,19 +217,20 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 
 // MongoAtlasDeleteHandler - Delete document(s)
 func MongoAtlasDeleteHandler(c echo.Context) error {
-	// Check if MongoDB Atlas is connected
+	// Check if MongoDB is connected
 	if atlasClient == nil {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "error",
 			"code":    503,
-			"message": "MongoDB Atlas is not connected. Please set MONGODB_ATLAS_URI environment variable.",
+			"message": "MongoDB is not connected. Please set the environment-specific MongoDB URI.",
 		})
 	}
 
 	var reqBody struct {
-		Database   string `json:"database"`    // optional - ถ้าไม่ระบุจะใช้ default
+		Database   string `json:"database"` // optional - ถ้าไม่ระบุจะใช้ default
 		Collection string `json:"collection"`
 		ShopId     string `json:"shopid"`
+		ShopIDAlt  string `json:"shop_id"`
 		Email      string `json:"email"`
 		CartId     string `json:"cartid"`
 		DeleteMany bool   `json:"delete_many"` // true = deleteMany, false = deleteOne
@@ -213,6 +252,11 @@ func MongoAtlasDeleteHandler(c echo.Context) error {
 			"code":    400,
 			"message": "Collection name is required",
 		})
+	}
+
+	reqBody.ShopId = normalizedAtlasShopID(reqBody.ShopId, reqBody.ShopIDAlt)
+	if err := validateAtlasTenant(c, reqBody.ShopId); err != nil {
+		return err
 	}
 
 	// Validate identifiers - ต้องไม่ว่าง
@@ -271,7 +315,7 @@ func MongoAtlasDeleteHandler(c echo.Context) error {
 	}
 
 	if deleteErr != nil {
-		logger.Error("MongoDB Atlas delete error: %v", deleteErr)
+		logger.Error("MongoDB delete error: %v", deleteErr)
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
 			"status":  "error",
 			"code":    500,
@@ -289,12 +333,12 @@ func MongoAtlasDeleteHandler(c echo.Context) error {
 
 // MongoAtlasGetHandler - Get document(s)
 func MongoAtlasGetHandler(c echo.Context) error {
-	// Check if MongoDB Atlas is connected
+	// Check if MongoDB is connected
 	if atlasClient == nil {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "error",
 			"code":    503,
-			"message": "MongoDB Atlas is not connected. Please set MONGODB_ATLAS_URI environment variable.",
+			"message": "MongoDB is not connected. Please set the environment-specific MongoDB URI.",
 		})
 	}
 
@@ -302,6 +346,7 @@ func MongoAtlasGetHandler(c echo.Context) error {
 		Database   string `json:"database"` // optional - ถ้าไม่ระบุจะใช้ default
 		Collection string `json:"collection"`
 		ShopId     string `json:"shopid"`
+		ShopIDAlt  string `json:"shop_id"`
 		Email      string `json:"email"`
 		CartId     string `json:"cartid"`
 		Limit      int64  `json:"limit"`
@@ -324,6 +369,11 @@ func MongoAtlasGetHandler(c echo.Context) error {
 			"code":    400,
 			"message": "Collection name is required",
 		})
+	}
+
+	reqBody.ShopId = normalizedAtlasShopID(reqBody.ShopId, reqBody.ShopIDAlt)
+	if err := validateAtlasTenant(c, reqBody.ShopId); err != nil {
+		return err
 	}
 
 	// Build filter - ไม่บังคับทั้ง 3 ตัว (optional)
@@ -364,7 +414,7 @@ func MongoAtlasGetHandler(c echo.Context) error {
 	collection := db.Collection(reqBody.Collection)
 	cursor, err := collection.Find(ctx, filter, opts)
 	if err != nil {
-		logger.Error("MongoDB Atlas find error: %v", err)
+		logger.Error("MongoDB find error: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
 			"status":  "error",
 			"code":    500,
@@ -377,7 +427,7 @@ func MongoAtlasGetHandler(c echo.Context) error {
 	// Decode results
 	var results []bson.M
 	if err := cursor.All(ctx, &results); err != nil {
-		logger.Error("MongoDB Atlas decode error: %v", err)
+		logger.Error("MongoDB decode error: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
 			"status":  "error",
 			"code":    500,

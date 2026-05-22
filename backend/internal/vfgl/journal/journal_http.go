@@ -550,8 +550,8 @@ func (h JournalHttp) SearchJournal(ctx microservice.IContext) error {
 
 	accountGroup := ctx.QueryParam("accountgroup")
 
-	startDateText := strings.TrimSpace(ctx.QueryParam("startdate"))
-	endDateText := strings.TrimSpace(ctx.QueryParam("enddate"))
+	startDateText := strings.TrimSpace(ctx.QueryParam("start_date"))
+	endDateText := strings.TrimSpace(ctx.QueryParam("end_date"))
 
 	startDate := time.Time{}
 	endDate := time.Time{}
@@ -609,7 +609,7 @@ func (h JournalHttp) SearchJournal(ctx microservice.IContext) error {
 			Type:  "string",
 		},
 		{
-			Field: "createdat",
+			Field: "created_at",
 			Type:  "time.Time",
 		},
 		{

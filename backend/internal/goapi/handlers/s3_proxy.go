@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
-	"strings"
 	"time"
 
 	"smlcloudplatform/internal/goapi/logger"
@@ -15,23 +15,35 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// S3FileProxyHandler - Proxy file downloads from SeaweedFS S3 through goapi
+// S3FileProxyHandler - Proxy private file downloads from S3/R2 through goapi
 // GET /s3/file/*
-// ใช้แทน presigned URL เมื่อ SeaweedFS ไม่ได้เปิด port ให้เข้าถึงจากภายนอก
-// goapi ดาวน์โหลดไฟล์จาก SeaweedFS internal แล้ว stream ให้ client
+// goapi ดาวน์โหลดไฟล์จาก private storage แล้ว stream ให้ client
 func S3FileProxyHandler(c echo.Context) error {
 	// Get object key from wildcard path parameter
-	objectKey := c.Param("*")
+	objectKey := storageNormalizeObjectKey(c.Param("*"))
 	if objectKey == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "file key is required",
 		})
 	}
 
-	// Sanitize: prevent path traversal
-	if strings.Contains(objectKey, "..") {
+	if storageObjectShopID(objectKey) == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "invalid file key",
+		})
+	}
+
+	shopID := storageContextShopID(c)
+	if shopID == "" {
+		logger.Warn("S3 proxy blocked: missing shop in auth context")
+		return c.JSON(http.StatusUnauthorized, map[string]string{
+			"error": "shop not selected",
+		})
+	}
+	if !storageObjectBelongsToShop(objectKey, shopID) {
+		logger.Warn("S3 proxy blocked: requested_shop=%s token_shop=%s", storageObjectShopID(objectKey), shopID)
+		return c.JSON(http.StatusForbidden, map[string]string{
+			"error": "forbidden",
 		})
 	}
 
@@ -39,6 +51,17 @@ func S3FileProxyHandler(c echo.Context) error {
 	if err != nil || client == nil {
 		return c.JSON(http.StatusServiceUnavailable, map[string]string{
 			"error": "Storage service not available",
+		})
+	}
+
+	return streamStorageObject(c, client, objectKey, "")
+}
+
+func streamStorageObject(c echo.Context, client *s3.Client, objectKey string, downloadName string) error {
+	objectKey = storageNormalizeObjectKey(objectKey)
+	if storageObjectShopID(objectKey) == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "invalid file key",
 		})
 	}
 
@@ -68,8 +91,13 @@ func S3FileProxyHandler(c echo.Context) error {
 		c.Response().Header().Set("Content-Length", fmt.Sprintf("%d", *output.ContentLength))
 	}
 
-	// Cache headers (1 hour)
-	c.Response().Header().Set("Cache-Control", "public, max-age=3600")
+	c.Response().Header().Set("Cache-Control", "private, no-store")
+	c.Response().Header().Set("X-Content-Type-Options", "nosniff")
+	if downloadName != "" {
+		c.Response().Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{
+			"filename": downloadName,
+		}))
+	}
 
 	// Stream the file to client
 	c.Response().Header().Set("Content-Type", contentType)

@@ -13,22 +13,22 @@ const optionpatternCollectionName = "optionPattern"
 type OptionPattern struct {
 	models.PartitionIdentity `bson:"inline"`
 
-	PatternCode          string `json:"patterncode" bson:"patterncode"`
+	PatternCode string `json:"patterncode" bson:"patterncode"`
 	models.Name          `bson:"inline"`
-	Names                *[]models.NameX        `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	Names *[]models.NameX        `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 	OptionPatternDetails *[]OptionPatternDetail `json:"optionpatterndetails" bson:"optionpatterndetails"`
-	ColorCode            string                 `json:"colorcode" bson:"colorcode"`
+	ColorCode string                 `json:"colorcode" bson:"colorcode"`
 }
 
 type OptionPatternDetail struct {
-	XOrder              int8   `json:"xorder" bson:"xorder"`
-	OptionCode          string `json:"optioncode" bson:"optioncode"`
+	XOrder int8   `json:"xorder" bson:"xorder"`
+	OptionCode string `json:"optioncode" bson:"optioncode"`
 	*optionModel.Option `bson:"inline"`
 }
 
 type OptionPatternInfo struct {
 	models.DocIdentity `bson:"inline"`
-	OptionPattern      `bson:"inline"`
+	OptionPattern  `bson:"inline"`
 }
 
 func (OptionPatternInfo) CollectionName() string {
@@ -37,11 +37,11 @@ func (OptionPatternInfo) CollectionName() string {
 
 type OptionPatternData struct {
 	models.ShopIdentity `bson:"inline"`
-	OptionPatternInfo   `bson:"inline"`
+	OptionPatternInfo  `bson:"inline"`
 }
 
 type OptionPatternDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	OptionPatternData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -59,7 +59,7 @@ func (OptionPatternItemGuid) CollectionName() string {
 }
 
 type OptionPatternActivity struct {
-	OptionPatternData   `bson:"inline"`
+	OptionPatternData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

@@ -61,7 +61,7 @@ func NewReceivableOtherRepository(pst microservice.IPersisterMongo) *ReceivableO
 func (repo ReceivableOtherRepository) FindLastDocNo(ctx context.Context, shopID string, prefixDocNo string) (models.ReceivableOtherDoc, error) {
 	filters := bson.M{
 		"shopid": shopID,
-		"deletedat": bson.M{
+		"deleted_at": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

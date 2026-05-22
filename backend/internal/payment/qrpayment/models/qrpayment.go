@@ -10,35 +10,35 @@ const qrpaymentCollectionName = "qrPayment"
 
 type QrPayment struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code                     string          `json:"code" bson:"code" validate:"required"`
-	QrNames                  *[]models.NameX `json:"qrnames" bson:"qrnames" validate:"required,min=1,unique=Code,dive"`
-	QrType                   int             `json:"qrtype" bson:"qrtype"`
-	IsActive                 bool            `json:"isactive" bson:"isactive"`
-	Logo                     string          `json:"logo" bson:"logo"`
-	BankCode                 string          `json:"bankcode" bson:"bankcode"`
-	BankNames                *[]models.NameX `json:"banknames" bson:"banknames"`
-	BookBankCode             string          `json:"bookbankcode" bson:"bookbankcode"`
-	BookBankNames            *[]models.NameX `json:"bookbanknames" bson:"bookbanknames"`
+	Code string          `json:"code" bson:"code" validate:"required"`
+	QrNames *[]models.NameX `json:"qrnames" bson:"qrnames" validate:"required,min=1,unique=Code,dive"`
+	QrType int             `json:"qrtype" bson:"qrtype"`
+	IsActive bool            `json:"isactive" bson:"isactive"`
+	Logo string          `json:"logo" bson:"logo"`
+	BankCode string          `json:"bankcode" bson:"bankcode"`
+	BankNames *[]models.NameX `json:"banknames" bson:"banknames"`
+	BookBankCode string          `json:"bookbankcode" bson:"bookbankcode"`
+	BookBankNames *[]models.NameX `json:"bookbanknames" bson:"bookbanknames"`
 
-	QrCode         string `json:"qrcode" bson:"qrcode"`
-	ApiKey         string `json:"apikey" bson:"apikey"`
-	BillerCode     string `json:"billercode" bson:"billercode"`
-	BillerID       string `json:"billerid" bson:"billerid"`
-	StoreID        string `json:"storeid" bson:"storeid"`
-	TerminalID     string `json:"terminalid" bson:"terminalid"`
-	MerchantName   string `json:"merchantname" bson:"merchantname"`
-	AccessCode     string `json:"accesscode" bson:"accesscode"`
-	BankCharge     string `json:"bankcharge" bson:"bankcharge"`
+	QrCode string `json:"qrcode" bson:"qrcode"`
+	ApiKey string `json:"apikey" bson:"apikey"`
+	BillerCode string `json:"billercode" bson:"billercode"`
+	BillerID string `json:"billerid" bson:"billerid"`
+	StoreID string `json:"storeid" bson:"storeid"`
+	TerminalID string `json:"terminalid" bson:"terminalid"`
+	MerchantName string `json:"merchantname" bson:"merchantname"`
+	AccessCode string `json:"accesscode" bson:"accesscode"`
+	BankCharge string `json:"bankcharge" bson:"bankcharge"`
 	CustomerCharge string `json:"customercharge" bson:"customercharge"`
-	IsSlipSave     bool   `json:"isslipsave" bson:"isslipsave"`
+	IsSlipSave bool   `json:"isslipsave" bson:"isslipsave"`
 
 	// 0 = เงินเข้าทันที , 1 = สิ้นวัน , 2 = วันถัดไป
 	CloseQr int8   `json:"closeqr" bson:"closeqr"`
-	Secret  string `json:"secret" bson:"secret"`
-	Token   string `json:"token" bson:"token"`
+	Secret string `json:"secret" bson:"secret"`
+	Token string `json:"token" bson:"token"`
 
 	// PaymentCode   string          `json:"paymentcode" bson:"paymentcode"`
-	// CountryCode   string          `json:"countrycode" bson:"countrycode"`
+	// CountryCode   string          `json:"country_code" bson:"country_code"`
 	// PaymentLogo   string          `json:"paymentlogo" bson:"paymentlogo"`
 	// PaymentType   int8            `json:"paymenttype" bson:"paymenttype"`
 	// FeeRate       float64         `json:"feerate" bson:"feerate"`
@@ -50,7 +50,7 @@ type QrPayment struct {
 
 type QrPaymentInfo struct {
 	models.DocIdentity `bson:"inline"`
-	QrPayment          `bson:"inline"`
+	QrPayment  `bson:"inline"`
 }
 
 func (QrPaymentInfo) CollectionName() string {
@@ -59,12 +59,12 @@ func (QrPaymentInfo) CollectionName() string {
 
 type QrPaymentData struct {
 	models.ShopIdentity `bson:"inline"`
-	QrPaymentInfo       `bson:"inline"`
+	QrPaymentInfo  `bson:"inline"`
 }
 
 type QrPaymentDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	QrPaymentData      `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	QrPaymentData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -81,7 +81,7 @@ func (QrPaymentItemGuid) CollectionName() string {
 }
 
 type QrPaymentActivity struct {
-	QrPaymentData       `bson:"inline"`
+	QrPaymentData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

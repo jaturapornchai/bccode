@@ -10,12 +10,12 @@ const groupsubtwoproductCollectionName = "groupsubtwoProductMaster"
 
 type GroupsubtwoProduct struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code                     string          `json:"code" bson:"code"`
-	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
-	GroupMainGuid            string          `json:"groupMainGuid" bson:"groupMainGuid"`
-	GroupMainNames           *[]models.NameX `json:"groupMainNames" bson:"-"`
-	GroupSubGuid             string          `json:"groupSubGuid" bson:"groupSubGuid"`
-	GroupSubNames            *[]models.NameX `json:"groupSubNames" bson:"-"`
+	Code string          `json:"code" bson:"code"`
+	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	GroupMainGuid string          `json:"group_main_guid" bson:"group_main_guid"`
+	GroupMainNames *[]models.NameX `json:"group_main_names" bson:"-"`
+	GroupSubGuid string          `json:"group_sub_guid" bson:"group_sub_guid"`
+	GroupSubNames *[]models.NameX `json:"group_sub_names" bson:"-"`
 }
 
 type GroupsubtwoProductInfo struct {
@@ -33,7 +33,7 @@ type GroupsubtwoProductData struct {
 }
 
 type GroupsubtwoProductDoc struct {
-	ID                     primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	GroupsubtwoProductData `bson:"inline"`
 	models.ActivityDoc     `bson:"inline"`
 }

@@ -152,7 +152,7 @@ func (svc PaymentMasterHttpService) SearchPaymentMaster(shopID string, q string)
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"guidfixed",
+		"guid_fixed",
 		"paymentcode",
 	}
 

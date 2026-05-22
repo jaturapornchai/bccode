@@ -13,55 +13,55 @@ import (
 
 type YoYComparisonRequest struct {
 	ShopID string `json:"shop_id"`
-	Year   int    `json:"year"`
-	Month  int    `json:"month"` // Optional - if provided, compare specific month
+	Year int    `json:"year"`
+	Month int    `json:"month"` // Optional - if provided, compare specific month
 }
 
 type YoYComparisonResponse struct {
-	Period           string              `json:"period"`
-	CurrentYear      int                 `json:"current_year"`
-	PreviousYear     int                 `json:"previous_year"`
-	Summary          ComparisonSummary   `json:"summary"`
+	Period string              `json:"period"`
+	CurrentYear int                 `json:"current_year"`
+	PreviousYear int                 `json:"previous_year"`
+	Summary ComparisonSummary   `json:"summary"`
 	MonthlyBreakdown []MonthComparison   `json:"monthly_breakdown"`
-	TopChanges       []ChangeHighlight   `json:"top_changes"`
-	GeneratedAt      time.Time           `json:"generated_at"`
+	TopChanges []ChangeHighlight   `json:"top_changes"`
+	GeneratedAt time.Time           `json:"generated_at"`
 }
 
 type ComparisonSummary struct {
-	CurrentRevenue      float64 `json:"current_revenue"`
-	CurrentRevenueWord  string  `json:"current_revenue_word"`
-	PreviousRevenue     float64 `json:"previous_revenue"`
+	CurrentRevenue float64 `json:"current_revenue"`
+	CurrentRevenueWord string  `json:"current_revenue_word"`
+	PreviousRevenue float64 `json:"previous_revenue"`
 	PreviousRevenueWord string  `json:"previous_revenue_word"`
-	RevenueChange       float64 `json:"revenue_change"`
+	RevenueChange float64 `json:"revenue_change"`
 	RevenueChangePercent float64 `json:"revenue_change_percent"`
-	ChangeDirection     string  `json:"change_direction"` // up, down, stable
+	ChangeDirection string  `json:"change_direction"` // up, down, stable
 
-	CurrentOrders       int     `json:"current_orders"`
-	PreviousOrders      int     `json:"previous_orders"`
+	CurrentOrders int     `json:"current_orders"`
+	PreviousOrders int     `json:"previous_orders"`
 	OrdersChangePercent float64 `json:"orders_change_percent"`
 
-	CurrentProfit       float64 `json:"current_profit"`
-	PreviousProfit      float64 `json:"previous_profit"`
+	CurrentProfit float64 `json:"current_profit"`
+	PreviousProfit float64 `json:"previous_profit"`
 	ProfitChangePercent float64 `json:"profit_change_percent"`
 
-	CurrentAvgOrder     float64 `json:"current_avg_order"`
-	PreviousAvgOrder    float64 `json:"previous_avg_order"`
+	CurrentAvgOrder float64 `json:"current_avg_order"`
+	PreviousAvgOrder float64 `json:"previous_avg_order"`
 }
 
 type MonthComparison struct {
-	Month              string  `json:"month"`
-	MonthName          string  `json:"month_name"`
-	CurrentRevenue     float64 `json:"current_revenue"`
-	PreviousRevenue    float64 `json:"previous_revenue"`
-	ChangePercent      float64 `json:"change_percent"`
-	ChangeDirection    string  `json:"change_direction"`
+	Month string  `json:"month"`
+	MonthName string  `json:"month_name"`
+	CurrentRevenue float64 `json:"current_revenue"`
+	PreviousRevenue float64 `json:"previous_revenue"`
+	ChangePercent float64 `json:"change_percent"`
+	ChangeDirection string  `json:"change_direction"`
 }
 
 type ChangeHighlight struct {
-	Metric      string  `json:"metric"`
+	Metric string  `json:"metric"`
 	Description string  `json:"description"`
-	Change      float64 `json:"change_percent"`
-	Trend       string  `json:"trend"` // positive, negative
+	Change float64 `json:"change_percent"`
+	Trend string  `json:"trend"` // positive, negative
 }
 
 func GetYoYComparison(ctx context.Context, shopID string, year, month int) (*YoYComparisonResponse, error) {
@@ -216,36 +216,36 @@ func GetYoYComparison(ctx context.Context, shopID string, year, month int) (*YoY
 
 type MoMComparisonRequest struct {
 	ShopID string `json:"shop_id"`
-	Year   int    `json:"year"`
-	Month  int    `json:"month"`
+	Year int    `json:"year"`
+	Month int    `json:"month"`
 }
 
 type MoMComparisonResponse struct {
-	Period           string            `json:"period"`
-	CurrentMonth     MonthInfo         `json:"current_month"`
-	PreviousMonth    MonthInfo         `json:"previous_month"`
-	Summary          ComparisonSummary `json:"summary"`
-	WeeklyBreakdown  []WeekComparison  `json:"weekly_breakdown"`
-	DailyTrend       []DailyComparison `json:"daily_trend"`
-	GeneratedAt      time.Time         `json:"generated_at"`
+	Period string            `json:"period"`
+	CurrentMonth MonthInfo         `json:"current_month"`
+	PreviousMonth MonthInfo         `json:"previous_month"`
+	Summary ComparisonSummary `json:"summary"`
+	WeeklyBreakdown []WeekComparison  `json:"weekly_breakdown"`
+	DailyTrend []DailyComparison `json:"daily_trend"`
+	GeneratedAt time.Time         `json:"generated_at"`
 }
 
 type MonthInfo struct {
-	Year      int    `json:"year"`
-	Month     int    `json:"month"`
+	Year int    `json:"year"`
+	Month int    `json:"month"`
 	MonthName string `json:"month_name"`
 }
 
 type WeekComparison struct {
-	Week            int     `json:"week"`
-	CurrentRevenue  float64 `json:"current_revenue"`
+	Week int     `json:"week"`
+	CurrentRevenue float64 `json:"current_revenue"`
 	PreviousRevenue float64 `json:"previous_revenue"`
-	ChangePercent   float64 `json:"change_percent"`
+	ChangePercent float64 `json:"change_percent"`
 }
 
 type DailyComparison struct {
-	Day             int     `json:"day"`
-	CurrentRevenue  float64 `json:"current_revenue"`
+	Day int     `json:"day"`
+	CurrentRevenue float64 `json:"current_revenue"`
 	PreviousRevenue float64 `json:"previous_revenue"`
 }
 

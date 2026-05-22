@@ -63,7 +63,7 @@ func (repo CostCenterRepository) FindOneByCode(ctx context.Context, shopID strin
 		models.CostCenterDoc{},
 		bson.M{
 			"shopid":         shopID,
-			"deletedat":      bson.M{"$exists": false},
+			"deleted_at":      bson.M{"$exists": false},
 			"branchcode":     branchCode,
 			"costcentercode": costCenterCode,
 		}, &doc)

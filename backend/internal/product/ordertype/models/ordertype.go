@@ -10,20 +10,20 @@ const ordertypeCollectionName = "productOrderTypes"
 
 type OrderType struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code                     string            `json:"code" bson:"code"`
-	Names                    *[]models.NameX   `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
-	Prices                   *[]OrderTypePrice `json:"prices" bson:"prices" validate:"required,min=1,unique=Type,dive"`
-	Remarks                  []*[]models.NameX `json:"remarks" bson:"remarks"`
+	Code string            `json:"code" bson:"code"`
+	Names *[]models.NameX   `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	Prices *[]OrderTypePrice `json:"prices" bson:"prices" validate:"required,min=1,unique=Type,dive"`
+	Remarks []*[]models.NameX `json:"remarks" bson:"remarks"`
 }
 
 type OrderTypePrice struct {
-	Type  int8    `json:"type" bson:"type"`
+	Type int8    `json:"type" bson:"type"`
 	Price float64 `json:"price" bson:"price"`
 }
 
 type OrderTypeInfo struct {
 	models.DocIdentity `bson:"inline"`
-	OrderType          `bson:"inline"`
+	OrderType  `bson:"inline"`
 }
 
 func (OrderTypeInfo) CollectionName() string {
@@ -32,12 +32,12 @@ func (OrderTypeInfo) CollectionName() string {
 
 type OrderTypeData struct {
 	models.ShopIdentity `bson:"inline"`
-	OrderTypeInfo       `bson:"inline"`
+	OrderTypeInfo  `bson:"inline"`
 }
 
 type OrderTypeDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	OrderTypeData      `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	OrderTypeData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -54,7 +54,7 @@ func (OrderTypeItemGuid) CollectionName() string {
 }
 
 type OrderTypeActivity struct {
-	OrderTypeData       `bson:"inline"`
+	OrderTypeData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

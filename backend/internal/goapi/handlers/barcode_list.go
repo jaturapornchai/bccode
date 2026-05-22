@@ -17,38 +17,64 @@ import (
 
 // BarcodeListRequest — Request body สำหรับดึงรายการบาร์โค้ดจาก PostgreSQL
 type BarcodeListRequest struct {
-	ShopID       string   `json:"shopid"`
-	Keyword      string   `json:"keyword"`
-	GroupCode    string   `json:"groupcode"`
-	BrandCode    string   `json:"brandcode"`
-	CategoryCode string   `json:"categorycode"`
-	ClassCode    string   `json:"classcode"`
-	DesignCode   string   `json:"designcode"`
-	GradeCode    string   `json:"gradecode"`
-	ModelCode    string   `json:"modelcode"`
-	PatternCode  string   `json:"patterncode"`
-	PriceMin     *float64 `json:"price_min"`
-	PriceMax     *float64 `json:"price_max"`
-	Limit        int      `json:"limit"`
-	Offset       int      `json:"offset"`
-	SortField    string   `json:"sort_field"`
-	SortOrder    string   `json:"sort_order"`
+	ShopID          string   `json:"shopid"`
+	Keyword         string   `json:"keyword"`
+	GroupCode       string   `json:"group_code"`
+	GroupCodeLegacy string   `json:"groupcode"`
+	BrandCode       string   `json:"brand_code"`
+	BrandCodeLegacy string   `json:"brandcode"`
+	CategoryCode    string   `json:"categorycode"`
+	ClassCode       string   `json:"classcode"`
+	DesignCode      string   `json:"designcode"`
+	GradeCode       string   `json:"gradecode"`
+	ModelCode       string   `json:"modelcode"`
+	PatternCode     string   `json:"patterncode"`
+	PriceMin        *float64 `json:"price_min"`
+	PriceMax        *float64 `json:"price_max"`
+	Limit           int      `json:"limit"`
+	Offset          int      `json:"offset"`
+	SortField       string   `json:"sort_field"`
+	SortOrder       string   `json:"sort_order"`
 }
 
 // BarcodeListItem — รายการบาร์โค้ดสำหรับแสดงใน list (lightweight)
 type BarcodeListItem struct {
-	GuidFixed  string  `json:"guidfixed"`
-	Barcode    string  `json:"barcode"`
-	Name       string  `json:"name0"`
-	UnitCode   string  `json:"unitcode"`
-	UnitName   string  `json:"unitname"`
-	ItemCode   string  `json:"itemcode"`
-	GroupCode  string  `json:"groupcode"`
-	GroupNames string  `json:"groupnames"`
+	GuidFixed        string  `json:"guid_fixed"`
+	Barcode          string  `json:"barcode"`
+	Name             string  `json:"name0"`
+	UnitCode         string  `json:"unitcode"`
+	UnitName         string  `json:"unit_name"`
+	ItemCode         string  `json:"itemcode"`
+	BarcodeRef       string  `json:"barcoderef"`
+	GroupCode        string  `json:"group_code"`
+	GroupNames       string  `json:"group_names"`
+	BrandCode        string  `json:"brandcode"`
+	BrandNames       string  `json:"brandnames"`
+	CategoryCode     string  `json:"categorycode"`
+	CategoryNames    string  `json:"category_names"`
+	ClassCode        string  `json:"classcode"`
+	ClassNames       string  `json:"classnames"`
+	DesignCode       string  `json:"designcode"`
+	DesignNames      string  `json:"designnames"`
+	GradeCode        string  `json:"gradecode"`
+	GradeNames       string  `json:"gradenames"`
+	ModelCode        string  `json:"modelcode"`
+	ModelNames       string  `json:"modelnames"`
+	PatternCode      string  `json:"patterncode"`
+	PatternNames     string  `json:"patternnames"`
+	GroupSubOneCode  string  `json:"groupsubonecode"`
+	GroupSubOneNames string  `json:"groupsubonenames"`
+	GroupSubTwoCode  string  `json:"groupsubtwocode"`
+	GroupSubTwoNames string  `json:"groupsubtwonames"`
 	Price1           float64 `json:"price1"`
 	ImageUri         string  `json:"imageuri"`
 	StandValue       float64 `json:"standvalue"`
 	DivideValue      float64 `json:"dividevalue"`
+	IsStock          int     `json:"isstock"`
+	ItemType         int     `json:"itemtype"`
+	IsUseSubBarcodes bool    `json:"isusesubbarcodes"`
+	Checksum         string  `json:"checksum"`
+	ShopID           string  `json:"shopid"`
 	UnitCount        int     `json:"unit_count"`
 	AllUnitNames     string  `json:"all_unit_names"`
 	BalanceQty       float64 `json:"balance_qty"`
@@ -72,6 +98,12 @@ func BarcodeListHandler(c echo.Context) error {
 			"message": "Missing required parameter: shopid",
 		})
 	}
+	if req.GroupCode == "" {
+		req.GroupCode = req.GroupCodeLegacy
+	}
+	if req.BrandCode == "" {
+		req.BrandCode = req.BrandCodeLegacy
+	}
 
 	// Defaults
 	if req.Limit <= 0 {
@@ -88,7 +120,8 @@ func BarcodeListHandler(c echo.Context) error {
 	useRelevanceSort := req.SortField == "relevance"
 	validSortFields := map[string]string{
 		"barcode": "pb.barcode", "name0": "pb.name0", "itemcode": "pb.itemcode",
-		"groupnames": "pb.groupnames", "price1": "pb.price1", "unitname": "pb.unitname",
+		"group_names": "pb.groupnames", "price1": "pb.price1", "unit_name": "pb.unitname",
+		"groupnames": "pb.groupnames", "unitname": "pb.unitname",
 	}
 	if !useRelevanceSort {
 		if mapped, ok := validSortFields[req.SortField]; ok {
@@ -278,9 +311,20 @@ func executeSearch(db *sql.DB, conditions []string, args []interface{}, argIdx i
 	// Data
 	dataQuery := fmt.Sprintf(`
 		SELECT COALESCE(pb.guidfixed,''), pb.barcode, COALESCE(pb.name0,''), COALESCE(pb.unitcode,''), COALESCE(pb.unitname,''),
-			   COALESCE(pb.itemcode,''), COALESCE(pb.groupcode,''), COALESCE(pb.groupnames,''),
+			   COALESCE(pb.itemcode,''), COALESCE(pb.barcoderef,''), COALESCE(pb.groupcode,''), COALESCE(pb.groupnames,''),
+			   COALESCE(pb.brandcode,''), COALESCE(pb.brandnames,''),
+			   COALESCE(pb.categorycode,''), COALESCE(pb.categorynames,''),
+			   COALESCE(pb.classcode,''), COALESCE(pb.classnames,''),
+			   COALESCE(pb.designcode,''), COALESCE(pb.designnames,''),
+			   COALESCE(pb.gradecode,''), COALESCE(pb.gradenames,''),
+			   COALESCE(pb.modelcode,''), COALESCE(pb.modelnames,''),
+			   COALESCE(pb.patterncode,''), COALESCE(pb.patternnames,''),
+			   COALESCE(pb.groupsubonecode,''), COALESCE(pb.groupsubonenames,''),
+			   COALESCE(pb.groupsubtwocode,''), COALESCE(pb.groupsubtwonames,''),
 			   COALESCE(pb.price1,0), COALESCE(pb.imageuri,''),
 			   COALESCE(pb.barcoderefunitstand,0), COALESCE(pb.barcoderefunitdivide,0),
+			   COALESCE(pb.isstock,0), COALESCE(pb.itemtype,0), COALESCE(pb.isusesubbarcodes,false),
+			   COALESCE(pb.checksum,''), COALESCE(pb.shopid,''),
 			   COALESCE(p.balanceqty,0), COALESCE(p.balanceqtyword,'')
 		FROM productbarcode pb
 		LEFT JOIN product p ON p.itemcode = pb.itemcode
@@ -303,9 +347,20 @@ func executeSearch(db *sql.DB, conditions []string, args []interface{}, argIdx i
 		var price sql.NullFloat64
 		if err := rows.Scan(
 			&item.GuidFixed, &item.Barcode, &item.Name, &item.UnitCode, &item.UnitName,
-			&item.ItemCode, &item.GroupCode, &item.GroupNames,
+			&item.ItemCode, &item.BarcodeRef, &item.GroupCode, &item.GroupNames,
+			&item.BrandCode, &item.BrandNames,
+			&item.CategoryCode, &item.CategoryNames,
+			&item.ClassCode, &item.ClassNames,
+			&item.DesignCode, &item.DesignNames,
+			&item.GradeCode, &item.GradeNames,
+			&item.ModelCode, &item.ModelNames,
+			&item.PatternCode, &item.PatternNames,
+			&item.GroupSubOneCode, &item.GroupSubOneNames,
+			&item.GroupSubTwoCode, &item.GroupSubTwoNames,
 			&price, &item.ImageUri,
 			&item.StandValue, &item.DivideValue,
+			&item.IsStock, &item.ItemType, &item.IsUseSubBarcodes,
+			&item.Checksum, &item.ShopID,
 			&item.BalanceQty, &item.BalanceFormatted,
 		); err != nil {
 			logger.Error("BarcodeListHandler: scan: %v", err)
@@ -539,22 +594,57 @@ func formatBarcodeItems(items []BarcodeListItem) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(items))
 	for _, item := range items {
 		result = append(result, map[string]interface{}{
-			"guidfixed":          item.GuidFixed,
-			"barcode":            item.Barcode,
-			"names":              []map[string]string{{"code": "th", "name": item.Name}},
-			"itemunitcode":       item.UnitCode,
-			"itemunitnames":      []map[string]string{{"code": "th", "name": item.UnitName}},
-			"itemcode":           item.ItemCode,
-			"groupcode":          item.GroupCode,
-			"groupnames":         []map[string]string{{"code": "th", "name": item.GroupNames}},
-			"prices":             []map[string]interface{}{{"keynumber": 1, "price": item.Price1}},
-			"imageuri":           item.ImageUri,
+			"guid_fixed":        item.GuidFixed,
+			"barcode":           item.Barcode,
+			"names":             []map[string]string{{"code": "th", "name": item.Name}},
+			"item_unit_code":    item.UnitCode,
+			"itemunitnames":     []map[string]string{{"code": "th", "name": item.UnitName}},
+			"itemcode":          item.ItemCode,
+			"barcoderef":        item.BarcodeRef,
+			"group_code":        item.GroupCode,
+			"groupcode":         item.GroupCode,
+			"group_names":       []map[string]string{{"code": "th", "name": item.GroupNames}},
+			"groupnames":        item.GroupNames,
+			"brand_code":        item.BrandCode,
+			"brandcode":         item.BrandCode,
+			"brandnames":        []map[string]string{{"code": "th", "name": item.BrandNames}},
+			"categorycode":      item.CategoryCode,
+			"category_code":     item.CategoryCode,
+			"category_names":    []map[string]string{{"code": "th", "name": item.CategoryNames}},
+			"categorynames":     []map[string]string{{"code": "th", "name": item.CategoryNames}},
+			"classcode":         item.ClassCode,
+			"class_code":        item.ClassCode,
+			"classnames":        []map[string]string{{"code": "th", "name": item.ClassNames}},
+			"designcode":        item.DesignCode,
+			"design_code":       item.DesignCode,
+			"designnames":       []map[string]string{{"code": "th", "name": item.DesignNames}},
+			"gradecode":         item.GradeCode,
+			"grade_code":        item.GradeCode,
+			"gradenames":        []map[string]string{{"code": "th", "name": item.GradeNames}},
+			"modelcode":         item.ModelCode,
+			"model_code":        item.ModelCode,
+			"modelnames":        []map[string]string{{"code": "th", "name": item.ModelNames}},
+			"patterncode":       item.PatternCode,
+			"pattern_code":      item.PatternCode,
+			"patternnames":      []map[string]string{{"code": "th", "name": item.PatternNames}},
+			"groupsubonecode":   item.GroupSubOneCode,
+			"groupsubonenames":  []map[string]string{{"code": "th", "name": item.GroupSubOneNames}},
+			"groupsubtwocode":   item.GroupSubTwoCode,
+			"groupsubtwonames":  []map[string]string{{"code": "th", "name": item.GroupSubTwoNames}},
+			"prices":            []map[string]interface{}{{"key_number": 1, "price": item.Price1}},
+			"imageuri":          item.ImageUri,
 			"standvalue":        item.StandValue,
 			"dividevalue":       item.DivideValue,
-			"unit_count":         item.UnitCount,
-			"all_unit_names":     item.AllUnitNames,
-			"balance_qty":        item.BalanceQty,
-			"balance_formatted":  item.BalanceFormatted,
+			"isstock":           item.IsStock,
+			"itemtype":          item.ItemType,
+			"item_type":         item.ItemType,
+			"isusesubbarcodes":  item.IsUseSubBarcodes,
+			"checksum":          item.Checksum,
+			"shopid":            item.ShopID,
+			"unit_count":        item.UnitCount,
+			"all_unit_names":    item.AllUnitNames,
+			"balance_qty":       item.BalanceQty,
+			"balance_formatted": item.BalanceFormatted,
 		})
 	}
 	return result

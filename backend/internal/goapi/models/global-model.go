@@ -13,71 +13,71 @@ type languageNameModel struct {
 }
 
 type CheckSumModel struct {
-	RefCode     string `json:"refcode"`
-	Checksum    string `json:"checksum"`
+	RefCode string `json:"refcode"`
+	Checksum string `json:"checksum"`
 	MongoDbName string `json:"mongodbname"`
 }
 
 type productOrderModel struct {
-	Shopid          string                     `json:"shopid"`
-	Barcode         string                     `json:"barcode"`
-	Itemcode        string                     `json:"itemcode"`
-	Names           []languageNameModel        `json:"names"`
-	Unituses        []productOrderUnitUseModel `json:"unituses"`
-	Unitcode        string                     `json:"unitcode"`
-	Units           []productOrderUnitModel    `json:"units"`
-	Unitcost        string                     `json:"unitcost"`
-	Unitstandard    string                     `json:"unitstandard"`
-	Multiunit       bool                       `json:"multiunit"`
-	Itemtype        int                        `json:"itemtype"`
-	Itemvat         int                        `json:"itemvat"`
-	Normalprice     float64                    `json:"normalprice"`
-	Price           float64                    `json:"price"`
-	Memberprice     float64                    `json:"memberprice"`
-	Pricerangemin   float64                    `json:"pricerangemin"`
-	Pricerangemax   float64                    `json:"pricerangemax"`
-	Images          []productOrderImageModel   `json:"images"`
-	Recommended     bool                       `json:"recommended"`
+	Shopid string                     `json:"shopid"`
+	Barcode string                     `json:"barcode"`
+	Itemcode string                     `json:"itemcode"`
+	Names []languageNameModel        `json:"names"`
+	Unituses []productOrderUnitUseModel `json:"unituses"`
+	Unitcode string                     `json:"unitcode"`
+	Units []productOrderUnitModel    `json:"units"`
+	Unitcost string                     `json:"unitcost"`
+	Unitstandard string                     `json:"unitstandard"`
+	Multiunit bool                       `json:"multiunit"`
+	Itemtype int                        `json:"item_type"`
+	Itemvat int                        `json:"itemvat"`
+	Normalprice float64                    `json:"normalprice"`
+	Price float64                    `json:"price"`
+	Memberprice float64                    `json:"memberprice"`
+	Pricerangemin float64                    `json:"pricerangemin"`
+	Pricerangemax float64                    `json:"pricerangemax"`
+	Images []productOrderImageModel   `json:"images"`
+	Recommended bool                       `json:"recommended"`
 	Shoprecommended bool                       `json:"shoprecommended"`
-	Havepoint       bool                       `json:"havepoint"`
-	Starpersent     float64                    `json:"starpersent"`
-	Ordercount      int                        `json:"ordercount"`
-	Descriptions    []languageNameModel        `json:"descriptions"`
-	Options         []productOrderOptionModel  `json:"options"`
-	Orderminimum    float64                    `json:"orderminimum"`
+	Havepoint bool                       `json:"havepoint"`
+	Starpersent float64                    `json:"starpersent"`
+	Ordercount int                        `json:"ordercount"`
+	Descriptions []languageNameModel        `json:"descriptions"`
+	Options []productOrderOptionModel  `json:"options"`
+	Orderminimum float64                    `json:"orderminimum"`
 }
 
 type productOrderUnitModel struct {
-	Unitcode  string              `json:"unitcode"`
+	Unitcode string              `json:"unitcode"`
 	Unitnames []languageNameModel `json:"unitnames"`
 }
 
 type productOrderOptionModel struct {
-	Guidcode      string                          `json:"guidcode"`
-	Names         []languageNameModel             `json:"names"`
-	Isstock       bool                            `json:"isstock"`
+	Guidcode string                          `json:"guidcode"`
+	Names []languageNameModel             `json:"names"`
+	Isstock bool                            `json:"isstock"`
 	Optiondetails []productOrderOptionDetailModel `json:"optiondetails"`
 }
 
 type productOrderOptionDetailIncludeModel struct {
 	Optionguid string                                 `json:"optionguid"`
-	Details    []productOrderOptionDetailIncludeModel `json:"details"`
+	Details []productOrderOptionDetailIncludeModel `json:"details"`
 }
 
 type productOrderOptionDetailModel struct {
-	Guidcode       string                                 `json:"guidcode"`
-	Names          []languageNameModel                    `json:"names"`
-	Image          string                                 `json:"image"`
+	Guidcode string                                 `json:"guidcode"`
+	Names []languageNameModel                    `json:"names"`
+	Image string                                 `json:"image"`
 	Includeoptions []productOrderOptionDetailIncludeModel `json:"includeoptions"`
-	Selected       bool                                   `json:"-"`
-	Isenable       bool                                   `json:"-"`
+	Selected bool                                   `json:"-"`
+	Isenable bool                                   `json:"-"`
 }
 
 type productOrderUnitUseModel struct {
-	Unitcode    string  `json:"unitcode"`
+	Unitcode string  `json:"unitcode"`
 	Itemunitstd float64 `json:"itemunitstd"`
 	Itemunitdiv float64 `json:"itemunitdiv"`
-	Isunitcost  bool    `json:"isunitcost"`
+	Isunitcost bool    `json:"isunitcost"`
 }
 
 type productOrderImageModel struct {
@@ -86,24 +86,24 @@ type productOrderImageModel struct {
 
 type productOrderBalanceModel struct {
 	Itemcode string                           `json:"itemcode"`
-	Qty      float64                          `json:"qty"`
-	Units    []productOrderBalanceUnitModel   `json:"units"`
-	Options  []productOrderBalanceOptionModel `json:"options"`
+	Qty float64                          `json:"qty"`
+	Units []productOrderBalanceUnitModel   `json:"units"`
+	Options []productOrderBalanceOptionModel `json:"options"`
 }
 
 type productOrderBalanceUnitModel struct {
 	Unitcode string  `json:"unitcode"`
-	Qty      float64 `json:"qty"`
+	Qty float64 `json:"qty"`
 }
 
 type productOrderBalanceOptionModel struct {
 	Optionguid string                                 `json:"optionguid"`
-	Details    []productOrderBalanceOptionDetailModel `json:"details"`
+	Details []productOrderBalanceOptionDetailModel `json:"details"`
 }
 
 type productOrderBalanceOptionDetailModel struct {
 	Optionguid string  `json:"optionguid"`
-	Qty        float64 `json:"qty"`
+	Qty float64 `json:"qty"`
 }
 
 func DataProductForTest() productOrderModel {
@@ -225,13 +225,13 @@ func main() {
 
 // Warehouse models for Kafka messages
 type MongoWarehouseModel struct {
-	ShopId   string                        `json:"shopid"`
-	Code     string                        `json:"code"`
-	Names    []languageNameModel           `json:"names"`
+	ShopId string                        `json:"shopid"`
+	Code string                        `json:"code"`
+	Names []languageNameModel           `json:"names"`
 	Location []MongoWarehouseLocationModel `json:"location"`
 }
 
 type MongoWarehouseLocationModel struct {
-	Code  string              `json:"code"`
+	Code string              `json:"code"`
 	Names []languageNameModel `json:"names"`
 }

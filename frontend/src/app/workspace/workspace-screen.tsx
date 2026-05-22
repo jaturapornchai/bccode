@@ -52,6 +52,24 @@ type LineLinkStatusResponse = {
   status?: "pending" | "success" | "failed" | "expired";
   message?: string;
 };
+type PendingUnitSetup = {
+  shop: ShopListItem;
+  branch: BranchListItem | null;
+  shopInfo: Record<string, unknown> | null;
+  selectedCodes: string[];
+  units: ProductUnitOption[];
+};
+type ProductUnitOption = {
+  unitcode: string;
+  names?: { code?: string; name?: string }[];
+};
+type StandardProductUnitResponse = {
+  success?: boolean;
+  data?: ProductUnitOption[];
+  total?: number;
+  source?: string;
+  message?: string;
+};
 
 const SOCIAL_POLL_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_SOCIAL_POLL_INTERVAL_MS = 2000;
@@ -81,6 +99,9 @@ const workspaceTextEn = {
   loadingCompanies: "Loading companies",
   logout: "Log out",
   noCompanies: "No company yet. Create a company before starting.",
+  signedInAs: "Signed in as",
+  availableCompanies: "Available companies",
+  availableBranches: "Available branches",
   requestFailed: "Request failed.",
   searchBranch: "Search branches",
   searchCompany: "Search companies",
@@ -118,29 +139,32 @@ const workspaceBackendKeys: Partial<Record<WorkspaceTextKey, string>> = {
 
 const workspaceText: Partial<Record<LanguageCode, Record<WorkspaceTextKey, string>>> = {
   th: {
-    backToCompanies: "กลับไปเลือกกิจการ",
-    changeCompany: "เปลี่ยนกิจการ",
-    companyName: "ชื่อกิจการ",
+    backToCompanies: "กลับไปเลือกบริษัท",
+    changeCompany: "เปลี่ยนบริษัท",
+    companyName: "ชื่อบริษัท",
     companyNamePlaceholder: "เช่น บริษัท ตัวอย่าง จำกัด",
-    companyNameRequired: "กรุณากรอกชื่อกิจการ",
-    createCompany: "สร้างกิจการ",
-    createCompanyNew: "สร้างกิจการใหม่",
-    createCompanyRequiresGoogle: "ต้องเข้าสู่ระบบด้วย Google เพื่อสร้างกิจการใหม่",
-    createShopFailed: "สร้างกิจการไม่สำเร็จ",
-    createShopSuccess: "สร้างกิจการแล้ว กำลังโหลดรายการใหม่",
-    loadShopsFailed: "โหลดกิจการไม่สำเร็จ",
-    loadingCompanies: "กำลังโหลดข้อมูลกิจการ",
+    companyNameRequired: "กรุณากรอกชื่อบริษัท",
+    createCompany: "สร้างบริษัท",
+    createCompanyNew: "สร้างบริษัทใหม่",
+    createCompanyRequiresGoogle: "ต้องเข้าสู่ระบบด้วย Google เพื่อสร้างบริษัทใหม่",
+    createShopFailed: "สร้างบริษัทไม่สำเร็จ",
+    createShopSuccess: "สร้างบริษัทแล้ว กำลังโหลดรายการใหม่",
+    loadShopsFailed: "โหลดบริษัทไม่สำเร็จ",
+    loadingCompanies: "กำลังโหลดข้อมูลบริษัท",
     logout: "ออกจากระบบ",
-    noCompanies: "ยังไม่มีกิจการ ให้สร้างกิจการใหม่ก่อนเริ่มใช้งาน",
+    noCompanies: "ยังไม่มีบริษัท ให้สร้างบริษัทใหม่ก่อนเริ่มใช้งาน",
+    signedInAs: "เข้าสู่ระบบเป็น",
+    availableCompanies: "บริษัทที่เข้าได้",
+    availableBranches: "สาขาที่เข้าได้",
     requestFailed: "เรียกข้อมูลไม่สำเร็จ",
     searchBranch: "ค้นหาสาขา",
-    searchCompany: "ค้นหากิจการ",
+    searchCompany: "ค้นหาบริษัท",
     selectBranchTitle: "เลือกสาขา",
-    selectCompanyTitle: "เลือกกิจการ",
-    selectShopFailed: "เลือกกิจการไม่สำเร็จ",
+    selectCompanyTitle: "เลือกบริษัท",
+    selectShopFailed: "เลือกบริษัทไม่สำเร็จ",
     staff: "พนักงาน",
     stepBranch: "3 เลือกสาขา",
-    stepCompany: "2 เลือกกิจการ",
+    stepCompany: "2 เลือกบริษัท",
     stepLogin: "1 เข้าสู่ระบบ",
     stepMenu: "4 เมนูหลัก",
     owner: "เจ้าของ",
@@ -161,6 +185,9 @@ const workspaceText: Partial<Record<LanguageCode, Record<WorkspaceTextKey, strin
     loadingCompanies: "កំពុងផ្ទុកក្រុមហ៊ុន",
     logout: "ចេញពីប្រព័ន្ធ",
     noCompanies: "មិនទាន់មានក្រុមហ៊ុន សូមបង្កើតក្រុមហ៊ុនមុនចាប់ផ្តើម។",
+    signedInAs: "ចូលប្រើជា",
+    availableCompanies: "ក្រុមហ៊ុនដែលអាចចូលបាន",
+    availableBranches: "សាខាដែលអាចចូលបាន",
     requestFailed: "សំណើបរាជ័យ។",
     searchBranch: "ស្វែងរកសាខា",
     searchCompany: "ស្វែងរកក្រុមហ៊ុន",
@@ -189,6 +216,9 @@ const workspaceText: Partial<Record<LanguageCode, Record<WorkspaceTextKey, strin
     loadingCompanies: "Đang tải công ty",
     logout: "Đăng xuất",
     noCompanies: "Chưa có công ty. Hãy tạo công ty trước khi bắt đầu.",
+    signedInAs: "Đăng nhập bằng",
+    availableCompanies: "Công ty có thể truy cập",
+    availableBranches: "Chi nhánh có thể truy cập",
     requestFailed: "Yêu cầu thất bại.",
     searchBranch: "Tìm chi nhánh",
     searchCompany: "Tìm công ty",
@@ -228,17 +258,37 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
   const [lineDialog, setLineDialog] = useState<LineDialogState>(emptyLineDialog);
+  const [pendingUnitSetup, setPendingUnitSetup] = useState<PendingUnitSetup | null>(null);
+  const [unitSetupSaving, setUnitSetupSaving] = useState(false);
   const linePollTimer = useRef<number | null>(null);
   const activeBackendUrl = auth?.backendUrl ?? initialBackendUrl;
   const backendLanguage = useBackendLanguage(language, activeBackendUrl, language === initialLanguage ? initialBackendLanguage : undefined);
   const text = useCallback(
-    (key: WorkspaceTextKey) => backendText(backendLanguage, workspaceBackendKeys[key] ?? key, wt(language, key)),
+    (key: WorkspaceTextKey) => {
+      const backendKey = workspaceBackendKeys[key] ?? key;
+      const fallback = wt(language, key);
+      const resolved = backendText(backendLanguage, backendKey, fallback);
+      return resolved === backendKey ? fallback : resolved;
+    },
     [backendLanguage, language],
   );
   const connectLineText = backendText(backendLanguage, "connect_line", t(language, "loginWithLine"));
   const lineLinkDescription = backendText(backendLanguage, "scan_qr_with_line", t(language, "lineLoginDescription"));
   const lineLinkSuccessText = backendText(backendLanguage, "link_line_success", t(language, "loginSuccess"));
   const lineLinkWaitingText = backendText(backendLanguage, "waiting_for_link", t(language, "lineLoginWaiting"));
+  const unitSetupTitle = backendText(backendLanguage, "product_unit_setup_required", language === "th" ? "ยังไม่มีหน่วยนับสินค้า" : "Product units are missing");
+  const unitSetupDescription = backendText(
+    backendLanguage,
+    "product_unit_setup_description",
+    language === "th"
+      ? "บริษัทนี้ยังไม่มีหน่วยนับสินค้า ต้องการเพิ่มหน่วยนับเริ่มต้นอัตโนมัติหรือไม่"
+      : "This company has no product units. Add default product units automatically?",
+  );
+  const unitSetupConfirmText = backendText(backendLanguage, "product_unit_setup_confirm", language === "th" ? "เพิ่มอัตโนมัติ" : "Add automatically");
+  const unitSetupSkipText = backendText(backendLanguage, "product_unit_setup_skip", language === "th" ? "เข้าเมนูก่อน" : "Enter menu first");
+  const unitSetupSelectedText = backendText(backendLanguage, "selected", language === "th" ? "เลือกแล้ว" : "Selected");
+  const unitSetupSelectAllText = backendText(backendLanguage, "select_all", language === "th" ? "เลือกทั้งหมด" : "Select all");
+  const unitSetupClearText = backendText(backendLanguage, "clear_selection", language === "th" ? "ล้างการเลือก" : "Clear");
   const canCreateCompany = canAuthCreateCompany(auth);
 
   const loadShops = useCallback(async (currentAuth: AuthSession | null) => {
@@ -250,8 +300,8 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       const nextShops = Array.isArray(payload.data) ? payload.data : [];
       setShops(nextShops);
       setStep("shops");
-      if (nextShops.length === 0) {
-        setNotice({ type: "info", textKey: canAuthCreateCompany(currentAuth) ? "noCompanies" : "createCompanyRequiresGoogle" });
+      if (nextShops.length === 0 && !canAuthCreateCompany(currentAuth)) {
+        setNotice({ type: "info", textKey: "createCompanyRequiresGoogle" });
       }
     } catch (error) {
       setStep("shops");
@@ -294,6 +344,13 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     if (!needle) return branches;
     return branches.filter((branch) => `${branchDisplayName(branch)} ${branch.code ?? ""}`.toLowerCase().includes(needle));
   }, [branchQuery, branches]);
+
+  const signedInAs = auth?.profile?.email || auth?.username || "";
+  const currentTitle = step === "branches" ? text("selectBranchTitle") : text("selectCompanyTitle");
+  const currentSummary =
+    step === "branches"
+      ? `${text("availableBranches")}: ${filteredBranches.length}`
+      : `${text("availableCompanies")}: ${filteredShops.length}`;
 
   function stopLinePolling() {
     if (linePollTimer.current !== null) {
@@ -428,8 +485,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       localStorage.setItem(workspaceStorageKeys.shopInfo, JSON.stringify(shopInfo.data ?? null));
 
       if (nextBranches.length <= 1) {
-        persistWorkspace(shop, nextBranches[0] ?? null, shopInfo.data ?? null);
-        router.push("/menu");
+        await enterWorkspaceWithUnitCheck(shop, nextBranches[0] ?? null, shopInfo.data ?? null);
         return;
       }
 
@@ -472,12 +528,88 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     }
   }
 
-  function selectBranch(branch: BranchListItem) {
-    if (!selectedShop) return;
+  async function selectBranch(branch: BranchListItem) {
+    if (!selectedShop || !auth) return;
+    setBusy(true);
+    setNotice(null);
     const shopInfoRaw = localStorage.getItem(workspaceStorageKeys.shopInfo);
     const shopInfo = parseShopInfo(shopInfoRaw);
-    persistWorkspace(selectedShop, branch, shopInfo);
+    try {
+      await enterWorkspaceWithUnitCheck(selectedShop, branch, shopInfo);
+    } catch (error) {
+      setNotice(error instanceof Error && error.message ? { type: "error", text: error.message } : { type: "error", text: text("requestFailed") });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function enterWorkspaceWithUnitCheck(shop: ShopListItem, branch: BranchListItem | null, shopInfo: Record<string, unknown> | null) {
+    if (!auth) return;
+    persistWorkspace(shop, branch, shopInfo);
+    const payload = await callWorkspaceApi<{ data?: unknown[]; total?: number }>(auth, "product-units?offset=0&limit=1&q=");
+
+    if (getApiTotal(payload) > 0) {
+      router.push("/menu");
+      return;
+    }
+
+    const mainShopId = getMainShopId(shopInfo);
+    const standardUnits = await callWorkspaceApi<StandardProductUnitResponse>(
+      auth,
+      `product-units/standard?mainShopId=${encodeURIComponent(mainShopId)}&q=`,
+    );
+    const units = Array.isArray(standardUnits.data) ? standardUnits.data : [];
+    setPendingUnitSetup({
+      shop,
+      branch,
+      shopInfo,
+      units,
+      selectedCodes: units.map((unit) => unit.unitcode),
+    });
+    setNotice({ type: "info", text: unitSetupTitle });
+  }
+
+  async function confirmUnitSetup() {
+    if (!auth || !pendingUnitSetup) return;
+    setUnitSetupSaving(true);
+    setNotice(null);
+    try {
+      const payload = await callWorkspaceApi<{ success?: boolean; message?: string; data?: Record<string, unknown> }>(auth, "product-units/defaults", {
+        method: "POST",
+        body: { mainShopId: getMainShopId(pendingUnitSetup.shopInfo), unitcodes: pendingUnitSetup.selectedCodes },
+      });
+      if (payload.success === false) throw new Error(payload.message ?? text("requestFailed"));
+      setPendingUnitSetup(null);
+      setNotice({ type: "success", text: payload.message ?? unitSetupConfirmText });
+      router.push("/menu");
+    } catch (error) {
+      setNotice(error instanceof Error && error.message ? { type: "error", text: error.message } : { type: "error", text: text("requestFailed") });
+    } finally {
+      setUnitSetupSaving(false);
+    }
+  }
+
+  function skipUnitSetup() {
+    setPendingUnitSetup(null);
     router.push("/menu");
+  }
+
+  function togglePendingUnit(unitcode: string, checked: boolean) {
+    setPendingUnitSetup((current) => {
+      if (!current) return current;
+      const selected = new Set(current.selectedCodes);
+      if (checked) selected.add(unitcode);
+      else selected.delete(unitcode);
+      return { ...current, selectedCodes: Array.from(selected) };
+    });
+  }
+
+  function selectAllPendingUnits() {
+    setPendingUnitSetup((current) => current ? { ...current, selectedCodes: current.units.map((unit) => unit.unitcode) } : current);
+  }
+
+  function clearPendingUnits() {
+    setPendingUnitSetup((current) => current ? { ...current, selectedCodes: [] } : current);
   }
 
   function logout() {
@@ -495,7 +627,8 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
           <span className="workspace-mark"><Building2 size={18} /></span>
           <div>
             <p>BC Ai Account</p>
-            <h1>{step === "branches" ? text("selectBranchTitle") : text("selectCompanyTitle")}</h1>
+            <h1>{currentTitle}</h1>
+            {signedInAs ? <small>{text("signedInAs")}: {signedInAs}</small> : null}
           </div>
         </div>
         <div className="workspace-actions">
@@ -519,6 +652,18 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       </header>
 
       <section className="workspace-panel">
+        <div className="workspace-panel-head">
+          <div>
+            <h2>{currentTitle}</h2>
+            <p>{currentSummary}</p>
+          </div>
+          {step === "shops" && canCreateCompany ? (
+            <button className="primary-button workspace-head-action" type="button" onClick={() => setStep("create")}>
+              <Plus size={17} /> {text("createCompanyNew")}
+            </button>
+          ) : null}
+        </div>
+
         <div className="step-strip">
           <span className="active">{text("stepLogin")}</span>
           <span className={step === "shops" || step === "branches" || step === "create" ? "active" : ""}>{text("stepCompany")}</span>
@@ -544,15 +689,16 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 <Search size={17} />
                 <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={text("searchCompany")} />
               </label>
-              {canCreateCompany ? (
-                <button className="secondary-button" type="button" onClick={() => setStep("create")}>
-                  <Plus size={17} /> {text("createCompanyNew")}
-                </button>
-              ) : null}
             </div>
-            <div className="workspace-card-grid">
-              {filteredShops.map((shop, index) => {
-                const isCreator = shop.iscreator === true
+            {filteredShops.length === 0 ? (
+              <div className="workspace-empty-state">
+                <Store size={24} />
+                <strong>{text("noCompanies")}</strong>
+              </div>
+            ) : (
+              <div className="workspace-card-grid">
+                {filteredShops.map((shop, index) => {
+                const isCreator = shop.is_creator === true
                   || Boolean(auth?.username && shop.createdby && shop.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase());
                 return (
                   <button className="shop-card" disabled={busy} key={shop.shopid} type="button" onClick={() => void selectShop(shop)}>
@@ -570,8 +716,9 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                     </span>
                   </button>
                 );
-              })}
-            </div>
+                })}
+              </div>
+            )}
           </>
         ) : null}
 
@@ -605,21 +752,28 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 <input value={branchQuery} onChange={(event) => setBranchQuery(event.target.value)} placeholder={text("searchBranch")} />
               </label>
             </div>
-            <div className="workspace-card-grid">
-              {filteredBranches.map((branch, index) => (
-                <button className="shop-card branch-card" key={branch.guidfixed || branch.code} type="button" onClick={() => selectBranch(branch)}>
+            {filteredBranches.length === 0 ? (
+              <div className="workspace-empty-state">
+                <GitBranch size={24} />
+                <strong>{text("searchBranch")}</strong>
+              </div>
+            ) : (
+              <div className="workspace-card-grid">
+                {filteredBranches.map((branch, index) => (
+                <button className="shop-card branch-card" disabled={busy} key={branch.guid_fixed || branch.code} type="button" onClick={() => void selectBranch(branch)}>
                   <span className={`shop-avatar tone-${index % 6}`}><GitBranch size={20} /></span>
                   <span className="shop-main">
                     <strong>{branchDisplayName(branch)}</strong>
-                    <small>{branch.code || branch.guidfixed}</small>
+                    <small>{branch.code || branch.guid_fixed}</small>
                   </span>
                   <span className="shop-badges">
                     {branch.base_currency ? <b>{branch.base_currency}</b> : null}
                     {branch.language ? <em>{branch.language.toUpperCase()}</em> : null}
                   </span>
                 </button>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </>
         ) : null}
       </section>
@@ -690,6 +844,68 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
           </section>
         </div>
       ) : null}
+
+      {pendingUnitSetup ? (
+        <div className="dialog-backdrop" role="presentation">
+          <section className="line-login-dialog" aria-label={unitSetupTitle} role="dialog" aria-modal="true">
+            <div className="dialog-header">
+              <div>
+                <p className="eyebrow">PRODUCT UNIT</p>
+                <h2>{unitSetupTitle}</h2>
+              </div>
+              <button className="icon-button dialog-close" type="button" onClick={skipUnitSetup} aria-label={unitSetupSkipText} disabled={unitSetupSaving}>
+                ×
+              </button>
+            </div>
+            <div className="message info">
+              <AlertCircle size={18} />
+              <span>{unitSetupDescription}</span>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-semibold">
+              <span>{unitSetupSelectedText}: {pendingUnitSetup.selectedCodes.length.toLocaleString(localeOf(language))}/{pendingUnitSetup.units.length.toLocaleString(localeOf(language))}</span>
+              <span className="line-dialog-actions">
+                <button className="secondary-button" type="button" onClick={selectAllPendingUnits} disabled={unitSetupSaving || pendingUnitSetup.units.length === 0}>
+                  {unitSetupSelectAllText}
+                </button>
+                <button className="secondary-button" type="button" onClick={clearPendingUnits} disabled={unitSetupSaving || pendingUnitSetup.selectedCodes.length === 0}>
+                  {unitSetupClearText}
+                </button>
+              </span>
+            </div>
+            <div className="grid max-h-[38dvh] gap-2 overflow-y-auto pr-1">
+              {pendingUnitSetup.units.length ? pendingUnitSetup.units.map((unit) => {
+                const checked = pendingUnitSetup.selectedCodes.includes(unit.unitcode);
+                return (
+                  <label className="flex min-w-0 cursor-pointer items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm font-semibold" key={unit.unitcode}>
+                    <input
+                      className="size-4 shrink-0 accent-primary"
+                      type="checkbox"
+                      checked={checked}
+                      disabled={unitSetupSaving}
+                      onChange={(event) => togglePendingUnit(unit.unitcode, event.target.checked)}
+                    />
+                    <span className="min-w-0 flex-1 truncate">{unitDisplayName(unit, language)}</span>
+                    <b className="shrink-0 text-xs text-muted-foreground">{unit.unitcode}</b>
+                  </label>
+                );
+              }) : (
+                <p className="rounded-xl border border-border bg-background px-3 py-2 text-sm font-semibold text-muted-foreground">
+                  {backendText(backendLanguage, "no_standard_product_unit", language === "th" ? "ไม่พบหน่วยนับมาตรฐานที่เพิ่มได้" : "No standard product units are available.")}
+                </p>
+              )}
+            </div>
+            <div className="line-dialog-actions">
+              <button className="secondary-button" type="button" onClick={skipUnitSetup} disabled={unitSetupSaving}>
+                {unitSetupSkipText}
+              </button>
+              <button className="primary-button" type="button" onClick={() => void confirmUnitSetup()} disabled={unitSetupSaving || pendingUnitSetup.selectedCodes.length === 0}>
+                {unitSetupSaving ? <Loader2 className="spin" aria-hidden="true" size={18} /> : <Plus aria-hidden="true" size={18} />}
+                <span>{unitSetupConfirmText}</span>
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </main>
   );
 }
@@ -736,6 +952,29 @@ function persistWorkspace(shop: ShopListItem, branch: BranchListItem | null, sho
   localStorage.setItem(workspaceStorageKeys.branch, JSON.stringify(branch));
 }
 
+function getApiTotal(payload: { data?: unknown[]; total?: number }): number {
+  if (typeof payload.total === "number") return payload.total;
+  return Array.isArray(payload.data) ? payload.data.length : 0;
+}
+
+function getMainShopId(shopInfo: Record<string, unknown> | null): string {
+  if (!shopInfo) return "";
+  const mainShopId = shopInfo.main_shop_id ?? shopInfo.mainshopid ?? shopInfo.mainShopId;
+  return typeof mainShopId === "string" ? mainShopId.trim() : "";
+}
+
+function unitDisplayName(unit: ProductUnitOption, language: LanguageCode): string {
+  const names = Array.isArray(unit.names) ? unit.names : [];
+  return names.find((name) => name.code?.toLowerCase() === language && name.name?.trim())?.name?.trim()
+    ?? names.find((name) => name.code?.toLowerCase() === "th" && name.name?.trim())?.name?.trim()
+    ?? names.find((name) => name.name?.trim())?.name?.trim()
+    ?? unit.unitcode;
+}
+
+function localeOf(language: LanguageCode): string {
+  return language === "th" ? "th-TH" : "en-US";
+}
+
 function parseShopInfo(raw: string | null): Record<string, unknown> | null {
   if (!raw) return null;
   try {
@@ -748,16 +987,16 @@ function parseShopInfo(raw: string | null): Record<string, unknown> | null {
 
 function createDefaultBranch(): Record<string, unknown> {
   return {
-    guidfixed: "",
+    guid_fixed: "",
     code: "00000",
     names: [{ code: "th", name: "สำนักงานใหญ่" }],
     languages: ["th"],
     base_currency: "THB",
     language: "th",
     timezone: "Asia/Bangkok",
-    timezoneoffset: "+07:00",
-    timezonelabel: "(UTC+07:00) Bangkok",
-    yeartype: "buddhist",
+    timezone_offset: "+07:00",
+    timezone_label: "(UTC+07:00) Bangkok",
+    year_type: "buddhist",
   };
 }
 
@@ -775,10 +1014,11 @@ function createShopPayload(name: string): Record<string, unknown> {
       emailstaffs: [],
       isusebranch: false,
       isusedepartment: false,
-      languageconfigs: [{ code: "th", codeTranslator: "th", name: "Thai", isuse: true, isdefault: true }],
+      language: "th",
+      languageconfigs: [{ code: "th", codetranslator: "th", name: "ภาษาไทย", is_use: true, isdefault: true }],
       latitude: 0,
       longitude: 0,
-      taxid: "",
+      tax_id: "",
       vatrate: 7,
       vattypesale: 0,
       vattypepurchase: 0,

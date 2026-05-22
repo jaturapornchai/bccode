@@ -187,7 +187,7 @@ func (svc CreditorHttpService) DeleteCreditorByGUIDs(shopID string, authUsername
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 	deleteFilterQuery := map[string]interface{}{
-		"guidfixed": bson.M{"$in": GUIDs},
+		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
 	findDocs, err := svc.repo.FindByGuids(ctx, shopID, GUIDs)
@@ -294,7 +294,7 @@ func (svc CreditorHttpService) SearchCreditor(shopID string, filters map[string]
 		"code",
 		"names.name",
 		"groups",
-		"fundcode",
+		"fund_code",
 		"addressforbilling.address.0",
 		"addressforbilling.phoneprimary",
 		"addressforbilling.phonesecondary",
@@ -334,7 +334,7 @@ func (svc CreditorHttpService) SearchCreditorStep(shopID string, langCode string
 		"code",
 		"names.name",
 		"groups",
-		"fundcode",
+		"fund_code",
 		"addressforbilling.address.0",
 		"addressforbilling.phoneprimary",
 		"addressforbilling.phonesecondary",

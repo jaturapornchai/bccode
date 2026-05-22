@@ -18,40 +18,40 @@ import (
 // ==================== Top Customers ====================
 
 type TopCustomersRequest struct {
-	ShopID   string `json:"shop_id"`
+	ShopID string `json:"shop_id"`
 	FromDate string `json:"from_date"`
-	ToDate   string `json:"to_date"`
-	Limit    int    `json:"limit"`
-	SortBy   string `json:"sort_by"` // amount, orders, profit
+	ToDate string `json:"to_date"`
+	Limit int    `json:"limit"`
+	SortBy string `json:"sort_by"` // amount, orders, profit
 }
 
 type TopCustomersResponse struct {
-	Period          string           `json:"period"`
-	Summary         CustomerSummary  `json:"summary"`
-	Customers       []TopCustomer    `json:"customers"`
-	GeneratedAt     time.Time        `json:"generated_at"`
+	Period string           `json:"period"`
+	Summary CustomerSummary  `json:"summary"`
+	Customers []TopCustomer    `json:"customers"`
+	GeneratedAt time.Time        `json:"generated_at"`
 }
 
 type CustomerSummary struct {
-	TotalCustomers     int     `json:"total_customers"`
-	TotalRevenue       float64 `json:"total_revenue"`
-	TotalRevenueWord   string  `json:"total_revenue_word"`
+	TotalCustomers int     `json:"total_customers"`
+	TotalRevenue float64 `json:"total_revenue"`
+	TotalRevenueWord string  `json:"total_revenue_word"`
 	AveragePerCustomer float64 `json:"average_per_customer"`
 	Top20Concentration float64 `json:"top_20_concentration_percent"` // % of revenue from top 20%
 }
 
 type TopCustomer struct {
-	Rank           int     `json:"rank"`
-	CustomerCode   string  `json:"customer_code"`
-	CustomerName   string  `json:"customer_name"`
-	TotalAmount    float64 `json:"total_amount"`
+	Rank int     `json:"rank"`
+	CustomerCode string  `json:"customer_code"`
+	CustomerName string  `json:"customer_name"`
+	TotalAmount float64 `json:"total_amount"`
 	TotalAmountWord string `json:"total_amount_word"`
-	OrderCount     int     `json:"order_count"`
-	AverageOrder   float64 `json:"average_order"`
-	Profit         float64 `json:"profit"`
-	ProfitMargin   float64 `json:"profit_margin_percent"`
-	Percentage     float64 `json:"percentage_of_total"`
-	LastOrderDate  string  `json:"last_order_date"`
+	OrderCount int     `json:"order_count"`
+	AverageOrder float64 `json:"average_order"`
+	Profit float64 `json:"profit"`
+	ProfitMargin float64 `json:"profit_margin_percent"`
+	Percentage float64 `json:"percentage_of_total"`
+	LastOrderDate string  `json:"last_order_date"`
 }
 
 func GetTopCustomers(ctx context.Context, shopID, fromDate, toDate string, limit int, sortBy string) (*TopCustomersResponse, error) {
@@ -215,46 +215,46 @@ func GetTopCustomers(ctx context.Context, shopID, fromDate, toDate string, limit
 // ==================== Customer Growth ====================
 
 type CustomerGrowthRequest struct {
-	ShopID   string `json:"shop_id"`
+	ShopID string `json:"shop_id"`
 	FromDate string `json:"from_date"`
-	ToDate   string `json:"to_date"`
+	ToDate string `json:"to_date"`
 }
 
 type CustomerGrowthResponse struct {
-	Period          string              `json:"period"`
-	Summary         GrowthSummary       `json:"summary"`
-	MonthlyGrowth   []MonthlyGrowth     `json:"monthly_growth"`
-	NewVsReturning  NewVsReturning      `json:"new_vs_returning"`
-	GeneratedAt     time.Time           `json:"generated_at"`
+	Period string              `json:"period"`
+	Summary GrowthSummary       `json:"summary"`
+	MonthlyGrowth []MonthlyGrowth     `json:"monthly_growth"`
+	NewVsReturning NewVsReturning      `json:"new_vs_returning"`
+	GeneratedAt time.Time           `json:"generated_at"`
 }
 
 type GrowthSummary struct {
-	TotalNewCustomers     int     `json:"total_new_customers"`
-	TotalReturning        int     `json:"total_returning_customers"`
-	GrowthRate            float64 `json:"growth_rate_percent"`
-	RetentionRate         float64 `json:"retention_rate_percent"`
-	ChurnRate             float64 `json:"churn_rate_percent"`
+	TotalNewCustomers int     `json:"total_new_customers"`
+	TotalReturning int     `json:"total_returning_customers"`
+	GrowthRate float64 `json:"growth_rate_percent"`
+	RetentionRate float64 `json:"retention_rate_percent"`
+	ChurnRate float64 `json:"churn_rate_percent"`
 	CustomerLifetimeValue float64 `json:"customer_lifetime_value"`
 }
 
 type MonthlyGrowth struct {
-	Month          string  `json:"month"`
-	NewCustomers   int     `json:"new_customers"`
-	Returning      int     `json:"returning_customers"`
-	Churned        int     `json:"churned_customers"`
-	NetGrowth      int     `json:"net_growth"`
-	GrowthRate     float64 `json:"growth_rate_percent"`
+	Month string  `json:"month"`
+	NewCustomers int     `json:"new_customers"`
+	Returning int     `json:"returning_customers"`
+	Churned int     `json:"churned_customers"`
+	NetGrowth int     `json:"net_growth"`
+	GrowthRate float64 `json:"growth_rate_percent"`
 }
 
 type NewVsReturning struct {
-	NewCustomerRevenue       float64 `json:"new_customer_revenue"`
-	NewCustomerRevenueWord   string  `json:"new_customer_revenue_word"`
-	NewCustomerPercent       float64 `json:"new_customer_percent"`
-	ReturningRevenue         float64 `json:"returning_revenue"`
-	ReturningRevenueWord     string  `json:"returning_revenue_word"`
-	ReturningPercent         float64 `json:"returning_percent"`
-	NewCustomerAvgOrder      float64 `json:"new_customer_avg_order"`
-	ReturningAvgOrder        float64 `json:"returning_avg_order"`
+	NewCustomerRevenue float64 `json:"new_customer_revenue"`
+	NewCustomerRevenueWord string  `json:"new_customer_revenue_word"`
+	NewCustomerPercent float64 `json:"new_customer_percent"`
+	ReturningRevenue float64 `json:"returning_revenue"`
+	ReturningRevenueWord string  `json:"returning_revenue_word"`
+	ReturningPercent float64 `json:"returning_percent"`
+	NewCustomerAvgOrder float64 `json:"new_customer_avg_order"`
+	ReturningAvgOrder float64 `json:"returning_avg_order"`
 }
 
 func GetCustomerGrowth(ctx context.Context, shopID, fromDate, toDate string) (*CustomerGrowthResponse, error) {
@@ -428,35 +428,35 @@ func GetCustomerGrowth(ctx context.Context, shopID, fromDate, toDate string) (*C
 // ==================== Customer Segments ====================
 
 type CustomerSegmentsRequest struct {
-	ShopID   string `json:"shop_id"`
+	ShopID string `json:"shop_id"`
 	FromDate string `json:"from_date"`
-	ToDate   string `json:"to_date"`
+	ToDate string `json:"to_date"`
 }
 
 type CustomerSegmentsResponse struct {
-	Period       string            `json:"period"`
-	Segments     []CustomerSegment `json:"segments"`
-	RFMAnalysis  RFMAnalysis       `json:"rfm_analysis"`
-	GeneratedAt  time.Time         `json:"generated_at"`
+	Period string            `json:"period"`
+	Segments []CustomerSegment `json:"segments"`
+	RFMAnalysis RFMAnalysis       `json:"rfm_analysis"`
+	GeneratedAt time.Time         `json:"generated_at"`
 }
 
 type CustomerSegment struct {
-	Name           string  `json:"name"`
-	Description    string  `json:"description"`
-	CustomerCount  int     `json:"customer_count"`
-	Percentage     float64 `json:"percentage"`
-	TotalRevenue   float64 `json:"total_revenue"`
+	Name string  `json:"name"`
+	Description string  `json:"description"`
+	CustomerCount int     `json:"customer_count"`
+	Percentage float64 `json:"percentage"`
+	TotalRevenue float64 `json:"total_revenue"`
 	RevenuePercent float64 `json:"revenue_percent"`
-	AvgOrderValue  float64 `json:"avg_order_value"`
-	AvgFrequency   float64 `json:"avg_frequency"`
+	AvgOrderValue float64 `json:"avg_order_value"`
+	AvgFrequency float64 `json:"avg_frequency"`
 }
 
 type RFMAnalysis struct {
-	Champions     int `json:"champions"`      // High R, F, M
+	Champions int `json:"champions"`      // High R, F, M
 	LoyalCustomers int `json:"loyal_customers"` // High F, M
-	AtRisk        int `json:"at_risk"`        // Low R, High F, M
-	Lost          int `json:"lost"`           // Very Low R
-	NewCustomers  int `json:"new_customers"`  // High R, Low F
+	AtRisk int `json:"at_risk"`        // Low R, High F, M
+	Lost int `json:"lost"`           // Very Low R
+	NewCustomers int `json:"new_customers"`  // High R, Low F
 }
 
 func GetCustomerSegments(ctx context.Context, shopID, fromDate, toDate string) (*CustomerSegmentsResponse, error) {
@@ -590,20 +590,20 @@ func GetCustomerSegments(ctx context.Context, shopID, fromDate, toDate string) (
 
 // CustomerSearchResult — lightweight customer record สำหรับ search result
 type CustomerSearchResult struct {
-	GuidFixed string `json:"guidfixed"`
-	Code      string `json:"code"`
-	Name0     string `json:"name0"`
-	TaxId     string `json:"taxid,omitempty"`
-	Email     string `json:"email,omitempty"`
-	ShopID    string `json:"shopid"`
+	GuidFixed string `json:"guid_fixed"`
+	Code string `json:"code"`
+	Name0 string `json:"name0"`
+	TaxId string `json:"tax_id,omitempty"`
+	Email string `json:"email,omitempty"`
+	ShopID string `json:"shopid"`
 }
 
 // SearchCustomersResponse — result สำหรับ search_customers MCP tool
 type SearchCustomersResponse struct {
-	Customers   []CustomerSearchResult `json:"customers"`
-	Count       int                   `json:"count"`
-	Keyword     string                `json:"keyword"`
-	SearchMode  string                `json:"search_mode"` // "vector", "regex"
+	Customers []CustomerSearchResult `json:"customers"`
+	Count int                   `json:"count"`
+	Keyword string                `json:"keyword"`
+	SearchMode string                `json:"search_mode"` // "vector", "regex"
 	GeneratedAt time.Time             `json:"generated_at"`
 }
 
@@ -651,8 +651,8 @@ func SearchCustomers(ctx context.Context, shopID, keyword string, limit int) (*S
 	filter := bson.M{
 		"shopid": shopID,
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 	keyFilter := bson.M{
@@ -660,7 +660,7 @@ func SearchCustomers(ctx context.Context, shopID, keyword string, limit int) (*S
 			{"code": bson.M{"$regex": keyword, "$options": "i"}},
 			{"name0": bson.M{"$regex": keyword, "$options": "i"}},
 			{"names.name": bson.M{"$regex": keyword, "$options": "i"}},
-			{"taxid": bson.M{"$regex": keyword, "$options": "i"}},
+			{"tax_id": bson.M{"$regex": keyword, "$options": "i"}},
 		},
 	}
 	filter = bson.M{"$and": []bson.M{filter, keyFilter}}
@@ -674,12 +674,12 @@ func SearchCustomers(ctx context.Context, shopID, keyword string, limit int) (*S
 	defer cursor.Close(ctx)
 
 	type mongoCustomer struct {
-		GuidFixed string `bson:"guidfixed"`
-		Code      string `bson:"code"`
-		Name0     string `bson:"name0"`
-		TaxId     string `bson:"taxid"`
-		Email     string `bson:"email"`
-		ShopID    string `bson:"shopid"`
+		GuidFixed string `bson:"guid_fixed"`
+		Code string `bson:"code"`
+		Name0 string `bson:"name0"`
+		TaxId string `bson:"tax_id"`
+		Email string `bson:"email"`
+		ShopID string `bson:"shopid"`
 	}
 	var raw []mongoCustomer
 	if err := cursor.All(ctx, &raw); err != nil {

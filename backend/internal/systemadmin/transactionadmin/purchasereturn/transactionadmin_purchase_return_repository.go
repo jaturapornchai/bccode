@@ -29,7 +29,7 @@ func (r *PurchaseReturnTransactionAdminRepository) FindPurchaseReturnDocByShopID
 	err := r.pst.Find(ctx, &purchaseReturnModel.PurchaseReturnDoc{},
 		bson.M{
 			"shopid":    shopID,
-			"deletedat": bson.M{"$exists": false}},
+			"deleted_at": bson.M{"$exists": false}},
 		&docList)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func (r *PurchaseReturnTransactionAdminRepository) FindPurchaseReturnDeleteDocBy
 	err := r.pst.Find(ctx, &purchaseReturnModel.PurchaseReturnDoc{},
 		bson.M{
 			"shopid":    shopID,
-			"deletedat": bson.M{"$exists": true},
+			"deleted_at": bson.M{"$exists": true},
 		},
 		&docList)
 	if err != nil {

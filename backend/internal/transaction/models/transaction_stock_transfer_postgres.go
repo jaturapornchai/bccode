@@ -9,14 +9,14 @@ import (
 
 type StockTransferTransactionPG struct {
 	TransactionPG `gorm:"embedded;"`
-	Items         *[]StockTransferTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	Items *[]StockTransferTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
 }
 
 type StockTransferTransactionDetailPG struct {
 	TransactionDetailPG `gorm:"embedded;"`
-	ToWhCode            string `json:"towhcode" bson:"towhcode"`
-	ToLocationCode      string `json:"tolocationcode" bson:"tolocationcode"`
-	CalcFlag            int8   `json:"calcflag" gorm:"column:calcflag"`
+	ToWhCode string `json:"towhcode" bson:"towhcode"`
+	ToLocationCode string `json:"tolocationcode" bson:"tolocationcode"`
+	CalcFlag int8   `json:"calcflag" gorm:"column:calcflag"`
 }
 
 func (StockTransferTransactionPG) TableName() string {

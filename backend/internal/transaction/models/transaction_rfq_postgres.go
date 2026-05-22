@@ -9,16 +9,16 @@ import (
 
 // ใบสืบราคา (Request for Quotation)
 type RFQTransactionPG struct {
-	TransactionPG   `gorm:"embedded;"`
-	RefPRDocNo      string                    `json:"refprdocno" gorm:"column:refprdocno"`
-	RefPRGuidFixed  string                    `json:"refprguidfixed" gorm:"column:refprguidfixed"`
-	SelectedVendor  string                    `json:"selectedvendor" gorm:"column:selectedvendor"`
+	TransactionPG  `gorm:"embedded;"`
+	RefPRDocNo string                    `json:"refprdocno" gorm:"column:refprdocno"`
+	RefPRGuidFixed string                    `json:"refprguidfixed" gorm:"column:refprguidfixed"`
+	SelectedVendor string                    `json:"selectedvendor" gorm:"column:selectedvendor"`
 	SelectionReason string                    `json:"selectionreason" gorm:"column:selectionreason"`
-	RefPODocNo      string                    `json:"refpodocno" gorm:"column:refpodocno"`
-	RefPOGuidFixed  string                    `json:"refpoguidfixed" gorm:"column:refpoguidfixed"`
-	MinVendors      int8                      `json:"minvendors" gorm:"column:minvendors"`
+	RefPODocNo string                    `json:"refpodocno" gorm:"column:refpodocno"`
+	RefPOGuidFixed string                    `json:"refpoguidfixed" gorm:"column:refpoguidfixed"`
+	MinVendors int8                      `json:"minvendors" gorm:"column:minvendors"`
 	ConversionStatus string                   `json:"conversionstatus" gorm:"column:conversionstatus"`
-	Items           *[]RFQDetailTransactionPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	Items *[]RFQDetailTransactionPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
 }
 
 // รายละเอียด ใบสืบราคา

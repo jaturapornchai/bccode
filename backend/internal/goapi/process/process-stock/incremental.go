@@ -186,10 +186,10 @@ func DeleteItemChecksum(ctx context.Context, db *sql.DB, shopId, itemCode string
 
 // IncrementalStats - Statistics for incremental calculation
 type IncrementalStats struct {
-	TotalItems   int           `json:"total_items"`
+	TotalItems int           `json:"total_items"`
 	SkippedItems int           `json:"skipped_items"`
 	ProcessedItems int         `json:"processed_items"`
-	Duration     time.Duration `json:"duration"`
+	Duration time.Duration `json:"duration"`
 	WALSavedPercent float64    `json:"wal_saved_percent"`
 }
 

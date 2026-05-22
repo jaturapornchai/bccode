@@ -18,68 +18,68 @@ type DashboardKPIsRequest struct {
 
 // DashboardKPIsResponse represents the dashboard KPIs
 type DashboardKPIsResponse struct {
-	Period           string             `json:"period"`
-	DateRange        DateRangeInfo      `json:"date_range"`
-	Sales            SalesKPI           `json:"sales"`
-	Orders           OrdersKPI          `json:"orders"`
-	Profit           ProfitKPI          `json:"profit"`
-	Customers        CustomersKPI       `json:"customers"`
-	Inventory        InventoryKPI       `json:"inventory"`
-	TopProducts      []TopProductKPI    `json:"top_products"`
-	SalesTrend       []SalesTrendPoint  `json:"sales_trend"`
-	GeneratedAt      time.Time          `json:"generated_at"`
+	Period string             `json:"period"`
+	DateRange DateRangeInfo      `json:"date_range"`
+	Sales SalesKPI           `json:"sales"`
+	Orders OrdersKPI          `json:"orders"`
+	Profit ProfitKPI          `json:"profit"`
+	Customers CustomersKPI       `json:"customers"`
+	Inventory InventoryKPI       `json:"inventory"`
+	TopProducts []TopProductKPI    `json:"top_products"`
+	SalesTrend []SalesTrendPoint  `json:"sales_trend"`
+	GeneratedAt time.Time          `json:"generated_at"`
 }
 
 type DateRangeInfo struct {
 	From string `json:"from"`
-	To   string `json:"to"`
+	To string `json:"to"`
 }
 
 type SalesKPI struct {
-	TotalAmount      float64 `json:"total_amount"`
-	TotalAmountWord  string  `json:"total_amount_word"`
-	GrowthPercent    float64 `json:"growth_percent"`
-	GrowthDirection  string  `json:"growth_direction"` // up, down, stable
-	PreviousAmount   float64 `json:"previous_amount"`
+	TotalAmount float64 `json:"total_amount"`
+	TotalAmountWord string  `json:"total_amount_word"`
+	GrowthPercent float64 `json:"growth_percent"`
+	GrowthDirection string  `json:"growth_direction"` // up, down, stable
+	PreviousAmount float64 `json:"previous_amount"`
 }
 
 type OrdersKPI struct {
-	TotalCount       int     `json:"total_count"`
-	AverageValue     float64 `json:"average_value"`
-	GrowthPercent    float64 `json:"growth_percent"`
-	GrowthDirection  string  `json:"growth_direction"`
+	TotalCount int     `json:"total_count"`
+	AverageValue float64 `json:"average_value"`
+	GrowthPercent float64 `json:"growth_percent"`
+	GrowthDirection string  `json:"growth_direction"`
 }
 
 type ProfitKPI struct {
-	GrossProfit      float64 `json:"gross_profit"`
-	GrossProfitWord  string  `json:"gross_profit_word"`
-	GrossMargin      float64 `json:"gross_margin_percent"`
-	NetProfit        float64 `json:"net_profit"`
-	NetMargin        float64 `json:"net_margin_percent"`
+	GrossProfit float64 `json:"gross_profit"`
+	GrossProfitWord string  `json:"gross_profit_word"`
+	GrossMargin float64 `json:"gross_margin_percent"`
+	NetProfit float64 `json:"net_profit"`
+	NetMargin float64 `json:"net_margin_percent"`
 }
 
 type CustomersKPI struct {
-	TotalActive      int     `json:"total_active"`
-	NewCustomers     int     `json:"new_customers"`
-	ReturningRate    float64 `json:"returning_rate_percent"`
+	TotalActive int     `json:"total_active"`
+	NewCustomers int     `json:"new_customers"`
+	ReturningRate float64 `json:"returning_rate_percent"`
 }
 
 type InventoryKPI struct {
-	TotalValue       float64 `json:"total_value"`
-	TotalValueWord   string  `json:"total_value_word"`
-	LowStockCount    int     `json:"low_stock_count"`
-	OutOfStockCount  int     `json:"out_of_stock_count"`
+	TotalValue float64 `json:"total_value"`
+	TotalValueWord string  `json:"total_value_word"`
+	LowStockCount int     `json:"low_stock_count"`
+	OutOfStockCount int     `json:"out_of_stock_count"`
 }
 
 type TopProductKPI struct {
-	ItemCode    string  `json:"itemcode"`
-	Name        string  `json:"name"`
-	Quantity    float64 `json:"quantity"`
-	Amount      float64 `json:"amount"`
+	ItemCode string  `json:"itemcode"`
+	Name string  `json:"name"`
+	Quantity float64 `json:"quantity"`
+	Amount float64 `json:"amount"`
 }
 
 type SalesTrendPoint struct {
-	Date   string  `json:"date"`
+	Date string  `json:"date"`
 	Amount float64 `json:"amount"`
 }
 
@@ -241,19 +241,19 @@ type BusinessHealthRequest struct {
 
 // BusinessHealthResponse represents overall business health
 type BusinessHealthResponse struct {
-	OverallScore     int                `json:"overall_score"`      // 0-100
-	OverallStatus    string             `json:"overall_status"`     // excellent, good, fair, poor
-	Metrics          []HealthMetric     `json:"metrics"`
-	Recommendations  []string           `json:"recommendations"`
-	GeneratedAt      time.Time          `json:"generated_at"`
+	OverallScore int                `json:"overall_score"`      // 0-100
+	OverallStatus string             `json:"overall_status"`     // excellent, good, fair, poor
+	Metrics []HealthMetric     `json:"metrics"`
+	Recommendations []string           `json:"recommendations"`
+	GeneratedAt time.Time          `json:"generated_at"`
 }
 
 type HealthMetric struct {
-	Name        string  `json:"name"`
-	Score       int     `json:"score"`       // 0-100
-	Status      string  `json:"status"`      // excellent, good, fair, poor
-	Value       string  `json:"value"`
-	Target      string  `json:"target"`
+	Name string  `json:"name"`
+	Score int     `json:"score"`       // 0-100
+	Status string  `json:"status"`      // excellent, good, fair, poor
+	Value string  `json:"value"`
+	Target string  `json:"target"`
 	Description string  `json:"description"`
 }
 

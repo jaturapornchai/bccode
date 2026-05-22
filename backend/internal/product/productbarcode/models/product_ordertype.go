@@ -4,9 +4,9 @@ import "smlcloudplatform/internal/models"
 
 type ProductOrderType struct {
 	models.DocIdentity `bson:"inline"`
-	Code               string          `json:"code" bson:"code"`
-	Names              *[]models.NameX `json:"names" bson:"names"`
-	Price              float64         `json:"price" bson:"price"`
+	Code string          `json:"code" bson:"code"`
+	Names *[]models.NameX `json:"names" bson:"names"`
+	Price float64         `json:"price" bson:"price"`
 }
 
 type ProductOrderTypeMessageQueueRequest struct {

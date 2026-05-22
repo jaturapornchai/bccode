@@ -154,7 +154,7 @@ func (svc DebtorHttpService) CreateDebtor(shopID string, authUsername string, do
 
 	// Check PointsCode uniqueness if provided
 	if doc.PointsCode != "" {
-		findDocPointsCode, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "pointscode", doc.PointsCode)
+		findDocPointsCode, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "points_code", doc.PointsCode)
 
 		if err != nil {
 			return "", err
@@ -240,7 +240,7 @@ func (svc DebtorHttpService) UpdateDebtor(shopID string, guid string, authUserna
 
 	// Check PointsCode uniqueness if provided
 	if doc.PointsCode != "" {
-		findDocPointsCode, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "pointscode", doc.PointsCode)
+		findDocPointsCode, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "points_code", doc.PointsCode)
 
 		if err != nil {
 			return err
@@ -336,7 +336,7 @@ func (svc DebtorHttpService) DeleteDebtorByGUIDs(shopID string, authUsername str
 	}
 
 	deleteFilterQuery := map[string]interface{}{
-		"guidfixed": bson.M{"$in": GUIDs},
+		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
 	err = svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
@@ -476,7 +476,7 @@ func (svc DebtorHttpService) SearchDebtor(shopID string, filters map[string]inte
 		"code",
 		"names.name",
 		"groups",
-		"fundcode",
+		"fund_code",
 		"addressforbilling.address.0",
 		"addressforbilling.phoneprimary",
 		"addressforbilling.phonesecondary",
@@ -532,7 +532,7 @@ func (svc DebtorHttpService) SearchDebtorStep(shopID string, langCode string, fi
 		"code",
 		"names.name",
 		"groups",
-		"fundcode",
+		"fund_code",
 		"addressforbilling.address.0",
 		"addressforbilling.phoneprimary",
 		"addressforbilling.phonesecondary",
@@ -754,7 +754,7 @@ func (svc DebtorHttpService) RecalPointByPointsCode(shopID string, pointsCode st
 	}
 
 	// Find the debtor by pointscode
-	findDebtor, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "pointscode", pointsCode)
+	findDebtor, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "points_code", pointsCode)
 	if err != nil {
 		return err
 	}
@@ -812,7 +812,7 @@ func (svc DebtorHttpService) AddPointManually(shopID string, pointsCode string, 
 	}
 
 	// Find debtor by pointscode
-	debtor, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "pointscode", pointsCode)
+	debtor, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "points_code", pointsCode)
 	if err != nil {
 		return fmt.Errorf("failed to find debtor: %w", err)
 	}
@@ -904,7 +904,7 @@ func (svc DebtorHttpService) BulkAddPoints(shopID string, pointsList []models.Op
 		}
 
 		// Find debtor by pointscode
-		debtor, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "pointscode", item.PointsCode)
+		debtor, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "points_code", item.PointsCode)
 		if err != nil {
 			result.Failed++
 			result.FailedItems = append(result.FailedItems, models.BulkImportPointFailedItem{

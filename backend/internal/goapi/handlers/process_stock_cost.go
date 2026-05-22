@@ -14,21 +14,21 @@ import (
 
 // ProcessStockCostRequest - request payload for process stock cost queries
 type ProcessStockCostRequest struct {
-	ShopID       string   `json:"shop_id"`
-	FromDate     string   `json:"from_date"`
-	ToDate       string   `json:"to_date"`
-	BranchCodes  []string `json:"branch_codes,omitempty"`
+	ShopID string   `json:"shop_id"`
+	FromDate string   `json:"from_date"`
+	ToDate string   `json:"to_date"`
+	BranchCodes []string `json:"branch_codes,omitempty"`
 	ProductCodes []string `json:"product_codes,omitempty"`
-	Limit        int      `json:"limit,omitempty"`
-	Offset       int      `json:"offset,omitempty"`
+	Limit int      `json:"limit,omitempty"`
+	Offset int      `json:"offset,omitempty"`
 }
 
 // ProcessStockCostSummaryRequest - request for summary queries
 type ProcessStockCostSummaryRequest struct {
-	ShopID       string   `json:"shop_id"`
-	FromDate     string   `json:"from_date"`
-	ToDate       string   `json:"to_date"`
-	BranchCodes  []string `json:"branch_codes,omitempty"`
+	ShopID string   `json:"shop_id"`
+	FromDate string   `json:"from_date"`
+	ToDate string   `json:"to_date"`
+	BranchCodes []string `json:"branch_codes,omitempty"`
 	ProductCodes []string `json:"product_codes,omitempty"`
 }
 

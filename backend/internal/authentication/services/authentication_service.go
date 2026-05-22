@@ -118,7 +118,7 @@ func (svc AuthenticationService) LoginWithPhoneNumberOTP(userLoginReq *auth_mode
 		return models.TokenLoginResponse{}, errors.New("OTP invalid")
 	}
 
-	findUser, err := svc.authRepo.FindByIdentity(context.Background(), "phonenumber", userLoginReq.PhoneNumber)
+	findUser, err := svc.authRepo.FindByIdentity(context.Background(), "phone_number", userLoginReq.PhoneNumber)
 
 	if err != nil && err.Error() != "mongo: no documents in result" {
 		return models.TokenLoginResponse{}, errors.New("auth: database connect error")
@@ -466,7 +466,7 @@ func (svc AuthenticationService) CheckExistsPhonenumber(phoneNumber string) (boo
 
 	phoneNumber = utils.NormalizePhonenumber(phoneNumber)
 
-	userPhonenumberFind, err := svc.authRepo.FindByIdentity(context.Background(), "phonenumber", phoneNumber)
+	userPhonenumberFind, err := svc.authRepo.FindByIdentity(context.Background(), "phone_number", phoneNumber)
 	if err != nil && err.Error() != "mongo: no documents in result" {
 		return true, err
 	}
@@ -533,7 +533,7 @@ func (svc AuthenticationService) RegisterByPhonenumber(userRequest auth_models.R
 	user.Email = ""
 	user.Password = hashPassword
 	user.PhoneNumber = userRequest.PhoneNumber
-	user.RegisterType = "phonenumber"
+	user.RegisterType = "phone_number"
 
 	user.CreatedAt = svc.timeNow()
 

@@ -530,13 +530,13 @@ func (h CouponHttp) DownloadImportTemplate(ctx microservice.IContext) error {
 
 	// กำหนดหัวตาราง (ใช้ชื่อฟิลด์จาก model)
 	headers := []string{
-		"couponcode",               // รหัสคูปอง
+		"coupon_code",               // รหัสคูปอง
 		"names",                    // ชื่อคูปอง (string เดียว)
 		"couponvalue",              // มูลค่าคูปอง
-		"issueddate",               // วันที่ออกคูปอง (YYYY-MM-DD)
-		"expirydate",               // วันหมดอายุ (YYYY-MM-DD)
-		"coupontype",               // ประเภทคูปอง (0,1,2)
-		"customercodes",            // รหัสลูกค้า (ถ้ามีหลายตัวใช้ ;)
+		"issued_date",               // วันที่ออกคูปอง (YYYY-MM-DD)
+		"expiry_date",               // วันหมดอายุ (YYYY-MM-DD)
+		"coupon_type",               // ประเภทคูปอง (0,1,2)
+		"customer_codes",            // รหัสลูกค้า (ถ้ามีหลายตัวใช้ ;)
 		"remark",                   // หมายเหตุ
 		"status",                   // สถานะ (0,1)
 		"isonetimeuse",             // ใช้ครั้งเดียว (true/false)

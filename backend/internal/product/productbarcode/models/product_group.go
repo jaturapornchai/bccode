@@ -3,7 +3,7 @@ package models
 import "smlcloudplatform/internal/models"
 
 type ProductGroup struct {
-	Code  string          `json:"code" bson:"code"`
+	Code string          `json:"code" bson:"code"`
 	Names *[]models.NameX `json:"names" bson:"names"`
 }
 

@@ -18,14 +18,14 @@ import (
 // ==================== PostgreSQL Dev Command ====================
 
 type PgCommandResponse struct {
-	Query        string                   `json:"query"`
-	CommandType  string                   `json:"command_type"` // SELECT, DELETE, INSERT, etc.
-	Rows         []map[string]interface{} `json:"rows,omitempty"`
-	RowCount     int                      `json:"row_count"`
+	Query string                   `json:"query"`
+	CommandType string                   `json:"command_type"` // SELECT, DELETE, INSERT, etc.
+	Rows []map[string]interface{} `json:"rows,omitempty"`
+	RowCount int                      `json:"row_count"`
 	RowsAffected int64                    `json:"rows_affected"`
-	Truncated    bool                     `json:"truncated"`
-	ExecutionMs  int64                    `json:"execution_ms"`
-	GeneratedAt  time.Time                `json:"generated_at"`
+	Truncated bool                     `json:"truncated"`
+	ExecutionMs int64                    `json:"execution_ms"`
+	GeneratedAt time.Time                `json:"generated_at"`
 }
 
 // ExecutePgCommand รัน SQL query/command บน PostgreSQL (dev — ไม่จำกัด readonly)
@@ -145,14 +145,14 @@ func ExecutePgCommand(ctx context.Context, shopID, query string, limit int) (*Pg
 // ==================== ClickHouse Dev Command ====================
 
 type ChCommandResponse struct {
-	Database     string                   `json:"database"`
-	Query        string                   `json:"query"`
-	CommandType  string                   `json:"command_type"`
-	Rows         []map[string]interface{} `json:"rows,omitempty"`
-	RowCount     int                      `json:"row_count"`
-	Truncated    bool                     `json:"truncated"`
-	ExecutionMs  int64                    `json:"execution_ms"`
-	GeneratedAt  time.Time                `json:"generated_at"`
+	Database string                   `json:"database"`
+	Query string                   `json:"query"`
+	CommandType string                   `json:"command_type"`
+	Rows []map[string]interface{} `json:"rows,omitempty"`
+	RowCount int                      `json:"row_count"`
+	Truncated bool                     `json:"truncated"`
+	ExecutionMs int64                    `json:"execution_ms"`
+	GeneratedAt time.Time                `json:"generated_at"`
 }
 
 // ExecuteChCommand รัน SQL query/command บน ClickHouse (dev — ไม่จำกัด readonly)

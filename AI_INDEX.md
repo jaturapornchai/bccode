@@ -14,14 +14,15 @@ Purpose: keep Codex, Claude Code, and other agents fast. Read this file first, t
 - Focused frontend lint: `cd frontend; npm run lint -- <file>`
 - Backend health: `curl.exe --max-time 10 -s -i http://localhost:8888/healthz`
 - Narrow search: `rg -n "term" <path>`
-- Safe git status: `git status --short -- . ':!clone-skills' ':!frontend/bcaiaccount' ':!frontend/bclms'`
+- Focused git status: `git status --short -- <exact-path-or-module>`
+- Changed-file count only: `git diff --name-only -- <exact-path-or-module> | Measure-Object -Line`
 
 ## Large Files
 - `frontend/src/app/system-settings/system-settings-screen.tsx` - do not open full file; search exact route/field/function.
 - `frontend/src/app/menu/main-menu-screen.tsx` - do not open full file; search exact component or label.
 - `frontend/src/app/globals.css` - search class names only.
 - `backend/assets/language/languages.tsv` - never open full file; query exact keys only.
-- Generated Swagger/docs and lockfiles are not default context.
+- Generated Swagger/docs, manuals, Playwright snapshots/logs, duplicate skill packs, backend runtime logs, and lockfiles are not default context.
 
 ## Task Routes
 - Login/auth UI: `frontend/src/app/login-screen.tsx`, `frontend/src/app/api/auth/**`, backend auth files only when API behavior is involved.
@@ -35,7 +36,7 @@ Purpose: keep Codex, Claude Code, and other agents fast. Read this file first, t
 - Backend auth/password/shop access: `backend/internal/authentication/authentication_http.go`, `backend/internal/authentication/services/authentication_service.go`, `backend/internal/authentication/models/user.go`, `backend/internal/shop/**`.
 
 ## Manual Rule
-Do not create or update manuals during normal work. Manual generation is only when explicitly requested or at final project manual phase.
+Do not create or update manuals automatically. Manual generation is only when Jead explicitly requests a specific manual or manual batch.
 
 ## Escalation
 Use broad repo review only when the user asks for whole-system review, security review, production readiness, or architecture changes.

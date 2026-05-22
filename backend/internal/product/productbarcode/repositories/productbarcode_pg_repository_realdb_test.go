@@ -15,23 +15,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var barcode = &models.ProductBarcodePg{}
-var productBarcodeRepository repositories.IProductBarcodePGRepository
+func newRealDBRepository(t *testing.T) (repositories.IProductBarcodePGRepository, *models.ProductBarcodePg) {
+	t.Helper()
+	if os.Getenv("BC_REAL_DB_TESTS") != "1" {
+		t.Skip("set BC_REAL_DB_TESTS=1 to run PostgreSQL integration tests")
+	}
 
-func init() {
-
-	os.Setenv("MODE", "test")
-	cfg := config.NewConfig()
-
-	repo := microservice.NewPersister(cfg.PersisterConfig())
-
-	productBarcodeRepository = repositories.NewProductBarcodePGRepository(repo)
-
+	t.Setenv("MODE", "test")
 	codeTh := "th"
 	itemNameThai := "ทดสอบ"
 	codeEn := "en"
 	itemNameEng := "test"
-	barcode = &models.ProductBarcodePg{
+	barcode := &models.ProductBarcodePg{
 		ShopID:  "shoptester",
 		Barcode: "1234567890",
 		PartitionIdentity: commonModel.PartitionIdentity{
@@ -48,23 +43,21 @@ func init() {
 			},
 		},
 	}
+
+	cfg := config.NewConfig()
+	repo := microservice.NewPersister(cfg.PersisterConfig())
+	return repositories.NewProductBarcodePGRepository(repo), barcode
 }
 
 func TestCreateProductBarcodeInRealDB(t *testing.T) {
-
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
-	}
+	productBarcodeRepository, barcode := newRealDBRepository(t)
 
 	err := productBarcodeRepository.Create(barcode)
 	assert.NoError(t, err)
 }
 
 func TestGetBarcode(t *testing.T) {
-
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
-	}
+	productBarcodeRepository, barcode := newRealDBRepository(t)
 
 	bar, err := productBarcodeRepository.Get(barcode.ShopID, barcode.Barcode)
 	assert.NoError(t, err)
@@ -73,10 +66,7 @@ func TestGetBarcode(t *testing.T) {
 }
 
 func TestUpdateBarcode(t *testing.T) {
-
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
-	}
+	productBarcodeRepository, barcode := newRealDBRepository(t)
 
 	currentTime := time.Now()
 	timeStr := currentTime.Format("20060201150405")
@@ -92,10 +82,7 @@ func TestUpdateBarcode(t *testing.T) {
 }
 
 func TestGetBarcodeAssertNotFoundBarcode(t *testing.T) {
-
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
-	}
+	productBarcodeRepository, _ := newRealDBRepository(t)
 
 	doc, err := productBarcodeRepository.Get("999", "999")
 	assert.NoError(t, err)
@@ -104,10 +91,7 @@ func TestGetBarcodeAssertNotFoundBarcode(t *testing.T) {
 }
 
 func TestDeleteProductBarcodeInRealDB(t *testing.T) {
-
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
-	}
+	productBarcodeRepository, barcode := newRealDBRepository(t)
 
 	err := productBarcodeRepository.Delete(barcode.ShopID, barcode.Barcode)
 	assert.NoError(t, err)

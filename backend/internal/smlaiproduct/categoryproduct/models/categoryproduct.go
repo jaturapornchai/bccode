@@ -10,13 +10,13 @@ const categoryproductCollectionName = "categoryProductMaster"
 
 type CategoryProduct struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code                     string          `json:"code" bson:"code"`
-	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	Code string          `json:"code" bson:"code"`
+	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 }
 
 type CategoryProductInfo struct {
 	models.DocIdentity `bson:"inline"`
-	CategoryProduct    `bson:"inline"`
+	CategoryProduct  `bson:"inline"`
 }
 
 func (CategoryProductInfo) CollectionName() string {
@@ -29,7 +29,7 @@ type CategoryProductData struct {
 }
 
 type CategoryProductDoc struct {
-	ID                  primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	CategoryProductData `bson:"inline"`
 	models.ActivityDoc  `bson:"inline"`
 }

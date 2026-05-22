@@ -6,37 +6,37 @@ import (
 )
 
 type StockBalanceImportMeta struct {
-	TotalItem   uint64  `json:"totalitem" ch:"totalitem"`
-	TotalAmount float64 `json:"totalamount" ch:"totalamount"`
+	TotalItem uint64  `json:"totalitem" ch:"totalitem"`
+	TotalAmount float64 `json:"total_amount" ch:"total_amount"`
 }
 
 type StockBalanceImportRaw struct {
-	Barcode       string  `json:"barcode" ch:"barcode"`
-	Name          string  `json:"name" ch:"name"`
-	UnitCode      string  `json:"unitcode" ch:"unitcode"`
+	Barcode string  `json:"barcode" ch:"barcode"`
+	Name string  `json:"name" ch:"name"`
+	UnitCode string  `json:"unitcode" ch:"unitcode"`
 	WarehouseCode string  `json:"warehousecode" ch:"warehousecode"`
-	ShelfCode     string  `json:"shelfcode" ch:"shelfcode"`
-	Qty           float64 `json:"qty" ch:"qty"`
-	Price         float64 `json:"price" ch:"price"`
-	SumAmount     float64 `json:"sumamount" ch:"sumamount"`
-	IsNotExist    bool    `json:"isnotexist" ch:"isnotexist"`
+	ShelfCode string  `json:"shelfcode" ch:"shelfcode"`
+	Qty float64 `json:"qty" ch:"qty"`
+	Price float64 `json:"price" ch:"price"`
+	SumAmount float64 `json:"sum_amount" ch:"sum_amount"`
+	IsNotExist bool    `json:"isnotexist" ch:"isnotexist"`
 }
 
 type StockBalanceImport struct {
-	TaskID    string  `json:"taskid" ch:"taskid"`
+	TaskID string  `json:"taskid" ch:"taskid"`
 	RowNumber float64 `json:"rownumber" ch:"rownumber"`
 	StockBalanceImportRaw
 }
 
 type StockBalanceImportInfo struct {
-	GUIDFixed string `json:"guidfixed" ch:"guidfixed"`
-	ShopID    string `json:"shopid" ch:"shopid"`
+	GUIDFixed string `json:"guid_fixed" ch:"guid_fixed"`
+	ShopID string `json:"shopid" ch:"shopid"`
 	StockBalanceImport
 }
 
 type StockBalanceImportDoc struct {
 	StockBalanceImportInfo
-	CreatedAt time.Time `json:"createdat" ch:"createdat"`
+	CreatedAt time.Time `json:"created_at" ch:"created_at"`
 	CreatedBy string    `json:"createdby" ch:"createdby"`
 }
 
@@ -57,12 +57,12 @@ const (
 )
 
 type PaginationData struct {
-	Total     int64 `json:"total"`
-	Page      int64 `json:"page"`
-	PerPage   int64 `json:"perPage"`
-	Prev      int64 `json:"prev"`
-	Next      int64 `json:"next"`
-	TotalPage int64 `json:"totalPage"`
+	Total int64 `json:"total"`
+	Page int64 `json:"page"`
+	PerPage int64 `json:"per_page"`
+	Prev int64 `json:"prev"`
+	Next int64 `json:"next"`
+	TotalPage int64 `json:"total_page"`
 }
 
 func (p *PaginationData) Build() {

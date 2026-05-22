@@ -12,9 +12,9 @@ import (
 // เพิ่มหนี้ซื้อสินค้า
 type PurchaseDebitNoteTransactionPG struct {
 	TransactionPG `bson:"inline"`
-	CreditorCode  string                                  `json:"creditorcode" gorm:"column:creditorcode"`
+	CreditorCode string                                  `json:"creditorcode" gorm:"column:creditorcode"`
 	CreditorNames pkgModels.JSONB                         `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
-	Items         *[]PurchaseDebitNoteTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	Items *[]PurchaseDebitNoteTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
 }
 
 // รายละเอียด เพิ่มหนี้ซื้อสินค้า

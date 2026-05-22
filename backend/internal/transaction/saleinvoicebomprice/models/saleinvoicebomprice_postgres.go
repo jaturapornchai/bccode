@@ -10,22 +10,22 @@ import (
 )
 
 type SaleInvoiceBomPricePg struct {
-	ShopID    string                `json:"shopid" gorm:"column:shopid"`
-	GuidFixed string                `json:"guidfixed" bson:"guidfixed" gorm:"column:guidfixed;primaryKey"`
-	BOMGuid   string                `json:"bomguid" gorm:"column:bomguid"`
-	DocNo     string                `json:"docno" gorm:"column:docno"`
-	Prices    SaleInvoicePriceJSONB `json:"prices" gorm:"column:prices"`
-	Barcode   string                `json:"barcode" bson:"barcode"`
-	Qty       float64               `json:"qty" bson:"qty"`
-	Price     float64               `json:"price" bson:"price"`
-	Ratio     float64               `json:"ratio" bson:"ratio"`
+	ShopID string                `json:"shopid" gorm:"column:shopid"`
+	GuidFixed string                `json:"guid_fixed" bson:"guid_fixed" gorm:"column:guid_fixed;primaryKey"`
+	BOMGuid string                `json:"bomguid" gorm:"column:bomguid"`
+	DocNo string                `json:"docno" gorm:"column:docno"`
+	Prices SaleInvoicePriceJSONB `json:"prices" gorm:"column:prices"`
+	Barcode string                `json:"barcode" bson:"barcode"`
+	Qty float64               `json:"qty" bson:"qty"`
+	Price float64               `json:"price" bson:"price"`
+	Ratio float64               `json:"ratio" bson:"ratio"`
 }
 
 type SaleInvoicePricePg struct {
 	Barcode string  `json:"barcode" bson:"barcode"`
-	Qty     float64 `json:"qty" bson:"qty"`
-	Price   float64 `json:"price" bson:"price"`
-	Ratio   float64 `json:"ratio" bson:"ratio"`
+	Qty float64 `json:"qty" bson:"qty"`
+	Price float64 `json:"price" bson:"price"`
+	Ratio float64 `json:"ratio" bson:"ratio"`
 }
 
 func (s *SaleInvoiceBomPricePg) CompareTo(other *SaleInvoiceBomPricePg) bool {

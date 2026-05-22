@@ -161,7 +161,7 @@ func (svc AccountGroupHttpService) Search(shopID string, pageable micromodels.Pa
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"guidfixed",
+		"guid_fixed",
 		"code",
 	}
 

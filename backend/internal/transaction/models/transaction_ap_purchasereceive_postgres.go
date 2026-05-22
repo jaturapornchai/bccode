@@ -12,9 +12,9 @@ import (
 // ตั้งหนี้จากการรับสินค้า
 type APPurchaseReceivePG struct {
 	TransactionPG `bson:"inline"`
-	CreditorCode  string                       `json:"creditorcode" gorm:"column:creditorcode"`
+	CreditorCode string                       `json:"creditorcode" gorm:"column:creditorcode"`
 	CreditorNames pkgModels.JSONB              `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
-	Items         *[]APPurchaseReceiveDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	Items *[]APPurchaseReceiveDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
 }
 
 // รายละเอียด ตั้งหนี้จากการรับสินค้า

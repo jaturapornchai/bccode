@@ -12,12 +12,12 @@ const saleorderCollectionName = "transactionAccrualreceive"
 type Accrualreceive struct {
 	models.PartitionIdentity `bson:"inline"`
 	transmodels.Transaction  `bson:"inline"`
-	RefPurchasePartial       []string `json:"refpurchasepartial" bson:"refpurchasepartial"`
+	RefPurchasePartial []string `json:"refpurchasepartial" bson:"refpurchasepartial"`
 }
 
 type AccrualreceiveInfo struct {
 	models.DocIdentity `bson:"inline"`
-	Accrualreceive     `bson:"inline"`
+	Accrualreceive  `bson:"inline"`
 }
 
 func (AccrualreceiveInfo) CollectionName() string {
@@ -30,7 +30,7 @@ type AccrualreceiveData struct {
 }
 
 type AccrualreceiveDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	AccrualreceiveData `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }

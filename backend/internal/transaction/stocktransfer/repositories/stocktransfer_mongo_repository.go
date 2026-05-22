@@ -74,7 +74,7 @@ func (repo StockTransferRepository) FindDocOne(ctx context.Context, shopID, docn
 func (repo StockTransferRepository) FindLastDocNo(ctx context.Context, shopID string, prefixDocNo string) (models.StockTransferDoc, error) {
 	filters := bson.M{
 		"shopid": shopID,
-		"deletedat": bson.M{
+		"deleted_at": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

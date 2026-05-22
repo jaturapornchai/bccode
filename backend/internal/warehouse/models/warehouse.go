@@ -17,31 +17,31 @@ const warehouseCollectionName = "warehouse"
 
 type Warehouse struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code                     string          `json:"code" bson:"code"`
-	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
-	Location                 *[]Location     `json:"location" bson:"location" validate:"omitempty,unique=Code,dive"`
+	Code string          `json:"code" bson:"code"`
+	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	Location *[]Location     `json:"location" bson:"location" validate:"omitempty,unique=Code,dive"`
 }
 
 type Location struct {
-	Code  string          `json:"code" bson:"code"`
+	Code string          `json:"code" bson:"code"`
 	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 	Shelf []Shelf         `json:"shelf" bson:"shelf" validate:"omitempty,unique=Code,dive"`
 }
 
 type Shelf struct {
-	Code         string                `json:"code" bson:"code"`
-	Name         string                `json:"name" bson:"name" validate:"required,min=1"`
-	Min          int                   `json:"min" bson:"min" validate:"omitempty,gte=0"`
-	Max          int                   `json:"max" bson:"max" validate:"omitempty,gte=0"`
+	Code string                `json:"code" bson:"code"`
+	Name string                `json:"name" bson:"name" validate:"required,min=1"`
+	Min int                   `json:"min" bson:"min" validate:"omitempty,gte=0"`
+	Max int                   `json:"max" bson:"max" validate:"omitempty,gte=0"`
 	ProductItems []ShelfProductBarcode `json:"productitems" bson:"productitems"`
 }
 
 type ShelfProductBarcode struct {
-	GuidFixed string          `json:"guidfixed" bson:"guidfixed"`
-	Barcode   string          `json:"barcode" bson:"barcode"`
-	Unitcode  string          `json:"unitcode" bson:"unitcode" validate:"required"`
+	GuidFixed string          `json:"guid_fixed" bson:"guid_fixed"`
+	Barcode string          `json:"barcode" bson:"barcode"`
+	Unitcode string          `json:"unitcode" bson:"unitcode" validate:"required"`
 	UnitNames *[]models.NameX `json:"unitnames" bson:"unitnames"`
-	Names     *[]models.NameX `json:"names" bson:"names"`
+	Names *[]models.NameX `json:"names" bson:"names"`
 }
 
 // Helper methods for Shelf
@@ -101,24 +101,24 @@ type BulkRemoveProductRequest struct {
 }
 
 type BulkProductOperationResponse struct {
-	Success      bool                  `json:"success"`
-	TotalCount   int                   `json:"totalcount"`
+	Success bool                  `json:"success"`
+	TotalCount int                   `json:"totalcount"`
 	SuccessCount int                   `json:"successcount"`
-	FailedCount  int                   `json:"failedcount"`
-	Errors       []BulkOperationError  `json:"errors,omitempty"`
-	Results      []BulkOperationResult `json:"results,omitempty"`
+	FailedCount int                   `json:"failedcount"`
+	Errors []BulkOperationError  `json:"errors,omitempty"`
+	Results []BulkOperationResult `json:"results,omitempty"`
 }
 
 type BulkOperationError struct {
-	Index        int    `json:"index"`
-	ProductGuid  string `json:"productguid,omitempty"`
+	Index int    `json:"index"`
+	ProductGuid string `json:"productguid,omitempty"`
 	ErrorMessage string `json:"errormessage"`
 }
 
 type BulkOperationResult struct {
-	Index       int    `json:"index"`
+	Index int    `json:"index"`
 	ProductGuid string `json:"productguid"`
-	Status      string `json:"status"` // "success", "updated", "removed"
+	Status string `json:"status"` // "success", "updated", "removed"
 }
 
 // Bulk operations methods for Shelf
@@ -182,12 +182,12 @@ func (s *Shelf) RemoveMultipleProductBarcodes(guidFixedList []string) BulkProduc
 }
 
 type LocationInfo struct {
-	GuidFixed      string          `json:"guidfixed" bson:"guidfixed"`
-	WarehouseCode  string          `json:"warehousecode" bson:"warehousecode"`
+	GuidFixed string          `json:"guid_fixed" bson:"guid_fixed"`
+	WarehouseCode string          `json:"warehousecode" bson:"warehousecode"`
 	WarehouseNames *[]models.NameX `json:"warehousenames" bson:"warehousenames"`
-	LocationCode   string          `json:"locationcode" bson:"locationcode"`
-	LocationNames  *[]models.NameX `json:"locationnames" bson:"locationnames"`
-	Shelf          []Shelf         `json:"shelf" bson:"shelf"`
+	LocationCode string          `json:"locationcode" bson:"locationcode"`
+	LocationNames *[]models.NameX `json:"locationnames" bson:"locationnames"`
+	Shelf []Shelf         `json:"shelf" bson:"shelf"`
 }
 
 func (LocationInfo) CollectionName() string {
@@ -195,13 +195,13 @@ func (LocationInfo) CollectionName() string {
 }
 
 type ShelfInfo struct {
-	GuidFixed      string          `json:"guidfixed" bson:"guidfixed"`
-	WarehouseCode  string          `json:"warehousecode" bson:"warehousecode"`
+	GuidFixed string          `json:"guid_fixed" bson:"guid_fixed"`
+	WarehouseCode string          `json:"warehousecode" bson:"warehousecode"`
 	WarehouseNames *[]models.NameX `json:"warehousenames" bson:"warehousenames"`
-	LocationCode   string          `json:"locationcode" bson:"locationcode"`
-	LocationNames  *[]models.NameX `json:"locationnames" bson:"locationnames"`
-	ShelfCode      string          `json:"shelfcode" bson:"shelfcode"`
-	ShelfName      string          `json:"shelfname" bson:"shelfname"`
+	LocationCode string          `json:"locationcode" bson:"locationcode"`
+	LocationNames *[]models.NameX `json:"locationnames" bson:"locationnames"`
+	ShelfCode string          `json:"shelfcode" bson:"shelfcode"`
+	ShelfName string          `json:"shelfname" bson:"shelfname"`
 }
 
 func (ShelfInfo) CollectionName() string {
@@ -210,21 +210,21 @@ func (ShelfInfo) CollectionName() string {
 
 type LocationRequest struct {
 	WarehouseCode string          `json:"warehousecode" bson:"warehousecode" validate:"required"`
-	Code          string          `json:"locationcode" bson:"locationcode" validate:"required"`
-	Names         *[]models.NameX `json:"locationnames" bson:"locationnames"`
-	Shelf         []Shelf         `json:"shelf" bson:"shelf"`
+	Code string          `json:"locationcode" bson:"locationcode" validate:"required"`
+	Names *[]models.NameX `json:"locationnames" bson:"locationnames"`
+	Shelf []Shelf         `json:"shelf" bson:"shelf"`
 }
 
 type ShelfRequest struct {
 	WarehouseCode string `json:"warehousecode" bson:"warehousecode" validate:"required"`
-	LocationCode  string `json:"locationcode" bson:"locationcode" validate:"required"`
-	Code          string `json:"shelfcode" bson:"shelfcode" validate:"required"`
-	Name          string `json:"shelfname" bson:"shelfname"`
+	LocationCode string `json:"locationcode" bson:"locationcode" validate:"required"`
+	Code string `json:"shelfcode" bson:"shelfcode" validate:"required"`
+	Name string `json:"shelfname" bson:"shelfname"`
 }
 
 type WarehouseInfo struct {
 	models.DocIdentity `bson:"inline"`
-	Warehouse          `bson:"inline"`
+	Warehouse  `bson:"inline"`
 }
 
 func (WarehouseInfo) CollectionName() string {
@@ -233,12 +233,12 @@ func (WarehouseInfo) CollectionName() string {
 
 type WarehouseData struct {
 	models.ShopIdentity `bson:"inline"`
-	WarehouseInfo       `bson:"inline"`
+	WarehouseInfo  `bson:"inline"`
 }
 
 type WarehouseDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	WarehouseData      `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	WarehouseData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -255,7 +255,7 @@ func (WarehouseItemGuid) CollectionName() string {
 }
 
 type WarehouseActivity struct {
-	WarehouseData       `bson:"inline"`
+	WarehouseData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 
@@ -275,15 +275,15 @@ func (WarehouseDeleteActivity) CollectionName() string {
 type WarehouseMessageQueue struct {
 	models.ShopIdentity `bson:"inline"`
 	models.DocIdentity  `bson:"inline"`
-	Warehouse           `bson:"inline"`
+	Warehouse  `bson:"inline"`
 }
 
 type WarehousePG struct {
 	models.ShopIdentity `gorm:"embedded;"`
-	GuidFixed           string       `json:"guidfixed" gorm:"column:guidfixed;primaryKey"`
-	Code                string       `json:"code" gorm:"column:code"`
-	Names               models.JSONB `json:"names" gorm:"column:names;type:jsonb"`
-	Location            LocationsPG  `json:"location" gorm:"column:location;type:jsonb"`
+	GuidFixed string       `json:"guid_fixed" gorm:"column:guid_fixed;primaryKey"`
+	Code string       `json:"code" gorm:"column:code"`
+	Names models.JSONB `json:"names" gorm:"column:names;type:jsonb"`
+	Location LocationsPG  `json:"location" gorm:"column:location;type:jsonb"`
 }
 
 func (WarehousePG) TableName() string {
@@ -301,7 +301,7 @@ func (jd *WarehousePG) BeforeCreate(tx *gorm.DB) error {
 func (s *WarehousePG) CompareTo(other *WarehousePG) bool {
 
 	diff := cmp.Diff(s, other,
-		cmpopts.IgnoreFields(WarehousePG{}, "guidfixed"),
+		cmpopts.IgnoreFields(WarehousePG{}, "guid_fixed"),
 	)
 
 	return diff == ""

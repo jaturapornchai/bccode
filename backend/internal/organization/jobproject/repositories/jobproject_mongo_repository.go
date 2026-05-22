@@ -63,7 +63,7 @@ func (repo JobProjectRepository) FindOneByCode(ctx context.Context, shopID strin
 		models.JobProjectDoc{},
 		bson.M{
 			"shopid":         shopID,
-			"deletedat":      bson.M{"$exists": false},
+			"deleted_at":      bson.M{"$exists": false},
 			"branchcode":     branchCode,
 			"jobprojectcode": jobProjectCode,
 		}, &doc)

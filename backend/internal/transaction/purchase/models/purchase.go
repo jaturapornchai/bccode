@@ -16,7 +16,7 @@ type Purchase struct {
 
 type PurchaseInfo struct {
 	models.DocIdentity `bson:"inline"`
-	Purchase           `bson:"inline"`
+	Purchase  `bson:"inline"`
 }
 
 func (PurchaseInfo) CollectionName() string {
@@ -25,12 +25,12 @@ func (PurchaseInfo) CollectionName() string {
 
 type PurchaseData struct {
 	models.ShopIdentity `bson:"inline"`
-	PurchaseInfo        `bson:"inline"`
+	PurchaseInfo  `bson:"inline"`
 }
 
 type PurchaseDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	PurchaseData       `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	PurchaseData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -47,7 +47,7 @@ func (PurchaseItemGuid) CollectionName() string {
 }
 
 type PurchaseActivity struct {
-	PurchaseData        `bson:"inline"`
+	PurchaseData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

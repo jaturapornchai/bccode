@@ -181,7 +181,7 @@ func validateHeader(trans *transmodels.Transaction, result *ValidationResult) {
 
 	// vattype — ประเภทภาษี (must be 0, 1, 2, or 3)
 	if !validVatTypes[trans.TransactionHeader.VatType] {
-		result.AddErrorf("vattype", "INVALID_VALUE",
+		result.AddErrorf("vat_type", "INVALID_VALUE",
 			"ประเภทภาษี (vattype) ไม่ถูกต้อง: %d — ค่าที่รองรับ: 0 (ไม่มีภาษี), 1 (รวมภาษี), 2 (แยกภาษี), 3 (ยกเว้นภาษี)",
 			"Invalid VAT type: %d — allowed values: 0 (no VAT), 1 (VAT included), 2 (VAT excluded), 3 (VAT exempt).",
 			trans.TransactionHeader.VatType, trans.TransactionHeader.VatType)
@@ -279,7 +279,7 @@ func checkDetailNaN(index int, itemLabel string, detail *transmodels.Detail, res
 	fields := []fieldCheck{
 		{"qty", detail.Qty},
 		{"price", detail.Price},
-		{"sumamount", detail.SumAmount},
+		{"sum_amount", detail.SumAmount},
 		{"discountamount", detail.DiscountAmount},
 		{"price_doc", detail.PriceDoc},
 		{"sumamount_doc", detail.SumAmountDoc},
@@ -316,7 +316,7 @@ func validateMultiCurrency(trans *transmodels.Transaction, result *ValidationRes
 	// If document currency is specified, exchange rate must be valid
 	if header.DocCurrency != "" {
 		if header.ExchangeRate <= 0 {
-			result.AddErrorf("exchangerate", "INVALID_EXCHANGE_RATE",
+			result.AddErrorf("exchange_rate", "INVALID_EXCHANGE_RATE",
 				"อัตราแลกเปลี่ยนต้องมากกว่า 0 เมื่อระบุสกุลเงินเอกสาร (%s) — ค่าปัจจุบัน: %.6f",
 				"Exchange rate must be greater than 0 when document currency (%s) is specified — current value: %.6f.",
 				header.DocCurrency, header.ExchangeRate, header.DocCurrency, header.ExchangeRate)
@@ -331,10 +331,10 @@ func validateMultiCurrency(trans *transmodels.Transaction, result *ValidationRes
 	}
 
 	headerFields := []headerFieldCheck{
-		{"exchangerate", header.ExchangeRate},
+		{"exchange_rate", header.ExchangeRate},
 		{"totalvalue", header.TotalValue},
 		{"totalaftervat", header.TotalAfterVat},
-		{"totalamount", header.TotalAmount},
+		{"total_amount", header.TotalAmount},
 		{"totalbeforevat", header.TotalBeforeVat},
 		{"totalvatvalue", header.TotalVatValue},
 		{"totaldiscount", header.TotalDiscount},

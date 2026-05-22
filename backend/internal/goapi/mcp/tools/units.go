@@ -22,33 +22,33 @@ const unitCollection = "units"
 
 // UnitNameEntry ชื่อหน่วยนับแต่ละภาษา
 type UnitNameEntry struct {
-	Code     string `json:"code" bson:"code"`
-	Name     string `json:"name" bson:"name"`
-	IsAuto   bool   `json:"isauto" bson:"isauto"`
+	Code string `json:"code" bson:"code"`
+	Name string `json:"name" bson:"name"`
+	IsAuto bool   `json:"isauto" bson:"isauto"`
 	IsDelete bool   `json:"isdelete" bson:"isdelete"`
 }
 
 // UnitDocument เอกสารหน่วยนับใน MongoDB
 type UnitDocument struct {
-	ID        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ShopID    string             `json:"shopid" bson:"shopid"`
-	GuidFixed string             `json:"guidfixed" bson:"guidfixed"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ShopID string             `json:"shopid" bson:"shopid"`
+	GuidFixed string             `json:"guid_fixed" bson:"guid_fixed"`
 	UnitCode string `json:"unitcode" bson:"unitcode"`
-	Names     []UnitNameEntry    `json:"names" bson:"names"`
+	Names []UnitNameEntry    `json:"names" bson:"names"`
 	CreatedBy string             `json:"createdby" bson:"createdby"`
-	CreatedAt time.Time          `json:"createdat" bson:"createdat"`
+	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
 	UpdatedBy string             `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
-	UpdatedAt time.Time          `json:"updatedat,omitempty" bson:"updatedat,omitempty"`
-	DeletedAt time.Time          `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
+	UpdatedAt time.Time          `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
+	DeletedAt time.Time          `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
 }
 
 // ==================== List Units ====================
 
 // ListUnitsResponse ผลลัพธ์จากการดึง/ค้นหาหน่วยนับ
 type ListUnitsResponse struct {
-	Units       []UnitDocument `json:"units"`
-	Count       int            `json:"count"`
-	Keyword     string         `json:"keyword,omitempty"`
+	Units []UnitDocument `json:"units"`
+	Count int            `json:"count"`
+	Keyword string         `json:"keyword,omitempty"`
 	GeneratedAt time.Time      `json:"generated_at"`
 }
 
@@ -77,8 +77,8 @@ func ListUnits(ctx context.Context, shopID, keyword string, limit int) (*ListUni
 	filter := bson.M{
 		"shopid": shopID,
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 
@@ -127,11 +127,11 @@ func ListUnits(ctx context.Context, shopID, keyword string, limit int) (*ListUni
 
 // CreateUnitResponse ผลลัพธ์จากการสร้างหน่วยนับ
 type CreateUnitResponse struct {
-	Success     bool         `json:"success"`
-	Message     string       `json:"message"`
-	Unit        UnitDocument `json:"unit"`
-	KafkaSync   string       `json:"kafka_sync"`
-	KafkaError  string       `json:"kafka_error,omitempty"`
+	Success bool         `json:"success"`
+	Message string       `json:"message"`
+	Unit UnitDocument `json:"unit"`
+	KafkaSync string       `json:"kafka_sync"`
+	KafkaError string       `json:"kafka_error,omitempty"`
 	GeneratedAt time.Time    `json:"generated_at"`
 }
 
@@ -159,8 +159,8 @@ func CreateUnit(ctx context.Context, shopID, unitCode, namesJSON string) (*Creat
 		"shopid":   shopID,
 		"unitcode": unitCode,
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 	count, err := coll.CountDocuments(ctx, existFilter)
@@ -228,20 +228,20 @@ func CreateUnit(ctx context.Context, shopID, unitCode, namesJSON string) (*Creat
 // CreateUnitsRequest รายการหน่วยนับที่ต้องการสร้างพร้อมกัน
 type CreateUnitsItem struct {
 	UnitCode string          `json:"unitcode"`
-	Names    []UnitNameEntry `json:"names"`
+	Names []UnitNameEntry `json:"names"`
 }
 
 // CreateUnitsResponse ผลลัพธ์จากการสร้างหน่วยนับหลายรายการ
 type CreateUnitsResponse struct {
-	Success      bool           `json:"success"`
-	Message      string         `json:"message"`
-	Created      []UnitDocument `json:"created"`
-	Skipped      []string       `json:"skipped,omitempty"`
+	Success bool           `json:"success"`
+	Message string         `json:"message"`
+	Created []UnitDocument `json:"created"`
+	Skipped []string       `json:"skipped,omitempty"`
 	CreatedCount int            `json:"created_count"`
 	SkippedCount int            `json:"skipped_count"`
-	KafkaSync    string         `json:"kafka_sync"`
-	KafkaError   string         `json:"kafka_error,omitempty"`
-	GeneratedAt  time.Time      `json:"generated_at"`
+	KafkaSync string         `json:"kafka_sync"`
+	KafkaError string         `json:"kafka_error,omitempty"`
+	GeneratedAt time.Time      `json:"generated_at"`
 }
 
 // CreateUnits สร้างหน่วยนับหลายรายการพร้อมกัน
@@ -283,8 +283,8 @@ func CreateUnits(ctx context.Context, shopID, unitsJSON string) (*CreateUnitsRes
 		"shopid":   shopID,
 		"unitcode": bson.M{"$in": unitCodes},
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 	cursor, err := coll.Find(ctx, existFilter)
@@ -374,11 +374,11 @@ func CreateUnits(ctx context.Context, shopID, unitsJSON string) (*CreateUnitsRes
 
 // UpdateUnitResponse ผลลัพธ์จากการอัปเดตหน่วยนับ
 type UpdateUnitResponse struct {
-	Success     bool         `json:"success"`
-	Message     string       `json:"message"`
-	Unit        UnitDocument `json:"unit"`
-	KafkaSync   string       `json:"kafka_sync"`
-	KafkaError  string       `json:"kafka_error,omitempty"`
+	Success bool         `json:"success"`
+	Message string       `json:"message"`
+	Unit UnitDocument `json:"unit"`
+	KafkaSync string       `json:"kafka_sync"`
+	KafkaError string       `json:"kafka_error,omitempty"`
 	GeneratedAt time.Time    `json:"generated_at"`
 }
 
@@ -405,8 +405,8 @@ func UpdateUnit(ctx context.Context, shopID, unitCode, namesJSON string) (*Updat
 		"shopid":   shopID,
 		"unitcode": unitCode,
 		"$or": []bson.M{
-			{"deletedat": bson.M{"$exists": false}},
-			{"deletedat": time.Time{}},
+			{"deleted_at": bson.M{"$exists": false}},
+			{"deleted_at": time.Time{}},
 		},
 	}
 
@@ -418,7 +418,7 @@ func UpdateUnit(ctx context.Context, shopID, unitCode, namesJSON string) (*Updat
 
 	// สร้าง update fields
 	updateFields := bson.M{
-		"updatedat": time.Now(),
+		"updated_at": time.Now(),
 		"updatedby": "mcp-tool",
 	}
 	if namesJSON != "" {
@@ -463,11 +463,11 @@ func UpdateUnit(ctx context.Context, shopID, unitCode, namesJSON string) (*Updat
 
 // DeleteUnitResponse ผลลัพธ์จากการลบหน่วยนับ
 type DeleteUnitResponse struct {
-	Success     bool      `json:"success"`
-	Message     string    `json:"message"`
-	UnitCode    string    `json:"unitcode"`
-	KafkaSync   string    `json:"kafka_sync"`
-	KafkaError  string    `json:"kafka_error,omitempty"`
+	Success bool      `json:"success"`
+	Message string    `json:"message"`
+	UnitCode string    `json:"unitcode"`
+	KafkaSync string    `json:"kafka_sync"`
+	KafkaError string    `json:"kafka_error,omitempty"`
 	GeneratedAt time.Time `json:"generated_at"`
 }
 
@@ -536,15 +536,15 @@ func DeleteUnit(ctx context.Context, shopID, unitCode string) (*DeleteUnitRespon
 
 // DeleteUnitsResponse ผลลัพธ์จากการลบหน่วยนับหลายรายการ
 type DeleteUnitsResponse struct {
-	Success       bool      `json:"success"`
-	Message       string    `json:"message"`
-	Deleted       []string  `json:"deleted"`
-	NotFound      []string  `json:"not_found,omitempty"`
-	DeletedCount  int       `json:"deleted_count"`
+	Success bool      `json:"success"`
+	Message string    `json:"message"`
+	Deleted []string  `json:"deleted"`
+	NotFound []string  `json:"not_found,omitempty"`
+	DeletedCount int       `json:"deleted_count"`
 	NotFoundCount int       `json:"not_found_count"`
-	KafkaSync     string    `json:"kafka_sync"`
-	KafkaError    string    `json:"kafka_error,omitempty"`
-	GeneratedAt   time.Time `json:"generated_at"`
+	KafkaSync string    `json:"kafka_sync"`
+	KafkaError string    `json:"kafka_error,omitempty"`
+	GeneratedAt time.Time `json:"generated_at"`
 }
 
 // DeleteUnits ลบหน่วยนับหลายรายการพร้อมกัน
@@ -673,14 +673,14 @@ func GetUnitSchema() map[string]interface{} {
 		"fields": map[string]interface{}{
 			"_id":       "ObjectID — MongoDB auto-generated ID",
 			"shopid":    "string — Shop ID (tenant isolation)",
-			"guidfixed": "string — UUID สำหรับอ้างอิงภายใน",
+			"guid_fixed": "string — UUID สำหรับอ้างอิงภายใน",
 			"unitcode":  "string (required, max 100) — รหัสหน่วยนับ เช่น EA, BOX, KG, PACK",
 			"names":     "array (required) — ชื่อหลายภาษา [{code:'th', name:'ชิ้น'}, {code:'en', name:'Each'}]",
 			"createdby": "string — ผู้สร้าง",
-			"createdat": "datetime — วันที่สร้าง",
+			"created_at": "datetime — วันที่สร้าง",
 			"updatedby": "string — ผู้แก้ไขล่าสุด",
-			"updatedat": "datetime — วันที่แก้ไขล่าสุด",
-			"deletedat": "datetime — วันที่ลบ (soft delete)",
+			"updated_at": "datetime — วันที่แก้ไขล่าสุด",
+			"deleted_at": "datetime — วันที่ลบ (soft delete)",
 		},
 		"indexes": []string{
 			"shopid + unitcode (unique per shop)",

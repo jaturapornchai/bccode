@@ -11,11 +11,11 @@ import (
 
 // SubmitComplaintRequest — request ร้องเรียน AI จาก frontend
 type SubmitComplaintRequest struct {
-	ShopID   string `json:"shop_id" validate:"required"`
-	ModelID  string `json:"model_id" validate:"required"`
+	ShopID string `json:"shop_id" validate:"required"`
+	ModelID string `json:"model_id" validate:"required"`
 	Category string `json:"category" validate:"required"` // wrong_answer, gibberish, wrong_language, refused, hallucination, too_short, irrelevant
 	Question string `json:"question,omitempty"`
-	Answer   string `json:"answer,omitempty"`
+	Answer string `json:"answer,omitempty"`
 }
 
 // SubmitComplaint — POST /api/v1/ai-provider/complaint

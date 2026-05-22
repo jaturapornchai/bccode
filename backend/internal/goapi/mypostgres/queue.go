@@ -14,13 +14,13 @@ import (
 
 // QueueItem - โครงสร้างข้อมูล queue item (เหมือน myredis.QueueItem)
 type QueueItem struct {
-	ID         int64     `json:"id,omitempty"`
-	ShopId     string    `json:"shop_id"`
-	DocNo      string    `json:"doc_no"`
-	TransFlag  string    `json:"trans_flag"`
+	ID int64     `json:"id,omitempty"`
+	ShopId string    `json:"shop_id"`
+	DocNo string    `json:"doc_no"`
+	TransFlag string    `json:"trans_flag"`
 	RetryCount int       `json:"retry_count"`
-	CreatedAt  time.Time `json:"created_at"`
-	Error      string    `json:"error,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	Error string    `json:"error,omitempty"`
 }
 
 // QueueManager - จัดการ queue ใน PostgreSQL
@@ -280,12 +280,12 @@ func (qm *QueueManager) GetQueueLength(ctx context.Context, shopId string) (int6
 
 // QueueStats - สถิติของ queue
 type QueueStats struct {
-	ShopId          string     `json:"shop_id"`
-	PendingCount    int64      `json:"pending_count"`
+	ShopId string     `json:"shop_id"`
+	PendingCount int64      `json:"pending_count"`
 	ProcessingCount int64      `json:"processing_count"`
-	CompletedCount  int64      `json:"completed_count"`
-	FailedCount     int64      `json:"failed_count"`
-	OldestItem      *time.Time `json:"oldest_item,omitempty"`
+	CompletedCount int64      `json:"completed_count"`
+	FailedCount int64      `json:"failed_count"`
+	OldestItem *time.Time `json:"oldest_item,omitempty"`
 }
 
 // GetQueueStats - ดึงสถิติ queue ของ shop (แทนที่ Redis custom stats)
@@ -335,11 +335,11 @@ func (qm *QueueManager) GetQueueStats(ctx context.Context, shopId string) (*Queu
 
 // QueueSummary - สรุปข้อมูล queue ทั้งหมด
 type QueueSummary struct {
-	TotalShops      int                      `json:"total_shops"`
-	TotalPending    int64                    `json:"total_pending"`
+	TotalShops int                      `json:"total_shops"`
+	TotalPending int64                    `json:"total_pending"`
 	TotalProcessing int64                    `json:"total_processing"`
-	TotalFailed     int64                    `json:"total_failed"`
-	ShopStats       []map[string]interface{} `json:"shop_stats"`
+	TotalFailed int64                    `json:"total_failed"`
+	ShopStats []map[string]interface{} `json:"shop_stats"`
 }
 
 // GetQueueSummary - ดึงสรุปข้อมูล queue ทั้งหมด (แทนที่ Redis custom stats)

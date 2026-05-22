@@ -86,7 +86,7 @@ func (svc ProductCategoryHttpService) buildDefaultAllProductsCategory(ctx contex
 	// Fetch all products where materialtype != 1
 	filters := bson.M{
 		"shopid":       shopID,
-		"deletedat":    bson.M{"$exists": false},
+		"deleted_at":    bson.M{"$exists": false},
 		"materialtype": bson.M{"$ne": 1},
 	}
 
@@ -95,7 +95,7 @@ func (svc ProductCategoryHttpService) buildDefaultAllProductsCategory(ctx contex
 		"barcode":          1,
 		"itemcode":         1,
 		"names":            1,
-		"itemunitcode":     1,
+		"item_unit_code":     1,
 		"itemunitnames":    1,
 		"manufacturerguid": 1,
 	})
@@ -273,7 +273,7 @@ func (svc ProductCategoryHttpService) SearchProductCategory(shopID string, filte
 
 	// Extract groupNumber from filters (default to 0)
 	groupNumber := 0
-	if groupNumFilter, exists := filters["groupnumber"]; exists {
+	if groupNumFilter, exists := filters["group_number"]; exists {
 		if gn, ok := groupNumFilter.(int); ok {
 			groupNumber = gn
 		}
@@ -519,7 +519,7 @@ func (svc ProductCategoryHttpService) DeleteProductCategoryByGUIDs(shopID string
 	defer ctxCancel()
 
 	deleteFilterQuery := map[string]interface{}{
-		"guidfixed": bson.M{"$in": GUIDs},
+		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
 	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)

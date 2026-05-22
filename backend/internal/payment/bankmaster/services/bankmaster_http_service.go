@@ -156,7 +156,7 @@ func (svc BankMasterHttpService) DeleteBankMasterByGUIDs(shopID string, authUser
 	defer ctxCancel()
 
 	deleteFilterQuery := map[string]interface{}{
-		"guidfixed": bson.M{"$in": GUIDs},
+		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
 	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
@@ -216,7 +216,7 @@ func (svc BankMasterHttpService) SearchBankMasterStep(shopID string, langCode st
 	}
 
 	selectFields := map[string]interface{}{
-		"guidfixed": 1,
+		"guid_fixed": 1,
 		"code":      1,
 		"logo":      1,
 	}

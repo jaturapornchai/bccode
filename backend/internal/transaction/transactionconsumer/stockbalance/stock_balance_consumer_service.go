@@ -80,7 +80,7 @@ func (s *StockReceiveTransactionConsumerService) GetStockBalanceDetail(shopID st
 		Page:  1,
 		Sorts: []micromodels.KeyInt{
 			{
-				Key:   "guidfixed",
+				Key:   "guid_fixed",
 				Value: -1,
 			},
 		},

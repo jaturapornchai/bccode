@@ -22,31 +22,31 @@ const (
 
 // APIKey represents an MCP API Key
 type APIKey struct {
-	ID                 primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	APIKey             string             `bson:"api_key" json:"api_key"`
-	ShopID             string             `bson:"shop_id" json:"shop_id"`
-	Name               string             `bson:"name" json:"name"`
-	Description        string             `bson:"description" json:"description"`
-	IsActive           bool               `bson:"is_active" json:"is_active"`
-	AllowedTools       []string           `bson:"allowed_tools" json:"allowed_tools"`
+	ID primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	APIKey string             `bson:"api_key" json:"api_key"`
+	ShopID string             `bson:"shop_id" json:"shop_id"`
+	Name string             `bson:"name" json:"name"`
+	Description string             `bson:"description" json:"description"`
+	IsActive bool               `bson:"is_active" json:"is_active"`
+	AllowedTools []string           `bson:"allowed_tools" json:"allowed_tools"`
 	RateLimitPerMinute int                `bson:"rate_limit_per_minute" json:"rate_limit_per_minute"`
-	CreatedAt          time.Time          `bson:"created_at" json:"created_at"`
-	ExpiresAt          *time.Time         `bson:"expires_at,omitempty" json:"expires_at,omitempty"`
-	LastUsedAt         *time.Time         `bson:"last_used_at,omitempty" json:"last_used_at,omitempty"`
-	CreatedBy          string             `bson:"created_by" json:"created_by"`
+	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
+	ExpiresAt *time.Time         `bson:"expires_at,omitempty" json:"expires_at,omitempty"`
+	LastUsedAt *time.Time         `bson:"last_used_at,omitempty" json:"last_used_at,omitempty"`
+	CreatedBy string             `bson:"created_by" json:"created_by"`
 }
 
 // AuditLog represents an MCP audit log entry
 type AuditLog struct {
-	ID              primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	APIKeyID        primitive.ObjectID `bson:"api_key_id" json:"api_key_id"`
-	ShopID          string             `bson:"shop_id" json:"shop_id"`
-	ToolName        string             `bson:"tool_name" json:"tool_name"`
-	RequestParams   bson.M             `bson:"request_params" json:"request_params"`
-	ResponseStatus  string             `bson:"response_status" json:"response_status"`
-	ErrorMessage    string             `bson:"error_message,omitempty" json:"error_message,omitempty"`
+	ID primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	APIKeyID primitive.ObjectID `bson:"api_key_id" json:"api_key_id"`
+	ShopID string             `bson:"shop_id" json:"shop_id"`
+	ToolName string             `bson:"tool_name" json:"tool_name"`
+	RequestParams bson.M             `bson:"request_params" json:"request_params"`
+	ResponseStatus string             `bson:"response_status" json:"response_status"`
+	ErrorMessage string             `bson:"error_message,omitempty" json:"error_message,omitempty"`
 	ExecutionTimeMs int64              `bson:"execution_time_ms" json:"execution_time_ms"`
-	CreatedAt       time.Time          `bson:"created_at" json:"created_at"`
+	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
 }
 
 // KeysRepository handles API key operations

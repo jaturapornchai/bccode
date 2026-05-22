@@ -12,11 +12,11 @@ import (
 type PersisterMongoConfig struct{}
 
 func (*PersisterMongoConfig) MongodbURI() string {
-	return os.Getenv("MONGODB_URI")
+	return config.MongoURIForCurrentEnvironment()
 }
 
 func (*PersisterMongoConfig) DB() string {
-	return os.Getenv("MONGODB_DB")
+	return config.MongoDatabaseForCurrentEnvironment("")
 }
 
 func (*PersisterMongoConfig) Debug() bool {

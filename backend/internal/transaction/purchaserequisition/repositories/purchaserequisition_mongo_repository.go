@@ -56,7 +56,7 @@ func NewPurchaseRequisitionRepository(pst microservice.IPersisterMongo) *Purchas
 func (repo PurchaseRequisitionRepository) FindLastDocNo(ctx context.Context, shopID string, prefixDocNo string) (models.PurchaseRequisitionDoc, error) {
 	filters := bson.M{
 		"shopid": shopID,
-		"deletedat": bson.M{
+		"deleted_at": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

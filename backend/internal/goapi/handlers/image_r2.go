@@ -31,12 +31,12 @@ import (
 )
 
 var (
-	r2Client           *s3.Client
-	r2PresignClient    *s3.Client // client สำหรับ presigned URL (ใช้ public endpoint)
-	r2BucketName       string
-	r2InitOnce         sync.Once
-	r2InitErr          error
-	isSeaweedFSMode    bool       // true เมื่อใช้ SeaweedFS S3 gateway
+	r2Client        *s3.Client
+	r2PresignClient *s3.Client // client สำหรับ presigned URL (ใช้ public endpoint)
+	r2BucketName    string
+	r2InitOnce      sync.Once
+	r2InitErr       error
+	isSeaweedFSMode bool // true เมื่อใช้ SeaweedFS S3 gateway
 )
 
 // GetR2Client - Returns the S3-compatible client (SeaweedFS or R2)
@@ -206,17 +206,14 @@ func ensureBucketExists(client *s3.Client, bucketName string) {
 }
 
 // getPresignedURL - สร้าง URL สำหรับดูไฟล์
-// SeaweedFS proxy mode: ถ้าไม่มี S3_PUBLIC_ENDPOINT → return proxy URL ผ่าน goapi (/s3/file/{key})
-// Presigned URL mode: ถ้ามี S3_PUBLIC_ENDPOINT → return presigned URL (legacy/local access)
-// R2 mode: ใช้ presigned URL เสมอ
+// Private mode (default): return proxy URL ผ่าน goapi (/s3/file/{key}) เพื่อไม่เปิด R2/S3 URL ตรง
+// Direct presigned URL mode: ต้องเปิด STORAGE_ALLOW_PRESIGNED_URL=true เท่านั้น
 func getPresignedURL(client *s3.Client, r2Key string, expireMinutes int) (string, error) {
-	// SeaweedFS proxy mode: return proxy URL path (ไม่ต้อง sign)
-	// ใช้เมื่อไม่มี S3_PUBLIC_ENDPOINT — ทุกไฟล์เข้าถึงผ่าน goapi proxy
-	if isSeaweedFSMode && r2PresignClient == nil {
-		return "/s3/file/" + r2Key, nil
+	if !storageAllowsDirectPresignedURL() {
+		return storageProxyURL(r2Key), nil
 	}
 
-	// Presigned URL mode (R2 legacy หรือ SeaweedFS ที่เปิด public endpoint)
+	// Direct URL mode (explicit opt-in only)
 	if expireMinutes <= 0 {
 		expireMinutes = 60 // default 1 hour
 	}
@@ -276,9 +273,23 @@ func getImageFromR2(client *s3.Client, r2Key string) ([]byte, string, error) {
 	return data, contentType, nil
 }
 
-// ImageUploadHandler - อัปโหลดรูปภาพไปยัง R2 และบันทึก metadata ใน MongoDB Atlas
+// ImageUploadHandler - อัปโหลดรูปภาพไปยัง R2 และบันทึก metadata ใน MongoDB
 // POST /image/upload
 func ImageUploadHandler(c echo.Context) error {
+	// Get shopid from auth context and reject multipart tenant tampering.
+	shopID, authStatus := storageAuthorizedShopID(c, c.FormValue("shopid"))
+	if authStatus != http.StatusOK {
+		message := "shop not selected"
+		if authStatus == http.StatusForbidden {
+			message = "Forbidden"
+		}
+		return c.JSON(authStatus, map[string]interface{}{
+			"status":  "error",
+			"code":    authStatus,
+			"message": message,
+		})
+	}
+
 	// Check R2 client
 	client, err := GetR2Client()
 	if err != nil || client == nil {
@@ -290,22 +301,12 @@ func ImageUploadHandler(c echo.Context) error {
 		})
 	}
 
-	// Check MongoDB Atlas
+	// Check MongoDB
 	if atlasClient == nil {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "error",
 			"code":    503,
-			"message": "MongoDB Atlas is not connected",
-		})
-	}
-
-	// Get shopid from form
-	shopID := c.FormValue("shopid")
-	if shopID == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"status":  "error",
-			"code":    400,
-			"message": "shopid is required",
+			"message": "MongoDB is not connected",
 		})
 	}
 
@@ -415,7 +416,7 @@ func ImageUploadHandler(c echo.Context) error {
 		}
 	}
 
-	// Save metadata to MongoDB Atlas (ไม่เก็บ URL)
+	// Save metadata to MongoDB (ไม่เก็บ URL)
 	now := time.Now()
 	imageDoc := models.ImageMetadata{
 		ShopID:       shopID,
@@ -465,7 +466,7 @@ func ImageListHandler(c echo.Context) error {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "error",
 			"code":    503,
-			"message": "MongoDB Atlas is not connected",
+			"message": "MongoDB is not connected",
 		})
 	}
 
@@ -478,16 +479,21 @@ func ImageListHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+	shopID, authStatus := storageAuthorizedShopID(c, req.ShopID)
+	if authStatus != http.StatusOK {
+		message := "shop not selected"
+		if authStatus == http.StatusForbidden {
+			message = "Forbidden"
+		}
+		return c.JSON(authStatus, map[string]interface{}{
 			"status":  "error",
-			"code":    400,
-			"message": "shopid is required",
+			"code":    authStatus,
+			"message": message,
 		})
 	}
 
 	// Build filter
-	filter := bson.M{"shopid": req.ShopID}
+	filter := bson.M{"shopid": shopID}
 	if req.Category != "" {
 		filter["category"] = req.Category
 	}
@@ -554,8 +560,8 @@ func ImageListHandler(c echo.Context) error {
 			CreatedAt:    img.CreatedAt,
 			UpdatedAt:    img.UpdatedAt,
 		}
-		// สร้าง Presigned URL (private, หมดอายุใน 60 นาที)
-		if client != nil && img.R2Key != "" {
+		// สร้าง private backend URL เฉพาะไฟล์ที่อยู่ใต้ shopid เดียวกัน
+		if client != nil && img.R2Key != "" && storageObjectBelongsToShop(img.R2Key, img.ShopID) {
 			url, err := getPresignedURL(client, img.R2Key, 60)
 			if err == nil {
 				item.URL = url
@@ -623,7 +629,7 @@ func ImageGetHandler(c echo.Context) error {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "error",
 			"code":    503,
-			"message": "MongoDB Atlas is not connected",
+			"message": "MongoDB is not connected",
 		})
 	}
 
@@ -636,11 +642,24 @@ func ImageGetHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.FileName == "" {
+	shopID, authStatus := storageAuthorizedShopID(c, req.ShopID)
+	if authStatus != http.StatusOK {
+		message := "shop not selected"
+		if authStatus == http.StatusForbidden {
+			message = "Forbidden"
+		}
+		return c.JSON(authStatus, map[string]interface{}{
+			"status":  "error",
+			"code":    authStatus,
+			"message": message,
+		})
+	}
+
+	if req.FileName == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "shopid and filename are required",
+			"message": "filename is required",
 		})
 	}
 
@@ -650,8 +669,8 @@ func ImageGetHandler(c echo.Context) error {
 
 	collection := atlasDB.Collection("images")
 	filter := bson.M{
-		"shopid":   req.ShopID,
-		"filename": req.FileName,
+		"shopid":    shopID,
+		"file_name": req.FileName,
 	}
 
 	var imageDoc models.ImageMetadata
@@ -661,6 +680,15 @@ func ImageGetHandler(c echo.Context) error {
 			"status":  "error",
 			"code":    404,
 			"message": "Image not found",
+		})
+	}
+
+	if !storageObjectBelongsToShop(imageDoc.R2Key, shopID) {
+		logger.Warn("Image get blocked: requested_shop=%s object_shop=%s", shopID, storageObjectShopID(imageDoc.R2Key))
+		return c.JSON(http.StatusForbidden, map[string]interface{}{
+			"status":  "error",
+			"code":    403,
+			"message": "Forbidden",
 		})
 	}
 
@@ -702,7 +730,7 @@ func ImageDeleteHandler(c echo.Context) error {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "error",
 			"code":    503,
-			"message": "MongoDB Atlas is not connected",
+			"message": "MongoDB is not connected",
 		})
 	}
 
@@ -715,11 +743,16 @@ func ImageDeleteHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+	shopID, authStatus := storageAuthorizedShopID(c, req.ShopID)
+	if authStatus != http.StatusOK {
+		message := "shop not selected"
+		if authStatus == http.StatusForbidden {
+			message = "Forbidden"
+		}
+		return c.JSON(authStatus, map[string]interface{}{
 			"status":  "error",
-			"code":    400,
-			"message": "shopid is required",
+			"code":    authStatus,
+			"message": message,
 		})
 	}
 
@@ -737,7 +770,7 @@ func ImageDeleteHandler(c echo.Context) error {
 	collection := atlasDB.Collection("images")
 
 	// Build filter
-	filter := bson.M{"shopid": req.ShopID}
+	filter := bson.M{"shopid": shopID}
 	if req.ImageID != "" {
 		oid, err := primitive.ObjectIDFromHex(req.ImageID)
 		if err != nil {
@@ -749,7 +782,7 @@ func ImageDeleteHandler(c echo.Context) error {
 		}
 		filter["_id"] = oid
 	} else {
-		filter["filename"] = req.FileName
+		filter["file_name"] = req.FileName
 	}
 
 	// Find the image first to get R2 key
@@ -760,6 +793,15 @@ func ImageDeleteHandler(c echo.Context) error {
 			"status":  "error",
 			"code":    404,
 			"message": "Image not found",
+		})
+	}
+
+	if !storageObjectBelongsToShop(imageDoc.R2Key, shopID) {
+		logger.Warn("Image delete blocked: requested_shop=%s object_shop=%s", shopID, storageObjectShopID(imageDoc.R2Key))
+		return c.JSON(http.StatusForbidden, map[string]interface{}{
+			"status":  "error",
+			"code":    403,
+			"message": "Forbidden",
 		})
 	}
 
@@ -784,7 +826,7 @@ func ImageDeleteHandler(c echo.Context) error {
 		})
 	}
 
-	logger.Success("Image deleted: %s (shop: %s)", imageDoc.FileName, req.ShopID)
+	logger.Success("Image deleted: %s (shop: %s)", imageDoc.FileName, shopID)
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"status":  "success",
@@ -800,7 +842,7 @@ func ImageInfoHandler(c echo.Context) error {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "error",
 			"code":    503,
-			"message": "MongoDB Atlas is not connected",
+			"message": "MongoDB is not connected",
 		})
 	}
 
@@ -813,11 +855,24 @@ func ImageInfoHandler(c echo.Context) error {
 		})
 	}
 
-	if req.ShopID == "" || req.FileName == "" {
+	shopID, authStatus := storageAuthorizedShopID(c, req.ShopID)
+	if authStatus != http.StatusOK {
+		message := "shop not selected"
+		if authStatus == http.StatusForbidden {
+			message = "Forbidden"
+		}
+		return c.JSON(authStatus, map[string]interface{}{
+			"status":  "error",
+			"code":    authStatus,
+			"message": message,
+		})
+	}
+
+	if req.FileName == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "shopid and filename are required",
+			"message": "filename is required",
 		})
 	}
 
@@ -826,8 +881,8 @@ func ImageInfoHandler(c echo.Context) error {
 
 	collection := atlasDB.Collection("images")
 	filter := bson.M{
-		"shopid":   req.ShopID,
-		"filename": req.FileName,
+		"shopid":    shopID,
+		"file_name": req.FileName,
 	}
 
 	var imageDoc models.ImageMetadata
@@ -863,7 +918,7 @@ func ImageVerifyHandler(c echo.Context) error {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "error",
 			"code":    503,
-			"message": "MongoDB Atlas is not connected",
+			"message": "MongoDB is not connected",
 		})
 	}
 
@@ -894,11 +949,16 @@ func ImageVerifyHandler(c echo.Context) error {
 	// ตอนนี้ใช้วิธี: ถ้าส่งมาเป็น false และไม่ระบุ field อื่นๆ ก็จะเป็น true
 	checkDuplicate := true // Default เป็น true เสมอ
 
-	if req.ShopID == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+	shopID, authStatus := storageAuthorizedShopID(c, req.ShopID)
+	if authStatus != http.StatusOK {
+		message := "shop not selected"
+		if authStatus == http.StatusForbidden {
+			message = "Forbidden"
+		}
+		return c.JSON(authStatus, map[string]interface{}{
 			"status":  "error",
-			"code":    400,
-			"message": "shopid is required",
+			"code":    authStatus,
+			"message": message,
 		})
 	}
 
@@ -916,7 +976,7 @@ func ImageVerifyHandler(c echo.Context) error {
 	collection := atlasDB.Collection("images")
 
 	// Build filter
-	filter := bson.M{"shopid": req.ShopID}
+	filter := bson.M{"shopid": shopID}
 	if req.ImageID != "" {
 		oid, err := primitive.ObjectIDFromHex(req.ImageID)
 		if err != nil {
@@ -928,7 +988,7 @@ func ImageVerifyHandler(c echo.Context) error {
 		}
 		filter["_id"] = oid
 	} else {
-		filter["filename"] = req.FileName
+		filter["file_name"] = req.FileName
 	}
 
 	// Find the image
@@ -939,6 +999,15 @@ func ImageVerifyHandler(c echo.Context) error {
 			"status":  "error",
 			"code":    404,
 			"message": "Image not found",
+		})
+	}
+
+	if !storageObjectBelongsToShop(imageDoc.R2Key, shopID) {
+		logger.Warn("Image verify blocked: requested_shop=%s object_shop=%s", shopID, storageObjectShopID(imageDoc.R2Key))
+		return c.JSON(http.StatusForbidden, map[string]interface{}{
+			"status":  "error",
+			"code":    403,
+			"message": "Forbidden",
 		})
 	}
 

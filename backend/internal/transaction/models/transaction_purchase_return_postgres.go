@@ -10,20 +10,20 @@ import (
 )
 
 type PurchaseReturnTransactionPG struct {
-	TransactionPG    `gorm:"embedded;"`
-	CreditorCode     string                               `json:"creditorcode" gorm:"column:creditorcode"`
-	CreditorNames    pkgModels.JSONB                      `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
-	TotalPayCash     float64                              `json:"totalpaycash" gorm:"column:totalpaycash"`
+	TransactionPG  `gorm:"embedded;"`
+	CreditorCode string                               `json:"creditorcode" gorm:"column:creditorcode"`
+	CreditorNames pkgModels.JSONB                      `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
+	TotalPayCash float64                              `json:"totalpaycash" gorm:"column:totalpaycash"`
 	TotalPayTransfer float64                              `json:"totalpaytransfer" gorm:"column:totalpaytransfer"`
-	TotalPayCredit   float64                              `json:"totalpaycredit" gorm:"column:totalpaycredit"`
-	Items            *[]PurchaseReturnTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	TotalPayCredit float64                              `json:"totalpaycredit" gorm:"column:totalpaycredit"`
+	Items *[]PurchaseReturnTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
 }
 
 type PurchaseReturnTransactionDetailPG struct {
 	TransactionDetailPG `gorm:"embedded;"`
-	ManufacturerGUID    string          `json:"manufacturerguid" gorm:"column:manufacturerguid"`
-	ManufacturerCode    string          `json:"manufacturercode" gorm:"column:manufacturercode"`
-	ManufacturerNames   pkgModels.JSONB `json:"manufacturernames" gorm:"column:manufacturernames;type:jsonb"`
+	ManufacturerGUID string          `json:"manufacturerguid" gorm:"column:manufacturerguid"`
+	ManufacturerCode string          `json:"manufacturercode" gorm:"column:manufacturercode"`
+	ManufacturerNames pkgModels.JSONB `json:"manufacturernames" gorm:"column:manufacturernames;type:jsonb"`
 }
 
 func (PurchaseReturnTransactionPG) TableName() string {

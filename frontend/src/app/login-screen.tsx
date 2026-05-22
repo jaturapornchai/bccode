@@ -102,6 +102,7 @@ export function LoginScreen() {
   const [loginState, setLoginState] = useState<LoginState>("idle");
   const [signUpState, setSignUpState] = useState<SignUpState>("idle");
   const [connectionState, setConnectionState] = useState<ConnectionState>("idle");
+  const [connectionMessage, setConnectionMessage] = useState("");
   const [providerLoginState, setProviderLoginState] = useState<ProviderLoginState>("idle");
   const [isLocalTestHost, setIsLocalTestHost] = useState(false);
   const [lineDialog, setLineDialog] = useState<LineDialogState>(emptyLineDialog);
@@ -535,6 +536,7 @@ export function LoginScreen() {
 
   async function handleConnectionTest() {
     setConnectionState("testing");
+    setConnectionMessage("");
     setMessage("");
 
     try {
@@ -546,10 +548,11 @@ export function LoginScreen() {
       const data = (await response.json()) as { success?: boolean; message?: string };
       if (!response.ok || !data.success) throw new Error(data.message ?? t(language, "connectionFailed"));
       setConnectionState("success");
-      setMessage(t(language, "connectionSuccess"));
+      setConnectionMessage(t(language, "connectionSuccess"));
     } catch (error) {
       setConnectionState("error");
-      setMessage(error instanceof Error ? error.message : t(language, "connectionFailed"));
+      const errMsg = error instanceof Error ? error.message : t(language, "connectionFailed");
+      setConnectionMessage(errMsg);
     }
   }
 
@@ -582,11 +585,39 @@ export function LoginScreen() {
   return (
     <main className="login-shell">
       <section className="brand-panel" aria-label="BC Ai Account">
-        <div className="brand-mark">AI</div>
+        <div className="brand-badge-row">
+          <div className="brand-mark">AI</div>
+          <div>
+            <p className="eyebrow">{t(language, "brandEyebrow")}</p>
+            <strong>{t(language, "secureWorkspace")}</strong>
+          </div>
+        </div>
         <div className="brand-copy">
-          <p className="eyebrow">{t(language, "brandEyebrow")}</p>
           <h1>{t(language, "loginTitle")}</h1>
           <p>{t(language, "brandDescription")}</p>
+        </div>
+        <div className="brand-feature-grid" aria-label={t(language, "firstUseTitle")}>
+          <div className="brand-feature-card">
+            <Building2 aria-hidden="true" size={20} />
+            <div>
+              <strong>{t(language, "firstUseTitle")}</strong>
+              <span>{t(language, "firstUseDescription")}</span>
+            </div>
+          </div>
+          <div className="brand-feature-card">
+            <ShieldCheck aria-hidden="true" size={20} />
+            <div>
+              <strong>{t(language, "secureWorkspace")}</strong>
+              <span>{t(language, "multiCompanyDescription")}</span>
+            </div>
+          </div>
+          <div className="brand-feature-card">
+            <MessageCircle aria-hidden="true" size={20} />
+            <div>
+              <strong>{t(language, "loginWithLine")}</strong>
+              <span>{t(language, "lineLoginDescription")}</span>
+            </div>
+          </div>
         </div>
         <div className="status-strip" aria-label="System status">
           <div>
@@ -616,6 +647,16 @@ export function LoginScreen() {
             </div>
           </div>
 
+          <button
+            className="primary-button signup-open-button email-signup-button"
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={loginState === "loading" || providerLoginState !== "idle"}
+          >
+            {providerLoginState === "google" ? <Loader2 className="spin" aria-hidden="true" size={18} /> : <UserPlus aria-hidden="true" size={18} />}
+            <span>{t(language, "signUpWithEmail")}</span>
+          </button>
+
           <div className="first-use-note">
             <Building2 aria-hidden="true" size={20} />
             <div>
@@ -634,6 +675,7 @@ export function LoginScreen() {
                 onChange={(event) => {
                   setBackendUrl(event.target.value);
                   setConnectionState("idle");
+                  setConnectionMessage("");
                 }}
                 list="backend-url-history"
                 placeholder="http://localhost:8888/goapi"
@@ -648,6 +690,27 @@ export function LoginScreen() {
                 {connectionState === "testing" ? <Loader2 className="spin" size={16} /> : t(language, "testConnection")}
               </button>
             </div>
+            {connectionMessage && (
+              <div
+                className={`connection-status-msg ${connectionState === "success" ? "success" : "error"}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontSize: "0.82rem",
+                  fontWeight: "bold",
+                  marginTop: "2px",
+                  color: connectionState === "success" ? "var(--success)" : "var(--danger)",
+                }}
+              >
+                {connectionState === "success" ? (
+                  <CheckCircle2 size={14} />
+                ) : (
+                  <AlertCircle size={14} />
+                )}
+                <span>{connectionMessage}</span>
+              </div>
+            )}
             <datalist id="backend-url-history">
               {urlHistory.map((url) => (
                 <option key={url} value={url} />
@@ -712,20 +775,6 @@ export function LoginScreen() {
           <button className="primary-button" type="submit" disabled={!canSubmit}>
             {loginState === "loading" ? <Loader2 className="spin" size={18} /> : <LockKeyhole size={18} />}
             <span>{loginState === "loading" ? t(language, "loggingIn") : t(language, "login")}</span>
-          </button>
-
-          <button
-            className="secondary-button signup-open-button"
-            type="button"
-            onClick={() => {
-              setSignUpOpen(true);
-              setSignUpState("idle");
-              setSignUpForm((current) => ({ ...current, username: username.trim() || current.username }));
-            }}
-            disabled={loginState === "loading" || providerLoginState !== "idle"}
-          >
-            <UserPlus aria-hidden="true" size={18} />
-            <span>{t(language, "signUp")}</span>
           </button>
 
           <div className="social-login-separator">

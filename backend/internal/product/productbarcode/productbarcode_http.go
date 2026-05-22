@@ -915,10 +915,10 @@ func (h ProductBarcodeHttp) Export(ctx microservice.IContext) error {
 		"barcode",     //บาร์โค้ด",
 		"productname", //"ชื่อสินค้า",
 		"unitcode",    //"หน่วยนับ",
-		"unitname",    //"ชื่อหน่วยนับ",
+		"unit_name",    //"ชื่อหน่วยนับ",
 		"price",       //ราคาขาย",
-		"itemtype",    //ประเภทสินค้า",
-		"groupcode",   //กลุ่มสินค้า",
+		"item_type",    //ประเภทสินค้า",
+		"group_code",   //กลุ่มสินค้า",
 	}
 
 	languageHeader := map[string]string{}
@@ -1018,8 +1018,8 @@ func (h ProductBarcodeHttp) searchFilter(queryParam func(string) string) map[str
 			Type:  requestfilter.FieldTypeInt,
 		},
 		{
-			Param: "itemtype",
-			Field: "itemtype",
+			Param: "item_type",
+			Field: "item_type",
 			Type:  requestfilter.FieldTypeInt,
 		},
 		{
@@ -1049,8 +1049,8 @@ func (h ProductBarcodeHttp) searchFilter(queryParam func(string) string) map[str
 			Type:  requestfilter.FieldTypeString,
 		},
 		{
-			Param: "groupcode",
-			Field: "groupcode",
+			Param: "group_code",
+			Field: "group_code",
 			Type:  requestfilter.FieldTypeString,
 		},
 		{
@@ -1128,8 +1128,8 @@ func (h ProductBarcodeHttp) searchFilter(queryParam func(string) string) map[str
 			Type:  requestfilter.FieldTypeString,
 		},
 		{
-			Param: "brandcode",
-			Field: "brandcode",
+			Param: "brand_code",
+			Field: "brand_code",
 			Type:  requestfilter.FieldTypeString,
 		},
 		// Brand Names filters
@@ -1258,8 +1258,8 @@ func (h ProductBarcodeHttp) searchFilter(queryParam func(string) string) map[str
 		},
 		// Category filters
 		{
-			Param: "categoryguid",
-			Field: "categoryguid",
+			Param: "category_guid",
+			Field: "category_guid",
 			Type:  requestfilter.FieldTypeString,
 		},
 		{
@@ -1386,7 +1386,7 @@ func (h ProductBarcodeHttp) searchFilter(queryParam func(string) string) map[str
 			{"itemcode": bson.M{"$regex": qParam, "$options": "i"}},
 
 			// Group codes and names
-			{"groupcode": bson.M{"$regex": qParam, "$options": "i"}},
+			{"group_code": bson.M{"$regex": qParam, "$options": "i"}},
 			{"groupnames.name": bson.M{"$regex": qParam, "$options": "i"}},
 			{"groupsubonecode": bson.M{"$regex": qParam, "$options": "i"}},
 			{"groupsubonenames.name": bson.M{"$regex": qParam, "$options": "i"}},
@@ -1394,7 +1394,7 @@ func (h ProductBarcodeHttp) searchFilter(queryParam func(string) string) map[str
 			{"groupsubtwonames.name": bson.M{"$regex": qParam, "$options": "i"}},
 
 			// Brand codes and names
-			{"brandcode": bson.M{"$regex": qParam, "$options": "i"}},
+			{"brand_code": bson.M{"$regex": qParam, "$options": "i"}},
 			{"brandnames.name": bson.M{"$regex": qParam, "$options": "i"}},
 
 			// Design codes and names
@@ -1425,7 +1425,7 @@ func (h ProductBarcodeHttp) searchFilter(queryParam func(string) string) map[str
 			{"names.name": bson.M{"$regex": qParam, "$options": "i"}},
 
 			// Unit codes and names
-			{"itemunitcode": bson.M{"$regex": qParam, "$options": "i"}},
+			{"item_unit_code": bson.M{"$regex": qParam, "$options": "i"}},
 			{"itemunitnames.name": bson.M{"$regex": qParam, "$options": "i"}},
 
 			// Manufacturer codes and names
@@ -1492,7 +1492,7 @@ func (h ProductBarcodeHttp) searchFilter(queryParam func(string) string) map[str
 		if zeroPriceParam == "true" {
 			filters["prices"] = bson.M{
 				"$elemMatch": bson.M{
-					"keynumber": 1,
+					"key_number": 1,
 					"price":     0,
 				},
 			}
@@ -1503,7 +1503,7 @@ func (h ProductBarcodeHttp) searchFilter(queryParam func(string) string) map[str
 					"prices": bson.M{
 						"$not": bson.M{
 							"$elemMatch": bson.M{
-								"keynumber": 1,
+								"key_number": 1,
 								"price":     0,
 							},
 						},

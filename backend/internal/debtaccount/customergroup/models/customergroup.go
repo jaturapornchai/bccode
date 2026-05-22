@@ -10,13 +10,13 @@ const customergroupCollectionName = "customerGroups"
 
 type CustomerGroup struct {
 	models.PartitionIdentity `bson:"inline"`
-	GroupCode                string          `json:"groupcode" bson:"groupcode"`
-	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	GroupCode string          `json:"group_code" bson:"group_code"`
+	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 }
 
 type CustomerGroupInfo struct {
 	models.DocIdentity `bson:"inline"`
-	CustomerGroup      `bson:"inline"`
+	CustomerGroup  `bson:"inline"`
 }
 
 func (CustomerGroupInfo) CollectionName() string {
@@ -25,11 +25,11 @@ func (CustomerGroupInfo) CollectionName() string {
 
 type CustomerGroupData struct {
 	models.ShopIdentity `bson:"inline"`
-	CustomerGroupInfo   `bson:"inline"`
+	CustomerGroupInfo  `bson:"inline"`
 }
 
 type CustomerGroupDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	CustomerGroupData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
@@ -39,7 +39,7 @@ func (CustomerGroupDoc) CollectionName() string {
 }
 
 type CustomerGroupItemGuid struct {
-	GroupCode string `json:"groupcode" bson:"groupcode"`
+	GroupCode string `json:"group_code" bson:"group_code"`
 }
 
 func (CustomerGroupItemGuid) CollectionName() string {
@@ -47,7 +47,7 @@ func (CustomerGroupItemGuid) CollectionName() string {
 }
 
 type CustomerGroupActivity struct {
-	CustomerGroupData   `bson:"inline"`
+	CustomerGroupData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

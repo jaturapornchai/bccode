@@ -86,10 +86,10 @@ func TestStockReceiveProductTransactionPhaser(t *testing.T) {
 	giveInput := `{
 		"id": "647e919242c9a6d317361d78",
 		"shopid": "2PrIIqTWxoBXv16K310sNwfHmfY",
-		"guidfixed": "2QoOKOZ7Bv8dSUv38VTkkS2AZ0J",
+		"guid_fixed": "2QoOKOZ7Bv8dSUv38VTkkS2AZ0J",
 		"docno": "IF2023060100001",
 		"docdatetime": "2023-06-01T01:52:44.000Z",
-		"guidref": "665f61bf-a49a-420b-9140-9824a704ef15",
+		"guid_ref": "665f61bf-a49a-420b-9140-9824a704ef15",
 		"transflag": 60,
 		"docreftype": 0,
 		"docrefno": "",
@@ -107,9 +107,9 @@ func TestStockReceiveProductTransactionPhaser(t *testing.T) {
 		},
 		"taxdocno": "",
 		"taxdocdate": "2023-05-31T17:00:00Z",
-		"doctype": 0,
+		"doc_type": 0,
 		"inquirytype": 0,
-		"vattype": 0,
+		"vat_type": 0,
 		"vatrate": 7,
 		"custcode": "",
 		"custnames": [],
@@ -121,8 +121,8 @@ func TestStockReceiveProductTransactionPhaser(t *testing.T) {
 		"totalaftervat": 12.84,
 		"totalbeforevat": 12,
 		"totalvatvalue": 0.84,
-		"totalamount": 12.84,
-		"totalcost": 0,
+		"total_amount": 12.84,
+		"total_cost": 0,
 		"posid": "",
 		"cashiercode": "",
 		"salecode": "",
@@ -134,7 +134,7 @@ func TestStockReceiveProductTransactionPhaser(t *testing.T) {
 		"details": [
 			{
 				"inquirytype": 0,
-				"linenumber": 0,
+				"line_number": 0,
 				"docdatetime": "2023-06-06T01:40:28.334Z",
 				"docref": "",
 				"docrefdatetime": "2023-06-06T01:40:28.000Z",
@@ -142,8 +142,8 @@ func TestStockReceiveProductTransactionPhaser(t *testing.T) {
 				"barcode": "BARCODE001",
 				"itemcode": "ITEM001",
 				"unitcode": "ENV",
-				"itemtype": 0,
-				"itemguid": "2PrfDoufKF7KF0Ua2V6sbHBlm2R",
+				"item_type": 0,
+				"item_guid": "2PrfDoufKF7KF0Ua2V6sbHBlm2R",
 				"qty": 1,
 				"totalqty": 1,
 				"price": 12,
@@ -151,18 +151,18 @@ func TestStockReceiveProductTransactionPhaser(t *testing.T) {
 				"discountamount": 0,
 				"totalvaluevat": 0.84,
 				"priceexcludevat": 12,
-				"sumamount": 12,
+				"sum_amount": 12,
 				"sumamountexcludevat": 12,
 				"dividevalue": 1,
 				"standvalue": 1,
-				"vattype": 0,
+				"vat_type": 0,
 				"remark": "",
 				"multiunit": false,
 				"sumofcost": 0,
 				"averagecost": 0,
 				"laststatus": 0,
 				"ispos": 0,
-				"taxtype": 0,
+				"tax_type": 0,
 				"vatcal": 0,
 				"whcode": "00000",
 				"shelfcode": "",
@@ -246,11 +246,11 @@ func TestStockReceiveProductTransactionPhaser(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, get.ShopID, want.ShopID, "shopid")
-	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guidfixed")
+	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guid_fixed")
 	assert.Equal(t, get.TransFlag, want.TransFlag, "transflag")
 	assert.Equal(t, get.DocNo, want.DocNo, "docno")
 	assert.Equal(t, get.DocDate, want.DocDate, "docdate")
-	assert.Equal(t, get.GuidRef, want.GuidRef, "guidref")
+	assert.Equal(t, get.GuidRef, want.GuidRef, "guid_ref")
 	assert.Equal(t, get.DocRefType, want.DocRefType, "docreftype")
 	assert.Equal(t, get.DocRefNo, want.DocRefNo, "docrefno")
 	assert.Equal(t, get.DocRefDate, want.DocRefDate, "docrefdate")
@@ -259,7 +259,7 @@ func TestStockReceiveProductTransactionPhaser(t *testing.T) {
 	assert.Equal(t, get.Description, want.Description, "description")
 	assert.Equal(t, get.InquiryType, want.InquiryType, "inquirytype")
 	assert.Equal(t, get.VatRate, want.VatRate, "vatrate")
-	assert.Equal(t, get.VatType, want.VatType, "vattype")
+	assert.Equal(t, get.VatType, want.VatType, "vat_type")
 	assert.Equal(t, get.DiscountWord, want.DiscountWord, "discountword")
 	assert.Equal(t, get.TotalDiscount, want.TotalDiscount, "totaldiscount")
 	assert.Equal(t, get.TotalValue, want.TotalValue, "totalvalue")
@@ -267,7 +267,7 @@ func TestStockReceiveProductTransactionPhaser(t *testing.T) {
 	assert.Equal(t, get.TotalExceptVat, want.TotalExceptVat, "totalexceptvat")
 	assert.Equal(t, get.TotalVatValue, want.TotalVatValue, "totalvatvalue")
 	assert.Equal(t, get.TotalAfterVat, want.TotalAfterVat, "totalaftervat")
-	assert.Equal(t, get.TotalAmount, want.TotalAmount, "totalamount")
+	assert.Equal(t, get.TotalAmount, want.TotalAmount, "total_amount")
 
 	// detail
 	assert.Equal(t, (*get.Items)[0].GuidFixed, (*want.Items)[0].GuidFixed, "item.guidfixed")

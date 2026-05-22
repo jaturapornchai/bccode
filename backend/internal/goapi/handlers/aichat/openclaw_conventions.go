@@ -54,17 +54,17 @@ func BuildSessionKey(shopID, sessionID string) string {
 
 // OpenClawError — error envelope ตาม OpenClaw spec ข้อ 12
 type OpenClawError struct {
-	Code    string               `json:"code"`
+	Code string               `json:"code"`
 	Message string               `json:"message"`
 	Details *OpenClawErrorDetail `json:"details,omitempty"`
 }
 
 // OpenClawErrorDetail — รายละเอียดเพิ่มเติม + คำแนะนำว่า client ควรทำอะไรต่อ
 type OpenClawErrorDetail struct {
-	Code                string `json:"code,omitempty"`                // เช่น "MODEL_TIMEOUT"
-	Reason              string `json:"reason,omitempty"`              // human-readable why
-	RecommendedNextStep string `json:"recommendedNextStep,omitempty"` // hint ให้ client
-	CanRetry            bool   `json:"canRetry,omitempty"`            // retry แล้วน่าจะหายไหม
+	Code string `json:"code,omitempty"`                // เช่น "MODEL_TIMEOUT"
+	Reason string `json:"reason,omitempty"`              // human-readable why
+	RecommendedNextStep string `json:"recommended_next_step,omitempty"` // hint ให้ client
+	CanRetry bool   `json:"can_retry,omitempty"`            // retry แล้วน่าจะหายไหม
 }
 
 // Standard error codes (ตรงกับ OpenClaw spec ที่เราใช้)

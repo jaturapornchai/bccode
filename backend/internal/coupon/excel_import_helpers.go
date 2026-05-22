@@ -179,7 +179,7 @@ func (h CouponHttp) processExcelImportSync(shopID, authUsername string, req mode
 			errors = append(errors, models.CouponImportError{
 				Row:        rowNum,
 				CouponCode: couponCode,
-				Field:      "couponcode",
+				Field:      "coupon_code",
 				Error:      "รหัสคูปองไม่สามารถเป็นค่าว่างได้",
 			})
 			continue
@@ -190,7 +190,7 @@ func (h CouponHttp) processExcelImportSync(shopID, authUsername string, req mode
 			errors = append(errors, models.CouponImportError{
 				Row:        rowNum,
 				CouponCode: couponCode,
-				Field:      "couponcode",
+				Field:      "coupon_code",
 				Error:      fmt.Sprintf("รหัสคูปองซ้ำกับแถวที่ %d", existingRow),
 			})
 			continue
@@ -203,7 +203,7 @@ func (h CouponHttp) processExcelImportSync(shopID, authUsername string, req mode
 			errors = append(errors, models.CouponImportError{
 				Row:        rowNum,
 				CouponCode: couponCode,
-				Field:      "couponcode",
+				Field:      "coupon_code",
 				Error:      "ไม่สามารถตรวจสอบรหัสคูปองในฐานข้อมูลได้: " + err.Error(),
 			})
 			continue
@@ -213,7 +213,7 @@ func (h CouponHttp) processExcelImportSync(shopID, authUsername string, req mode
 			errors = append(errors, models.CouponImportError{
 				Row:        rowNum,
 				CouponCode: couponCode,
-				Field:      "couponcode",
+				Field:      "coupon_code",
 				Error:      "มีรหัสคูปองนี้อยู่ในระบบแล้ว",
 			})
 			continue

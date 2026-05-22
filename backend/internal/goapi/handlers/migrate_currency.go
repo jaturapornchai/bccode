@@ -224,7 +224,7 @@ func BackfillCurrencyDataHandler(c echo.Context) error {
 			docCurrencySymbol, _ := doc["doc_currencysymbol"].(string)
 
 			var exchangeRate float64
-			switch v := doc["exchangerate"].(type) {
+			switch v := doc["exchange_rate"].(type) {
 			case float64:
 				exchangeRate = v
 			case int32:

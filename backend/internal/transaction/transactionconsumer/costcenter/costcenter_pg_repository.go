@@ -45,7 +45,7 @@ func (repo *CostCenterPGRepository) Create(doc models.CostCenterPg) error {
 func (repo *CostCenterPGRepository) Update(shopID string, guidFixed string, doc models.CostCenterPg) error {
 	err := repo.pst.Update(&doc, map[string]interface{}{
 		"shopid":    shopID,
-		"guidfixed": guidFixed,
+		"guid_fixed": guidFixed,
 	})
 	if err != nil {
 		return err
@@ -56,7 +56,7 @@ func (repo *CostCenterPGRepository) Update(shopID string, guidFixed string, doc 
 func (repo *CostCenterPGRepository) Delete(shopID string, guidFixed string) error {
 	err := repo.pst.Delete(&models.CostCenterPg{}, map[string]interface{}{
 		"shopid":    shopID,
-		"guidfixed": guidFixed,
+		"guid_fixed": guidFixed,
 	})
 	if err != nil {
 		return err

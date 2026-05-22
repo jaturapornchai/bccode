@@ -6,14 +6,14 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"smlcloudplatform/internal/goapi/logger"
-	"smlcloudplatform/internal/goapi/models"
 	"io"
 	"math"
-	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
+	coreconfig "smlcloudplatform/internal/config"
+	"smlcloudplatform/internal/goapi/logger"
+	"smlcloudplatform/internal/goapi/models"
 	"strconv"
 	"strings"
 	"sync"
@@ -71,7 +71,7 @@ func createMongoProductionClient() (*mongo.Client, error) {
 	config := config.NewServiceConfig()
 	uri := config.MongodbURI()
 	if uri == "" {
-		return nil, fmt.Errorf("MONGODB_URI not found in environment variables")
+		return nil, fmt.Errorf("MongoDB URI not found for %s environment", coreconfig.CurrentDataEnvironment())
 	}
 
 	// Optimized connection options for balanced performance
@@ -109,38 +109,14 @@ func createMongoProductionClient() (*mongo.Client, error) {
 
 func createMongoClient() (*mongo.Client, error) {
 	config := config.NewServiceConfig()
+	dataEnv := coreconfig.CurrentDataEnvironment()
 
-	// Build MongoDB connection string from dev server configuration
-	serverIP := config.MongoServerIP()
-	serverPort := config.MongoServerPort()
-	username := config.MongoUsername()
-	password := config.MongoPassword()
-	authDB := config.MongoAuthDB()
-
-	var uri string
-	var serverDescription string
-
-	// ✅ ใช้ LOCAL DEV SERVER ก่อนเสมอ (ถ้ามี config)
-	if serverIP != "" && username != "" && password != "" {
-		// URL encode username and password to handle special characters like @
-		encodedUsername := url.QueryEscape(username)
-		encodedPassword := url.QueryEscape(password)
-
-		// Build connection URI: mongodb://username:password@host:port/?authSource=authDB
-		uri = fmt.Sprintf("mongodb://%s:%s@%s:%s/?authSource=%s",
-			encodedUsername, encodedPassword, serverIP, serverPort, authDB)
-
-		serverDescription = fmt.Sprintf("DEV MongoDB at %s:%s", serverIP, serverPort)
-	} else {
-		// ⚠️ Fallback: ถ้าไม่มี local config ให้ใช้ MONGODB_URI (production/cloud)
-		uriConfig := config.MongodbURI()
-		if uriConfig == "" {
-			return nil, fmt.Errorf("no MongoDB configuration found (neither local nor MONGODB_URI)")
-		}
-		uri = uriConfig
-		serverDescription = "Production/Cloud MongoDB (MONGODB_URI)"
-		logger.Info("⚠️  ใช้ MONGODB_URI - กำลังเชื่อมต่อไปยัง production/cloud database!")
+	uri := config.MongodbURI()
+	if uri == "" {
+		return nil, fmt.Errorf("no MongoDB URI configured for %s environment", dataEnv)
 	}
+	serverDescription := fmt.Sprintf("%s MongoDB configured by environment-specific URI", strings.ToUpper(dataEnv))
+	logger.Info("MongoDB connection target: %s", serverDescription)
 
 	logger.Debug("MongoDB URI: %s", maskPassword(uri))
 

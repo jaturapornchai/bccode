@@ -51,7 +51,7 @@ func (repo CrudRepository[T]) CountByKey(ctx context.Context, shopID string, key
 
 	filters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 		keyName:     keyValue,
 	}
 
@@ -62,7 +62,7 @@ func (repo CrudRepository[T]) CountByInKeys(ctx context.Context, shopID string, 
 
 	filters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 		keyName:     bson.M{"$in": keyValues},
 	}
 
@@ -97,7 +97,7 @@ func (repo CrudRepository[T]) CreateInBatch(ctx context.Context, docList []T) er
 func (repo CrudRepository[T]) Update(ctx context.Context, shopID string, guid string, doc T) error {
 	filterDoc := map[string]interface{}{
 		"shopid":    shopID,
-		"guidfixed": guid,
+		"guid_fixed": guid,
 	}
 
 	err := repo.pst.UpdateOne(ctx, new(T), filterDoc, doc)
@@ -129,7 +129,7 @@ func (repo CrudRepository[T]) Delete(ctx context.Context, shopID string, usernam
 }
 
 func (repo CrudRepository[T]) DeleteByGuidfixed(ctx context.Context, shopID string, guid string, username string) error {
-	err := repo.pst.SoftDelete(ctx, new(T), username, bson.M{"guidfixed": guid, "shopid": shopID})
+	err := repo.pst.SoftDelete(ctx, new(T), username, bson.M{"guid_fixed": guid, "shopid": shopID})
 
 	if err != nil {
 		return err
@@ -146,12 +146,12 @@ func (repo CrudRepository[T]) FindOne(ctx context.Context, shopID string, filter
 	case bson.M:
 		tempFilterQuery := filters.(bson.M)
 		tempFilterQuery["shopid"] = shopID
-		tempFilterQuery["deletedat"] = bson.M{"$exists": false}
+		tempFilterQuery["deleted_at"] = bson.M{"$exists": false}
 		filterQuery = tempFilterQuery
 	case bson.D:
 		tempFilterQuery := filters.(bson.D)
 		tempFilterQuery = append(tempFilterQuery, bson.E{"shopid", shopID})
-		tempFilterQuery = append(tempFilterQuery, bson.E{"deletedat", bson.D{{"$exists", false}}})
+		tempFilterQuery = append(tempFilterQuery, bson.E{"deleted_at", bson.D{{"$exists", false}}})
 
 		filterQuery = tempFilterQuery
 	default:
@@ -176,7 +176,7 @@ func (repo CrudRepository[T]) FindByGuid(ctx context.Context, shopID string, gui
 	err := repo.pst.FindOne(
 		ctx,
 		new(T),
-		bson.M{"guidfixed": guid, "shopid": shopID, "deletedat": bson.M{"$exists": false}},
+		bson.M{"guid_fixed": guid, "shopid": shopID, "deleted_at": bson.M{"$exists": false}},
 		doc,
 	)
 
@@ -194,7 +194,7 @@ func (repo CrudRepository[T]) FindByGuids(ctx context.Context, shopID string, gu
 	err := repo.pst.Find(
 		ctx,
 		new(T),
-		bson.M{"guidfixed": bson.M{"$in": guids}, "shopid": shopID, "deletedat": bson.M{"$exists": false}},
+		bson.M{"guid_fixed": bson.M{"$in": guids}, "shopid": shopID, "deleted_at": bson.M{"$exists": false}},
 		doc,
 	)
 
@@ -209,7 +209,7 @@ func (repo CrudRepository[T]) FindByDocIndentityGuid(ctx context.Context, shopID
 
 	doc := new(T)
 
-	err := repo.pst.FindOne(ctx, new(T), bson.M{"shopid": shopID, "deletedat": bson.M{"$exists": false}, indentityField: indentityValue}, doc)
+	err := repo.pst.FindOne(ctx, new(T), bson.M{"shopid": shopID, "deleted_at": bson.M{"$exists": false}, indentityField: indentityValue}, doc)
 
 	if err != nil {
 		return *new(T), err
@@ -232,7 +232,7 @@ func (repo CrudRepository[T]) FindByDocIndentityGuids(ctx context.Context, shopI
 
 	doc := new([]T)
 
-	err := repo.pst.Find(ctx, new(T), bson.M{"shopid": shopID, "deletedat": bson.M{"$exists": false}, indentityField: bson.M{"$in": values}}, doc)
+	err := repo.pst.Find(ctx, new(T), bson.M{"shopid": shopID, "deleted_at": bson.M{"$exists": false}, indentityField: bson.M{"$in": values}}, doc)
 
 	if err != nil {
 		return *new([]T), err
@@ -252,7 +252,7 @@ func (repo CrudRepository[T]) FindOneFilter(ctx context.Context, shopID string, 
 	}
 
 	findFilters["shopid"] = shopID
-	findFilters["deletedat"] = bson.M{"$exists": false}
+	findFilters["deleted_at"] = bson.M{"$exists": false}
 
 	err := repo.pst.FindOne(ctx, new(T), findFilters, doc)
 
@@ -274,7 +274,7 @@ func (repo CrudRepository[T]) FindFilter(ctx context.Context, shopID string, fil
 	}
 
 	findFilters["shopid"] = shopID
-	findFilters["deletedat"] = bson.M{"$exists": false}
+	findFilters["deleted_at"] = bson.M{"$exists": false}
 
 	err := repo.pst.Find(ctx, new(T), findFilters, doc)
 

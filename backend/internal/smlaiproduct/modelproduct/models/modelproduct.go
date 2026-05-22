@@ -10,13 +10,13 @@ const modelproductCollectionName = "modelProductMaster"
 
 type ModelProduct struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code                     string          `json:"code" bson:"code"`
-	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	Code string          `json:"code" bson:"code"`
+	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 }
 
 type ModelProductInfo struct {
 	models.DocIdentity `bson:"inline"`
-	ModelProduct       `bson:"inline"`
+	ModelProduct  `bson:"inline"`
 }
 
 func (ModelProductInfo) CollectionName() string {
@@ -25,12 +25,12 @@ func (ModelProductInfo) CollectionName() string {
 
 type ModelProductData struct {
 	models.ShopIdentity `bson:"inline"`
-	ModelProductInfo    `bson:"inline"`
+	ModelProductInfo  `bson:"inline"`
 }
 
 type ModelProductDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ModelProductData   `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ModelProductData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -47,7 +47,7 @@ func (ModelProductItemGuid) CollectionName() string {
 }
 
 type ModelProductActivity struct {
-	ModelProductData    `bson:"inline"`
+	ModelProductData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

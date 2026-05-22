@@ -62,7 +62,7 @@ func (svc TableService) CreateTable(shopID string, authUsername string, doc mode
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByTwoColumns(ctx, shopID, "number", doc.Number, "groupnumber", doc.GroupNumber)
+	findDoc, err := svc.repo.FindByTwoColumns(ctx, shopID, "number", doc.Number, "group_number", doc.GroupNumber)
 
 	if err != nil {
 		return "", err
@@ -146,7 +146,7 @@ func (svc TableService) DeleteTableByGUIDs(shopID string, authUsername string, G
 	defer ctxCancel()
 
 	deleteFilterQuery := map[string]interface{}{
-		"guidfixed": bson.M{"$in": GUIDs},
+		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
 	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
@@ -163,7 +163,7 @@ func (svc TableService) DeleteByGUIDs(shopID string, authUsername string, GUIDs 
 	defer ctxCancel()
 
 	deleteFilterQuery := map[string]interface{}{
-		"guidfixed": bson.M{"$in": GUIDs},
+		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
 	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)

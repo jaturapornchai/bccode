@@ -38,25 +38,25 @@ func (j *JSONB) Scan(value interface{}) error {
 
 // BomProductBarcodePg holds data for the BOM product barcode
 type BomProductBarcodePg struct {
-	BarcodeGuidFixed string  `json:"guidfixed" gorm:"column:guidfixed"`
-	Level            int     `json:"level" gorm:"column:level"`
-	Names            JSONB   `json:"names" gorm:"column:names;type:jsonb"`
-	ItemUnitCode     string  `json:"itemunitcode" gorm:"column:itemunitcode"`
-	ItemUnitNames    JSONB   `json:"itemunitnames" gorm:"column:itemunitnames;type:jsonb"`
-	Barcode          string  `json:"barcode" gorm:"column:barcode" validate:"required,min=1"`
-	Condition        bool    `json:"condition" gorm:"column:condition"`
-	DivideValue      float64 `json:"dividevalue" gorm:"column:dividevalue"`
-	StandValue       float64 `json:"standvalue" gorm:"column:standvalue"`
-	Qty              float64 `json:"qty" gorm:"column:qty"`
+	BarcodeGuidFixed string  `json:"guid_fixed" gorm:"column:guid_fixed"`
+	Level int     `json:"level" gorm:"column:level"`
+	Names JSONB   `json:"names" gorm:"column:names;type:jsonb"`
+	ItemUnitCode string  `json:"item_unit_code" gorm:"column:item_unit_code"`
+	ItemUnitNames JSONB   `json:"itemunitnames" gorm:"column:itemunitnames;type:jsonb"`
+	Barcode string  `json:"barcode" gorm:"column:barcode" validate:"required,min=1"`
+	Condition bool    `json:"condition" gorm:"column:condition"`
+	DivideValue float64 `json:"dividevalue" gorm:"column:dividevalue"`
+	StandValue float64 `json:"standvalue" gorm:"column:standvalue"`
+	Qty float64 `json:"qty" gorm:"column:qty"`
 }
 
 // ProductBarcodeBOMViewPG represents a view for product barcode BOMs
 type ProductBarcodeBOMViewPG struct {
-	ShopID            string              `json:"shopid" gorm:"column:shopid"`
-	GuidFixed         string              `json:"guidfixed" bson:"guidfixed" gorm:"column:guidfixed;primaryKey"`
+	ShopID string              `json:"shopid" gorm:"column:shopid"`
+	GuidFixed string              `json:"guid_fixed" bson:"guid_fixed" gorm:"column:guid_fixed;primaryKey"`
 	BOMProductBarcode BomProductBarcodePg `gorm:"embedded;"`
-	ImageURI          string              `json:"imageuri" gorm:"column:imageuri"`
-	BOM               BOMViewPg           `json:"bom" gorm:"foreignKey:BOMForeignKey;references:BOMReference"` // Update ForeignKey and References
+	ImageURI string              `json:"imageuri" gorm:"column:imageuri"`
+	BOM BOMViewPg           `json:"bom" gorm:"foreignKey:BOMForeignKey;references:BOMReference"` // Update ForeignKey and References
 }
 
 // TableName sets the custom table name for GORM

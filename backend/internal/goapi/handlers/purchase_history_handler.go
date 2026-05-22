@@ -14,23 +14,23 @@ import (
 
 // PurchaseHistoryRequest - request สำหรับดึงประวัติการสั่งซื้อ
 type PurchaseHistoryRequest struct {
-	ShopID   string   `json:"shop_id"`
+	ShopID string   `json:"shop_id"`
 	Barcodes []string `json:"barcodes"`
-	Months   int      `json:"months"` // จำนวนเดือนย้อนหลัง (default 3)
+	Months int      `json:"months"` // จำนวนเดือนย้อนหลัง (default 3)
 }
 
 // PurchaseHistoryItem - รายการประวัติการสั่งซื้อ
 type PurchaseHistoryItem struct {
-	Barcode      string  `json:"barcode"`
-	ItemCode     string  `json:"itemcode"`
-	DocNo        string  `json:"docno"`
-	DocDate      string  `json:"docdate"`
-	CustCode     string  `json:"custcode"`     // รหัสผู้ขาย/เจ้าหนี้
-	TotalQty     float64 `json:"totalqty"`
-	UnitCode     string  `json:"unitcode"`
-	Price        float64 `json:"price"`
-	SumAmount    float64 `json:"sumamount"`
-	TransFlag    int     `json:"transflag"`
+	Barcode string  `json:"barcode"`
+	ItemCode string  `json:"itemcode"`
+	DocNo string  `json:"docno"`
+	DocDate string  `json:"docdate"`
+	CustCode string  `json:"custcode"`     // รหัสผู้ขาย/เจ้าหนี้
+	TotalQty float64 `json:"totalqty"`
+	UnitCode string  `json:"unitcode"`
+	Price float64 `json:"price"`
+	SumAmount float64 `json:"sum_amount"`
+	TransFlag int     `json:"transflag"`
 }
 
 // PurchaseHistoryHandler - ดึงประวัติการสั่งซื้อสินค้า

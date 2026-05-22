@@ -21,19 +21,27 @@ import (
 // FileUploadResponse - response structure for file upload
 type FileUploadResponse struct {
 	Success   bool   `json:"success"`
-	FileName  string `json:"fileName"`
-	FileURL   string `json:"fileUrl"`
-	ObjectKey string `json:"objectKey,omitempty"` // S3 object key สำหรับ download ภายหลัง
-	FileSize  int64  `json:"fileSize"`
+	FileName  string `json:"file_name"`
+	FileURL   string `json:"file_url"`
+	ObjectKey string `json:"object_key,omitempty"` // S3 object key สำหรับ download ภายหลัง
+	FileSize  int64  `json:"file_size"`
 	Message   string `json:"message"`
 }
 
 // FileUploadHandler - handles file upload to SeaweedFS S3
 // POST /upload
-// Form data: file (multipart/form-data), shopid (optional)
+// Form data: file (multipart/form-data), shopid (optional, must match auth token if provided)
 // Returns: JSON with file name and presigned URL
 func FileUploadHandler(c echo.Context) error {
 	logger.Info("File upload request received from %s", c.RealIP())
+
+	shopID, authStatus := storageAuthorizedShopID(c, c.FormValue("shopid"))
+	if authStatus != http.StatusOK {
+		return c.JSON(authStatus, FileUploadResponse{
+			Success: false,
+			Message: "shop not selected or forbidden",
+		})
+	}
 
 	client, err := GetR2Client()
 	if err != nil {
@@ -89,14 +97,7 @@ func FileUploadHandler(c echo.Context) error {
 	ext := filepath.Ext(file.Filename)
 	newFileName := uuid.New().String() + ext
 
-	// สร้าง S3 key: uploads/{date}/{filename}
-	shopID := c.FormValue("shopid")
-	var objectKey string
-	if shopID != "" {
-		objectKey = fmt.Sprintf("%s/uploads/%s/%s", shopID, time.Now().Format("20060102"), newFileName)
-	} else {
-		objectKey = fmt.Sprintf("uploads/%s/%s", time.Now().Format("20060102"), newFileName)
-	}
+	objectKey := fmt.Sprintf("%s/uploads/%s/%s", shopID, time.Now().Format("20060102"), newFileName)
 
 	// Detect content type
 	contentType := file.Header.Get("Content-Type")
@@ -153,7 +154,18 @@ func FileDownloadHandler(c echo.Context) error {
 	}
 
 	// URL decode (key อาจมี / encoded)
-	objectKey = strings.ReplaceAll(objectKey, "%2F", "/")
+	objectKey = storageNormalizeObjectKey(strings.ReplaceAll(objectKey, "%2F", "/"))
+	shopID := storageContextShopID(c)
+	if shopID == "" {
+		return c.JSON(http.StatusUnauthorized, map[string]interface{}{
+			"error": "shop not selected",
+		})
+	}
+	if !storageObjectBelongsToShop(objectKey, shopID) {
+		return c.JSON(http.StatusForbidden, map[string]interface{}{
+			"error": "forbidden",
+		})
+	}
 
 	client, err := GetR2Client()
 	if err != nil {
@@ -162,12 +174,5 @@ func FileDownloadHandler(c echo.Context) error {
 		})
 	}
 
-	url, err := getPresignedURL(client, objectKey, 5)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"error": "Failed to generate download URL",
-		})
-	}
-
-	return c.Redirect(http.StatusTemporaryRedirect, url)
+	return streamStorageObject(c, client, objectKey, "")
 }

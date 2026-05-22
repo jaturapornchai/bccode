@@ -103,11 +103,11 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 	giveInput := `{
 		"id": "6465f2c8dfc8097596db4215",
 		"shopid": "2PrIIqTWxoBXv16K310sNwfHmfY",
-		"guidfixed": "2PxduUIwAoptr2OTwROegQ98Uvq",
+		"guid_fixed": "2PxduUIwAoptr2OTwROegQ98Uvq",
 		"transflag": 16,
 		"docno": "PO23050616392C90",
 		"docdatetime": "2023-05-06T09:41:21.000Z",
-		"guidref": "d4d2eddd-2f36-424f-92d2-3d0cb6c50b3f",
+		"guid_ref": "d4d2eddd-2f36-424f-92d2-3d0cb6c50b3f",
 		"docreftype": 3,
 		"docrefno": "PO2305051637AAD9",
 		"docrefdate": "2023-05-05T09:37:25.000Z",
@@ -125,10 +125,10 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 		"taxdocno": "TAXXXXX",
 		"taxdocdate": "2023-05-18T09:37:21.000Z",
 		"description": "remark",
-		"doctype": 1,
+		"doc_type": 1,
 		"inquirytype": 1,
 		"vatrate": 7,
-		"vattype": 2,
+		"vat_type": 2,
 		"discountword": "3%",
 		"totaldiscount": 15,
 		"totalvalue": 20,
@@ -136,7 +136,7 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 		"totalexceptvat": 0,
 		"totalvatvalue": 0,
 		"totalaftervat": 20,
-		"totalamount": 20,		
+		"total_amount": 20,
 		"membercode": "",
 		"cashiercode": "",
 		"salecode": "",
@@ -165,13 +165,13 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 		"details": [
 			{
 				"inquirytype": 0,
-				"itemguid": "2Pxcf33JyR8jRXiKpH2cNc9lH9v",
+				"item_guid": "2Pxcf33JyR8jRXiKpH2cNc9lH9v",
 				"barcode": "BARCODE015",
 				"unitcode": "PCE",
 				"price": 10,
 				"discount": "2%",
 				"discountamount": 5,
-				"sumamount": 20,
+				"sum_amount": 20,
 				"sumamountexcludevat": 20,
 				"standvalue": 1,
 				"dividevalue": 1,
@@ -201,7 +201,7 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 				"shelfcode": "",
 				"totalqty": 2,
 				"calcflag": 1,
-				"vattype": 2,
+				"vat_type": 2,
 				"itemnames": [
 					{
 						"code": "th",
@@ -222,15 +222,15 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 						"isdelete": false
 					}
 				],
-				"linenumber": 0,				
+				"line_number": 0,
 				"averagecost": 0,
 				"laststatus": 0,
-				"taxtype": 0,
+				"tax_type": 0,
 				"itemcode": "",
 				"ispos": 0,
 				"multiunit": false,
 				"priceexcludevat": 10,
-				"itemtype": 3,
+				"item_type": 3,
 				"remark": "detail remark",
 				"qty": 2,
 
@@ -263,7 +263,7 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 		],
 		
 		
-		"totalcost": 0,
+		"total_cost": 0,
 		"posid": "",
 		"status": 0,
 		"iscancel": false,
@@ -311,11 +311,11 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 	// )
 	assert.Nil(t, err)
 	assert.Equal(t, get.ShopID, want.ShopID, "shopid")
-	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guidfixed")
+	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guid_fixed")
 	assert.Equal(t, get.TransFlag, want.TransFlag, "transflag")
 	assert.Equal(t, get.DocNo, want.DocNo, "docno")
 	assert.Equal(t, get.DocDate, want.DocDate, "docdate")
-	assert.Equal(t, get.GuidRef, want.GuidRef, "guidref")
+	assert.Equal(t, get.GuidRef, want.GuidRef, "guid_ref")
 	assert.Equal(t, get.DocRefType, want.DocRefType, "docreftype")
 	assert.Equal(t, get.DocRefNo, want.DocRefNo, "docrefno")
 	assert.Equal(t, get.DocRefDate, want.DocRefDate, "docrefdate")
@@ -324,7 +324,7 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 	assert.Equal(t, get.Description, want.Description, "description")
 	assert.Equal(t, get.InquiryType, want.InquiryType, "inquirytype")
 	assert.Equal(t, get.VatRate, want.VatRate, "vatrate")
-	assert.Equal(t, get.VatType, want.VatType, "vattype")
+	assert.Equal(t, get.VatType, want.VatType, "vat_type")
 	assert.Equal(t, get.DiscountWord, want.DiscountWord, "discountword")
 	assert.Equal(t, get.TotalDiscount, want.TotalDiscount, "totaldiscount")
 	assert.Equal(t, get.TotalValue, want.TotalValue, "totalvalue")
@@ -332,7 +332,7 @@ func TestPurchaseReturnTransactionPhaser(t *testing.T) {
 	assert.Equal(t, get.TotalExceptVat, want.TotalExceptVat, "totalexceptvat")
 	assert.Equal(t, get.TotalVatValue, want.TotalVatValue, "totalvatvalue")
 	assert.Equal(t, get.TotalAfterVat, want.TotalAfterVat, "totalaftervat")
-	assert.Equal(t, get.TotalAmount, want.TotalAmount, "totalamount")
+	assert.Equal(t, get.TotalAmount, want.TotalAmount, "total_amount")
 
 	assert.Equal(t, get.CreditorCode, want.CreditorCode, "creditorcode")
 	assert.Equal(t, *get.CreditorNames[0].Name, "เจ้าหนี้ทั่วไป", "creditorname")

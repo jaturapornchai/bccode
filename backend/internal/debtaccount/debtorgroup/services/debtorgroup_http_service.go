@@ -63,7 +63,7 @@ func (svc DebtorGroupHttpService) CreateDebtorGroup(shopID string, authUsername 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "groupcode", doc.GroupCode)
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "group_code", doc.GroupCode)
 
 	if err != nil {
 		return "", err
@@ -156,7 +156,7 @@ func (svc DebtorGroupHttpService) DeleteDebtorGroupByGUIDs(shopID string, authUs
 	defer ctxCancel()
 
 	deleteFilterQuery := map[string]interface{}{
-		"guidfixed": bson.M{"$in": GUIDs},
+		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
 	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
@@ -192,7 +192,7 @@ func (svc DebtorGroupHttpService) SearchDebtorGroup(shopID string, filters map[s
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"groupcode",
+		"group_code",
 		"names.name",
 	}
 
@@ -211,7 +211,7 @@ func (svc DebtorGroupHttpService) SearchDebtorGroupStep(shopID string, langCode 
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"groupcode",
+		"group_code",
 		"names.name",
 	}
 
@@ -238,7 +238,7 @@ func (svc DebtorGroupHttpService) SaveInBatch(shopID string, authUsername string
 		itemCodeGuidList = append(itemCodeGuidList, doc.GroupCode)
 	}
 
-	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "groupcode", itemCodeGuidList)
+	findItemGuid, err := svc.repo.FindInItemGuid(ctx, shopID, "group_code", itemCodeGuidList)
 
 	if err != nil {
 		return common.BulkImport{}, err
@@ -277,7 +277,7 @@ func (svc DebtorGroupHttpService) SaveInBatch(shopID string, authUsername string
 		duplicateDataList,
 		svc.getDocIDKey,
 		func(shopID string, guid string) (models.DebtorGroupDoc, error) {
-			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "groupcode", guid)
+			return svc.repo.FindByDocIndentityGuid(ctx, shopID, "group_code", guid)
 		},
 		func(doc models.DebtorGroupDoc) bool {
 			return doc.GroupCode != ""

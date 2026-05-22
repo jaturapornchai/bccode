@@ -6,8 +6,19 @@
 ### MongoDB
 | Name        | Description            | Value |
 |-------------|------------------------|-------|
-| MONGODB_URI | Mongodb Connection URI | ''    |
-| MONGODB_DB  | Mongodb Database Name  | ''    |
+| MODE / BC_ENV / APP_ENV / ENVIRONMENT | Runtime environment: `development/dev`, `uat`, `production/pro` | `development` |
+| MONGODB_DEV_URI | MongoDB DEV connection URI (`mongodb://` or `mongodb+srv://`) | secret |
+| MONGODB_DEV_DB | MongoDB DEV database name | '' |
+| MONGODB_UAT_URI | MongoDB UAT connection URI (`mongodb://` or `mongodb+srv://`) | secret |
+| MONGODB_UAT_DB | MongoDB UAT database name | '' |
+| MONGODB_PRO_URI / MONGODB_PRODUCTION_URI | MongoDB PRO connection URI (`mongodb://` or `mongodb+srv://`) | secret |
+| MONGODB_PRO_DB / MONGODB_PRODUCTION_DB | MongoDB PRO database name | '' |
+| MONGODB_URI | Legacy/fallback MongoDB URI for DEV only | '' |
+| MONGODB_DB | Legacy/fallback MongoDB DB for DEV only | '' |
+
+MongoDB data must be separated by environment. DEV, UAT, and PRO must use different MongoDB locations or databases and different credentials. The location can be MongoDB Atlas or a private MongoDB deployment. Do not commit real MongoDB URI, password, token, or API key into this repository.
+
+MongoDB rollout policy: start with fresh empty DEV/UAT/PRO databases. Do not migrate, import, upload, or copy old MongoDB data unless a separate migration task is explicitly approved with source, target, backup, and rollback plan.
 
 
 ### Redis

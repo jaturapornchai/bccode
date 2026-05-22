@@ -211,6 +211,7 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/formdesign": "fileCog",
   "/line_notify": "notification",
   "/permission_definition": "shield",
+  "/approval_setting": "shield",
   "/permission_link": "link",
   "/mcp_apikey": "key",
   "/ai_provider": "bot",

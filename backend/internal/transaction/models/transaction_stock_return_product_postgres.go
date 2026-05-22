@@ -9,7 +9,7 @@ import (
 
 type StockReturnProductTransactionPG struct {
 	TransactionPG `gorm:"embedded;"`
-	Items         *[]StockReturnProductTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	Items *[]StockReturnProductTransactionDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
 }
 
 type StockReturnProductTransactionDetailPG struct {

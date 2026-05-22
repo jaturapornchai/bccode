@@ -28,7 +28,7 @@ type ReceiveDepositRefundData struct {
 }
 
 type ReceiveDepositRefundDoc struct {
-	ID                       primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	ReceiveDepositRefundData `bson:"inline"`
 	models.ActivityDoc       `bson:"inline"`
 }

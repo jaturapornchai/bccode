@@ -43,8 +43,8 @@ func lookupUnitNames(ctx context.Context, shopID, unitCode string) []BarcodeName
 		"shopid":   shopID,
 		"unitcode": unitCode,
 		"$or": []bson.M{
-			{"deletedby": bson.M{"$exists": false}},
-			{"deletedby": ""},
+			{"deleted_by": bson.M{"$exists": false}},
+			{"deleted_by": ""},
 		},
 	}).Decode(&doc)
 	if err != nil {
@@ -78,8 +78,8 @@ func lookupGroupNames(ctx context.Context, shopID, groupCode string) []BarcodeNa
 		"shopid": shopID,
 		"code":   groupCode,
 		"$or": []bson.M{
-			{"deletedby": bson.M{"$exists": false}},
-			{"deletedby": ""},
+			{"deleted_by": bson.M{"$exists": false}},
+			{"deleted_by": ""},
 		},
 	}).Decode(&doc)
 	if err != nil {
@@ -111,10 +111,10 @@ func lookupCategoryNames(ctx context.Context, shopID, categoryCode string) []Bar
 	}
 	err := coll.FindOne(ctx, bson.M{
 		"shopid":    shopID,
-		"guidfixed": categoryCode,
+		"guid_fixed": categoryCode,
 		"$or": []bson.M{
-			{"deletedby": bson.M{"$exists": false}},
-			{"deletedby": ""},
+			{"deleted_by": bson.M{"$exists": false}},
+			{"deleted_by": ""},
 		},
 	}).Decode(&doc)
 	if err != nil {
@@ -130,59 +130,59 @@ func lookupCategoryNames(ctx context.Context, shopID, categoryCode string) []Bar
 
 // BarcodeNameEntry ชื่อสินค้า/หน่วยนับแต่ละภาษา
 type BarcodeNameEntry struct {
-	Code     string `json:"code" bson:"code"`
-	Name     string `json:"name" bson:"name"`
-	IsAuto   bool   `json:"isauto" bson:"isauto"`
+	Code string `json:"code" bson:"code"`
+	Name string `json:"name" bson:"name"`
+	IsAuto bool   `json:"isauto" bson:"isauto"`
 	IsDelete bool   `json:"isdelete" bson:"isdelete"`
 }
 
 // BarcodePriceEntry ราคาสินค้า
 type BarcodePriceEntry struct {
-	KeyNumber int     `json:"keynumber" bson:"keynumber"`
-	Price     float64 `json:"price" bson:"price"`
+	KeyNumber int     `json:"key_number" bson:"key_number"`
+	Price float64 `json:"price" bson:"price"`
 }
 
 // BarcodeDocument เอกสาร barcode ใน MongoDB (fields หลักที่ MCP ใช้)
 type BarcodeDocument struct {
-	ID            primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ShopID        string             `json:"shopid" bson:"shopid"`
-	GuidFixed     string             `json:"guidfixed" bson:"guidfixed"`
-	Barcode       string             `json:"barcode" bson:"barcode"`
-	ItemCode      string             `json:"itemcode" bson:"itemcode"`
-	Names         []BarcodeNameEntry `json:"names" bson:"names"`
-	ItemUnitCode  string             `json:"itemunitcode" bson:"itemunitcode"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ShopID string             `json:"shopid" bson:"shopid"`
+	GuidFixed string             `json:"guid_fixed" bson:"guid_fixed"`
+	Barcode string             `json:"barcode" bson:"barcode"`
+	ItemCode string             `json:"itemcode" bson:"itemcode"`
+	Names []BarcodeNameEntry `json:"names" bson:"names"`
+	ItemUnitCode string             `json:"item_unit_code" bson:"item_unit_code"`
 	ItemUnitNames []BarcodeNameEntry `json:"itemunitnames" bson:"itemunitnames"`
-	Prices        []BarcodePriceEntry `json:"prices" bson:"prices"`
-	StandValue    float64            `json:"standvalue" bson:"standvalue"`
-	DivideValue   float64            `json:"dividevalue" bson:"dividevalue"`
-	IsMainBarcode bool               `json:"ismainbarcode" bson:"ismainbarcode"`
-	ImageURI      string             `json:"imageuri" bson:"imageuri"`
-	GroupCode     string             `json:"groupcode" bson:"groupcode"`
-	GroupNames    []BarcodeNameEntry `json:"groupnames" bson:"groupnames"`
-	BrandCode     string             `json:"brandcode" bson:"brandcode"`
-	BrandNames    []BarcodeNameEntry `json:"brandnames" bson:"brandnames"`
-	CategoryCode  string             `json:"categorycode" bson:"categorycode"`
-	CategoryNames []BarcodeNameEntry `json:"categorynames" bson:"categorynames"`
-	RefBarcodes      []RefBarcodeEntry `json:"refbarcodes,omitempty" bson:"refbarcodes,omitempty"`
+	Prices []BarcodePriceEntry `json:"prices" bson:"prices"`
+	StandValue float64            `json:"standvalue" bson:"standvalue"`
+	DivideValue float64            `json:"dividevalue" bson:"dividevalue"`
+	IsMainBarcode bool               `json:"is_main_barcode" bson:"is_main_barcode"`
+	ImageURI string             `json:"imageuri" bson:"imageuri"`
+	GroupCode string             `json:"group_code" bson:"group_code"`
+	GroupNames []BarcodeNameEntry `json:"group_names" bson:"group_names"`
+	BrandCode string             `json:"brand_code" bson:"brand_code"`
+	BrandNames []BarcodeNameEntry `json:"brandnames" bson:"brandnames"`
+	CategoryCode string             `json:"categorycode" bson:"categorycode"`
+	CategoryNames []BarcodeNameEntry `json:"category_names" bson:"category_names"`
+	RefBarcodes []RefBarcodeEntry `json:"refbarcodes,omitempty" bson:"refbarcodes,omitempty"`
 	IsUseSubBarcodes bool              `json:"isusesubbarcodes" bson:"isusesubbarcodes"`
-	ItemType         int8              `json:"itemtype" bson:"itemtype"`
-	TaxType          int8              `json:"taxtype" bson:"taxtype"`
-	VatType          int8              `json:"vattype" bson:"vattype"`
-	CreatedBy        string            `json:"createdby" bson:"createdby"`
-	CreatedAt     time.Time          `json:"createdat" bson:"createdat"`
-	UpdatedBy     string             `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
-	UpdatedAt     time.Time          `json:"updatedat,omitempty" bson:"updatedat,omitempty"`
-	DeletedBy     string             `json:"deletedby,omitempty" bson:"deletedby,omitempty"`
-	DeletedAt     time.Time          `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
+	ItemType int8              `json:"item_type" bson:"item_type"`
+	TaxType int8              `json:"tax_type" bson:"tax_type"`
+	VatType int8              `json:"vat_type" bson:"vat_type"`
+	CreatedBy string            `json:"createdby" bson:"createdby"`
+	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
+	UpdatedBy string             `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
+	UpdatedAt time.Time          `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
+	DeletedBy string             `json:"deleted_by,omitempty" bson:"deleted_by,omitempty"`
+	DeletedAt time.Time          `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
 }
 
 // ==================== List Barcodes ====================
 
 // ListBarcodesResponse ผลลัพธ์จากการดึง/ค้นหา barcode
 type ListBarcodesResponse struct {
-	Barcodes    []BarcodeDocument `json:"barcodes"`
-	Count       int               `json:"count"`
-	Keyword     string            `json:"keyword,omitempty"`
+	Barcodes []BarcodeDocument `json:"barcodes"`
+	Count int               `json:"count"`
+	Keyword string            `json:"keyword,omitempty"`
 	GeneratedAt time.Time         `json:"generated_at"`
 }
 
@@ -211,8 +211,8 @@ func ListBarcodes(ctx context.Context, shopID, keyword string, limit int) (*List
 	filter := bson.M{
 		"shopid": shopID,
 		"$or": []bson.M{
-			{"deletedby": bson.M{"$exists": false}},
-			{"deletedby": ""},
+			{"deleted_by": bson.M{"$exists": false}},
+			{"deleted_by": ""},
 		},
 	}
 
@@ -235,17 +235,17 @@ func ListBarcodes(ctx context.Context, shopID, keyword string, limit int) (*List
 		SetLimit(int64(limit)).
 		SetSort(bson.D{{Key: "barcode", Value: 1}}).
 		SetProjection(bson.M{
-			"shopid": 1, "guidfixed": 1, "barcode": 1, "itemcode": 1,
-			"names": 1, "itemunitcode": 1, "itemunitnames": 1,
+			"shopid": 1, "guid_fixed": 1, "barcode": 1, "itemcode": 1,
+			"names": 1, "item_unit_code": 1, "itemunitnames": 1,
 			"prices": 1, "standvalue": 1, "dividevalue": 1,
-			"ismainbarcode": 1, "isusesubbarcodes": 1,
+			"is_main_barcode": 1, "isusesubbarcodes": 1,
 			"refbarcodes": 1, "imageuri": 1,
-			"groupcode": 1, "groupnames": 1,
-			"brandcode": 1, "brandnames": 1,
-			"categorycode": 1, "categorynames": 1,
-			"itemtype": 1, "taxtype": 1, "vattype": 1,
-			"createdby": 1, "createdat": 1,
-			"updatedby": 1, "updatedat": 1,
+			"group_code": 1, "group_names": 1,
+			"brand_code": 1, "brandnames": 1,
+			"categorycode": 1, "category_names": 1,
+			"item_type": 1, "tax_type": 1, "vat_type": 1,
+			"createdby": 1, "created_at": 1,
+			"updatedby": 1, "updated_at": 1,
 		})
 
 	cursor, err := coll.Find(ctx, filter, opts)
@@ -275,11 +275,11 @@ func ListBarcodes(ctx context.Context, shopID, keyword string, limit int) (*List
 
 // CreateBarcodeResponse ผลลัพธ์จากการสร้าง barcode
 type CreateBarcodeResponse struct {
-	Success     bool            `json:"success"`
-	Message     string          `json:"message"`
-	Barcode     BarcodeDocument `json:"barcode"`
-	KafkaSync   string          `json:"kafka_sync"`
-	KafkaError  string          `json:"kafka_error,omitempty"`
+	Success bool            `json:"success"`
+	Message string          `json:"message"`
+	Barcode BarcodeDocument `json:"barcode"`
+	KafkaSync string          `json:"kafka_sync"`
+	KafkaError string          `json:"kafka_error,omitempty"`
 	GeneratedAt time.Time       `json:"generated_at"`
 }
 
@@ -309,8 +309,8 @@ func CreateBarcode(ctx context.Context, shopID, barcode, itemCode, namesJSON, it
 		"shopid":  shopID,
 		"barcode": barcode,
 		"$or": []bson.M{
-			{"deletedby": bson.M{"$exists": false}},
-			{"deletedby": ""},
+			{"deleted_by": bson.M{"$exists": false}},
+			{"deleted_by": ""},
 		},
 	}
 	count, err := coll.CountDocuments(ctx, existFilter)
@@ -453,28 +453,28 @@ func CreateBarcode(ctx context.Context, shopID, barcode, itemCode, namesJSON, it
 
 // CreateBarcodesItem รายการ barcode ที่ต้องการสร้างพร้อมกัน
 type CreateBarcodesItem struct {
-	Barcode       string              `json:"barcode"`
-	ItemCode      string              `json:"itemcode"`
-	Names         []BarcodeNameEntry  `json:"names"`
-	ItemUnitCode  string              `json:"itemunitcode"`
+	Barcode string              `json:"barcode"`
+	ItemCode string              `json:"itemcode"`
+	Names []BarcodeNameEntry  `json:"names"`
+	ItemUnitCode string              `json:"item_unit_code"`
 	ItemUnitNames []BarcodeNameEntry  `json:"itemunitnames"`
-	Prices        []BarcodePriceEntry `json:"prices"`
-	StandValue    float64             `json:"standvalue"`
-	DivideValue   float64             `json:"dividevalue"`
-	IsMainBarcode *bool               `json:"ismainbarcode"`
+	Prices []BarcodePriceEntry `json:"prices"`
+	StandValue float64             `json:"standvalue"`
+	DivideValue float64             `json:"dividevalue"`
+	IsMainBarcode *bool               `json:"is_main_barcode"`
 }
 
 // CreateBarcodesResponse ผลลัพธ์จากการสร้าง barcode หลายรายการ
 type CreateBarcodesResponse struct {
-	Success      bool              `json:"success"`
-	Message      string            `json:"message"`
-	Created      []BarcodeDocument `json:"created"`
-	Skipped      []string          `json:"skipped,omitempty"`
+	Success bool              `json:"success"`
+	Message string            `json:"message"`
+	Created []BarcodeDocument `json:"created"`
+	Skipped []string          `json:"skipped,omitempty"`
 	CreatedCount int               `json:"created_count"`
 	SkippedCount int               `json:"skipped_count"`
-	KafkaSync    string            `json:"kafka_sync"`
-	KafkaError   string            `json:"kafka_error,omitempty"`
-	GeneratedAt  time.Time         `json:"generated_at"`
+	KafkaSync string            `json:"kafka_sync"`
+	KafkaError string            `json:"kafka_error,omitempty"`
+	GeneratedAt time.Time         `json:"generated_at"`
 }
 
 // CreateBarcodes สร้าง barcode หลายรายการพร้อมกัน
@@ -516,8 +516,8 @@ func CreateBarcodes(ctx context.Context, shopID, barcodesJSON string) (*CreateBa
 		"shopid":  shopID,
 		"barcode": bson.M{"$in": barcodeValues},
 		"$or": []bson.M{
-			{"deletedby": bson.M{"$exists": false}},
-			{"deletedby": ""},
+			{"deleted_by": bson.M{"$exists": false}},
+			{"deleted_by": ""},
 		},
 	}
 	cursor, err := coll.Find(ctx, existFilter)
@@ -642,11 +642,11 @@ func CreateBarcodes(ctx context.Context, shopID, barcodesJSON string) (*CreateBa
 
 // UpdateBarcodeResponse ผลลัพธ์จากการอัปเดต barcode
 type UpdateBarcodeResponse struct {
-	Success     bool            `json:"success"`
-	Message     string          `json:"message"`
-	Barcode     BarcodeDocument `json:"barcode"`
-	KafkaSync   string          `json:"kafka_sync"`
-	KafkaError  string          `json:"kafka_error,omitempty"`
+	Success bool            `json:"success"`
+	Message string          `json:"message"`
+	Barcode BarcodeDocument `json:"barcode"`
+	KafkaSync string          `json:"kafka_sync"`
+	KafkaError string          `json:"kafka_error,omitempty"`
 	GeneratedAt time.Time       `json:"generated_at"`
 }
 
@@ -671,10 +671,10 @@ func UpdateBarcode(ctx context.Context, shopID, guidFixed, namesJSON, itemUnitCo
 	// ค้นหา barcode ที่ต้องการอัปเดต
 	filter := bson.M{
 		"shopid":    shopID,
-		"guidfixed": guidFixed,
+		"guid_fixed": guidFixed,
 		"$or": []bson.M{
-			{"deletedby": bson.M{"$exists": false}},
-			{"deletedby": ""},
+			{"deleted_by": bson.M{"$exists": false}},
+			{"deleted_by": ""},
 		},
 	}
 
@@ -686,7 +686,7 @@ func UpdateBarcode(ctx context.Context, shopID, guidFixed, namesJSON, itemUnitCo
 
 	// สร้าง update fields
 	updateFields := bson.M{
-		"updatedat": time.Now(),
+		"updated_at": time.Now(),
 		"updatedby": "mcp-tool",
 	}
 	if namesJSON != "" {
@@ -697,7 +697,7 @@ func UpdateBarcode(ctx context.Context, shopID, guidFixed, namesJSON, itemUnitCo
 		updateFields["names"] = names
 	}
 	if itemUnitCode != "" {
-		updateFields["itemunitcode"] = itemUnitCode
+		updateFields["item_unit_code"] = itemUnitCode
 	}
 	if itemUnitNamesJSON != "" {
 		var itemUnitNames []BarcodeNameEntry
@@ -719,18 +719,18 @@ func UpdateBarcode(ctx context.Context, shopID, guidFixed, namesJSON, itemUnitCo
 		updateFields["prices"] = prices
 	}
 	if groupCode != "" {
-		updateFields["groupcode"] = groupCode
+		updateFields["group_code"] = groupCode
 	}
 	if groupNamesJSON != "" {
 		var groupNames []BarcodeNameEntry
 		if err := json.Unmarshal([]byte(groupNamesJSON), &groupNames); err != nil {
 			return nil, fmt.Errorf("groupnames JSON ไม่ถูกต้อง: %w", err)
 		}
-		updateFields["groupnames"] = groupNames
+		updateFields["group_names"] = groupNames
 	} else if groupCode != "" {
 		// Auto-lookup: ถ้าเปลี่ยน groupcode แต่ไม่ได้ระบุ groupnames → ดึงจาก productGroups collection
 		if looked := lookupGroupNames(ctx, shopID, groupCode); looked != nil {
-			updateFields["groupnames"] = looked
+			updateFields["group_names"] = looked
 		}
 	}
 	if categoryCode != "" {
@@ -741,11 +741,11 @@ func UpdateBarcode(ctx context.Context, shopID, guidFixed, namesJSON, itemUnitCo
 		if err := json.Unmarshal([]byte(categoryNamesJSON), &categoryNames); err != nil {
 			return nil, fmt.Errorf("categorynames JSON ไม่ถูกต้อง: %w", err)
 		}
-		updateFields["categorynames"] = categoryNames
+		updateFields["category_names"] = categoryNames
 	} else if categoryCode != "" {
 		// Auto-lookup: ถ้าเปลี่ยน categorycode แต่ไม่ได้ระบุ categorynames → ดึงจาก productCategories collection
 		if looked := lookupCategoryNames(ctx, shopID, categoryCode); looked != nil {
-			updateFields["categorynames"] = looked
+			updateFields["category_names"] = looked
 		}
 	}
 
@@ -783,11 +783,11 @@ func UpdateBarcode(ctx context.Context, shopID, guidFixed, namesJSON, itemUnitCo
 
 // DeleteBarcodeResponse ผลลัพธ์จากการลบ barcode
 type DeleteBarcodeResponse struct {
-	Success     bool      `json:"success"`
-	Message     string    `json:"message"`
-	GuidFixed   string    `json:"guidfixed"`
-	KafkaSync   string    `json:"kafka_sync"`
-	KafkaError  string    `json:"kafka_error,omitempty"`
+	Success bool      `json:"success"`
+	Message string    `json:"message"`
+	GuidFixed string    `json:"guid_fixed"`
+	KafkaSync string    `json:"kafka_sync"`
+	KafkaError string    `json:"kafka_error,omitempty"`
 	GeneratedAt time.Time `json:"generated_at"`
 }
 
@@ -811,7 +811,7 @@ func DeleteBarcode(ctx context.Context, shopID, guidFixed string) (*DeleteBarcod
 
 	filter := bson.M{
 		"shopid":    shopID,
-		"guidfixed": guidFixed,
+		"guid_fixed": guidFixed,
 	}
 
 	// ดึง document ก่อนลบ เพื่อส่ง Kafka event
@@ -856,15 +856,15 @@ func DeleteBarcode(ctx context.Context, shopID, guidFixed string) (*DeleteBarcod
 
 // DeleteBarcodesResponse ผลลัพธ์จากการลบ barcode หลายรายการ
 type DeleteBarcodesResponse struct {
-	Success       bool      `json:"success"`
-	Message       string    `json:"message"`
-	Deleted       []string  `json:"deleted"`
-	NotFound      []string  `json:"not_found,omitempty"`
-	DeletedCount  int       `json:"deleted_count"`
+	Success bool      `json:"success"`
+	Message string    `json:"message"`
+	Deleted []string  `json:"deleted"`
+	NotFound []string  `json:"not_found,omitempty"`
+	DeletedCount int       `json:"deleted_count"`
 	NotFoundCount int       `json:"not_found_count"`
-	KafkaSync     string    `json:"kafka_sync"`
-	KafkaError    string    `json:"kafka_error,omitempty"`
-	GeneratedAt   time.Time `json:"generated_at"`
+	KafkaSync string    `json:"kafka_sync"`
+	KafkaError string    `json:"kafka_error,omitempty"`
+	GeneratedAt time.Time `json:"generated_at"`
 }
 
 // DeleteBarcodes ลบ barcode หลายรายการพร้อมกัน
@@ -899,9 +899,9 @@ func DeleteBarcodes(ctx context.Context, shopID, guidfixedsJSON string) (*Delete
 	// ค้นหา guidfixed ที่มีอยู่จริง
 	existFilter := bson.M{
 		"shopid":    shopID,
-		"guidfixed": bson.M{"$in": guidFixeds},
+		"guid_fixed": bson.M{"$in": guidFixeds},
 	}
-	cursor, err := coll.Find(ctx, existFilter, options.Find().SetProjection(bson.M{"guidfixed": 1}))
+	cursor, err := coll.Find(ctx, existFilter, options.Find().SetProjection(bson.M{"guid_fixed": 1}))
 	if err != nil {
 		return nil, fmt.Errorf("ค้นหา barcode ล้มเหลว: %w", err)
 	}
@@ -910,7 +910,7 @@ func DeleteBarcodes(ctx context.Context, shopID, guidfixedsJSON string) (*Delete
 	existingGuids := make(map[string]bool)
 	for cursor.Next(ctx) {
 		var doc struct {
-			GuidFixed string `bson:"guidfixed"`
+			GuidFixed string `bson:"guid_fixed"`
 		}
 		if err := cursor.Decode(&doc); err == nil {
 			existingGuids[doc.GuidFixed] = true
@@ -934,7 +934,7 @@ func DeleteBarcodes(ctx context.Context, shopID, guidfixedsJSON string) (*Delete
 	if len(deleted) > 0 {
 		delCursor, _ := coll.Find(ctx, bson.M{
 			"shopid":    shopID,
-			"guidfixed": bson.M{"$in": deleted},
+			"guid_fixed": bson.M{"$in": deleted},
 		})
 		if delCursor != nil {
 			var docs []BarcodeDocument
@@ -950,7 +950,7 @@ func DeleteBarcodes(ctx context.Context, shopID, guidfixedsJSON string) (*Delete
 	if len(deleted) > 0 {
 		deleteFilter := bson.M{
 			"shopid":    shopID,
-			"guidfixed": bson.M{"$in": deleted},
+			"guid_fixed": bson.M{"$in": deleted},
 		}
 		_, err = coll.DeleteMany(ctx, deleteFilter)
 		if err != nil {
@@ -993,31 +993,31 @@ func GetBarcodeSchema() map[string]interface{} {
 		"fields": map[string]interface{}{
 			"_id":           "ObjectID — MongoDB auto-generated ID",
 			"shopid":        "string — Shop ID (tenant isolation)",
-			"guidfixed":     "string — UUID สำหรับอ้างอิงภายใน",
+			"guid_fixed":     "string — UUID สำหรับอ้างอิงภายใน",
 			"barcode":       "string (required) — รหัสบาร์โค้ด เช่น 8859100001234",
 			"itemcode":      "string (required) — รหัสสินค้า เช่น SKU001",
 			"names":         "array (required) — ชื่อหลายภาษา [{code:'th', name:'สินค้า A'}, {code:'en', name:'Product A'}]",
-			"itemunitcode":  "string — รหัสหน่วยนับ เช่น EA, BOX",
+			"item_unit_code":  "string — รหัสหน่วยนับ เช่น EA, BOX",
 			"itemunitnames": "array — ชื่อหน่วยนับหลายภาษา [{code:'th', name:'ชิ้น'}]",
 			"prices":        "array — ราคา [{keynumber:1, price:100.00}, {keynumber:2, price:90.00}]",
 			"standvalue":    "float — ค่าตัวตั้ง (unit conversion) default=1",
 			"dividevalue":   "float — ค่าตัวหาร (unit conversion) default=1",
-			"ismainbarcode":    "bool — เป็น barcode หลักหรือไม่",
+			"is_main_barcode":    "bool — เป็น barcode หลักหรือไม่",
 			"isusesubbarcodes": "bool — มี barcode อ้างอิง (reference/sub barcode) หรือไม่",
 			"refbarcodes":      "array — barcode อ้างอิง [{barcode, condition, dividevalue, standvalue, qty}]",
 			"imageuri":         "string — URL รูปสินค้า",
-			"groupcode":     "string — รหัสกลุ่มสินค้า",
-			"brandcode":     "string — รหัสยี่ห้อ",
+			"group_code":     "string — รหัสกลุ่มสินค้า",
+			"brand_code":     "string — รหัสยี่ห้อ",
 			"categorycode":  "string — รหัสประเภท",
-			"itemtype":      "int — ประเภทสินค้า (0=มีสต็อก, 1=บริการ, 2=ชุด, 3=วัตถุดิบ)",
-			"taxtype":       "int — ประเภทภาษี",
-			"vattype":       "int — ประเภท VAT",
+			"item_type":      "int — ประเภทสินค้า (0=มีสต็อก, 1=บริการ, 2=ชุด, 3=วัตถุดิบ)",
+			"tax_type":       "int — ประเภทภาษี",
+			"vat_type":       "int — ประเภท VAT",
 			"createdby":     "string — ผู้สร้าง",
-			"createdat":     "datetime — วันที่สร้าง",
+			"created_at":     "datetime — วันที่สร้าง",
 			"updatedby":     "string — ผู้แก้ไขล่าสุด",
-			"updatedat":     "datetime — วันที่แก้ไขล่าสุด",
-			"deletedby":     "string — ผู้ลบ (soft delete)",
-			"deletedat":     "datetime — วันที่ลบ (soft delete)",
+			"updated_at":     "datetime — วันที่แก้ไขล่าสุด",
+			"deleted_by":     "string — ผู้ลบ (soft delete)",
+			"deleted_at":     "datetime — วันที่ลบ (soft delete)",
 		},
 		"indexes": []string{
 			"shopid + barcode (unique per shop)",
@@ -1029,15 +1029,15 @@ func GetBarcodeSchema() map[string]interface{} {
 				"barcode":      "8859100001234",
 				"itemcode":     "SKU001",
 				"names":        []map[string]string{{"code": "th", "name": "น้ำดื่ม 600ml"}, {"code": "en", "name": "Water 600ml"}},
-				"itemunitcode": "EA",
-				"prices":       []map[string]interface{}{{"keynumber": 1, "price": 10.00}},
+				"item_unit_code": "EA",
+				"prices":       []map[string]interface{}{{"key_number": 1, "price": 10.00}},
 			},
 			{
 				"barcode":      "BOX-SKU001",
 				"itemcode":     "SKU001",
 				"names":        []map[string]string{{"code": "th", "name": "น้ำดื่ม 600ml (ลัง)"}, {"code": "en", "name": "Water 600ml (Box)"}},
-				"itemunitcode": "BOX",
-				"prices":       []map[string]interface{}{{"keynumber": 1, "price": 200.00}},
+				"item_unit_code": "BOX",
+				"prices":       []map[string]interface{}{{"key_number": 1, "price": 200.00}},
 				"standvalue":   24,
 				"dividevalue":  1,
 			},

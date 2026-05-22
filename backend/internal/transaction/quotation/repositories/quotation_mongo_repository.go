@@ -61,7 +61,7 @@ func NewQuotationRepository(pst microservice.IPersisterMongo) *QuotationReposito
 func (repo QuotationRepository) FindLastDocNo(ctx context.Context, shopID string, prefixDocNo string) (models.QuotationDoc, error) {
 	filters := bson.M{
 		"shopid": shopID,
-		"deletedat": bson.M{
+		"deleted_at": bson.M{
 			"$exists": false,
 		},
 		"docno": bson.M{

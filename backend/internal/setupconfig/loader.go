@@ -10,12 +10,16 @@ import (
 // bootstrapConfig โครงสร้าง JSON สำหรับ bootstrap ทุก config section
 // Redis และ Kafka ไม่อยู่ใน bootstrap.json — ใช้ค่า default (redis:6379, kafka:9092)
 type bootstrapConfig struct {
-	MongoDB      map[string]string `json:"mongodb"`
-	PostgreSQL   map[string]string `json:"postgresql"`
-	ClickHouse   map[string]string `json:"clickhouse"`
-	Service      map[string]string `json:"service"`
-	Integrations map[string]string `json:"integrations"`
-	Storage      map[string]string `json:"storage"`
+	MongoDB           map[string]string `json:"mongodb"`
+	MongoDBDev        map[string]string `json:"mongodb_dev"`
+	MongoDBUAT        map[string]string `json:"mongodb_uat"`
+	MongoDBPRO        map[string]string `json:"mongodb_pro"`
+	MongoDBProduction map[string]string `json:"mongodb_production"`
+	PostgreSQL        map[string]string `json:"postgresql"`
+	ClickHouse        map[string]string `json:"clickhouse"`
+	Service           map[string]string `json:"service"`
+	Integrations      map[string]string `json:"integrations"`
+	Storage           map[string]string `json:"storage"`
 }
 
 // configMapping กำหนดว่า Setup Config key ไหน map กับ env var อะไรบ้าง
@@ -24,6 +28,22 @@ var configMapping = map[string]map[string][]string{
 	"mongodb": {
 		"uri":      {"MONGODB_URI"},
 		"database": {"MONGODB_DB"}, // ใช้ "database" เท่านั้น (ไม่ใช้ "database_name" เพราะซ้ำ)
+	},
+	"mongodb_dev": {
+		"uri":      {"MONGODB_DEV_URI"},
+		"database": {"MONGODB_DEV_DB"},
+	},
+	"mongodb_uat": {
+		"uri":      {"MONGODB_UAT_URI"},
+		"database": {"MONGODB_UAT_DB"},
+	},
+	"mongodb_pro": {
+		"uri":      {"MONGODB_PRO_URI", "MONGODB_PRODUCTION_URI"},
+		"database": {"MONGODB_PRO_DB", "MONGODB_PRODUCTION_DB"},
+	},
+	"mongodb_production": {
+		"uri":      {"MONGODB_PRO_URI", "MONGODB_PRODUCTION_URI"},
+		"database": {"MONGODB_PRO_DB", "MONGODB_PRODUCTION_DB"},
 	},
 	"postgresql": {
 		"host":         {"POSTGRES_HOST"},
@@ -73,9 +93,9 @@ var configMapping = map[string]map[string][]string{
 
 // secretKeys รายชื่อ key ที่ต้อง mask ใน log
 var secretKeys = map[string]bool{
-	"password":          true,
-	"secret_access_key": true,
-	"account_key":       true,
+	"password":             true,
+	"secret_access_key":    true,
+	"account_key":          true,
 	"azure_account_key":    true,
 	"jwt_secret_key":       true,
 	"gemini_api_key":       true,
@@ -125,6 +145,10 @@ func LoadBootstrapConfig() {
 
 	// โหลดทุก section ที่มีใน bootstrap.json ตาม configMapping
 	overrideCount += applyBootstrapSection("mongodb", cfg.MongoDB)
+	overrideCount += applyBootstrapSection("mongodb_dev", cfg.MongoDBDev)
+	overrideCount += applyBootstrapSection("mongodb_uat", cfg.MongoDBUAT)
+	overrideCount += applyBootstrapSection("mongodb_pro", cfg.MongoDBPRO)
+	overrideCount += applyBootstrapSection("mongodb_production", cfg.MongoDBProduction)
 	overrideCount += applyBootstrapSection("postgresql", cfg.PostgreSQL)
 	overrideCount += applyBootstrapSection("clickhouse", cfg.ClickHouse)
 	overrideCount += applyBootstrapSection("service", cfg.Service)

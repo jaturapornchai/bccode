@@ -53,7 +53,7 @@ func (repo SaleInvoiceBomPriceRepository) FindByDocNo(ctx context.Context, shopI
 	var docs []models.SaleInvoiceBomPriceInfo
 	filters := map[string]interface{}{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 		"docno":     docNo,
 	}
 	err := repo.pst.Find(ctx, models.SaleInvoiceBomPriceInfo{}, filters, &docs)

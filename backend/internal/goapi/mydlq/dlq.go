@@ -10,15 +10,15 @@ import (
 
 // DLQMessage โครงสร้าง message ที่ล้มเหลว
 type DLQMessage struct {
-	ID             string                 `json:"id"`
-	OriginalTopic  string                 `json:"original_topic"`
-	OriginalKey    string                 `json:"original_key"`
-	OriginalValue  string                 `json:"original_value"`
-	Error          string                 `json:"error"`
-	RetryCount     int                    `json:"retry_count"`
-	FirstFailedAt  time.Time              `json:"first_failed_at"`
-	LastFailedAt   time.Time              `json:"last_failed_at"`
-	Metadata       map[string]interface{} `json:"metadata,omitempty"`
+	ID string                 `json:"id"`
+	OriginalTopic string                 `json:"original_topic"`
+	OriginalKey string                 `json:"original_key"`
+	OriginalValue string                 `json:"original_value"`
+	Error string                 `json:"error"`
+	RetryCount int                    `json:"retry_count"`
+	FirstFailedAt time.Time              `json:"first_failed_at"`
+	LastFailedAt time.Time              `json:"last_failed_at"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // DLQHandler interface สำหรับจัดการ DLQ

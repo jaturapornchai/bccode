@@ -10,13 +10,13 @@ const accountGroupCollectionName = "accountGroups"
 const accountGroupTableName = "account_group"
 
 type AccountGroup struct {
-	Code        string `json:"code" bson:"code" validate:"required"`
+	Code string `json:"code" bson:"code" validate:"required"`
 	models.Name `bson:"inline"`
 }
 
 type AccountGroupInfo struct {
 	models.DocIdentity `bson:"inline"`
-	AccountGroup       `bson:"inline"`
+	AccountGroup  `bson:"inline"`
 }
 
 func (AccountGroupInfo) CollectionName() string {
@@ -25,12 +25,12 @@ func (AccountGroupInfo) CollectionName() string {
 
 type AccountGroupData struct {
 	models.ShopIdentity `bson:"inline"`
-	AccountGroupInfo    `bson:"inline"`
+	AccountGroupInfo  `bson:"inline"`
 }
 
 type AccountGroupDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	AccountGroupData   `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	AccountGroupData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -47,7 +47,7 @@ func (AccountGroupIdentifier) CollectionName() string {
 }
 
 type AccountGroupActivity struct {
-	AccountGroupData    `bson:"inline"`
+	AccountGroupData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 
@@ -68,8 +68,8 @@ func (AccountGroupDeleteActivity) CollectionName() string {
 type AccountGroupPg struct {
 	models.Identity          `gorm:"embedded;"`
 	models.PartitionIdentity `gorm:"embedded;"`
-	Code                     string `json:"code" gorm:"column:code;primaryKey"`
-	Name1                    string `json:"name1" gorm:"column:name1"`
+	Code string `json:"code" gorm:"column:code;primaryKey"`
+	Name1 string `json:"name1" gorm:"column:name1"`
 }
 
 func (AccountGroup) TableName() string {
@@ -78,11 +78,11 @@ func (AccountGroup) TableName() string {
 
 type AccountGroupInfoResponse struct {
 	Success bool             `json:"success"`
-	Data    AccountGroupInfo `json:"data,omitempty"`
+	Data AccountGroupInfo `json:"data,omitempty"`
 }
 
 type AccountGroupPageResponse struct {
-	Success    bool                          `json:"success"`
-	Data       []AccountGroupInfo            `json:"data,omitempty"`
+	Success bool                          `json:"success"`
+	Data []AccountGroupInfo            `json:"data,omitempty"`
 	Pagination models.PaginationDataResponse `json:"pagination,omitempty"`
 }

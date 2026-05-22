@@ -64,7 +64,7 @@ func (repo SectionDepartmentRepository) FindOneByCode(ctx context.Context, shopI
 		ctx,
 		models.SectionDepartmentDoc{}, bson.M{
 			"shopid":         shopID,
-			"deletedat":      bson.M{"$exists": false},
+			"deleted_at":      bson.M{"$exists": false},
 			"branchcode":     branchCode,
 			"departmentcode": departmentCode,
 		},

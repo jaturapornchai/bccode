@@ -52,17 +52,17 @@ func (o *openAICompatProvider) Name() string {
 
 // OAIMessage — chat message (supports tool calls)
 type OAIMessage struct {
-	Role       string        `json:"role"`
-	Content    interface{}   `json:"content"` // string or []ContentPart
-	Reasoning  string        `json:"reasoning,omitempty"` // Ollama thinking models (gemma4, etc.)
-	ToolCalls  []OAIToolCall `json:"tool_calls,omitempty"`
+	Role string        `json:"role"`
+	Content interface{}   `json:"content"` // string or []ContentPart
+	Reasoning string        `json:"reasoning,omitempty"` // Ollama thinking models (gemma4, etc.)
+	ToolCalls []OAIToolCall `json:"tool_calls,omitempty"`
 	ToolCallID string        `json:"tool_call_id,omitempty"`
 }
 
 // ContentPart — multimodal content (text or image)
 type ContentPart struct {
-	Type     string    `json:"type"` // "text" or "image_url"
-	Text     string    `json:"text,omitempty"`
+	Type string    `json:"type"` // "text" or "image_url"
+	Text string    `json:"text,omitempty"`
 	ImageURL *ImageURL `json:"image_url,omitempty"`
 }
 
@@ -92,45 +92,45 @@ func GetContentString(content interface{}) string {
 
 // OAITool — function tool definition
 type OAITool struct {
-	Type     string      `json:"type"` // "function"
+	Type string      `json:"type"` // "function"
 	Function OAIFunction `json:"function"`
 }
 
 // OAIFunction — function metadata
 type OAIFunction struct {
-	Name        string      `json:"name"`
+	Name string      `json:"name"`
 	Description string      `json:"description"`
-	Parameters  interface{} `json:"parameters"`
+	Parameters interface{} `json:"parameters"`
 }
 
 // OAIToolCall — tool call from assistant
 type OAIToolCall struct {
-	ID       string          `json:"id"`
-	Type     string          `json:"type"` // "function"
+	ID string          `json:"id"`
+	Type string          `json:"type"` // "function"
 	Function OAIToolCallFunc `json:"function"`
 }
 
 // OAIToolCallFunc — function name + arguments
 type OAIToolCallFunc struct {
-	Name      string `json:"name"`
+	Name string `json:"name"`
 	Arguments string `json:"arguments"`
 }
 
 type oaiRequest struct {
-	Model       string       `json:"model"`
-	Messages    []OAIMessage `json:"messages"`
+	Model string       `json:"model"`
+	Messages []OAIMessage `json:"messages"`
 	Temperature float64      `json:"temperature,omitempty"`
-	TopP        float64      `json:"top_p,omitempty"`
-	MaxTokens   int          `json:"max_tokens,omitempty"`
-	Tools       []OAITool    `json:"tools,omitempty"`
-	Stream      bool         `json:"stream"`
+	TopP float64      `json:"top_p,omitempty"`
+	MaxTokens int          `json:"max_tokens,omitempty"`
+	Tools []OAITool    `json:"tools,omitempty"`
+	Stream bool         `json:"stream"`
 }
 
 // OAIResponse — full API response
 type OAIResponse struct {
-	Choices  []OAIChoice `json:"choices"`
-	Usage    OAIUsage    `json:"usage"`
-	Model    string      `json:"model"`
+	Choices []OAIChoice `json:"choices"`
+	Usage OAIUsage    `json:"usage"`
+	Model string      `json:"model"`
 	Provider string      `json:"provider,omitempty"` // จาก X-BCProxy-Provider header
 }
 
@@ -141,9 +141,9 @@ type OAIChoice struct {
 
 // OAIUsage — token usage
 type OAIUsage struct {
-	PromptTokens     int `json:"prompt_tokens"`
+	PromptTokens int `json:"prompt_tokens"`
 	CompletionTokens int `json:"completion_tokens"`
-	TotalTokens      int `json:"total_tokens"`
+	TotalTokens int `json:"total_tokens"`
 }
 
 func (o *openAICompatProvider) GenerateContent(ctx context.Context, req ChatRequest) (*ChatResponse, error) {

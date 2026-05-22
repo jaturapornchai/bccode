@@ -85,10 +85,10 @@ func TestStockReturnTransactionPhaser(t *testing.T) {
 	giveInput := `{
 		"id": "6499444f684e0b206e0b2118",
 		"shopid": "2PrIIqTWxoBXv16K310sNwfHmfY",
-		"guidfixed": "2RjalZEcCV3BzRybaHGeqXhfw6C",
+		"guid_fixed": "2RjalZEcCV3BzRybaHGeqXhfw6C",
 		"docno": "IR2023062600001",
 		"docdatetime": "2023-06-26T07:54:41.000Z",
-		"guidref": "61360335-818d-4df5-acd4-98a8f4aab685",
+		"guid_ref": "61360335-818d-4df5-acd4-98a8f4aab685",
 		"transflag": 58,
 		"docreftype": 0,
 		"docrefno": "",
@@ -106,9 +106,9 @@ func TestStockReturnTransactionPhaser(t *testing.T) {
 		},
 		"taxdocdate": "2023-06-26T07:54:41.000Z",
 		"taxdocno": "",
-		"doctype": 0,
+		"doc_type": 0,
 		"inquirytype": 0,
-		"vattype": 0,
+		"vat_type": 0,
 		"vatrate": 7,
 		"custcode": "",
 		"custnames": [],
@@ -120,8 +120,8 @@ func TestStockReturnTransactionPhaser(t *testing.T) {
 		"totalaftervat": 0,
 		"totalbeforevat": 0,
 		"totalvatvalue": 0,
-		"totalamount": 0,
-		"totalcost": 0,
+		"total_amount": 0,
+		"total_cost": 0,
 		"posid": "",
 		"cashiercode": "",
 		"salecode": "",
@@ -133,7 +133,7 @@ func TestStockReturnTransactionPhaser(t *testing.T) {
 		"details": [
 			{
 				"inquirytype": 0,
-				"linenumber": 0,
+				"line_number": 0,
 				"docdatetime": "2023-05-18T09:50:09.934Z",
 				"docref": "PO23051516490133",
 				"docrefdatetime": "2023-05-15T09:49:58.000Z",
@@ -141,8 +141,8 @@ func TestStockReturnTransactionPhaser(t *testing.T) {
 				"barcode": "BARCODE015",
 				"itemcode": "",
 				"unitcode": "PCE",
-				"itemtype": 0,
-				"itemguid": "2Pxcf33JyR8jRXiKpH2cNc9lH9v",
+				"item_type": 0,
+				"item_guid": "2Pxcf33JyR8jRXiKpH2cNc9lH9v",
 				"qty": 5,
 				"totalqty": 5,
 				"price": 0,
@@ -150,18 +150,18 @@ func TestStockReturnTransactionPhaser(t *testing.T) {
 				"discountamount": 0,
 				"totalvaluevat": 0,
 				"priceexcludevat": 0,
-				"sumamount": 0,
+				"sum_amount": 0,
 				"sumamountexcludevat": 0,
 				"dividevalue": 1,
 				"standvalue": 1,
-				"vattype": 0,
+				"vat_type": 0,
 				"remark": "",
 				"multiunit": false,
 				"sumofcost": 0,
 				"averagecost": 0,
 				"laststatus": 0,
 				"ispos": 0,
-				"taxtype": 0,
+				"tax_type": 0,
 				"vatcal": 0,
 				"whcode": "00000",
 				"shelfcode": "",
@@ -245,11 +245,11 @@ func TestStockReturnTransactionPhaser(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, get.ShopID, want.ShopID, "shopid")
-	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guidfixed")
+	assert.Equal(t, get.GuidFixed, want.GuidFixed, "guid_fixed")
 	assert.Equal(t, get.TransFlag, want.TransFlag, "transflag")
 	assert.Equal(t, get.DocNo, want.DocNo, "docno")
 	assert.Equal(t, get.DocDate, want.DocDate, "docdate")
-	assert.Equal(t, get.GuidRef, want.GuidRef, "guidref")
+	assert.Equal(t, get.GuidRef, want.GuidRef, "guid_ref")
 	assert.Equal(t, get.DocRefType, want.DocRefType, "docreftype")
 	assert.Equal(t, get.DocRefNo, want.DocRefNo, "docrefno")
 	assert.Equal(t, get.DocRefDate, want.DocRefDate, "docrefdate")
@@ -258,7 +258,7 @@ func TestStockReturnTransactionPhaser(t *testing.T) {
 	assert.Equal(t, get.Description, want.Description, "description")
 	assert.Equal(t, get.InquiryType, want.InquiryType, "inquirytype")
 	assert.Equal(t, get.VatRate, want.VatRate, "vatrate")
-	assert.Equal(t, get.VatType, want.VatType, "vattype")
+	assert.Equal(t, get.VatType, want.VatType, "vat_type")
 	assert.Equal(t, get.DiscountWord, want.DiscountWord, "discountword")
 	assert.Equal(t, get.TotalDiscount, want.TotalDiscount, "totaldiscount")
 	assert.Equal(t, get.TotalValue, want.TotalValue, "totalvalue")
@@ -266,7 +266,7 @@ func TestStockReturnTransactionPhaser(t *testing.T) {
 	assert.Equal(t, get.TotalExceptVat, want.TotalExceptVat, "totalexceptvat")
 	assert.Equal(t, get.TotalVatValue, want.TotalVatValue, "totalvatvalue")
 	assert.Equal(t, get.TotalAfterVat, want.TotalAfterVat, "totalaftervat")
-	assert.Equal(t, get.TotalAmount, want.TotalAmount, "totalamount")
+	assert.Equal(t, get.TotalAmount, want.TotalAmount, "total_amount")
 
 	// detail
 	assert.Equal(t, (*get.Items)[0].GuidFixed, (*want.Items)[0].GuidFixed, "item.guidfixed")

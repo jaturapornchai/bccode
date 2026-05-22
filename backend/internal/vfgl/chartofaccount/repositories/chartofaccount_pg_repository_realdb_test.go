@@ -11,19 +11,20 @@ import (
 	"gorm.io/gorm"
 )
 
-var repo repositories.ChartOfAccountPgRepository
+func newRealDBRepository(t *testing.T) repositories.ChartOfAccountPgRepository {
+	t.Helper()
+	if os.Getenv("BC_REAL_DB_TESTS") != "1" {
+		t.Skip("set BC_REAL_DB_TESTS=1 to run PostgreSQL integration tests")
+	}
 
-func init() {
 	persisterConfig := mock.NewPersisterPostgresqlConfig()
 	pst := microservice.NewPersister(persisterConfig)
-	repo = repositories.NewChartOfAccountPgRepository(pst)
+	return repositories.NewChartOfAccountPgRepository(pst)
 }
 
 func TestChartOfAccountRepositoryCreateInRealDB(t *testing.T) {
+	repo := newRealDBRepository(t)
 
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
-	}
 	assert := assert.New(t)
 	assert.NotNil(repo)
 
@@ -45,10 +46,8 @@ func TestChartOfAccountRepositoryCreateInRealDB(t *testing.T) {
 }
 
 func TestChartOfAccountRepositoryGetDataInRealDBFirstAssertErrorNotFound(t *testing.T) {
+	repo := newRealDBRepository(t)
 
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
-	}
 	assert := assert.New(t)
 	assert.NotNil(repo)
 

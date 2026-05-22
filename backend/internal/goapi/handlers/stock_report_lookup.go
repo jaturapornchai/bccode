@@ -14,13 +14,13 @@ import (
 
 // StockReportBarcodesRequest - request สำหรับดึง barcodes ตาม item codes
 type StockReportBarcodesRequest struct {
-	ShopID    string   `json:"shop_id"`
+	ShopID string   `json:"shop_id"`
 	ItemCodes []string `json:"item_codes"`
 }
 
 // StockReportWarehousesRequest - request สำหรับดึง warehouses + locations ตาม barcodes
 type StockReportWarehousesRequest struct {
-	ShopID   string   `json:"shop_id"`
+	ShopID string   `json:"shop_id"`
 	Barcodes []string `json:"barcodes"`
 }
 
@@ -136,7 +136,7 @@ func StockReportWarehousesHandler(c echo.Context) error {
 
 	// Group locations by warehouse
 	type warehouseData struct {
-		WHCode    string   `json:"whcode"`
+		WHCode string   `json:"whcode"`
 		Locations []string `json:"locations"`
 	}
 
@@ -210,7 +210,7 @@ func StockReportItemBarcodesHandler(c echo.Context) error {
 	defer rows.Close()
 
 	type itemBarcode struct {
-		Barcode    string `json:"barcode"`
+		Barcode string `json:"barcode"`
 		BarcodeRef string `json:"barcoderef"`
 	}
 	items := make([]itemBarcode, 0)

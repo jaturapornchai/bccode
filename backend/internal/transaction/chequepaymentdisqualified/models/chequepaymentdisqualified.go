@@ -28,7 +28,7 @@ type ChequePaymentDisqualifiedData struct {
 }
 
 type ChequePaymentDisqualifiedDoc struct {
-	ID                            primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	ChequePaymentDisqualifiedData `bson:"inline"`
 	models.ActivityDoc            `bson:"inline"`
 }

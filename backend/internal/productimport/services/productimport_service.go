@@ -1243,17 +1243,17 @@ func (svc ProductImportService) applyMasterDataFromCache(productBase *product_mo
 func (svc ProductImportService) applyMasterDataUpdatesFromCache(updateData bson.M, importData models.ProductImportRaw, changes []models.FieldChange, cache *MasterDataCache) error {
 	for _, change := range changes {
 		switch change.Field {
-		case "groupcode":
+		case "group_code":
 			if importData.GroupCode != "" {
 				if group, ok := cache.Groups[importData.GroupCode]; ok {
 					updateData["groupguid"] = group.GuidFixed
-					updateData["groupnames"] = group.Names
+					updateData["group_names"] = group.Names
 				} else {
 					return fmt.Errorf("group code '%s' not found in master data", importData.GroupCode)
 				}
 			} else {
 				updateData["groupguid"] = ""
-				updateData["groupnames"] = nil
+				updateData["group_names"] = nil
 			}
 
 		case "groupsubonecode":
@@ -1282,7 +1282,7 @@ func (svc ProductImportService) applyMasterDataUpdatesFromCache(updateData bson.
 				updateData["groupsubtwonames"] = nil
 			}
 
-		case "brandcode":
+		case "brand_code":
 			if importData.BrandCode != "" {
 				if brand, ok := cache.Brands[importData.BrandCode]; ok {
 					updateData["brandguid"] = brand.GuidFixed
@@ -1350,14 +1350,14 @@ func (svc ProductImportService) applyMasterDataUpdatesFromCache(updateData bson.
 		case "categorycode":
 			if importData.CategoryCode != "" {
 				if category, ok := cache.Categories[importData.CategoryCode]; ok {
-					updateData["categoryguid"] = category.GuidFixed
-					updateData["categorynames"] = category.Names
+					updateData["category_guid"] = category.GuidFixed
+					updateData["category_names"] = category.Names
 				} else {
 					return fmt.Errorf("category code '%s' not found in master data", importData.CategoryCode)
 				}
 			} else {
-				updateData["categoryguid"] = ""
-				updateData["categorynames"] = nil
+				updateData["category_guid"] = ""
+				updateData["category_names"] = nil
 			}
 
 		case "classcode":
@@ -1947,10 +1947,10 @@ func (svc *ProductImportService) processRefBarcodeUpdates(ctx context.Context, s
 		updateData := bson.M{
 			"$set": bson.M{
 				"refbarcodes":      []product_models.RefProductBarcode{refBarcode},
-				"ismainbarcode":    false,
+				"is_main_barcode":    false,
 				"isusesubbarcodes": true,
 				"updatedby":        authUsername,
-				"updatedat":        time.Now(),
+				"updated_at":        time.Now(),
 			},
 		}
 
@@ -2391,10 +2391,10 @@ func (svc ProductImportService) getDetailedChanges(importData models.ProductImpo
 		{"priceseven", existingData.PriceSeven, importData.PriceSeven, "Price 7 update"},
 		{"priceeight", existingData.PriceEight, importData.PriceEight, "Price 8 update"},
 		{"pricenine", existingData.PriceNine, importData.PriceNine, "Price 9 update"},
-		{"groupcode", existingData.GroupCode, importData.GroupCode, "Group code update"},
+		{"group_code", existingData.GroupCode, importData.GroupCode, "Group code update"},
 		{"groupsubonecode", existingData.GroupsuboneCode, importData.GroupsuboneCode, "Group sub one code update"},
 		{"groupsubtwocode", existingData.GroupsubtwoCode, importData.GroupsubtwoCode, "Group sub two code update"},
-		{"brandcode", existingData.BrandCode, importData.BrandCode, "Brand code update"},
+		{"brand_code", existingData.BrandCode, importData.BrandCode, "Brand code update"},
 		{"designcode", existingData.DesignCode, importData.DesignCode, "Design code update"},
 		{"modelcode", existingData.ModelCode, importData.ModelCode, "Model code update"},
 		{"patterncode", existingData.PatternCode, importData.PatternCode, "Pattern code update"},
@@ -2435,7 +2435,7 @@ func (svc ProductImportService) createCompareSummary(items []models.ProductBarco
 				nameChanges++
 			case "unitcode":
 				unitChanges++
-			case "groupcode", "groupsubonecode", "groupsubtwocode", "brandcode", "designcode", "modelcode", "patterncode", "gradecode", "categorycode", "classcode":
+			case "group_code", "groupsubonecode", "groupsubtwocode", "brand_code", "designcode", "modelcode", "patterncode", "gradecode", "categorycode", "classcode":
 				masterDataChanges++
 			case "barcoderef":
 				refBarcodeChanges++
@@ -2948,7 +2948,7 @@ func (svc ProductImportService) updateExistingProduct(shopID string, authUsernam
 	// สร้างข้อมูลที่จะ update
 	updateData := bson.M{
 		"updatedby": authUsername,
-		"updatedat": time.Now(),
+		"updated_at": time.Now(),
 	}
 
 	// จัดการ prices array แยกต่างหาก
@@ -2974,7 +2974,7 @@ func (svc ProductImportService) updateExistingProduct(shopID string, authUsernam
 			updateData["itemcode"] = importData.Code
 
 		case "unitcode":
-			updateData["itemunitcode"] = importData.UnitCode
+			updateData["item_unit_code"] = importData.UnitCode
 			// อาจต้องอัปเดต unit names ด้วย
 			if importData.UnitCode != "" {
 				unitDocs, err := svc.productUnitRepo.FindByUnitCodes(context.Background(), shopID, []string{importData.UnitCode})
@@ -3055,14 +3055,14 @@ func (svc ProductImportService) updateExistingProduct(shopID string, authUsernam
 			updatePriceInArray(&newPrices, 17, importData.PriceNine)
 
 		// Master data codes
-		case "groupcode":
-			updateData["groupcode"] = importData.GroupCode
+		case "group_code":
+			updateData["group_code"] = importData.GroupCode
 		case "groupsubonecode":
 			updateData["groupsubonecode"] = importData.GroupsuboneCode
 		case "groupsubtwocode":
 			updateData["groupsubtwocode"] = importData.GroupsubtwoCode
-		case "brandcode":
-			updateData["brandcode"] = importData.BrandCode
+		case "brand_code":
+			updateData["brand_code"] = importData.BrandCode
 		case "designcode":
 			updateData["designcode"] = importData.DesignCode
 		case "modelcode":
@@ -3092,12 +3092,12 @@ func (svc ProductImportService) updateExistingProduct(shopID string, authUsernam
 				}
 				updateData["refbarcodes"] = refBarcodes
 				updateData["isusesubbarcodes"] = true
-				updateData["ismainbarcode"] = false
+				updateData["is_main_barcode"] = false
 			} else {
 				// Clear RefBarcodes if no reference data
 				updateData["refbarcodes"] = []product_models.RefProductBarcode{}
 				updateData["isusesubbarcodes"] = false
-				updateData["ismainbarcode"] = true
+				updateData["is_main_barcode"] = true
 			}
 		}
 	}
@@ -3114,15 +3114,15 @@ func (svc ProductImportService) updateExistingProduct(shopID string, authUsernam
 		ctx := context.Background()
 		for _, change := range compareItem.Changes {
 			switch change.Field {
-			case "groupcode":
+			case "group_code":
 				if importData.GroupCode != "" {
 					if groups, err := svc.groupProductRepo.FindByCodes(ctx, shopID, []string{importData.GroupCode}); err == nil && len(groups) > 0 {
 						updateData["groupguid"] = groups[0].GuidFixed
-						updateData["groupnames"] = groups[0].Names
+						updateData["group_names"] = groups[0].Names
 					}
 				} else {
 					updateData["groupguid"] = ""
-					updateData["groupnames"] = nil
+					updateData["group_names"] = nil
 				}
 			case "groupsubonecode":
 				if importData.GroupsuboneCode != "" {
@@ -3144,7 +3144,7 @@ func (svc ProductImportService) updateExistingProduct(shopID string, authUsernam
 					updateData["groupsubtwoguid"] = ""
 					updateData["groupsubtwonames"] = nil
 				}
-			case "brandcode":
+			case "brand_code":
 				if importData.BrandCode != "" {
 					if brands, err := svc.brandProductRepo.FindByCodes(ctx, shopID, []string{importData.BrandCode}); err == nil && len(brands) > 0 {
 						updateData["brandguid"] = brands[0].GuidFixed
@@ -3197,12 +3197,12 @@ func (svc ProductImportService) updateExistingProduct(shopID string, authUsernam
 			case "categorycode":
 				if importData.CategoryCode != "" {
 					if categories, err := svc.categoryProductRepo.FindByCodes(ctx, shopID, []string{importData.CategoryCode}); err == nil && len(categories) > 0 {
-						updateData["categoryguid"] = categories[0].GuidFixed
-						updateData["categorynames"] = categories[0].Names
+						updateData["category_guid"] = categories[0].GuidFixed
+						updateData["category_names"] = categories[0].Names
 					}
 				} else {
-					updateData["categoryguid"] = ""
-					updateData["categorynames"] = nil
+					updateData["category_guid"] = ""
+					updateData["category_names"] = nil
 				}
 			case "classcode":
 				if importData.ClassCode != "" {
@@ -3769,10 +3769,10 @@ func (svc ProductImportService) ApplyChangesWithProgress(shopID string, authUser
 	if errorCount > 0 {
 		// 🆕 สร้าง error response เป็น JSON format
 		type ErrorDetail struct {
-			Summary      string   `json:"summary"`
-			TotalErrors  int      `json:"total_errors"`
+			Summary string   `json:"summary"`
+			TotalErrors int      `json:"total_errors"`
 			TotalRecords int      `json:"total_records"`
-			Errors       []string `json:"errors"`
+			Errors []string `json:"errors"`
 		}
 
 		errorDetail := ErrorDetail{

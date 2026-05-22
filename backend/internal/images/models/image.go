@@ -6,5 +6,5 @@ type Image struct {
 
 type UploadImageResponse struct {
 	Success bool  `json:"success"`
-	Data    Image `json:"data,omitempty"`
+	Data Image `json:"data,omitempty"`
 }

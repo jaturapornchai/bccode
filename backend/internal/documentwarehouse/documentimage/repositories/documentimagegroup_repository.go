@@ -73,15 +73,15 @@ func (repo DocumentImageGroupRepository) Transaction(ctx context.Context, fnc fu
 }
 
 func (repo DocumentImageGroupRepository) UpdateStatusByTask(ctx context.Context, shopID string, taskGUID string, status int8) error {
-	return repo.pst.Update(ctx, models.DocumentImageGroupDoc{}, bson.M{"shopid": shopID, "taskguid": taskGUID}, bson.M{"$set": bson.M{"status": status}})
+	return repo.pst.Update(ctx, models.DocumentImageGroupDoc{}, bson.M{"shopid": shopID, "task_guid": taskGUID}, bson.M{"$set": bson.M{"status": status}})
 }
 
 func (repo DocumentImageGroupRepository) FindStatusByDocumentImageGroupTask(ctx context.Context, shopID string, taskGUID string) ([]models.DocumentImageGroupStatus, error) {
 
 	filters := bson.M{
 		"shopid":    shopID,
-		"taskguid":  taskGUID,
-		"deletedat": bson.M{"$exists": false},
+		"task_guid":  taskGUID,
+		"deleted_at": bson.M{"$exists": false},
 	}
 	docList := []models.DocumentImageGroupStatus{}
 	err := repo.pst.Find(ctx, models.DocumentImageGroupDoc{}, filters, &docList)
@@ -97,8 +97,8 @@ func (repo DocumentImageGroupRepository) CountByTask(ctx context.Context, shopID
 
 	filters := bson.M{
 		"shopid":    shopID,
-		"taskguid":  taskGUID,
-		"deletedat": bson.M{"$exists": false},
+		"task_guid":  taskGUID,
+		"deleted_at": bson.M{"$exists": false},
 	}
 
 	return repo.pst.Count(ctx, models.DocumentImageGroupDoc{}, filters)
@@ -108,12 +108,12 @@ func (repo DocumentImageGroupRepository) CountRejectByTask(ctx context.Context, 
 
 	filters := bson.M{
 		"shopid":   shopID,
-		"taskguid": taskGUID,
+		"task_guid": taskGUID,
 		"$or": []interface{}{
 			bson.M{"status": models.IMAGE_REJECT},
 			bson.M{"status": models.IMAGE_REJECT_KEYING},
 		},
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 	}
 
 	return repo.pst.Count(ctx, models.DocumentImageGroupDoc{}, filters)
@@ -123,8 +123,8 @@ func (repo DocumentImageGroupRepository) UpdateTaskIsCompletedByTaskGUID(ctx con
 
 	filters := bson.M{
 		"shopid":    shopID,
-		"taskguid":  taskGUID,
-		"deletedat": bson.M{"$exists": false},
+		"task_guid":  taskGUID,
+		"deleted_at": bson.M{"$exists": false},
 	}
 
 	err := repo.pst.Update(ctx, models.DocumentImageGroupDoc{}, filters, bson.M{"$set": bson.M{"iscompleted": isCompleted}})
@@ -140,9 +140,9 @@ func (repo DocumentImageGroupRepository) UpdateXOrder(ctx context.Context, shopI
 
 	filters := bson.M{
 		"shopid":    shopID,
-		"taskguid":  taskGUID,
-		"guidfixed": GUID,
-		"deletedat": bson.M{"$exists": false},
+		"task_guid":  taskGUID,
+		"guid_fixed": GUID,
+		"deleted_at": bson.M{"$exists": false},
 	}
 
 	err := repo.pst.UpdateOne(ctx, models.DocumentImageGroupDoc{}, filters, bson.M{"xorder": xorder})
@@ -160,8 +160,8 @@ func (repo DocumentImageGroupRepository) FindLastOneByTask(ctx context.Context, 
 	err := repo.pst.Aggregate(ctx, models.DocumentImageGroupDoc{}, []interface{}{
 		bson.M{"$match": bson.M{
 			"shopid":    shopID,
-			"taskguid":  taskGUID,
-			"deletedat": bson.M{"$exists": false},
+			"task_guid":  taskGUID,
+			"deleted_at": bson.M{"$exists": false},
 		}},
 		bson.M{"$sort": bson.M{"xorder": -1}},
 		bson.M{"$limit": 1},
@@ -187,7 +187,7 @@ func (repo DocumentImageGroupRepository) FindOneByReference(ctx context.Context,
 			"shopid":            shopID,
 			"references.module": reference.Module,
 			"references.docno":  reference.DocNo,
-			"deletedat":         bson.M{"$exists": false},
+			"deleted_at":         bson.M{"$exists": false},
 		}},
 		bson.M{"$limit": 1},
 	}, &results)
@@ -233,7 +233,7 @@ func (repo DocumentImageGroupRepository) FindOneByDocumentImageGUID(ctx context.
 		"shopid":                            shopID,
 		"imagereferences":                   bson.M{"$exists": true},
 		"imagereferences.documentimageguid": documentImageGUID,
-		"deletedat":                         bson.M{"$exists": false},
+		"deleted_at":                         bson.M{"$exists": false},
 	}}
 
 	results := []models.DocumentImageGroupDoc{}
@@ -257,10 +257,10 @@ func (repo DocumentImageGroupRepository) FindWithoutGUIDByDocumentImageGUIDs(ctx
 
 	matchQuery := bson.M{"$match": bson.M{
 		"shopid":                            shopID,
-		"guidfixed":                         bson.M{"$ne": documentImageGroupGUID},
+		"guid_fixed":                         bson.M{"$ne": documentImageGroupGUID},
 		"imagereferences":                   bson.M{"$exists": true},
 		"imagereferences.documentimageguid": bson.M{"$in": documentImageGUIDs},
-		"deletedat":                         bson.M{"$exists": false},
+		"deleted_at":                         bson.M{"$exists": false},
 	}}
 
 	results := []models.DocumentImageGroupInfo{}
@@ -281,7 +281,7 @@ func (repo DocumentImageGroupRepository) FindByDocumentImageGUIDs(ctx context.Co
 		"shopid":                            shopID,
 		"imagereferences":                   bson.M{"$exists": true},
 		"imagereferences.documentimageguid": bson.M{"$in": documentImageGUIDs},
-		"deletedat":                         bson.M{"$exists": false},
+		"deleted_at":                         bson.M{"$exists": false},
 	}}
 
 	results := []models.DocumentImageGroupInfo{}
@@ -300,7 +300,7 @@ func (repo DocumentImageGroupRepository) FindByReferenceDocNo(ctx context.Contex
 	docList := []models.DocumentImageGroupDoc{}
 	err := repo.pst.Find(ctx, models.DocumentImageGroupDoc{}, bson.M{
 		"references.docno": docNo,
-		"deletedat":        bson.M{"$exists": false},
+		"deleted_at":        bson.M{"$exists": false},
 	}, &docList)
 
 	if err != nil {
@@ -313,8 +313,8 @@ func (repo DocumentImageGroupRepository) FindByReferenceDocNo(ctx context.Contex
 func (repo DocumentImageGroupRepository) FindByTaskGUID(ctx context.Context, shopID string, taskGUID string) ([]models.DocumentImageGroupDoc, error) {
 	docList := []models.DocumentImageGroupDoc{}
 	err := repo.pst.Find(ctx, models.DocumentImageGroupDoc{}, bson.M{
-		"taskguid":  taskGUID,
-		"deletedat": bson.M{"$exists": false},
+		"task_guid":  taskGUID,
+		"deleted_at": bson.M{"$exists": false},
 	}, &docList)
 
 	if err != nil {
@@ -329,7 +329,7 @@ func (repo DocumentImageGroupRepository) FindByReference(ctx context.Context, sh
 	err := repo.pst.Find(ctx, models.DocumentImageGroupDoc{}, bson.M{
 		"references.module": reference.Module,
 		"references.docno":  reference.DocNo,
-		"deletedat":         bson.M{"$exists": false},
+		"deleted_at":         bson.M{"$exists": false},
 	}, &docList)
 
 	if err != nil {
@@ -342,7 +342,7 @@ func (repo DocumentImageGroupRepository) FindByReference(ctx context.Context, sh
 func (repo DocumentImageGroupRepository) DeleteByGuidfixed(ctx context.Context, shopID string, guid string) error {
 	return repo.pst.Delete(ctx, models.DocumentImageGroupDoc{}, bson.M{
 		"shopid":    shopID,
-		"guidfixed": guid,
+		"guid_fixed": guid,
 	})
 }
 
@@ -384,7 +384,7 @@ func (repo DocumentImageGroupRepository) RemoveDocumentImageByDocumentImageGUIDs
 	}
 
 	removeQuery := bson.M{
-		"$pull": bson.M{"imagereferences": bson.M{"documentimageguid": bson.M{"$in": imageGUIDs}}},
+		"$pull": bson.M{"imagereferences": bson.M{"document_image_guid": bson.M{"$in": imageGUIDs}}},
 	}
 
 	return repo.pst.Update(ctx, models.DocumentImageGroupDoc{}, filterQuery, removeQuery)
@@ -394,8 +394,8 @@ func (repo DocumentImageGroupRepository) DeleteByGUIDsIsDocumentImageEmptyWithou
 
 	filterQuery := bson.D{
 		{Key: "shopid", Value: shopID},
-		{Key: "guidfixed", Value: bson.M{"$ne": withoutGUID, "$in": GUIDs}},
-		// {Key: "guidfixed", Value: bson.M{"$in": GUIDs}},
+		{Key: "guid_fixed", Value: bson.M{"$ne": withoutGUID, "$in": GUIDs}},
+		// {Key: "guid_fixed", Value: bson.M{"$in": GUIDs}},
 		{Key: "$or", Value: bson.A{
 			bson.D{{Key: "imagereferences", Value: bson.D{{Key: "$exists", Value: false}}}},
 			bson.D{{Key: "imagereferences", Value: bson.D{{Key: "$size", Value: 0}}}},
@@ -413,7 +413,7 @@ func (repo DocumentImageGroupRepository) DeleteByGUIDIsDocumentImageEmpty(ctx co
 
 	filterQuery := bson.D{
 		{Key: "shopid", Value: shopID},
-		{Key: "guidfixed", Value: imageGroupGUID},
+		{Key: "guid_fixed", Value: imageGroupGUID},
 		{Key: "$or", Value: bson.A{
 			bson.D{{Key: "imagereferences", Value: bson.D{{Key: "$exists", Value: false}}}},
 			bson.D{{Key: "imagereferences", Value: bson.D{{Key: "$size", Value: 0}}}},
@@ -430,7 +430,7 @@ func (repo DocumentImageGroupRepository) DeleteByGUIDIsDocumentImageEmpty(ctx co
 func (repo DocumentImageGroupRepository) DeleteByDocumentImageGUIDsHasOneWithoutDocumentImageGroupGUID(ctx context.Context, shopID string, withoutGUID string, imageGUIDs []string) error {
 	return repo.pst.Delete(ctx, models.DocumentImageGroupDoc{}, bson.M{
 		"shopid":                            shopID,
-		"guidfixed":                         bson.M{"$ne": withoutGUID},
+		"guid_fixed":                         bson.M{"$ne": withoutGUID},
 		"imagereferences":                   bson.M{"$exists": true, "$size": 1},
 		"imagereferences.documentimageguid": bson.M{"$in": imageGUIDs},
 		"$or": []interface{}{
@@ -444,7 +444,7 @@ func (repo DocumentImageGroupRepository) RemoveDocumentImageByDocumentImageGUIDs
 
 	filterQuery := bson.M{
 		"shopid":                            shopID,
-		"guidfixed":                         bson.M{"$ne": withoutGUID},
+		"guid_fixed":                         bson.M{"$ne": withoutGUID},
 		"imagereferences.documentimageguid": bson.M{"$in": imageGUIDs},
 		"imagereferences":                   bson.M{"$exists": true},
 		"$or": []interface{}{
@@ -454,7 +454,7 @@ func (repo DocumentImageGroupRepository) RemoveDocumentImageByDocumentImageGUIDs
 	}
 
 	removeQuery := bson.M{
-		"$pull": bson.M{"imagereferences": bson.M{"documentimageguid": bson.M{"$in": imageGUIDs}}},
+		"$pull": bson.M{"imagereferences": bson.M{"document_image_guid": bson.M{"$in": imageGUIDs}}},
 	}
 
 	return repo.pst.Update(ctx, models.DocumentImageGroupDoc{}, filterQuery, removeQuery)
@@ -479,7 +479,7 @@ func (repo DocumentImageGroupRepository) FindPageImageGroup(ctx context.Context,
 
 	queryFilters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": false},
+		"deleted_at": bson.M{"$exists": false},
 	}
 
 	if len(searchFilterList) > 0 {
@@ -493,14 +493,14 @@ func (repo DocumentImageGroupRepository) FindPageImageGroup(ctx context.Context,
 	// check if not have sort by guidfixed, add default sort by guidfixed asc
 	hasSortByGuidfixed := false
 	for _, sortItem := range pageable.Sorts {
-		if sortItem.Key == "guidfixed" {
+		if sortItem.Key == "guid_fixed" {
 			hasSortByGuidfixed = true
 			break
 		}
 	}
 
 	if !hasSortByGuidfixed {
-		pageable.Sorts = append(pageable.Sorts, micromodels.KeyInt{Key: "guidfixed", Value: 1})
+		pageable.Sorts = append(pageable.Sorts, micromodels.KeyInt{Key: "guid_fixed", Value: 1})
 	}
 
 	matchQuery := bson.M{

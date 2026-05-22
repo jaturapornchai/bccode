@@ -10,15 +10,15 @@ import (
 
 // PerformanceMetric เก็บข้อมูล performance ของแต่ละ query
 type PerformanceMetric struct {
-	Query       string        `json:"query"`
-	Database    string        `json:"database"`
-	Operation   string        `json:"operation"`
-	Duration    time.Duration `json:"duration"`
+	Query string        `json:"query"`
+	Database string        `json:"database"`
+	Operation string        `json:"operation"`
+	Duration time.Duration `json:"duration"`
 	RowsAffected int64        `json:"rows_affected"`
-	Status      string        `json:"status"` // "success", "error"
-	Error       string        `json:"error,omitempty"`
-	Timestamp   time.Time     `json:"timestamp"`
-	Context     string        `json:"context,omitempty"` // เพิ่มเติมเพื่อระบุ context
+	Status string        `json:"status"` // "success", "error"
+	Error string        `json:"error,omitempty"`
+	Timestamp time.Time     `json:"timestamp"`
+	Context string        `json:"context,omitempty"` // เพิ่มเติมเพื่อระบุ context
 }
 
 // QueryPerformanceLogger interface สำหรับ logging performance
@@ -237,11 +237,11 @@ func (bqt *BatchQueryTimer) End(err error) {
 
 // DatabasePerformanceStats สถิติ performance ของ database
 type DatabasePerformanceStats struct {
-	TotalQueries    int64                   `json:"total_queries"`
-	TotalErrors     int64                   `json:"total_errors"`
+	TotalQueries int64                   `json:"total_queries"`
+	TotalErrors int64                   `json:"total_errors"`
 	AverageDuration time.Duration           `json:"average_duration"`
-	SlowQueries     []PerformanceMetric     `json:"slow_queries,omitempty"`
-	DatabaseName    string                  `json:"database_name"`
+	SlowQueries []PerformanceMetric     `json:"slow_queries,omitempty"`
+	DatabaseName string                  `json:"database_name"`
 }
 
 // QueryStatsCollector รวบรวมสถิติ performance

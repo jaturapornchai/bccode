@@ -9,18 +9,18 @@ import (
 const deviceCollectionName = "orderDevices"
 
 type OrderDevice struct {
-	Code         string `json:"code" bson:"code"`
+	Code string `json:"code" bson:"code"`
 	DeviceNumber string `json:"devicenumber" bson:"devicenumber"`
-	DocFormat    string `json:"docformat" bson:"docformat"`
-	DeviceType   int8   `json:"devicetype" bson:"devicetype"` // ประเภทเครื่อง ex.เครื่องลูกค้า,เครื่องพนักงาน
-	ActivePin    string `json:"activepin" bson:"activepin"`
-	IsPOSActive  bool   `json:"isposactive" bson:"isposactive"` // ใช้งาน POS
-	SettingCode  string `json:"settingcode" bson:"settingcode"`
+	DocFormat string `json:"docformat" bson:"docformat"`
+	DeviceType int8   `json:"devicetype" bson:"devicetype"` // ประเภทเครื่อง ex.เครื่องลูกค้า,เครื่องพนักงาน
+	ActivePin string `json:"activepin" bson:"activepin"`
+	IsPOSActive bool   `json:"isposactive" bson:"isposactive"` // ใช้งาน POS
+	SettingCode string `json:"settingcode" bson:"settingcode"`
 }
 
 type OrderDeviceInfo struct {
 	models.DocIdentity `bson:"inline"`
-	OrderDevice        `bson:"inline"`
+	OrderDevice  `bson:"inline"`
 }
 
 func (OrderDeviceInfo) CollectionName() string {
@@ -29,12 +29,12 @@ func (OrderDeviceInfo) CollectionName() string {
 
 type OrderDeviceData struct {
 	models.ShopIdentity `bson:"inline"`
-	OrderDeviceInfo     `bson:"inline"`
+	OrderDeviceInfo  `bson:"inline"`
 }
 
 type OrderDeviceDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	OrderDeviceData    `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	OrderDeviceData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -51,7 +51,7 @@ func (OrderDeviceItemGuid) CollectionName() string {
 }
 
 type OrderDeviceActivity struct {
-	OrderDeviceData     `bson:"inline"`
+	OrderDeviceData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

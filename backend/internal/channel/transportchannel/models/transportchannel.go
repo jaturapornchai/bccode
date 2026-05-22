@@ -10,14 +10,14 @@ const transportchannelCollectionName = "transportChannel"
 
 type TransportChannel struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code                     string `json:"code" bson:"code" validate:"required,min=1"`
-	Name                     string `json:"name" bson:"name" validate:"required,min=1"`
-	ImageUri                 string `json:"imageuri" bson:"imageuri"`
+	Code string `json:"code" bson:"code" validate:"required,min=1"`
+	Name string `json:"name" bson:"name" validate:"required,min=1"`
+	ImageUri string `json:"imageuri" bson:"imageuri"`
 }
 
 type TransportChannelInfo struct {
 	models.DocIdentity `bson:"inline"`
-	TransportChannel   `bson:"inline"`
+	TransportChannel  `bson:"inline"`
 }
 
 func (TransportChannelInfo) CollectionName() string {
@@ -30,7 +30,7 @@ type TransportChannelData struct {
 }
 
 type TransportChannelDoc struct {
-	ID                   primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	TransportChannelData `bson:"inline"`
 	models.ActivityDoc   `bson:"inline"`
 }

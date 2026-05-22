@@ -11,34 +11,34 @@ const documentformateCollectionName = "documentFormate"
 
 type DocumentFormate struct {
 	models.PartitionIdentity `bson:"inline"`
-	DocCode                  string                   `json:"doccode" bson:"doccode" validate:"required,min=1"`
-	Module                   string                   `json:"module" bson:"module" validate:"min=1"`
-	DateFormate              string                   `json:"dateformate" bson:"dateformate"`
-	DocNumber                int                      `json:"docnumber" bson:"docnumber"`
-	DocFormat                string                   `json:"docformat" bson:"docformat"`
-	Description              string                   `json:"description" bson:"description"`
-	Details                  *[]DocumentFormateDetail `json:"details" bson:"details"`
-	IsAutoFormat             bool                     `json:"isautoformat" bson:"isautoformat"`
-	YearType                 int8                     `json:"yeartype" bson:"yeartype"`
-	AccountGroup             string                   `json:"accountgroup" bson:"accountgroup"`
-	BookCode                 string                   `json:"bookcode" bson:"bookcode"`
-	PromptDescription        string                   `json:"promptdescription" bson:"promptdescription"`
+	DocCode string                   `json:"doccode" bson:"doccode" validate:"required,min=1"`
+	Module string                   `json:"module" bson:"module" validate:"min=1"`
+	DateFormate string                   `json:"dateformate" bson:"dateformate"`
+	DocNumber int                      `json:"docnumber" bson:"docnumber"`
+	DocFormat string                   `json:"docformat" bson:"docformat"`
+	Description string                   `json:"description" bson:"description"`
+	Details *[]DocumentFormateDetail `json:"details" bson:"details"`
+	IsAutoFormat bool                     `json:"isautoformat" bson:"isautoformat"`
+	YearType int8                     `json:"year_type" bson:"year_type"`
+	AccountGroup string                   `json:"accountgroup" bson:"accountgroup"`
+	BookCode string                   `json:"bookcode" bson:"bookcode"`
+	PromptDescription string                   `json:"promptdescription" bson:"promptdescription"`
 }
 
 type DocumentFormateDetail struct {
-	AccountCode        string                                   `json:"accountcode,omitempty" bson:"accountcode,omitempty"`
-	ActionCode         string                                   `json:"actioncode" bson:"actioncode" validate:"required,min=1"`
-	Detail             string                                   `json:"detail" bson:"detail"`
-	Debit              string                                   `json:"debit" bson:"debit"`
-	Credit             string                                   `json:"credit" bson:"credit"`
+	AccountCode string                                   `json:"accountcode,omitempty" bson:"accountcode,omitempty"`
+	ActionCode string                                   `json:"actioncode" bson:"actioncode" validate:"required,min=1"`
+	Detail string                                   `json:"detail" bson:"detail"`
+	Debit string                                   `json:"debit" bson:"debit"`
+	Credit string                                   `json:"credit" bson:"credit"`
 	IsEntrySelfAccount bool                                     `json:"isentryselfaccount" bson:"isentryselfaccount"`
-	AccountDebit       chartofaccount_models.ChartOfAccountInfo `json:"accountdebit" bson:"accountdebit"`
-	AccountCredit      chartofaccount_models.ChartOfAccountInfo `json:"accountcredit" bson:"accountcredit"`
+	AccountDebit chartofaccount_models.ChartOfAccountInfo `json:"accountdebit" bson:"accountdebit"`
+	AccountCredit chartofaccount_models.ChartOfAccountInfo `json:"accountcredit" bson:"accountcredit"`
 }
 
 type DocumentFormateInfo struct {
 	models.DocIdentity `bson:"inline"`
-	DocumentFormate    `bson:"inline"`
+	DocumentFormate  `bson:"inline"`
 }
 
 func (DocumentFormateInfo) CollectionName() string {
@@ -51,7 +51,7 @@ type DocumentFormateData struct {
 }
 
 type DocumentFormateDoc struct {
-	ID                  primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	DocumentFormateData `bson:"inline"`
 	models.ActivityDoc  `bson:"inline"`
 }

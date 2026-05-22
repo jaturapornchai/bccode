@@ -38,26 +38,26 @@ func (l *LineAdapter) ValidateToken(token string) (*UserInfo, error) {
 }
 
 type verifyResponse struct {
-	Scope     string `json:"scope"`
-	ClientId  string `json:"client_id"`
+	Scope string `json:"scope"`
+	ClientId string `json:"client_id"`
 	ExpiresIn int    `json:"expires_in"`
 }
 
 type profileResponse struct {
-	UserId        string `json:"userId"`
-	DisplayName   string `json:"displayName"`
-	PictureUrl    string `json:"pictureUrl"`
-	StatusMessage string `json:"statusMessage"`
+	UserId string `json:"user_id"`
+	DisplayName string `json:"display_name"`
+	PictureUrl string `json:"picture_url"`
+	StatusMessage string `json:"status_message"`
 }
 
 type idTokenClaims struct {
-	Iss     string   `json:"iss"`
-	Sub     string   `json:"sub"`
-	Aud     string   `json:"aud"`
-	Exp     int64    `json:"exp"`
-	Iat     int64    `json:"iat"`
-	Amr     []string `json:"amr"`
-	Name    string   `json:"name"`
+	Iss string   `json:"iss"`
+	Sub string   `json:"sub"`
+	Aud string   `json:"aud"`
+	Exp int64    `json:"exp"`
+	Iat int64    `json:"iat"`
+	Amr []string `json:"amr"`
+	Name string   `json:"name"`
 	Picture string   `json:"picture"`
 }
 

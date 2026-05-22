@@ -13,35 +13,35 @@ import (
 // ==================== Database Schema ====================
 
 type DatabaseSchemaRequest struct {
-	ShopID    string `json:"shop_id"`
+	ShopID string `json:"shop_id"`
 	TableName string `json:"table_name"` // Optional - specific table
 }
 
 type DatabaseSchemaResponse struct {
 	DatabaseName string        `json:"database_name"`
-	Tables       []TableSchema `json:"tables"`
-	TableCount   int           `json:"table_count"`
-	GeneratedAt  time.Time     `json:"generated_at"`
+	Tables []TableSchema `json:"tables"`
+	TableCount int           `json:"table_count"`
+	GeneratedAt time.Time     `json:"generated_at"`
 }
 
 type TableSchema struct {
-	TableName   string         `json:"table_name"`
-	TableType   string         `json:"table_type"` // BASE TABLE, VIEW
-	Columns     []ColumnSchema `json:"columns"`
+	TableName string         `json:"table_name"`
+	TableType string         `json:"table_type"` // BASE TABLE, VIEW
+	Columns []ColumnSchema `json:"columns"`
 	ColumnCount int            `json:"column_count"`
-	RowCount    int64          `json:"row_count_estimate"`
+	RowCount int64          `json:"row_count_estimate"`
 	Description string         `json:"description,omitempty"`
 }
 
 type ColumnSchema struct {
-	ColumnName    string `json:"column_name"`
-	DataType      string `json:"data_type"`
-	IsNullable    string `json:"is_nullable"`
+	ColumnName string `json:"column_name"`
+	DataType string `json:"data_type"`
+	IsNullable string `json:"is_nullable"`
 	ColumnDefault string `json:"column_default,omitempty"`
-	MaxLength     int    `json:"max_length,omitempty"`
-	IsPrimaryKey  bool   `json:"is_primary_key"`
-	IsForeignKey  bool   `json:"is_foreign_key"`
-	Description   string `json:"description,omitempty"`
+	MaxLength int    `json:"max_length,omitempty"`
+	IsPrimaryKey bool   `json:"is_primary_key"`
+	IsForeignKey bool   `json:"is_foreign_key"`
+	Description string `json:"description,omitempty"`
 }
 
 // GetDatabaseSchema returns the database schema information
@@ -162,17 +162,17 @@ func GetDatabaseSchema(ctx context.Context, shopID, tableName string) (*Database
 
 type ExecuteQueryRequest struct {
 	ShopID string `json:"shop_id"`
-	Query  string `json:"query"`
-	Limit  int    `json:"limit"` // Max rows to return
+	Query string `json:"query"`
+	Limit int    `json:"limit"` // Max rows to return
 }
 
 type ExecuteQueryResponse struct {
-	Query       string                   `json:"query"`
-	Columns     []string                 `json:"columns"`
-	Rows        []map[string]interface{} `json:"rows"`
-	RowCount    int                      `json:"row_count"`
+	Query string                   `json:"query"`
+	Columns []string                 `json:"columns"`
+	Rows []map[string]interface{} `json:"rows"`
+	RowCount int                      `json:"row_count"`
 	ExecutionMs int64                    `json:"execution_ms"`
-	Truncated   bool                     `json:"truncated"`
+	Truncated bool                     `json:"truncated"`
 	GeneratedAt time.Time                `json:"generated_at"`
 }
 
@@ -288,17 +288,17 @@ func ExecuteReadonlyQuery(ctx context.Context, shopID, query string, limit int) 
 // ==================== Get Table Sample Data ====================
 
 type TableSampleRequest struct {
-	ShopID    string `json:"shop_id"`
+	ShopID string `json:"shop_id"`
 	TableName string `json:"table_name"`
-	Limit     int    `json:"limit"`
+	Limit int    `json:"limit"`
 }
 
 type TableSampleResponse struct {
-	TableName   string                   `json:"table_name"`
-	Columns     []string                 `json:"columns"`
-	Rows        []map[string]interface{} `json:"rows"`
-	RowCount    int                      `json:"row_count"`
-	TotalRows   int64                    `json:"total_rows_estimate"`
+	TableName string                   `json:"table_name"`
+	Columns []string                 `json:"columns"`
+	Rows []map[string]interface{} `json:"rows"`
+	RowCount int                      `json:"row_count"`
+	TotalRows int64                    `json:"total_rows_estimate"`
 	GeneratedAt time.Time                `json:"generated_at"`
 }
 

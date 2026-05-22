@@ -31,22 +31,22 @@ var CacheKeyPatterns = map[string]string{
 
 // CacheEntry แสดงข้อมูลใน cache
 type CacheEntry struct {
-	Data       interface{} `json:"data"`
-	Timestamp  time.Time   `json:"timestamp"`
-	TTL        time.Duration `json:"ttl"`
-	HitCount   int64       `json:"hit_count"`
+	Data interface{} `json:"data"`
+	Timestamp time.Time   `json:"timestamp"`
+	TTL time.Duration `json:"ttl"`
+	HitCount int64       `json:"hit_count"`
 	LastAccess time.Time   `json:"last_access"`
 }
 
 // CacheStats สถิติการใช้งาน cache
 type CacheStats struct {
-	TotalEntries    int64              `json:"total_entries"`
-	TotalHits       int64              `json:"total_hits"`
-	TotalMisses     int64              `json:"total_misses"`
-	HitRate         float64            `json:"hit_rate"`
-	MemoryUsage     int64              `json:"memory_usage"`
-	ByType          map[string]int64   `json:"by_type"`
-	LastUpdated     time.Time          `json:"last_updated"`
+	TotalEntries int64              `json:"total_entries"`
+	TotalHits int64              `json:"total_hits"`
+	TotalMisses int64              `json:"total_misses"`
+	HitRate float64            `json:"hit_rate"`
+	MemoryUsage int64              `json:"memory_usage"`
+	ByType map[string]int64   `json:"by_type"`
+	LastUpdated time.Time          `json:"last_updated"`
 }
 
 // UnifiedCacheManager จัดการ cache หลายระดับ

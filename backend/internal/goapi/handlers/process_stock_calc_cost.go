@@ -20,21 +20,21 @@ const processStockCalcCostCommandID = "processstockcalccost"
 
 // processStockCalcCostRequest defines the payload structure accepted by ProcessStockCalcCostHandler.
 type processStockCalcCostRequest struct {
-	ShopID       string          `json:"shop_id"`
-	CommandID    string          `json:"command_id"`
+	ShopID string          `json:"shop_id"`
+	CommandID string          `json:"command_id"`
 	ItemCodeList json.RawMessage `json:"item_code_list"`
-	DeleteFirst  *bool           `json:"delete_first"`
-	PointQty     *int            `json:"point_qty"`
-	PointAmount  *int            `json:"point_amount"`
-	PointCost    *int            `json:"point_cost"`
-	Incremental  *bool           `json:"incremental"`   // ใช้ incremental calculation (ตรวจ checksum ก่อน)
-	MinimalLog   *bool           `json:"minimal_log"`   // ใช้ UPSERT แทน DELETE+INSERT เพื่อลด WAL
+	DeleteFirst *bool           `json:"delete_first"`
+	PointQty *int            `json:"point_qty"`
+	PointAmount *int            `json:"point_amount"`
+	PointCost *int            `json:"point_cost"`
+	Incremental *bool           `json:"incremental"`   // ใช้ incremental calculation (ตรวจ checksum ก่อน)
+	MinimalLog *bool           `json:"minimal_log"`   // ใช้ UPSERT แทน DELETE+INSERT เพื่อลด WAL
 }
 
 // processStockCalcCostItemResult holds per-item execution metadata for API responses.
 type processStockCalcCostItemResult struct {
-	ItemCode   string `json:"item_code"`
-	Status     string `json:"status"`
+	ItemCode string `json:"item_code"`
+	Status string `json:"status"`
 	DurationMs int64  `json:"duration_ms"`
 }
 

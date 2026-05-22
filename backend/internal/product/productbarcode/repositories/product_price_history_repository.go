@@ -60,7 +60,7 @@ func (repo ProductPriceHistoryRepository) FindByBarcode(ctx context.Context, sho
 
 func (repo ProductPriceHistoryRepository) CountByDateRange(ctx context.Context, shopID string, fromDate, toDate time.Time) (int, error) {
 	filters := map[string]interface{}{
-		"createdat": map[string]interface{}{
+		"created_at": map[string]interface{}{
 			"$gte": fromDate,
 			"$lte": toDate,
 		},

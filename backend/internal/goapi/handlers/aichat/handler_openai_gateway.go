@@ -58,50 +58,50 @@ func getOpenclawShopID() string {
 // ==================== OpenAI Types ====================
 
 type openaiChatMessage struct {
-	Role    string `json:"role"`
+	Role string `json:"role"`
 	Content any    `json:"content"` // string | []contentPart
-	Name    string `json:"name,omitempty"`
+	Name string `json:"name,omitempty"`
 }
 
 type openaiChatRequest struct {
-	Model    string              `json:"model"`
+	Model string              `json:"model"`
 	Messages []openaiChatMessage `json:"messages"`
-	Stream   bool                `json:"stream"`
-	User     string              `json:"user,omitempty"` // ใช้เป็น session_id
+	Stream bool                `json:"stream"`
+	User string              `json:"user,omitempty"` // ใช้เป็น session_id
 }
 
 type openaiChoice struct {
-	Index        int                `json:"index"`
-	Message      *openaiChatMessage `json:"message,omitempty"`
-	Delta        *openaiChatMessage `json:"delta,omitempty"`
+	Index int                `json:"index"`
+	Message *openaiChatMessage `json:"message,omitempty"`
+	Delta *openaiChatMessage `json:"delta,omitempty"`
 	FinishReason *string            `json:"finish_reason"`
 }
 
 type openaiUsage struct {
-	PromptTokens     int `json:"prompt_tokens"`
+	PromptTokens int `json:"prompt_tokens"`
 	CompletionTokens int `json:"completion_tokens"`
-	TotalTokens      int `json:"total_tokens"`
+	TotalTokens int `json:"total_tokens"`
 }
 
 type openaiChatResponse struct {
-	ID      string         `json:"id"`
-	Object  string         `json:"object"`
+	ID string         `json:"id"`
+	Object string         `json:"object"`
 	Created int64          `json:"created"`
-	Model   string         `json:"model"`
+	Model string         `json:"model"`
 	Choices []openaiChoice `json:"choices"`
-	Usage   *openaiUsage   `json:"usage,omitempty"`
+	Usage *openaiUsage   `json:"usage,omitempty"`
 }
 
 type openaiModel struct {
-	ID      string `json:"id"`
-	Object  string `json:"object"`
+	ID string `json:"id"`
+	Object string `json:"object"`
 	Created int64  `json:"created"`
 	OwnedBy string `json:"owned_by"`
 }
 
 type openaiModelList struct {
 	Object string        `json:"object"`
-	Data   []openaiModel `json:"data"`
+	Data []openaiModel `json:"data"`
 }
 
 // ==================== extractLastUserMessage ====================

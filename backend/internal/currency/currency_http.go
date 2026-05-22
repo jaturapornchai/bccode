@@ -342,8 +342,8 @@ func (h CurrencyHttp) SearchCurrencyStep(ctx microservice.IContext) error {
 // ExchangeRateRequest - Request for creating/updating exchange rate
 type ExchangeRateRequest struct {
 	Currency string  `json:"currency" validate:"required"` // USD, EUR, JPY
-	Date     string  `json:"date" validate:"required"`     // YYYY-MM-DD
-	Rate     float64 `json:"rate" validate:"required,gt=0"` // Exchange rate to THB
+	Date string  `json:"date" validate:"required"`     // YYYY-MM-DD
+	Rate float64 `json:"rate" validate:"required,gt=0"` // Exchange rate to THB
 }
 
 // Create ExchangeRateHistory godoc

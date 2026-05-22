@@ -9,17 +9,17 @@ import (
 const salechannelCollectionName = "saleChannel"
 
 type SaleChannel struct {
-	Code        string  `json:"code" bson:"code" validate:"required,min=1"`
-	Name        string  `json:"name" bson:"name" validate:"required,min=1"`
-	GP          float64 `json:"gp" bson:"gp"`
-	GPType      int8    `json:"gptype" bson:"gptype"`
+	Code string  `json:"code" bson:"code" validate:"required,min=1"`
+	Name string  `json:"name" bson:"name" validate:"required,min=1"`
+	GP float64 `json:"gp" bson:"gp"`
+	GPType int8    `json:"gp_type" bson:"gp_type"`
 	PriceNumber int8    `json:"price" bson:"price"`
-	ImageUri    string  `json:"imageuri" bson:"imageuri"`
+	ImageUri string  `json:"imageuri" bson:"imageuri"`
 }
 
 type SaleChannelInfo struct {
 	models.DocIdentity `bson:"inline"`
-	SaleChannel        `bson:"inline"`
+	SaleChannel  `bson:"inline"`
 }
 
 func (SaleChannelInfo) CollectionName() string {
@@ -29,12 +29,12 @@ func (SaleChannelInfo) CollectionName() string {
 type SaleChannelData struct {
 	models.PartitionIdentity `bson:"inline"`
 	models.ShopIdentity      `bson:"inline"`
-	SaleChannelInfo          `bson:"inline"`
+	SaleChannelInfo  `bson:"inline"`
 }
 
 type SaleChannelDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	SaleChannelData    `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	SaleChannelData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -51,7 +51,7 @@ func (SaleChannelItemGuid) CollectionName() string {
 }
 
 type SaleChannelActivity struct {
-	SaleChannelData     `bson:"inline"`
+	SaleChannelData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

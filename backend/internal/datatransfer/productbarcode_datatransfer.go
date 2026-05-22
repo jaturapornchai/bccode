@@ -61,7 +61,7 @@ func (pbd *ProductBarcodeDataTransfer) StartTransfer(ctx context.Context, shopID
 		Page:  1,
 		Sorts: []msModels.KeyInt{
 			{
-				Key:   "guidfixed",
+				Key:   "guid_fixed",
 				Value: -1,
 			},
 		},

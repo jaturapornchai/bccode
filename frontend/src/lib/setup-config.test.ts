@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   buildConnectionPayload,
+  createDefaultConfigMap,
   getFieldControl,
+  getCategoryDef,
   mergeBackendConfig,
   normalizeBooleanValue,
   normalizeSetupBackendUrl,
@@ -15,14 +17,31 @@ describe("setup config helpers", () => {
     expect(normalizeSetupBackendUrl("http://localhost:8888/goapi/")).toBe("http://localhost:8888/goapi");
   });
 
-  it("merges legacy mongodb database_name into database", () => {
+  it("hides legacy mongodb config from the settings UI", () => {
     const config = mergeBackendConfig([{ category: "mongodb", key: "database_name", value: "bcdev", is_secret: false }]);
-    expect(config.mongodb.find((item) => item.key === "database")?.value).toBe("bcdev");
+    expect(config.mongodb).toBeUndefined();
   });
 
   it("hides duplicated MongoDB production config from the settings UI", () => {
     const config = mergeBackendConfig([{ category: "mongodb_production", key: "uri", value: "mongodb://prod", is_secret: true }]);
     expect(config.mongodb_production).toBeUndefined();
+  });
+
+  it("shows only local MongoDB DEV in the setup UI", () => {
+    const config = createDefaultConfigMap();
+    expect(getCategoryDef("mongodb_dev").title).toBe("MongoDB DEV (Local)");
+    expect(config.mongodb_dev).toBeDefined();
+    expect(config.mongodb_uat).toBeUndefined();
+    expect(config.mongodb_pro).toBeUndefined();
+  });
+
+  it("hides future MongoDB UAT and PRO config from backend entries", () => {
+    const config = mergeBackendConfig([
+      { category: "mongodb_uat", key: "uri", value: "mongodb://uat", is_secret: true },
+      { category: "mongodb_pro", key: "uri", value: "mongodb://pro", is_secret: true },
+    ]);
+    expect(config.mongodb_uat).toBeUndefined();
+    expect(config.mongodb_pro).toBeUndefined();
   });
 
   it("builds kafka connection payload from server_url", () => {

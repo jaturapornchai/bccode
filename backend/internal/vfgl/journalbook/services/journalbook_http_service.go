@@ -161,7 +161,7 @@ func (svc JournalBookHttpService) Search(shopID string, pageable micromodels.Pag
 	defer ctxCancel()
 
 	searchInFields := []string{
-		"guidfixed",
+		"guid_fixed",
 		"code",
 	}
 

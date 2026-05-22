@@ -12,9 +12,9 @@ import (
 // ใบสั่งขาย
 type SaleOrderPG struct {
 	TransactionPG `gorm:"embedded;"`
-	DebtorCode    string               `json:"creditorcode" gorm:"column:creditorcode"`
-	DebtorNames   pkgModels.JSONB      `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
-	Items         *[]SaleOrderDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
+	DebtorCode string               `json:"creditorcode" gorm:"column:creditorcode"`
+	DebtorNames pkgModels.JSONB      `json:"creditornames" gorm:"column:creditornames;type:jsonb"`
+	Items *[]SaleOrderDetailPG `json:"items" gorm:"items;foreignKey:shopid,docno"`
 }
 
 // รายละเอียด ใบสั่งขาย

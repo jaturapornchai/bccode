@@ -160,7 +160,7 @@ func (svc *ShopServiceOld) EditMember(ctx microservice.IContext) error {
 
 	findIDx, _ := primitive.ObjectIDFromHex(id)
 	findMember := &models.Member{}
-	err = pst.FindByID(&models.Member{}, "guidfixed", findIDx, findMember)
+	err = pst.FindByID(&models.Member{}, "guid_fixed", findIDx, findMember)
 	if err != nil && err.Error() != "mongo: no documents in result" {
 		ctx.ResponseError(400, err.Error())
 		return err
@@ -181,7 +181,7 @@ func (svc *ShopServiceOld) EditMember(ctx microservice.IContext) error {
 	findMember.Name = memberReq.Name
 
 	idx, _ := primitive.ObjectIDFromHex(id)
-	err = pst.UpdateOne(&models.Member{}, "guidfixed", idx, findMember)
+	err = pst.UpdateOne(&models.Member{}, "guid_fixed", idx, findMember)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())
@@ -241,7 +241,7 @@ func (svc *ShopServiceOld) GetMemberInfo(ctx microservice.IContext) error {
 
 	memberInfo := &models.MemberInfo{}
 
-	err := pst.FindOne(&models.MemberInfo{}, bson.M{"guidfixed": id, "createdby": authUsername, "shop_id": shopID}, memberInfo)
+	err := pst.FindOne(&models.MemberInfo{}, bson.M{"guid_fixed": id, "createdby": authUsername, "shop_id": shopID}, memberInfo)
 
 	if err != nil {
 		ctx.ResponseError(400, "not found")
@@ -279,7 +279,7 @@ func (svc *ShopServiceOld) ChangePasswordMember(ctx microservice.IContext) error
 	}
 
 	findMember := &models.Member{}
-	err = pst.FindByID(&models.Member{}, "guidfixed", id, findMember)
+	err = pst.FindByID(&models.Member{}, "guid_fixed", id, findMember)
 	if err != nil && err.Error() != "mongo: no documents in result" {
 		ctx.ResponseError(400, err.Error())
 		return err
@@ -300,7 +300,7 @@ func (svc *ShopServiceOld) ChangePasswordMember(ctx microservice.IContext) error
 		findMember.Password = hashPassword
 	}
 
-	err = pst.UpdateOne(&models.Member{}, "guidfixed", id, findMember)
+	err = pst.UpdateOne(&models.Member{}, "guid_fixed", id, findMember)
 
 	if err != nil {
 		ctx.ResponseError(400, err.Error())

@@ -10,15 +10,15 @@ const masterincomeCollectionName = "masterIncomes"
 
 type MasterIncome struct {
 	models.PartitionIdentity `bson:"inline"`
-	Code                     string          `json:"code" bson:"code"`
-	Names                    *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
-	AccountCode              string          `json:"accountcode" bson:"accountcode"`
-	AccountName              string          `json:"accountname" bson:"accountname"`
+	Code string          `json:"code" bson:"code"`
+	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	AccountCode string          `json:"accountcode" bson:"accountcode"`
+	AccountName string          `json:"accountname" bson:"accountname"`
 }
 
 type MasterIncomeInfo struct {
 	models.DocIdentity `bson:"inline"`
-	MasterIncome       `bson:"inline"`
+	MasterIncome  `bson:"inline"`
 }
 
 func (MasterIncomeInfo) CollectionName() string {
@@ -27,12 +27,12 @@ func (MasterIncomeInfo) CollectionName() string {
 
 type MasterIncomeData struct {
 	models.ShopIdentity `bson:"inline"`
-	MasterIncomeInfo    `bson:"inline"`
+	MasterIncomeInfo  `bson:"inline"`
 }
 
 type MasterIncomeDoc struct {
-	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	MasterIncomeData   `bson:"inline"`
+	ID primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	MasterIncomeData  `bson:"inline"`
 	models.ActivityDoc `bson:"inline"`
 }
 
@@ -49,7 +49,7 @@ func (MasterIncomeItemGuid) CollectionName() string {
 }
 
 type MasterIncomeActivity struct {
-	MasterIncomeData    `bson:"inline"`
+	MasterIncomeData  `bson:"inline"`
 	models.ActivityTime `bson:"inline"`
 }
 

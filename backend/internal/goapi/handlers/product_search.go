@@ -23,71 +23,71 @@ import (
 
 // UnifiedSearchRequest - Request body สำหรับค้นหาสินค้าแบบ Unified
 type UnifiedSearchRequest struct {
-	ShopID         string `json:"shopid"`
-	Keyword        string `json:"keyword"`
-	WHCode         string `json:"whcode"`
-	LocationCode   string `json:"locationcode"`
-	Limit          int    `json:"limit"`
-	Offset         int    `json:"offset"` // สำหรับ pagination (infinite scroll)
+	ShopID string `json:"shopid"`
+	Keyword string `json:"keyword"`
+	WHCode string `json:"whcode"`
+	LocationCode string `json:"locationcode"`
+	Limit int    `json:"limit"`
+	Offset int    `json:"offset"` // สำหรับ pagination (infinite scroll)
 	IncludeBalance bool   `json:"include_balance"`
 }
 
 // SearchProductUnit - หน่วยสินค้าพร้อมราคา
 type SearchProductUnit struct {
-	Barcode     string  `json:"barcode"`
-	UnitCode    string  `json:"unitcode"`
-	UnitName    string  `json:"unitname"`
-	UnitStand   float64 `json:"unitstand"`
-	UnitDivide  float64 `json:"unitdivide"`
-	Price1      float64 `json:"price1"`
+	Barcode string  `json:"barcode"`
+	UnitCode string  `json:"unitcode"`
+	UnitName string  `json:"unit_name"`
+	UnitStand float64 `json:"unitstand"`
+	UnitDivide float64 `json:"unitdivide"`
+	Price1 float64 `json:"price1"`
 	PriceRetail float64 `json:"price_retail"`
 }
 
 // SearchLocationBalance - ยอดคงเหลือแยกตาม Location
 type SearchLocationBalance struct {
 	LocationCode string  `json:"location_code"`
-	BalanceQty   float64 `json:"balance_qty"`
-	BalanceWord  string  `json:"balance_word"`
+	BalanceQty float64 `json:"balance_qty"`
+	BalanceWord string  `json:"balance_word"`
 }
 
 // SearchWarehouseBalance - ยอดคงเหลือแยกตาม Warehouse พร้อม Locations
 type SearchWarehouseBalance struct {
 	WarehouseCode string                  `json:"warehouse_code"`
-	BalanceQty    float64                 `json:"balance_qty"`
-	BalanceWord   string                  `json:"balance_word"`
-	Locations     []SearchLocationBalance `json:"locations,omitempty"`
+	BalanceQty float64                 `json:"balance_qty"`
+	BalanceWord string                  `json:"balance_word"`
+	Locations []SearchLocationBalance `json:"locations,omitempty"`
 }
 
 // SearchBalanceInfo - ยอดคงเหลือพร้อม format และแยกตาม warehouse/location
 type SearchBalanceInfo struct {
-	Total      float64                  `json:"total"`
-	Formatted  string                   `json:"formatted"`
+	Total float64                  `json:"total"`
+	Formatted string                   `json:"formatted"`
 	Warehouses []SearchWarehouseBalance `json:"warehouses,omitempty"`
 	// ค้างรับ (PO ที่ยังไม่ได้รับของ)
-	PendingRecvQty  float64 `json:"pending_recv_qty"`
+	PendingRecvQty float64 `json:"pending_recv_qty"`
 	PendingRecvWord string  `json:"pending_recv_word"`
 	// ค้างส่ง (SO ที่ยังไม่ได้ส่งของ)
-	PendingSendQty  float64 `json:"pending_send_qty"`
+	PendingSendQty float64 `json:"pending_send_qty"`
 	PendingSendWord string  `json:"pending_send_word"`
 }
 
 // SearchProductItem - สินค้าที่ค้นพบ
 type SearchProductItem struct {
 	ItemCode string             `json:"itemcode"`
-	Name0    string             `json:"name0"`
-	Units    []SearchProductUnit `json:"units"`
-	Balance  *SearchBalanceInfo  `json:"balance,omitempty"`
-	Score    int                `json:"score"`
+	Name0 string             `json:"name0"`
+	Units []SearchProductUnit `json:"units"`
+	Balance *SearchBalanceInfo  `json:"balance,omitempty"`
+	Score int                `json:"score"`
 }
 
 // UnifiedSearchResponse - Response สำหรับการค้นหา
 type UnifiedSearchResponse struct {
-	Status   string              `json:"status"`
-	Count    int                 `json:"count"`
-	Total    int                 `json:"total"`   // จำนวนสินค้าทั้งหมดที่พบ (ก่อน pagination)
-	HasMore  bool                `json:"hasMore"` // มีข้อมูลเพิ่มหรือไม่ (สำหรับ infinite scroll)
+	Status string              `json:"status"`
+	Count int                 `json:"count"`
+	Total int                 `json:"total"`   // จำนวนสินค้าทั้งหมดที่พบ (ก่อน pagination)
+	HasMore bool                `json:"has_more"` // มีข้อมูลเพิ่มหรือไม่ (สำหรับ infinite scroll)
 	Products []SearchProductItem `json:"products"`
-	Tokens   []string            `json:"tokens"`
+	Tokens []string            `json:"tokens"`
 }
 
 // ==================== Main Handler ====================

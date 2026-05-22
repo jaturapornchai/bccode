@@ -1,10 +1,10 @@
 package models
 
 type ProcessMongoEmployeeModel struct {
-	Code     string `json:"code" bson:"code"`
-	Name     string `json:"name" bson:"name"`
+	Code string `json:"code" bson:"code"`
+	Name string `json:"name" bson:"name"`
 	Password string `json:"password" bson:"password"`
-	ShopId   string `json:"shopid" bson:"shopid"`
+	ShopId string `json:"shopid" bson:"shopid"`
 
 	// === ฟิลด์สำหรับระบบอนุมัติ ===
 	// ตำแหน่งงาน เช่น "หัวหน้าแผนก", "ผู้จัดการฝ่าย", "ผู้อำนวยการ"

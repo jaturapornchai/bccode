@@ -125,7 +125,7 @@ func (svc OcrService) downloadFileFromURL(url string) (io.Reader, string, error)
 	if contentDisposition != "" {
 		_, params, err := mime.ParseMediaType(contentDisposition)
 		if err == nil {
-			filename = params["filename"]
+			filename = params["file_name"]
 		}
 	}
 
@@ -208,7 +208,7 @@ func (svc OcrService) postResult(url string, ocrResault OcrResault, fileContent 
 	writer.WriteField("raw_header", strconv.Itoa(int(ocrResault.RawHeader)))
 	writer.WriteField("confident", strconv.Itoa(int(ocrResault.Confident)))
 	writer.WriteField("signature_code", strconv.Itoa(int(ocrResault.SignatureCode)))
-	writer.WriteField("startdate", ocrResault.Startdate)
+	writer.WriteField("start_date", ocrResault.Startdate)
 	writer.WriteField("stopdate", ocrResault.Stopdate)
 
 	// Create a new POST request

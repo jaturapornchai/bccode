@@ -77,13 +77,13 @@ type APICatalogResponse struct {
 
 type swaggerDoc struct {
 	Paths       map[string]map[string]json.RawMessage `json:"paths"`
-	Definitions map[string]json.RawMessage             `json:"definitions,omitempty"`
+	Definitions map[string]json.RawMessage            `json:"definitions,omitempty"`
 }
 
 type swaggerDefinition struct {
-	Type       string                            `json:"type"`
-	Properties map[string]swaggerPropertyDef      `json:"properties"`
-	Required   []string                           `json:"required"`
+	Type       string                        `json:"type"`
+	Properties map[string]swaggerPropertyDef `json:"properties"`
+	Required   []string                      `json:"required"`
 }
 
 type swaggerPropertyDef struct {
@@ -427,22 +427,22 @@ func resolveSwaggerRef(ref string) ([]SchemaField, string) {
 func getDescriptionOverride(method, path string) (string, bool) {
 	overrides := map[string]string{
 		// ===== Authentication =====
-		"POST /login":                   "Login with username/password, returns JWT access token",
-		"POST /login/email":             "Login with email/password",
-		"POST /login/phonenumber":       "Login with phone number/password",
-		"POST /login/line":              "Login with LINE access token",
-		"POST /login/google":            "Login with Google account",
-		"POST /login/pos":               "POS machine login (shopid + username)",
-		"POST /register":                "Register new user account",
-		"POST /refresh":                 "Refresh expired JWT access token",
-		"POST /logout":                  "Logout and invalidate token",
+		"POST /login":             "Login with username/password, returns JWT access token",
+		"POST /login/email":       "Login with email/password",
+		"POST /login/phonenumber": "Login with phone number/password",
+		"POST /login/line":        "Login with LINE access token",
+		"POST /login/google":      "Login with Google account",
+		"POST /login/pos":         "POS machine login (shopid + username)",
+		"POST /register":          "Register new user account",
+		"POST /refresh":           "Refresh expired JWT access token",
+		"POST /logout":            "Logout and invalidate token",
 
 		// ===== Shop =====
-		"GET /list-shop":                "List all shops for current user",
-		"GET /shop/{id}":                "Get shop profile by ID",
-		"PUT /shop/{id}":                "Update shop information",
-		"DELETE /shop/{id}":             "Delete shop",
-		"POST /select-shop":             "Select active shop for session",
+		"GET /list-shop":    "List all shops for current user",
+		"GET /shop/{id}":    "Get shop profile by ID",
+		"PUT /shop/{id}":    "Update shop information",
+		"DELETE /shop/{id}": "Delete shop",
+		"POST /select-shop": "Select active shop for session",
 
 		// ===== Branch =====
 		"GET /shop/branch":              "List all branches with search and pagination",
@@ -454,92 +454,92 @@ func getDescriptionOverride(method, path string) (string, bool) {
 		"GET /organization/branch/{id}": "Get branch detail by guidfixed",
 
 		// ===== Product Barcode =====
-		"GET /product/barcode/by-code":  "Get product barcodes by code array (JSON encoded)",
-		"POST /product/barcode/bulk":    "Bulk create product barcodes",
-		"GET /product/barcode/pk/{barcode}": "Get product barcode by primary key (barcode)",
+		"GET /product/barcode/by-code":       "Get product barcodes by code array (JSON encoded)",
+		"POST /product/barcode/bulk":         "Bulk create product barcodes",
+		"GET /product/barcode/pk/{barcode}":  "Get product barcode by primary key (barcode)",
 		"GET /product/barcode/bom/{barcode}": "Get BOM (Bill of Materials) for product barcode",
-		"GET /product/barcode/export":   "Export product barcodes",
+		"GET /product/barcode/export":        "Export product barcodes",
 
 		// ===== Warehouse =====
-		"GET /warehouse":                "List warehouses with search and pagination",
-		"POST /warehouse":               "Create new warehouse",
-		"DELETE /warehouse":             "Delete warehouse",
+		"GET /warehouse":    "List warehouses with search and pagination",
+		"POST /warehouse":   "Create new warehouse",
+		"DELETE /warehouse": "Delete warehouse",
 
 		// ===== Customer =====
-		"GET /debtaccount/customer":     "List customers with search and pagination",
-		"POST /debtaccount/customer":    "Create new customer",
-		"DELETE /debtaccount/customer":  "Delete customer",
+		"GET /debtaccount/customer":      "List customers with search and pagination",
+		"POST /debtaccount/customer":     "Create new customer",
+		"DELETE /debtaccount/customer":   "Delete customer",
 		"GET /debtaccount/customer/{id}": "Get customer detail by ID",
 		"PUT /debtaccount/customer/{id}": "Update customer",
 
 		// ===== Creditor =====
-		"GET /debtaccount/creditor":     "List creditors (suppliers) with search and pagination",
-		"POST /debtaccount/creditor":    "Create new creditor",
-		"GET /debtaccount/creditor/{id}": "Get creditor detail by ID",
-		"PUT /debtaccount/creditor/{id}": "Update creditor",
+		"GET /debtaccount/creditor":       "List creditors (suppliers) with search and pagination",
+		"POST /debtaccount/creditor":      "Create new creditor",
+		"GET /debtaccount/creditor/{id}":  "Get creditor detail by ID",
+		"PUT /debtaccount/creditor/{id}":  "Update creditor",
 		"POST /debtaccount/creditor/bulk": "Bulk create creditors",
 
 		// ===== Currency =====
-		"GET /currency":                 "List currencies",
-		"POST /currency":                "Create new currency",
-		"DELETE /currency":              "Delete currency",
+		"GET /currency":    "List currencies",
+		"POST /currency":   "Create new currency",
+		"DELETE /currency": "Delete currency",
 
 		// ===== Member =====
-		"GET /member":                   "List members with search and pagination",
-		"POST /member":                  "Create new member",
-		"GET /member/{id}":              "Get member detail by ID",
-		"PUT /member/{id}":              "Update member",
+		"GET /member":      "List members with search and pagination",
+		"POST /member":     "Create new member",
+		"GET /member/{id}": "Get member detail by ID",
+		"PUT /member/{id}": "Update member",
 
 		// ===== Employee =====
-		"GET /shop/employee":            "List employees with search and pagination",
-		"POST /shop/employee":           "Create new employee",
-		"GET /shop/employee/{id}":       "Get employee detail by ID",
-		"PUT /shop/employee/{id}":       "Update employee",
-		"DELETE /shop/employee/{id}":    "Delete employee",
+		"GET /shop/employee":         "List employees with search and pagination",
+		"POST /shop/employee":        "Create new employee",
+		"GET /shop/employee/{id}":    "Get employee detail by ID",
+		"PUT /shop/employee/{id}":    "Update employee",
+		"DELETE /shop/employee/{id}": "Delete employee",
 
 		// ===== User/Permission =====
-		"GET /shop/permission/{username}": "Get shop user permission and profile by username",
-		"PUT /shop/permission":          "Save shop user permission and profile (position, department, LINE, approval)",
+		"GET /shop/permission/{username}":    "Get shop user permission and profile by username",
+		"PUT /shop/permission":               "Save shop user permission and profile (position, department, LINE, approval)",
 		"DELETE /shop/permission/{username}": "Delete shop user permission",
 
 		// ===== Transaction: Sale Invoice =====
-		"GET /transaction/sale-invoice":   "List sale invoices with search and pagination",
-		"POST /transaction/sale-invoice":  "Create sale invoice",
-		"DELETE /transaction/sale-invoice": "Delete sale invoice",
+		"GET /transaction/sale-invoice":      "List sale invoices with search and pagination",
+		"POST /transaction/sale-invoice":     "Create sale invoice",
+		"DELETE /transaction/sale-invoice":   "Delete sale invoice",
 		"GET /transaction/sale-invoice/{id}": "Get sale invoice detail by ID",
 
 		// ===== Transaction: Sale Invoice Return =====
 		"GET /transaction/sale-invoice-return":    "List sale returns",
 		"POST /transaction/sale-invoice-return":   "Create sale return",
-		"DELETE /transaction/sale-invoice-return":  "Delete sale return",
+		"DELETE /transaction/sale-invoice-return": "Delete sale return",
 
 		// ===== Transaction: Purchase Order =====
-		"GET /transaction/purchase-order":         "List purchase orders with search and pagination",
-		"POST /transaction/purchase-order":        "Create purchase order",
-		"DELETE /transaction/purchase-order":       "Delete purchase order",
-		"GET /transaction/purchase-order/list":     "Search purchase orders with limit/offset pagination",
+		"GET /transaction/purchase-order":             "List purchase orders with search and pagination",
+		"POST /transaction/purchase-order":            "Create purchase order",
+		"DELETE /transaction/purchase-order":          "Delete purchase order",
+		"GET /transaction/purchase-order/list":        "Search purchase orders with limit/offset pagination",
 		"GET /transaction/purchase-order/code/{code}": "Get purchase order by document code",
 
 		// ===== Transaction: Purchase =====
-		"GET /transaction/purchase":               "List purchases with search and pagination",
-		"POST /transaction/purchase":              "Create purchase",
-		"DELETE /transaction/purchase":             "Delete purchase",
+		"GET /transaction/purchase":    "List purchases with search and pagination",
+		"POST /transaction/purchase":   "Create purchase",
+		"DELETE /transaction/purchase": "Delete purchase",
 
 		// ===== Stock =====
-		"GET /transaction/stock-transfer":         "List stock transfers",
-		"POST /transaction/stock-transfer":        "Create stock transfer",
-		"GET /transaction/stock-adjustment":        "List stock adjustments",
-		"POST /transaction/stock-adjustment":       "Create stock adjustment",
-		"GET /transaction/stock-balance":           "List stock balance (opening balance)",
-		"POST /transaction/stock-balance":          "Create stock balance record",
+		"GET /transaction/stock-transfer":    "List stock transfers",
+		"POST /transaction/stock-transfer":   "Create stock transfer",
+		"GET /transaction/stock-adjustment":  "List stock adjustments",
+		"POST /transaction/stock-adjustment": "Create stock adjustment",
+		"GET /transaction/stock-balance":     "List stock balance (opening balance)",
+		"POST /transaction/stock-balance":    "Create stock balance record",
 
 		// ===== Image/File =====
-		"POST /upload/productimage":     "Upload product image",
-		"POST /upload/shoplogo":         "Upload shop logo image",
+		"POST /upload/productimage": "Upload product image",
+		"POST /upload/shoplogo":     "Upload shop logo image",
 
 		// ===== Settings =====
-		"GET /setting":                  "Get shop settings/configuration",
-		"PUT /setting":                  "Update shop settings/configuration",
+		"GET /setting": "Get shop settings/configuration",
+		"PUT /setting": "Update shop settings/configuration",
 	}
 
 	key := method + " " + path
@@ -556,8 +556,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 		// ===== Health & Status =====
 		{Method: "GET", Path: "/goapi/", Description: "GoAPI root - returns version and status", Category: "health", Source: "goapi", AuthRequired: false,
 			Response: &APIResponse{ContentType: "application/json", Example: map[string]interface{}{"message": "Hello, World!", "version": "1.1.1121", "status": "healthy"}}},
-		{Method: "GET", Path: "/goapi/version", Description: "Get API version (optionally create database for shopid)", Category: "health", Source: "goapi", AuthRequired: false,
-			Parameters: []APIParam{{Name: "shopid", In: "query", Type: "string", Description: "Shop ID - if provided, creates database if not exists"}}},
+		{Method: "GET", Path: "/goapi/version", Description: "Get API version", Category: "health", Source: "goapi", AuthRequired: false},
 		{Method: "GET", Path: "/goapi/api/health", Description: "Health check - returns status and version", Category: "health", Source: "goapi", AuthRequired: false},
 		{Method: "GET", Path: "/goapi/api/health/kafka", Description: "Kafka connection health check", Category: "health", Source: "goapi", AuthRequired: false},
 		{Method: "GET", Path: "/goapi/api/health/background", Description: "Background task status", Category: "health", Source: "goapi", AuthRequired: false},
@@ -572,7 +571,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "POST", Path: "/goapi/get", Description: "Execute PostgreSQL SELECT query", Category: "database", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
-					"type": "object",
+					"type":     "object",
 					"required": []string{"shopid", "sql"},
 					"properties": map[string]interface{}{
 						"shopid": map[string]interface{}{"type": "string", "description": "Shop ID (database name)"},
@@ -583,7 +582,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "POST", Path: "/goapi/exec", Description: "Execute PostgreSQL command (INSERT/UPDATE/DELETE)", Category: "database", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
-					"type": "object",
+					"type":     "object",
 					"required": []string{"shopid", "sql"},
 					"properties": map[string]interface{}{
 						"shopid": map[string]interface{}{"type": "string", "description": "Shop ID (database name)"},
@@ -594,7 +593,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "POST", Path: "/goapi/getdoc", Description: "Get document data from PostgreSQL", Category: "database", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
-					"type": "object",
+					"type":     "object",
 					"required": []string{"shopid", "docno"},
 					"properties": map[string]interface{}{
 						"shopid":    map[string]interface{}{"type": "string", "description": "Shop ID"},
@@ -606,7 +605,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "POST", Path: "/goapi/mongogetdata", Description: "Query MongoDB collection", Category: "database", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
-					"type": "object",
+					"type":     "object",
 					"required": []string{"database", "collection"},
 					"properties": map[string]interface{}{
 						"database":   map[string]interface{}{"type": "string", "description": "MongoDB database name"},
@@ -631,7 +630,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "POST", Path: "/goapi/genpdf", Description: "Generate PDF document from template", Category: "pdf", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
-					"type": "object",
+					"type":     "object",
 					"required": []string{"shopid", "docno"},
 					"properties": map[string]interface{}{
 						"shopid":      map[string]interface{}{"type": "string", "description": "Shop ID"},
@@ -669,7 +668,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "POST", Path: "/goapi/api/transaction/calculate", Description: "Calculate transaction totals (tax, discount, net amount)", Category: "transaction", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
-					"type": "object",
+					"type":     "object",
 					"required": []string{"shopid", "items"},
 					"properties": map[string]interface{}{
 						"shopid":          map[string]interface{}{"type": "string", "description": "Shop ID"},
@@ -705,7 +704,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "POST", Path: "/goapi/api/report/sales/by-document", Description: "Sales report grouped by document", Category: "sales-report", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
-					"type": "object",
+					"type":     "object",
 					"required": []string{"shopid", "from_date", "to_date"},
 					"properties": map[string]interface{}{
 						"shopid":    map[string]interface{}{"type": "string", "description": "Shop ID"},
@@ -721,7 +720,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "POST", Path: "/goapi/api/report/sales/summary", Description: "Sales summary report with totals", Category: "sales-report", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
-					"type": "object",
+					"type":     "object",
 					"required": []string{"shopid", "from_date", "to_date"},
 					"properties": map[string]interface{}{
 						"shopid":    map[string]interface{}{"type": "string", "description": "Shop ID"},
@@ -747,7 +746,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "POST", Path: "/goapi/api/product/search", Description: "Search products with Thai full-text search, returns stock balance", Category: "product", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
-					"type": "object",
+					"type":     "object",
 					"required": []string{"shopid"},
 					"properties": map[string]interface{}{
 						"shopid":  map[string]interface{}{"type": "string", "description": "Shop ID"},
@@ -774,7 +773,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "POST", Path: "/goapi/api/product/barcode", Description: "Search product by exact barcode", Category: "product", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
-					"type": "object",
+					"type":     "object",
 					"required": []string{"shopid", "barcode"},
 					"properties": map[string]interface{}{
 						"shopid":  map[string]interface{}{"type": "string", "description": "Shop ID"},
@@ -820,7 +819,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "POST", Path: "/goapi/api/approval/po-status/submit", Description: "Submit PO for approval", Category: "approval", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
-					"type": "object",
+					"type":     "object",
 					"required": []string{"shopid", "docno", "submitted_by"},
 					"properties": map[string]interface{}{
 						"shopid":       map[string]interface{}{"type": "string", "description": "Shop ID"},
@@ -831,7 +830,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "POST", Path: "/goapi/api/approval/po-status/approve", Description: "Approve PO", Category: "approval", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
-					"type": "object",
+					"type":     "object",
 					"required": []string{"shopid", "docno", "approved_by"},
 					"properties": map[string]interface{}{
 						"shopid":      map[string]interface{}{"type": "string", "description": "Shop ID"},
@@ -843,7 +842,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "POST", Path: "/goapi/api/approval/po-status/reject", Description: "Reject PO", Category: "approval", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
-					"type": "object",
+					"type":     "object",
 					"required": []string{"shopid", "docno", "rejected_by"},
 					"properties": map[string]interface{}{
 						"shopid":      map[string]interface{}{"type": "string", "description": "Shop ID"},
@@ -894,13 +893,13 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "GET", Path: "/goapi/api/migrate/clickhouse-softdelete", Description: "Migrate ClickHouse soft delete columns", Category: "migration", Source: "goapi", AuthRequired: false},
 
 		// ===== MongoDB Operations =====
-		{Method: "POST", Path: "/goapi/copymongouattodev", Description: "Copy MongoDB data from UAT to dev", Category: "mongodb", Source: "goapi", AuthRequired: false},
-		{Method: "POST", Path: "/goapi/previewcopymongo", Description: "Preview MongoDB copy operation", Category: "mongodb", Source: "goapi", AuthRequired: false},
-		{Method: "GET", Path: "/goapi/listsourceshops", Description: "List source shops for MongoDB copy", Category: "mongodb", Source: "goapi", AuthRequired: false},
-		{Method: "POST", Path: "/goapi/atlas/get", Description: "Get data from MongoDB Atlas", Category: "mongodb", Source: "goapi", AuthRequired: false,
+		{Method: "POST", Path: "/goapi/copymongouattodev", Description: "DEV-only copy MongoDB data from UAT/PRO to DEV", Category: "mongodb", Source: "goapi", AuthRequired: true},
+		{Method: "POST", Path: "/goapi/previewcopymongo", Description: "Preview DEV-only MongoDB copy from UAT/PRO to DEV", Category: "mongodb", Source: "goapi", AuthRequired: true},
+		{Method: "GET", Path: "/goapi/listsourceshops", Description: "List UAT/PRO source shops for DEV-only MongoDB copy", Category: "mongodb", Source: "goapi", AuthRequired: true},
+		{Method: "POST", Path: "/goapi/atlas/get", Description: "Get data from MongoDB", Category: "mongodb", Source: "goapi", AuthRequired: true,
 			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"database": "dbname", "collection": "collname", "filter": map[string]interface{}{}}}},
-		{Method: "POST", Path: "/goapi/atlas/update", Description: "Update data in MongoDB Atlas", Category: "mongodb", Source: "goapi", AuthRequired: false},
-		{Method: "POST", Path: "/goapi/atlas/delete", Description: "Delete data from MongoDB Atlas", Category: "mongodb", Source: "goapi", AuthRequired: false},
+		{Method: "POST", Path: "/goapi/atlas/update", Description: "Update data in MongoDB", Category: "mongodb", Source: "goapi", AuthRequired: true},
+		{Method: "POST", Path: "/goapi/atlas/delete", Description: "Delete data from MongoDB", Category: "mongodb", Source: "goapi", AuthRequired: true},
 
 		// ===== ClickHouse =====
 		{Method: "POST", Path: "/goapi/clickhouse/query", Description: "Execute ClickHouse query", Category: "clickhouse", Source: "goapi", AuthRequired: false,
@@ -915,34 +914,43 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "POST", Path: "/goapi/test/purchase-partial", Description: "Test: publish purchase partial Kafka message", Category: "test", Source: "goapi", AuthRequired: false},
 
 		// ===== File / S3 =====
-		{Method: "GET", Path: "/goapi/s3/file/*", Description: "Proxy file from S3/R2 storage", Category: "file", Source: "goapi", AuthRequired: false},
+		{Method: "GET", Path: "/goapi/s3/file/*", Description: "Stream private object from S3/R2 storage — requires auth, object key must be under caller's shopid", Category: "file", Source: "goapi", AuthRequired: true},
 
-		// ===== Upload =====
-		{Method: "POST", Path: "/goapi/upload", Description: "Upload file (single file)", Category: "upload", Source: "goapi", AuthRequired: false,
+		// ===== Upload (private, shop-scoped) =====
+		{Method: "POST", Path: "/goapi/upload", Description: "Upload file (single file) — shopid resolved from auth context, object key is shopid/...", Category: "upload", Source: "goapi", AuthRequired: true,
 			RequestBody: &APIRequestBody{ContentType: "multipart/form-data"}},
-		{Method: "POST", Path: "/goapi/upload/init", Description: "Initialize chunked upload session", Category: "upload", Source: "goapi", AuthRequired: false,
-			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"filename": "file.xlsx", "total_chunks": 5}}},
-		{Method: "POST", Path: "/goapi/upload/chunk", Description: "Upload a file chunk", Category: "upload", Source: "goapi", AuthRequired: false,
+		{Method: "POST", Path: "/goapi/upload/init", Description: "Initialize chunked upload session", Category: "upload", Source: "goapi", AuthRequired: true,
+			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"file_name": "file.xlsx", "total_chunks": 5}}},
+		{Method: "POST", Path: "/goapi/upload/chunk", Description: "Upload a file chunk", Category: "upload", Source: "goapi", AuthRequired: true,
 			RequestBody: &APIRequestBody{ContentType: "multipart/form-data"}},
-		{Method: "POST", Path: "/goapi/upload/merge", Description: "Merge uploaded chunks into final file", Category: "upload", Source: "goapi", AuthRequired: false},
-		{Method: "GET", Path: "/goapi/upload/status/:uploadID", Description: "Get chunked upload status", Category: "upload", Source: "goapi", AuthRequired: false,
+		{Method: "POST", Path: "/goapi/upload/merge", Description: "Merge uploaded chunks into final file — shopid resolved from auth context", Category: "upload", Source: "goapi", AuthRequired: true},
+		{Method: "GET", Path: "/goapi/upload/status/:uploadID", Description: "Get chunked upload status", Category: "upload", Source: "goapi", AuthRequired: true,
 			Parameters: []APIParam{{Name: "uploadID", In: "path", Type: "string", Required: true, Description: "Upload session ID"}}},
-		{Method: "DELETE", Path: "/goapi/upload/cancel/:uploadID", Description: "Cancel chunked upload", Category: "upload", Source: "goapi", AuthRequired: false,
+		{Method: "DELETE", Path: "/goapi/upload/cancel/:uploadID", Description: "Cancel chunked upload", Category: "upload", Source: "goapi", AuthRequired: true,
 			Parameters: []APIParam{{Name: "uploadID", In: "path", Type: "string", Required: true, Description: "Upload session ID"}}},
 
 		// ===== Language =====
 		{Method: "GET", Path: "/goapi/api/language/:lang", Description: "Get language translations", Category: "language", Source: "goapi", AuthRequired: false,
 			Parameters: []APIParam{{Name: "lang", In: "path", Type: "string", Required: true, Description: "Language code (e.g., th, en)"}}},
 
-		// ===== Image =====
-		{Method: "POST", Path: "/goapi/image/upload", Description: "Upload image to R2/S3", Category: "image", Source: "goapi", AuthRequired: false,
+		// ===== Image (private, shop-scoped) =====
+		{Method: "POST", Path: "/goapi/image/upload", Description: "Upload image — object key is {shopid}/..., shopid resolved from auth context; mismatched form shopid is rejected with 403", Category: "image", Source: "goapi", AuthRequired: true,
 			RequestBody: &APIRequestBody{ContentType: "multipart/form-data"}},
-		{Method: "POST", Path: "/goapi/image/list", Description: "List images for a shop", Category: "image", Source: "goapi", AuthRequired: false,
+		{Method: "POST", Path: "/goapi/image/list", Description: "List images for the caller's shop; response URLs are backend proxy URLs only", Category: "image", Source: "goapi", AuthRequired: true,
 			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"shopid": "SHOP001", "prefix": "products/"}}},
-		{Method: "POST", Path: "/goapi/image/get", Description: "Get image by key", Category: "image", Source: "goapi", AuthRequired: false},
-		{Method: "POST", Path: "/goapi/image/info", Description: "Get image metadata", Category: "image", Source: "goapi", AuthRequired: false},
-		{Method: "POST", Path: "/goapi/image/delete", Description: "Delete image from storage", Category: "image", Source: "goapi", AuthRequired: false},
-		{Method: "POST", Path: "/goapi/image/promptpayverify", Description: "Verify PromptPay QR from image", Category: "image", Source: "goapi", AuthRequired: false},
+		{Method: "POST", Path: "/goapi/image/get", Description: "Get image by filename for the caller's shop", Category: "image", Source: "goapi", AuthRequired: true},
+		{Method: "POST", Path: "/goapi/image/info", Description: "Get image metadata for the caller's shop", Category: "image", Source: "goapi", AuthRequired: true},
+		{Method: "POST", Path: "/goapi/image/delete", Description: "Delete image for the caller's shop", Category: "image", Source: "goapi", AuthRequired: true},
+		{Method: "POST", Path: "/goapi/image/promptpayverify", Description: "Verify PromptPay QR from image", Category: "image", Source: "goapi", AuthRequired: true},
+
+		// ===== Attachment (private, shop-scoped) =====
+		{Method: "POST", Path: "/goapi/api/attachment/upload", Description: "Upload document attachment — object key is {shopid}/attachments/..., shopid resolved from auth context", Category: "attachment", Source: "goapi", AuthRequired: true,
+			RequestBody: &APIRequestBody{ContentType: "multipart/form-data"}},
+		{Method: "POST", Path: "/goapi/api/attachment/list", Description: "List document attachments for the caller's shop; URLs are backend proxy URLs only", Category: "attachment", Source: "goapi", AuthRequired: true,
+			RequestBody: &APIRequestBody{ContentType: "application/json", Example: map[string]interface{}{"shopid": "SHOP001", "screen_type": "purchaseorder", "docno": "PO-0001"}}},
+		{Method: "POST", Path: "/goapi/api/attachment/delete", Description: "Delete document attachment for the caller's shop", Category: "attachment", Source: "goapi", AuthRequired: true},
+		{Method: "GET", Path: "/goapi/api/attachment/download/:id", Description: "Stream attachment through backend after shopid check (no presigned URL redirect)", Category: "attachment", Source: "goapi", AuthRequired: true,
+			Parameters: []APIParam{{Name: "id", In: "path", Type: "string", Required: true, Description: "Attachment Mongo ObjectID"}}},
 
 		// ===== Excel Import =====
 		{Method: "POST", Path: "/goapi/xlsx/product/start", Description: "Start Excel product import preparation", Category: "import", Source: "goapi", AuthRequired: false,
@@ -952,11 +960,11 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "POST", Path: "/goapi/api/v1/chatbot/chat-gemini", Description: "Chat with Gemini AI", Category: "chatbot", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
-					"type": "object",
+					"type":     "object",
 					"required": []string{"shopid", "message"},
 					"properties": map[string]interface{}{
-						"shopid":         map[string]interface{}{"type": "string", "description": "Shop ID"},
-						"message":        map[string]interface{}{"type": "string", "description": "User message (Thai/English)"},
+						"shopid":          map[string]interface{}{"type": "string", "description": "Shop ID"},
+						"message":         map[string]interface{}{"type": "string", "description": "User message (Thai/English)"},
 						"conversation_id": map[string]interface{}{"type": "string", "description": "Conversation ID for context continuity"},
 					},
 				},
@@ -967,7 +975,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "POST", Path: "/goapi/api/v1/unified/query", Description: "Unified query - natural language to SQL/MongoDB query", Category: "unified", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
-					"type": "object",
+					"type":     "object",
 					"required": []string{"shopid", "query"},
 					"properties": map[string]interface{}{
 						"shopid": map[string]interface{}{"type": "string", "description": "Shop ID"},
@@ -982,7 +990,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "POST", Path: "/goapi/mcp/invoke", Description: "Invoke MCP tool by name (requires API key)", Category: "mcp", Source: "goapi", AuthRequired: true,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
-					"type": "object",
+					"type":     "object",
 					"required": []string{"tool"},
 					"properties": map[string]interface{}{
 						"tool":   map[string]interface{}{"type": "string", "description": "MCP tool name (e.g., get_daily_sales, search_products)"},

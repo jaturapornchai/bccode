@@ -30,7 +30,7 @@ func (r JournalTransactionAdminRepository) FindJournalTransactionDocByShopID(ctx
 
 	queryFilters := bson.M{
 		"shopid":    shopID,
-		"deletedat": bson.M{"$exists": isDeleted},
+		"deleted_at": bson.M{"$exists": isDeleted},
 	}
 
 	pagination, err := r.pst.FindPage(ctx, &journalModels.JournalDoc{}, queryFilters, pageable, &docList)

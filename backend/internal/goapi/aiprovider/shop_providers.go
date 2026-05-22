@@ -19,13 +19,13 @@ const shopAIProviderCollection = "aiProviderConfigs"
 
 // shopProviderDoc — document ใน MongoDB collection aiProviderConfigs
 type shopProviderDoc struct {
-	ShopID        string     `bson:"shopid"`
-	ProviderName  string     `bson:"providername"`
-	APIKey        string     `bson:"apikey"`
-	BaseURL       string     `bson:"baseurl"`
-	Model         string     `bson:"model"`
-	IsActive      bool       `bson:"isactive"`
-	Priority      int        `bson:"priority"`
+	ShopID string     `bson:"shopid"`
+	ProviderName string     `bson:"provider_name"`
+	APIKey string     `bson:"apikey"`
+	BaseURL string     `bson:"baseurl"`
+	Model string     `bson:"model"`
+	IsActive bool       `bson:"isactive"`
+	Priority int        `bson:"priority"`
 	CooldownUntil *time.Time `bson:"cooldownuntil"`
 }
 
@@ -169,13 +169,13 @@ func updateShopProviderCooldownDB(shopID, providerName, errMsg string, cooldownU
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	filter := bson.M{"shopid": shopID, "providername": providerName}
+	filter := bson.M{"shopid": shopID, "provider_name": providerName}
 	update := bson.M{
 		"$set": bson.M{
 			"lasterror":     errMsg,
-			"lasterrorat":   time.Now(),
+			"last_error_at":   time.Now(),
 			"cooldownuntil": cooldownUntil,
-			"updatedat":     time.Now(),
+			"updated_at":     time.Now(),
 		},
 	}
 

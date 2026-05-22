@@ -86,7 +86,7 @@ func (svc EOrderService) GetShopInfoOld(shopID string, orderStationCode string) 
 
 		tempOrderStation := models.EOrderShopOrderOld{}
 		if orderDevice.Code != "" {
-			order, err := svc.repoOrder.FindByDocIndentityGuid(ctx, shopID, "guidfixed", orderDevice.SettingCode)
+			order, err := svc.repoOrder.FindByDocIndentityGuid(ctx, shopID, "guid_fixed", orderDevice.SettingCode)
 
 			if err != nil {
 				return models.EOrderShopOld{}, err
@@ -134,7 +134,7 @@ func (svc EOrderService) GetShopInfoOld(shopID string, orderStationCode string) 
 
 				// Kitchen
 				kitchens, err := svc.repoKitchen.Find(ctx, shopID, map[string]interface{}{
-					"groupnumber": order.KitchenGroupNumber,
+					"group_number": order.KitchenGroupNumber,
 				})
 
 				if err != nil {
@@ -198,7 +198,7 @@ func (svc EOrderService) GetShopInfo(shopID string, orderStationCode string) (mo
 		if orderDevice.Code != "" {
 			tempOrderStation.OrderDevice = orderDevice.OrderDevice
 
-			order, err := svc.repoOrder.FindByDocIndentityGuid(ctx, shopID, "guidfixed", orderDevice.SettingCode)
+			order, err := svc.repoOrder.FindByDocIndentityGuid(ctx, shopID, "guid_fixed", orderDevice.SettingCode)
 
 			if err != nil {
 				return models.EOrderShop{}, err
@@ -244,7 +244,7 @@ func (svc EOrderService) GetShopInfo(shopID string, orderStationCode string) (mo
 
 				// Kitchen
 				kitchens, err := svc.repoKitchen.Find(ctx, shopID, map[string]interface{}{
-					"groupnumber": order.KitchenGroupNumber,
+					"group_number": order.KitchenGroupNumber,
 				})
 
 				if err != nil {

@@ -267,7 +267,7 @@ func (svc StockBalanceHttpService) DeleteStockBalanceByGUIDs(shopID string, auth
 	}
 
 	deleteFilterQuery := map[string]interface{}{
-		"guidfixed": bson.M{"$in": GUIDs},
+		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
 	err = svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)

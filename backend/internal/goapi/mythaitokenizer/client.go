@@ -16,14 +16,14 @@ const (
 
 // TokenizeRequest - request สำหรับ tokenize endpoint
 type TokenizeRequest struct {
-	Texts  []string `json:"texts"`
+	Texts []string `json:"texts"`
 	Engine string   `json:"engine"` // "newmm", "attacut", "deepcut"
 }
 
 // TokenizeResponse - response จาก tokenize endpoint
 type TokenizeResponse struct {
 	Tokenized []string `json:"tokenized"`
-	Count     int      `json:"count"`
+	Count int      `json:"count"`
 }
 
 // Client - Thai Tokenizer client
