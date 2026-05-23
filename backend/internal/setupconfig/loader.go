@@ -26,24 +26,12 @@ type bootstrapConfig struct {
 // mainapi ใช้ env var names ต่างจาก goapi บางตัว
 var configMapping = map[string]map[string][]string{
 	"mongodb": {
-		"uri":      {"MONGODB_URI"},
-		"database": {"MONGODB_DB"}, // ใช้ "database" เท่านั้น (ไม่ใช้ "database_name" เพราะซ้ำ)
-	},
-	"mongodb_dev": {
-		"uri":      {"MONGODB_DEV_URI"},
-		"database": {"MONGODB_DEV_DB"},
-	},
-	"mongodb_uat": {
-		"uri":      {"MONGODB_UAT_URI"},
-		"database": {"MONGODB_UAT_DB"},
-	},
-	"mongodb_pro": {
-		"uri":      {"MONGODB_PRO_URI", "MONGODB_PRODUCTION_URI"},
-		"database": {"MONGODB_PRO_DB", "MONGODB_PRODUCTION_DB"},
-	},
-	"mongodb_production": {
-		"uri":      {"MONGODB_PRO_URI", "MONGODB_PRODUCTION_URI"},
-		"database": {"MONGODB_PRO_DB", "MONGODB_PRODUCTION_DB"},
+		"uri":      {"MONGODB_URI", "MONGODB_DEV_URI", "MONGODB_UAT_URI", "MONGODB_PRO_URI", "MONGODB_PRODUCTION_URI"},
+		"database": {"MONGODB_DB", "MONGODB_DEV_DB", "MONGODB_UAT_DB", "MONGODB_PRO_DB", "MONGODB_PRODUCTION_DB"},
+		"host":     {"MONGODB_HOST", "MONGODB_DEV_HOST", "MONGODB_UAT_HOST", "MONGODB_PRO_HOST"},
+		"port":     {"MONGODB_PORT", "MONGODB_DEV_PORT", "MONGODB_UAT_PORT", "MONGODB_PRO_PORT"},
+		"username": {"MONGODB_USERNAME", "MONGODB_USER", "MONGODB_DEV_USER", "MONGODB_UAT_USER", "MONGODB_PRO_USER"},
+		"password": {"MONGODB_PASSWORD", "MONGODB_DEV_PASSWORD", "MONGODB_UAT_PASSWORD", "MONGODB_PRO_PASSWORD"},
 	},
 	"postgresql": {
 		"host":         {"POSTGRES_HOST"},
@@ -110,6 +98,45 @@ var bootstrapPaths = []string{
 	"config/bootstrap.json",         // Monorepo root (local dev)
 }
 
+func getCustomConfigPath(bootstrapPath string) string {
+	if bootstrapPath == "" {
+		return ""
+	}
+	return strings.Replace(bootstrapPath, "bootstrap.json", "custom_config.json", 1)
+}
+
+func mergeCustomConfig(base *bootstrapConfig, customData []byte) error {
+	var custom bootstrapConfig
+	if err := json.Unmarshal(customData, &custom); err != nil {
+		return err
+	}
+
+	mergeMap := func(baseMap *map[string]string, customMap map[string]string) {
+		if customMap == nil {
+			return
+		}
+		if *baseMap == nil {
+			*baseMap = make(map[string]string)
+		}
+		for k, v := range customMap {
+			(*baseMap)[k] = v
+		}
+	}
+
+	mergeMap(&base.MongoDB, custom.MongoDB)
+	mergeMap(&base.MongoDBDev, custom.MongoDBDev)
+	mergeMap(&base.MongoDBUAT, custom.MongoDBUAT)
+	mergeMap(&base.MongoDBPRO, custom.MongoDBPRO)
+	mergeMap(&base.MongoDBProduction, custom.MongoDBProduction)
+	mergeMap(&base.PostgreSQL, custom.PostgreSQL)
+	mergeMap(&base.ClickHouse, custom.ClickHouse)
+	mergeMap(&base.Service, custom.Service)
+	mergeMap(&base.Integrations, custom.Integrations)
+	mergeMap(&base.Storage, custom.Storage)
+
+	return nil
+}
+
 // LoadBootstrapConfig อ่าน bootstrap.json แล้ว set env vars ทุก section
 // เรียกก่อน config.NewConfig() เพื่อให้ env vars พร้อมใช้งาน
 func LoadBootstrapConfig() {
@@ -141,6 +168,19 @@ func LoadBootstrapConfig() {
 
 	log.Printf("[Bootstrap] อ่าน bootstrap.json จาก %s", bootstrapPath)
 
+	// โหลด custom_config.json ถ้ามี เพื่อ override ค่าจาก bootstrap.json
+	customPath := getCustomConfigPath(bootstrapPath)
+	if customPath != "" {
+		if customData, err := os.ReadFile(customPath); err == nil {
+			log.Printf("[Bootstrap] พบ custom_config.json จาก %s - กำลัง merge...", customPath)
+			if err := mergeCustomConfig(&cfg, customData); err != nil {
+				log.Printf("[Bootstrap] อ่าน/รวม custom_config.json ล้มเหลว: %v", err)
+			} else {
+				log.Printf("[Bootstrap] รวม custom_config.json สำเร็จ")
+			}
+		}
+	}
+
 	overrideCount := 0
 
 	// โหลดทุก section ที่มีใน bootstrap.json ตาม configMapping
@@ -162,7 +202,7 @@ func LoadBootstrapConfig() {
 	composeClickHouseAddress()
 
 	if overrideCount > 0 {
-		log.Printf("[Bootstrap] ✅ โหลด config จาก bootstrap.json สำเร็จ (%d env vars)", overrideCount)
+		log.Printf("[Bootstrap] ✅ โหลด config สำเร็จ (%d env vars)", overrideCount)
 	} else {
 		log.Printf("[Bootstrap] ⚠️ bootstrap.json ว่างหรือไม่มี config ที่ตรงกับ configMapping")
 	}
@@ -224,6 +264,9 @@ func setDefaultEnvVars() {
 	}
 	for envVar, defaultVal := range defaults {
 		if os.Getenv(envVar) == "" {
+			if envVar == "KAFKA_SERVER_URL" && os.Getenv("ENABLE_KAFKA") == "false" {
+				continue
+			}
 			os.Setenv(envVar, defaultVal)
 			log.Printf("[Bootstrap] default %s = %s", envVar, defaultVal)
 		}

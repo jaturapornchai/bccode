@@ -2666,9 +2666,9 @@ percentage	เปอร์เซ็นต์	Percentage	百分比	パーセン�
 permission	สิทธิ์	Permission	权限	権限	សិទ្ធិ	권한	ສິດ	ခွင့်ပြုချက်	Quyền	Permission	Permission	Permission
 permission_code_exists	รหัสสิทธิ์นี้มีอยู่แล้ว	This permission code already exists	此权限代码已存在	この権限コードは既に存在します	កូដសិទ្ធិនេះមានរួចហើយ	이 권한 코드는 이미 존재합니다	ລະຫັດສິດນີ້ມີຢູ່ແລ້ວ	ဤခွင့်ပြုချက်ကုဒ် ရှိပြီးသားဖြစ်သည်	Mã quyền này đã tồn tại	This permission code already exists	This permission code already exists	This permission code already exists
 permission_code_required	รหัสสิทธิ์	Permission Code	Permission Code	Permission Code	Permission Code	Permission Code	Permission Code	Permission Code	Permission Code	Permission Code	Permission Code	Permission Code
-permission_definition	กำหนดสิทธิ์	Permission Definition	权限定义	権限定義	កំណត់សិទ្ធិ	권한 정의	ກຳນົດສິດ	ခွင့်ပြုချက်သတ်မှတ်ခြင်း	Định nghĩa quyền	Permission Definition	Permission Definition	Permission Definition
+permission_definition	กำหนดสิทธิ์หน้าจอ	Permission Definition	权限定义	権限定義	កំណត់សិទ្ធិ	권한 정의	ກຳນົດສິດ	ခွင့်ပြုချက်သတ်မှတ်ခြင်း	Định nghĩa quyền	Permission Definition	Permission Definition	Permission Definition
 permission_level	ระดับสิทธิ์	Permission Level	Permission Level	Permission Level	Permission Level	Permission Level	Permission Level	Permission Level	Permission Level	Permission Level	Permission Level	Permission Level
-permission_link	ผูกสิทธิ์	Permission Link	权限关联	権限リンク	ភ្ជាប់សិទ្ធិ	권한 연결	ເຊື່ອມໂຍງສິດ	ခွင့်ပြုချက်ချိတ်ဆက်	Liên kết quyền	Permission Link	Permission Link	Permission Link
+permission_link	กำหนดสิทธิ์พนักงาน	Permission Link	权限关联	権限リンク	ភ្ជាប់សិទ្ធិ	권한 연결	ເຊື່ອມໂຍງສິດ	ခွင့်ပြုချက်ချိတ်ဆက်	Liên kết quyền	Permission Link	Permission Link	Permission Link
 permission_name_label	ชื่อสิทธิ์	Permission Name	Permission Name	Permission Name	Permission Name	Permission Name	Permission Name	Permission Name	Permission Name	Permission Name	Permission Name	Permission Name
 permistion	สิทธิ์การใช้งาน	Permission	权限	権限	សិទ្ធិ	권한	ສິດການນຳໃຊ້	ခွင့်ပြုချက်	Quyền hạn	Permission	Permission	Permission
 pgsql_amount	ยอดเงิน PgSql	PgSql Amount	PgSql Amount	PgSql Amount	PgSql Amount	PgSql Amount	PgSql Amount	PgSql Amount	PgSql Amount	PgSql Amount	PgSql Amount	PgSql Amount
@@ -4602,3 +4602,4 @@ select_user	เลือกผู้ใช้งาน	Select user	选择用户	
 select_user_first	กรุณาเลือกผู้ใช้งานก่อน	Select user first	请先选择用户	先にユーザーを選択	សូមជ្រើសរើសអ្នកប្រើជាមុន	먼저 사용자를 선택하세요	ກະລຸນາເລືອກຜູ້ໃຊ້ກ່ອນ	ကျေးဇူးပြု၍ အသုံးပြုသူကို ဦးစွာရွေးပါ	Vui lòng chọn người dùng trước	Pilih pengguna dahulu	Pilih pengguna terlebih dahulu	Pumili muna ng user
 search_user_hint	พิมพ์อย่างน้อย 2 ตัวอักษรเพื่อค้นหาผู้ใช้งาน	Type at least 2 characters to search users.	输入至少 2 个字符以搜索用户	ユーザー検索には2文字以上入力	វាយយ៉ាងហោចណាស់ 2 តួអក្សរដើម្បីស្វែងរកអ្នកប្រើ	사용자 검색은 2자 이상 입력	ພິມຢ່າງໜ້ອຍ 2 ຕົວອັກສອນເພື່ອຄົ້ນຫາຜູ້ໃຊ້	အသုံးပြုသူရှာရန် အနည်းဆုံး စာလုံး 2 လုံး ရိုက်ပါ	Nhập ít nhất 2 ký tự để tìm người dùng	Taip sekurang-kurangnya 2 aksara untuk cari pengguna	Ketik minimal 2 karakter untuk mencari pengguna	Mag-type ng hindi bababa sa 2 character para maghanap ng user
 no_permission	ไม่มีสิทธิ์	No permission	无权限	権限なし	គ្មានសិទ្ធិ	권한 없음	ບໍ່ມີສິດ	ခွင့်ပြုချက်မရှိ	Không có quyền	Tiada kebenaran	Tidak ada izin	Walang pahintulot
+permission_group	กำหนดสิทธิ์ตามกลุ่ม	Permission Group	权限组	権限グループ	ក្រុមសិទ្ធិ	권한 그룹	ກຸ່ມສິດ	ခွင့်ပြုချက်အုပ်စု	Nhóm quyền	Permission Group	Permission Group	Permission Group

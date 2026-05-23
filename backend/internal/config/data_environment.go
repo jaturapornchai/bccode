@@ -34,9 +34,9 @@ func NormalizeDataEnvironment(value string) string {
 func MongoURIForCurrentEnvironment() string {
 	switch CurrentDataEnvironment() {
 	case DataEnvironmentUAT:
-		return firstNonEmptyEnv("MONGODB_UAT_URI")
+		return firstNonEmptyEnv("MONGODB_UAT_URI", "MONGODB_URI")
 	case DataEnvironmentPRO:
-		return firstNonEmptyEnv("MONGODB_PRO_URI", "MONGODB_PRODUCTION_URI")
+		return firstNonEmptyEnv("MONGODB_PRO_URI", "MONGODB_PRODUCTION_URI", "MONGODB_URI")
 	default:
 		return firstNonEmptyEnv("MONGODB_DEV_URI", "MONGODB_URI")
 	}
@@ -45,9 +45,9 @@ func MongoURIForCurrentEnvironment() string {
 func MongoDatabaseForCurrentEnvironment(defaultDB string) string {
 	switch CurrentDataEnvironment() {
 	case DataEnvironmentUAT:
-		return firstNonEmptyEnv("MONGODB_UAT_DB", "MONGODB_UAT_DATABASE")
+		return firstNonEmptyEnv("MONGODB_UAT_DB", "MONGODB_UAT_DATABASE", "MONGODB_DB", "MONGO_DB_NAME")
 	case DataEnvironmentPRO:
-		return firstNonEmptyEnv("MONGODB_PRO_DB", "MONGODB_PRO_DATABASE", "MONGODB_PRODUCTION_DB")
+		return firstNonEmptyEnv("MONGODB_PRO_DB", "MONGODB_PRO_DATABASE", "MONGODB_PRODUCTION_DB", "MONGODB_DB", "MONGO_DB_NAME")
 	default:
 		if dbName := firstNonEmptyEnv("MONGODB_DEV_DB", "MONGODB_DEV_DATABASE", "MONGO_DB_NAME", "MONGODB_DB"); dbName != "" {
 			return dbName

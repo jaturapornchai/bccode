@@ -50,20 +50,12 @@ type BootstrapConfigEntry struct {
 // ครอบคลุมทั้ง goapi และ mainapi env vars
 var configMapping = map[string]map[string][]string{
 	"mongodb": {
-		"uri":      {"MONGODB_URI"},
-		"database": {"MONGODB_DB", "MONGO_DB_NAME"}, // ใช้ "database" เท่านั้น (ไม่ใช้ "database_name" เพราะซ้ำ)
-	},
-	"mongodb_dev": {
-		"uri":      {"MONGODB_DEV_URI"},
-		"database": {"MONGODB_DEV_DB"},
-	},
-	"mongodb_uat": {
-		"uri":      {"MONGODB_UAT_URI"},
-		"database": {"MONGODB_UAT_DB"},
-	},
-	"mongodb_pro": {
-		"uri":      {"MONGODB_PRO_URI", "MONGODB_PRODUCTION_URI"},
-		"database": {"MONGODB_PRO_DB", "MONGODB_PRODUCTION_DB"},
+		"uri":      {"MONGODB_URI", "MONGODB_DEV_URI", "MONGODB_UAT_URI", "MONGODB_PRO_URI", "MONGODB_PRODUCTION_URI"},
+		"database": {"MONGODB_DB", "MONGO_DB_NAME", "MONGODB_DEV_DB", "MONGODB_UAT_DB", "MONGODB_PRO_DB", "MONGODB_PRODUCTION_DB"},
+		"host":     {"MONGODB_HOST", "MONGODB_DEV_HOST", "MONGODB_UAT_HOST", "MONGODB_PRO_HOST"},
+		"port":     {"MONGODB_PORT", "MONGODB_DEV_PORT", "MONGODB_UAT_PORT", "MONGODB_PRO_PORT"},
+		"username": {"MONGODB_USERNAME", "MONGODB_USER", "MONGODB_DEV_USER", "MONGODB_UAT_USER", "MONGODB_PRO_USER"},
+		"password": {"MONGODB_PASSWORD", "MONGODB_DEV_PASSWORD", "MONGODB_UAT_PASSWORD", "MONGODB_PRO_PASSWORD"},
 	},
 	"postgresql": {
 		"host":         {"POSTGRES_HOST"},
@@ -132,10 +124,6 @@ var configMapping = map[string]map[string][]string{
 		"azure_container_name": {"AZURE_STORAGE_CONTAINER_NAME"},
 		"azure_tenant_id":      {"AZURE_TENANT_ID"},
 	},
-	"mongodb_production": {
-		"uri":      {"MONGODB_PRO_URI", "MONGODB_PRODUCTION_URI"},
-		"database": {"MONGODB_PRO_DB", "MONGODB_PRODUCTION_DB"},
-	},
 }
 
 // secretKeys รายชื่อ key ที่ต้อง mask ใน log
@@ -158,6 +146,46 @@ var bootstrapPaths = []string{
 	"/app/bootstrap.json",           // Docker WORKDIR
 	"bootstrap.json",                // Current directory (local dev)
 	"config/bootstrap.json",         // Monorepo root (local dev)
+}
+
+func getCustomConfigPath(bootstrapPath string) string {
+	if bootstrapPath == "" {
+		return ""
+	}
+	return strings.Replace(bootstrapPath, "bootstrap.json", "custom_config.json", 1)
+}
+
+func mergeCustomConfig(base *bootstrapConfig, customData []byte) error {
+	var custom bootstrapConfig
+	if err := json.Unmarshal(customData, &custom); err != nil {
+		return err
+	}
+
+	mergeMap := func(baseMap *map[string]string, customMap map[string]string) {
+		if customMap == nil {
+			return
+		}
+		if *baseMap == nil {
+			*baseMap = make(map[string]string)
+		}
+		for k, v := range customMap {
+			(*baseMap)[k] = v
+		}
+	}
+
+	mergeMap(&base.MongoDB, custom.MongoDB)
+	mergeMap(&base.MongoDBDev, custom.MongoDBDev)
+	mergeMap(&base.MongoDBUAT, custom.MongoDBUAT)
+	mergeMap(&base.MongoDBPRO, custom.MongoDBPRO)
+	mergeMap(&base.PostgreSQL, custom.PostgreSQL)
+	mergeMap(&base.ClickHouse, custom.ClickHouse)
+	mergeMap(&base.Service, custom.Service)
+	mergeMap(&base.Integrations, custom.Integrations)
+	mergeMap(&base.Storage, custom.Storage)
+	mergeMap(&base.MongoDBProd, custom.MongoDBProd)
+	mergeMap(&base.Kafka, custom.Kafka)
+
+	return nil
 }
 
 // LoadBootstrapConfig อ่าน bootstrap.json แล้ว set env vars ทุก section
@@ -192,6 +220,19 @@ func LoadBootstrapConfig() {
 
 	logger.Info("[Bootstrap] อ่าน bootstrap.json จาก %s", bootstrapPath)
 
+	// โหลด custom_config.json ถ้ามี เพื่อ override ค่าจาก bootstrap.json
+	customPath := getCustomConfigPath(bootstrapPath)
+	if customPath != "" {
+		if customData, err := os.ReadFile(customPath); err == nil {
+			logger.Info("[Bootstrap] พบ custom_config.json จาก %s - กำลัง merge...", customPath)
+			if err := mergeCustomConfig(&cfg, customData); err != nil {
+				logger.Error("[Bootstrap] อ่าน/รวม custom_config.json ล้มเหลว: %v", err)
+			} else {
+				logger.Success("[Bootstrap] รวม custom_config.json สำเร็จ")
+			}
+		}
+	}
+
 	overrideCount := 0
 
 	// โหลดทุก section ที่มีใน bootstrap.json ตาม configMapping
@@ -214,7 +255,7 @@ func LoadBootstrapConfig() {
 	composeClickHouseAddress()
 
 	if overrideCount > 0 {
-		logger.Success("[Bootstrap] ✅ โหลด config จาก bootstrap.json สำเร็จ (%d env vars)", overrideCount)
+		logger.Success("[Bootstrap] ✅ โหลด config สำเร็จ (%d env vars)", overrideCount)
 	} else {
 		logger.Warn("[Bootstrap] bootstrap.json ว่างหรือไม่มี config ที่ตรงกับ configMapping")
 	}
@@ -288,6 +329,9 @@ func setDefaultEnvVars() {
 	}
 	for envVar, defaultVal := range defaults {
 		if os.Getenv(envVar) == "" {
+			if envVar == "KAFKA_SERVER_URL" && os.Getenv("ENABLE_KAFKA") == "false" {
+				continue
+			}
 			os.Setenv(envVar, defaultVal)
 			logger.Info("[Bootstrap] default %s = %s", envVar, defaultVal)
 		}
@@ -383,12 +427,14 @@ func maskURI(uri string) string {
 // สำหรับ API response ที่ Flutter frontend ใช้แสดงหน้า Setup Config
 func ReadBootstrapAsConfigEntries() ([]BootstrapConfigEntry, error) {
 	// หา bootstrap.json ที่ใช้งานอยู่
+	var bootstrapPath string
 	var data []byte
 	var err error
 
 	for _, path := range bootstrapPaths {
 		data, err = os.ReadFile(path)
 		if err == nil {
+			bootstrapPath = path
 			break
 		}
 	}
@@ -401,6 +447,25 @@ func ReadBootstrapAsConfigEntries() ([]BootstrapConfigEntry, error) {
 	var raw map[string]map[string]interface{}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return nil, fmt.Errorf("อ่าน bootstrap.json ล้มเหลว: %v", err)
+	}
+
+	// อ่าน custom_config.json ถ้ามี เพื่อทำการ merge
+	customPath := getCustomConfigPath(bootstrapPath)
+	if customPath != "" {
+		if customData, err := os.ReadFile(customPath); err == nil {
+			var customRaw map[string]map[string]interface{}
+			if err := json.Unmarshal(customData, &customRaw); err == nil {
+				// merge customRaw ลงใน raw
+				for cat, values := range customRaw {
+					if raw[cat] == nil {
+						raw[cat] = make(map[string]interface{})
+					}
+					for k, v := range values {
+						raw[cat][k] = v
+					}
+				}
+			}
+		}
 	}
 
 	var entries []BootstrapConfigEntry
@@ -427,20 +492,18 @@ func ReadBootstrapAsConfigEntries() ([]BootstrapConfigEntry, error) {
 	return entries, nil
 }
 
-// UpdateBootstrapJSON เขียนค่า config กลับไปที่ bootstrap.json
-// เรียกหลังจาก save config จาก Frontend เพื่อให้ bootstrap.json มีค่าล่าสุด
-// เมื่อ restart service จะได้ค่าใหม่ทันทีโดยไม่ต้องรอ MongoDB
+// UpdateBootstrapJSON เขียนค่า config กลับไปที่ custom_config.json
+// เรียกหลังจาก save config จาก Frontend เพื่อให้มีค่าล่าสุด
+// เพื่อหลีกเลี่ยงสิทธิ์ในการแก้ไข bootstrap.json โดยตรง
 func UpdateBootstrapJSON(configs []ConfigUpdateEntry) error {
-	logger.Info("[Bootstrap] กำลังเขียน config กลับไปที่ bootstrap.json...")
+	logger.Info("[Bootstrap] กำลังเขียน config กลับไปที่ custom_config.json...")
 
-	// หา bootstrap.json ที่ใช้งานอยู่
+	// หา bootstrap.json ที่ใช้งานอยู่เพื่อหาโฟลเดอร์สำหรับ custom_config.json
 	var bootstrapPath string
-	var data []byte
 	var err error
 
 	for _, path := range bootstrapPaths {
-		data, err = os.ReadFile(path)
-		if err == nil {
+		if _, err := os.Stat(path); err == nil {
 			bootstrapPath = path
 			break
 		}
@@ -450,10 +513,29 @@ func UpdateBootstrapJSON(configs []ConfigUpdateEntry) error {
 		return fmt.Errorf("ไม่พบ bootstrap.json — ค้นหาแล้วที่: %s", strings.Join(bootstrapPaths, ", "))
 	}
 
-	// อ่านค่าปัจจุบันเป็น generic map เพื่อรักษา field ที่ไม่ได้อยู่ใน configMapping
+	customPath := getCustomConfigPath(bootstrapPath)
+	if customPath == "" {
+		return fmt.Errorf("ไม่สามารถสร้าง custom_config.json path ได้")
+	}
+
+	// อ่านค่าปัจจุบันจาก custom_config.json ถ้ามีไฟล์อยู่แล้ว
+	// หากไม่มี ให้ใช้ค่าจาก bootstrap.json เป็นฐานเริ่มต้น
 	var current map[string]map[string]interface{}
-	if err := json.Unmarshal(data, &current); err != nil {
-		return fmt.Errorf("อ่าน bootstrap.json ล้มเหลว: %v", err)
+	customData, err := os.ReadFile(customPath)
+	if err == nil {
+		// custom_config.json มีอยู่แล้ว -> อ่านขึ้นมาอัพเดทต่อ
+		if err := json.Unmarshal(customData, &current); err != nil {
+			return fmt.Errorf("อ่าน custom_config.json ล้มเหลว: %v", err)
+		}
+	} else {
+		// ยังไม่มี custom_config.json -> อ่านจาก bootstrap.json เป็นค่าตั้งต้น
+		baseData, err := os.ReadFile(bootstrapPath)
+		if err != nil {
+			return fmt.Errorf("อ่าน bootstrap.json ล้มเหลว: %v", err)
+		}
+		if err := json.Unmarshal(baseData, &current); err != nil {
+			return fmt.Errorf("ถอดรหัส bootstrap.json ล้มเหลว: %v", err)
+		}
 	}
 
 	// อัพเดทค่าจาก configs ที่ส่งมา
@@ -482,7 +564,7 @@ func UpdateBootstrapJSON(configs []ConfigUpdateEntry) error {
 	}
 
 	if updatedCount == 0 {
-		logger.Info("[Bootstrap] ไม่มีค่าที่เปลี่ยนแปลง — ไม่เขียน bootstrap.json")
+		logger.Info("[Bootstrap] ไม่มีค่าที่เปลี่ยนแปลง — ไม่เขียน custom_config.json")
 		return nil
 	}
 
@@ -494,11 +576,11 @@ func UpdateBootstrapJSON(configs []ConfigUpdateEntry) error {
 
 	// เขียนไฟล์ (append newline ท้ายไฟล์)
 	newData = append(newData, '\n')
-	if err := os.WriteFile(bootstrapPath, newData, 0644); err != nil {
-		return fmt.Errorf("เขียน bootstrap.json ล้มเหลว: %v", err)
+	if err := os.WriteFile(customPath, newData, 0644); err != nil {
+		return fmt.Errorf("เขียน custom_config.json ล้มเหลว: %v", err)
 	}
 
-	logger.Success("[Bootstrap] ✅ เขียน bootstrap.json สำเร็จ (%d ค่า) → %s", updatedCount, bootstrapPath)
+	logger.Success("[Bootstrap] ✅ เขียน custom_config.json สำเร็จ (%d ค่า) → %s", updatedCount, customPath)
 	return nil
 }
 

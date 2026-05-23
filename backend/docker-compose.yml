@@ -79,94 +79,6 @@ services:
     networks:
       - app-network
 
-  # ─── Object Storage (SeaweedFS) ──────────
-
-  seaweedfs-master:
-    image: chrislusf/seaweedfs:latest
-    container_name: seaweedfs-master
-    command: "master -ip=seaweedfs-master -mdir=/data -defaultReplication=000"
-    ports:
-      - "127.0.0.1:9333:9333"
-    volumes:
-      - seaweedfs-master-data:/data
-    restart: unless-stopped
-    networks:
-      - app-network
-
-  seaweedfs-volume:
-    image: chrislusf/seaweedfs:latest
-    container_name: seaweedfs-volume
-    command: "volume -mserver=seaweedfs-master:9333 -dir=/data -max=100 -ip=seaweedfs-volume -port=8080"
-    depends_on:
-      - seaweedfs-master
-    volumes:
-      - seaweedfs-volume-data:/data
-    restart: unless-stopped
-    networks:
-      - app-network
-
-  seaweedfs-filer:
-    image: chrislusf/seaweedfs:latest
-    container_name: seaweedfs-filer
-    command: "filer -master=seaweedfs-master:9333 -s3 -s3.config=/etc/seaweedfs/s3.json -s3.port=8333"
-    depends_on:
-      - seaweedfs-master
-      - seaweedfs-volume
-    ports:
-      - "127.0.0.1:18888:8888"
-      - "127.0.0.1:18333:8333"
-    volumes:
-      - seaweedfs-filer-data:/data
-      - ./cluster/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
-    restart: unless-stopped
-    networks:
-      - app-network
-
-  # ─── Application (จุดเข้าเดียว port 8888) ──
-  # mainapi มี goapi embedded อยู่แล้วใต้ /goapi/*
-  # ไม่ต้องใช้ reverse proxy — mainapi เสิร์ฟทุกอย่างเอง
-
-  mainapi:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: mainapi
-    depends_on:
-      - redis
-      - kafka
-      - clickhouse
-      - seaweedfs-filer
-    ports:
-      - "8888:8888"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    sysctls:
-      - net.ipv6.conf.all.disable_ipv6=1
-    environment:
-      GO_ENV: development
-      DEV_API_MODE: "2"
-      SERVICE_PORT: "8888"
-      LOG_LEVEL: DEBUG
-      TZ: Asia/Bangkok
-      KAFKA_SERVER_URL: "kafka:29092"
-      FIREBASE_PROJECT_ID: "test06-a1240"
-      GODEBUG: "x509negativeserial=1"
-      DEPLOY_TOKEN: "${DEPLOY_TOKEN:-}"
-      DEPLOY_REPO_DIR: "${DEPLOY_REPO_DIR:-/opt/bcaicloud/backend}"
-      DEPLOY_COMPOSE_FILE: "${DEPLOY_COMPOSE_FILE:-docker-compose.yml}"
-      # ─── RAGFlow (Knowledge Base) ───────────
-      # ลูกพี่ตั้ง RAGFLOW_API_KEY จาก RAGFlow Web UI → Profile → API → Create API Key
-      # แล้ว export/set ใน shell หรือ secret store ก่อน docker compose up
-      RAGFLOW_BASE_URL: "${RAGFLOW_BASE_URL:-http://host.docker.internal:9380}"
-      RAGFLOW_API_KEY: "${RAGFLOW_API_KEY:-}"
-    volumes:
-      - ./bootstrap.json:/app/bootstrap.json:rw
-      - ./tdict-std.txt:/app/tdict-std.txt
-      - ./docs/swagger.json:/app/docs/swagger.json:ro
-    restart: unless-stopped
-    networks:
-      - app-network
-
 networks:
   app-network:
     driver: bridge
@@ -176,6 +88,4 @@ volumes:
   clickhouse-data:
   clickhouse-logs:
   kafka-data:
-  seaweedfs-master-data:
-  seaweedfs-volume-data:
-  seaweedfs-filer-data:
+
