@@ -8332,13 +8332,10 @@ function BranchMultiSelectFieldEditor({
   const [options, setOptions] = useState<BranchOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
   const selected = useMemo(
     () => selectedBranchesFromValue(form[field.key]),
     [field.key, form],
-  );
-  const selectedKeys = useMemo(
-    () => new Set(selected.map((item) => branchKeyOf(item))),
-    [selected],
   );
 
   useEffect(() => {
@@ -8347,7 +8344,7 @@ function BranchMultiSelectFieldEditor({
     setLoading(true);
     setError("");
     const params = new URLSearchParams({
-      limit: "500",
+      limit: "1000",
       offset: "0",
       shopid: workspace.shop.shopid,
     });
@@ -8386,33 +8383,24 @@ function BranchMultiSelectFieldEditor({
     return () => controller.abort();
   }, [auth, language, workspace]);
 
-  function toggleBranch(option: BranchOption, checked: boolean) {
+  function commitSelection(next: BranchOption[]) {
+    setForm({ ...form, [field.key]: next });
+  }
+
+  function removeBranch(option: BranchOption) {
     const key = branchKeyOf(option);
-    const without = selected.filter((item) => branchKeyOf(item) !== key);
-    setForm({
-      ...form,
-      [field.key]: checked ? [...without, option] : without,
-    });
+    commitSelection(selected.filter((item) => branchKeyOf(item) !== key));
   }
 
-  function selectAll() {
-    setForm({ ...form, [field.key]: options });
-  }
-
-  function clearAll() {
-    setForm({ ...form, [field.key]: [] });
-  }
-
-  const selectAllLabel =
-    language === "th" ? "เลือกทุกสาขา" : "Select all";
-  const clearLabel = language === "th" ? "ล้าง" : "Clear";
   const summary =
     language === "th"
       ? `เลือก ${selected.length} / ${options.length} สาขา`
       : `${selected.length} / ${options.length} branches selected`;
+  const pickLabel =
+    language === "th" ? "เลือกสาขา" : "Pick branches";
 
   return (
-    <section className="grid gap-2 rounded-2xl border border-border bg-background p-2 text-sm font-semibold md:col-span-2">
+    <section className="grid w-full gap-2 rounded-2xl border border-border bg-background p-2 text-sm font-semibold">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span>
           {label}
@@ -8422,21 +8410,16 @@ function BranchMultiSelectFieldEditor({
           <span>{summary}</span>
           <Button
             type="button"
-            variant="outline"
             size="sm"
-            onClick={selectAll}
-            disabled={loading || options.length === 0}
+            onClick={() => setDialogOpen(true)}
+            disabled={loading || (options.length === 0 && !error)}
           >
-            {selectAllLabel}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={clearAll}
-            disabled={loading || selected.length === 0}
-          >
-            {clearLabel}
+            {loading ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Search />
+            )}
+            {pickLabel}
           </Button>
         </div>
       </div>
@@ -8456,35 +8439,254 @@ function BranchMultiSelectFieldEditor({
             : 'No branches to choose yet — add one on the "Branch" screen first.'}
         </p>
       ) : null}
-      <ul className="grid gap-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-        {options.map((option) => {
-          const key = branchKeyOf(option);
-          const checked = selectedKeys.has(key);
-          return (
-            <li key={key}>
-              <label className="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5 text-xs font-medium hover:border-primary/40 hover:bg-accent/40">
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={(event) =>
-                    toggleBranch(option, event.target.checked)
-                  }
-                  className="size-4 accent-primary"
-                />
-                <span className="min-w-0 flex-1 truncate">
-                  {branchOptionDisplayName(option, language)}
-                </span>
-                {option.code ? (
-                  <span className="shrink-0 text-[10px] text-muted-foreground">
-                    {option.code}
+      {selected.length > 0 ? (
+        <ul className="flex flex-wrap gap-1.5">
+          {selected.map((option) => {
+            const key = branchKeyOf(option);
+            return (
+              <li key={key}>
+                <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-xs font-medium">
+                  <span className="max-w-[200px] truncate">
+                    {branchOptionDisplayName(option, language)}
                   </span>
-                ) : null}
-              </label>
-            </li>
-          );
-        })}
-      </ul>
+                  {option.code ? (
+                    <span className="text-[10px] font-normal text-muted-foreground">
+                      {option.code}
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="ml-1 grid size-4 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+                    onClick={() => removeBranch(option)}
+                    aria-label={
+                      language === "th" ? "ลบสาขา" : "Remove branch"
+                    }
+                  >
+                    <X className="size-3" />
+                  </button>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      ) : !loading && !error && options.length > 0 ? (
+        <p className="text-xs font-normal text-muted-foreground">
+          {language === "th"
+            ? "ยังไม่มีสาขาที่เลือก — กด \"เลือกสาขา\" เพื่อเลือก"
+            : 'No branches selected yet — click "Pick branches" to choose.'}
+        </p>
+      ) : null}
+      {dialogOpen ? (
+        <BranchPickerDialog
+          initialSelected={selected}
+          language={language}
+          onCancel={() => setDialogOpen(false)}
+          onConfirm={(next) => {
+            commitSelection(next);
+            setDialogOpen(false);
+          }}
+          options={options}
+        />
+      ) : null}
     </section>
+  );
+}
+
+function BranchPickerDialog({
+  initialSelected,
+  language,
+  onCancel,
+  onConfirm,
+  options,
+}: {
+  initialSelected: BranchOption[];
+  language: LanguageCode;
+  onCancel: () => void;
+  onConfirm: (selected: BranchOption[]) => void;
+  options: BranchOption[];
+}) {
+  const [draft, setDraft] = useState<BranchOption[]>(initialSelected);
+  const [query, setQuery] = useState("");
+  const draftKeys = useMemo(
+    () => new Set(draft.map((item) => branchKeyOf(item))),
+    [draft],
+  );
+  const filteredOptions = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return options;
+    return options.filter((option) => {
+      const name = branchOptionDisplayName(option, language).toLowerCase();
+      const code = option.code.toLowerCase();
+      return name.includes(needle) || code.includes(needle);
+    });
+  }, [language, options, query]);
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onCancel]);
+
+  function toggleDraft(option: BranchOption, checked: boolean) {
+    const key = branchKeyOf(option);
+    const without = draft.filter((item) => branchKeyOf(item) !== key);
+    setDraft(checked ? [...without, option] : without);
+  }
+
+  function selectAllVisible() {
+    const map = new Map<string, BranchOption>();
+    for (const item of draft) map.set(branchKeyOf(item), item);
+    for (const item of filteredOptions) map.set(branchKeyOf(item), item);
+    setDraft(Array.from(map.values()));
+  }
+
+  function clearVisible() {
+    if (!query.trim()) {
+      setDraft([]);
+      return;
+    }
+    const visibleKeys = new Set(
+      filteredOptions.map((item) => branchKeyOf(item)),
+    );
+    setDraft(draft.filter((item) => !visibleKeys.has(branchKeyOf(item))));
+  }
+
+  const title = language === "th" ? "เลือกสาขา" : "Pick branches";
+  const searchPlaceholder =
+    language === "th"
+      ? "ค้นหารหัสหรือชื่อสาขา"
+      : "Search branch code or name";
+  const summary =
+    language === "th"
+      ? `เลือก ${draft.length} / ${options.length} สาขา (กรอง ${filteredOptions.length})`
+      : `${draft.length} / ${options.length} selected (${filteredOptions.length} filtered)`;
+  const selectAllLabel =
+    language === "th"
+      ? query.trim()
+        ? "เลือกทั้งหมดที่กรอง"
+        : "เลือกทุกสาขา"
+      : query.trim()
+        ? "Select all filtered"
+        : "Select all";
+  const clearLabel =
+    language === "th"
+      ? query.trim()
+        ? "ล้างที่กรอง"
+        : "ล้างทั้งหมด"
+      : query.trim()
+        ? "Clear filtered"
+        : "Clear all";
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex flex-col bg-card text-card-foreground"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+    >
+      <header className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          <GitBranch className="size-4" />
+          {title}
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onCancel}
+          aria-label={language === "th" ? "ยกเลิก" : "Cancel"}
+        >
+          <X />
+        </Button>
+      </header>
+      <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
+        <label className="relative flex min-w-0 flex-1 items-center">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            autoFocus
+            className="h-9 pl-9"
+            placeholder={searchPlaceholder}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </label>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={selectAllVisible}
+          disabled={filteredOptions.length === 0}
+        >
+          {selectAllLabel}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={clearVisible}
+          disabled={draft.length === 0}
+        >
+          {clearLabel}
+        </Button>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
+        {filteredOptions.length === 0 ? (
+          <p className="grid h-full place-items-center text-sm text-muted-foreground">
+            {language === "th" ? "ไม่พบสาขา" : "No branches found"}
+          </p>
+        ) : (
+          <ul className="grid gap-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+            {filteredOptions.map((option) => {
+              const key = branchKeyOf(option);
+              const checked = draftKeys.has(key);
+              return (
+                <li key={key}>
+                  <label
+                    className={cn(
+                      "flex cursor-pointer items-center gap-2 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
+                      checked
+                        ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
+                        : "border-border bg-card hover:border-primary/40 hover:bg-accent/40",
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(event) =>
+                        toggleDraft(option, event.target.checked)
+                      }
+                      className="size-4 accent-primary"
+                    />
+                    <span className="min-w-0 flex-1 truncate">
+                      {branchOptionDisplayName(option, language)}
+                    </span>
+                    {option.code ? (
+                      <span className="shrink-0 text-[10px] text-muted-foreground">
+                        {option.code}
+                      </span>
+                    ) : null}
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+      <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-3 py-2">
+        <span className="text-xs text-muted-foreground">{summary}</span>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            {language === "th" ? "ยกเลิก" : "Cancel"}
+          </Button>
+          <Button type="button" onClick={() => onConfirm(draft)}>
+            <BadgeCheck />
+            {language === "th" ? "ยืนยัน" : "Confirm"}
+          </Button>
+        </div>
+      </footer>
+    </div>
   );
 }
 
