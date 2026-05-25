@@ -63,7 +63,7 @@ const barcodeTextTh = {
   actions: "การจัดการ",
 
   // Detail / Form
-  detailTitle: "รายละเอียดสินค้า",
+  detailTitle: "รายละเอียดบาร์โค้ด",
   noSelection: "เลือกรายการด้านซ้ายเพื่อดูรายละเอียด",
   loading: "กำลังโหลดข้อมูลบาร์โค้ด",
   noData: "ไม่พบข้อมูลบาร์โค้ด",
@@ -331,7 +331,7 @@ const barcodeTextEn: BarcodeText = {
   image: "Image",
   actions: "Actions",
 
-  detailTitle: "Product detail",
+  detailTitle: "Barcode detail",
   noSelection: "Select a row to see details",
   loading: "Loading barcodes",
   noData: "No barcode data",

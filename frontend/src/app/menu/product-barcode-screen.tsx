@@ -205,7 +205,7 @@ const barcodeText = {
     balance: "คงเหลือ",
     retailPrice: "ราคาขาย",
     image: "รูป",
-    detailTitle: "รายละเอียดสินค้า",
+    detailTitle: "รายละเอียดบาร์โค้ด",
     noSelection: "เลือกรายการด้านซ้ายเพื่อดูรายละเอียด",
     loading: "กำลังโหลดข้อมูลสินค้า",
     noData: "ไม่พบข้อมูลสินค้าจากฐานข้อมูลจริง",
@@ -328,7 +328,7 @@ const barcodeText = {
     balance: "Balance",
     retailPrice: "Retail price",
     image: "Image",
-    detailTitle: "Product detail",
+    detailTitle: "Barcode detail",
     noSelection: "Select a row on the left to view detail",
     loading: "Loading product data",
     noData: "No product data found in the real database",
@@ -1244,7 +1244,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
         </Card>
 
         <div
-          aria-label="ปรับขนาดรายการสินค้าและรายละเอียดสินค้า"
+          aria-label="ปรับขนาดรายการสินค้าและรายละเอียดบาร์โค้ด"
           aria-orientation="vertical"
           aria-valuemax={PRODUCT_SPLIT_MAX_LEFT}
           aria-valuemin={PRODUCT_SPLIT_MIN_LEFT}
