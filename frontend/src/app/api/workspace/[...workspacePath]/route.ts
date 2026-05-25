@@ -27,6 +27,13 @@ type ProductUnit = {
   names: ProductUnitName[];
 };
 
+type ShopName = {
+  code?: string;
+  name?: string;
+  isauto?: boolean;
+  isdelete?: boolean;
+};
+
 type MainApiResult = {
   ok: boolean;
   status: number;
@@ -53,7 +60,7 @@ export async function GET(request: Request, context: WorkspaceProxyContext) {
   const url = new URL(request.url);
   switch (path) {
     case "shops":
-      return proxyMainApiJson(request, mainApiUrl, "/list-shop?limit=100", { method: "GET" });
+      return listShopsWithDisplayNames(request, mainApiUrl);
     case "shop-info": {
       const shopid = url.searchParams.get("shopid")?.trim() ?? "";
       if (!shopid) return NextResponse.json({ success: false, message: "ไม่พบรหัสบริษัท" }, { status: 400 });
@@ -160,6 +167,51 @@ async function listMissingStandardProductUnits(request: Request, mainApiUrl: str
   } catch (error) {
     return NextResponse.json({ success: false, message: productUnitErrorMessage(error) }, { status: 504 });
   }
+}
+
+async function listShopsWithDisplayNames(request: Request, mainApiUrl: string): Promise<NextResponse> {
+  const authorization = requireBearerToken(request);
+  if (typeof authorization !== "string") return authorization;
+
+  try {
+    const result = await callMainApiJson(request, mainApiUrl, "/list-shop?limit=100", { method: "GET" }, authorization);
+    if (!result.ok || isApiFailure(result.payload)) return mainApiError(result, "โหลดบริษัทไม่สำเร็จ");
+
+    const shops = getArrayFromPayload(result.payload, "data");
+    const enriched = await Promise.all(shops.map((shop) => enrichShopDisplayName(request, mainApiUrl, authorization, shop)));
+
+    if (isRecord(result.payload)) {
+      return NextResponse.json({ ...result.payload, data: enriched }, { status: result.status });
+    }
+
+    return NextResponse.json({ success: true, data: enriched, total: enriched.length }, { status: result.status });
+  } catch (error) {
+    return NextResponse.json({ success: false, message: workspaceErrorMessage(error, "โหลดบริษัทไม่สำเร็จ") }, { status: 504 });
+  }
+}
+
+async function enrichShopDisplayName(request: Request, mainApiUrl: string, authorization: string, shop: unknown): Promise<unknown> {
+  if (!isRecord(shop) || hasShopDisplayName(shop)) return shop;
+
+  const shopid = getPayloadString(shop, "shopid")?.trim();
+  if (!shopid) return shop;
+
+  const result = await callMainApiJson(request, mainApiUrl, `/shop/${encodeURIComponent(shopid)}`, { method: "GET" }, authorization);
+  if (!result.ok || isApiFailure(result.payload)) return shop;
+
+  const shopInfo = payloadDataRecord(result.payload);
+  if (!shopInfo) return shop;
+
+  const names = getArray(shopInfo, "names")
+    .map((name) => normalizeShopName(name))
+    .filter((name): name is ShopName => Boolean(name));
+  const name = firstPayloadString(shopInfo, ["name1", "companyname", "company_name", "name"]);
+
+  return {
+    ...shop,
+    ...(name ? { name, name1: name } : {}),
+    ...(names.length > 0 ? { names } : {}),
+  };
 }
 
 async function createDefaultProductUnits(request: Request, mainApiUrl: string, mainShopId: string, selectedCodes: string[]): Promise<NextResponse> {
@@ -339,9 +391,29 @@ function normalizeUnitName(value: unknown): ProductUnitName | null {
   };
 }
 
+function normalizeShopName(value: unknown): ShopName | null {
+  if (!isRecord(value)) return null;
+  const name = getPayloadString(value, "name")?.trim();
+  if (!name) return null;
+  return {
+    code: getPayloadString(value, "code")?.trim(),
+    name,
+    isauto: value.isauto === true,
+    isdelete: value.isdelete === true,
+  };
+}
+
 function getPayloadString(payload: Record<string, unknown>, key: string): string | undefined {
   const value = payload[key];
   return typeof value === "string" ? value : undefined;
+}
+
+function firstPayloadString(payload: Record<string, unknown>, keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = getPayloadString(payload, key)?.trim();
+    if (value) return value;
+  }
+  return undefined;
 }
 
 function getPayloadStringArray(payload: Record<string, unknown>, key: string): string[] {
@@ -356,6 +428,21 @@ function getArrayFromPayload(payload: unknown, key: string): unknown[] {
 
 function isApiFailure(payload: unknown): boolean {
   return isRecord(payload) && payload.success === false;
+}
+
+function payloadDataRecord(payload: unknown): Record<string, unknown> | null {
+  if (!isRecord(payload)) return null;
+  return isRecord(payload.data) ? payload.data : payload;
+}
+
+function hasShopDisplayName(shop: Record<string, unknown>): boolean {
+  const shopid = getPayloadString(shop, "shopid")?.trim();
+  const directName = firstPayloadString(shop, ["name1", "companyname", "company_name", "name"]);
+  if (directName && directName !== shopid) return true;
+  return getArray(shop, "names").some((name) => {
+    const displayName = isRecord(name) ? getPayloadString(name, "name")?.trim() : "";
+    return Boolean(displayName && displayName !== shopid);
+  });
 }
 
 function mainApiError(result: MainApiResult, fallback: string): NextResponse {
@@ -379,4 +466,12 @@ function productUnitErrorMessage(error: unknown): string {
     : error instanceof Error && error.message
       ? error.message
       : "ไม่สามารถจัดการหน่วยนับสินค้าเริ่มต้นได้";
+}
+
+function workspaceErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.name === "AbortError"
+    ? "Server ไม่ตอบกลับทันเวลา"
+    : error instanceof Error && error.message
+      ? error.message
+      : fallback;
 }

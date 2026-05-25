@@ -6,5 +6,7 @@ services:
     environment:
       LANGUAGE_FILE_PATH: /app/language/languages.tsv
       LANGUAGE_RELOAD_ENABLED: "true"
+      THAILAND_ADDRESS_DATA_PATH: /app/address/thailand-addresses.json
     volumes:
       - ./assets/language:/app/language:ro
+      - ./assets/address:/app/address:ro

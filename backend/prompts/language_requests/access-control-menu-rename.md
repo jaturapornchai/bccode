@@ -25,7 +25,7 @@ Note: An earlier draft used key `menu_role_permission` "บทบาทและ
 
 ## Existing keys still in TSV (do NOT delete — may be reused elsewhere)
 - `access_control` — still used by other code paths; only frontend folder migrated away from it.
-- `permission_definition`, `approval_setting`, `permission_link`, `user`, `approval_permission` — still in TSV as ERP terms (permission API, audit log, etc.).
+- `permission_definition`, `approval_setting`, `permission_link`, `user`, `approval_permission` — still in TSV as business terms (permission API, audit log, etc.).
 
 ## caller file path
 - `frontend/src/lib/menu-data.ts` lines 305-308 (item declarations)

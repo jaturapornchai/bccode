@@ -47,7 +47,14 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { backendText, useBackendLanguage, type BackendLanguageDictionary } from "@/lib/backend-language";
 import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
-import { MENU_SECTIONS, flattenMenuItems, menuText, type MenuGroup, type MenuItem, type MenuSection } from "@/lib/menu-data";
+import {
+  MENU_SECTIONS,
+  flattenMenuItems,
+  menuText,
+  type MenuGroup,
+  type MenuItem,
+  type MenuSection,
+} from "@/lib/menu-data";
 import { getFrequentMenuEntries, menuUsageStorageKey, readMenuUsage, recordMenuUsage, type MenuUsageMap } from "@/lib/menu-usage";
 import { getSystemSettingConfig } from "@/lib/system-setting-screens";
 import { cn } from "@/lib/utils";
@@ -111,7 +118,7 @@ type MenuTreeNode =
   | { children: MenuItem[]; id: string; label: string; seedItem?: MenuItem; type: "folder" };
 type SettingRecord = Record<string, unknown>;
 
-const firstTab: WorkTab = { id: "home", title: "ภาพรวม ERP", route: "/menu", closable: false };
+const firstTab: WorkTab = { id: "home", title: "ภาพรวม", route: "/menu", closable: false };
 const menuLayoutStorageKey = "bc_menu_layout_mode";
 const SOCIAL_POLL_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_SOCIAL_POLL_INTERVAL_MS = 2000;
@@ -126,7 +133,7 @@ const emptyLineDialog: LineDialogState = {
   error: "",
   expired: false,
 };
-const accessMenuIds = new Set(["user", "permission-definition", "approval-setting", "permission-link"]);
+const accessMenuIds = new Set(["user", "permission-definition", "permission-group", "approval-setting", "permission-link"]);
 const branchScopedMenuIds = new Set(["branch", "department", "workday", "holiday"]);
 const systemTreeFolders = [
   { id: "access-control", itemIds: accessMenuIds, label: { key: "access_control", th: "การเข้าถึง", en: "Access" }, seedId: "user" },
@@ -207,22 +214,46 @@ async function fetchAllowedMenuIds(auth: AuthSession, workspace: WorkspaceSessio
   };
   const shopid = encodeURIComponent(workspace.shop.shopid);
   try {
-    const [linksResponse, definitionsResponse] = await Promise.all([
+    const [linksResponse, definitionsResponse, groupsResponse] = await Promise.all([
       fetch(`/api/system-settings/permission_link?limit=1000&offset=0&shopid=${shopid}`, { headers, cache: "no-store" }),
       fetch(`/api/system-settings/permission_definition?limit=1000&offset=0&shopid=${shopid}`, { headers, cache: "no-store" }),
+      fetch(`/api/system-settings/permission_group?limit=1000&offset=0&shopid=${shopid}`, { headers, cache: "no-store" }).catch(() => null),
     ]);
     if (!linksResponse.ok || !definitionsResponse.ok) return new Set();
 
     const [linksPayload, definitionsPayload] = await Promise.all([linksResponse.json() as Promise<unknown>, definitionsResponse.json() as Promise<unknown>]);
+
+    let groupsList: SettingRecord[] = [];
+    if (groupsResponse && groupsResponse.ok) {
+      try {
+        const groupsPayload = await groupsResponse.json() as unknown;
+        groupsList = normalizeSettingRecords(groupsPayload);
+      } catch {
+        // ignore
+      }
+    }
+
     const userKeys = new Set([auth.username, auth.profile?.email].map(stringValue).filter(Boolean).map((item) => item.toLowerCase()));
     const permissionLink = normalizeSettingRecords(linksPayload).find((record) => userKeys.has(stringValue(record.employeeCode).toLowerCase()));
-    const permissionCodes = new Set(stringArray(permissionLink?.permissionCodes));
-    if (!permissionCodes.size) return new Set();
+
+    const finalPermissionCodes = new Set<string>();
+    if (permissionLink) {
+      stringArray(permissionLink.permissionCodes).forEach((c) => finalPermissionCodes.add(c));
+      const empGroupCode = stringValue(permissionLink.groupCode);
+      if (empGroupCode) {
+        const matchedGroup = groupsList.find((g) => stringValue(g.groupCode) === empGroupCode);
+        if (matchedGroup) {
+          stringArray(matchedGroup.permissionCodes).forEach((c) => finalPermissionCodes.add(c));
+        }
+      }
+    }
+
+    if (!finalPermissionCodes.size) return new Set();
 
     const branchKeys = workspacePermissionKeys(workspace);
     const allowed = new Set<string>();
     for (const definition of normalizeSettingRecords(definitionsPayload)) {
-      if (!permissionCodes.has(stringValue(definition.permissionCode))) continue;
+      if (!finalPermissionCodes.has(stringValue(definition.permissionCode))) continue;
       const branches = toRecord(definition.branches);
       for (const branchKey of branchKeys) {
         const branch = toRecord(branches[branchKey]);
@@ -654,13 +685,8 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
 
   function handleContentScroll(event: UIEvent<HTMLDivElement>) {
     const nextScrollTop = event.currentTarget.scrollTop;
-    const delta = nextScrollTop - lastContentScrollTopRef.current;
 
-    if (nextScrollTop < 24) {
-      setTopChromeHidden(false);
-    } else if (delta > 12) {
-      setTopChromeHidden(true);
-    } else if (delta < -12) {
+    if (topChromeHidden) {
       setTopChromeHidden(false);
     }
 
@@ -672,8 +698,8 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const menuLayoutTopText = backendText(backendLanguage, "menu_layout_top", language === "th" ? "เมนูบน" : "Top menu");
 
   return (
-    <main className="min-h-dvh overflow-x-hidden bg-background text-foreground lg:h-dvh lg:overflow-hidden">
-      <div className={cn("grid min-h-dvh min-w-0 grid-cols-[minmax(0,1fr)] lg:h-dvh lg:overflow-hidden", showLeftMenu && "lg:grid-cols-[280px_minmax(0,1fr)]")}>
+    <main className="min-h-dvh overflow-x-hidden bg-background text-foreground lg:h-dvh lg:min-h-0 lg:max-h-dvh lg:overflow-hidden">
+      <div className={cn("grid min-h-dvh min-w-0 grid-cols-[minmax(0,1fr)] lg:h-dvh lg:min-h-0 lg:max-h-dvh lg:overflow-hidden", showLeftMenu && "lg:grid-cols-[280px_minmax(0,1fr)]")}>
         {showLeftMenu ? (
         <aside className="max-h-dvh min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain border-b border-border bg-card/80 p-3 lg:sticky lg:top-0 lg:h-dvh lg:border-b-0 lg:border-r">
           <div className="mb-3 flex items-center gap-3 rounded-2xl border border-border bg-background p-3 shadow-sm">
@@ -682,7 +708,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
             </div>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{workspace ? shopDisplayName(workspace.shop) : "BC Ai Account"}</p>
-              <p className="truncate text-xs text-muted-foreground">{workspace?.branch ? branchDisplayName(workspace.branch) : "ERP Workspace"}</p>
+              <p className="truncate text-xs text-muted-foreground">{workspace?.branch ? branchDisplayName(workspace.branch) : "Workspace"}</p>
             </div>
             <Button type="button" variant="outline" size="icon" className="ml-auto shrink-0" aria-label={mt(backendLanguage, "hideMenu")} title={mt(backendLanguage, "hideMenu")} onClick={() => setSidebarHidden(true)}>
               <PanelLeftClose className="h-4 w-4" />
@@ -728,11 +754,11 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
           }}
         >
           <header
-            className="menu-top-chrome sticky top-0 z-30 shrink-0 border-b border-border bg-background/90 px-3 py-2 backdrop-blur"
+            className="menu-top-chrome sticky top-0 z-30 shrink-0 border-b border-border bg-background/90 px-2 py-1 backdrop-blur"
             data-hidden={topChromeHidden ? "true" : "false"}
           >
-            <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex min-w-0 items-center gap-2">
+            <div className="flex flex-col gap-1.5 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex min-w-0 items-center gap-1.5">
                 {menuLayout === "left" && sidebarHidden ? (
                   <Button type="button" variant="outline" size="icon" className="shrink-0" aria-label={mt(backendLanguage, "showMenu")} title={mt(backendLanguage, "showMenu")} onClick={() => setSidebarHidden(false)}>
                     <PanelLeftOpen className="h-4 w-4" />
@@ -769,17 +795,17 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                 </div>
               </div>
 
-              <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-2 lg:flex-1">
+              <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-1.5 lg:flex-1">
                 <label className="relative min-w-52 flex-1 lg:max-w-xs xl:max-w-sm">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input className="pl-9" placeholder={mt(backendLanguage, "searchMenu")} value={globalSearch} onChange={(event) => setGlobalSearch(event.target.value)} />
+                  <Input className="h-8 pl-9" placeholder={mt(backendLanguage, "searchMenu")} value={globalSearch} onChange={(event) => setGlobalSearch(event.target.value)} />
                 </label>
-                <Button variant="outline" size="icon" aria-label={backendText(backendLanguage, "notification")}>
+                <Button variant="outline" size="icon" className="h-8 w-8" aria-label={backendText(backendLanguage, "notification")}>
                   <Bell className="h-4 w-4" />
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline">
+                    <Button variant="outline" size="sm" className="h-8 gap-1 px-2">
                       <Star className="h-4 w-4" />
                       {mt(backendLanguage, "frequentMenu")}
                     </Button>
@@ -799,7 +825,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <div className="w-28">
+                <div className="w-24">
                   <LanguageDialog language={language} onLanguageChange={setLanguage} />
                 </div>
                 <ManualLink compact language={language} screen="menu" />
@@ -807,7 +833,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                 <ThemeToggle language={language} />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="min-w-0">
+                    <Button variant="outline" size="sm" className="h-8 min-w-0 gap-1 px-2">
                       <UserRound className="h-4 w-4" />
                       <span className="hidden max-w-28 truncate sm:inline">{loginIdentity}</span>
                       <ChevronsUpDown className="h-3.5 w-3.5 opacity-60" />
@@ -855,7 +881,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
           ) : null}
 
           <div className={cn(
-            "grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3 p-3 lg:min-h-0 lg:flex-1 lg:overflow-hidden",
+            "grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2 p-2 lg:min-h-0 lg:flex-1 lg:overflow-hidden",
             isDefaultPassword ? "lg:grid-rows-[auto_auto_minmax(0,1fr)]" : "lg:grid-rows-[auto_minmax(0,1fr)]",
           )}>
             {isDefaultPassword ? (
@@ -1079,12 +1105,14 @@ function TopMenuChrome({
 }) {
   const [openSectionId, setOpenSectionId] = useState<string | null>(null);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+  const [activeFolderIndex, setActiveFolderIndex] = useState<number>(0);
   const [openSectionLeft, setOpenSectionLeft] = useState(0);
   const [flyoutSide, setFlyoutSide] = useState<"left" | "right">("right");
   const menuRootRef = useRef<HTMLDivElement | null>(null);
   const openSection = MENU_SECTIONS.find((section) => section.id === openSectionId) ?? null;
   const visibleGroups = openSection
-    ? openSection.groups
+    ? getVisibleGroups(openSection, language, "", backendLanguage)
         .map((group) => ({ group, items: getVisibleItems(group.items, language, "", backendLanguage) }))
         .filter((entry) => entry.items.length > 0)
     : [];
@@ -1092,19 +1120,27 @@ function TopMenuChrome({
   const activeGroupIndex = Math.max(0, visibleGroups.findIndex((entry) => entry.group.id === activeGroupEntry?.group.id));
 
   useEffect(() => {
-    if (!openSectionId) return;
+    if (!openSectionId) {
+      setActiveFolderId(null);
+      setActiveFolderIndex(0);
+      return;
+    }
 
     function closeOnOutsidePointer(event: PointerEvent) {
       const target = event.target;
       if (target instanceof Node && menuRootRef.current?.contains(target)) return;
       setOpenSectionId(null);
       setActiveGroupId(null);
+      setActiveFolderId(null);
+      setActiveFolderIndex(0);
     }
 
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
       setOpenSectionId(null);
       setActiveGroupId(null);
+      setActiveFolderId(null);
+      setActiveFolderIndex(0);
     }
 
     document.addEventListener("pointerdown", closeOnOutsidePointer);
@@ -1124,21 +1160,36 @@ function TopMenuChrome({
     setOpenSectionLeft(target.offsetLeft);
     setFlyoutSide(rect.left + firstPanelWidth + gap + secondPanelWidth <= window.innerWidth - viewportPadding ? "right" : "left");
     setOpenSectionId(section.id);
-    setActiveGroupId(section.groups[0]?.id ?? null);
+    setActiveGroupId(getVisibleGroups(section, language, "", backendLanguage)[0]?.id ?? null);
+    setActiveFolderId(null);
+    setActiveFolderIndex(0);
   }
 
+  const hasSingleGroup = openSection ? openSection.groups.length === 1 : false;
+
+  // Find active folder node under active group
+  const activeFolderNode = (() => {
+    if (!activeFolderId) return null;
+    const targetGroup = hasSingleGroup ? openSection?.groups[0] : activeGroupEntry?.group;
+    if (!targetGroup) return null;
+    return getMenuTreeNodes(targetGroup, language, "", backendLanguage).find(
+      (node) => node.type === "folder" && node.id === activeFolderId
+    ) as Extract<MenuTreeNode, { type: "folder" }> | undefined;
+  })();
+
   return (
-    <nav className="shrink-0 border-b border-border bg-card/95 px-3 py-1.5" aria-label={mt(backendLanguage, "navigation")}>
+    <nav className="shrink-0 border-b border-border bg-card/95 px-2 py-1" aria-label={mt(backendLanguage, "navigation")}>
       <div className="relative" ref={menuRootRef}>
       <div className="flex min-w-0 gap-1 overflow-x-auto">
         <Button
           type="button"
           variant={activeSection === "all" ? "secondary" : "ghost"}
           size="sm"
-          className="h-8 shrink-0 gap-1 px-2"
+          className="h-7 shrink-0 gap-1 px-2 text-[12px]"
           onClick={() => {
             setOpenSectionId(null);
             setActiveGroupId(null);
+            setActiveFolderId(null);
             onSelectSection("all");
           }}
         >
@@ -1153,7 +1204,7 @@ function TopMenuChrome({
               type="button"
               variant={activeSection === section.id ? "secondary" : "ghost"}
               size="sm"
-              className="h-8 shrink-0 gap-1 px-2"
+              className="h-7 shrink-0 gap-1 px-2 text-[12px]"
               aria-expanded={openSectionId === section.id}
               onMouseEnter={(event) => {
                 onSelectSection(section.id);
@@ -1172,14 +1223,15 @@ function TopMenuChrome({
                 setFlyoutSide(rect.left + firstPanelWidth + 4 + secondPanelWidth <= window.innerWidth - 12 ? "right" : "left");
                 setOpenSectionId((current) => {
                   const next = current === section.id ? null : section.id;
-                  setActiveGroupId(next ? section.groups[0]?.id ?? null : null);
+                  setActiveGroupId(next ? getVisibleGroups(section, language, "", backendLanguage)[0]?.id ?? null : null);
+                  setActiveFolderId(null);
                   return next;
                 });
               }}
             >
               <SectionIcon sectionId={section.id} />
               <span>{sectionLabel}</span>
-              <Badge variant="outline" className="h-5 px-1.5">{countSectionItems(section)}</Badge>
+              <Badge variant="outline" className="h-4 px-1.5 text-[10px]">{countSectionItems(section)}</Badge>
               <ChevronDown className={cn("h-3.5 w-3.5 opacity-70 transition", openSectionId === section.id && "rotate-180")} />
             </Button>
           );
@@ -1190,71 +1242,191 @@ function TopMenuChrome({
           className="absolute top-[calc(100%+6px)] z-40 flex overflow-visible rounded-lg border border-border bg-popover text-popover-foreground shadow-lg"
           style={{ left: `${openSectionLeft}px` }}
         >
-          <div className="w-72 min-w-0 max-w-[calc(100vw-1.5rem)] overflow-y-auto p-1.5">
-            <div className="mb-1 px-2 text-xs font-semibold text-muted-foreground">
-              {menuText(openSection.title, language, backendLanguage)}
-            </div>
-            <div className="grid gap-1">
-              {visibleGroups.map(({ group, items }) => {
-                const active = activeGroupEntry?.group.id === group.id;
-                return (
-                  <button
-                    key={group.id}
-                    type="button"
-                    className={cn(
-                      "flex h-9 min-w-0 items-center justify-between gap-2 rounded-md px-2 text-left text-sm hover:bg-muted",
-                      active && "bg-primary/10 text-primary",
-                    )}
-                    onClick={() => setActiveGroupId(group.id)}
-                    onMouseEnter={() => setActiveGroupId(group.id)}
-                  >
-                    <span className="truncate">{menuText(group.title, language, backendLanguage)}</span>
-                    <span className="flex shrink-0 items-center gap-1">
-                      <Badge variant={active ? "secondary" : "outline"} className="h-5 px-1.5">{items.length}</Badge>
-                      <ChevronDown className={cn("h-3.5 w-3.5 -rotate-90 opacity-70", active && "opacity-100")} />
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          {activeGroupEntry ? (
-            <div
-              className="absolute z-50 w-80 max-w-[calc(100vw-19rem)] overflow-y-auto rounded-lg border border-border bg-popover p-1.5 text-popover-foreground shadow-lg"
-              style={{
-                maxHeight: "72vh",
-                top: `${28 + activeGroupIndex * 40}px`,
-                ...(flyoutSide === "left" ? { right: "calc(100% + 4px)" } : { left: "calc(100% + 4px)" }),
-              }}
-            >
-              <div className="mb-1 flex items-center justify-between gap-2 px-2 text-xs font-semibold text-muted-foreground">
-                <span className="truncate">{menuText(activeGroupEntry.group.title, language, backendLanguage)}</span>
-                <Badge variant="secondary" className="h-5 px-1.5">{activeGroupEntry.items.length}</Badge>
+          {hasSingleGroup && openSection.groups[0] ? (
+            <>
+              {/* Column 1: Items and folders of the single group */}
+              <div className="w-72 min-w-0 max-w-[calc(100vw-1.5rem)] overflow-y-auto p-1.5">
+                <div className="mb-1 px-2 text-xs font-semibold text-muted-foreground">
+                  {menuText(openSection.title, language, backendLanguage)}
+                </div>
+                <div className="grid gap-1">
+                  {getMenuTreeNodes(openSection.groups[0], language, "", backendLanguage).map((node, nodeIndex) => {
+                    if (node.type === "folder") {
+                      const active = activeFolderId === node.id;
+                      return (
+                        <button
+                          key={node.id}
+                          type="button"
+                          className={cn(
+                            "flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-md px-2 text-left text-sm hover:bg-muted",
+                            active && "bg-primary/10 text-primary"
+                          )}
+                          onMouseEnter={() => {
+                            setActiveFolderId(node.id);
+                            setActiveFolderIndex(nodeIndex);
+                          }}
+                          onClick={() => {
+                            setActiveFolderId(node.id);
+                            setActiveFolderIndex(nodeIndex);
+                          }}
+                        >
+                          <span className="flex min-w-0 items-center gap-2">
+                            {node.seedItem ? <MenuRouteIcon item={node.seedItem} size={15} /> : <Command className="h-4 w-4" />}
+                            <span className="truncate">{node.label}</span>
+                          </span>
+                          <span className="flex shrink-0 items-center gap-1">
+                            <Badge variant={active ? "secondary" : "outline"} className="h-5 px-1.5">{node.children.length}</Badge>
+                            <ChevronDown className={cn("h-3.5 w-3.5 -rotate-90 opacity-70", active && "opacity-100")} />
+                          </span>
+                        </button>
+                      );
+                    }
+
+                    const locked = !canAccessMenuItem(node.item);
+                    return (
+                      <button
+                        key={node.id}
+                        type="button"
+                        disabled={locked}
+                        className="flex h-9 w-full min-w-0 items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-55"
+                        onMouseEnter={() => {
+                          setActiveFolderId(null);
+                          setActiveFolderIndex(0);
+                        }}
+                        onClick={() => {
+                          setOpenSectionId(null);
+                          setActiveGroupId(null);
+                          setActiveFolderId(null);
+                          onOpenItem(node.item);
+                        }}
+                      >
+                        <MenuRouteIcon item={node.item} size={15} />
+                        <span className="min-w-0 flex-1 truncate">{menuText(node.item.label, language, backendLanguage)}</span>
+                        {locked ? <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="grid gap-1">
-                {activeGroupEntry.items.map((item) => {
-                  const locked = !canAccessMenuItem(item);
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      disabled={locked}
-                      className="flex h-9 w-full min-w-0 items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-55"
-                      onClick={() => {
-                        setOpenSectionId(null);
-                        setActiveGroupId(null);
-                        onOpenItem(item);
-                      }}
-                    >
-                      <MenuRouteIcon item={item} size={15} />
-                      <span className="min-w-0 flex-1 truncate">{menuText(item.label, language, backendLanguage)}</span>
-                      {locked ? <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
-                    </button>
-                  );
-                })}
+
+              {/* Column 2: sub-items of the active folder */}
+              {activeFolderNode ? (
+                <div
+                  className={cn(
+                    "absolute w-80 max-h-[72vh] overflow-y-auto rounded-lg border border-border bg-popover p-1.5 shadow-lg text-popover-foreground",
+                    flyoutSide === "left" ? "right-[calc(100%+4px)]" : "left-[calc(100%+4px)]"
+                  )}
+                  style={{ top: `${28 + activeFolderIndex * 40}px` }}
+                >
+                  <div className="mb-1 flex items-center justify-between gap-2 px-2 text-xs font-semibold text-muted-foreground">
+                    <span className="truncate">{activeFolderNode.label}</span>
+                    <Badge variant="secondary" className="h-5 px-1.5">{activeFolderNode.children.length}</Badge>
+                  </div>
+                  <div className="grid gap-1">
+                    {activeFolderNode.children.map((item) => {
+                      const locked = !canAccessMenuItem(item);
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          disabled={locked}
+                          className="flex h-9 w-full min-w-0 items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-55"
+                          onClick={() => {
+                            setOpenSectionId(null);
+                            setActiveGroupId(null);
+                            setActiveFolderId(null);
+                            onOpenItem(item);
+                          }}
+                        >
+                          <MenuRouteIcon item={item} size={15} />
+                          <span className="min-w-0 flex-1 truncate">{menuText(item.label, language, backendLanguage)}</span>
+                          {locked ? <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <>
+              {/* Column 1: Groups list */}
+              <div className="w-72 min-w-0 max-w-[calc(100vw-1.5rem)] overflow-y-auto p-1.5">
+                <div className="mb-1 px-2 text-xs font-semibold text-muted-foreground">
+                  {menuText(openSection.title, language, backendLanguage)}
+                </div>
+                <div className="grid gap-1">
+                  {visibleGroups.map(({ group, items }) => {
+                    const active = activeGroupEntry?.group.id === group.id;
+                    return (
+                      <button
+                        key={group.id}
+                        type="button"
+                        className={cn(
+                          "flex h-9 min-w-0 items-center justify-between gap-2 rounded-md px-2 text-left text-sm hover:bg-muted",
+                          active && "bg-primary/10 text-primary",
+                        )}
+                        onClick={() => {
+                          setActiveGroupId(group.id);
+                          setActiveFolderId(null);
+                        }}
+                        onMouseEnter={() => {
+                          setActiveGroupId(group.id);
+                          setActiveFolderId(null);
+                        }}
+                      >
+                        <span className="truncate">{menuText(group.title, language, backendLanguage)}</span>
+                        <span className="flex shrink-0 items-center gap-1">
+                          <Badge variant={active ? "secondary" : "outline"} className="h-5 px-1.5">{items.length}</Badge>
+                          <ChevronDown className={cn("h-3.5 w-3.5 -rotate-90 opacity-70", active && "opacity-100")} />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ) : null}
+
+              {/* Column 2: Items of the active group */}
+              {activeGroupEntry ? (
+                <div
+                  className="absolute z-50 w-80 max-w-[calc(100vw-19rem)] overflow-y-auto rounded-lg border border-border bg-popover p-1.5 text-popover-foreground shadow-lg"
+                  style={{
+                    maxHeight: "72vh",
+                    top: `${28 + activeGroupIndex * 40}px`,
+                    ...(flyoutSide === "left" ? { right: "calc(100% + 4px)" } : { left: "calc(100% + 4px)" }),
+                  }}
+                >
+                  <div className="mb-1 flex items-center justify-between gap-2 px-2 text-xs font-semibold text-muted-foreground">
+                    <span className="truncate">{menuText(activeGroupEntry.group.title, language, backendLanguage)}</span>
+                    <Badge variant="secondary" className="h-5 px-1.5">{activeGroupEntry.items.length}</Badge>
+                  </div>
+                  <div className="grid gap-1">
+                    {activeGroupEntry.items.map((item) => {
+                      const locked = !canAccessMenuItem(item);
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          disabled={locked}
+                          className="flex h-9 w-full min-w-0 items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-55"
+                          onClick={() => {
+                            setOpenSectionId(null);
+                            setActiveGroupId(null);
+                            setActiveFolderId(null);
+                            onOpenItem(item);
+                          }}
+                        >
+                          <MenuRouteIcon item={item} size={15} />
+                          <span className="min-w-0 flex-1 truncate">{menuText(item.label, language, backendLanguage)}</span>
+                          {locked ? <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+            </>
+          )}
         </div>
       ) : null}
       </div>
@@ -1351,23 +1523,50 @@ function MenuSectionAccordion({
       {expanded ? (
         <div className="grid gap-1 rounded-2xl border border-border bg-background/70 p-1.5" role="group">
           {visibleGroups.length ? (
-            visibleGroups.map((group) => {
-              const groupKey = `${section.id}:${group.id}`;
-              return (
-                <MenuTreeGroup
-                  backendLanguage={backendLanguage}
-                  canAccessMenuItem={canAccessMenuItem}
-                  expanded={expandedGroups.includes(groupKey) || Boolean(search.trim())}
-                  group={group}
-                  groupKey={groupKey}
-                  key={group.id}
-                  language={language}
-                  onOpenItem={onOpenItem}
-                  onToggle={() => onToggleGroup(groupKey)}
-                  search={search}
-                />
-              );
-            })
+            section.groups.length === 1 ? (
+              (() => {
+                const group = section.groups[0];
+                const nodes = getMenuTreeNodes(group, language, search, backendLanguage);
+                return nodes.map((node) => node.type === "folder" ? (
+                  <MenuTreeFolder
+                    backendLanguage={backendLanguage}
+                    canAccessMenuItem={canAccessMenuItem}
+                    folder={node}
+                    key={node.id}
+                    language={language}
+                    onOpenItem={onOpenItem}
+                    search={search}
+                  />
+                ) : (
+                  <MenuTreeItemButton
+                    backendLanguage={backendLanguage}
+                    isLocked={!canAccessMenuItem(node.item)}
+                    item={node.item}
+                    key={node.id}
+                    language={language}
+                    onOpenItem={onOpenItem}
+                  />
+                ));
+              })()
+            ) : (
+              visibleGroups.map((group) => {
+                const groupKey = `${section.id}:${group.id}`;
+                return (
+                  <MenuTreeGroup
+                    backendLanguage={backendLanguage}
+                    canAccessMenuItem={canAccessMenuItem}
+                    expanded={expandedGroups.includes(groupKey) || Boolean(search.trim())}
+                    group={group}
+                    groupKey={groupKey}
+                    key={group.id}
+                    language={language}
+                    onOpenItem={onOpenItem}
+                    onToggle={() => onToggleGroup(groupKey)}
+                    search={search}
+                  />
+                );
+              })
+            )
           ) : (
             <div className="rounded-xl border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">{mt(backendLanguage, "noMenu")}</div>
           )}
@@ -1680,7 +1879,7 @@ function OpenTabs({
   }
 
   return (
-    <div className="flex max-w-full flex-wrap gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm" role="tablist" aria-label={mt(backendLanguage, "openTabs")}>
+    <div className="flex max-w-full flex-wrap gap-1 rounded-xl border border-border bg-card p-1 shadow-sm" role="tablist" aria-label={mt(backendLanguage, "openTabs")}>
       {tabs.map((tab) => (
         <div
           aria-grabbed={draggingTabId === tab.id}
@@ -1714,8 +1913,10 @@ function OpenTabs({
             clearDragState();
           }}
           className={cn(
-            "relative flex w-full min-w-0 cursor-grab items-center overflow-hidden rounded-2xl border transition-[background-color,border-color,box-shadow,opacity,transform] duration-200 ease-out active:cursor-grabbing sm:w-auto sm:min-w-44 sm:max-w-64",
-            tab.id === activeTabId ? "border-primary/30 bg-primary/10 text-primary" : "border-border bg-background text-foreground",
+            "group relative flex w-full min-w-0 cursor-grab items-center overflow-hidden rounded-t-md border border-b-0 transition-[background-color,border-color,box-shadow,opacity,transform] duration-200 ease-out active:cursor-grabbing sm:w-auto sm:min-w-28 sm:max-w-44",
+            tab.id === activeTabId
+              ? "border-border border-t-2 border-t-primary bg-background text-primary shadow-sm font-semibold"
+              : "border-border bg-muted/65 text-muted-foreground hover:bg-background/80 hover:text-foreground",
             draggingTabId === tab.id && "scale-[0.98] opacity-60 ring-2 ring-ring/30 shadow-lg",
             insertMarker?.tabId === tab.id && draggingTabId !== tab.id && "translate-y-[-2px] border-primary/40 bg-primary/5 shadow-md",
           )}
@@ -1733,22 +1934,28 @@ function OpenTabs({
             role="tab"
             aria-selected={tab.id === activeTabId}
             onClick={() => onSelect(tab.id)}
-            className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 px-3 py-2 text-left"
+            title={`${tab.item ? menuText(tab.item.label, language, backendLanguage) : mt(backendLanguage, "overviewErp")} ${tab.id === "home" ? mt(backendLanguage, "dashboardRoute") : tab.route}`}
+            className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-1.5 px-2 py-1 text-left"
           >
-            <span className="row-span-2 grid h-7 w-7 place-items-center rounded-xl bg-background">
-              {tab.item ? <MenuRouteIcon item={tab.item} size={15} /> : <HomeMenuIcon size={15} />}
+            <span className="row-span-2 grid h-5 w-5 place-items-center rounded-md bg-background">
+              {tab.item ? <MenuRouteIcon item={tab.item} size={13} /> : <HomeMenuIcon size={13} />}
             </span>
-            <b className="truncate text-sm">{tab.item ? menuText(tab.item.label, language, backendLanguage) : mt(backendLanguage, "overviewErp")}</b>
-            <small className="truncate text-xs text-muted-foreground">{tab.id === "home" ? mt(backendLanguage, "dashboardRoute") : tab.route}</small>
+            <b className="flex min-w-0 items-center gap-1 text-[12px] leading-[14px]">
+              <span className="truncate">{tab.item ? menuText(tab.item.label, language, backendLanguage) : mt(backendLanguage, "overviewErp")}</span>
+            </b>
+            <small className="truncate text-[10px] leading-3 text-muted-foreground">{tab.id === "home" ? mt(backendLanguage, "dashboardRoute") : tab.route}</small>
           </button>
           {tab.closable ? (
             <button
               type="button"
-              className="mr-2 grid h-7 w-7 place-items-center rounded-xl hover:bg-background"
+              className={cn(
+                "mr-1 grid h-5 w-5 place-items-center rounded-md opacity-70 transition-opacity hover:bg-background hover:opacity-100",
+                tab.id !== activeTabId && "opacity-0 focus-visible:opacity-100 group-hover:opacity-70",
+              )}
               onClick={() => onClose(tab.id)}
               aria-label={`${mt(backendLanguage, "closeTab")} ${tab.item ? menuText(tab.item.label, language, backendLanguage) : mt(backendLanguage, "overviewErp")}`}
             >
-              <CircleX className="h-4 w-4" />
+              <CircleX className="h-3.5 w-3.5" />
             </button>
           ) : null}
         </div>

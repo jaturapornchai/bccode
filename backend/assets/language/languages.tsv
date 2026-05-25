@@ -43,6 +43,7 @@ action_code	รหัสหน้าจอ	Screen Code	屏幕代码	画面コー
 action_history	ประวัติการดำเนินการ	Action History	操作历史	アクション履歴	ប្រវត្តិសកម្មភាព	작업 이력	ປະຫວັດການດຳເນີນການ	လုပ်ဆောင်ချက်မှတ်တမ်း	Lịch sử hành động	Action History	Action History	Action History
 activate	เปิดใช้งาน	Activate	启用	有効化	បើក	활성화	ເປີດໃຊ້	ဖွင့်ပါ	Kích hoạt	Activate	Activate	Activate
 active	ใช้งาน	Active	启用	有効	សកម្ម	활성	ໃຊ້ງານ	အသုံးပြု	Hoạt động	Active	Active	Active
+active_languages	ภาษาที่ใช้งาน	Active Languages	启用语言	使用言語	ភាសាដែលកំពុងប្រើ	사용 언어	ພາສາທີ່ໃຊ້ງານ	အသုံးပြုနေသော ဘာသာစကားများ	Ngôn ngữ đang dùng	Bahasa aktif	Bahasa aktif	Mga aktibong wika
 access_enabled	เข้าใช้งานได้	Can access	允许访问	アクセス可能	អាចចូលប្រើបាន	접속 가능	ເຂົ້າໃຊ້ງານໄດ້	ဝင်ရောက်အသုံးပြုနိုင်သည်	Có thể truy cập	Boleh akses	Dapat mengakses	Maaaring maka-access
 access_status	สถานะเข้าใช้งาน	Access status	访问状态	アクセス状態	ស្ថានភាពចូលប្រើ	접속 상태	ສະຖານະການເຂົ້າໃຊ້ງານ	ဝင်ရောက်အသုံးပြုမှုအခြေအနေ	Trạng thái truy cập	Status akses	Status akses	Katayuan ng access
 access_temporarily_disabled	เข้าใช้งานไม่ได้ชั่วคราว	Temporarily disabled	暂时禁止访问	一時的に無効	បិទការចូលប្រើបណ្តោះអាសន្ន	일시적으로 접속 중지	ປິດການເຂົ້າໃຊ້ງານຊົ່ວຄາວ	ယာယီဝင်ရောက်ခွင့်ပိတ်ထားသည်	Tạm thời bị khóa	Dilumpuhkan sementara	Dinonaktifkan sementara	Pansamantalang hindi pinapayagan
@@ -4536,19 +4537,19 @@ columns	คอลัมน์	Columns	列	列	ជួរឈរ	열	ຄໍລຳ	�
 commands	คำสั่ง	Commands	命令	コマンド	ពាក្យបញ្ជា	명령	ຄຳສັ່ງ	အမိန့်များ	Lệnh	Arahan	Perintah	Mga utos
 creditor_debtor	เจ้าหนี้/ลูกหนี้	Creditor / Debtor	债权人/债务人	債権者/債務者	ម្ចាស់បំណុល/កូនបំណុល	채권자/채무자	ເຈົ້າໜີ້/ລູກໜີ້	ကြွေးရှင်/ကြွေးမြီရှင်	Chủ nợ / khách nợ	Pemiutang / penghutang	Kreditor / debitor	Creditor / debtor
 displaying	แสดง	Displaying	显示中	表示中	កំពុងបង្ហាញ	표시 중	ສະແດງ	ပြသနေသည်	Hiển thị	Memaparkan	Menampilkan	Ipinapakita
-erp_database	ฐานข้อมูล ERP	ERP database	ERP 数据库	ERPデータベース	មូលដ្ឋានទិន្នន័យ ERP	ERP 데이터베이스	ຖານຂໍ້ມູນ ERP	ERP ဒေတာဘေ့စ်	Cơ sở dữ liệu ERP	Pangkalan data ERP	Basis data ERP	ERP database
-erp_data_table	ตารางข้อมูล ERP	ERP Data Table	ERP 数据表	ERPデータテーブル	តារាងទិន្នន័យ ERP	ERP 데이터 테이블	ຕາຕະລາງຂໍ້ມູນ ERP	ERP ဒေတာဇယား	Bảng dữ liệu ERP	Jadual data ERP	Tabel data ERP	Talahanayan ng data ERP
+erp_database	ฐานข้อมูล	Database	数据库	データベース	មូលដ្ឋានទិន្នន័យ	데이터베이스	ຖານຂໍ້ມູນ	ဒေတာဘေ့စ်	Cơ sở dữ liệu	Pangkalan data	Basis data	Database
+erp_data_table	ตารางข้อมูล	Data Table	数据表	データテーブル	តារាងទិន្នន័យ	데이터 테이블	ຕາຕະລາງຂໍ້ມູນ	ဒေတာဇယား	Bảng dữ liệu	Jadual data	Tabel data	Talahanayan ng data
 erp_data_table_description	ค้นหา กรอง เรียงหน้า เปิด/ปิดคอลัมน์ และเปิดเมนูเป็นแท็บด้วย TanStack Table	Search, filter, sort, show/hide columns, and open menus as tabs with TanStack Table	使用 TanStack Table 搜索、筛选、排序、显示/隐藏列并将菜单打开为标签	TanStack Tableで検索、フィルター、並べ替え、列表示切替、メニューをタブで開く	ស្វែងរក ត្រង តម្រៀប បើក/បិទជួរឈរ និងបើកម៉ឺនុយជាថេបដោយ TanStack Table	TanStack Table로 검색, 필터, 정렬, 열 표시 전환, 메뉴 탭 열기	ຄົ້ນຫາ ກັ່ນຕອງ ຈັດລຳດັບ ເປີດ/ປິດຄໍລຳ ແລະເປີດເມນູເປັນແທັບດ້ວຍ TanStack Table	ရှာဖွေ၊ စစ်ထုတ်၊ စီစဉ်၊ ကော်လံဖွင့်/ပိတ်ပြီး မီနူးကို တက်ဘ်အဖြစ် ဖွင့်ပါ	Tìm kiếm, lọc, sắp xếp, bật/tắt cột và mở menu thành tab bằng TanStack Table	Cari, tapis, susun, buka/tutup lajur dan buka menu sebagai tab dengan TanStack Table	Cari, filter, urutkan, tampil/sembunyikan kolom, dan buka menu sebagai tab dengan TanStack Table	Maghanap, mag-filter, mag-sort, ipakita/itago ang column, at buksan ang menu bilang tab gamit ang TanStack Table
-erp_menu_ratio	สัดส่วนเมนู ERP	ERP menu ratio	ERP 菜单比例	ERPメニュー比率	សមាមាត្រម៉ឺនុយ ERP	ERP 메뉴 비율	ສັດສ່ວນເມນູ ERP	ERP မီနူးအချိုး	Tỷ lệ menu ERP	Nisbah menu ERP	Rasio menu ERP	Ratio ng menu ERP
-erp_navigation	เมนู ERP	ERP navigation	ERP 导航	ERPナビゲーション	ការរុករក ERP	ERP 탐색	ເມນູນຳທາງ ERP	ERP လမ်းညွှန်	Điều hướng ERP	Navigasi ERP	Navigasi ERP	Nabigasyon ng ERP
-erp_overview	ภาพรวม ERP	ERP overview	ERP 概览	ERP概要	ទិដ្ឋភាពទូទៅ ERP	ERP 개요	ພາບລວມ ERP	ERP အကျဉ်းချုပ်	Tổng quan ERP	Gambaran keseluruhan ERP	Ikhtisar ERP	Pangkalahatang-ideya ng ERP
+erp_menu_ratio	สัดส่วนเมนู	Menu ratio	菜单比例	メニュー比率	សមាមាត្រម៉ឺនុយ	메뉴 비율	ສັດສ່ວນເມນູ	မီနူးအချိုး	Tỷ lệ menu	Nisbah menu	Rasio menu	Ratio ng menu
+erp_navigation	เมนู	Navigation	导航	ナビゲーション	ការរុករក	탐색	ເມນູນຳທາງ	လမ်းညွှန်	Điều hướng	Navigasi	Navigasi	Nabigasyon
+erp_overview	ภาพรวม	Overview	概览	概要	ទិដ្ឋភាពទូទៅ	개요	ພາບລວມ	ခြုံငုံသုံးသပ်ချက်	Tổng quan	Gambaran keseluruhan	Ikhtisar	Pangkalahatang-ideya
 from_count	จาก	from	从	から	ពី	중	ຈາກ	မှ	từ	daripada	dari	mula sa
 from_legacy_flutter	จาก Flutter เดิม	From legacy Flutter	来自旧版 Flutter	旧Flutterから	ពី Flutter ចាស់	기존 Flutter 기준	ຈາກ Flutter ເດີມ	ယခင် Flutter မှ	Từ Flutter cũ	Daripada Flutter lama	Dari Flutter lama	Mula sa lumang Flutter
 hide_menu	ซ่อนเมนู	Hide menu	隐藏菜单	メニューを隠す	លាក់ម៉ឺនុយ	메뉴 숨기기	ເຊື່ອງເມນູ	မီနူးဖျောက်	Ẩn menu	Sembunyi menu	Sembunyikan menu	Itago ang menu
 menu_layout_left	เมนูซ้าย	Left menu	左侧菜单	左メニュー	ម៉ឺនុយខាងឆ្វេង	왼쪽 메뉴	ເມນູຊ້າຍ	ဘယ်မီနူး	Menu trái	Menu kiri	Menu kiri	Kaliwang menu
 menu_layout_top	เมนูบน	Top menu	顶部菜单	上部メニュー	ម៉ឺនុយខាងលើ	상단 메뉴	ເມນູເທິງ	အပေါ်မီနူး	Menu trên	Menu atas	Menu atas	Itaas na menu
 inventory_reports	รายงานสินค้า	Inventory Reports	库存报告	在庫レポート	របាយការណ៍ស្តុក	재고 보고서	ລາຍງານສິນຄ້າ	ကုန်လက်ကျန်အစီရင်ခံစာများ	Báo cáo tồn kho	Laporan inventori	Laporan inventori	Mga ulat ng inventory
-loading_erp_dashboard	กำลังโหลด ERP dashboard	Loading ERP dashboard	正在加载 ERP 仪表板	ERPダッシュボードを読み込み中	កំពុងផ្ទុកផ្ទាំងគ្រប់គ្រង ERP	ERP 대시보드 로딩 중	ກຳລັງໂຫຼດ dashboard ERP	ERP dashboard တင်နေသည်	Đang tải dashboard ERP	Memuatkan dashboard ERP	Memuat dashboard ERP	Naglo-load ng ERP dashboard
+loading_erp_dashboard	กำลังโหลด dashboard	Loading dashboard	正在加载仪表板	ダッシュボードを読み込み中	កំពុងផ្ទុកផ្ទាំងគ្រប់គ្រង	대시보드 로딩 중	ກຳລັງໂຫຼດ dashboard	dashboard တင်နေသည်	Đang tải dashboard	Memuatkan dashboard	Memuat dashboard	Naglo-load ng dashboard
 menu_all	เมนูทั้งหมด	All menus	全部菜单	すべてのメニュー	ម៉ឺនុយទាំងអស់	전체 메뉴	ເມນູທັງໝົດ	မီနူးအားလုံး	Tất cả menu	Semua menu	Semua menu	Lahat ng menu
 menu_load_failed	โหลดข้อมูลเมนูไม่สำเร็จ	Menu data load failed	菜单数据加载失败	メニューデータの読み込みに失敗	ផ្ទុកទិន្នន័យម៉ឺនុយបរាជ័យ	메뉴 데이터 로드 실패	ໂຫຼດຂໍ້ມູນເມນູບໍ່ສຳເລັດ	မီနူးဒေတာ တင်မအောင်မြင်	Không tải được dữ liệu menu	Gagal memuatkan data menu	Gagal memuat data menu	Hindi na-load ang data ng menu
 migrate_business_screen_pending	รอ migrate หน้าจอธุรกิจ	Business screen migration pending	业务页面迁移待处理	業務画面の移行待ち	រង់ចាំ migrate អេក្រង់អាជីវកម្ម	업무 화면 마이그레이션 대기	ລໍຖ້າ migrate ໜ້າຈໍທຸລະກິດ	လုပ်ငန်းမျက်နှာပြင် migration စောင့်နေသည်	Đang chờ migrate màn hình nghiệp vụ	Menunggu migrasi skrin perniagaan	Menunggu migrasi layar bisnis	Naghihintay ng migration ng business screen

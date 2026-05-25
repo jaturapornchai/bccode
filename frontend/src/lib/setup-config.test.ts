@@ -17,9 +17,9 @@ describe("setup config helpers", () => {
     expect(normalizeSetupBackendUrl("http://localhost:8888/goapi/")).toBe("http://localhost:8888/goapi");
   });
 
-  it("hides legacy mongodb config from the settings UI", () => {
+  it("shows MongoDB config from backend entries in the settings UI", () => {
     const config = mergeBackendConfig([{ category: "mongodb", key: "database_name", value: "bcdev", is_secret: false }]);
-    expect(config.mongodb).toBeUndefined();
+    expect(config.mongodb?.find((item) => item.key === "database")?.value).toBe("bcdev");
   });
 
   it("hides duplicated MongoDB production config from the settings UI", () => {
@@ -27,10 +27,11 @@ describe("setup config helpers", () => {
     expect(config.mongodb_production).toBeUndefined();
   });
 
-  it("shows only local MongoDB DEV in the setup UI", () => {
+  it("shows only the current MongoDB category in the setup UI", () => {
     const config = createDefaultConfigMap();
-    expect(getCategoryDef("mongodb_dev").title).toBe("MongoDB DEV (Local)");
-    expect(config.mongodb_dev).toBeDefined();
+    expect(getCategoryDef("mongodb").title).toBe("MongoDB");
+    expect(config.mongodb).toBeDefined();
+    expect(config.mongodb_dev).toBeUndefined();
     expect(config.mongodb_uat).toBeUndefined();
     expect(config.mongodb_pro).toBeUndefined();
   });

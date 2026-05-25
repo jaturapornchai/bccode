@@ -44,51 +44,21 @@ export type FieldControl =
   | { type: "checkbox" }
   | { type: "radio"; options: FieldOption[] };
 
-const hiddenCategoryIds = new Set(["mongodb", "mongodb_uat", "mongodb_pro", "mongodb_production"]);
+const hiddenCategoryIds = new Set(["mongodb_dev", "mongodb_uat", "mongodb_pro", "mongodb_production", "mongodb_production_legacy"]);
 
 export const SETUP_CATEGORY_DEFS: CategoryDef[] = [
   {
     id: "mongodb",
     title: "MongoDB",
-    description: "ฐานข้อมูล MongoDB fallback/legacy สำหรับ DEV เท่านั้น",
+    description: "ฐานข้อมูล MongoDB สำหรับระบบบัญชี",
     testType: "mongodb",
     items: [
       setupItem("mongodb", "uri", true, "MongoDB Connection URI"),
       setupItem("mongodb", "database", false, "MongoDB Database Name"),
-      setupItem("mongodb", "host", false, "MongoDB host แยกจาก URI ถ้ามี"),
-      setupItem("mongodb", "port", false, "MongoDB port"),
-      setupItem("mongodb", "username", false, "MongoDB username"),
-      setupItem("mongodb", "password", true, "MongoDB password"),
-    ],
-  },
-  {
-    id: "mongodb_dev",
-    title: "MongoDB DEV (Local)",
-    description: "MongoDB สำหรับ run บน local ระหว่างพัฒนา; UAT/PRO จะตั้งค่าบน internet ภายหลัง",
-    testType: "mongodb",
-    items: [
-      setupItem("mongodb_dev", "uri", true, "MongoDB DEV Local Connection URI"),
-      setupItem("mongodb_dev", "database", false, "MongoDB DEV Local Database Name"),
-    ],
-  },
-  {
-    id: "mongodb_uat",
-    title: "MongoDB UAT",
-    description: "MongoDB UAT สำหรับทดสอบกับ user แยกจาก DEV และ PRO",
-    testType: "mongodb",
-    items: [
-      setupItem("mongodb_uat", "uri", true, "MongoDB UAT Connection URI"),
-      setupItem("mongodb_uat", "database", false, "MongoDB UAT Database Name"),
-    ],
-  },
-  {
-    id: "mongodb_pro",
-    title: "MongoDB PRO",
-    description: "MongoDB PRO สำหรับใช้งานจริง แยกจาก DEV และ UAT",
-    testType: "mongodb",
-    items: [
-      setupItem("mongodb_pro", "uri", true, "MongoDB PRO Connection URI"),
-      setupItem("mongodb_pro", "database", false, "MongoDB PRO Database Name"),
+      setupItem("mongodb", "host", false, "MongoDB Host"),
+      setupItem("mongodb", "port", false, "MongoDB Port"),
+      setupItem("mongodb", "username", false, "MongoDB Username"),
+      setupItem("mongodb", "password", true, "MongoDB Password"),
     ],
   },
   {
@@ -187,11 +157,6 @@ export const SETUP_CATEGORY_DEFS: CategoryDef[] = [
       setupItem("storage", "azure_account_key", true, "Azure account key"),
       setupItem("storage", "azure_container_name", false, "Azure container"),
       setupItem("storage", "azure_tenant_id", false, "Azure tenant id"),
-      setupItem("storage", "s3_endpoint", false, "S3 endpoint"),
-      setupItem("storage", "s3_public_endpoint", false, "S3 public endpoint"),
-      setupItem("storage", "s3_access_key_id", true, "S3 access key"),
-      setupItem("storage", "s3_secret_access_key", true, "S3 secret key"),
-      setupItem("storage", "s3_bucket_name", false, "S3 bucket"),
     ],
   },
 ];
@@ -371,7 +336,7 @@ export function mergeBackendConfig(entries: unknown): ConfigMap {
 }
 
 export function updateConfigItem(configMap: ConfigMap, category: string, key: string, value: string): ConfigMap {
-  return Object.fromEntries(
+  const nextConfigMap = Object.fromEntries(
     Object.entries(configMap).map(([categoryId, items]) => [
       categoryId,
       categoryId === category
@@ -379,6 +344,45 @@ export function updateConfigItem(configMap: ConfigMap, category: string, key: st
         : items,
     ]),
   );
+
+  // คำนวณ URI อัตโนมัติสำหรับ mongodb เมื่อฟิลด์อื่นที่ไม่ใช่ uri มีการเปลี่ยนแปลง
+  if (category.startsWith("mongodb") && key !== "uri") {
+    const items = nextConfigMap[category] ?? [];
+    const host = items.find((i) => i.key === "host")?.value.trim() ?? "";
+    const port = items.find((i) => i.key === "port")?.value.trim() ?? "";
+    const user = items.find((i) => i.key === "username")?.value.trim() ?? "";
+    const pass = items.find((i) => i.key === "password")?.value.trim() ?? "";
+    const db = items.find((i) => i.key === "database")?.value.trim() ?? "";
+
+    if (host) {
+      let authStr = "";
+      if (user) {
+        authStr = pass ? `${encodeURIComponent(user)}:${encodeURIComponent(pass)}@` : `${encodeURIComponent(user)}@`;
+      }
+      const dbStr = db ? `/${db}` : "";
+
+      let generatedUri = "";
+      if (host.toLowerCase().includes("mongodb.net")) {
+        // สำหรับ MongoDB Atlas (Cloud)
+        generatedUri = `mongodb+srv://${authStr}${host}${dbStr}?retryWrites=true&w=majority`;
+      } else {
+        // สำหรับ Local / Server ทั่วไป
+        const portStr = port ? `:${port}` : "";
+        generatedUri = `mongodb://${authStr}${host}${portStr}${dbStr}`;
+      }
+
+      return Object.fromEntries(
+        Object.entries(nextConfigMap).map(([categoryId, items]) => [
+          categoryId,
+          categoryId === category
+            ? items.map((item) => (item.key === "uri" ? { ...item, value: generatedUri } : item))
+            : items,
+        ]),
+      );
+    }
+  }
+
+  return nextConfigMap;
 }
 
 export function serializeConfig(configMap: ConfigMap): ConfigItem[] {

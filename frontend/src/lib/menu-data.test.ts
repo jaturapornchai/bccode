@@ -79,8 +79,12 @@ describe("menu language labels", () => {
     ).toBe("Cài đặt hệ thống");
   });
 
-  it("falls back to the key id when a backend translation is missing", () => {
-    expect(menuText({ key: "unknown_key", th: "ตั้งค่า", en: "Settings" }, "th", readyDictionary({}))).toBe("unknown_key");
+  it("falls back to the local label before the key id when a backend translation is missing", () => {
+    expect(menuText({ key: "unknown_key", th: "ตั้งค่า", en: "Settings" }, "th", readyDictionary({}))).toBe("ตั้งค่า");
+  });
+
+  it("does not show the active language menu slug when the backend dictionary is missing that key", () => {
+    expect(menuText({ key: "active_languages", th: "ภาษาที่ใช้งาน", en: "Active Languages" }, "th", readyDictionary({}))).toBe("ภาษาที่ใช้งาน");
   });
 
   it("uses local label while backend language dictionary is still loading", () => {
@@ -91,8 +95,17 @@ describe("menu language labels", () => {
     const settingsGroup = MENU_SECTIONS.find((section) => section.id === "settings")?.groups.find((group) => group.id === "company-system");
     const itemIds = settingsGroup?.items.map((item) => item.id) ?? [];
 
-    expect(itemIds.indexOf("employee")).toBeGreaterThan(itemIds.indexOf("holiday"));
+    expect(itemIds.indexOf("employee")).toBeGreaterThan(itemIds.indexOf("branch"));
     expect(itemIds.indexOf("employee")).toBeLessThan(itemIds.indexOf("form-design"));
+  });
+
+  it("hides sub-screens that were merged into the branch screen", () => {
+    const settingsGroup = MENU_SECTIONS.find((section) => section.id === "settings")?.groups.find((group) => group.id === "company-system");
+    const itemIds = settingsGroup?.items.map((item) => item.id) ?? [];
+
+    expect(itemIds).not.toContain("department");
+    expect(itemIds).not.toContain("workday");
+    expect(itemIds).not.toContain("holiday");
   });
 
   it("has backend language keys for every menu item", () => {

@@ -1,10 +1,10 @@
 ---
 source: C:\Users\jatur\Downloads\stitch_ban_chiang_erp_palette.zip
-origin: User-approved Google Stitch Ban Chiang ERP reference
+origin: User-approved Google Stitch Ban Chiang business reference
 usage: Colors and UX/UI visual direction only. Do not use as business data, text source, API source, font source, image source, or HTML template.
 ---
 
-# Ban Chiang ERP Color And UX/UI Reference
+# Ban Chiang Business Color And UX/UI Reference
 
 ## Palette
 
@@ -58,7 +58,7 @@ usage: Colors and UX/UI visual direction only. Do not use as business data, text
 
 ## UX/UI Notes
 
-- Modern ERP/SaaS interface.
+- Modern SaaS/business interface.
 - Warm earth-tone terracotta accents.
 - Paper/ceramic-like surfaces.
 - Compact data-first layout.

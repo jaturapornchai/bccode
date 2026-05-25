@@ -1,5 +1,6 @@
 import { validateBackendUrl } from "./backend-url";
 import { normalizeLanguage, type LanguageCode } from "./i18n";
+import { sanitizeBackendLanguageDictionary } from "./backend-language-sanitize";
 import type { BackendLanguageDictionary } from "./backend-language";
 
 export const languagePreferenceCookie = "user_language";
@@ -42,7 +43,7 @@ export async function loadBackendLanguageDictionary(
     });
     const payload = await response.json().catch(() => ({})) as unknown;
     if (!response.ok || !isDictionaryPayload(payload)) return {};
-    return payload;
+    return sanitizeBackendLanguageDictionary(payload);
   } catch {
     return {};
   }

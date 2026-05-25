@@ -1,0 +1,110 @@
+- generic [ref=e1] [box=0,0,2048,1152]:
+  - main [ref=e2] [box=0,0,2048,1152]:
+    - generic [ref=e4] [box=0,0,2048,1152]:
+      - generic [ref=e6] [box=8,4,2032,42]:
+        - generic [ref=e8] [box=8,6,175,38]:
+          - button "เมนูซ้าย" [ref=e9] [box=11,9,89,32]:
+            - img [box=19,17,16,16]
+            - generic [ref=e10] [box=39,13,53,24]: เมนูซ้าย
+          - button "เมนูบน" [ref=e11] [box=100,9,81,32]:
+            - img [box=108,17,16,16]
+            - generic [ref=e12] [box=128,13,45,24]: เมนูบน
+        - generic [ref=e13] [box=189,4,1851,42]:
+          - generic [ref=e14] [box=189,9,1101,32]:
+            - img [box=201,17,16,16]
+            - textbox [active] [ref=e15] [box=189,9,1101,32]:
+              - /placeholder: ค้นหาเมนู เอกสาร หรือ route
+              - text: ผู้ใช้งาน
+          - button "การแจ้งเตือน" [ref=e16] [box=1296,9,32,32]:
+            - img [box=1304,17,16,16]
+          - button "ใช้ประจำ" [ref=e17] [box=1334,9,96,32]:
+            - img [box=1343,17,16,16]
+            - text: ใช้ประจำ
+          - button "เลือกภาษา" [ref=e19] [cursor=pointer] [box=1436,6,96,38]:
+            - img [ref=e20] [box=1445,17,8,16]
+            - generic [ref=e24] [box=1489,13,34,24]: ภาษาไทย
+          - link "คู่มือ" [ref=e25] [cursor=pointer] [box=1538,4,34,42]:
+            - /url: /manual/menu?lang=th
+            - img [ref=e26] [box=1546,16,18,18]
+          - group "ซูม" [ref=e28] [box=1578,4,190,42]:
+            - button "ซูมเข้า" [ref=e29] [box=1581,7,34,36]:
+              - img [box=1590,17,16,16]
+            - button "เลือกขนาดซูม" [ref=e30] [box=1617,7,112,36]:
+              - img [box=1625,17,16,16]
+              - generic [ref=e31] [box=1649,13,48,24]: 100%
+              - img [box=1705,17,16,16]
+            - button "ซูมออก" [ref=e32] [box=1731,7,34,36]:
+              - img [box=1740,17,16,16]
+          - generic [ref=e33] [box=1774,4,90,42]:
+            - button "เลือกธีมสี" [ref=e34] [cursor=pointer] [box=1774,4,42,42]:
+              - img [ref=e35] [box=1786,16,18,18]
+            - button "เปลี่ยนเป็นธีมมืด" [ref=e42] [cursor=pointer] [box=1822,4,42,42]:
+              - img [ref=e43] [box=1834,16,18,18]
+          - button "jaturapornchai@gmail.com" [ref=e45] [box=1870,9,170,32]:
+            - img [box=1879,17,16,16]
+            - generic [ref=e46] [box=1899,13,112,24]: jaturapornchai@gmail.com
+            - img [box=2015,17,16,16]
+      - navigation "เมนู" [ref=e47] [box=0,51,2048,37]:
+        - generic [ref=e49] [box=8,55,2032,28]:
+          - button "ภาพรวม" [ref=e50] [box=8,55,89,28]:
+            - img [box=16,61,16,16]
+            - text: ภาพรวม
+          - button "งานประจำ 32" [ref=e51] [box=101,55,151,28]:
+            - img [box=109,61,16,16]
+            - generic [ref=e52] [box=129,57,66,24]: งานประจำ
+            - generic [ref=e53] [box=199,61,25,16]: "32"
+            - img [box=229,61,16,16]
+          - button "รายงาน 20" [ref=e54] [box=257,55,134,28]:
+            - img [box=265,61,16,16]
+            - generic [ref=e55] [box=285,57,49,24]: รายงาน
+            - generic [ref=e56] [box=338,61,25,16]: "20"
+            - img [box=367,61,16,16]
+          - button "ข้อมูลหลัก 65" [ref=e57] [box=395,55,154,28]:
+            - img [box=403,61,16,16]
+            - generic [ref=e58] [box=423,57,69,24]: ข้อมูลหลัก
+            - generic [ref=e59] [box=496,61,25,16]: "65"
+            - img [box=525,61,16,16]
+          - button "ตั้งค่า 20" [ref=e60] [box=553,55,120,28]:
+            - img [box=561,61,16,16]
+            - generic [ref=e61] [box=581,57,35,24]: ตั้งค่า
+            - generic [ref=e62] [box=620,61,25,16]: "20"
+            - img [box=649,61,16,16]
+      - generic [ref=e63] [box=0,88,2048,1064]:
+        - tablist "แท็บที่เปิดอยู่" [ref=e65] [box=8,96,2032,46]:
+          - tab "ภาพรวม หน้าแรก" [selected] [ref=e67] [box=14,103,110,34]:
+            - img [ref=e69] [box=26,114,13,13]
+            - generic [ref=e73] [box=48,107,45,14]: ภาพรวม
+            - generic [ref=e74] [box=48,121,68,12]: หน้าแรก
+        - tabpanel [ref=e77] [box=8,150,2028,751]:
+          - generic [ref=e78] [box=8,150,2028,751]:
+            - region "KPI" [ref=e79] [box=8,150,2028,117]:
+              - generic [ref=e80] [box=8,150,498,117]:
+                - generic [ref=e81] [box=9,151,496,78]
+                - generic [ref=e85] [box=21,232,108,22]: จาก Flutter เดิม
+              - generic [ref=e86] [box=518,150,498,117]:
+                - generic [ref=e87] [box=519,151,496,78]
+                - generic [ref=e91] [box=531,232,101,22]: กลุ่มงานประจำ
+              - generic [ref=e92] [box=1028,150,498,117]:
+                - generic [ref=e93] [box=1029,151,496,78]
+                - generic [ref=e97] [box=1041,232,166,22]: รอ migrate หน้าจอรายงาน
+              - generic [ref=e98] [box=1538,150,498,117]:
+                - generic [ref=e99] [box=1539,151,496,78]
+                - generic [ref=e103] [box=1551,232,76,22]: ฐานข้อมูล
+            - generic [ref=e105] [box=8,279,2028,336]:
+              - generic [ref=e106] [box=9,280,2026,66]:
+                - heading "สัดส่วนเมนู" [level=3] [ref=e107] [box=21,292,2002,16]
+                - paragraph [ref=e108] [box=21,314,2002,20]: จำนวน route ที่ migrate มาเป็น Next.js แยกตามหมวดหลัก
+              - application [ref=e112] [box=21,346,2002,256]:
+                - generic [ref=e133] [box=36,348,1748,243]
+            - generic [ref=e154] [box=8,627,2028,275]:
+              - generic [ref=e155] [box=9,628,2026,66]:
+                - heading "ตารางข้อมูล" [level=3] [ref=e156] [box=21,640,2002,16]
+                - paragraph [ref=e157] [box=21,662,2002,20]: ค้นหา กรอง เรียงหน้า เปิด/ปิดคอลัมน์ และเปิดเมนูเป็นแท็บด้วย TanStack Table
+              - generic [ref=e159] [box=21,694,2002,195]:
+                - generic [ref=e160] [box=21,694,2002,40]
+                - table [ref=e166] [box=22,747,2000,97]
+                - generic [ref=e199] [box=21,856,2002,32]
+  - button "Open Next.js Dev Tools" [ref=e207] [cursor=pointer] [box=22,1098,32,32]:
+    - img [ref=e208] [box=22,1094,40,40]
+  - alert [ref=e211] [box=-1,1151,1,1]
+  - generic [ref=e212] [box=0,-20000,7,18]: "0"

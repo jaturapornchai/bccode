@@ -70,14 +70,13 @@ func (svc BranchHttpService) CreateBranch(shopID string, authUsername string, do
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindOneFilter(
-		ctx,
-		shopID,
-		map[string]interface{}{
-			"code":              doc.Code,
-			"businesstype.code": doc.BusinessType.Code,
-		},
-	)
+	normalizedCode, err := models.NormalizeThaiTaxBranchCode(doc.Code)
+	if err != nil {
+		return "", err
+	}
+	doc.Code = normalizedCode
+
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
 	if err != nil {
 		return "", err
 	}
@@ -135,6 +134,20 @@ func (svc BranchHttpService) UpdateBranch(shopID string, guid string, authUserna
 		return errors.New("document not found")
 	}
 
+	normalizedCode, err := models.NormalizeThaiTaxBranchCode(doc.Code)
+	if err != nil {
+		return err
+	}
+	doc.Code = normalizedCode
+
+	existingCodeDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", doc.Code)
+	if err != nil {
+		return err
+	}
+	if len(existingCodeDoc.GuidFixed) > 0 && existingCodeDoc.GuidFixed != guid {
+		return errors.New("branch code is exists")
+	}
+
 	if doc.Departments == nil {
 		doc.Departments = &[]models.Department{}
 	}
@@ -181,6 +194,18 @@ func (svc BranchHttpService) DeleteBranch(shopID string, guid string, authUserna
 		return errors.New("document not found")
 	}
 
+	if models.IsThaiHeadOfficeBranchCode(findDoc.Code) {
+		return errors.New("head office branch cannot be deleted")
+	}
+
+	branchCount, err := svc.repo.Count(ctx, shopID)
+	if err != nil {
+		return err
+	}
+	if branchCount <= 1 {
+		return errors.New("company must have at least one branch")
+	}
+
 	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
 	if err != nil {
 		return err
@@ -196,11 +221,33 @@ func (svc BranchHttpService) DeleteBranchByGUIDs(shopID string, authUsername str
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
+	branchCount, err := svc.repo.Count(ctx, shopID)
+	if err != nil {
+		return err
+	}
+	foundCount := 0
+	for _, guid := range GUIDs {
+		findDoc, err := svc.repo.FindByGuid(ctx, shopID, guid)
+		if err != nil {
+			return err
+		}
+		if len(findDoc.GuidFixed) < 1 {
+			continue
+		}
+		foundCount++
+		if models.IsThaiHeadOfficeBranchCode(findDoc.Code) {
+			return errors.New("head office branch cannot be deleted")
+		}
+	}
+	if branchCount <= foundCount {
+		return errors.New("company must have at least one branch")
+	}
+
 	deleteFilterQuery := map[string]interface{}{
 		"guid_fixed": bson.M{"$in": GUIDs},
 	}
 
-	err := svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
+	err = svc.repo.Delete(ctx, shopID, authUsername, deleteFilterQuery)
 	if err != nil {
 		return err
 	}
@@ -305,7 +352,12 @@ func (svc BranchHttpService) InfoBranchByCode(shopID string, code string) (model
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
 
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", code)
+	normalizedCode, err := models.NormalizeThaiTaxBranchCode(code)
+	if err != nil {
+		return models.BranchInfoResponse{}, err
+	}
+
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, shopID, "code", normalizedCode)
 
 	if err != nil {
 		return models.BranchInfoResponse{}, err
@@ -392,6 +444,14 @@ func (svc BranchHttpService) SaveInBatch(shopID string, authUsername string, dat
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
+
+	for i := range dataList {
+		normalizedCode, err := models.NormalizeThaiTaxBranchCode(dataList[i].Code)
+		if err != nil {
+			return common.BulkImport{}, err
+		}
+		dataList[i].Code = normalizedCode
+	}
 
 	payloadList, payloadDuplicateList := importdata.FilterDuplicate[models.Branch](dataList, svc.getDocIDKey)
 

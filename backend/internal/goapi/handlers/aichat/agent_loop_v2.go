@@ -122,10 +122,10 @@ const maxIterationsV2 = 12
 
 // AgentV2Request — request สำหรับ น้องกุ้ง agent v2
 type AgentV2Request struct {
-	ShopID string   `json:"shop_id" validate:"required"`
+	ShopID    string   `json:"shop_id" validate:"required"`
 	SessionID string   `json:"session_id"`
-	Question string   `json:"question" validate:"required"`
-	Images []string `json:"images,omitempty"` // base64 encoded images
+	Question  string   `json:"question" validate:"required"`
+	Images    []string `json:"images,omitempty"` // base64 encoded images
 	// OutputFormat — "html" or "markdown" (default markdown).
 	// Flutter น้องกุ้ง overlay sets "html" (rendered by flutter_html).
 	// OpenClaw / external OpenAI-compatible clients use "markdown".
@@ -134,7 +134,7 @@ type AgentV2Request struct {
 	// Flutter ส่งค่าจาก checkbox ที่ user เลือก
 	// OpenClaw / clients ที่ไม่ส่ง = ค้นหาทั้งหมดเสมอ
 	SearchDatabase *bool `json:"search_database,omitempty"`
-	SearchKB *bool `json:"search_kb,omitempty"`
+	SearchKB       *bool `json:"search_kb,omitempty"`
 	SearchInternet *bool `json:"search_internet,omitempty"`
 }
 
@@ -225,7 +225,7 @@ func kungSystemPrompt(format string) string {
 // htmlMode: when true, output instructions tell AI to emit HTML tags
 // (Flutter renders via flutter_html). When false, AI emits standard Markdown.
 func buildKungSystemPrompt(today string, htmlMode bool) string {
-	tmpl := `You are "Nong Kung" 🦐 — an AI assistant for a Thai POS/ERP shop (BC Account).
+	tmpl := `You are "Nong Kung" 🦐 — an AI assistant for a Thai POS/accounting shop (BC Account).
 Today: {{TODAY}}
 
 # RULE #1 — NEVER ANSWER WITHOUT THINKING / DATA
@@ -513,7 +513,7 @@ need data), use **🧠 จากความรู้ทั่วไปของ
 Now connect the dots across EVERY source used in section 2. This is where you tell the whole
 story — don't repeat the per-source split. Interpret the result thoroughly and go DEEP:
 
-- **Customer record**: every key field (code, taxid, full name, address, contact, credit terms, last activity), business context (debtor = customer in this ERP, can be B2B/B2C), unusual values
+- **Customer record**: every key field (code, taxid, full name, address, contact, credit terms, last activity), business context (debtor = customer in this business system, can be B2B/B2C), unusual values
 - **Sales data**: WoW/MoM trends, top contributors, anomalies vs average, seasonality
 - **Stock data**: turnover rate, days of supply, dead stock risk, reorder implications
 - **Recipe / how-to**: explain WHY each step matters, ingredient substitutions, common mistakes, regional variations
@@ -971,9 +971,9 @@ func RunAgentLoopV2(ctx context.Context, req AgentV2Request, emitSSE func(SSEEve
 			params     map[string]any
 			source     string
 			// preResolved: ถ้า prep phase สรุปผลแล้ว (validation error / loop) → ไม่ต้อง execute
-			preResolved bool
-			resolvedMsg string // content ของ tool message ที่จะ append
-			resolvedErr string // error string สำหรับ ToolExecution
+			preResolved  bool
+			resolvedMsg  string // content ของ tool message ที่จะ append
+			resolvedErr  string // error string สำหรับ ToolExecution
 			loopDetected bool
 			// post-execute results
 			execResult any

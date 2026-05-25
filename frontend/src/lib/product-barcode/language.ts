@@ -2,7 +2,7 @@
  * UI string pack for Product Barcode screens.
  *
  * Source of truth note:
- * backend `assets/language/languages.tsv` is the canonical ERP label registry.
+ * backend `assets/language/languages.tsv` is the canonical label registry.
  * The keys below should eventually be backed by language API; until those keys
  * land in TSV we keep a local Thai/English fallback so the screen ships.
  * Each key here SHOULD have a matching entry in TSV — see
@@ -80,7 +80,7 @@ const barcodeTextTh = {
   delete: "ลบ",
   preview: "ตัวอย่าง",
   saveSuccess: "บันทึกสินค้าแล้ว",
-  deleteConfirm: "ยืนยันลบสินค้าที่เลือก?",
+  deleteConfirm: "ต้องการลบสินค้าที่เลือกจริงหรือไม่",
   deleteSuccess: "ลบสินค้าแล้ว",
   missingGuid: "รายการที่เลือกไม่มี GUID สำหรับลบ",
   exportSuccess: "ส่งออกข้อมูลที่แสดงอยู่แล้ว",

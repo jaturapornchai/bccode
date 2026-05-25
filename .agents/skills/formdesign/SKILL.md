@@ -1,9 +1,9 @@
 ---
 name: formdesign
-description: Use when applying BC Ai ERP frontend colors and UX/UI visual treatment from the user-approved Ban Chiang / Google Stitch reference. Use only for palette, spacing, surfaces, shadows, layout density, forms, tables, menus, and interaction polish.
+description: Use when applying BC Ai Account frontend colors and UX/UI visual treatment from the user-approved Ban Chiang / Google Stitch reference. Use only for palette, spacing, surfaces, shadows, layout density, forms, tables, menus, and interaction polish.
 ---
 
-# BC Ai ERP Color And UX/UI Skill
+# BC Ai Account Color And UX/UI Skill
 
 ## Scope
 
@@ -54,22 +54,27 @@ Dark theme must be derived through project CSS variables, not by hardcoding a se
 
 ## UX/UI Direction
 
-- Modern ERP/SaaS, warm earth-tone, professional, dense, and data-first.
+- Modern SaaS/business, warm earth-tone, professional, dense, and data-first.
 - Use terracotta for primary action, active navigation, focus, selected state, and key accents.
 - Use cream/paper surfaces instead of stark white where it improves comfort.
 - Use subtle 1px borders for structure.
 - Use soft terracotta-tinted shadows:
   - Rest: `0 4px 12px rgba(160, 64, 53, 0.08)`
   - Hover/popover: `0 8px 24px rgba(160, 64, 53, 0.12)`
-- Avoid heavy black shadows, glassmorphism, large gradients, decorative blobs, and low-contrast text.
+- For core transaction/business screens: Keep them dense, data-first, professional, using warm earth-tone surfaces, subtle 1px borders, and soft terracotta-tinted shadows. Avoid heavy dark shadows, decorative blobs, or low-contrast text.
+- For entry, portal, and workspace selection views: Use premium frosted glassmorphism, linear/radial gradient glows, micro-interactions, scale transitions on hover, and digital chip tags (e.g., monospace terminal tags) to create a striking first impression.
+- **Display Integrity (No Truncation / No Omissions)**: Displayed information (such as IDs, creator emails, titles, and codes) must be fully visible. Do not truncate, clip, or omit details using ellipsis or hidden overflows. Ensure wrapping is enabled (`word-break: break-word` and `white-space: normal`) to preserve readability across all responsive breakpoints.
+- **Grid & Card Layouts**: For entity cards (such as companies, shops, branches), ensure grid columns are wide enough (minimum width 480px) to prevent vertical layout clamping. Use horizontal details rows and flex alignments to display sub-details side-by-side.
 - Decorative Ban Chiang/spiral motifs are allowed only as very low-opacity background accents and must never reduce readability.
 
 ## Density And Layout
 
-- Default to compact ERP spacing: 8px rhythm, 8-16px gaps.
+- Default to compact business spacing: 8px rhythm, 8-16px gaps.
 - Reduce page margins, section padding, toolbar gaps, form row spacing, table/list row height, and control height as far as practical while preserving readability and tap safety.
 - Apply density globally or through shared screen tokens before adding page-specific overrides.
 - Use full-width, wrap-first layouts.
+- Above-the-fold UI is a compact workbench, not a banner. Keep the topbar, category/menu row, tab strip, screen header, and search/action toolbar low-height and dense; use compact controls, tight gaps, and wrapping instead of tall stacked chrome.
+- Do not enlarge these zones with hero-style cards, decorative whitespace, tall tab cards, or default-size utility buttons unless the user explicitly requests a roomier layout for that screen.
 - Popups, dropdowns, menus, and combobox panels must calculate width/position from the trigger and current viewport/container before showing, then clamp to the visible area instead of overflowing to the right.
 - Keep controls compact but touch-safe on mobile.
 - Desktop: sidebar/tree menu + topbar + tab strip + dense content canvas.

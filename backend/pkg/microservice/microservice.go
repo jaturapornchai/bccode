@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"runtime"
@@ -137,10 +138,10 @@ func (ms *Microservice) CheckReadyToStart() error {
 	if mongodbUri != "" {
 		ms.Logger.Debug("[MONGODB]Test Connection.")
 		pst := NewPersisterMongo(ms.config.MongoPersisterConfig())
-		ms.Logger.Debug("connect : ", mongodbUri)
+		ms.Logger.Debug("connect : ", maskConnectionString(mongodbUri))
 		err := pst.TestConnect(context.Background())
 		if err != nil {
-			ms.Logger.Errorf("[MONGODB]Connection Failed(%v)., with error %v", mongodbUri, err)
+			ms.Logger.Errorf("[MONGODB]Connection Failed(%v)., with error %v", maskConnectionString(mongodbUri), err)
 			return err
 		}
 		ms.mongoPersisters[mongodbUri] = pst
@@ -195,6 +196,30 @@ func (ms *Microservice) CheckReadyToStart() error {
 	}
 
 	return nil
+}
+
+func maskConnectionString(raw string) string {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		if strings.Contains(raw, "@") {
+			return "***"
+		}
+		return raw
+	}
+	if parsed.User == nil {
+		return raw
+	}
+	username := parsed.User.Username()
+	if username == "" {
+		parsed.User = url.User("***")
+		return parsed.String()
+	}
+	if _, hasPassword := parsed.User.Password(); hasPassword {
+		parsed.User = url.UserPassword(username, "***")
+	} else {
+		parsed.User = url.User("***")
+	}
+	return parsed.String()
 }
 
 // Start start all registered services

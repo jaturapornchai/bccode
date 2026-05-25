@@ -6,6 +6,52 @@ describe("workspace product unit setup route", () => {
     vi.unstubAllGlobals();
   });
 
+  it("enriches company cards with names from shop info when list-shop only returns ids", async () => {
+    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      const requestUrl = String(url);
+      expect(init?.headers).toMatchObject({ Authorization: "Bearer test-token" });
+
+      if (requestUrl === "http://localhost:8888/list-shop?limit=100") {
+        expect(init?.method).toBe("GET");
+        return Response.json({
+          success: true,
+          data: [{ shopid: "SHOP001", name: "SHOP001", names: null }],
+          total: 1,
+        });
+      }
+
+      if (requestUrl === "http://localhost:8888/shop/SHOP001") {
+        expect(init?.method).toBe("GET");
+        return Response.json({
+          success: true,
+          data: {
+            name1: "บริษัท ทดสอบ จำกัด",
+            names: [{ code: "th", name: "บริษัท ทดสอบ จำกัด" }],
+          },
+        });
+      }
+
+      throw new Error(`Unexpected URL ${requestUrl}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      new Request("http://localhost/api/workspace/shops?backendUrl=http://localhost:8888/goapi", {
+        headers: { Authorization: "Bearer test-token" },
+      }),
+      workspaceContext("shops"),
+    );
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json.data[0]).toMatchObject({
+      shopid: "SHOP001",
+      name: "บริษัท ทดสอบ จำกัด",
+      names: [{ code: "th", name: "บริษัท ทดสอบ จำกัด" }],
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("proxies the product unit existence check to mainapi", async () => {
     const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       expect(String(url)).toBe("http://localhost:8888/unit/list?offset=0&limit=1&q=&sort=unitcode:1");

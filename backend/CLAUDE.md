@@ -3,6 +3,8 @@
 ## Overview
 Unified Go backend: **mainapi** (cloud platform) + **goapi** (BI/analytics API) in one module.
 
+Read `D:\bccode\.agents\rules\bc-account-core-rules.md` and `D:\bccode\.agents\wiki\llm-index.md` before changing backend runtime, database, storage, secret, DEV deployment behavior, or reusable backend LLM knowledge.
+
 - **Module:** `smlcloudplatform`
 - **Go version:** 1.26
 - **Framework:** Echo v4
@@ -89,6 +91,9 @@ Unified Go backend: **mainapi** (cloud platform) + **goapi** (BI/analytics API) 
 ### Docker Stack — Port มาตรฐาน (ใช้ทุกที่เหมือนกัน)
 ใช้ `docker-compose.yml` ไฟล์เดียว ทุก environment (Docker Desktop, VPS, Production)
 
+Local backend development runs on Docker Desktop. Do not require host Go/CGO/librdkafka setup for normal local backend runs; host Go is for focused compiler/toolchain work only.
+Kafka and Redis are mandatory runtime services for MainAPI. Local Docker Desktop runs must include Kafka and Redis, with MainAPI using Docker-network addresses such as `KAFKA_SERVER_URL=kafka:29092` and `REDIS_CACHE_URI=redis:6379`.
+
 **MainAPI — จุดเข้าเดียว (port 8888):**
 - MainAPI มี GoAPI embedded อยู่ข้างใน (ไม่มี reverse proxy)
 - Local: `http://localhost:8888`
@@ -98,22 +103,22 @@ Unified Go backend: **mainapi** (cloud platform) + **goapi** (BI/analytics API) 
 | Service | Host Port | Bind | Note |
 |---------|-----------|------|------|
 | **MainAPI** (gateway) | **8888** | `0.0.0.0` | จุดเข้าเดียว (GoAPI embedded) |
-| MongoDB | 27017 | — | **NATIVE** (ไม่อยู่ Docker) |
-| PostgreSQL | 5432 | — | **NATIVE** (ไม่อยู่ Docker) |
+| MongoDB | Atlas | external | DEV uses MongoDB Atlas via `MONGODB_DEV_URI` from local env/secret files |
+| PostgreSQL | 5432 | server | DEV PostgreSQL runs on `45.144.166.112` |
 | Redis | 6379 | `127.0.0.1` | redis:6379 |
-| ClickHouse HTTP | 8123 | `127.0.0.1` | clickhouse:8123 |
-| ClickHouse Native | 9000 | `127.0.0.1` | clickhouse:9000 |
+| ClickHouse HTTP | 8123 | server | DEV ClickHouse runs on `45.144.166.112` |
+| ClickHouse Native | 9000 | server | DEV ClickHouse runs on `45.144.166.112` |
 | Kafka | 9092 | `127.0.0.1` | kafka:29092 |
 | Zookeeper | — | docker only | zookeeper:2181 |
 | SeaweedFS Master | 9333 | `127.0.0.1` | seaweedfs-master:9333 |
 | SeaweedFS Filer | 18888 | `127.0.0.1` | seaweedfs-filer:8888 |
 | SeaweedFS S3 | 18333 | `127.0.0.1` | seaweedfs-filer:8333 |
 
-**MongoDB + PostgreSQL = NATIVE:**
-- ลง native บน host (ไม่อยู่ใน Docker — ข้อมูลปลอดภัย)
-- Docker containers เข้าถึงผ่าน `host.docker.internal`
-- MongoDB ต้องมี replica set `rs0` (goapi ใช้ change streams)
-- Docker Compose ใช้ `extra_hosts: ["host.docker.internal:host-gateway"]`
+**DEV data services:**
+- MongoDB uses MongoDB Atlas. Supply `MONGODB_DEV_URI` and `MONGODB_DEV_DB` from local env/secret files only.
+- PostgreSQL and ClickHouse run on `45.144.166.112`. Supply credentials from local env/secret files only.
+- System images/files are stored on Cloudflare storage. Supply Cloudflare credentials from local env/secret files only.
+- Do not commit server passwords, MongoDB Atlas connection strings with credentials, Cloudflare tokens, or storage access keys.
 
 **กฏ Port:**
 - **MainAPI (port 8888) เท่านั้น** ที่เปิดออกนอก
@@ -121,9 +126,11 @@ Unified Go backend: **mainapi** (cloud platform) + **goapi** (BI/analytics API) 
 - **Port เดียวกันทุก environment** ไม่ว่า Docker Desktop, VPS, หรือ server ตัวไหน
 - ห้ามเปลี่ยน port mapping — ถ้าต้องการเปลี่ยนต้องแก้ทั้ง compose + CLAUDE.md + Memory
 
-**Domain (กฏ):**
-- **VPS dev:** `api.bcaicloud.com` → `5.223.69.66` (Hetzner)
-- ห้ามใช้ IP ตรง ให้ใช้ domain เสมอ (ยกเว้น SSH)
+**DEV domain/routing rule:**
+- Frontend: `https://dev.bcaicloud.com`
+- Backend: `https://dev.bcaicloud.com/backend`
+- DEV server: `45.144.166.112` (SSH only)
+- Public routing goes through Caddy; internal service ports must not become public workflow requirements.
 
 ### Build Commands
 ```bash
@@ -141,9 +148,9 @@ docker compose up -d
 curl http://localhost:8888/goapi/version
 curl http://localhost:8888/goapi/api/health
 
-# Test — VPS
-curl http://api.bcaicloud.com:8888/goapi/version
-curl http://api.bcaicloud.com:8888/goapi/api/health
+# Test — DEV public route
+curl https://dev.bcaicloud.com/backend/goapi/version
+curl https://dev.bcaicloud.com/backend/goapi/api/health
 ```
 
 ### Import Paths
@@ -170,13 +177,13 @@ MCP เป็น bridge ให้ AI tools ฝั่ง frontend เข้าถ
 - ถ้า frontend ต้องการ API ใหม่ ให้ส่ง API Specification Prompt มาในไฟล์ `prompts/api_requests/{feature}.md`
 - เมื่อได้รับ prompt จาก frontend → สร้าง API ตาม spec + เพิ่ม MCP tool ถ้าจำเป็น
 
-### ERP Language Source Of Truth
-- `assets/language/languages.tsv` is the single source of truth for ERP UI labels, field labels, report names, report headers, report columns, status text, and repeated business terms.
+### Language Source Of Truth
+- `assets/language/languages.tsv` is the single source of truth for UI labels, field labels, report names, report headers, report columns, status text, and repeated business terms.
 - Backend reports, PDF generation, API metadata, and frontend screens must use the same keys from `languages.tsv`; do not maintain separate report-only JSON dictionaries or frontend-only business-label dictionaries that can drift.
 - Language APIs must normalize aliases such as `zh -> cn`, `jp -> ja`, `kr -> ko`, and `tl -> fil`.
 - Fallback order is requested language → English → Thai → key.
 - Report request payloads must pass `language_code`; generated report titles/headers/columns must match frontend screen labels for the same selected language.
-- When adding any visible ERP text, add the key to `assets/language/languages.tsv` and add/update a narrow test for the backend/frontend path using it.
+- When adding any visible business text, add the key to `assets/language/languages.tsv` and add/update a narrow test for the backend/frontend path using it.
 
 ### Multi-Tenant With tenant_id
 - `tenant_id` is the canonical tenant boundary for new backend/API/report work.
@@ -193,12 +200,14 @@ MCP เป็น bridge ให้ AI tools ฝั่ง frontend เข้าถ
 - Use `architecture/high-scale-multitenant-bi.md` as the blueprint for MongoDB -> Kafka -> PostgreSQL -> Kafka -> ClickHouse at high concurrency.
 - Use `architecture/admin-access-control.md` for platform admins, group owners, tenant admins, branch grants, first-admin bootstrap, and policy-based access resolution.
 
-### K3s Production Scaling
-- Docker Desktop/docker-compose remains local/dev only. Use `cluster/k3s` for production/high-concurrency deployment.
-- Do not promise 10,000 concurrent screens until a load test proves the full path: Ingress → mainapi/goapi → PostgreSQL/MongoDB/ClickHouse/Kafka/object storage/report generation.
-- K3s production must use HA control-plane design, SSD-backed datastore, secrets encryption at rest, resource requests/limits, HPA, probes, PodDisruptionBudget, and no hardcoded secrets in manifests.
-- `mainapi` is stateless enough to scale horizontally only when production config is read from Kubernetes Secret/ConfigMap or a shared config service. Mutable per-pod `bootstrap.json` writes are not safe for multiple replicas.
-- Stateful dependencies must be external HA services or dedicated clustered deployments. Do not copy single-node docker-compose infrastructure into production K3s as-is.
+### API Version Compatibility
+- Backend API contracts start at `v1`; future breaking changes must add `v2`, `v3`, and so on.
+- Supported API versions must run side-by-side in the same deployed backend. When `v2` is added, keep `v1` routes/handlers/adapters active at the same time.
+- Route or negotiate the API version per request. Do not rely on a global backend version switch that would break old clients.
+- Keep `v1` backward-compatible for web, iOS, and Android clients that have not updated yet.
+- Version-aware clients should send `X-BC-Required-Backend-Version`, `X-BC-Client-Platform`, and `X-BC-Client-Version`.
+- Backend handlers that participate in versioned contracts should expose active/supported backend versions when practical and reject clearly incompatible clients with a safe, user-readable error.
+- Do not remove or change `v1` behavior until every dependent client version is migrated or a compatibility adapter exists.
 
 ### Kafka
 - `ENABLE_KAFKA=true` in bootstrap.json `service.enable_kafka`

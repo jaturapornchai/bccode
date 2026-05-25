@@ -22,11 +22,11 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import QRCode from "qrcode";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { runtimeGoApiUrlForOrigin } from "@/lib/backend-url";
 import { persistLanguagePreferenceCookies } from "@/lib/backend-language-preload";
 import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
 import { isLocalLoginHost, LOCAL_GOOGLE_TEST_EMAIL } from "@/lib/local-dev-auth";
 import { LanguageDialog } from "./language-dialog";
-import { ManualLink } from "./manual-link";
 import { ThemeToggle } from "./theme-toggle";
 
 type LoginState = "idle" | "loading" | "success" | "error";
@@ -34,6 +34,10 @@ type SignUpState = "idle" | "loading" | "success" | "error";
 type ConnectionState = "idle" | "testing" | "success" | "error";
 type ProviderLoginState = "idle" | "google" | "line" | "local-google";
 type AuthMethod = "password" | "google" | "line";
+type RuntimeMode = {
+  ready: boolean;
+  sameServerBackend: boolean;
+};
 type SocialLoginResponse = {
   success?: boolean;
   status?: "pending" | "success" | "failed" | "expired";
@@ -65,7 +69,6 @@ type SignUpForm = {
   confirmPassword: string;
 };
 
-const DEFAULT_BACKEND_URL = "http://localhost:8888/goapi";
 const SOCIAL_POLL_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_SOCIAL_POLL_INTERVAL_MS = 2000;
 const storageKeys = {
@@ -92,8 +95,7 @@ const emptyLineDialog: LineDialogState = {
 
 export function LoginScreen() {
   const router = useRouter();
-  const [backendUrl, setBackendUrl] = useState(DEFAULT_BACKEND_URL);
-  const [urlHistory, setUrlHistory] = useState<string[]>([]);
+  const [backendUrl, setBackendUrl] = useState("");
   const [language, setLanguage] = useState<LanguageCode>("th");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -104,6 +106,8 @@ export function LoginScreen() {
   const [connectionState, setConnectionState] = useState<ConnectionState>("idle");
   const [connectionMessage, setConnectionMessage] = useState("");
   const [providerLoginState, setProviderLoginState] = useState<ProviderLoginState>("idle");
+  const [runtimeMode, setRuntimeMode] = useState<RuntimeMode>({ ready: false, sameServerBackend: false });
+  const [devGoogleLoginEnabled, setDevGoogleLoginEnabled] = useState(false);
   const [isLocalTestHost, setIsLocalTestHost] = useState(false);
   const [lineDialog, setLineDialog] = useState<LineDialogState>(emptyLineDialog);
   const [signUpOpen, setSignUpOpen] = useState(false);
@@ -116,6 +120,7 @@ export function LoginScreen() {
   const [message, setMessage] = useState("");
   const googlePollTimer = useRef<number | null>(null);
   const linePollTimer = useRef<number | null>(null);
+  const autoConnectionTested = useRef(false);
 
   const canSubmit = useMemo(() => {
     return backendUrl.trim().length > 0 &&
@@ -136,26 +141,21 @@ export function LoginScreen() {
   }, [backendUrl, loginState, providerLoginState, signUpForm.confirmPassword, signUpForm.password, signUpForm.username, signUpState]);
 
   useEffect(() => {
-    const savedBackendUrl = localStorage.getItem(storageKeys.backendUrl);
+    setRuntimeMode({ ready: true, sameServerBackend: isPublicRuntimeHost() });
     const savedLanguage = normalizeLanguage(localStorage.getItem(storageKeys.language) ?? "th");
     const savedUsername = localStorage.getItem(storageKeys.username);
     const savedRemember =
       localStorage.getItem(storageKeys.rememberUsername) === "true" ||
       localStorage.getItem(storageKeys.legacyRememberPassword) === "true";
-    const history = readUrlHistory();
 
     void loadLocalTestLoginAvailability();
-
-    if (savedBackendUrl) {
-      setBackendUrl(savedBackendUrl);
-    } else {
-      void loadConfigUrl();
-    }
+    setBackendUrl(runtimeBackendUrlForCurrentPage());
 
     setLanguage(savedLanguage);
-    setUrlHistory(history);
     setUsername(savedUsername ?? "");
     setRememberUsername(savedRemember);
+    localStorage.removeItem(storageKeys.backendUrl);
+    localStorage.removeItem(storageKeys.backendUrlHistory);
     localStorage.removeItem(storageKeys.legacyPassword);
     localStorage.removeItem(storageKeys.legacyRememberPassword);
 
@@ -171,19 +171,44 @@ export function LoginScreen() {
     persistLanguagePreferenceCookies(language, backendUrl);
   }, [backendUrl, language]);
 
-  async function loadConfigUrl() {
-    try {
-      const response = await fetch("/config.json", { cache: "no-store" });
-      if (!response.ok) return;
-      const data = (await response.json()) as { goapi_url?: string };
-      if (data.goapi_url) setBackendUrl(data.goapi_url);
-    } catch {
-      setBackendUrl(DEFAULT_BACKEND_URL);
-    }
-  }
+  useEffect(() => {
+    if (!backendUrl.trim() || autoConnectionTested.current) return;
+
+    const timer = window.setTimeout(() => {
+      autoConnectionTested.current = true;
+      void (async () => {
+        const targetBackendUrl = runtimeBackendUrlForCurrentPage();
+        if (targetBackendUrl !== backendUrl) {
+          setBackendUrl(targetBackendUrl);
+        }
+
+        setConnectionState("testing");
+        setConnectionMessage("");
+
+        try {
+          const response = await fetch("/api/backend/check", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ backendUrl: targetBackendUrl }),
+          });
+          const data = (await response.json()) as { success?: boolean; message?: string };
+          if (!response.ok || !data.success) throw new Error(data.message ?? t(language, "connectionFailed"));
+          setConnectionState("success");
+          setConnectionMessage(t(language, "connectionSuccess"));
+        } catch (error) {
+          setConnectionState("error");
+          setConnectionMessage(error instanceof Error ? error.message : t(language, "connectionFailed"));
+        }
+      })();
+    }, 350);
+
+    return () => window.clearTimeout(timer);
+  }, [backendUrl, language]);
 
   async function loadLocalTestLoginAvailability() {
-    if (!isLocalLoginHost(window.location.hostname)) {
+    const isLocalHost = isLocalLoginHost(window.location.hostname);
+    if (!isLocalHost && !isPublicRuntimeHost()) {
+      setDevGoogleLoginEnabled(false);
       setIsLocalTestHost(false);
       return;
     }
@@ -191,8 +216,11 @@ export function LoginScreen() {
     try {
       const response = await fetch("/api/auth/google/dev-login", { cache: "no-store" });
       const data = (await response.json()) as { enabled?: boolean };
-      setIsLocalTestHost(response.ok && data.enabled === true);
+      const enabled = response.ok && data.enabled === true;
+      setDevGoogleLoginEnabled(enabled);
+      setIsLocalTestHost(isLocalHost && enabled);
     } catch {
+      setDevGoogleLoginEnabled(false);
       setIsLocalTestHost(false);
     }
   }
@@ -220,6 +248,8 @@ export function LoginScreen() {
     setMessage(t(language, "googleLoginOpening"));
 
     try {
+      if (devGoogleLoginEnabled && (await tryDevGoogleLoginFallback("", true))) return;
+
       const response = await fetch("/api/auth/google/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -234,7 +264,9 @@ export function LoginScreen() {
       };
 
       if (!response.ok || !data.success || !data.sessionId || !data.loginUrl) {
-        throw new Error(data.message ?? t(language, "loginFailed"));
+        const errorMessage = data.message ?? t(language, "loginFailed");
+        if (await tryDevGoogleLoginFallback(errorMessage)) return;
+        throw new Error(errorMessage);
       }
 
       const popup = window.open(data.loginUrl, "bc-google-login", "popup=yes,width=480,height=720");
@@ -254,10 +286,41 @@ export function LoginScreen() {
         void pollGoogleLogin(data.sessionId!);
       }, Math.max(data.pollInterval ?? DEFAULT_SOCIAL_POLL_INTERVAL_MS, 1000));
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : t(language, "loginFailed");
+      if (await tryDevGoogleLoginFallback(errorMessage)) return;
       stopGooglePolling();
       setProviderLoginState("idle");
       setLoginState("error");
-      setMessage(error instanceof Error ? error.message : t(language, "loginFailed"));
+      setMessage(errorMessage);
+    }
+  }
+
+  async function tryDevGoogleLoginFallback(reason: string, force = false): Promise<boolean> {
+    if (!force && !reason.includes("Google login service")) return false;
+
+    try {
+      const targetBackendUrl = runtimeBackendUrlForCurrentPage();
+      if (targetBackendUrl !== backendUrl) {
+        setBackendUrl(targetBackendUrl);
+      }
+
+      const response = await fetch("/api/auth/google/dev-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ backendUrl: targetBackendUrl }),
+      });
+      const data = (await response.json()) as SocialLoginResponse;
+      if (!response.ok || !data.success || !data.token) return false;
+
+      const nextUsername = data.user?.username || data.user?.email || data.user?.name || LOCAL_GOOGLE_TEST_EMAIL;
+      persistLogin(data.backendUrl ?? targetBackendUrl, nextUsername, data.token, data.refresh ?? "", "google", data.user);
+      setLoginState("success");
+      setProviderLoginState("idle");
+      setMessage(t(language, "loginSuccess"));
+      router.push("/workspace");
+      return true;
+    } catch {
+      return false;
     }
   }
 
@@ -535,15 +598,24 @@ export function LoginScreen() {
   }
 
   async function handleConnectionTest() {
+    await runConnectionTest({ automatic: false });
+  }
+
+  async function runConnectionTest(options: { automatic: boolean }) {
+    const targetBackendUrl = runtimeBackendUrlForCurrentPage();
+    if (targetBackendUrl !== backendUrl) {
+      setBackendUrl(targetBackendUrl);
+    }
+
     setConnectionState("testing");
     setConnectionMessage("");
-    setMessage("");
+    if (!options.automatic) setMessage("");
 
     try {
       const response = await fetch("/api/backend/check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ backendUrl }),
+        body: JSON.stringify({ backendUrl: targetBackendUrl }),
       });
       const data = (await response.json()) as { success?: boolean; message?: string };
       if (!response.ok || !data.success) throw new Error(data.message ?? t(language, "connectionFailed"));
@@ -564,7 +636,7 @@ export function LoginScreen() {
     method: AuthMethod,
     profile?: SocialLoginResponse["user"],
   ) {
-    localStorage.setItem(storageKeys.backendUrl, nextBackendUrl);
+    const runtimeBackendUrl = runtimeBackendUrlForCurrentPage(nextBackendUrl);
     localStorage.setItem(storageKeys.rememberUsername, String(rememberUsername));
     if (rememberUsername) {
       localStorage.setItem(storageKeys.username, nextUsername);
@@ -572,13 +644,11 @@ export function LoginScreen() {
       localStorage.removeItem(storageKeys.username);
     }
     localStorage.removeItem(storageKeys.legacyPassword);
-
-    const nextHistory = [nextBackendUrl, ...urlHistory.filter((url) => url !== nextBackendUrl)].slice(0, 10);
-    localStorage.setItem(storageKeys.backendUrlHistory, JSON.stringify(nextHistory));
-    setUrlHistory(nextHistory);
+    localStorage.removeItem(storageKeys.backendUrl);
+    localStorage.removeItem(storageKeys.backendUrlHistory);
     localStorage.setItem(
       storageKeys.auth,
-      JSON.stringify({ token, refresh, username: nextUsername, backendUrl: nextBackendUrl, method, profile: profile ?? null }),
+      JSON.stringify({ token, refresh, username: nextUsername, backendUrl: runtimeBackendUrl, method, profile: profile ?? null }),
     );
   }
 
@@ -641,82 +711,52 @@ export function LoginScreen() {
               <Link className="icon-button settings-link" href="/settings" title={t(language, "settings")} aria-label={t(language, "settings")}>
                 <SettingsIcon aria-hidden="true" size={18} />
               </Link>
-              <div className="lock-badge" aria-hidden="true">
-                <LockKeyhole size={20} />
-              </div>
             </div>
           </div>
 
-          <button
-            className="primary-button signup-open-button email-signup-button"
-            type="button"
-            onClick={handleGoogleLogin}
-            disabled={loginState === "loading" || providerLoginState !== "idle"}
-          >
-            {providerLoginState === "google" ? <Loader2 className="spin" aria-hidden="true" size={18} /> : <UserPlus aria-hidden="true" size={18} />}
-            <span>{t(language, "signUpWithEmail")}</span>
-          </button>
-
-          <div className="first-use-note">
-            <Building2 aria-hidden="true" size={20} />
-            <div>
-              <strong>{t(language, "firstUseTitle")}</strong>
-              <span>{t(language, "firstUseDescription")}</span>
-              <small>{t(language, "multiCompanyDescription")}</small>
-            </div>
-          </div>
-
-          <label className="field-group">
-            <span>{t(language, "backendUrl")}</span>
-            <div className="input-shell">
-              <Server aria-hidden="true" size={18} />
-              <input
-                value={backendUrl}
-                onChange={(event) => {
-                  setBackendUrl(event.target.value);
-                  setConnectionState("idle");
-                  setConnectionMessage("");
-                }}
-                list="backend-url-history"
-                placeholder="http://localhost:8888/goapi"
-                inputMode="url"
-              />
-              <button
-                className="text-action"
-                type="button"
-                onClick={handleConnectionTest}
-                disabled={connectionState === "testing"}
-              >
-                {connectionState === "testing" ? <Loader2 className="spin" size={16} /> : t(language, "testConnection")}
-              </button>
-            </div>
-            {connectionMessage && (
-              <div
-                className={`connection-status-msg ${connectionState === "success" ? "success" : "error"}`}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  fontSize: "0.82rem",
-                  fontWeight: "bold",
-                  marginTop: "2px",
-                  color: connectionState === "success" ? "var(--success)" : "var(--danger)",
-                }}
-              >
-                {connectionState === "success" ? (
-                  <CheckCircle2 size={14} />
-                ) : (
-                  <AlertCircle size={14} />
-                )}
-                <span>{connectionMessage}</span>
+          {runtimeMode.ready && !runtimeMode.sameServerBackend ? (
+            <label className="field-group">
+              <span>{t(language, "backendUrl")}</span>
+              <div className="input-shell">
+                <Server aria-hidden="true" size={18} />
+                <input
+                  value={backendUrl}
+                  readOnly
+                  aria-readonly="true"
+                  placeholder="/backend/goapi"
+                />
+                <button
+                  className="text-action"
+                  type="button"
+                  onClick={handleConnectionTest}
+                  disabled={connectionState === "testing"}
+                >
+                  {connectionState === "testing" ? <Loader2 className="spin" size={16} /> : t(language, "testConnection")}
+                </button>
               </div>
-            )}
-            <datalist id="backend-url-history">
-              {urlHistory.map((url) => (
-                <option key={url} value={url} />
-              ))}
-            </datalist>
-          </label>
+              {connectionMessage && (
+                <div
+                  className={`connection-status-msg ${connectionState === "success" ? "success" : "error"}`}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: "0.82rem",
+                    fontWeight: "bold",
+                    marginTop: "2px",
+                    color: connectionState === "success" ? "var(--success)" : "var(--danger)",
+                  }}
+                >
+                  {connectionState === "success" ? (
+                    <CheckCircle2 size={14} />
+                  ) : (
+                    <AlertCircle size={14} />
+                  )}
+                  <span>{connectionMessage}</span>
+                </div>
+              )}
+            </label>
+          ) : null}
 
           <label className="field-group">
             <span>{t(language, "username")}</span>
@@ -762,7 +802,6 @@ export function LoginScreen() {
               />
               <span>{t(language, "rememberUsername")}</span>
             </label>
-            <ManualLink language={language} screen="login" />
           </div>
 
           {message ? (
@@ -824,6 +863,25 @@ export function LoginScreen() {
               <span>{t(language, "loginWithLine")}</span>
             </button>
           </div>
+
+          <div className="first-use-note">
+            <Building2 aria-hidden="true" size={20} />
+            <div>
+              <strong>{t(language, "firstUseTitle")}</strong>
+              <span>{t(language, "firstUseDescription")}</span>
+              <small>{t(language, "multiCompanyDescription")}</small>
+            </div>
+          </div>
+
+          <button
+            className="primary-button signup-open-button email-signup-button"
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={loginState === "loading" || providerLoginState !== "idle"}
+          >
+            {providerLoginState === "google" ? <Loader2 className="spin" aria-hidden="true" size={18} /> : <UserPlus aria-hidden="true" size={18} />}
+            <span>{t(language, "signUpWithEmail")}</span>
+          </button>
         </form>
 
         {signUpOpen ? (
@@ -981,15 +1039,11 @@ export function LoginScreen() {
   );
 }
 
-function readUrlHistory(): string[] {
-  const raw = localStorage.getItem(storageKeys.backendUrlHistory);
-  if (!raw) return [];
+function runtimeBackendUrlForCurrentPage(fallback = ""): string {
+  if (typeof window === "undefined") return fallback;
+  return runtimeGoApiUrlForOrigin(window.location.origin);
+}
 
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((value): value is string => typeof value === "string").slice(0, 10);
-  } catch {
-    return [];
-  }
+function isPublicRuntimeHost(): boolean {
+  return typeof window !== "undefined" && !window.location.hostname.includes("localhost") && !window.location.hostname.includes("127.0.0.1");
 }

@@ -60,3 +60,4 @@ app.log
 
 # Config (contains credentials — DO NOT commit)
 bootstrap.json
+custom_config.json

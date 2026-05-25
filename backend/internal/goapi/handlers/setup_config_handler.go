@@ -957,8 +957,8 @@ func SetupSeedConfigHandler(c echo.Context) error {
 		// MongoDB DEV ใช้สำหรับ run บน local เท่านั้น; UAT/PRO จะตั้งค่าตอน deploy บน internet ภายหลัง
 		{Category: "mongodb_dev", Key: "uri", Value: envFirst("MONGODB_DEV_URI", "MONGODB_URI"), Description: "MongoDB DEV Local Connection URI", IsSecret: true},
 		{Category: "mongodb_dev", Key: "database", Value: envFirst("MONGODB_DEV_DB", "MONGODB_DEV_DATABASE", "MONGO_DB_NAME", "MONGODB_DB", "MONGODB_DATABASE_NAME"), Description: "MongoDB DEV Local Database Name", IsSecret: false},
-		{Category: "mongodb", Key: "uri", Value: os.Getenv("MONGODB_URI"), Description: "Legacy MongoDB URI (DEV fallback only)", IsSecret: true},
-		{Category: "mongodb", Key: "database", Value: envFirst("MONGODB_DB", "MONGO_DB_NAME", "MONGODB_DATABASE_NAME"), Description: "Legacy MongoDB Database Name (DEV fallback only)", IsSecret: false},
+		{Category: "mongodb", Key: "uri", Value: os.Getenv("MONGODB_URI"), Description: "Legacy MongoDB URI (explicit compatibility only)", IsSecret: true},
+		{Category: "mongodb", Key: "database", Value: envFirst("MONGODB_DB", "MONGO_DB_NAME", "MONGODB_DATABASE_NAME"), Description: "Legacy MongoDB Database Name (explicit compatibility only)", IsSecret: false},
 
 		// PostgreSQL
 		{Category: "postgresql", Key: "host", Value: os.Getenv("POSTGRES_HOST"), Description: "PostgreSQL Host", IsSecret: false},
@@ -986,6 +986,7 @@ func SetupSeedConfigHandler(c echo.Context) error {
 		{Category: "integrations", Key: "r2_account_id", Value: os.Getenv("R2_ACCOUNT_ID"), Description: "Cloudflare R2 Account ID", IsSecret: false},
 		{Category: "integrations", Key: "r2_access_key_id", Value: os.Getenv("R2_ACCESS_KEY_ID"), Description: "Cloudflare R2 Access Key", IsSecret: true},
 		{Category: "integrations", Key: "r2_secret_access_key", Value: os.Getenv("R2_SECRET_ACCESS_KEY"), Description: "Cloudflare R2 Secret Key", IsSecret: true},
+		{Category: "integrations", Key: "r2_bucket_name", Value: os.Getenv("R2_BUCKET_NAME"), Description: "Cloudflare R2 Bucket Name", IsSecret: false},
 	}
 
 	db := getSetupDB()

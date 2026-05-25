@@ -20,6 +20,7 @@ type bootstrapConfig struct {
 	Service           map[string]string `json:"service"`
 	Integrations      map[string]string `json:"integrations"`
 	Storage           map[string]string `json:"storage"`
+	Kafka             map[string]string `json:"kafka"`
 }
 
 // configMapping กำหนดว่า Setup Config key ไหน map กับ env var อะไรบ้าง
@@ -51,6 +52,7 @@ var configMapping = map[string]map[string][]string{
 		"database_name": {"CH_DATABASE_NAME"},
 	},
 	"service": {
+		"enable_kafka":        {"ENABLE_KAFKA"},
 		"log_level":           {"LOG_LEVEL"},
 		"jwt_secret_key":      {"JWT_SECRET_KEY"},
 		"dev_api_mode":        {"DEV_API_MODE"},
@@ -76,6 +78,9 @@ var configMapping = map[string]map[string][]string{
 		"s3_access_key_id":     {"S3_ACCESS_KEY_ID"},
 		"s3_secret_access_key": {"S3_SECRET_ACCESS_KEY"},
 		"s3_bucket_name":       {"S3_BUCKET_NAME"},
+	},
+	"kafka": {
+		"server_url": {"KAFKA_SERVER_URL"},
 	},
 }
 
@@ -133,6 +138,7 @@ func mergeCustomConfig(base *bootstrapConfig, customData []byte) error {
 	mergeMap(&base.Service, custom.Service)
 	mergeMap(&base.Integrations, custom.Integrations)
 	mergeMap(&base.Storage, custom.Storage)
+	mergeMap(&base.Kafka, custom.Kafka)
 
 	return nil
 }
@@ -194,6 +200,7 @@ func LoadBootstrapConfig() {
 	overrideCount += applyBootstrapSection("service", cfg.Service)
 	overrideCount += applyBootstrapSection("integrations", cfg.Integrations)
 	overrideCount += applyBootstrapSection("storage", cfg.Storage)
+	overrideCount += applyBootstrapSection("kafka", cfg.Kafka)
 
 	// ตั้งค่า default สำหรับ Redis และ Kafka (ไม่ต้องตั้งใน bootstrap.json)
 	setDefaultEnvVars()

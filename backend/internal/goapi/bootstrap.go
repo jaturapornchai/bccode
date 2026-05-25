@@ -641,6 +641,7 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string) {
 
 	// Language API
 	g.GET("/api/language/:lang", handlers.GetLanguageHandler)
+	g.GET("/api/address/thailand", handlers.GetThailandAddressHandler)
 
 	// Image endpoints
 	authGroup.POST("/image/upload", handlers.ImageUploadHandler)

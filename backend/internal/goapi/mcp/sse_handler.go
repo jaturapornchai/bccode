@@ -23,29 +23,29 @@ const (
 // JSONRPCRequest represents a JSON-RPC 2.0 request
 type JSONRPCRequest struct {
 	JSONRPC string          `json:"jsonrpc"`
-	ID interface{}     `json:"id,omitempty"`
-	Method string          `json:"method"`
-	Params json.RawMessage `json:"params,omitempty"`
+	ID      interface{}     `json:"id,omitempty"`
+	Method  string          `json:"method"`
+	Params  json.RawMessage `json:"params,omitempty"`
 }
 
 // JSONRPCResponse represents a JSON-RPC 2.0 response
 type JSONRPCResponse struct {
 	JSONRPC string        `json:"jsonrpc"`
-	ID interface{}   `json:"id,omitempty"`
-	Result interface{}   `json:"result,omitempty"`
-	Error *JSONRPCError `json:"error,omitempty"`
+	ID      interface{}   `json:"id,omitempty"`
+	Result  interface{}   `json:"result,omitempty"`
+	Error   *JSONRPCError `json:"error,omitempty"`
 }
 
 // JSONRPCError represents a JSON-RPC 2.0 error
 type JSONRPCError struct {
-	Code int         `json:"code"`
+	Code    int         `json:"code"`
 	Message string      `json:"message"`
-	Data interface{} `json:"data,omitempty"`
+	Data    interface{} `json:"data,omitempty"`
 }
 
 // MCP Tool Definition
 type MCPToolDef struct {
-	Name string                 `json:"name"`
+	Name        string                 `json:"name"`
 	Description string                 `json:"description,omitempty"`
 	InputSchema map[string]interface{} `json:"input_schema"`
 }
@@ -304,7 +304,7 @@ func (s *MCPServer) handleInitialize(params json.RawMessage) map[string]interfac
 			"tools": map[string]interface{}{},
 		},
 		"serverInfo": map[string]interface{}{
-			"name":    "BC Cloud ERP MCP Server",
+			"name":    "BC Cloud MCP Server",
 			"version": "1.0.0",
 		},
 	}
@@ -1882,7 +1882,7 @@ func (s *MCPServer) handleToolsListFiltered(session *SSESession) map[string]inte
 // handleToolCall handles tool invocation
 func (s *MCPServer) handleToolCall(ctx context.Context, session *SSESession, params json.RawMessage) (interface{}, error) {
 	var callParams struct {
-		Name string                 `json:"name"`
+		Name      string                 `json:"name"`
 		Arguments map[string]interface{} `json:"arguments"`
 	}
 

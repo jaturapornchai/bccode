@@ -302,17 +302,16 @@ export const MENU_SECTIONS: MenuSection[] = [
         id: "company-system",
         title: { key: "system_settings", th: "ตั้งค่าระบบ", en: "System Settings" },
         items: [
+          tx("active-languages", "ภาษาที่ใช้งาน", "Active Languages", "/active_languages", "settings"),
           tx("user", "ผู้ใช้งาน", "User", "/user", "settings"),
-          tx("permission-definition", "กำหนดสิทธิ์", "Permission Definition", "/permission_definition", "settings"),
+          tx("permission-definition", "กำหนดสิทธิ์หน้าจอ", "Permission Definition", "/permission_definition", "settings"),
+          tx("permission-group", "กำหนดสิทธิ์ตามกลุ่ม", "Permission Group", "/permission_group", "settings"),
           tx("approval-setting", "สิทธิ์การอนุมัติ", "Approval Permission", "/approval_setting", "settings"),
-          tx("permission-link", "ผูกสิทธิ์", "Permission Link", "/permission_link", "settings"),
+          tx("permission-link", "กำหนดสิทธิ์พนักงาน", "Permission Link", "/permission_link", "settings"),
           tx("currency", "สกุลเงิน", "Currency", "/currency", "settings"),
           tx("company-type", "ประเภทธุรกิจ", "Business Type", "/business_type_screen", "settings"),
           tx("company", "บริษัท", "Company", "/company", "settings"),
           tx("branch", "สาขา", "Branch", "/branch", "settings"),
-          tx("department", "แผนก", "Department", "/department", "settings"),
-          tx("workday", "วันทำงาน", "Work Day", "/work_day_screen", "settings"),
-          tx("holiday", "วันหยุด", "Holiday", "/holiday_screen", "settings"),
           tx("employee", "พนักงาน", "Employee", "/employee", "settings"),
           tx("line-oa-user-link", "เชื่อม LINE OA", "Connect LINE OA", "/line-oa", "settings"),
           tx("form-design", "ออกแบบฟอร์ม", "Form Design", "/formdesign", "settings"),
@@ -330,7 +329,7 @@ export function menuText(label: MenuLabel, language: LanguageCode, dictionary?: 
   const fromBackend = label.key ? dictionary?.[label.key] : "";
   if (fromBackend) return fromBackend;
   if (label.key && dictionary && !isBackendLanguageReady(dictionary)) return label[language] || label.en || label.th || "";
-  return label.key || label[language] || label.en || label.th;
+  return label[language] || label.en || label.th || label.key || "";
 }
 
 export function flattenMenuItems(): MenuItem[] {

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { sanitizeBackendLanguageDictionary } from "@/lib/backend-language-sanitize";
 import { validateBackendUrl } from "@/lib/backend-url";
 
 type LanguageProxyContext = {
@@ -36,7 +37,7 @@ export async function GET(request: Request, context: LanguageProxyContext) {
     if (!response.ok || !data || typeof data !== "object" || Array.isArray(data)) {
       return NextResponse.json({ success: false, message: "โหลดภาษาไม่สำเร็จ" }, { status: 502 });
     }
-    return NextResponse.json(data, { status: 200 });
+    return NextResponse.json(sanitizeBackendLanguageDictionary(data as Record<string, string>), { status: 200 });
   } catch {
     return NextResponse.json({ success: false, message: "เชื่อมต่อ backend language API ไม่สำเร็จ" }, { status: 504 });
   } finally {

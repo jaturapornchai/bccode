@@ -12,6 +12,9 @@
 - Read active project files first: `AGENTS.md`, `CLAUDE.md`, README, source code, tests, and local docs.
 - Do not rely on deleted shared skill folders.
 - Do not guess APIs, schemas, enum values, SQL, workflows, or config.
+- **Conflict Rule**: `AGENTS.md` and `D:\bccode\.agents\rules\bc-account-core-rules.md` are the canonical rule sources. `AI_INDEX.md`, `.agents\wiki\llm-index.md`, and local skills are routing layers. If a skill/wiki/LLM page duplicates and conflicts with the canonical rules, update that downstream file to link back to the canonical source instead of creating another variant.
+- **Token Budget Rule For Agent Assets**: Keep skills, wiki/LLM pages, prompts, handoffs, checklists, and workflow docs router-first and short. Put durable project facts in the canonical rule/source file once, then link to it. Do not copy long runtime, deployment, storage, version, or security blocks into every skill.
+- **Skill Upgrade Rule**: If any code change modifies, refines, or affects a system pattern, layout contract, or business rule that relates to an existing skill (found under `D:\bccode\.agents\skills\`), you MUST proactively update and upgrade the matching `SKILL.md` file immediately. This ensures that the agent's core skills stay synchronized, prevents regressions, and enables continuous, incremental development without reverting to old behaviors.
 
 ## AI Truth Verification Rule
 - AI must not guess, fabricate, invent, embellish, or fill missing details as fact.
@@ -20,9 +23,15 @@
 - If a fact cannot be verified, state clearly that it is unverified and do not present it as true.
 - Distinguish confirmed evidence, assumptions, and recommendations. Never mix assumptions into factual summaries.
 
+## No Fallback Rule
+- Do not silently substitute missing config, API routes, storage providers, database values, language keys, business defaults, credentials, tenant/branch context, or user/company data.
+- If a required value is missing, invalid, unauthorized, unreachable, or unverified, stop that operation and show a clear error with the real reason and the missing source/key/env/route when it is safe to reveal.
+- Do not route image/file upload to old storage, mock data, legacy endpoints, local labels, hardcoded defaults, or derived credentials when the configured source is unavailable.
+- Migration compatibility must be explicit and tested; it must not be hidden as automatic fallback behavior.
+
 ## License / Copyright Rule
 - Treat third-party code, templates, UI kits, design systems, images, icons, fonts, screenshots, generated assets, sample code, and documentation as legally sensitive until their license and usage rights are verified.
-- Use external ERP/UI systems such as SAP Fiori, Odoo, ERPNext, React-admin, Refine, shadcn/ui, and similar products only as references for general UX patterns, workflows, and floorplans. Do not copy their code, assets, branding, screenshots, visual identity, or screen layouts one-to-one.
+- Use external business/UI systems such as SAP Fiori, Odoo, ERPNext, React-admin, Refine, shadcn/ui, and similar products only as references for general UX patterns, workflows, and floorplans. Do not copy their code, assets, branding, screenshots, visual identity, or screen layouts one-to-one.
 - New UI must be implemented as original BC Ai Account work using project-owned code and approved dependencies. Inspiration is allowed; direct reproduction is not.
 - Before adding a dependency, template, component registry item, icon pack, font, image, or generated asset, verify the license from an official or primary source and record enough evidence in the task summary or local docs when the choice affects distribution.
 - Prefer permissive licenses that are normally suitable for commercial/customer installation, such as MIT, Apache-2.0, BSD, and ISC, after verifying the actual project license.
@@ -34,6 +43,7 @@
 
 ## AI Coding Rules (Pareto-style)
 - Be concise, technical, actionable, and answer in Thai.
+- **Brainstorm & Plan First Rule**: Before editing, creating, or implementing any features or UI, brainstorm the absolute best, most beautiful, and easiest-to-use UX/UI and technical solutions. Outline and review the implementation plan, write/update code incrementally, and perform thorough testing to verify the changes before claiming completion.
 - No magic: if infra, code, API, schema, or file path is not verified, state the assumption or ask first.
 - Verify before saying done. Use tests, build, curl, logs, browser check, or diff evidence; if verification is not possible, say why.
 - Use web/docs for external facts, especially facts that may change such as versions, pricing, recent releases, external API behavior, legal/licensing, standards, product/service capabilities, and public company/provider claims.
@@ -47,19 +57,21 @@
 - For substantial task closeouts, always end with: `✅ Pros`, `⚠️ Cons / Risks`, and `💡 Recommendations`.
 
 ## No Mock Data Rule
-- Do not create or rely on mock, fake, dummy, demo, sample, placeholder, or invented business data when testing workflows, screens, API behavior, ERP logic, permissions, approvals, reports, tenant isolation, or database behavior.
+- Do not create or rely on mock, fake, dummy, demo, sample, placeholder, or invented business data when testing workflows, screens, API behavior, business logic, permissions, approvals, reports, tenant isolation, or database behavior.
 - Use real data from the selected DEV database for development verification. For UAT or PRO, read or write data only when the task explicitly allows that environment and the action is safe under the environment rules.
 - If a test needs temporary records, create them in the real DEV database through the real application/API flow, mark them with a clear test prefix, verify the behavior, and clean them up before completion.
-- Do not replace real integration checks with mocked API responses for feature completion claims. Mocking low-level technical failures is allowed only for isolated unit tests where no business data or ERP behavior is being validated.
+- Do not replace real integration checks with mocked API responses for feature completion claims. Mocking low-level technical failures is allowed only for isolated unit tests where no business data or business behavior is being validated.
+- When debugging data issues, query or search the real selected DEV data source through the approved path: backend API, MongoDB Atlas, server-hosted PostgreSQL, server-hosted ClickHouse, Kafka, or Redis. If real data access is blocked, say so and mark the answer unverified.
 - Final reports must distinguish real database verification from unit tests or static checks.
 
 ## Context Budget Rule
 - Keep Codex/agent context small by default. Start from the requested module, current source, tests, and narrow runtime evidence; do not scan or load the whole repo unless explicitly requested.
 - Start each coding task from `AI_INDEX.md` when available. Use it as the routing map, then open only the listed files for the task area.
+- For rule-sensitive work, read `D:\bccode\.agents\rules\bc-account-core-rules.md` as the single runtime/deployment/storage/version reference; do not load every skill just to re-read duplicated rules.
 - Use `rg` and `rg --files` so root `.ignore` is respected. Do not use broad recursive `Get-ChildItem`/full-tree reads unless a task specifically requires inventory.
 - Do not read generated or bulky files into context by default: `backend/docs/**`, `backend/api/swagger/**`, `backend/assets/fonts/**`, `backend/tdict-std.txt`, lockfiles, screenshots/images, `.playwright-mcp/**`, `manual/*.json`, build outputs, runtime logs, dependency folders, duplicate skill packs, or legacy Flutter/reference trees, except when the task is explicitly a frontend migration/clone/reference-screen task.
 - For `backend/assets/language/languages.tsv`, never open the full file. Query exact keys only, for example `rg -n "^permission_link\t|^new_item\t" backend/assets/language/languages.tsv`.
-- During fast UI iteration, do not edit `languages.tsv` for every small label change. Use stable language keys with local fallback text, then record missing or provisional keys under `backend/prompts/language_requests/` for later batch translation.
+- During fast UI iteration, do not edit `languages.tsv` for every small label change. Use stable language keys, show an explicit missing-translation error when a key is absent, and record missing or provisional keys under `backend/prompts/language_requests/` for later batch translation.
 - For API behavior, read handlers/services/tests first. Use generated Swagger only when the task is specifically about OpenAPI docs.
 - Use project-local root skills under `D:\bccode\.agents` only. Ignore duplicate skill bundles under `backend/.agents`, `.claude`, `.cline`, `.roo`, `.kiro`, `.kilocode`, and `bcai-claude-skills` unless explicitly requested.
 - Prefer line-range reads and symbol/function-level inspection for files over 50 KB. Files currently known to be large include `frontend/src/app/system-settings/system-settings-screen.tsx` and `frontend/src/app/menu/main-menu-screen.tsx`.
@@ -115,28 +127,58 @@
 - DEV mode should emit detailed console/server logs for environment, route, source, target, tenant/shop id, counts, and safe masked connection metadata to make debugging easy. PRO must avoid noisy logs and must not log secrets, tokens, passwords, or full connection strings.
 - Environment names in APIs/config should be normalized to `dev`, `uat`, and `pro`. Legacy aliases such as `development`, `local`, `production`, and `prod` may be accepted only after explicit normalization.
 
-## ERP Language Source Of Truth Rule
+## Development and Deployment Rules
+- Frontend runs locally on the host machine for speed, usually from `D:\bccode\frontend`.
+- Backend runs on Docker Desktop for local development, using MainAPI as the single entrypoint on `http://localhost:8888`.
+- After changing backend code, backend Docker config, or backend runtime config, automatically rebuild and recreate the affected Docker Desktop service before claiming completion. Default command: `cd D:\bccode\backend; docker-compose up -d --no-deps --build mainapi`, then verify `http://localhost:8888/healthz` or the changed route.
+- Kafka and Redis are mandatory backend runtime services. Keep them running with MainAPI and use Docker-network addresses such as `KAFKA_SERVER_URL=kafka:29092` and `REDIS_CACHE_URI=redis:6379`.
+- DEV MongoDB uses MongoDB Atlas through local env/secret files only.
+- System images/files are stored on Cloudflare storage through local env/secret files only.
+- Cloudflare upload runtime must use explicit R2 config: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, and `R2_BUCKET_NAME`. A standalone Cloudflare API token must not be treated as upload-ready config.
+- DEV PostgreSQL and ClickHouse run on server `45.144.166.112` with credentials from local env/secret files only.
+- Deploy to DEV only when Jead explicitly says `deploy dev`.
+- `deploy dev` means build and deploy both backend and frontend together.
+- DEV public URLs are frontend `https://dev.bcaicloud.com` and backend `https://dev.bcaicloud.com/backend`.
+- DEV public routing must go through Caddy on `dev.bcaicloud.com`; the public HTTP entrypoint is port `80`, and internal service ports must not become public workflow requirements.
+- Never write server passwords, MongoDB Atlas connection strings with credentials, or Cloudflare tokens into repo files, docs, skills, prompts, logs, commits, PR text, or chat summaries.
+
+## API Version Compatibility Rule
+- Backend API contracts must be versioned. The current baseline is `v1`; future breaking changes must add `v2`, `v3`, and so on.
+- Supported backend API versions must work side-by-side in the same deployed backend. When `v2` exists, `v1` and `v2` must both continue serving requests at the same time for old and new clients.
+- Version selection must be explicit per request through URL versioning and/or request metadata. Do not use a single global backend mode that turns off older API versions.
+- Keep `v1` backward-compatible for clients that cannot update immediately, including frontend web, iOS, and Android.
+- Frontend web, iOS, and Android clients must declare the backend contract version they require. Preferred request metadata is `X-BC-Required-Backend-Version`, `X-BC-Client-Platform`, and `X-BC-Client-Version`.
+- Backend responses for version-aware endpoints should expose the active backend API version and supported versions, so clients can block or warn before calling incompatible APIs.
+- Release and deploy checks must include a compatibility matrix: frontend web version, iOS version, Android version, required backend version, and deployed backend supported versions.
+- Do not remove, rename, or change the behavior of a `v1` contract until every dependent client version is verified as migrated or a compatibility adapter exists.
+
+## Language Source Of Truth Rule
 - Supported UI languages for the whole system are exactly: Thai (`th`), English (`en`), Chinese (`cn`), Japanese (`ja`), Korean (`ko`), Lao (`lo`), Myanmar/Burmese (`my`), Khmer (`km`), Vietnamese (`vi`), Malay (`ms`), Indonesian (`id`), and Filipino (`fil`).
-- Every new visible UI label, placeholder, hint text, helper text, tooltip, option label, validation message, status, dialog text, manual text, report label, and repeated ERP/business term must eventually support all 12 languages above. Prefer backend `backend/assets/language/languages.tsv` as the source; during UI iteration, a stable key with a local Thai/English fallback is allowed if the missing key is recorded for batch translation.
-- Backend `backend/assets/language/languages.tsv` is the single source of truth for ERP UI labels, common field labels, report names, report headers, report columns, status text, and repeated business terms.
+- Every new visible UI label, placeholder, hint text, helper text, tooltip, option label, validation message, status, dialog text, manual text, report label, and repeated business term must eventually support all 12 languages above. Prefer backend `backend/assets/language/languages.tsv` as the source; during UI iteration, a missing key must show an explicit missing-translation error and be recorded for batch translation.
+- Backend `backend/assets/language/languages.tsv` is the single source of truth for UI labels, common field labels, report names, report headers, report columns, status text, and repeated business terms.
 - Default language is Thai (`th`). If no language is selected, invalid, or missing from session/config, normalize to `th`.
-- Do not hardcode visible business/menu/screen/report text directly in frontend or report code. Use a stable language id/key and resolve the displayed text from backend `languages.tsv` when available; temporary fallback text is allowed only with a tracked missing-language request.
-- When adding or changing any screen, menu, report, placeholder, hint/helper text, option, status, or validation text during development, do not force an immediate `languages.tsv` edit. Add or update `languages.tsv` only when the key is already nearby, the change is release-ready, or the user explicitly asks for translations. Otherwise record the key, fallback text, screen/module, and reason under `backend/prompts/language_requests/`.
+- Do not hardcode visible business/menu/screen/report text directly in frontend or report code. Use a stable language id/key and resolve the displayed text from backend `languages.tsv`; if the key is missing, show an explicit missing-translation error instead of temporary text.
+- When adding or changing any screen, menu, report, placeholder, hint/helper text, option, status, or validation text during development, do not force an immediate `languages.tsv` edit. Add or update `languages.tsv` only when the key is already nearby, the change is release-ready, or the user explicitly asks for translations. Otherwise record the key, intended text, screen/module, and reason under `backend/prompts/language_requests/`.
 - Frontend and backend reports must use the same language keys from `languages.tsv`. Do not create independent frontend-only or report-only dictionaries for business labels unless they are generated/cache layers from this source.
 - Frontend must load the selected language from the backend language API (`/goapi/api/language/:lang` through the configured Backend URL/proxy) and re-render immediately when the user changes language.
 - Backend report generation must accept/pass `language_code`, normalize legacy aliases such as `zh -> cn`, `jp -> ja`, `kr -> ko`, and resolve labels from the shared language system.
 - If a visible translation is wrong or incomplete in a released or report-critical path, fix the backend language key and the caller's language id wiring, not a one-off frontend string.
-- Missing translation fallback may use Thai/English fallback text during development to keep the UI usable. Before release, batch missing keys into `languages.tsv`; report-critical output should not ship with provisional fallback text.
+- Missing translations must not use Thai/English substitute text. Show the missing language key/error visibly during development, then batch missing keys into `languages.tsv` before release.
 - Report screens and report output must display the same translated field names, filters, titles, and columns as the frontend screen for the selected language.
 - Year/calendar labels must use full translated words in every supported UI language, not Thai-only abbreviations such as `พ.ศ.` / `ค.ศ.`, except where space is intentionally constrained and a localized abbreviation is explicitly desired.
 
-## K3s Production Scaling Rule
-- Local development may keep using Docker Desktop, but high-concurrency production deployment for BC Ai Account must use the K3s deployment path under `backend/cluster/k3s`.
-- Docker Desktop may use k3d with `backend/cluster/k3s/overlays/k3d` for local smoke tests only; do not treat k3d/Docker Desktop as production HA.
+## Image Display Rule
+- Fields whose type or meaning is image/file upload must display the actual image preview in read-only/detail views, not only the stored URL/path.
+- Private GoAPI/R2 file paths such as `/goapi/s3/file/...` require bearer auth. Frontend previews must load them with authenticated `fetch`, convert the response to a browser-local object URL, and render that object URL. Do not use the protected path directly as `<img>`/CSS image source because browser image requests cannot attach the auth header.
+- For private images, optimize speed with session-memory object URL caching only. Do not make R2 buckets public, expose direct R2 URLs, store image blobs in `localStorage`/IndexedDB, or enable persistent/shared cache unless Jead explicitly approves that security trade-off.
+- Keep the stored image URL/path visible and fully readable beside or below the preview for debugging and auditability.
+- If the image cannot be loaded, show a visible broken/missing-image state with the original path; do not hide the value or silently substitute another image.
+
+## Production Scaling Rule
+- Current local development and DEV deployment are Docker/Caddy based; K3s/Kubernetes is not part of the active default workflow.
+- Do not load, create, or follow K3s/Kubernetes manifests or cluster docs unless Jead explicitly asks for production scaling or Kubernetes work.
+- If Kubernetes is reintroduced later, keep it in a separate architecture document and do not let it override the local Docker Desktop or DEV Caddy deployment rules.
 - Do not claim support for 10,000 concurrent screens until load testing proves it with real API mix, database latency, object storage, Kafka, report generation, and frontend static asset behavior.
-- K3s production must be high-availability: multiple server nodes, external or embedded etcd/datastore with SSD-backed storage, encrypted secrets at rest, and no hardcoded credentials in manifests or repository files.
-- Stateless app services such as `mainapi` must run as multiple replicas behind Service/Ingress and HPA. Stateful services such as PostgreSQL, MongoDB, Kafka, ClickHouse, Redis, and object storage must be deployed as HA managed services or dedicated clustered components, not single-node demo containers.
-- Production config must come from Kubernetes Secrets/ConfigMaps or a proper config service. Do not rely on mutable per-pod `bootstrap.json` writes for multi-replica deployments.
 
 ## Frontend Responsive Rule
 - Design every screen mobile-first.
@@ -145,6 +187,8 @@
 - Use responsive constraints, flexible grids, and readable touch targets; verify with browser/device viewport checks when changing UI.
 - Use dense, information-first UX/UI globally through CSS variables/tokens first: keep margin, padding, gaps, textbox/input/control height, form spacing, table/list spacing, and decorative whitespace as small as practical so each screen shows maximum useful data, while preserving readable text and usable touch targets. Prefer global CSS density rules over one-off per-screen spacing.
 - Use full-width, wrap-first UX/UI: screen containers, sections, cards, forms, fields, lists, tables, dialogs, and action rows must default to `width: 100%` and `max-width: 100%`, then use flex/grid wrapping to fit the viewport. Avoid fixed widths except for icon-only controls and intentionally fixed-format widgets.
+- Above-the-fold chrome must stay compact. The global topbar, category/menu row, open-tab strip, screen header, and search/action toolbar are data-visibility surfaces, not hero/banner space. Keep desktop controls around compact heights (`h-8`/about 32px where practical), use small padding/gaps, keep tabs and headers low, and wrap controls into tight rows instead of increasing vertical height. Do not reintroduce large `py-3`, `h-10`/`h-11`, decorative header cards, or tall tab strips in these zones unless Jead explicitly requests it.
+- Layout heights and widths must automatically expand and adjust in realtime like Flutter's `Expanded`/flex layout system. Avoid hardcoded viewport height clippings (like static `max-h-[52dvh]`) or inner scrollbars on containers (like checkbox grids or checklist matrices) inside detail views and forms. Instead, let nested components expand to their natural content height, and let the outer pane scroll container (which recalculates viewport height in realtime) handle scrolling to eliminate confusing double scrollbars.
 
 ## Frontend Theme Rule
 - Every screen must support both light and dark themes.
@@ -152,7 +196,7 @@
 - Each screen must have only one light/dark theme switch icon, and it must be placed in the top-most screen controls/header.
 - The theme control must persist the user preference and apply a root theme marker such as `data-theme` so CSS changes immediately.
 - Use CSS variables/tokens for background, foreground/text color, border, shadow, focus, and state colors; do not hardcode one-off screen colors unless there is a documented reason.
-- Prefer `color-scheme`, root theme markers, and `prefers-color-scheme` fallback support, and keep components readable in both modes.
+- Prefer `color-scheme`, root theme markers, and `prefers-color-scheme` only for initial theme detection, and keep components readable in both modes.
 - Combobox, dropdown, menu, and select-like controls must use themed CSS for the trigger and the opened list; avoid native select popups when their option panel cannot reliably follow the active theme.
 - Language selection must use a themed dialog box with national flags from the Flutter reference assets when available; do not use a combobox for language selection.
 - When changing UI, verify light and dark theme rendering for the affected screen.
@@ -167,7 +211,11 @@
 ## No Business Hardcode Rule
 - Do not hardcode company, branch, tenant, currency, timezone, UTC offset, working time, holiday, tax, warehouse, customer, supplier, or business-specific defaults in reusable code.
 - BC Ai Account is multi-company and multi-branch. Defaults must come from persisted company/branch settings, backend language/config data, user input, environment config, or an explicit seed/setup flow.
-- If a fallback is technically required, keep it generic, visible, and overrideable; do not let fallback values silently become business rules.
+- Thailand tax/VAT branch numbering is a legal default: `สำนักงานใหญ่` / head office uses branch code `00000`; `00001` is the first branch office, not the head office.
+- Thai branch codes must be normalized as five-digit strings in persisted data and tax/document output. Input aliases such as `สำนักงานใหญ่`, `สนญ`, `HQ`, and `HO` may normalize to `00000`; numeric input such as `1` or `01` normalizes to `00001`; non-numeric or longer-than-five-digit codes must be rejected for Thai tax branches.
+- A company must always keep at least one branch, and normal CRUD must not delete the head-office branch `00000`.
+- Thai address selection must use the backend licensed dataset at `backend/assets/address/thailand-addresses.json` served by GoAPI `/api/address/thailand`; frontend must call it through the Backend URL/proxy, not bundle the JSON in `frontend/public`. Store official area codes in `province_code`, `district_code`, and `sub_district_code`; store five-digit postal code in `zip_code`.
+- If a required business value/config/data source is unavailable, show an error and stop the operation; do not substitute a generic value or let replacement values become business rules.
 - Working days, holidays, local time, timezone, and UTC offset must be scoped by company and branch where the workflow depends on location.
 - Departments, working days, and holidays must be scoped by branch where branches can differ. Use the selected workspace branch when saving/listing these screens, and store branch timezone/calendar context with date-time values.
 - Persist every backend/API date-time/timestamp value as UTC+0. UI may display local company/branch time, Buddhist Era, or Christian Era, but storage/API payloads must carry UTC+0 values plus explicit timezone/UTC-offset context when local display is needed.

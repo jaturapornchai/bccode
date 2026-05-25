@@ -39,9 +39,8 @@ var (
 	isSeaweedFSMode bool // true เมื่อใช้ SeaweedFS S3 gateway
 )
 
-// GetR2Client - Returns the S3-compatible client (SeaweedFS or R2)
-// ถ้า S3_ENDPOINT ถูก set → ใช้ SeaweedFS S3 gateway
-// ถ้าไม่ → fallback ไปใช้ Cloudflare R2 (backward compatible)
+// GetR2Client returns the explicitly configured S3-compatible client.
+// S3_ENDPOINT enables S3-compatible mode; otherwise Cloudflare R2 config is required.
 func GetR2Client() (*s3.Client, error) {
 	r2InitOnce.Do(func() {
 		s3Endpoint := strings.TrimSpace(os.Getenv("S3_ENDPOINT"))
@@ -50,7 +49,7 @@ func GetR2Client() (*s3.Client, error) {
 			// ─── SeaweedFS S3 Gateway Path ───
 			initSeaweedFS(s3Endpoint)
 		} else {
-			// ─── Cloudflare R2 Path (legacy) ───
+			// ─── Cloudflare R2 Path ───
 			initR2()
 		}
 	})
@@ -134,7 +133,7 @@ func initSeaweedFS(endpoint string) {
 	logger.Info("✅ SeaweedFS S3 client initialized (endpoint: %s, bucket: %s)", endpoint, r2BucketName)
 }
 
-// initR2 สร้าง S3 client สำหรับ Cloudflare R2 (legacy)
+// initR2 สร้าง S3 client สำหรับ Cloudflare R2
 func initR2() {
 	accountID := strings.TrimSpace(os.Getenv("R2_ACCOUNT_ID"))
 	accessKeyID := strings.TrimSpace(os.Getenv("R2_ACCESS_KEY_ID"))
@@ -246,6 +245,14 @@ func InitR2Client() error {
 	return err
 }
 
+func storageConfigErrorMessage(err error) string {
+	const message = "R2 storage is not configured"
+	if err == nil {
+		return message
+	}
+	return fmt.Sprintf("%s: %v", message, err)
+}
+
 // getImageFromR2 - ดึงรูปจาก R2 และ return เป็น bytes
 func getImageFromR2(client *s3.Client, r2Key string) ([]byte, string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -297,7 +304,7 @@ func ImageUploadHandler(c echo.Context) error {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "error",
 			"code":    503,
-			"message": "R2 storage is not configured",
+			"message": storageConfigErrorMessage(err),
 		})
 	}
 
@@ -621,7 +628,7 @@ func ImageGetHandler(c echo.Context) error {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "error",
 			"code":    503,
-			"message": "R2 storage is not configured",
+			"message": storageConfigErrorMessage(err),
 		})
 	}
 
@@ -722,7 +729,7 @@ func ImageDeleteHandler(c echo.Context) error {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "error",
 			"code":    503,
-			"message": "R2 storage is not configured",
+			"message": storageConfigErrorMessage(err),
 		})
 	}
 
@@ -910,7 +917,7 @@ func ImageVerifyHandler(c echo.Context) error {
 		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "error",
 			"code":    503,
-			"message": "R2 storage is not configured",
+			"message": storageConfigErrorMessage(err),
 		})
 	}
 

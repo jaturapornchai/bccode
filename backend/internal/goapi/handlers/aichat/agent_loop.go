@@ -73,7 +73,7 @@ const maxIterations = 10
 // agentSystemPrompt — system prompt สำหรับ agent (ภาษาไทย)
 func agentSystemPrompt() string {
 	today := time.Now().Format("2006-01-02")
-	return fmt.Sprintf(`คุณเป็นผู้ช่วย AI สำหรับระบบ POS/ERP ของร้านค้า
+	return fmt.Sprintf(`คุณเป็นผู้ช่วย AI สำหรับระบบ POS/บัญชี ของร้านค้า
 คุณมี tools สำหรับดึงข้อมูลจากระบบ — ใช้ tools เพื่อตอบคำถามของผู้ใช้
 
 วันที่ปัจจุบัน: %s

@@ -6,7 +6,10 @@ export type LocalizedName = {
 export type ShopListItem = {
   shopid: string;
   name?: string;
+  name1?: string;
   names?: LocalizedName[];
+  companyname?: string;
+  company_name?: string;
   branchcode?: string;
   role?: number;
   is_favorite?: boolean;
@@ -63,7 +66,12 @@ export function localizedName(names: LocalizedName[] | undefined, fallback = "")
 }
 
 export function shopDisplayName(shop: ShopListItem): string {
-  return shop.name?.trim() || localizedName(shop.names, shop.shopid);
+  return localizedName(shop.names, "") ||
+    shop.name1?.trim() ||
+    shop.companyname?.trim() ||
+    shop.company_name?.trim() ||
+    shop.name?.trim() ||
+    shop.shopid;
 }
 
 export function branchDisplayName(branch: BranchListItem): string {

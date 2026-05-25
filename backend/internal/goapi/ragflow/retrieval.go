@@ -14,41 +14,41 @@ import (
 
 // RetrievalRequest matches RAGFlow's POST /api/v1/retrieval schema.
 type RetrievalRequest struct {
-	Question string   `json:"question"`
-	DatasetIDs []string `json:"dataset_ids"`
-	DocumentIDs []string `json:"document_ids,omitempty"`
-	PageSize int      `json:"page_size,omitempty"` // chunks per result (default 30)
+	Question         string   `json:"question"`
+	DatasetIDs       []string `json:"dataset_ids"`
+	DocumentIDs      []string `json:"document_ids,omitempty"`
+	PageSize         int      `json:"page_size,omitempty"` // chunks per result (default 30)
 	SimilarityThresh float64  `json:"similarity_threshold,omitempty"`
-	VectorWeight float64  `json:"vector_similarity_weight,omitempty"`
-	TopK int      `json:"top_k,omitempty"`
-	RerankID string   `json:"rerank_id,omitempty"`
-	KeywordSearch bool     `json:"keyword,omitempty"`
-	Highlight bool     `json:"highlight,omitempty"`
+	VectorWeight     float64  `json:"vector_similarity_weight,omitempty"`
+	TopK             int      `json:"top_k,omitempty"`
+	RerankID         string   `json:"rerank_id,omitempty"`
+	KeywordSearch    bool     `json:"keyword,omitempty"`
+	Highlight        bool     `json:"highlight,omitempty"`
 }
 
 // RetrievalChunk — one matched piece of a document
 type RetrievalChunk struct {
-	ID string  `json:"id"`
-	Content string  `json:"content"`
-	ContentLTKS string  `json:"content_ltks"`
-	DocumentID string  `json:"document_id"`
-	DocumentKeyword string  `json:"document_keyword"`
-	Highlight string  `json:"highlight"`
-	Img string  `json:"img_id"`
+	ID                string   `json:"id"`
+	Content           string   `json:"content"`
+	ContentLTKS       string   `json:"content_ltks"`
+	DocumentID        string   `json:"document_id"`
+	DocumentKeyword   string   `json:"document_keyword"`
+	Highlight         string   `json:"highlight"`
+	Img               string   `json:"img_id"`
 	ImportantKeywords []string `json:"important_keywords"`
-	KbID string  `json:"kb_id"`
-	Similarity float64 `json:"similarity"`
-	TermSimilarity float64 `json:"term_similarity"`
-	VectorSimilarity float64 `json:"vector_similarity"`
+	KbID              string   `json:"kb_id"`
+	Similarity        float64  `json:"similarity"`
+	TermSimilarity    float64  `json:"term_similarity"`
+	VectorSimilarity  float64  `json:"vector_similarity"`
 }
 
 type retrievalResponse struct {
-	Code int    `json:"code"`
+	Code    int    `json:"code"`
 	Message string `json:"message"`
 	Data    struct {
-		Chunks []RetrievalChunk `json:"chunks"`
+		Chunks  []RetrievalChunk `json:"chunks"`
 		DocAggs []map[string]any `json:"doc_aggs"`
-		Total int              `json:"total"`
+		Total   int              `json:"total"`
 	} `json:"data"`
 }
 
@@ -72,7 +72,7 @@ func (c *Client) Retrieve(question string, datasetIDs []string, topK int) ([]Ret
 	// match document text — RAGFlow's hybrid scoring filters out chunks where
 	// BM25 contribution is zero, so a generic word like "search" returns nothing.
 	//
-	// Since every document in BC Account's KB is a BC ERP document, prepending
+	// Since every document in BC Account's KB is a BC Account document, prepending
 	// "BC Account document" gives near-universal BM25 hits while the multilingual
 	// embedding (gemma) handles the actual Thai semantic match via vector similarity.
 	//

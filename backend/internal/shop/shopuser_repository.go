@@ -234,7 +234,7 @@ func (svc ShopUserRepository) FindByShopIDAndUsername(ctx context.Context, shopI
 func (svc ShopUserRepository) FindShopCreatedBy(ctx context.Context, shopID string) (string, error) {
 	shopDoc := &shopmodels.ShopDoc{}
 
-	err := svc.pst.FindOne(ctx, &shopmodels.ShopDoc{}, bson.M{"guidfixed": shopID}, shopDoc)
+	err := svc.pst.FindOne(ctx, &shopmodels.ShopDoc{}, bson.M{"guid_fixed": shopID}, shopDoc)
 	if err != nil {
 		return "", err
 	}
@@ -332,7 +332,7 @@ func (repo ShopUserRepository) FindByUsernamePage(ctx context.Context, username 
 		bson.M{"$lookup": bson.M{
 			"from":         "shops",
 			"localField":   "shopid",
-			"foreignField": "guidfixed",
+			"foreignField": "guid_fixed",
 			"as":           "shopInfo",
 		}},
 		bson.M{

@@ -8,6 +8,8 @@ When working with Go code:
 1. LSP goToDefinition before modifying an unfamiliar function
 2. LSP findReferences before renaming or refactoring
 3. LSP getDiagnostics after every change
+4. After backend code/config changes, automatically deploy the affected service to Docker Desktop before completion: `cd D:\bccode\backend; docker-compose up -d --no-deps --build mainapi`
+5. Verify the running Docker Desktop backend with `http://localhost:8888/healthz` or the changed route.
 
 ## Required Patterns
 - Context: always pass ctx through every function

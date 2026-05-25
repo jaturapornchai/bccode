@@ -82,11 +82,12 @@ export function useConfirmDialog() {
       }}
       role="dialog"
     >
-      <section
+      <div
         className={cn(
-          "grid w-full max-w-[min(560px,calc(100vw-16px))] gap-3 rounded-2xl border bg-card p-3 text-card-foreground shadow-xl",
+          "grid gap-3 rounded-2xl border bg-card p-3 text-card-foreground shadow-xl",
           toneClass[pending.tone].panel,
         )}
+        style={{ width: "min(460px, calc(100vw - 16px))" }}
       >
         <header className="flex min-w-0 items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-2">
@@ -117,7 +118,7 @@ export function useConfirmDialog() {
             {pending.confirmLabel}
           </Button>
         </footer>
-      </section>
+      </div>
     </div>
   ) : null;
 

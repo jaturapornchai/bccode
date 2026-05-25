@@ -95,7 +95,7 @@ Optional production hardening:
 BC_AI_ERP_BOOTSTRAP_ADMIN_EMAILS=jaturapornchai@gmail.com,admin@example.com
 ```
 
-Use this only during first deployment from Kubernetes Secret or environment config.
+Use this only during first deployment from a controlled secret source or environment config.
 
 ### Company Groups
 
@@ -368,7 +368,7 @@ BC_AI_ERP_REQUIRE_ADMIN_AUDIT=true
 BC_AI_ERP_SUPPORT_ACCESS_DEFAULT=deny
 ```
 
-Production must load these from Kubernetes Secret or controlled environment config.
+Production must load these from a controlled secret source or environment config.
 
 ## Dependencies
 

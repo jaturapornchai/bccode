@@ -98,7 +98,31 @@ export function SettingsScreen() {
   const [importText, setImportText] = useState("");
   const [currentSetupPassword, setCurrentSetupPassword] = useState("");
   const [newSetupPassword, setNewSetupPassword] = useState("");
+  const [mongodbMode, setMongodbMode] = useState<"uri" | "fields">("uri");
   const { confirm, confirmationDialog } = useConfirmDialog();
+
+  const handleSetMongodbMode = (mode: "uri" | "fields") => {
+    setMongodbMode(mode);
+    setConfigMap((current) => {
+      const items = current["mongodb"] ?? [];
+      const nextItems = items.map((item) => {
+        if (mode === "uri") {
+          // เคลียร์ค่า host, port, username, password เพื่อไม่ให้สับสน
+          if (item.key === "host" || item.key === "port" || item.key === "username" || item.key === "password") {
+            return { ...item, value: "" };
+          }
+        } else {
+          // เคลียร์ค่า URI ก่อน เพื่อให้ฟังก์ชันประกอบเริ่มคำนวณจากฟิลด์ใหม่
+          if (item.key === "uri") {
+            return { ...item, value: "" };
+          }
+        }
+        return item;
+      });
+      return { ...current, mongodb: nextItems };
+    });
+  };
+
 
   const canSaveBackend = useMemo(() => backendUrl.trim().length > 0, [backendUrl]);
   const isBusy = loadingAction !== "idle";
@@ -131,13 +155,25 @@ export function SettingsScreen() {
   async function loadConfigUrl() {
     try {
       const response = await fetch("/config.json", { cache: "no-store" });
-      if (!response.ok) return;
-      const data = (await response.json()) as { goapi_url?: string };
-      if (data.goapi_url) setBackendUrl(data.goapi_url);
+      if (response.ok) {
+        const data = (await response.json()) as { goapi_url?: string };
+        if (data.goapi_url && !data.goapi_url.includes("localhost")) {
+          setBackendUrl(data.goapi_url);
+          return;
+        }
+      }
+
+      // Fallback อัจฉริยะ: ชี้ไปที่โดเมนปัจจุบันทันทีเมื่อเปิดจาก VPS / Production
+      if (typeof window !== "undefined" && !window.location.hostname.includes("localhost") && !window.location.hostname.includes("127.0.0.1")) {
+        setBackendUrl(`${window.location.origin}/goapi`);
+      } else {
+        setBackendUrl(DEFAULT_BACKEND_URL);
+      }
     } catch {
       setBackendUrl(DEFAULT_BACKEND_URL);
     }
   }
+
 
   function handleSaveBackendUrl() {
     const normalized = normalizeSetupBackendUrl(backendUrl);
@@ -214,15 +250,26 @@ export function SettingsScreen() {
     setLoadingAction("load");
     try {
       const data = await callSetup("config/get", { password }, backendUrlOverride);
-      setConfigMap(mergeBackendConfig(data.data));
+      const merged = mergeBackendConfig(data.data);
+      setConfigMap(merged);
       setAuthenticated(true);
       setStatus(`โหลด config สำเร็จ`, "success");
+
+      // ตรวจสอบว่าโหมดเริ่มต้นควรเป็นแบบกรอก URI หรือแบบแยกฟิลด์
+      const mongoItems = merged["mongodb"] ?? [];
+      const host = mongoItems.find((i) => i.key === "host")?.value.trim() ?? "";
+      if (host && !host.includes("xxxx")) {
+        setMongodbMode("fields");
+      } else {
+        setMongodbMode("uri");
+      }
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "โหลด config ล้มเหลว", "error");
     } finally {
       setLoadingAction("idle");
     }
   }
+
 
   async function handleSaveConfig() {
     const errors = validateConfig(configMap);
@@ -437,6 +484,8 @@ export function SettingsScreen() {
     }
     return data;
   }
+
+
 
   return (
     <main className="settings-shell">
@@ -667,8 +716,16 @@ export function SettingsScreen() {
               </section>
 
               <div className="setup-config-sections">
-                {orderedCategories.map((category) => renderConfigSection(category, configMap[category] ?? []))}
+                {orderedCategories
+                  .filter((cat) => cat !== "integrations")
+                  .map((category) => renderConfigSection(category, configMap[category] ?? []))}
               </div>
+
+              {orderedCategories.includes("integrations") && (
+                <div className="integrations-wrapper">
+                  {renderConfigSection("integrations", configMap["integrations"] ?? [])}
+                </div>
+              )}
             </div>
           </>
         ) : null}
@@ -689,6 +746,16 @@ export function SettingsScreen() {
       return renderIntegrationsSection(items);
     }
 
+    // สำหรับ MongoDB: กรองฟิลด์ที่จะแสดงผลตามโหมดเชื่อมต่อ
+    let displayItems = items;
+    if (category === "mongodb") {
+      if (mongodbMode === "uri") {
+        displayItems = items.filter((item) => item.key === "uri" || item.key === "database");
+      } else {
+        displayItems = items;
+      }
+    }
+
     return (
       <section className="settings-card config-card" key={category} aria-label={categoryDef.title}>
         <div className="config-card-header">
@@ -701,12 +768,33 @@ export function SettingsScreen() {
             </div>
           </div>
           <div className="config-card-meta">
-            <span className="field-count">{items.length} fields</span>
+            <span className="field-count">{displayItems.length} fields</span>
             {testResult ? <TestBadge result={testResult} /> : null}
           </div>
         </div>
 
-        <div className="config-field-grid">{items.map((item) => renderConfigField(item))}</div>
+        {category === "mongodb" && (
+          <div className="mongodb-mode-row">
+            <div className="mongodb-mode-selector">
+              <button
+                className={`mongodb-mode-button ${mongodbMode === "uri" ? "active" : ""}`}
+                type="button"
+                onClick={() => handleSetMongodbMode("uri")}
+              >
+                กรอก URI โดยตรง
+              </button>
+              <button
+                className={`mongodb-mode-button ${mongodbMode === "fields" ? "active" : ""}`}
+                type="button"
+                onClick={() => handleSetMongodbMode("fields")}
+              >
+                ระบุรายละเอียดแยกฟิลด์
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="config-field-grid">{displayItems.map((item) => renderConfigField(item))}</div>
 
         {canTest ? (
           <div className="config-test-row">
@@ -726,6 +814,7 @@ export function SettingsScreen() {
       </section>
     );
   }
+
 
   function renderIntegrationsSection(items: ConfigItem[]) {
     const providerItem = items.find((item) => item.key === "ai_provider");
@@ -837,13 +926,41 @@ export function SettingsScreen() {
     );
   }
 
+  function getDefaultValue(category: string, key: string): string | null {
+    if (key === "port") {
+      if (category === "postgresql") return "5432";
+      if (category === "clickhouse") return "9000";
+      if (category === "mongodb") return "27017";
+    }
+    if (key === "server_url" && category === "kafka") return "127.0.0.1:9092";
+    if (key === "timezone" && category === "postgresql") return "Asia/Bangkok";
+    if (key === "service_port" && category === "service") return "8888";
+    return null;
+  }
+
   function renderConfigField(item: ConfigItem) {
     const control = getFieldControl(item);
     if (control?.type === "checkbox") return renderCheckboxField(item);
     if (control?.type === "radio") return renderRadioField(item, control.options);
 
+    const defaultValue = getDefaultValue(item.category, item.key);
+    const hasDefault = defaultValue !== null;
+
+    const isWideField = 
+      item.key === "uri" || 
+      item.key === "server_url" || 
+      item.key === "host_api" || 
+      item.key === "cors_allowed_origins" ||
+      item.key === "jwt_secret_key" ||
+      item.key.endsWith("_api_key") ||
+      item.key.endsWith("_secret_access_key") ||
+      item.key.endsWith("_access_key_id") ||
+      item.key === "azure_account_key";
+
+    const isMongoUriReadOnly = item.category === "mongodb" && item.key === "uri" && mongodbMode === "fields";
+
     return (
-      <label className="field-group config-field" key={`${item.category}.${item.key}`}>
+      <label className={`field-group config-field ${isWideField ? "field-group-wide" : ""}`} key={`${item.category}.${item.key}`}>
         <span>{fieldLabels[item.key] ?? item.key}</span>
         <div className="input-shell">
           {item.isSecret ? <KeyRound aria-hidden="true" size={17} /> : <SettingsIcon aria-hidden="true" size={17} />}
@@ -851,14 +968,34 @@ export function SettingsScreen() {
             autoComplete="off"
             value={item.value}
             onChange={(event) => updateItem(item.category, item.key, event.target.value)}
-            placeholder={item.description || item.key}
+            placeholder={isMongoUriReadOnly ? "ระบบประกอบ URI อัตโนมัติ..." : (item.description || item.key)}
             type={item.isSecret ? "password" : "text"}
+            readOnly={isMongoUriReadOnly}
+            disabled={isMongoUriReadOnly}
+            style={isMongoUriReadOnly ? { opacity: 0.8, cursor: "not-allowed" } : undefined}
           />
+          {hasDefault && item.value.trim() !== defaultValue && !isMongoUriReadOnly && (
+            <button
+              className="default-button-inline"
+              type="button"
+              onClick={() => updateItem(item.category, item.key, defaultValue)}
+              title={`ใช้ค่าเริ่มต้น: ${defaultValue}`}
+            >
+              Default
+            </button>
+          )}
         </div>
-        {item.description ? <small>{item.description}</small> : null}
+        {item.description ? (
+          <small>
+            {isMongoUriReadOnly 
+              ? "URI (ประกอบให้อัตโนมัติจากการกรอก Host, Port, User, Pass, Database)" 
+              : item.description}
+          </small>
+        ) : null}
       </label>
     );
   }
+
 
   function renderCheckboxField(item: ConfigItem) {
     const checked = normalizeBooleanValue(item.value);

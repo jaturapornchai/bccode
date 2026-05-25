@@ -175,7 +175,7 @@ Unused dimension columns may be empty, but the tenant keys must never be empty.
 
 Use shared tables, not one table/database per tenant.
 
-Recommended ordering for most ERP reports:
+Recommended ordering for most business reports:
 
 ```sql
 PARTITION BY toYYYYMM(doc_date)
@@ -221,7 +221,7 @@ The allowed `tenant_id` list must come from backend authorization, not from the 
 
 ## Read Workflow
 
-### Normal ERP Screens
+### Normal Business Screens
 
 Use MongoDB/PostgreSQL APIs for transactional screens that need current editable documents or strict balances.
 
@@ -247,12 +247,12 @@ Flow:
 
 ## Scale And Deployment
 
-High-concurrency production should run on K3s using the manifests under `backend/cluster/k3s`.
+High-concurrency production deployment target must be explicitly approved and backed by load-test evidence before it is treated as supported.
 
 Recommended separation:
 
 ```text
-interactive-api pods     = login, menu, workspace, ERP reads/writes
+interactive-api pods     = login, menu, workspace, business reads/writes
 worker-pg pods           = Kafka -> PostgreSQL processing
 worker-clickhouse pods   = Kafka -> ClickHouse ingestion
 report-api pods          = ClickHouse report APIs
@@ -306,7 +306,7 @@ REDIS_URL
 OBJECT_STORAGE_ENDPOINT
 ```
 
-K3s production must load secrets through Kubernetes Secrets or a secret manager. Do not put real credentials in manifests.
+Production must load secrets through an approved secret manager or environment-specific secure configuration. Do not put real credentials in repository files.
 
 ## Dependencies
 
@@ -315,7 +315,7 @@ K3s production must load secrets through Kubernetes Secrets or a secret manager.
 - PostgreSQL sized for posting workloads and indexed tenant queries.
 - ClickHouse cluster for BI/report query volume.
 - Redis/cache for hot menu/session/read metadata when needed.
-- K3s for production orchestration and horizontal scaling.
+- An approved production orchestration path for horizontal scaling.
 
 ## Usage Example
 
@@ -335,7 +335,7 @@ Backend behavior:
 
 ## Limitations
 
-- This design does not prove capacity by itself. Use `backend/cluster/k3s/CAPACITY_10000.md` for load-test gates.
+- This design does not prove capacity by itself. Use measured load-test gates before claiming large concurrent screen capacity.
 - ClickHouse data is eventually consistent with PostgreSQL because it is event-driven.
 - Kafka can redeliver messages; all consumers must be idempotent.
 - Historical data needs backfill into `company_group_id`, `tenant_id`, and `branch_id` before owner overview can be trusted.

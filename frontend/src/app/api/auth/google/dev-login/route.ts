@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { postMainApiAuth } from "@/lib/auth-bridge";
 import { validateBackendUrl } from "@/lib/backend-url";
 import {
+  isConfiguredDevLoginRequest,
   isLocalLoginRequest,
   LOCAL_GOOGLE_TEST_EMAIL,
   LOCAL_GOOGLE_TEST_NAME,
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   if (!canUseLocalGoogleTestLogin(request)) {
-    return NextResponse.json({ success: false, message: "ปุ่มทดสอบนี้ใช้ได้เฉพาะเครื่อง local เท่านั้น" }, { status: 403 });
+    return NextResponse.json({ success: false, message: "DEV Google login ยังไม่ได้เปิดสำหรับ host นี้" }, { status: 403 });
   }
 
   let body: DevGoogleLoginBody;
@@ -75,5 +76,5 @@ export async function POST(request: Request) {
 }
 
 function canUseLocalGoogleTestLogin(request: Request): boolean {
-  return process.env.NODE_ENV !== "production" && isLocalLoginRequest(request);
+  return (process.env.NODE_ENV !== "production" && isLocalLoginRequest(request)) || isConfiguredDevLoginRequest(request);
 }

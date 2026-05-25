@@ -473,11 +473,17 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       let nextBranches = Array.isArray(branchPayload.data) ? branchPayload.data : [];
 
       if (nextBranches.length === 0) {
-        const created = await callWorkspaceApi<{ data?: BranchListItem }>(auth, "branch", {
+        const created = await callWorkspaceApi<{ data?: BranchListItem; id?: string; ID?: string }>(auth, "branch", {
           method: "POST",
-          body: { branch: createDefaultBranch() },
+          body: { branch: createDefaultBranch(shop, shopInfo.data ?? null) },
         });
-        if (created.data) nextBranches = [created.data];
+        if (created.data) {
+          nextBranches = [created.data];
+        } else {
+          const reloaded = await callWorkspaceApi<{ data?: BranchListItem[] }>(auth, "branches?offset=0&limit=100&q=");
+          nextBranches = Array.isArray(reloaded.data) ? reloaded.data : [];
+          if (nextBranches.length === 0) nextBranches = [createDefaultBranchListItem(created.id ?? created.ID)];
+        }
       }
 
       setSelectedShop(shop);
@@ -705,7 +711,15 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                     <span className={`shop-avatar tone-${index % 6}`}><Store size={20} /></span>
                     <span className="shop-main">
                       <strong>{shopDisplayName(shop)}</strong>
-                      <small>{shop.shopid}</small>
+                      <div className="shop-details-row">
+                        <small>{shop.shopid}</small>
+                        {shop.createdby ? (
+                          <span className="shop-creator">
+                            <UserRound size={12} />
+                            {language === "th" ? `ผู้สร้าง: ${shop.createdby}` : `Creator: ${shop.createdby}`}
+                          </span>
+                        ) : null}
+                      </div>
                     </span>
                     <span className="shop-badges">
                       <b className={isCreator ? "creator-badge" : "user-badge"}>
@@ -985,18 +999,164 @@ function parseShopInfo(raw: string | null): Record<string, unknown> | null {
   }
 }
 
-function createDefaultBranch(): Record<string, unknown> {
+function createDefaultBranch(shop?: ShopListItem, shopInfo?: Record<string, unknown> | null): Record<string, unknown> {
+  const settings = recordValue(shopInfo?.settings);
+  const languageCodes = activeLanguageCodes(settings);
+  const companyNames = normalizedNames(shopInfo?.names, shop ? shopDisplayName(shop) : "");
+  const companyAddress = normalizedNames(shopInfo?.address, "");
   return {
     guid_fixed: "",
     code: "00000",
+    companynames: companyNames,
+    names: defaultBranchNames(languageCodes),
+    departments: [],
+    languages: languageCodes,
+    contact: {
+      address: companyAddress,
+      country_code: stringValue(settings?.country_code) || "TH",
+      province_code: "",
+      district_code: "",
+      sub_district_code: "",
+      zip_code: "",
+      phone_number: stringValue(shopInfo?.telephone),
+      latitude: numberValue(settings?.latitude),
+      longitude: numberValue(settings?.longitude),
+    },
+    imageuri: "",
+    logouri: stringValue(shopInfo?.logo),
+    pos: {
+      tax_id: stringValue(settings?.tax_id),
+      isbom: false,
+      vatrate: numberValue(settings?.vatrate),
+      vattypesale: numberValue(settings?.vattypesale),
+      vattypepurchase: numberValue(settings?.vattypepurchase),
+      inquirytypesale: numberValue(settings?.inquirytypesale),
+      inquirytypepurchase: numberValue(settings?.inquirytypepurchase),
+      headerreceiptpos: "",
+      footerreceiptpos: "",
+    },
+    businesstype: {},
+    paymentrounding: createDefaultPaymentRounding(),
+    pointconfig: { generalrules: [], specialrules: [], pointusagetype: 1 },
+    machinetype: 0,
+    couponusetype: 0,
+    company_registration_no: stringValue(settings?.company_registration_no),
+    is_vat_registered: booleanValue(settings?.is_vat_registered),
+    base_currency: stringValue(settings?.base_currency) || "THB",
+    language: languageCodes[0] ?? "th",
+    timezone: stringValue(settings?.timezone) || "Asia/Bangkok",
+    timezone_offset: stringValue(settings?.timezone_offset) || "+07:00",
+    timezone_label: stringValue(settings?.timezone_label) || "(UTC+07:00) Bangkok",
+    date_format: stringValue(settings?.date_format) || "dd/MM/yyyy",
+    year_type: booleanValue(settings?.usebuddhistcalendar, true) ? "buddhist" : "christian",
+    decimal_quantity: numberValue(settings?.decimal_quantity, 2),
+    decimal_price: numberValue(settings?.decimal_price, 2),
+    decimal_document: numberValue(settings?.decimal_document, 2),
+    is_restaurant: false,
+    is_tire: false,
+    is_agriculture: false,
+    is_pharmacy: false,
+    is_retail: false,
+    is_service: false,
+    is_wholesale: false,
+    is_manufacturing: false,
+    is_import_export: false,
+    is_contractor: false,
+    is_rental: false,
+    is_ecommerce: false,
+    is_logistics: false,
+    is_education: false,
+    is_hotel: false,
+    is_beauty: false,
+    is_gold_shop: false,
+    is_accounting_firm: false,
+    is_construction: false,
+    is_electronics: false,
+    is_mobile_shop: false,
+  };
+}
+
+function activeLanguageCodes(settings: Record<string, unknown> | null): string[] {
+  const configs = Array.isArray(settings?.languageconfigs) ? settings.languageconfigs : [];
+  const codes = configs
+    .filter((item) => !recordValue(item) || recordValue(item)?.is_use !== false)
+    .map((item) => stringValue(recordValue(item)?.code).toLowerCase())
+    .filter(Boolean);
+  return codes.length > 0 ? Array.from(new Set(codes)) : ["th"];
+}
+
+function defaultBranchNames(languageCodes: string[]): Array<{ code: string; name: string }> {
+  return languageCodes.map((code) => ({ code, name: code === "th" ? "สำนักงานใหญ่" : "" }));
+}
+
+function normalizedNames(value: unknown, fallbackName: string): Array<{ code: string; name: string }> {
+  if (Array.isArray(value)) {
+    const names = value
+      .map((item) => recordValue(item))
+      .filter((item): item is Record<string, unknown> => Boolean(item))
+      .map((item) => ({ code: stringValue(item.code).toLowerCase(), name: stringValue(item.name) }))
+      .filter((item) => item.code && item.name);
+    if (names.length > 0) return names;
+  }
+  const fallback = fallbackName.trim();
+  return fallback ? [{ code: "th", name: fallback }] : [];
+}
+
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
+
+function stringValue(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function numberValue(value: unknown, fallback = 0): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
+}
+
+function booleanValue(value: unknown, fallback = false): boolean {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  if (typeof value === "string") return ["true", "1", "yes", "y", "buddhist"].includes(value.trim().toLowerCase());
+  return fallback;
+}
+
+function createDefaultBranchListItem(guidFixed: unknown): BranchListItem {
+  return {
+    guid_fixed: typeof guidFixed === "string" && guidFixed.trim() ? guidFixed.trim() : "00000",
+    code: "00000",
     names: [{ code: "th", name: "สำนักงานใหญ่" }],
-    languages: ["th"],
     base_currency: "THB",
     language: "th",
     timezone: "Asia/Bangkok",
     timezone_offset: "+07:00",
     timezone_label: "(UTC+07:00) Bangkok",
     year_type: "buddhist",
+  };
+}
+
+function createDefaultPaymentRounding(): Record<string, unknown> {
+  const defaultRules = [
+    { lowerbound: 0.01, upperbound: 0.12, roundto: 0 },
+    { lowerbound: 0.13, upperbound: 0.37, roundto: 0.25 },
+    { lowerbound: 0.38, upperbound: 0.62, roundto: 0.5 },
+    { lowerbound: 0.63, upperbound: 0.87, roundto: 0.75 },
+    { lowerbound: 0.88, upperbound: 0.99, roundto: 1 },
+  ];
+  const method = { enabled: true, rules: defaultRules };
+  return {
+    banktransfer: method,
+    cash: method,
+    cheque: method,
+    coupon: method,
+    creditcard: method,
+    delivery: method,
+    qrcode: method,
   };
 }
 

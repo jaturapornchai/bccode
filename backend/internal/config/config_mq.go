@@ -20,6 +20,10 @@ type MQConfig struct {
 
 func NewMQConfig() *MQConfig {
 
+	if getEnv("ENABLE_KAFKA", "") == "false" {
+		return &MQConfig{}
+	}
+
 	uri := getEnv("KAFKA_SERVER_URL", "")             // localhost:9094
 	protocol := getEnv("KAFKA_SECURITY_PROTOCOL", "") // SASL_SSL
 	sslca := getEnv("KAFKA_SSL_CA_FILE", "")          // /path/to/ca

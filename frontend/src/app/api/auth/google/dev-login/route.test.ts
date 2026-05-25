@@ -35,6 +35,21 @@ describe("dev Google login route", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("allows configured DEV host in production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("BC_ENABLE_DEV_GOOGLE_LOGIN", "true");
+
+    const response = await GET(new Request("https://dev.bcaicloud.com/api/auth/google/dev-login", {
+      headers: { host: "dev.bcaicloud.com" },
+    }));
+    const json = await response.json();
+
+    expect(json).toEqual({
+      enabled: true,
+      email: "jaturapornchai@gmail.com",
+    });
+  });
+
   it("is enabled for localhost outside production", async () => {
     vi.stubEnv("NODE_ENV", "test");
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { sanitizeBackendLanguageDictionary, sanitizeBackendLanguageText } from "./backend-language-sanitize";
 import { persistLanguagePreferenceCookies } from "./backend-language-preload";
 import type { LanguageCode } from "./i18n";
 
@@ -38,7 +39,7 @@ function readStoredDictionary(cacheKey: string): BackendLanguageDictionary | nul
     if (!raw) return null;
     const parsed = JSON.parse(raw) as unknown;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
-    return parsed as BackendLanguageDictionary;
+    return sanitizeBackendLanguageDictionary(parsed as BackendLanguageDictionary);
   } catch {
     return null;
   }
@@ -47,7 +48,7 @@ function readStoredDictionary(cacheKey: string): BackendLanguageDictionary | nul
 function writeStoredDictionary(cacheKey: string, dictionary: BackendLanguageDictionary) {
   if (!canUseBrowserStorage()) return;
   try {
-    window.localStorage.setItem(storageKeyFor(cacheKey), JSON.stringify(dictionary));
+    window.localStorage.setItem(storageKeyFor(cacheKey), JSON.stringify(sanitizeBackendLanguageDictionary(dictionary)));
   } catch {
     // Cache writes are best-effort; the UI can still use the in-memory dictionary.
   }
@@ -86,7 +87,7 @@ function cachedDictionary(language: LanguageCode, backendUrl: string | undefined
   if (memory) return { ...memory };
   const stored = readStoredDictionary(cacheKey);
   if (!stored) return null;
-  memoryCache.set(cacheKey, stored);
+  memoryCache.set(cacheKey, sanitizeBackendLanguageDictionary(stored));
   return { ...stored };
 }
 
@@ -96,8 +97,9 @@ function initialState(
   initialDictionary?: BackendLanguageDictionary,
 ): BackendLanguageState {
   if (initialDictionary && Object.keys(initialDictionary).length > 0) {
-    if (backendUrl) memoryCache.set(cacheKeyFor(language, backendUrl), initialDictionary);
-    return stateFromDictionary({ ...initialDictionary }, { hasCache: true, isLoading: false, isReady: true });
+    const sanitized = sanitizeBackendLanguageDictionary(initialDictionary);
+    if (backendUrl) memoryCache.set(cacheKeyFor(language, backendUrl), sanitized);
+    return stateFromDictionary({ ...sanitized }, { hasCache: true, isLoading: false, isReady: true });
   }
   const cached = cachedDictionary(language, backendUrl);
   if (cached) return stateFromDictionary(cached, { hasCache: true, isLoading: false, isReady: true });
@@ -139,9 +141,10 @@ export function useBackendLanguageState(
         return response.json() as Promise<BackendLanguageDictionary>;
       })
       .then((data) => {
-        memoryCache.set(cacheKey, data);
-        writeStoredDictionary(cacheKey, data);
-        setState(stateFromDictionary({ ...data }, { hasCache: true, isLoading: false, isReady: true }));
+        const sanitized = sanitizeBackendLanguageDictionary(data);
+        memoryCache.set(cacheKey, sanitized);
+        writeStoredDictionary(cacheKey, sanitized);
+        setState(stateFromDictionary({ ...sanitized }, { hasCache: true, isLoading: false, isReady: true }));
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
@@ -178,8 +181,8 @@ export function isBackendLanguageLoading(dictionary: BackendLanguageDictionary |
 
 export function backendText(dictionary: BackendLanguageDictionary, key: string, fallback?: string): string {
   const text = dictionary[key];
-  if (text) return text;
-  if (fallback !== undefined) return fallback;
+  if (text) return sanitizeBackendLanguageText(text);
+  if (fallback !== undefined) return sanitizeBackendLanguageText(fallback);
   if (!isBackendLanguageReady(dictionary)) return "";
   return key;
 }

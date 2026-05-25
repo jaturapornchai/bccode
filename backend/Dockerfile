@@ -32,6 +32,7 @@ COPY --from=builder /go/app/go-app .
 COPY ./tdict-std.txt /app/tdict-std.txt
 COPY ./assets/fonts/ /app/fonts/
 COPY ./assets/language/ /app/language/
+COPY ./assets/address/ /app/address/
 
 RUN chown -R appuser:appgroup /app
 

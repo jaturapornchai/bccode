@@ -27,6 +27,7 @@ export type MenuIconKey =
   | "fileText"
   | "folder"
   | "gift"
+  | "globe"
   | "grid"
   | "group"
   | "import"
@@ -200,6 +201,7 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/ordersetting": "settings",
   "/currency": "currency",
   "/business_type_screen": "category",
+  "/active_languages": "globe",
   "/company": "building",
   "/branch": "branch",
   "/department": "department",
@@ -211,7 +213,8 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/formdesign": "fileCog",
   "/line_notify": "notification",
   "/permission_definition": "shield",
-  "/approval_setting": "shield",
+  "/permission_group": "users",
+  "/approval_setting": "payment",
   "/permission_link": "link",
   "/mcp_apikey": "key",
   "/ai_provider": "bot",
