@@ -134,10 +134,8 @@ const emptyLineDialog: LineDialogState = {
   expired: false,
 };
 const accessMenuIds = new Set(["user", "permission-definition", "permission-group", "approval-setting", "permission-link"]);
-const branchScopedMenuIds = new Set(["branch", "department", "workday", "holiday"]);
 const systemTreeFolders = [
   { id: "access-control", itemIds: accessMenuIds, label: { key: "access_control", th: "การเข้าถึง", en: "Access" }, seedId: "user" },
-  { id: "branch-scope", itemIds: branchScopedMenuIds, seedId: "branch" },
 ];
 const menuUiKeys = {
   closeTab: "close_tab",
