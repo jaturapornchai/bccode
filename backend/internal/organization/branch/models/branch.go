@@ -18,6 +18,7 @@ type Branch struct {
 	Departments              *[]Department           `json:"departments" bson:"departments"`
 	BusinessTypes            *[]string               `json:"businesstypes" bson:"businesstypes"`
 	ImageURI                 string                  `json:"imageuri" bson:"imageuri"`
+	ImageURIs                []string                `json:"imageuris" bson:"imageuris"`
 	LogoURI                  string                  `json:"logouri" bson:"logouri"`
 	Languages                *[]string               `json:"languages" bson:"languages"`
 	Contact                  Contact                 `json:"contact" bson:"contact"`

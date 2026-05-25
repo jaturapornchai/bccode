@@ -33,7 +33,7 @@ describe("system setting screen configs", () => {
     expect(keys.has("pointconfig")).toBe(true);
     expect(keys.has("machinetype")).toBe(true);
     expect(keys.has("couponusetype")).toBe(true);
-    expect(keys.has("imageuri")).toBe(true);
+    expect(keys.has("imageuris")).toBe(true);
     expect(keys.has("logouri")).toBe(true);
     expect(keys.has("businesstype")).toBe(true);
     for (const key of [

@@ -19,6 +19,7 @@ export type SystemSettingField = {
     | "combo"
     | "date"
     | "image-upload"
+    | "image-gallery"
     | "json"
     | "language-configs"
     | "language-list"
@@ -487,7 +488,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       jsonField("paymentrounding", "การปัดเศษ", "Payment rounding"),
       jsonField("pointconfig", "ตั้งค่าแต้ม", "Point config"),
       numberField("machinetype", "ประเภทเครื่อง", "Machine type"),
-      imageUploadField("imageuri", "รูปภาพ", "Image"),
+      imageGalleryField("imageuris", "รูปภาพ", "Images"),
       imageUploadField("logouri", "โลโก้ร้าน", "Logo"),
       checkboxField("is_restaurant", "ร้านอาหาร", "Restaurant"),
       checkboxField("is_tire", "ยางรถ", "Tire"),
@@ -1296,6 +1297,14 @@ function imageUploadField(
   en: string,
 ): SystemSettingField {
   return { key, label: { th, en }, type: "image-upload" };
+}
+
+function imageGalleryField(
+  key: string,
+  th: string,
+  en: string,
+): SystemSettingField {
+  return { key, label: { th, en }, type: "image-gallery" };
 }
 
 function checkboxField(
