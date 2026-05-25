@@ -15,6 +15,7 @@ export type SystemSettingField = {
   key: string;
   label: SystemSettingText;
   type:
+    | "branch-multi-select"
     | "checkbox"
     | "combo"
     | "date"
@@ -586,7 +587,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       textField("pincode", "PIN", "PIN"),
       checkboxField("isenabled", "เปิดใช้งาน", "Enabled"),
       checkboxField("isusepos", "ใช้งาน POS", "Use POS"),
-      jsonField("branches", "สาขาที่ใช้งาน", "Branches JSON"),
+      branchMultiSelectField("branches", "สาขาที่ใช้งาน", "Active branches"),
     ],
   },
   {
@@ -1305,6 +1306,14 @@ function imageGalleryField(
   en: string,
 ): SystemSettingField {
   return { key, label: { th, en }, type: "image-gallery" };
+}
+
+function branchMultiSelectField(
+  key: string,
+  th: string,
+  en: string,
+): SystemSettingField {
+  return { key, label: { th, en }, type: "branch-multi-select" };
 }
 
 function checkboxField(

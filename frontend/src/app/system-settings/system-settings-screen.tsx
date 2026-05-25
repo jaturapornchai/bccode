@@ -3148,6 +3148,18 @@ function SettingDetailPanel({
               </div>
             );
           }
+          if (field.type === "branch-multi-select") {
+            const label = fieldLabel(field, language, config, dictionary);
+            return (
+              <div className={fieldGridItemClass(field, config)} key={field.key}>
+                <BranchMultiSelectReadOnlyDetail
+                  label={label}
+                  language={language}
+                  value={getByPath(record, field.key)}
+                />
+              </div>
+            );
+          }
           if (isThailandAddressPrimaryField(config, field)) {
             return (
               <div className={fieldGridItemClass(field, config)} key={field.key}>
@@ -3515,6 +3527,7 @@ function fieldGridItemClass(
     return "min-w-0 md:col-span-2";
   if (isBranchLatitudeField(config, field)) return "min-w-0 md:col-span-2";
   if (
+    field.type === "branch-multi-select" ||
     field.type === "image-upload" ||
     field.type === "image-gallery" ||
     field.type === "json" ||
@@ -5527,6 +5540,20 @@ function FieldEditor({
         label={label}
         language={language}
         setForm={setForm}
+      />
+    );
+  }
+
+  if (field.type === "branch-multi-select") {
+    return (
+      <BranchMultiSelectFieldEditor
+        auth={auth}
+        field={field}
+        form={form}
+        label={label}
+        language={language}
+        setForm={setForm}
+        workspace={workspace}
       />
     );
   }
@@ -8221,6 +8248,295 @@ function GalleryReadOnlyItem({
   );
 }
 
+type BranchOption = {
+  guid_fixed: string;
+  code: string;
+  names: Array<{ code?: string; name?: string }>;
+};
+
+function branchOptionDisplayName(
+  option: BranchOption,
+  language: LanguageCode,
+): string {
+  const names = option.names ?? [];
+  const localized =
+    names.find((item) => item.code?.toLowerCase() === language && item.name)
+      ?.name ??
+    names.find((item) => item.code?.toLowerCase() === "th" && item.name)
+      ?.name ??
+    names.find((item) => item.name)?.name;
+  return (localized ?? option.code ?? option.guid_fixed).trim();
+}
+
+function recordToBranchOption(record: SettingRecord): BranchOption {
+  const namesRaw = Array.isArray(record.names) ? record.names : [];
+  const names: BranchOption["names"] = namesRaw
+    .filter(isRecord)
+    .map((entry) => ({
+      code: stringValue(entry.code),
+      name: stringValue(entry.name),
+    }));
+  return {
+    guid_fixed: stringValue(record.guid_fixed),
+    code: stringValue(record.code),
+    names,
+  };
+}
+
+function selectedBranchesFromValue(value: unknown): BranchOption[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (typeof item === "string") {
+        const trimmed = item.trim();
+        if (!trimmed) return null;
+        return { guid_fixed: trimmed, code: "", names: [] } as BranchOption;
+      }
+      if (!isRecord(item)) return null;
+      const namesRaw = Array.isArray(item.names) ? item.names : [];
+      const names: BranchOption["names"] = namesRaw
+        .filter(isRecord)
+        .map((entry) => ({
+          code: stringValue(entry.code),
+          name: stringValue(entry.name),
+        }));
+      const guid = stringValue(item.guid_fixed ?? item.guidfixed ?? item.guid);
+      const code = stringValue(item.code);
+      if (!guid && !code) return null;
+      return { guid_fixed: guid, code, names } as BranchOption;
+    })
+    .filter((item): item is BranchOption => item !== null);
+}
+
+function branchKeyOf(option: { guid_fixed?: string; code?: string }): string {
+  return stringValue(option.guid_fixed) || stringValue(option.code);
+}
+
+function BranchMultiSelectFieldEditor({
+  auth,
+  field,
+  form,
+  label,
+  language,
+  setForm,
+  workspace,
+}: {
+  auth: AuthSession | null;
+  field: SystemSettingField;
+  form: FormState;
+  label: string;
+  language: LanguageCode;
+  setForm: (form: FormState) => void;
+  workspace: WorkspaceSession | null;
+}) {
+  const [options, setOptions] = useState<BranchOption[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const selected = useMemo(
+    () => selectedBranchesFromValue(form[field.key]),
+    [field.key, form],
+  );
+  const selectedKeys = useMemo(
+    () => new Set(selected.map((item) => branchKeyOf(item))),
+    [selected],
+  );
+
+  useEffect(() => {
+    if (!auth || !workspace) return;
+    const controller = new AbortController();
+    setLoading(true);
+    setError("");
+    const params = new URLSearchParams({
+      limit: "500",
+      offset: "0",
+      shopid: workspace.shop.shopid,
+    });
+    void fetch(`/api/system-settings/branch?${params.toString()}`, {
+      headers: requestHeaders(auth),
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json() as Promise<unknown>;
+      })
+      .then((payload) => {
+        const records = extractListRecords(payload);
+        const parsed = records
+          .map(recordToBranchOption)
+          .filter((option) => option.guid_fixed || option.code);
+        setOptions(parsed);
+        setLoading(false);
+      })
+      .catch((catchError: unknown) => {
+        if (
+          catchError instanceof DOMException &&
+          catchError.name === "AbortError"
+        )
+          return;
+        setError(
+          catchError instanceof Error && catchError.message
+            ? catchError.message
+            : language === "th"
+              ? "โหลดสาขาไม่สำเร็จ"
+              : "Failed to load branches",
+        );
+        setLoading(false);
+      });
+    return () => controller.abort();
+  }, [auth, language, workspace]);
+
+  function toggleBranch(option: BranchOption, checked: boolean) {
+    const key = branchKeyOf(option);
+    const without = selected.filter((item) => branchKeyOf(item) !== key);
+    setForm({
+      ...form,
+      [field.key]: checked ? [...without, option] : without,
+    });
+  }
+
+  function selectAll() {
+    setForm({ ...form, [field.key]: options });
+  }
+
+  function clearAll() {
+    setForm({ ...form, [field.key]: [] });
+  }
+
+  const selectAllLabel =
+    language === "th" ? "เลือกทุกสาขา" : "Select all";
+  const clearLabel = language === "th" ? "ล้าง" : "Clear";
+  const summary =
+    language === "th"
+      ? `เลือก ${selected.length} / ${options.length} สาขา`
+      : `${selected.length} / ${options.length} branches selected`;
+
+  return (
+    <section className="grid gap-2 rounded-2xl border border-border bg-background p-2 text-sm font-semibold md:col-span-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span>
+          {label}
+          {field.required ? " *" : ""}
+        </span>
+        <div className="flex flex-wrap items-center gap-2 text-xs font-normal text-muted-foreground">
+          <span>{summary}</span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={selectAll}
+            disabled={loading || options.length === 0}
+          >
+            {selectAllLabel}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={clearAll}
+            disabled={loading || selected.length === 0}
+          >
+            {clearLabel}
+          </Button>
+        </div>
+      </div>
+      {loading ? (
+        <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
+          <Loader2 className="size-3 animate-spin" />
+          {language === "th" ? "กำลังโหลดสาขา…" : "Loading branches…"}
+        </div>
+      ) : null}
+      {error ? (
+        <p className="text-xs font-semibold text-destructive">{error}</p>
+      ) : null}
+      {options.length === 0 && !loading && !error ? (
+        <p className="text-xs font-normal text-muted-foreground">
+          {language === "th"
+            ? "ยังไม่มีสาขาให้เลือก — เพิ่มสาขาในหน้า \"สาขา\" ก่อน"
+            : 'No branches to choose yet — add one on the "Branch" screen first.'}
+        </p>
+      ) : null}
+      <ul className="grid gap-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+        {options.map((option) => {
+          const key = branchKeyOf(option);
+          const checked = selectedKeys.has(key);
+          return (
+            <li key={key}>
+              <label className="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5 text-xs font-medium hover:border-primary/40 hover:bg-accent/40">
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={(event) =>
+                    toggleBranch(option, event.target.checked)
+                  }
+                  className="size-4 accent-primary"
+                />
+                <span className="min-w-0 flex-1 truncate">
+                  {branchOptionDisplayName(option, language)}
+                </span>
+                {option.code ? (
+                  <span className="shrink-0 text-[10px] text-muted-foreground">
+                    {option.code}
+                  </span>
+                ) : null}
+              </label>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+function BranchMultiSelectReadOnlyDetail({
+  label,
+  language,
+  value,
+}: {
+  label: string;
+  language: LanguageCode;
+  value: unknown;
+}) {
+  const selected = selectedBranchesFromValue(value);
+  return (
+    <div className="grid gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] border-l-2 border-l-secondary">
+      <span className="text-xs font-semibold text-muted-foreground">
+        {label}
+      </span>
+      {selected.length === 0 ? (
+        <b className="text-foreground font-medium">-</b>
+      ) : (
+        <ul className="flex flex-wrap gap-1">
+          {selected.map((option) => {
+            const key = branchKeyOf(option);
+            return (
+              <li
+                key={key}
+                className="rounded-md border border-border bg-background px-2 py-0.5 text-xs font-semibold"
+              >
+                {branchOptionDisplayName(option, language)}
+                {option.code ? (
+                  <span className="ml-1 text-[10px] font-normal text-muted-foreground">
+                    {option.code}
+                  </span>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function extractListRecords(payload: unknown): SettingRecord[] {
+  if (!isRecord(payload)) return Array.isArray(payload) ? payload.filter(isRecord) : [];
+  const data = payload.data;
+  if (Array.isArray(data)) return data.filter(isRecord);
+  if (isRecord(data) && Array.isArray(data.data)) return data.data.filter(isRecord);
+  return [];
+}
+
 function BranchCoordinatePairEditor({
   config,
   form,
@@ -10094,6 +10410,8 @@ function formFromRecord(
         const legacySingle = toUriArray(getByPath(record, "imageuri"));
         form[field.key] = legacySingle;
       }
+    } else if (field.type === "branch-multi-select") {
+      form[field.key] = selectedBranchesFromValue(value);
     } else form[field.key] = value ?? "";
   }
   if (config.slug === "company") {
@@ -10247,6 +10565,8 @@ function buildPayload(
       setByPath(payload, field.key, isRecord(value) ? value : {});
     else if (field.type === "image-gallery")
       setByPath(payload, field.key, toUriArray(value));
+    else if (field.type === "branch-multi-select")
+      setByPath(payload, field.key, selectedBranchesFromValue(value));
     else if (field.type === "json")
       setByPath(payload, field.key, parseJsonField(value, field.key));
     else if (field.type === "checkbox")
