@@ -1860,6 +1860,12 @@ export function SystemSettingsScreen({
           text={text}
           workDays={workDays}
         />
+      ) : config.slug === "productgroup" && !hideChrome ? (
+        <ProductGroupUnifiedView
+          initialBackendLanguage={initialBackendLanguage}
+          initialBackendUrl={initialBackendUrl}
+          language={language}
+        />
       ) : config.slug === "branch" && !branchOverride ? (
         <BranchUnifiedView
           auth={auth}
@@ -9226,6 +9232,151 @@ function BranchEmbeddedSubScreen({
       language={language}
       route={route}
     />
+  );
+}
+
+type ProductGroupTabKey =
+  | "productgroup"
+  | "master_group_screen"
+  | "master_group_sub1_screen"
+  | "master_group_sub2_screen";
+
+const PRODUCT_GROUP_TABS: ReadonlyArray<{
+  id: ProductGroupTabKey;
+  route: string;
+  labels: Record<LanguageCode, string>;
+}> = [
+  {
+    id: "productgroup",
+    route: "/productgroup",
+    labels: {
+      th: "กลุ่มสินค้า",
+      en: "Product Group",
+      cn: "产品组",
+      ja: "商品グループ",
+      ko: "상품 그룹",
+      lo: "ກຸ່ມສິນຄ້າ",
+      my: "ကုန်ပစ္စည်းအုပ်စု",
+      km: "ក្រុមផលិតផល",
+      vi: "Nhóm sản phẩm",
+      ms: "Kumpulan Produk",
+      id: "Grup Produk",
+      fil: "Grupo ng Produkto",
+    },
+  },
+  {
+    id: "master_group_screen",
+    route: "/master_group_screen",
+    labels: {
+      th: "กลุ่มหลัก",
+      en: "Main Group",
+      cn: "主组",
+      ja: "メイングループ",
+      ko: "메인 그룹",
+      lo: "ກຸ່ມຫຼັກ",
+      my: "ပင်မ အုပ်စု",
+      km: "ក្រុមមេ",
+      vi: "Nhóm chính",
+      ms: "Kumpulan Utama",
+      id: "Grup Utama",
+      fil: "Pangunahing Grupo",
+    },
+  },
+  {
+    id: "master_group_sub1_screen",
+    route: "/master_group_sub1_screen",
+    labels: {
+      th: "กลุ่มย่อย 1",
+      en: "Sub Group 1",
+      cn: "子组 1",
+      ja: "サブグループ 1",
+      ko: "하위 그룹 1",
+      lo: "ກຸ່ມຍ່ອຍ 1",
+      my: "အောက်အုပ်စု ၁",
+      km: "ក្រុមរង ១",
+      vi: "Nhóm phụ 1",
+      ms: "Kumpulan Kecil 1",
+      id: "Sub Grup 1",
+      fil: "Sub Grupo 1",
+    },
+  },
+  {
+    id: "master_group_sub2_screen",
+    route: "/master_group_sub2_screen",
+    labels: {
+      th: "กลุ่มย่อย 2",
+      en: "Sub Group 2",
+      cn: "子组 2",
+      ja: "サブグループ 2",
+      ko: "하위 그룹 2",
+      lo: "ກຸ່ມຍ່ອຍ 2",
+      my: "အောက်အုပ်စု ၂",
+      km: "ក្រុមរង ២",
+      vi: "Nhóm phụ 2",
+      ms: "Kumpulan Kecil 2",
+      id: "Sub Grup 2",
+      fil: "Sub Grupo 2",
+    },
+  },
+];
+
+function productGroupTabLabel(
+  tab: (typeof PRODUCT_GROUP_TABS)[number],
+  language: LanguageCode,
+): string {
+  return tab.labels[language] ?? tab.labels.en ?? tab.id;
+}
+
+function ProductGroupUnifiedView({
+  initialBackendLanguage,
+  initialBackendUrl,
+  language,
+}: {
+  initialBackendLanguage?: BackendLanguageDictionary;
+  initialBackendUrl?: string;
+  language: LanguageCode;
+}) {
+  const [activeTab, setActiveTab] = useState<ProductGroupTabKey>(
+    "productgroup",
+  );
+  const activeTabEntry =
+    PRODUCT_GROUP_TABS.find((tab) => tab.id === activeTab) ??
+    PRODUCT_GROUP_TABS[0];
+  return (
+    <div className="grid w-full min-w-0 gap-2">
+      <Card className="overflow-hidden">
+        <div className="flex flex-wrap items-center gap-1 border-b border-border bg-muted/40 px-2 py-1.5">
+          {PRODUCT_GROUP_TABS.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                className={cn(
+                  "rounded-md px-2.5 py-1 text-xs font-semibold transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-foreground hover:bg-background",
+                )}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {productGroupTabLabel(tab, language)}
+              </button>
+            );
+          })}
+        </div>
+        <div className="p-2">
+          <SystemSettingsScreen
+            embedded
+            hideChrome
+            initialBackendLanguage={initialBackendLanguage}
+            initialBackendUrl={initialBackendUrl}
+            language={language}
+            route={activeTabEntry.route}
+          />
+        </div>
+      </Card>
+    </div>
   );
 }
 

@@ -204,9 +204,6 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("grade", "Grade", "Grade", "/master_grade_screen", "master"),
           tx("model", "Model", "Model", "/master_model_screen", "master"),
           tx("pattern", "Pattern", "Pattern", "/master_pattern_screen", "master"),
-          tx("group-main", "กลุ่มหลัก", "Main Group", "/master_group_screen", "master"),
-          tx("group-sub1", "กลุ่มย่อย 1", "Sub Group 1", "/master_group_sub1_screen", "master"),
-          tx("group-sub2", "กลุ่มย่อย 2", "Sub Group 2", "/master_group_sub2_screen", "master"),
         ],
       },
       {
