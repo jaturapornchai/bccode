@@ -280,7 +280,11 @@ export function MapPickerDialog({
 
   const runSearch = useCallback(async () => {
     const query = searchQuery.trim();
-    if (!query) return;
+    if (!query) {
+      setSearchResults([]);
+      setSearchStatus("idle");
+      return;
+    }
     searchControllerRef.current?.abort();
     const controller = new AbortController();
     searchControllerRef.current = controller;
@@ -349,6 +353,20 @@ export function MapPickerDialog({
     setPosition({ lat: result.lat, lng: result.lng, zoom: SEARCH_ZOOM });
     setSearchResults([]);
   };
+
+  useEffect(() => {
+    if (!open) return;
+    const trimmed = searchQuery.trim();
+    if (trimmed.length < 3) {
+      setSearchResults([]);
+      setSearchStatus("idle");
+      return;
+    }
+    const id = window.setTimeout(() => {
+      void runSearch();
+    }, 600);
+    return () => window.clearTimeout(id);
+  }, [open, runSearch, searchQuery]);
 
   if (!open) return null;
 

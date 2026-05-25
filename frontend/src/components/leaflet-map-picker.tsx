@@ -12,11 +12,9 @@ import {
   useMapEvents,
 } from "react-leaflet";
 
-const ICON_RETINA =
-  "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png";
-const ICON =
-  "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png";
-const SHADOW = "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png";
+const ICON_RETINA = "/leaflet/marker-icon-2x.png";
+const ICON = "/leaflet/marker-icon.png";
+const SHADOW = "/leaflet/marker-shadow.png";
 
 const defaultIcon = L.icon({
   iconUrl: ICON,

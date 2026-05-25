@@ -340,6 +340,139 @@ function branchTabLabel(
   if (!tab) return tabId;
   return tab.labels[language] ?? tab.labels.en ?? tabId;
 }
+
+const POS_TAB_SECTIONS: ReadonlyArray<{
+  id: string;
+  title: Record<LanguageCode, string>;
+  fieldKeys: string[];
+}> = [
+  {
+    id: "registration",
+    title: {
+      th: "ทะเบียน / VAT",
+      en: "Registration / VAT",
+      cn: "注册 / VAT",
+      ja: "登録 / VAT",
+      ko: "등록 / VAT",
+      lo: "ການລົງທະບຽນ / VAT",
+      my: "မှတ်ပုံတင် / VAT",
+      km: "ការចុះបញ្ជី / VAT",
+      vi: "Đăng ký / VAT",
+      ms: "Pendaftaran / VAT",
+      id: "Registrasi / VAT",
+      fil: "Pagrehistro / VAT",
+    },
+    fieldKeys: [
+      "businesstype",
+      "company_registration_no",
+      "is_vat_registered",
+      "pos.tax_id",
+      "pos.vatrate",
+    ],
+  },
+  {
+    id: "tax-types",
+    title: {
+      th: "ประเภทภาษีซื้อ-ขาย",
+      en: "Purchase / Sale Tax",
+      cn: "购销税",
+      ja: "仕入・売上税",
+      ko: "구매/판매 세금",
+      lo: "ພາສີຊື້-ຂາຍ",
+      my: "ဝယ်/ရောင်း အခွန်",
+      km: "ពន្ធទិញ-លក់",
+      vi: "Thuế mua-bán",
+      ms: "Cukai Beli/Jual",
+      id: "Pajak Beli/Jual",
+      fil: "Buwis Bili/Benta",
+    },
+    fieldKeys: [
+      "pos.vattypepurchase",
+      "pos.inquirytypepurchase",
+      "pos.vattypesale",
+      "pos.inquirytypesale",
+    ],
+  },
+  {
+    id: "receipt",
+    title: {
+      th: "ใบเสร็จ",
+      en: "Receipt",
+      cn: "收据",
+      ja: "レシート",
+      ko: "영수증",
+      lo: "ໃບບິນ",
+      my: "ပြေစာ",
+      km: "បង្កាន់ដៃ",
+      vi: "Biên lai",
+      ms: "Resit",
+      id: "Struk",
+      fil: "Resibo",
+    },
+    fieldKeys: ["pos.headerreceiptpos", "pos.footerreceiptpos"],
+  },
+  {
+    id: "coupons-points",
+    title: {
+      th: "คูปอง / แต้ม",
+      en: "Coupons / Points",
+      cn: "优惠券 / 积分",
+      ja: "クーポン / ポイント",
+      ko: "쿠폰 / 포인트",
+      lo: "ຄູປ໋ອງ / ຄະແນນ",
+      my: "ကူပွန် / အမှတ်",
+      km: "គូប៉ុង / ពិន្ទុ",
+      vi: "Coupon / Điểm",
+      ms: "Kupon / Mata",
+      id: "Kupon / Poin",
+      fil: "Kupon / Puntos",
+    },
+    fieldKeys: ["couponusetype", "pointconfig"],
+  },
+  {
+    id: "rounding",
+    title: {
+      th: "การปัดเศษ",
+      en: "Rounding",
+      cn: "舍入",
+      ja: "丸め",
+      ko: "반올림",
+      lo: "ການປັດເສດ",
+      my: "အလုံးအလုံး",
+      km: "ការបង្គត់",
+      vi: "Làm tròn",
+      ms: "Pembundaran",
+      id: "Pembulatan",
+      fil: "Pag-round",
+    },
+    fieldKeys: ["paymentrounding"],
+  },
+  {
+    id: "pos-other",
+    title: {
+      th: "POS อื่น ๆ",
+      en: "POS Other",
+      cn: "POS 其他",
+      ja: "POS その他",
+      ko: "POS 기타",
+      lo: "POS ອື່ນໆ",
+      my: "POS အခြား",
+      km: "POS ផ្សេងៗ",
+      vi: "POS khác",
+      ms: "POS Lain",
+      id: "POS Lainnya",
+      fil: "POS Iba pa",
+    },
+    fieldKeys: ["pos.isbom", "machinetype"],
+  },
+];
+
+function posSectionTitle(
+  section: (typeof POS_TAB_SECTIONS)[number],
+  language: LanguageCode,
+): string {
+  return section.title[language] ?? section.title.en ?? section.id;
+}
 const authenticatedImageObjectUrlCache = new Map<
   string,
   AuthenticatedImageCacheEntry
@@ -8026,28 +8159,54 @@ function BranchUnifiedView({
                   event.preventDefault();
                   onSubmit(event);
                 }}
-                className="grid gap-2 p-3"
+                className="grid gap-3 p-3"
               >
-                <div className="grid gap-2 md:grid-cols-2">
-                  {grouped[activeTab].map((field) => (
-                    <div
-                      className={fieldGridItemClass(field, config)}
-                      key={field.key}
-                    >
-                      <FieldEditor
-                        auth={auth}
-                        config={config}
-                        dateTimeScope={dateTimeScope}
-                        dictionary={dictionary}
-                        field={field}
-                        form={form}
-                        language={language}
-                        setForm={setForm}
-                        workspace={workspace}
-                      />
-                    </div>
-                  ))}
-                </div>
+                {activeTab === "pos" ? (
+                  <BranchPosSections
+                    auth={auth}
+                    config={config}
+                    dateTimeScope={dateTimeScope}
+                    dictionary={dictionary}
+                    fields={grouped[activeTab]}
+                    form={form}
+                    language={language}
+                    setForm={setForm}
+                    workspace={workspace}
+                  />
+                ) : activeTab === "business" ? (
+                  <BranchBusinessFlags
+                    auth={auth}
+                    config={config}
+                    dateTimeScope={dateTimeScope}
+                    dictionary={dictionary}
+                    fields={grouped[activeTab]}
+                    form={form}
+                    language={language}
+                    setForm={setForm}
+                    workspace={workspace}
+                  />
+                ) : (
+                  <div className="grid gap-2 md:grid-cols-2">
+                    {grouped[activeTab].map((field) => (
+                      <div
+                        className={fieldGridItemClass(field, config)}
+                        key={field.key}
+                      >
+                        <FieldEditor
+                          auth={auth}
+                          config={config}
+                          dateTimeScope={dateTimeScope}
+                          dictionary={dictionary}
+                          field={field}
+                          form={form}
+                          language={language}
+                          setForm={setForm}
+                          workspace={workspace}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-2">
                   <Button
                     type="button"
@@ -8179,6 +8338,142 @@ function branchRecordToListItem(record: SettingRecord): BranchListItem {
 
 function branchDisplayLabel(language: LanguageCode): string {
   return language === "th" ? "สาขา" : "branch";
+}
+
+type BranchTabSectionProps = {
+  auth: AuthSession | null;
+  config: SystemSettingConfig;
+  dateTimeScope: DateTimeScope;
+  dictionary: BackendLanguageDictionary;
+  fields: SystemSettingField[];
+  form: FormState;
+  language: LanguageCode;
+  setForm: (form: FormState) => void;
+  workspace: WorkspaceSession | null;
+};
+
+function BranchPosSections({
+  auth,
+  config,
+  dateTimeScope,
+  dictionary,
+  fields,
+  form,
+  language,
+  setForm,
+  workspace,
+}: BranchTabSectionProps) {
+  const fieldByKey = useMemo(() => {
+    const map = new Map<string, SystemSettingField>();
+    for (const field of fields) map.set(field.key, field);
+    return map;
+  }, [fields]);
+  const sectionEntries = POS_TAB_SECTIONS.map((section) => ({
+    section,
+    sectionFields: section.fieldKeys
+      .map((key) => fieldByKey.get(key))
+      .filter((item): item is SystemSettingField => Boolean(item)),
+  })).filter((entry) => entry.sectionFields.length > 0);
+  const claimedKeys = new Set(
+    sectionEntries.flatMap((entry) =>
+      entry.sectionFields.map((field) => field.key),
+    ),
+  );
+  const orphanFields = fields.filter((field) => !claimedKeys.has(field.key));
+
+  return (
+    <div className="grid gap-3">
+      {sectionEntries.map(({ section, sectionFields }) => (
+        <section
+          key={section.id}
+          className="grid gap-2 rounded-xl border border-border bg-background/40 p-3"
+        >
+          <header className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {posSectionTitle(section, language)}
+          </header>
+          <div className="grid gap-2 md:grid-cols-2">
+            {sectionFields.map((field) => (
+              <div
+                className={fieldGridItemClass(field, config)}
+                key={field.key}
+              >
+                <FieldEditor
+                  auth={auth}
+                  config={config}
+                  dateTimeScope={dateTimeScope}
+                  dictionary={dictionary}
+                  field={field}
+                  form={form}
+                  language={language}
+                  setForm={setForm}
+                  workspace={workspace}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+      {orphanFields.length > 0 ? (
+        <section className="grid gap-2 rounded-xl border border-border bg-background/40 p-3">
+          <header className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {language === "th" ? "อื่น ๆ" : "Other"}
+          </header>
+          <div className="grid gap-2 md:grid-cols-2">
+            {orphanFields.map((field) => (
+              <div
+                className={fieldGridItemClass(field, config)}
+                key={field.key}
+              >
+                <FieldEditor
+                  auth={auth}
+                  config={config}
+                  dateTimeScope={dateTimeScope}
+                  dictionary={dictionary}
+                  field={field}
+                  form={form}
+                  language={language}
+                  setForm={setForm}
+                  workspace={workspace}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+    </div>
+  );
+}
+
+function BranchBusinessFlags({
+  auth,
+  config,
+  dateTimeScope,
+  dictionary,
+  fields,
+  form,
+  language,
+  setForm,
+  workspace,
+}: BranchTabSectionProps) {
+  return (
+    <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+      {fields.map((field) => (
+        <div className="min-w-0" key={field.key}>
+          <FieldEditor
+            auth={auth}
+            config={config}
+            dateTimeScope={dateTimeScope}
+            dictionary={dictionary}
+            field={field}
+            form={form}
+            language={language}
+            setForm={setForm}
+            workspace={workspace}
+          />
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function ComboFieldEditor({
