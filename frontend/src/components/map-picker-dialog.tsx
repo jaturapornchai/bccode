@@ -393,12 +393,9 @@ export function MapPickerDialog({
         </Button>
       </header>
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <form
+        <div
           className="relative flex min-w-0 flex-1 items-center gap-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void runSearch();
-          }}
+          role="search"
         >
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -406,10 +403,17 @@ export function MapPickerDialog({
             placeholder={text(language, "search")}
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                void runSearch();
+              }
+            }}
           />
           <Button
-            type="submit"
+            type="button"
             size="sm"
+            onClick={() => void runSearch()}
             disabled={searchStatus === "loading" || !searchQuery.trim()}
           >
             {searchStatus === "loading" ? (
@@ -419,7 +423,7 @@ export function MapPickerDialog({
             )}
             {text(language, "searchAction")}
           </Button>
-        </form>
+        </div>
         <Button
           type="button"
           variant="outline"
