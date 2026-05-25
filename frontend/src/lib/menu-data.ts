@@ -177,7 +177,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         id: "products",
         title: ml("product_management", "จัดการสินค้า", "Products"),
         items: [
-          { ...tx("barcode", "สินค้า", "Product", "/product_barcode", "master"), label: ml("product", "สินค้า", "Product") },
+          { ...tx("barcode", "บาร์โค้ด", "Barcode", "/product_barcode", "master"), label: ml("barcode", "บาร์โค้ด", "Barcode") },
           tx("product-unit", "หน่วยนับสินค้า", "Product Unit", "/productunit", "master"),
           tx("label-print", "พิมพ์ป้ายสินค้า", "Print Product Label", "/product_barcode_shelf", "master"),
           tx("promotion", "โปรโมชั่น", "Promotion", "/promotion_screen", "master"),
