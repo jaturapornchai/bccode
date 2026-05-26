@@ -86,7 +86,7 @@ func (svc ProductCategoryHttpService) buildDefaultAllProductsCategory(ctx contex
 	// Fetch all products where materialtype != 1
 	filters := bson.M{
 		"shopid":       shopID,
-		"deleted_at":    bson.M{"$exists": false},
+		"deleted_at":   bson.M{"$exists": false},
 		"materialtype": bson.M{"$ne": 1},
 	}
 
@@ -95,7 +95,7 @@ func (svc ProductCategoryHttpService) buildDefaultAllProductsCategory(ctx contex
 		"barcode":          1,
 		"itemcode":         1,
 		"names":            1,
-		"item_unit_code":     1,
+		"item_unit_code":   1,
 		"itemunitnames":    1,
 		"manufacturerguid": 1,
 	})
@@ -438,10 +438,7 @@ func (svc ProductCategoryHttpService) XSortsSave(shopID string, authUsername str
 
 		findDoc.XSorts = &tempXSorts
 
-		findDoc.UpdatedBy = authUsername
-		findDoc.UpdatedAt = time.Now()
-
-		err = svc.repo.Update(ctx, shopID, findDoc.GuidFixed, findDoc)
+		err = svc.repo.UpdateXSorts(ctx, shopID, findDoc.GuidFixed, tempXSorts, authUsername, time.Now())
 
 		if err != nil {
 			return err

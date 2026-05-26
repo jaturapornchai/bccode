@@ -67,6 +67,13 @@ Related central entrypoints:
 - Unit-level mocks are allowed only for isolated technical failures and pure code paths; they do not replace real DEV data verification for business behavior.
 - If real data access is blocked, report what was checked and mark the result unverified instead of inventing an answer.
 
+## Thai SME Business Domain
+- BC Ai Account supports Thai SME business operations, not generic admin CRUD.
+- Agents working on this project must behave as Thai SME accounting and business-domain experts across accounting, marketing, sales, purchasing, trading/distribution, restaurant operations, light manufacturing, general ledger, inventory accounting, accounts receivable, accounts payable, tax/VAT-aware workflows, company/branch operations, reporting, and auditability.
+- Business modules must be designed around real operating documents and lifecycle flows, such as quotation, sale order, invoice, receipt, purchase request, purchase order, bill, payment, stock receipt, stock issue, transfer, stock count, restaurant sale, production/BOM consumption, finished goods receipt, debtor/creditor aging, and GL posting.
+- Do not implement accounting, inventory, tax, AR/AP, sales, purchase, restaurant, production, or reporting features as isolated data-entry screens without preserving document flow, numbering, tax/VAT treatment, stock impact, accounting impact, permissions, reports, and traceability.
+- When a change touches a business process, inspect the current source, legacy Flutter behavior when relevant, existing data contracts, and real DEV behavior before implementation. Surface business impact and compatibility risk before changing schemas, APIs, postings, stock movement, tax logic, or reporting behavior.
+
 ## Thai Branch Code Rule
 - For Thailand tax/VAT branch numbering, head office (`สำนักงานใหญ่`) is branch code `00000`.
 - `00001` is the first branch office code, not the head office.

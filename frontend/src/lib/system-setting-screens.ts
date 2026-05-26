@@ -30,6 +30,7 @@ export type SystemSettingField = {
     | "radio"
     | "select"
     | "text"
+    | "time-sale-list"
     | "textarea";
   required?: boolean;
   readOnly?: boolean;
@@ -975,17 +976,33 @@ function productMasterConfigs(): SystemSettingConfig[] {
         en: "Manage product categories and category groups.",
       },
       fields: [
+        { ...numberField("group_number", "ลำดับกลุ่ม", "Group number"), readOnly: true },
+        { ...textField("parent_guid", "หมวดแม่", "Parent category GUID"), readOnly: true },
         namesField("names", "ชื่อหมวดสินค้า", "Product category names"),
-        numberField("group_number", "กลุ่มลำดับ", "Group number"),
-        textField("parent_guid", "หมวดแม่", "Parent category GUID"),
-        checkboxField("useimageorcolor", "ใช้รูปหรือสี", "Use image or color"),
-        textField("colorselecthex", "สี", "Color"),
-        jsonField("xsorts", "ลำดับหมวดย่อย", "Subcategory order JSON"),
-        jsonField(
-          "codelist",
-          "รายการสินค้าในหมวด",
-          "Category product list JSON",
+        checkboxField("isdisabled", "ปิดใช้งาน", "Disabled"),
+        timeSaleListField("timeforsales", "เวลาการขาย", "Time for sale"),
+        radioField(
+          "useimageorcolor",
+          "การแสดงผลหมวด",
+          "Category display mode",
+          [
+            {
+              value: "false",
+              label: "Use image",
+              labels: { th: "ใช้รูปภาพ", en: "Use image" },
+            },
+            {
+              value: "true",
+              label: "Use color",
+              labels: { th: "ใช้สี", en: "Use color" },
+            },
+          ],
+          false,
+          "boolean",
         ),
+        textField("colorselecthex", "สี (Hex)", "Color (Hex)"),
+        imageUploadField("imageuri", "รูปภาพ", "Image"),
+        imageUploadField("coveruri", "รูปหน้าปก", "Cover image"),
       ],
     },
     {
@@ -1306,6 +1323,14 @@ function imageGalleryField(
   en: string,
 ): SystemSettingField {
   return { key, label: { th, en }, type: "image-gallery" };
+}
+
+function timeSaleListField(
+  key: string,
+  th: string,
+  en: string,
+): SystemSettingField {
+  return { key, label: { th, en }, type: "time-sale-list" };
 }
 
 function branchMultiSelectField(

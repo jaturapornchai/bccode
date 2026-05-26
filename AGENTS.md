@@ -23,6 +23,13 @@
 - If a fact cannot be verified, state clearly that it is unverified and do not present it as true.
 - Distinguish confirmed evidence, assumptions, and recommendations. Never mix assumptions into factual summaries.
 
+## Business Domain Expert Rule
+- Treat BC Ai Account as a Thai SME business platform, not a generic CRUD/admin system.
+- The assistant must act as an expert in Thai SME accounting and operations: accounting, marketing, sales, purchasing, trading/distribution, restaurant operations, light manufacturing, general ledger, inventory accounting, accounts receivable, accounts payable, tax/VAT-aware workflows, branch/company operations, and related SME business processes.
+- Design and review features through real business workflows: quote/order/invoice/receipt, purchase request/order/bill/payment, stock receiving/issuing/transfer/counting, POS/restaurant sale flows, production/BOM consumption and finished goods, debtor/creditor aging, GL posting, reporting, and auditability.
+- Do not reduce business modules to storage screens. Preserve document lifecycle, approvals where applicable, numbering, tax, branch, stock, accounting impact, permissions, reports, and traceability.
+- If a requested workflow affects accounting, inventory, tax, AR/AP, restaurant, purchasing, sales, manufacturing, or reporting, inspect the existing source/legacy Flutter/reference behavior before changing it and surface business impact before implementation.
+
 ## No Fallback Rule
 - Do not silently substitute missing config, API routes, storage providers, database values, language keys, business defaults, credentials, tenant/branch context, or user/company data.
 - If a required value is missing, invalid, unauthorized, unreachable, or unverified, stop that operation and show a clear error with the real reason and the missing source/key/env/route when it is safe to reveal.

@@ -2,6 +2,7 @@
 
 import {
   AlertCircle,
+  ArrowLeft,
   BadgeCheck,
   Bot,
   Building2,
@@ -13,6 +14,8 @@ import {
   DownloadCloud,
   Edit3,
   FileCog,
+  FolderOpen,
+  FolderPlus,
   GitBranch,
   Globe,
   ImageIcon,
@@ -83,6 +86,7 @@ import {
   type SystemSettingOption,
 } from "@/lib/system-setting-screens";
 import { MapPickerDialog } from "@/components/map-picker-dialog";
+import { ProductCategoryTreeView } from "./product-category-tree-view";
 import { imageNeedsAuthenticatedFetch } from "@/lib/image-upload-proxy";
 import { normalizeThaiTaxBranchCode } from "@/lib/thai-branch-code";
 import {
@@ -907,6 +911,8 @@ const fieldValueAliases: Record<string, string[]> = {
   "branch.contact.zip_code": ["contact.zipcode"],
   "branch.pos.tax_id": ["pos.taxid"],
   "branch.year_type": ["yeartype"],
+  "product_category_group_select_screen.group_number": ["groupnumber"],
+  "product_category_group_select_screen.parent_guid": ["parentguid"],
 };
 
 const dayNames: Record<LanguageCode, string[]> = {
@@ -996,6 +1002,11 @@ export function SystemSettingsScreen({
   const [autoOpenedCompanyId, setAutoOpenedCompanyId] = useState("");
   const [workDays, setWorkDays] = useState<WorkDay[]>([]);
   const [sourceShopId, setSourceShopId] = useState("");
+  const [groupNumber, setGroupNumber] = useState<number | null>(null);
+  const [categorySelectedGuid, setCategorySelectedGuid] = useState("");
+  const [categorySearchQuery, setCategorySearchQuery] = useState("");
+  const groupNumberRef = useRef<number | null>(null);
+  groupNumberRef.current = groupNumber;
   const [copySourceEnvironment, setCopySourceEnvironment] = useState<
     "uat" | "pro"
   >("uat");
@@ -1068,13 +1079,17 @@ export function SystemSettingsScreen({
       else setLoading(true);
       setNotice(null);
       try {
+        const limitValue = currentConfig.slug === "product_category_group_select_screen" ? "100000" : String(SETTINGS_LIST_PAGE_SIZE);
         const searchParams = new URLSearchParams({
-          limit: String(SETTINGS_LIST_PAGE_SIZE),
+          limit: limitValue,
           offset: String(offset),
           page: String(Math.floor(offset / SETTINGS_LIST_PAGE_SIZE) + 1),
           q: query,
           shopid: currentWorkspace.shop.shopid,
         });
+        if (currentConfig.slug === "product_category_group_select_screen" && groupNumberRef.current !== null) {
+          searchParams.set("group-number", String(groupNumberRef.current));
+        }
         const scope = resolveDateTimeScope(currentWorkspace);
         if (
           currentConfig.slug === "department" ||
@@ -1154,6 +1169,7 @@ export function SystemSettingsScreen({
 
   useEffect(() => {
     if (!config) return;
+    setGroupNumber(null);
     const savedLanguage = normalizeLanguage(
       localStorage.getItem("user_language") ??
         externalLanguage ??
@@ -1183,6 +1199,17 @@ export function SystemSettingsScreen({
     loadRecords,
     router,
   ]);
+
+  useEffect(() => {
+    if (config?.slug === "product_category_group_select_screen" && auth && workspace) {
+      void loadRecords(auth, workspace, config);
+    }
+  }, [groupNumber, config, auth, workspace, loadRecords]);
+
+  useEffect(() => {
+    setCategorySelectedGuid("");
+    setCategorySearchQuery("");
+  }, [groupNumber]);
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -1297,6 +1324,17 @@ export function SystemSettingsScreen({
     setNotice(null);
   }
 
+  function handleOpenCategoryCreate(parentGuid?: string) {
+    setEditing(null);
+    const initialForm = defaultForm(currentConfig, language);
+    initialForm.group_number = groupNumber;
+    initialForm.parent_guid = parentGuid ?? "";
+    setForm(initialForm);
+    setFormOpen(true);
+    setSelectedRecordId("");
+    setNotice(null);
+  }
+
   async function openEdit(record: SettingRecord) {
     setSelectedRecordId(recordId(record, currentConfig));
     setEditing(record);
@@ -1346,6 +1384,53 @@ export function SystemSettingsScreen({
         text: error instanceof Error ? error.message : text("jsonInvalid"),
       });
       return;
+    }
+
+    if (currentConfig.slug === "product_category_group_select_screen") {
+      const parentGuid = stringValue(
+        payload.parent_guid ?? payload.parentguid ?? form.parent_guid,
+      );
+      const getParentGuidAll = (list: SettingRecord[], pGuid: string): string => {
+        if (!pGuid) return "";
+        const parent = list.find((r) => productCategoryGuid(r) === pGuid);
+        if (!parent) return pGuid;
+        const grandParentGuid = productCategoryParentGuid(parent);
+        const grandParents = getParentGuidAll(list, grandParentGuid);
+        return grandParents ? `${grandParents},${pGuid}` : pGuid;
+      };
+      payload.parent_guid = parentGuid;
+      payload.group_number = Number(
+        payload.group_number ?? form.group_number ?? groupNumber ?? 0,
+      );
+      payload.parentguidall = getParentGuidAll(records, parentGuid);
+      const existingXSorts = Array.isArray(payload.xsorts)
+        ? (payload.xsorts as unknown[])
+        : [];
+      if (existingXSorts.length === 0) {
+        const currentGuid = productCategoryGuid(editing ?? payload);
+        const siblingOrders = records
+          .filter(
+            (record) =>
+              productCategoryGroupNumber(record) === Number(payload.group_number) &&
+              productCategoryParentGuid(record) === parentGuid &&
+              productCategoryGuid(record) !== currentGuid,
+          )
+          .map(productCategoryXOrder)
+          .filter((order) => Number.isFinite(order));
+        payload.xsorts = [
+          {
+            code: "X",
+            xorder:
+              siblingOrders.length > 0 ? Math.max(...siblingOrders) + 1 : 1,
+          },
+        ];
+      }
+      if (!Array.isArray(payload.codelist)) payload.codelist = [];
+      if (!Array.isArray(payload.timeforsales)) payload.timeforsales = [];
+      if (payload.colorselecthex) {
+        payload.colorselecthex = normalizeHexColor(payload.colorselecthex);
+        payload.colorselect = payload.colorselecthex;
+      }
     }
 
     const missingRequired = currentConfig.fields.some(
@@ -1754,6 +1839,11 @@ export function SystemSettingsScreen({
     setStandardUnitDialog((current) => ({ ...current, selectedCodes: [] }));
   }
 
+  const showProductCategoryHeaderControls =
+    config.slug === "product_category_group_select_screen" &&
+    !hideChrome &&
+    groupNumber !== null;
+
   const content = (
     <div className="grid w-full min-w-0 gap-2">
       {hideChrome ? null : (
@@ -1803,7 +1893,62 @@ export function SystemSettingsScreen({
               </p>
             </div>
           </div>
-          <div className="flex shrink-0 flex-wrap justify-end gap-1.5 items-center">
+          <div
+            className={cn(
+              "flex min-w-0 flex-wrap items-center justify-end gap-1.5",
+              showProductCategoryHeaderControls ? "flex-[1_1_34rem]" : "shrink-0",
+            )}
+          >
+            {showProductCategoryHeaderControls ? (
+              <div className="flex min-w-0 flex-[1_1_28rem] flex-wrap items-center justify-end gap-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="size-8 shrink-0 rounded-lg"
+                  onClick={() => {
+                    setGroupNumber(null);
+                    setCategorySelectedGuid("");
+                    setCategorySearchQuery("");
+                  }}
+                >
+                  <ArrowLeft className="size-4" />
+                </Button>
+                <Badge
+                  variant="outline"
+                  className="h-8 shrink-0 px-2 text-xs font-semibold"
+                >
+                  {language === "th" ? `กลุ่ม ${groupNumber}` : `Group ${groupNumber}`}
+                </Badge>
+                <Input
+                  className="h-8 min-w-40 flex-[1_1_14rem] rounded-lg text-sm md:max-w-72"
+                  placeholder={language === "th" ? "ค้นหา..." : "Search..."}
+                  value={categorySearchQuery}
+                  onChange={(event) => setCategorySearchQuery(event.target.value)}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 shrink-0 rounded-lg gap-1.5"
+                  onClick={() => handleOpenCategoryCreate()}
+                  disabled={loading || saving}
+                >
+                  <Plus className="size-4" />
+                  {language === "th" ? "เพิ่มหมวดหลัก" : "Add Root"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 shrink-0 rounded-lg gap-1.5"
+                  onClick={() => categorySelectedGuid && handleOpenCategoryCreate(categorySelectedGuid)}
+                  disabled={loading || saving || !categorySelectedGuid}
+                >
+                  <FolderPlus className="size-4 text-emerald-600 dark:text-emerald-400" />
+                  {language === "th" ? "เพิ่มหมวดย่อย" : "Add Subcategory"}
+                </Button>
+              </div>
+            ) : null}
             {embedded ? null : (
               <LanguageDialog
                 language={language}
@@ -1866,6 +2011,74 @@ export function SystemSettingsScreen({
           initialBackendUrl={initialBackendUrl}
           language={language}
         />
+      ) : config.slug === "product_category_group_select_screen" && !hideChrome ? (
+        <div
+          className={cn(
+            "grid w-full min-w-0 items-stretch gap-3",
+            groupNumber === null
+              ? "grid-cols-1"
+              : "min-h-[calc(100dvh-12rem)] xl:grid-cols-[minmax(320px,0.95fr)_minmax(420px,1.05fr)]",
+          )}
+        >
+          <ProductCategoryTreeView
+            auth={auth}
+            workspace={workspace}
+            language={language}
+            records={records}
+            groupNumber={groupNumber}
+            setGroupNumber={setGroupNumber}
+            selectedGuid={categorySelectedGuid}
+            setSelectedGuid={setCategorySelectedGuid}
+            searchQuery={categorySearchQuery}
+            onOpenCreate={handleOpenCategoryCreate}
+            onOpenEdit={openEdit}
+            onDeleteRecord={deleteRecord}
+            onRefresh={() => void loadRecords(auth, workspace, config)}
+            saving={saving}
+            loading={loading}
+          />
+          {groupNumber === null ? null : (
+            <div className="min-h-0 h-full">
+              {formOpen ? (
+                <SettingFormDialog
+                  inline
+                  auth={auth}
+                  config={config}
+                  dictionary={backendLanguage}
+                  editing={editing}
+                  form={form}
+                  dateTimeScope={dateTimeScope}
+                  language={language}
+                  notice={notice}
+                  onClose={() => {
+                    if (!saving) setFormOpen(false);
+                  }}
+                  onSubmit={saveRecord}
+                  saving={saving}
+                  setForm={setForm}
+                  text={text}
+                  workspace={workspace}
+                />
+              ) : (
+                <Card className="h-full border-border bg-card shadow-sm">
+                  <CardContent className="grid h-full min-h-60 place-items-center p-4 text-center text-sm text-muted-foreground">
+                    <div className="grid gap-2">
+                      <FolderOpen className="mx-auto size-8 text-primary/70" />
+                      <b className="text-foreground">
+                        {language === "th" ? "เลือกหรือเพิ่มหมวดสินค้า" : "Select or add a category"}
+                      </b>
+                      <span>
+                        {language === "th"
+                          ? "เลือกแถวด้านซ้ายเพื่อแก้ไข หรือกดเพิ่มหมวดหลัก/หมวดย่อย"
+                          : "Select a row on the left to edit, or add a root/subcategory."}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </div>
       ) : config.slug === "branch" && !branchOverride ? (
         <BranchUnifiedView
           auth={auth}
@@ -3177,6 +3390,17 @@ function SettingDetailPanel({
               </div>
             );
           }
+          if (field.type === "time-sale-list") {
+            return (
+              <div className={fieldGridItemClass(field, config)} key={field.key}>
+                <TimeSaleListReadOnlyDetail
+                  label={fieldLabel(field, language, config, dictionary)}
+                  language={language}
+                  value={getByPath(record, field.key)}
+                />
+              </div>
+            );
+          }
           if (isBranchStructuredSettingField(config, field)) {
             return (
               <div className={fieldGridItemClass(field, config)} key={field.key}>
@@ -3541,6 +3765,7 @@ function fieldGridItemClass(
     field.type === "language-list" ||
     field.type === "master-picker" ||
     field.type === "names" ||
+    field.type === "time-sale-list" ||
     field.type === "textarea"
   ) {
     return "min-w-0 md:col-span-2";
@@ -5480,6 +5705,19 @@ function FieldEditor({
     );
   }
 
+  if (field.type === "time-sale-list") {
+    return (
+      <TimeSaleListEditor
+        dateTimeScope={dateTimeScope}
+        field={field}
+        form={form}
+        label={label}
+        language={language}
+        setForm={setForm}
+      />
+    );
+  }
+
   if (field.type === "textarea" || field.type === "json") {
     return (
       <label className="grid gap-1 text-sm font-semibold md:col-span-2">
@@ -5632,6 +5870,37 @@ function FieldEditor({
     );
   }
 
+  if (
+    config.slug === "product_category_group_select_screen" &&
+    field.key === "colorselecthex"
+  ) {
+    const hex = normalizeHexColor(value);
+    return (
+      <label className="grid gap-1 text-sm font-semibold">
+        <span>{label}</span>
+        <div className="flex w-full flex-wrap items-center gap-2 rounded-2xl border border-input bg-background px-2 py-2 shadow-sm">
+          <input
+            aria-label={label}
+            className="h-9 w-12 rounded-lg border border-input bg-background"
+            type="color"
+            value={hex}
+            onChange={(event) =>
+              setForm({ ...form, [field.key]: event.target.value })
+            }
+          />
+          <Input
+            className="min-w-32 flex-1"
+            value={String(value ?? "")}
+            onChange={(event) =>
+              setForm({ ...form, [field.key]: event.target.value })
+            }
+            placeholder="#000000"
+          />
+        </div>
+      </label>
+    );
+  }
+
   const emailLockedByLoginCode =
     config.slug === "user" &&
     field.key === "email" &&
@@ -5673,6 +5942,255 @@ function isBranchStructuredSettingField(
     field.type === "json" &&
     (field.key === "paymentrounding" || field.key === "pointconfig")
   );
+}
+
+type TimeSaleRow = {
+  daysofweek: number[];
+  fromdate: string;
+  todate: string;
+  fromtime: string;
+  totime: string;
+};
+
+function TimeSaleListEditor({
+  dateTimeScope,
+  field,
+  form,
+  label,
+  language,
+  setForm,
+}: {
+  dateTimeScope: DateTimeScope;
+  field: SystemSettingField;
+  form: FormState;
+  label: string;
+  language: LanguageCode;
+  setForm: (form: FormState) => void;
+}) {
+  const rows = normalizeTimeSaleFormList(form[field.key]);
+  const enabled = rows.length > 0;
+
+  function commit(nextRows: TimeSaleRow[]) {
+    setForm({ ...form, [field.key]: nextRows });
+  }
+
+  function updateRow(index: number, patch: Partial<TimeSaleRow>) {
+    commit(rows.map((row, rowIndex) => (rowIndex === index ? { ...row, ...patch } : row)));
+  }
+
+  function toggleEnabled(checked: boolean) {
+    commit(checked ? [emptyTimeSaleRow()] : []);
+  }
+
+  function toggleDay(index: number, day: number, checked: boolean) {
+    const current = new Set(rows[index]?.daysofweek ?? []);
+    if (checked) current.add(day);
+    else current.delete(day);
+    updateRow(index, { daysofweek: Array.from(current).sort((a, b) => a - b) });
+  }
+
+  return (
+    <section className="grid gap-2 rounded-2xl border border-border bg-background p-2 text-sm font-semibold">
+      <label className="flex min-h-10 items-center gap-2">
+        <input
+          className="size-4 accent-primary"
+          type="checkbox"
+          checked={enabled}
+          onChange={(event) => toggleEnabled(event.target.checked)}
+        />
+        <span>
+          {label}
+          {enabled ? ` (${rows.length})` : ""}
+        </span>
+      </label>
+      {enabled ? (
+        <div className="grid gap-2">
+          {rows.map((row, index) => (
+            <div
+              className="grid gap-2 rounded-xl border border-border bg-card p-2"
+              key={index}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <b>
+                  {language === "th" ? "ช่วงเวลา" : "Time window"} {index + 1}
+                </b>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  onClick={() => commit(rows.filter((_, rowIndex) => rowIndex !== index))}
+                >
+                  <Trash2 className="size-3.5" />
+                  {language === "th" ? "ลบ" : "Delete"}
+                </Button>
+              </div>
+              <div className="grid gap-2 md:grid-cols-2">
+                <DateField
+                  language={language}
+                  yearType={dateTimeScope.calendarYearType}
+                  label={language === "th" ? "วันที่เริ่ม" : "From date"}
+                  value={row.fromdate}
+                  onChange={(event) => updateRow(index, { fromdate: event.target.value })}
+                />
+                <DateField
+                  language={language}
+                  yearType={dateTimeScope.calendarYearType}
+                  label={language === "th" ? "วันที่สิ้นสุด" : "To date"}
+                  value={row.todate}
+                  onChange={(event) => updateRow(index, { todate: event.target.value })}
+                />
+                <TimeField
+                  label={language === "th" ? "เวลาเริ่ม" : "From time"}
+                  value={row.fromtime}
+                  onChange={(event) => updateRow(index, { fromtime: normalizeTimeInput(event.target.value) })}
+                />
+                <TimeField
+                  label={language === "th" ? "เวลาสิ้นสุด" : "To time"}
+                  value={row.totime}
+                  onChange={(event) => updateRow(index, { totime: normalizeTimeInput(event.target.value) })}
+                />
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {dayNames[language].map((dayName, dayIndex) => {
+                  const day = dayIndex + 1;
+                  const checked = row.daysofweek.includes(day);
+                  return (
+                    <label
+                      className={cn(
+                        "inline-flex min-h-8 cursor-pointer items-center gap-1 rounded-lg border px-2 text-xs font-semibold",
+                        checked
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-background text-muted-foreground",
+                      )}
+                      key={day}
+                    >
+                      <input
+                        className="size-3 accent-primary"
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(event) => toggleDay(index, day, event.target.checked)}
+                      />
+                      {dayName}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            className="h-9 justify-center"
+            onClick={() => commit([...rows, emptyTimeSaleRow()])}
+          >
+            <Plus className="size-4" />
+            {language === "th" ? "เพิ่มช่วงเวลา" : "Add time window"}
+          </Button>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function TimeSaleListReadOnlyDetail({
+  label,
+  language,
+  value,
+}: {
+  label: string;
+  language: LanguageCode;
+  value: unknown;
+}) {
+  const rows = normalizeTimeSaleFormList(value);
+  return (
+    <div className="grid gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+      <span className="text-xs font-semibold text-muted-foreground">
+        {label}
+      </span>
+      {rows.length === 0 ? (
+        <b className="text-foreground">-</b>
+      ) : (
+        <div className="grid gap-1">
+          {rows.map((row, index) => (
+            <div className="rounded-lg border border-border bg-background p-2" key={index}>
+              <b>
+                {language === "th" ? "ช่วงเวลา" : "Time window"} {index + 1}
+              </b>
+              <p className="text-xs font-medium text-muted-foreground">
+                {row.fromdate || "-"} {row.fromtime || "--:--"} - {row.todate || "-"} {row.totime || "--:--"}
+              </p>
+              <p className="text-xs font-medium text-muted-foreground">
+                {(row.daysofweek.length ? row.daysofweek : [1, 2, 3, 4, 5, 6, 7])
+                  .map((day) => dayNames[language][day - 1])
+                  .filter(Boolean)
+                  .join(", ")}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function emptyTimeSaleRow(): TimeSaleRow {
+  return {
+    daysofweek: [1, 2, 3, 4, 5, 6, 7],
+    fromdate: "",
+    todate: "",
+    fromtime: "",
+    totime: "",
+  };
+}
+
+function normalizeTimeSaleFormList(value: unknown): TimeSaleRow[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord).map((item) => ({
+    daysofweek: normalizeTimeSaleDays(item.daysofweek),
+    fromdate: timeSaleDateInputValue(item.fromdate),
+    todate: timeSaleDateInputValue(item.todate),
+    fromtime: normalizeTimeInput(stringValue(item.fromtime)),
+    totime: normalizeTimeInput(stringValue(item.totime)),
+  }));
+}
+
+function normalizeTimeSalePayload(value: unknown): TimeSaleRow[] {
+  return normalizeTimeSaleFormList(value).map((item) => ({
+    daysofweek: item.daysofweek,
+    fromdate: timeSaleDateInputToIso(item.fromdate),
+    todate: timeSaleDateInputToIso(item.todate),
+    fromtime: item.fromtime,
+    totime: item.totime,
+  }));
+}
+
+function normalizeTimeSaleDays(value: unknown): number[] {
+  const values = Array.isArray(value) ? value : [];
+  const normalized = values
+    .map((item) => Number(item))
+    .filter((item) => Number.isInteger(item) && item >= 1 && item <= 7);
+  return Array.from(new Set(normalized)).sort((a, b) => a - b);
+}
+
+function timeSaleDateInputValue(value: unknown): string {
+  const raw = stringValue(value);
+  if (!raw) return "";
+  const match = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match?.[1] ?? "";
+}
+
+function timeSaleDateInputToIso(value: unknown): string {
+  const raw = timeSaleDateInputValue(value);
+  if (!raw) return "";
+  return new Date(`${raw}T00:00:00.000Z`).toISOString();
+}
+
+function normalizeHexColor(value: unknown): string {
+  const raw = stringValue(value).replace(/^#/, "");
+  if (/^[0-9a-fA-F]{6}$/.test(raw)) return `#${raw}`;
+  if (/^[0-9a-fA-F]{8}$/.test(raw)) return `#${raw.slice(2)}`;
+  return "#ffffff";
 }
 
 const paymentMethodKeys = [
@@ -10649,6 +11167,7 @@ function defaultForm(
       form[field.key] = defaultLanguageConfigs("th");
     else if (field.type === "language-list") form[field.key] = ["th"];
     else if (field.type === "master-picker") form[field.key] = {};
+    else if (field.type === "time-sale-list") form[field.key] = [];
     else if (field.type === "json")
       form[field.key] =
         field.key === "paymentrounding"
@@ -10718,6 +11237,8 @@ function formFromRecord(
       );
     else if (field.type === "master-picker")
       form[field.key] = isRecord(value) ? value : {};
+    else if (field.type === "time-sale-list")
+      form[field.key] = normalizeTimeSaleFormList(value);
     else if (
       field.type === "json" &&
       config.slug === "permission_definition" &&
@@ -10918,6 +11439,8 @@ function buildPayload(
       setByPath(payload, field.key, isRecord(value) ? value : {});
     else if (field.type === "image-gallery")
       setByPath(payload, field.key, toUriArray(value));
+    else if (field.type === "time-sale-list")
+      setByPath(payload, field.key, normalizeTimeSalePayload(value));
     else if (field.type === "branch-multi-select")
       setByPath(payload, field.key, selectedBranchesFromValue(value));
     else if (field.type === "json")
@@ -11161,6 +11684,33 @@ function stringValue(value: unknown): string {
       : String(value).trim();
 }
 
+function productCategoryGuid(record: SettingRecord | null | undefined): string {
+  if (!record) return "";
+  return stringValue(record.guid_fixed ?? record.guidfixed ?? record.guid);
+}
+
+function productCategoryParentGuid(
+  record: SettingRecord | null | undefined,
+): string {
+  if (!record) return "";
+  return stringValue(record.parent_guid ?? record.parentguid);
+}
+
+function productCategoryGroupNumber(
+  record: SettingRecord | null | undefined,
+): number {
+  if (!record) return 0;
+  const value = Number(record.group_number ?? record.groupnumber ?? 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function productCategoryXOrder(record: SettingRecord): number {
+  const xsorts = Array.isArray(record.xsorts) ? record.xsorts : [];
+  const first = xsorts.find(isRecord);
+  const value = isRecord(first) ? Number(first.xorder ?? 0) : 0;
+  return Number.isFinite(value) ? value : 0;
+}
+
 function isEmailLike(value: unknown): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(stringValue(value));
 }
@@ -11174,6 +11724,7 @@ function recordId(
   return String(
     value ??
       record.guid_fixed ??
+      record.guidfixed ??
       record.id ??
       record._id ??
       record.code ??
@@ -11206,6 +11757,7 @@ function recordTitle(
       record.provider_name ??
       record.code ??
       record.guid_fixed ??
+      record.guidfixed ??
       config?.slug ??
       "",
   );
@@ -12067,6 +12619,14 @@ function fieldDisplayValue(
 ): string {
   if (field.type === "master-picker") {
     return masterPickerDisplayValue(value, language);
+  }
+  if (field.type === "time-sale-list") {
+    const count = normalizeTimeSaleFormList(value).length;
+    return count > 0
+      ? language === "th"
+        ? `${count} ช่วงเวลา`
+        : `${count} time windows`
+      : "-";
   }
   if (
     field.type === "combo" ||

@@ -22,6 +22,7 @@ This is the shared LLM-readable wiki entrypoint for Claude Code, Codex/GPT-5.5, 
 ## Current Core Routing
 - Frontend task routing: `D:\bccode\AI_INDEX.md`, then `D:\bccode\frontend\...`.
 - Backend task routing: `D:\bccode\AI_INDEX.md`, then `D:\bccode\backend\CLAUDE.md`, then exact Go handlers/services/tests.
+- Thai SME accounting/business-domain work: `D:\bccode\.agents\rules\bc-account-core-rules.md` Thai SME Business Domain, then `D:\bccode\.agents\skills\bc-account-expert\SKILL.md`, then active source/legacy reference routed by `D:\bccode\AI_INDEX.md`.
 - Runtime, DEV deployment, storage, secrets, real-data verification, and API version rules: `D:\bccode\.agents\rules\bc-account-core-rules.md`.
 - Private image upload/preview routing: `D:\bccode\.agents\rules\bc-account-core-rules.md` Image Display Enforcement, then `D:\bccode\AI_INDEX.md` private image upload route for exact frontend/backend files.
 - Frontend density and above-the-fold chrome rules: `D:\bccode\.agents\rules\bc-account-core-rules.md`, then `D:\bccode\.agents\skills\nextjs-frontend\SKILL.md` and `D:\bccode\.agents\skills\formdesign\SKILL.md`.

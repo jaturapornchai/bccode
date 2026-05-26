@@ -29,6 +29,7 @@ Purpose: keep Codex, Claude Code, and other agents fast. Read this file first, t
 - Generated Swagger/docs, manuals, Playwright snapshots/logs, duplicate skill packs, backend runtime logs, and lockfiles are not default context.
 
 ## Task Routes
+- Thai SME accounting/business-domain workflows: `.agents/rules/bc-account-core-rules.md` Thai SME Business Domain, `.agents/skills/bc-account-expert/SKILL.md`, then exact frontend/backend/legacy source for the affected module.
 - Login/auth UI: `frontend/src/app/login-screen.tsx`, `frontend/src/app/api/auth/**`, backend auth files only when API behavior is involved.
 - Workspace/company selection: `frontend/src/app/workspace/workspace-screen.tsx`, `frontend/src/app/api/workspace/[...workspacePath]/route.ts`, `frontend/src/lib/workspace-models.ts`.
 - Main menu/dashboard/sidebar: `frontend/src/app/menu/main-menu-screen.tsx`, `frontend/src/app/menu/menu-dashboard-data.ts`, `frontend/src/lib/menu-data.ts`, `frontend/src/lib/menu-icons.ts`.
@@ -36,6 +37,7 @@ Purpose: keep Codex, Claude Code, and other agents fast. Read this file first, t
 - Thai company/branch tax structure: `.agents/rules/bc-account-core-rules.md`, `backend/internal/organization/branch/models/branch_code.go`, `backend/internal/organization/branch/services/branch_http_service.go`, `backend/cmd/branch_code_audit/main.go`, `frontend/src/lib/thai-branch-code.ts`, and the system-settings files above.
 - Thai address dataset/cascading lookup: `backend/assets/address/thailand-addresses.json`, `backend/internal/goapi/handlers/address_handler.go`, `frontend/src/app/api/address/thailand/route.ts`, `frontend/src/lib/thailand-addresses.ts`, and the system-settings branch address fields.
 - Private image upload and preview: `.agents/rules/bc-account-core-rules.md` Image Display Enforcement, `frontend/src/lib/image-upload-proxy.ts`, `frontend/src/app/api/upload/image/route.ts`, `frontend/src/app/system-settings/system-settings-screen.tsx`, `backend/internal/goapi/handlers/image_r2.go`, `backend/internal/goapi/handlers/s3_proxy.go`, and `backend/internal/goapi/handlers/storage_private_test.go`.
+- Product category screen: `frontend/src/app/system-settings/product-category-tree-view.tsx`, `frontend/src/app/system-settings/system-settings-screen.tsx`, `frontend/src/lib/system-setting-screens.ts`, active backend model `backend/internal/product/productcategory/models/productcategory.go`, and legacy Flutter reference `D:\bcdev\frontend\bcaiaccount\lib\screens\config\product_category_screen.dart`.
 - Frontend density/top chrome: `frontend/src/app/menu/main-menu-screen.tsx`, `frontend/src/app/system-settings/system-settings-screen.tsx`, `frontend/src/app/globals.css`, plus `.agents/skills/nextjs-frontend/SKILL.md` and `.agents/skills/formdesign/SKILL.md`.
 - User management: same as System settings plus `backend/internal/authentication/**` and `backend/internal/shop/**` only when server behavior is involved.
 - Permissions/menu access: `frontend/src/lib/menu-data.ts`, `frontend/src/lib/menu-permissions.ts`, `frontend/src/app/system-settings/system-settings-screen.tsx`, related backend permission services when needed.

@@ -37,16 +37,21 @@ export async function GET(request: Request, context: SystemSettingsProxyContext)
 
 export async function POST(request: Request, context: SystemSettingsProxyContext) {
   const body = await readBody(request);
-  if (!isRecord(body)) return badPayload();
+  if (!isRecord(body) && !Array.isArray(body)) return badPayload();
 
   const resolved = await resolveProxy(context);
   if (resolved instanceof NextResponse) return resolved;
 
-  const tenantResponse = validateTenantAccess(request, body);
+  const tenantResponse = validateTenantAccess(request, Array.isArray(body) ? undefined : body);
   if (tenantResponse) return tenantResponse;
 
-  const base = resolveBaseUrl(request, resolved.config, body);
+  const base = resolveBaseUrl(request, resolved.config, Array.isArray(body) ? undefined : body);
   if (base instanceof NextResponse) return base;
+
+  if (Array.isArray(body)) {
+    const path = resolved.config.basePath ?? "";
+    return proxyJson(request, base, path, { method: "POST", body: JSON.stringify(body) });
+  }
 
   const path = buildWritePath(request, resolved.config, "", "POST", body);
   const payload = buildWritePayload(request, resolved.config, "", body);
@@ -59,16 +64,21 @@ export async function POST(request: Request, context: SystemSettingsProxyContext
 
 export async function PUT(request: Request, context: SystemSettingsProxyContext) {
   const body = await readBody(request);
-  if (!isRecord(body)) return badPayload();
+  if (!isRecord(body) && !Array.isArray(body)) return badPayload();
 
   const resolved = await resolveProxy(context);
   if (resolved instanceof NextResponse) return resolved;
 
-  const tenantResponse = validateTenantAccess(request, body);
+  const tenantResponse = validateTenantAccess(request, Array.isArray(body) ? undefined : body);
   if (tenantResponse) return tenantResponse;
 
-  const base = resolveBaseUrl(request, resolved.config, body);
+  const base = resolveBaseUrl(request, resolved.config, Array.isArray(body) ? undefined : body);
   if (base instanceof NextResponse) return base;
+
+  if (Array.isArray(body)) {
+    const path = resolved.id ? `${resolved.config.basePath}/${encodeURIComponent(resolved.id)}` : (resolved.config.basePath ?? "");
+    return proxyJson(request, base, path, { method: "PUT", body: JSON.stringify(body) });
+  }
 
   const path = buildWritePath(request, resolved.config, resolved.id, "PUT", body);
   const payload = buildWritePayload(request, resolved.config, resolved.id, body);
@@ -428,7 +438,7 @@ function stripProxyKeys(body: Record<string, unknown>): Record<string, unknown> 
 }
 
 function forwardPagingParams(sourceUrl: URL, target: URLSearchParams) {
-  for (const key of ["offset", "limit", "q", "page", "branch_key", "branchcode", "branchguid"]) {
+  for (const key of ["offset", "limit", "q", "page", "branch_key", "branchcode", "branchguid", "group-number"]) {
     const value = sourceUrl.searchParams.get(key);
     if (value) target.set(key, value);
   }

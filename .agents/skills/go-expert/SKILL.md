@@ -17,6 +17,8 @@ When working with Go code:
 - Goroutine: every goroutine must have a done channel or context cancel
 - SQL: use $1,$2 parameterized queries — never string concat
 - Gin route: use middleware for auth and logging
+- Mongo soft delete must write both `deleted_at` and legacy `deletedat` until all repositories and existing data are normalized; list/read filters currently hide records by `deleted_at`.
+- Mongo reorder/xsort endpoints must use targeted `$set` updates for the changed fields (`xsorts`, parent/order metadata, activity fields) instead of writing a fetched full document back to Mongo. Full-document `$set` can include immutable/internal fields such as `_id` and turn simple ordering changes into server errors.
 
 ## Pre-commit Checks
 ```bash

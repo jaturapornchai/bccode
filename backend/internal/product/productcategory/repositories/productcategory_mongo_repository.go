@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/product/productcategory/models"
 	"smlcloudplatform/internal/repositories"
 	"smlcloudplatform/pkg/microservice"
@@ -32,6 +33,7 @@ type IProductCategoryRepository interface {
 	FindCreatedOrUpdatedStep(ctx context.Context, shopID string, lastUpdatedDate time.Time, extraFilters map[string]interface{}, pageableStep micromodels.PageableStep) ([]models.ProductCategoryActivity, error)
 
 	UpdateCodeList(ctx context.Context, shopID string, codeXSort models.CodeXSort) error
+	UpdateXSorts(ctx context.Context, shopID string, guid string, xsorts []common.XSort, username string, updatedAt time.Time) error
 }
 
 type ProductCategoryRepository struct {
@@ -69,6 +71,29 @@ func (repo ProductCategoryRepository) UpdateCodeList(ctx context.Context, shopID
 			"codelist.$.names":     codeXSort.Names,
 			"codelist.$.unitcode":  codeXSort.UnitCode,
 			"codelist.$.unitnames": codeXSort.UnitNames,
+		},
+	}
+
+	return repo.pst.Update(
+		ctx,
+		models.ProductCategoryDoc{},
+		filters,
+		doc,
+	)
+}
+
+func (repo ProductCategoryRepository) UpdateXSorts(ctx context.Context, shopID string, guid string, xsorts []common.XSort, username string, updatedAt time.Time) error {
+	filters := bson.M{
+		"shopid":     shopID,
+		"guid_fixed": guid,
+		"deleted_at": bson.M{"$exists": false},
+	}
+
+	doc := bson.M{
+		"$set": bson.M{
+			"xsorts":     xsorts,
+			"updatedby":  username,
+			"updated_at": updatedAt,
 		},
 	}
 

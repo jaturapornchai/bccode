@@ -17,6 +17,7 @@ bootstrap.json
 *.dll
 *.so
 *.dylib
+*.tar
 tmp/
 dist/
 coverage/
