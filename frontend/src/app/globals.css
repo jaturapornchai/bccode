@@ -1447,6 +1447,20 @@ h2:not([class]) {
   color: var(--text);
 }
 
+.access-control-dialog {
+  width: 95%;
+  max-width: 1400px;
+  height: 90dvh;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  overflow: hidden;
+}
+
 .line-login-dialog h2 {
   font-size: 1.35rem;
 }

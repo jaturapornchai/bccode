@@ -1017,7 +1017,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
 
       {activeAccessRoute ? (
         <div className="dialog-backdrop" role="presentation">
-          <section className="line-login-dialog max-w-5xl w-full h-[90dvh] flex flex-col" role="dialog" aria-modal="true">
+          <section className="access-control-dialog" role="dialog" aria-modal="true">
             <div className="dialog-header shrink-0">
               <div>
                 <p className="eyebrow">{language === "th" ? "การเข้าถึง" : "ACCESS CONTROL"}</p>
