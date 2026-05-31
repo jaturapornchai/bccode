@@ -43,7 +43,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LanguageDialog } from "../language-dialog";
@@ -853,7 +852,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     return (
       <main className="w-screen h-screen bg-background flex flex-col overflow-hidden">
         <section className="w-full h-full flex flex-col bg-card" role="dialog" aria-modal="true">
-          <div className="dialog-header shrink-0 flex items-center justify-between px-6">
+          <div className="dialog-header shrink-0 flex items-center justify-between gap-3 px-6">
             <div className="flex items-center gap-6 min-w-0">
               <button
                 className="secondary-button flex items-center gap-2 px-3 py-1.5 text-sm font-bold text-foreground hover:bg-muted hover:text-primary border border-border rounded-xl transition-all shadow-sm shrink-0"
@@ -874,16 +873,49 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               </div>
 
             </div>
-            <button
-              className="icon-button dialog-close"
-              type="button"
-              onClick={() => {
-                setStep("shops");
-                setActiveAccessRoute(null);
-              }}
-            >
-              ×
-            </button>
+            <div className="flex min-w-0 items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="secondary-button flex min-w-0 max-w-[42vw] items-center gap-2 px-3 py-1.5 text-sm font-bold text-foreground hover:bg-muted hover:text-primary border border-border rounded-xl transition-all shadow-sm"
+                    type="button"
+                    disabled={busy || shops.length <= 1}
+                  >
+                    <Store size={16} className="shrink-0 text-muted-foreground" />
+                    <span className="min-w-0 truncate">
+                      {selectedShopForAccess ? shopAccessDisplayName(selectedShopForAccess, language) : (language === "th" ? "เลือกกิจการ" : "Select business")}
+                    </span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80">
+                  {shops.map((shop) => {
+                    const active = shop.shopid === selectedShopForAccess?.shopid;
+                    return (
+                      <DropdownMenuItem
+                        className="gap-2"
+                        disabled={busy || active}
+                        key={shop.shopid}
+                        onClick={() => void handleAccessShopChange(shop)}
+                      >
+                        <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <span className="min-w-0 flex-1 truncate">{shopAccessDisplayName(shop, language)}</span>
+                        {active ? <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" /> : null}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <button
+                className="icon-button dialog-close"
+                type="button"
+                onClick={() => {
+                  setStep("shops");
+                  setActiveAccessRoute(null);
+                }}
+              >
+                ×
+              </button>
+            </div>
           </div>
           <div className="flex-1 min-h-0 flex bg-card overflow-hidden">
             {/* Sidebar ภายใน Modal */}
@@ -913,7 +945,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
             {/* คอนเทนต์แสดงผลฝั่งขวา */}
             <div className="flex-1 min-h-0 overflow-y-auto p-4">
               <SystemSettingsScreen
-                key={activeAccessRoute} // บังคับรีเรนเดอร์เมื่อเปลี่ยนหน้าจอ
+                key={`${activeAccessRoute}:${selectedShopForAccess?.shopid ?? ""}`}
                 route={activeAccessRoute}
                 embedded
                 hideChrome
@@ -1536,6 +1568,26 @@ function normalizedNames(value: unknown, fallbackName: string): Array<{ code: st
 
 function recordValue(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
+
+function shopAccessDisplayName(shop: ShopListItem, language: LanguageCode): string {
+  const shopWithCompanies = shop as ShopListItem & { companies?: unknown[] };
+  const companies = Array.isArray(shopWithCompanies.companies)
+    ? shopWithCompanies.companies
+      .map((item) => recordValue(item))
+      .filter((item): item is Record<string, unknown> => Boolean(item && isVisibleOrganizationRecord(item)))
+    : [];
+  if (companies.length === 1) {
+    const company = companies[0];
+    const code = stringValue(company.code);
+    const name = localizedName(company.names as { code?: string; name?: string }[] | undefined, code);
+    return code ? `[${code}] ${name || code}` : name || shopDisplayName(shop);
+  }
+  if (companies.length > 1) {
+    const countLabel = language === "th" ? `${companies.length} บริษัท` : `${companies.length} companies`;
+    return `${shopDisplayName(shop)} (${countLabel})`;
+  }
+  return shopDisplayName(shop);
 }
 
 function isVisibleOrganizationRecord(value: unknown): boolean {
