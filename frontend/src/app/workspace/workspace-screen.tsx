@@ -723,7 +723,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               <div>
                 <p className="eyebrow">{language === "th" ? "การตั้งค่าระบบ" : "SYSTEM CONFIGURATION"}</p>
                 <h2 className="text-xl font-bold">
-                  {language === "th" ? "จัดการสิทธิ์การเข้าถึง" : "Access Control"}
+                  {language === "th" ? "ตั้งค่าระบบและการเข้าถึง" : "Settings & Access Control"}
                 </h2>
               </div>
 
@@ -743,9 +743,11 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
             {/* Sidebar ภายใน Modal */}
             <aside className="w-60 shrink-0 border-r border-border bg-muted/20 p-4 flex flex-col gap-1 overflow-y-auto">
               <p className="px-2 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                {language === "th" ? "การเข้าถึงระบบ" : "Access Settings"}
+                {language === "th" ? "ตั้งค่าระบบและการเข้าถึง" : "Settings & Access"}
               </p>
               {[
+                { route: "/company", label: language === "th" ? "ข้อมูลบริษัท" : "Company Profile" },
+                { route: "/branch", label: language === "th" ? "สาขา" : "Branch" },
                 { route: "/user", label: language === "th" ? "ผู้ใช้งาน" : "Users" },
                 { route: "/permission_link", label: language === "th" ? "กำหนดสิทธิ์ผู้ใช้งาน" : "Permission Link" },
                 { route: "/permission_definition", label: language === "th" ? "กำหนดสิทธิ์หน้าจอ" : "Permission Definition" },
@@ -830,11 +832,11 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               <button
                 className="secondary-button workspace-head-action flex items-center gap-1.5"
                 type="button"
-                onClick={() => void openAccessSettings("/user")}
+                onClick={() => void openAccessSettings("/company")}
                 disabled={busy}
               >
                 <KeyRound size={17} />
-                <span>{language === "th" ? "การเข้าถึง" : "Access"}</span>
+                <span>{language === "th" ? "ตั้งค่าระบบ" : "Settings"}</span>
               </button>
             ) : null}
             {step === "shops" && canCreateCompany ? (

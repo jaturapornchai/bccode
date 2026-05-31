@@ -303,8 +303,6 @@ export const MENU_SECTIONS: MenuSection[] = [
 
           tx("currency", "สกุลเงิน", "Currency", "/currency", "settings"),
           tx("company-type", "ประเภทธุรกิจ", "Business Type", "/business_type_screen", "settings"),
-          { ...tx("company", "ข้อมูลบริษัท", "Company Profile", "/company", "settings"), label: ml("company_profile", "ข้อมูลบริษัท", "Company Profile") },
-          tx("branch", "สาขา", "Branch", "/branch", "settings"),
           tx("employee", "พนักงาน", "Employee", "/employee", "settings"),
           tx("line-oa-user-link", "เชื่อม LINE OA", "Connect LINE OA", "/line-oa", "settings"),
           tx("form-design", "ออกแบบฟอร์ม", "Form Design", "/formdesign", "settings"),

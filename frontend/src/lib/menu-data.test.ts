@@ -91,11 +91,10 @@ describe("menu language labels", () => {
     expect(menuText({ key: "settings", th: "ตั้งค่า", en: "Settings" }, "th", {})).toBe("ตั้งค่า");
   });
 
-  it("keeps employee outside access control and before form design", () => {
+  it("keeps employee before form design", () => {
     const settingsGroup = MENU_SECTIONS.find((section) => section.id === "settings")?.groups.find((group) => group.id === "company-system");
     const itemIds = settingsGroup?.items.map((item) => item.id) ?? [];
 
-    expect(itemIds.indexOf("employee")).toBeGreaterThan(itemIds.indexOf("branch"));
     expect(itemIds.indexOf("employee")).toBeLessThan(itemIds.indexOf("form-design"));
   });
 
@@ -106,15 +105,6 @@ describe("menu language labels", () => {
     expect(itemIds).not.toContain("department");
     expect(itemIds).not.toContain("workday");
     expect(itemIds).not.toContain("holiday");
-  });
-
-  it("labels the company settings entry as current company profile, not company creation", () => {
-    const settingsGroup = MENU_SECTIONS.find((section) => section.id === "settings")?.groups.find((group) => group.id === "company-system");
-    const companyItem = settingsGroup?.items.find((item) => item.id === "company");
-
-    expect(companyItem?.label.key).toBe("company_profile");
-    expect(companyItem?.label.th).toBe("ข้อมูลบริษัท");
-    expect(companyItem?.label.en).toBe("Company Profile");
   });
 
   it("has backend language keys for every menu item", () => {
