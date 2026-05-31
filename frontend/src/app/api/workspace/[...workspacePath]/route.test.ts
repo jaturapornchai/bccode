@@ -30,6 +30,19 @@ describe("workspace product unit setup route", () => {
           },
         });
       }
+      if (requestUrl === "http://localhost:8888/select-shop") {
+        expect(init?.method).toBe("POST");
+        expect(JSON.parse(String(init?.body))).toEqual({ shopid: "SHOP001" });
+        return Response.json({ success: true });
+      }
+      if (requestUrl === "http://localhost:8888/organization/company") {
+        expect(init?.method).toBe("GET");
+        return Response.json({ success: true, data: [] });
+      }
+      if (requestUrl === "http://localhost:8888/organization/branch") {
+        expect(init?.method).toBe("GET");
+        return Response.json({ success: true, data: [] });
+      }
 
       throw new Error(`Unexpected URL ${requestUrl}`);
     });
@@ -48,8 +61,10 @@ describe("workspace product unit setup route", () => {
       shopid: "SHOP001",
       name: "บริษัท ทดสอบ จำกัด",
       names: [{ code: "th", name: "บริษัท ทดสอบ จำกัด" }],
+      companies: [],
+      branches: [],
     });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(5);
   });
 
   it("uses company metadata returned by list-shop without requiring selected shop detail", async () => {
@@ -78,6 +93,19 @@ describe("workspace product unit setup route", () => {
           total: 1,
         });
       }
+      if (requestUrl === "http://localhost:8888/select-shop") {
+        expect(init?.method).toBe("POST");
+        expect(JSON.parse(String(init?.body))).toEqual({ shopid: "SHOP001" });
+        return Response.json({ success: true });
+      }
+      if (requestUrl === "http://localhost:8888/organization/company") {
+        expect(init?.method).toBe("GET");
+        return Response.json({ success: true, data: [] });
+      }
+      if (requestUrl === "http://localhost:8888/organization/branch") {
+        expect(init?.method).toBe("GET");
+        return Response.json({ success: true, data: [] });
+      }
 
       throw new Error(`Unexpected URL ${requestUrl}`);
     });
@@ -100,8 +128,77 @@ describe("workspace product unit setup route", () => {
       date_format: "dd/MM/yyyy",
       timezone: "Asia/Bangkok",
       year_type: "buddhist",
+      companies: [],
+      branches: [],
     });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+  });
+
+  it("attaches organization companies and branches to the shop selected for each lookup", async () => {
+    let selectedShop = "";
+    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      const requestUrl = String(url);
+      expect(init?.headers).toMatchObject({ Authorization: "Bearer test-token" });
+
+      if (requestUrl === "http://localhost:8888/list-shop?limit=100") {
+        return Response.json({
+          success: true,
+          data: [
+            {
+              shopid: "SHOP_EMPTY",
+              names: [{ code: "th", name: "กิจการว่าง" }],
+              languageconfigs: [{ code: "th", name: "ภาษาไทย", is_use: true, isdefault: true }],
+            },
+            {
+              shopid: "SHOP_WITH_ORG",
+              names: [{ code: "th", name: "กิจการมีบริษัท" }],
+              languageconfigs: [{ code: "th", name: "ภาษาไทย", is_use: true, isdefault: true }],
+            },
+          ],
+          total: 2,
+        });
+      }
+      if (requestUrl === "http://localhost:8888/select-shop") {
+        selectedShop = JSON.parse(String(init?.body)).shopid;
+        return Response.json({ success: true });
+      }
+      if (requestUrl === "http://localhost:8888/organization/company") {
+        return Response.json({
+          success: true,
+          data: selectedShop === "SHOP_WITH_ORG"
+            ? [{ guid_fixed: "COMP001", code: "001", names: [{ code: "th", name: "บริษัท A" }] }]
+            : [],
+        });
+      }
+      if (requestUrl === "http://localhost:8888/organization/branch") {
+        return Response.json({
+          success: true,
+          data: selectedShop === "SHOP_WITH_ORG"
+            ? [{ guid_fixed: "BR001", company_guid: "COMP001", code: "00000", names: [{ code: "th", name: "สำนักงานใหญ่" }] }]
+            : [],
+        });
+      }
+
+      throw new Error(`Unexpected URL ${requestUrl}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      new Request("http://localhost/api/workspace/shops?backendUrl=http://localhost:8888/goapi", {
+        headers: { Authorization: "Bearer test-token" },
+      }),
+      workspaceContext("shops"),
+    );
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json.data[0]).toMatchObject({ shopid: "SHOP_EMPTY", companies: [], branches: [] });
+    expect(json.data[1]).toMatchObject({
+      shopid: "SHOP_WITH_ORG",
+      companies: [{ guid_fixed: "COMP001", code: "001" }],
+      branches: [{ guid_fixed: "BR001", company_guid: "COMP001", code: "00000" }],
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(7);
   });
 
   it("proxies the product unit existence check to mainapi", async () => {
