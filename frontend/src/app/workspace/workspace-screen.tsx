@@ -746,8 +746,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 {language === "th" ? "ตั้งค่าระบบและการเข้าถึง" : "Settings & Access"}
               </p>
               {[
-                { route: "/company", label: language === "th" ? "ข้อมูลบริษัท" : "Company Profile" },
-                { route: "/branch", label: language === "th" ? "สาขา" : "Branch" },
+                { route: "/company", label: language === "th" ? "ข้อมูลบริษัทและสาขา" : "Company & Branch" },
                 { route: "/user", label: language === "th" ? "ผู้ใช้งาน" : "Users" },
                 { route: "/permission_link", label: language === "th" ? "กำหนดสิทธิ์ผู้ใช้งาน" : "Permission Link" },
                 { route: "/permission_definition", label: language === "th" ? "กำหนดสิทธิ์หน้าจอ" : "Permission Definition" },

@@ -2310,7 +2310,7 @@ export function SystemSettingsScreen({
           saving={saving}
           loading={loading}
         />
-      ) : (config.slug === "company" || config.slug === "branch") && !hideChrome ? (
+      ) : (config.slug === "company" || config.slug === "branch") ? (
         <CompanyBranchTreeView
           auth={auth}
           workspace={workspace}
