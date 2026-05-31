@@ -741,31 +741,15 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
           </div>
           <div className="flex items-center gap-2">
             {step === "shops" ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="secondary-button workspace-head-action flex items-center gap-1.5" type="button">
-                    <KeyRound size={17} />
-                    <span>{language === "th" ? "การเข้าถึง" : "Access"}</span>
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-card border border-border">
-                  <DropdownMenuItem className="cursor-pointer font-medium" onClick={() => void openAccessSettings("/user")}>
-                    {language === "th" ? "ผู้ใช้งาน" : "Users"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer font-medium" onClick={() => void openAccessSettings("/permission_definition")}>
-                    {language === "th" ? "กำหนดสิทธิ์หน้าจอ" : "Permission Definition"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer font-medium" onClick={() => void openAccessSettings("/permission_group")}>
-                    {language === "th" ? "กำหนดสิทธิ์ตามกลุ่ม" : "Permission Group"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer font-medium" onClick={() => void openAccessSettings("/approval_setting")}>
-                    {language === "th" ? "สิทธิ์การอนุมัติ" : "Approval Permission"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer font-medium" onClick={() => void openAccessSettings("/permission_link")}>
-                    {language === "th" ? "กำหนดสิทธิ์พนักงาน" : "Permission Link"}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <button
+                className="secondary-button workspace-head-action flex items-center gap-1.5"
+                type="button"
+                onClick={() => void openAccessSettings("/user")}
+                disabled={busy}
+              >
+                <KeyRound size={17} />
+                <span>{language === "th" ? "การเข้าถึง" : "Access"}</span>
+              </button>
             ) : null}
             {step === "shops" && canCreateCompany ? (
               <button className="primary-button workspace-head-action flex items-center gap-1.5" type="button" onClick={() => setStep("create")}>
@@ -1050,13 +1034,9 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
             <div className="dialog-header shrink-0 flex items-center justify-between">
               <div className="flex items-center gap-6 min-w-0">
                 <div>
-                  <p className="eyebrow">{language === "th" ? "การเข้าถึง" : "ACCESS CONTROL"}</p>
-                  <h2 className="truncate max-w-[200px] md:max-w-none">
-                    {activeAccessRoute === "/user" && (language === "th" ? "ผู้ใช้งาน" : "Users")}
-                    {activeAccessRoute === "/permission_definition" && (language === "th" ? "กำหนดสิทธิ์หน้าจอ" : "Permission Definition")}
-                    {activeAccessRoute === "/permission_group" && (language === "th" ? "กำหนดสิทธิ์ตามกลุ่ม" : "Permission Group")}
-                    {activeAccessRoute === "/approval_setting" && (language === "th" ? "สิทธิ์การอนุมัติ" : "Approval Permission")}
-                    {activeAccessRoute === "/permission_link" && (language === "th" ? "กำหนดสิทธิ์พนักงาน" : "Permission Link")}
+                  <p className="eyebrow">{language === "th" ? "การตั้งค่าระบบ" : "SYSTEM CONFIGURATION"}</p>
+                  <h2 className="text-xl font-bold">
+                    {language === "th" ? "จัดการสิทธิ์การเข้าถึง" : "Access Control"}
                   </h2>
                 </div>
                 {shops.length > 0 ? (
@@ -1084,15 +1064,49 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 ×
               </button>
             </div>
-            <div className="flex-1 min-h-0 overflow-y-auto p-4 bg-card rounded-b-2xl">
-              <SystemSettingsScreen
-                route={activeAccessRoute}
-                embedded
-                hideChrome
-                branchOverride={null}
-                language={language}
-                initialLanguage={language}
-              />
+            <div className="flex-1 min-h-0 flex bg-card rounded-b-2xl overflow-hidden">
+              {/* Sidebar ภายใน Modal */}
+              <aside className="w-60 shrink-0 border-r border-border bg-muted/20 p-4 flex flex-col gap-1 overflow-y-auto">
+                <p className="px-2 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  {language === "th" ? "การเข้าถึงระบบ" : "Access Settings"}
+                </p>
+                {[
+                  { route: "/user", label: language === "th" ? "ผู้ใช้งาน" : "Users" },
+                  { route: "/permission_definition", label: language === "th" ? "กำหนดสิทธิ์หน้าจอ" : "Permission Definition" },
+                  { route: "/permission_group", label: language === "th" ? "กำหนดสิทธิ์ตามกลุ่ม" : "Permission Group" },
+                  { route: "/approval_setting", label: language === "th" ? "สิทธิ์การอนุมัติ" : "Approval Permission" },
+                  { route: "/permission_link", label: language === "th" ? "กำหนดสิทธิ์พนักงาน" : "Permission Link" },
+                ].map((item) => {
+                  const isActive = activeAccessRoute === item.route;
+                  return (
+                    <button
+                      key={item.route}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 ${
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-foreground hover:bg-muted"
+                      }`}
+                      type="button"
+                      onClick={() => setActiveAccessRoute(item.route)}
+                    >
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </aside>
+
+              {/* คอนเทนต์แสดงผลฝั่งขวา */}
+              <div className="flex-1 min-h-0 overflow-y-auto p-4">
+                <SystemSettingsScreen
+                  key={activeAccessRoute} // บังคับรีเรนเดอร์เมื่อเปลี่ยนหน้าจอ
+                  route={activeAccessRoute}
+                  embedded
+                  hideChrome
+                  branchOverride={null}
+                  language={language}
+                  initialLanguage={language}
+                />
+              </div>
             </div>
           </section>
         </div>
