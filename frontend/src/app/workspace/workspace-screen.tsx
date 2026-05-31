@@ -48,7 +48,7 @@ import { ManualLink } from "../manual-link";
 import { ThemeToggle } from "../theme-toggle";
 import { SystemSettingsScreen } from "../system-settings/system-settings-screen";
 
-type Step = "loading" | "shops" | "create" | "branches";
+type Step = "loading" | "shops" | "create" | "branches" | "access";
 type Notice = { type: "success" | "error" | "info"; text?: string; textKey?: WorkspaceTextKey } | null;
 type LineDialogState = {
   open: boolean;
@@ -546,6 +546,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       localStorage.setItem(workspaceStorageKeys.workspace, JSON.stringify({ shop: representativeShop, branch: defaultBranch, shopInfo: shopInfo.data ?? null }));
 
       setActiveAccessRoute(route);
+      setStep("access");
     } catch (error) {
       setNotice(error instanceof Error && error.message ? { type: "error", text: error.message } : { type: "error", text: language === "th" ? "เตรียมระบบกำหนดสิทธิ์ล้มเหลว" : "Failed to initialize access control." });
     } finally {
@@ -700,6 +701,110 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     localStorage.removeItem(workspaceStorageKeys.shopInfo);
     localStorage.removeItem(workspaceStorageKeys.branch);
     router.replace("/");
+  }
+
+  if (step === "access" && activeAccessRoute) {
+    return (
+      <main className="workspace-page">
+        <section className="access-control-dialog w-full h-[100vh] rounded-none border-none shadow-none flex flex-col" role="dialog" aria-modal="true">
+          <div className="dialog-header shrink-0 flex items-center justify-between">
+            <div className="flex items-center gap-6 min-w-0">
+              <button
+                className="icon-button flex items-center gap-1.5 text-sm font-semibold hover:text-primary transition-colors pr-4 border-r border-border rounded-none"
+                type="button"
+                onClick={() => {
+                  setStep("shops");
+                  setActiveAccessRoute(null);
+                }}
+              >
+                <ArrowLeft size={16} />
+                <span>{language === "th" ? "ย้อนกลับ" : "Back"}</span>
+              </button>
+              <div>
+                <p className="eyebrow">{language === "th" ? "การตั้งค่าระบบ" : "SYSTEM CONFIGURATION"}</p>
+                <h2 className="text-xl font-bold">
+                  {language === "th" ? "จัดการสิทธิ์การเข้าถึง" : "Access Control"}
+                </h2>
+              </div>
+              {shops.length > 0 ? (
+                <div className="flex items-center gap-2 border-l border-border pl-6">
+                  <span className="text-xs font-bold text-muted-foreground whitespace-nowrap uppercase tracking-wider">{language === "th" ? "จัดการบริษัท:" : "Shop:"}</span>
+                  <select
+                    className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer hover:border-primary/50 transition-colors"
+                    value={selectedShopForAccess?.shopid ?? ""}
+                    disabled={busy}
+                    onChange={(e) => {
+                      const shop = shops.find((s) => s.shopid === e.target.value);
+                      if (shop) void handleAccessShopChange(shop);
+                    }}
+                  >
+                    {shops.map((shop) => (
+                      <option key={shop.shopid} value={shop.shopid}>
+                        {shopDisplayName(shop)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+            </div>
+            <button
+              className="icon-button dialog-close"
+              type="button"
+              onClick={() => {
+                setStep("shops");
+                setActiveAccessRoute(null);
+              }}
+            >
+              ×
+            </button>
+          </div>
+          <div className="flex-1 min-h-0 flex bg-card overflow-hidden">
+            {/* Sidebar ภายใน Modal */}
+            <aside className="w-60 shrink-0 border-r border-border bg-muted/20 p-4 flex flex-col gap-1 overflow-y-auto">
+              <p className="px-2 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                {language === "th" ? "การเข้าถึงระบบ" : "Access Settings"}
+              </p>
+              {[
+                { route: "/user", label: language === "th" ? "ผู้ใช้งาน" : "Users" },
+                { route: "/permission_definition", label: language === "th" ? "กำหนดสิทธิ์หน้าจอ" : "Permission Definition" },
+                { route: "/permission_group", label: language === "th" ? "กำหนดสิทธิ์ตามกลุ่ม" : "Permission Group" },
+                { route: "/approval_setting", label: language === "th" ? "สิทธิ์การอนุมัติ" : "Approval Permission" },
+                { route: "/permission_link", label: language === "th" ? "กำหนดสิทธิ์พนักงาน" : "Permission Link" },
+              ].map((item) => {
+                const isActive = activeAccessRoute === item.route;
+                return (
+                  <button
+                    key={item.route}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 ${
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-foreground hover:bg-muted"
+                    }`}
+                    type="button"
+                    onClick={() => setActiveAccessRoute(item.route)}
+                  >
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </aside>
+
+            {/* คอนเทนต์แสดงผลฝั่งขวา */}
+            <div className="flex-1 min-h-0 overflow-y-auto p-4">
+              <SystemSettingsScreen
+                key={activeAccessRoute} // บังคับรีเรนเดอร์เมื่อเปลี่ยนหน้าจอ
+                route={activeAccessRoute}
+                embedded
+                hideChrome
+                branchOverride={null}
+                language={language}
+                initialLanguage={language}
+              />
+            </div>
+          </div>
+        </section>
+      </main>
+    );
   }
 
   return (
@@ -1028,89 +1133,6 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
         </div>
       ) : null}
 
-      {activeAccessRoute ? (
-        <div className="dialog-backdrop" role="presentation">
-          <section className="access-control-dialog" role="dialog" aria-modal="true">
-            <div className="dialog-header shrink-0 flex items-center justify-between">
-              <div className="flex items-center gap-6 min-w-0">
-                <div>
-                  <p className="eyebrow">{language === "th" ? "การตั้งค่าระบบ" : "SYSTEM CONFIGURATION"}</p>
-                  <h2 className="text-xl font-bold">
-                    {language === "th" ? "จัดการสิทธิ์การเข้าถึง" : "Access Control"}
-                  </h2>
-                </div>
-                {shops.length > 0 ? (
-                  <div className="flex items-center gap-2 border-l border-border pl-6">
-                    <span className="text-xs font-bold text-muted-foreground whitespace-nowrap uppercase tracking-wider">{language === "th" ? "จัดการบริษัท:" : "Shop:"}</span>
-                    <select
-                      className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer hover:border-primary/50 transition-colors"
-                      value={selectedShopForAccess?.shopid ?? ""}
-                      disabled={busy}
-                      onChange={(e) => {
-                        const shop = shops.find((s) => s.shopid === e.target.value);
-                        if (shop) void handleAccessShopChange(shop);
-                      }}
-                    >
-                      {shops.map((shop) => (
-                        <option key={shop.shopid} value={shop.shopid}>
-                          {shopDisplayName(shop)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ) : null}
-              </div>
-              <button className="icon-button dialog-close" type="button" onClick={() => setActiveAccessRoute(null)}>
-                ×
-              </button>
-            </div>
-            <div className="flex-1 min-h-0 flex bg-card rounded-b-2xl overflow-hidden">
-              {/* Sidebar ภายใน Modal */}
-              <aside className="w-60 shrink-0 border-r border-border bg-muted/20 p-4 flex flex-col gap-1 overflow-y-auto">
-                <p className="px-2 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                  {language === "th" ? "การเข้าถึงระบบ" : "Access Settings"}
-                </p>
-                {[
-                  { route: "/user", label: language === "th" ? "ผู้ใช้งาน" : "Users" },
-                  { route: "/permission_definition", label: language === "th" ? "กำหนดสิทธิ์หน้าจอ" : "Permission Definition" },
-                  { route: "/permission_group", label: language === "th" ? "กำหนดสิทธิ์ตามกลุ่ม" : "Permission Group" },
-                  { route: "/approval_setting", label: language === "th" ? "สิทธิ์การอนุมัติ" : "Approval Permission" },
-                  { route: "/permission_link", label: language === "th" ? "กำหนดสิทธิ์พนักงาน" : "Permission Link" },
-                ].map((item) => {
-                  const isActive = activeAccessRoute === item.route;
-                  return (
-                    <button
-                      key={item.route}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 ${
-                        isActive
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-foreground hover:bg-muted"
-                      }`}
-                      type="button"
-                      onClick={() => setActiveAccessRoute(item.route)}
-                    >
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
-              </aside>
-
-              {/* คอนเทนต์แสดงผลฝั่งขวา */}
-              <div className="flex-1 min-h-0 overflow-y-auto p-4">
-                <SystemSettingsScreen
-                  key={activeAccessRoute} // บังคับรีเรนเดอร์เมื่อเปลี่ยนหน้าจอ
-                  route={activeAccessRoute}
-                  embedded
-                  hideChrome
-                  branchOverride={null}
-                  language={language}
-                  initialLanguage={language}
-                />
-              </div>
-            </div>
-          </section>
-        </div>
-      ) : null}
     </main>
   );
 }
