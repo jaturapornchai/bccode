@@ -944,7 +944,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 <strong>{text("noCompanies")}</strong>
               </div>
             ) : (
-              <div className="max-w-4xl mx-auto w-full space-y-6 py-2">
+              <div className="flex flex-wrap gap-6 justify-center w-full py-2">
                 {filteredShops.map((shop, shopIndex) => {
                   const shopBranches = (shop as any).branches || [];
                   const isCreator = shop.is_creator === true
@@ -953,101 +953,91 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   const currencyLabel = shopCurrencyLabel(shop, language);
                   
                   return (
-                    <div key={shop.shopid} className="group/shop relative border border-border/80 rounded-2xl bg-card/85 backdrop-blur-md overflow-hidden shadow-md hover:shadow-xl transition-all duration-300">
+                    <div key={shop.shopid} className="group/shop relative w-full md:w-[calc(50%-12px)] lg:w-[380px] shrink-0 border border-border/80 rounded-2xl bg-card/85 backdrop-blur-md overflow-hidden shadow-md hover:shadow-xl transition-all duration-300">
                       {/* Left color bar accent */}
                       <div className={`absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b ${shopIndex % 2 === 0 ? "from-indigo-500 to-indigo-600" : "from-teal-500 to-emerald-500"}`} />
                       
-                      {/* Shop Header */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 gap-3 border-b border-border/60 bg-muted/20 pl-7">
-                        <div className="flex items-center gap-3.5">
-                          <span className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${shopIndex % 2 === 0 ? "bg-indigo-500/10 text-indigo-500" : "bg-teal-500/10 text-teal-500"}`}>
-                            <Store size={22} />
+                      {/* Shop Header (Compact layout for grid view) */}
+                      <div className="flex flex-col p-4 pb-3 pl-6 border-b border-border/60 bg-muted/20">
+                        <div className="flex items-center gap-3">
+                          <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${shopIndex % 2 === 0 ? "bg-indigo-500/10 text-indigo-500" : "bg-teal-500/10 text-teal-500"}`}>
+                            <Store size={20} />
                           </span>
-                          <div>
-                            <h3 className="font-bold text-foreground text-base sm:text-lg tracking-tight">{shopDisplayName(shop)}</h3>
-                            <div className="flex flex-wrap gap-x-2 gap-y-1 mt-0.5 text-xs text-muted-foreground/80">
-                              <span className="font-mono bg-muted/60 px-1.5 py-0.5 rounded border border-border/40">ID: {shop.shopid}</span>
-                              {shop.createdby && (
-                                <span className="flex items-center gap-1 text-muted-foreground/75">
-                                  <UserRound size={12} className="text-muted-foreground/60" />
-                                  <span>{language === "th" ? `ผู้สร้าง: ${shop.createdby}` : `Creator: ${shop.createdby}`}</span>
-                                </span>
-                              )}
-                            </div>
+                          <div className="min-w-0">
+                            <h3 className="font-bold text-foreground text-sm sm:text-base tracking-tight truncate" title={shopDisplayName(shop)}>
+                              {shopDisplayName(shop)}
+                            </h3>
+                            <p className="text-[10px] text-muted-foreground/80 mt-0.5 font-mono truncate">ID: {shop.shopid}</p>
                           </div>
                         </div>
                         
-                        <div className="flex flex-wrap items-center gap-2 shrink-0">
-                          {/* Config Chips */}
-                          {languageCodes.length > 0 && (
-                            <span className="px-2 py-0.5 text-[10px] sm:text-xs bg-muted border border-border/50 text-muted-foreground rounded-full flex items-center gap-1 font-medium">
-                              <Languages size={10} />
-                              {languageCodes.join(", ")}
-                            </span>
-                          )}
-                          {currencyLabel && (
-                            <span className="px-2 py-0.5 text-[10px] sm:text-xs bg-muted border border-border/50 text-muted-foreground rounded-full flex items-center gap-1 font-medium">
-                              <Coins size={10} />
-                              {currencyLabel}
-                            </span>
-                          )}
-                          
-                          <span className={`px-2.5 py-0.5 text-[10px] sm:text-xs font-bold rounded-full border ${
+                        <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                          <span className={`px-2 py-0.5 text-[9px] font-bold rounded border uppercase shrink-0 ${
                             isCreator 
                               ? "bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-500/20" 
                               : "bg-blue-500/10 text-blue-600 dark:text-blue-500 border-blue-500/20"
                           }`}>
                             {isCreator ? "OWNER" : "USER"}
                           </span>
+                          {languageCodes.map((code) => (
+                            <span key={code} className="px-1.5 py-0.5 text-[9px] bg-muted border border-border/50 text-muted-foreground rounded font-semibold uppercase shrink-0">
+                              {code}
+                            </span>
+                          ))}
+                          {currencyLabel && (
+                            <span className="px-1.5 py-0.5 text-[9px] bg-muted border border-border/50 text-muted-foreground rounded font-semibold uppercase shrink-0">
+                              {currencyLabel.split(" ")[0]}
+                            </span>
+                          )}
                         </div>
                       </div>
 
                       {/* Branches List */}
-                      <div className="divide-y divide-border/50 bg-card pl-4">
+                      <div className="divide-y divide-border/50 bg-card pl-3">
                         {shopBranches.length === 0 ? (
-                          <div className="p-5 text-xs sm:text-sm text-muted-foreground text-center">
+                          <div className="p-5 text-xs text-muted-foreground text-center">
                             ไม่พบข้อมูลสาขา
                           </div>
                         ) : (
                           <div className="relative">
                             {/* Branch connector line */}
-                            <div className="absolute left-6 top-2 bottom-8 w-[1.5px] bg-border/50" />
+                            <div className="absolute left-5 top-2 bottom-8 w-[1.5px] bg-border/40" />
                             
                             {shopBranches.map((branch: any) => {
                               const itemKey = `${shop.shopid}-${branch.guid_fixed || branch.code}`;
                               return (
                                 <div key={itemKey} className="relative flex items-center group/branch">
                                   {/* Branch connector node */}
-                                  <div className="absolute left-6 w-3 h-[1.5px] bg-border/50" />
+                                  <div className="absolute left-5 w-3 h-[1.5px] bg-border/40" />
                                   
                                   <button
-                                    className="w-full flex items-center justify-between p-4 pl-12 hover:bg-muted/30 transition-all duration-200 text-left"
+                                    className="w-full flex items-center justify-between p-3 pl-10 hover:bg-muted/30 transition-all duration-200 text-left"
                                     disabled={busy}
                                     onClick={() => void selectShopAndBranch(shop, branch)}
                                   >
-                                    <div className="flex items-center gap-3.5">
-                                      <span className="w-9 h-9 rounded-lg flex items-center justify-center bg-sky-500/10 text-sky-500 shrink-0 group-hover/branch:bg-sky-500 group-hover/branch:text-white transition-all duration-250">
-                                        <GitBranch size={17} />
+                                    <div className="flex items-center gap-3">
+                                      <span className="w-8 h-8 rounded-lg flex items-center justify-center bg-sky-500/10 text-sky-500 shrink-0 group-hover/branch:bg-sky-500 group-hover/branch:text-white transition-all duration-250">
+                                        <GitBranch size={15} />
                                       </span>
-                                      <div>
-                                        <span className="font-semibold text-xs sm:text-sm text-foreground group-hover/branch:text-sky-500 transition-colors">
+                                      <div className="min-w-0">
+                                        <span className="font-semibold text-xs text-foreground group-hover/branch:text-sky-500 transition-colors block truncate">
                                           {branchDisplayName(branch)}
                                         </span>
-                                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 font-mono">
+                                        <p className="text-[9px] text-muted-foreground mt-0.5 font-mono truncate">
                                           CODE: {branch.code || branch.guid_fixed}
                                         </p>
                                       </div>
                                     </div>
                                     
-                                    <div className="flex items-center gap-3 shrink-0 pr-4">
+                                    <div className="flex items-center gap-2 shrink-0 pr-3">
                                       {branch.base_currency && (
-                                        <span className="px-2 py-0.5 text-[10px] bg-muted border border-border/40 text-muted-foreground rounded font-medium">
+                                        <span className="px-1.5 py-0.5 text-[9px] bg-muted border border-border/40 text-muted-foreground rounded font-medium shrink-0">
                                           {branch.base_currency}
                                         </span>
                                       )}
-                                      <span className="text-xs font-bold text-sky-500 flex items-center gap-1 transform translate-x-1 opacity-0 group-hover/branch:opacity-100 group-hover/branch:translate-x-0 transition-all duration-200">
+                                      <span className="text-[11px] font-bold text-sky-500 flex items-center gap-0.5 transform translate-x-1 opacity-0 group-hover/branch:opacity-100 group-hover/branch:translate-x-0 transition-all duration-200 shrink-0">
                                         <span>เข้าใช้งาน</span>
-                                        <ArrowRight size={14} />
+                                        <ArrowRight size={12} />
                                       </span>
                                     </div>
                                   </button>
