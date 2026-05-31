@@ -367,8 +367,8 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     }> = [];
 
     shops.forEach((shop) => {
-      const shopCompanies = (shop as any).companies || [];
-      const shopBranches = (shop as any).branches || [];
+      const shopCompanies = Array.isArray((shop as any).companies) ? (shop as any).companies.filter(isVisibleOrganizationRecord) : [];
+      const shopBranches = Array.isArray((shop as any).branches) ? (shop as any).branches.filter(isVisibleOrganizationRecord) : [];
 
       shopCompanies.forEach((company: any) => {
         const compBranches = shopBranches.filter((b: any) => b.company_guid === company.guid_fixed);
@@ -1534,6 +1534,14 @@ function normalizedNames(value: unknown, fallbackName: string): Array<{ code: st
 
 function recordValue(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
+
+function isVisibleOrganizationRecord(value: unknown): boolean {
+  const record = recordValue(value);
+  if (!record) return false;
+  if (record.is_active === false) return false;
+  const deletedAt = stringValue(record.deleted_at);
+  return deletedAt.length === 0;
 }
 
 function stringValue(value: unknown): string {
