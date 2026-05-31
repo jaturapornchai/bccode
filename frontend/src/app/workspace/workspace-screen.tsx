@@ -747,10 +747,10 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               </p>
               {[
                 { route: "/user", label: language === "th" ? "ผู้ใช้งาน" : "Users" },
+                { route: "/permission_link", label: language === "th" ? "กำหนดสิทธิ์พนักงาน" : "Permission Link" },
                 { route: "/permission_definition", label: language === "th" ? "กำหนดสิทธิ์หน้าจอ" : "Permission Definition" },
                 { route: "/permission_group", label: language === "th" ? "กำหนดสิทธิ์ตามกลุ่ม" : "Permission Group" },
                 { route: "/approval_setting", label: language === "th" ? "สิทธิ์การอนุมัติ" : "Approval Permission" },
-                { route: "/permission_link", label: language === "th" ? "กำหนดสิทธิ์พนักงาน" : "Permission Link" },
               ].map((item) => {
                 const isActive = activeAccessRoute === item.route;
                 return (
