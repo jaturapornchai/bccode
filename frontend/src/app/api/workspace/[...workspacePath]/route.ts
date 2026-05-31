@@ -186,11 +186,65 @@ async function listShopsWithDisplayNames(request: Request, mainApiUrl: string): 
     const shops = getArrayFromPayload(result.payload, "data");
     const enriched = await Promise.all(shops.map((shop) => enrichShopDisplayName(request, mainApiUrl, authorization, shop)));
 
-    if (isRecord(result.payload)) {
-      return NextResponse.json({ ...result.payload, data: enriched }, { status: result.status });
+    // Fetch branches sequentially for each shop using session select-shop
+    const enrichedWithBranches = [];
+    for (const shop of enriched) {
+      if (!isRecord(shop)) {
+        enrichedWithBranches.push(shop);
+        continue;
+      }
+
+      const shopid = getPayloadString(shop, "shopid")?.trim();
+      if (!shopid) {
+        enrichedWithBranches.push({ ...shop, branches: [] });
+        continue;
+      }
+
+      try {
+        const selectResult = await callMainApiJson(
+          request,
+          mainApiUrl,
+          "/select-shop",
+          {
+            method: "POST",
+            body: JSON.stringify({ shopid }),
+          },
+          authorization,
+        );
+
+        if (selectResult.ok) {
+          const branchResult = await callMainApiJson(
+            request,
+            mainApiUrl,
+            "/organization/branch/list?offset=0&limit=100&q=",
+            { method: "GET" },
+            authorization,
+          );
+
+          if (branchResult.ok && !isApiFailure(branchResult.payload)) {
+            const branches = getArrayFromPayload(branchResult.payload, "data");
+            enrichedWithBranches.push({
+              ...shop,
+              branches,
+            });
+            continue;
+          }
+        }
+      } catch (err) {
+        console.error(`Error loading branches for shop ${shopid}:`, err);
+      }
+
+      enrichedWithBranches.push({
+        ...shop,
+        branches: [],
+      });
     }
 
-    return NextResponse.json({ success: true, data: enriched, total: enriched.length }, { status: result.status });
+    if (isRecord(result.payload)) {
+      return NextResponse.json({ ...result.payload, data: enrichedWithBranches }, { status: result.status });
+    }
+
+    return NextResponse.json({ success: true, data: enrichedWithBranches, total: enrichedWithBranches.length }, { status: result.status });
   } catch (error) {
     return NextResponse.json({ success: false, message: workspaceErrorMessage(error, "โหลดบริษัทไม่สำเร็จ") }, { status: 504 });
   }

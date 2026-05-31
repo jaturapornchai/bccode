@@ -3,6 +3,7 @@
 import {
   AlertCircle,
   ArrowLeft,
+  ArrowRight,
   Building2,
   CalendarDays,
   CheckCircle2,
@@ -358,7 +359,22 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   const filteredShops = useMemo(() => {
     const needle = query.trim().toLowerCase();
     if (!needle) return shops;
-    return shops.filter((shop) => `${shopDisplayName(shop)} ${shop.shopid} ${shop.createdby ?? ""}`.toLowerCase().includes(needle));
+    return shops
+      .map((shop) => {
+        const shopMatches = `${shopDisplayName(shop)} ${shop.shopid} ${shop.createdby ?? ""}`.toLowerCase().includes(needle);
+        const matchedBranches =
+          (shop as any).branches?.filter((branch: any) =>
+            `${branchDisplayName(branch)} ${branch.code ?? ""}`.toLowerCase().includes(needle)
+          ) || [];
+        if (shopMatches || matchedBranches.length > 0) {
+          return {
+            ...shop,
+            branches: shopMatches ? (shop as any).branches : matchedBranches,
+          };
+        }
+        return null;
+      })
+      .filter(Boolean) as ShopListItem[];
   }, [query, shops]);
 
   const filteredBranches = useMemo(() => {
@@ -479,6 +495,31 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     if (!lineDialog.loginUrl) return;
     await navigator.clipboard.writeText(lineDialog.loginUrl);
     setNotice({ type: "success", text: t(language, "copied") });
+  }
+
+  async function selectShopAndBranch(shop: ShopListItem, branch: BranchListItem) {
+    if (!auth) return;
+    setBusy(true);
+    setNotice(null);
+    try {
+      await callWorkspaceApi(auth, "select-shop", {
+        method: "POST",
+        body: { shopid: shop.shopid },
+      });
+      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `shop-info?shopid=${encodeURIComponent(shop.shopid)}`);
+      localStorage.setItem(workspaceStorageKeys.shopInfo, JSON.stringify(shopInfo.data ?? null));
+      setSelectedShop(shop);
+
+      const branchPayload = await callWorkspaceApi<{ data?: BranchListItem[] }>(auth, "branches?offset=0&limit=100&q=");
+      const nextBranches = Array.isArray(branchPayload.data) ? branchPayload.data : [branch];
+      setBranches(nextBranches);
+
+      await enterWorkspaceWithUnitCheck(shop, branch, shopInfo.data ?? null);
+    } catch (error) {
+      setNotice(error instanceof Error && error.message ? { type: "error", text: error.message } : { type: "error", textKey: "selectShopFailed" });
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function selectShop(shop: ShopListItem) {
@@ -843,8 +884,9 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
 
         <div className="step-strip">
           <span className="active">{text("stepLogin")}</span>
-          <span className={step === "shops" || step === "branches" ? "active" : ""}>{text("stepCompany")}</span>
-          <span className={step === "branches" ? "active" : ""}>{text("stepBranch")}</span>
+          <span className={step === "shops" ? "active" : ""}>
+            {language === "th" ? "2 เลือกบริษัทและสาขา" : "2 Select Company & Branch"}
+          </span>
           <span>{text("stepMenu")}</span>
         </div>
 
@@ -873,51 +915,86 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 <strong>{text("noCompanies")}</strong>
               </div>
             ) : (
-              <div className="workspace-card-grid">
-                {filteredShops.map((shop, index) => {
-                const isCreator = shop.is_creator === true
-                  || Boolean(auth?.username && shop.createdby && shop.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase());
-                const languageCodes = shopLanguageCodes(shop);
-                const currencyLabel = shopCurrencyLabel(shop, language);
-                const dateFormat = shopDateFormatLabel(shop, language);
-                return (
-                  <button className="shop-card" disabled={busy} key={shop.shopid} type="button" onClick={() => void selectShop(shop)}>
-                    <span className={`shop-avatar tone-${index % 6}`}><Store size={20} /></span>
-                    <span className="shop-main">
-                      <strong>{shopDisplayName(shop)}</strong>
-                      <div className="shop-details-row">
-                        <small>{shop.shopid}</small>
-                        {shop.createdby ? (
-                          <span className="shop-creator">
-                            <UserRound size={12} />
-                            {language === "th" ? `ผู้สร้าง: ${shop.createdby}` : `Creator: ${shop.createdby}`}
+              <div className="space-y-4">
+                {filteredShops.map((shop, shopIndex) => {
+                  const shopBranches = (shop as any).branches || [];
+                  const isCreator = shop.is_creator === true
+                    || Boolean(auth?.username && shop.createdby && shop.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase());
+                  
+                  return (
+                    <div key={shop.shopid} className="border border-border rounded-2xl bg-card overflow-hidden shadow-sm">
+                      {/* Shop Header */}
+                      <div className="flex items-center justify-between p-4 bg-muted/30 border-b border-border">
+                        <div className="flex items-center gap-3">
+                          <span className={`w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10 text-primary`}>
+                            <Store size={20} />
                           </span>
-                        ) : null}
+                          <div>
+                            <h3 className="font-bold text-foreground text-sm sm:text-base">{shopDisplayName(shop)}</h3>
+                            <div className="flex flex-wrap gap-x-2 gap-y-1 mt-0.5 text-xs text-muted-foreground">
+                              <span>ID: {shop.shopid}</span>
+                              {shop.createdby && (
+                                <span>• ผู้สร้าง: {shop.createdby}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${isCreator ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" : "bg-blue-500/10 text-blue-500 border border-blue-500/20"}`}>
+                            {isCreator ? "OWNER" : "USER"}
+                          </span>
+                        </div>
                       </div>
-                      <span className="shop-config-row">
-                        <span className="shop-config-chip">
-                          <Languages size={12} />
-                          {language === "th" ? "ภาษา" : "Languages"}: {languageCodes.join(", ")}
-                        </span>
-                        <span className="shop-config-chip">
-                          <Coins size={12} />
-                          {language === "th" ? "สกุลเงิน" : "Currency"}: {currencyLabel}
-                        </span>
-                        <span className="shop-config-chip">
-                          <CalendarDays size={12} />
-                          {language === "th" ? "วันที่" : "Date"}: {dateFormat}
-                        </span>
-                      </span>
-                    </span>
-                    <span className="shop-badges">
-                      <b className={isCreator ? "creator-badge" : "user-badge"}>
-                        {isCreator ? <Crown size={13} /> : <UserRound size={13} />}
-                        {isCreator ? "OWNER" : "USER"}
-                      </b>
-                      {shop.branchcode ? <em>{shop.branchcode}</em> : null}
-                    </span>
-                  </button>
-                );
+
+                      {/* Branches List */}
+                      <div className="divide-y divide-border">
+                        {shopBranches.length === 0 ? (
+                          <div className="p-4 text-xs sm:text-sm text-muted-foreground text-center">
+                            ไม่พบข้อมูลสาขา
+                          </div>
+                        ) : (
+                          shopBranches.map((branch: any) => {
+                            const itemKey = `${shop.shopid}-${branch.guid_fixed || branch.code}`;
+                            return (
+                              <button
+                                key={itemKey}
+                                className="w-full flex items-center justify-between p-3.5 hover:bg-muted/50 transition-colors text-left group"
+                                disabled={busy}
+                                onClick={() => void selectShopAndBranch(shop, branch)}
+                              >
+                                <div className="flex items-center gap-3 pl-4 border-l-2 border-primary/20 group-hover:border-primary transition-colors">
+                                  <span className="w-8 h-8 rounded-lg flex items-center justify-center bg-sky-500/10 text-sky-500 shrink-0">
+                                    <GitBranch size={16} />
+                                  </span>
+                                  <div>
+                                    <span className="font-semibold text-xs sm:text-sm text-foreground group-hover:text-primary transition-colors">
+                                      {branchDisplayName(branch)}
+                                    </span>
+                                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                                      รหัสสาขา: {branch.code || branch.guid_fixed}
+                                    </p>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center gap-2 shrink-0">
+                                  {branch.base_currency && (
+                                    <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] bg-accent text-accent-foreground rounded-md font-medium">
+                                      {branch.base_currency}
+                                    </span>
+                                  )}
+                                  <span className="text-xs font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                                    <span>เข้าใช้งาน</span>
+                                    <ArrowRight size={14} />
+                                  </span>
+                                </div>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  );
                 })}
               </div>
             )}
