@@ -1246,8 +1246,9 @@ export function SystemSettingsScreen({
         }
         if (currentConfig.kind === "copy-uat")
           searchParams.set("source_environment", copySourceEnvironment);
+        const fetchSlug = currentConfig.slug === "permission_link" ? "user" : currentConfig.slug;
         const response = await fetch(
-          `/api/system-settings/${currentConfig.slug}?${searchParams.toString()}`,
+          `/api/system-settings/${fetchSlug}?${searchParams.toString()}`,
           {
             headers: {
               "x-bc-backend-url": currentAuth.backendUrl,
@@ -1259,7 +1260,14 @@ export function SystemSettingsScreen({
         const payload = (await response.json()) as unknown;
         if (!response.ok || isFailed(payload))
           throw new Error(extractMessage(payload) ?? text("requestFailed"));
-        const nextRecords = normalizeRecords(payload, currentConfig);
+        let nextRecords = normalizeRecords(payload, currentConfig.slug === "permission_link" ? getSystemSettingConfig("user")! : currentConfig);
+        if (currentConfig.slug === "permission_link") {
+          nextRecords = nextRecords.map((r: any) => ({
+            ...r,
+            employeeCode: r.username,
+            employeeName: r.user_profile_name || r.name || r.username,
+          }));
+        }
         const scopedRecords =
           currentConfig.slug === "holiday_screen" ||
           currentConfig.slug === "department"
@@ -1521,6 +1529,40 @@ export function SystemSettingsScreen({
     setForm(formFromRecord(record, currentConfig, language));
     setFormOpen(true);
     setNotice(null);
+
+    if (auth && workspace && currentConfig.slug === "permission_link") {
+      const empCode = record.employeeCode || recordId(record, currentConfig);
+      if (empCode) {
+        try {
+          const params = new URLSearchParams({ shopid: workspace.shop.shopid });
+          const response = await fetch(
+            `/api/system-settings/permission_link/${encodeURIComponent(String(empCode))}?${params.toString()}`,
+            {
+              headers: requestHeaders(auth),
+              cache: "no-store",
+            },
+          );
+          const payload = (await response.json()) as unknown;
+          if (response.ok && !isFailed(payload)) {
+            const detail = normalizeRecords(payload, currentConfig)[0];
+            if (detail) {
+              const mergedRecord = {
+                ...record,
+                ...detail,
+                employeeCode: record.employeeCode,
+                employeeName: record.employeeName,
+              };
+              setEditing(mergedRecord);
+              setForm(formFromRecord(mergedRecord, currentConfig, language));
+            }
+          }
+        } catch {
+          // Keep base form if fetch fails or no existing permission config exists
+        }
+      }
+      return;
+    }
+
     if (!auth || !workspace || currentConfig.kind !== "main-crud") return;
     const id = recordId(record, currentConfig);
     if (!id) return;
@@ -2653,7 +2695,7 @@ export function SystemSettingsScreen({
                   )}
                   {text("refresh")}
                 </Button>
-                {canEdit ? (
+                {canEdit && currentConfig.slug !== "permission_link" ? (
                   <Button
                     type="button"
                     size="sm"
@@ -2719,7 +2761,7 @@ export function SystemSettingsScreen({
                   <p className="text-sm text-muted-foreground">
                     {canEdit ? text("emptyHint") : text("readOnlyEmptyHint")}
                   </p>
-                  {canEdit ? (
+                  {canEdit && currentConfig.slug !== "permission_link" ? (
                     <Button type="button" onClick={openCreate} disabled={!auth}>
                       <Plus />
                       {text("add")}
@@ -6024,15 +6066,10 @@ function FieldEditor({
 
   if (config.slug === "permission_link" && field.key === "employeeCode") {
     return (
-      <PermissionLinkUserSelector
-        auth={auth}
-        dictionary={dictionary}
-        field={field}
-        form={form}
-        language={language}
-        setForm={setForm}
-        workspace={workspace}
-      />
+      <label className="grid gap-1 text-sm font-semibold">
+        <span>{label}</span>
+        <Input value={String(value ?? "")} readOnly disabled aria-readonly />
+      </label>
     );
   }
 

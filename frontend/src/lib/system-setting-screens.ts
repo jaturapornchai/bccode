@@ -784,10 +784,10 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     collection: "employee_permissions",
     idField: "employeeCode",
     deleteKey: "employeeCode",
-    title: { th: "กำหนดสิทธิ์พนักงาน", en: "Permission Link" },
+    title: { th: "กำหนดสิทธิ์ผู้ใช้งาน", en: "User Permission" },
     subtitle: {
-      th: "เชื่อมผู้ใช้/พนักงานกับรหัสสิทธิ์",
-      en: "Link users or employees to permission codes.",
+      th: "กำหนดสิทธิ์การเข้าถึงบริษัทและสาขาของผู้ใช้งาน",
+      en: "Configure company and branch access permissions for users.",
     },
     fields: [
       textField(
