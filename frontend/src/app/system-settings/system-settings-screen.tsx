@@ -9439,7 +9439,7 @@ function recordToBranchOption(record: SettingRecord): BranchOption {
       name: stringValue(entry.name),
     }));
   return {
-    guid_fixed: stringValue(record.guid_fixed),
+    guid_fixed: stringValue(record.guid_fixed ?? record.guidfixed ?? record.guid ?? record.guidFixed),
     code: stringValue(record.code),
     names,
   };
@@ -9470,8 +9470,10 @@ function selectedBranchesFromValue(value: unknown): BranchOption[] {
     .filter((item): item is BranchOption => item !== null);
 }
 
-function branchKeyOf(option: { guid_fixed?: string; code?: string }): string {
-  return stringValue(option.guid_fixed) || stringValue(option.code);
+function branchKeyOf(option: { guid_fixed?: string; code?: string; shopid?: string }): string {
+  const shopPrefix = option.shopid ? `${option.shopid}_` : "";
+  const coreKey = stringValue(option.guid_fixed) || stringValue(option.code);
+  return `${shopPrefix}${coreKey}`;
 }
 
 function BranchMultiSelectFieldEditor({
@@ -9995,8 +9997,24 @@ function CompanyBranchTreeSelector({
   }, [form.company_guids]);
 
   const selectedBranches = useMemo(() => {
-    return selectedBranchesFromValue(form.branches);
-  }, [form.branches]);
+    const raw = selectedBranchesFromValue(form.branches);
+    return raw.map((item) => {
+      const itemCoreKey = stringValue(item.guid_fixed) || stringValue(item.code);
+      if (!itemCoreKey) return item;
+      for (const [shopid, shopBranches] of Object.entries(branchesMap)) {
+        const match = shopBranches.find((br) => 
+          (stringValue(br.guid_fixed) || stringValue(br.code)) === itemCoreKey
+        );
+        if (match) {
+          return {
+            ...item,
+            shopid: shopid,
+          };
+        }
+      }
+      return item;
+    });
+  }, [form.branches, branchesMap]);
 
   useEffect(() => {
     if (!auth || !workspace) return;
@@ -10038,7 +10056,11 @@ function CompanyBranchTreeSelector({
           const records = extractListRecords(payload);
           const parsed = records
             .map(recordToBranchOption)
-            .filter((opt) => opt.guid_fixed || opt.code);
+            .filter((opt) => opt.guid_fixed || opt.code)
+            .map((opt) => ({
+              ...opt,
+              shopid: sid,
+            }));
           return { sid, data: parsed };
         });
 
