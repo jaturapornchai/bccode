@@ -15,6 +15,7 @@ description: Use when working with the BC Account business system. Knows domain 
 
 ## 2.1 Data Store Roles
 - **MongoDB**: authoritative operational source for all CRUD, documents, master data, and user-entered business data.
+- **Default Source**: When storage is not explicitly specified by Jead, use MongoDB for operational create/read/update/delete/list/detail flows. Do not read business master data from PostgreSQL or ClickHouse just because a projection exists.
 - **Cloudflare R2/S3**: only binary/image/file object storage. MongoDB keeps metadata and private paths.
 - **PostgreSQL**: relational processing/projection store for postings, balances, VAT/tax, AR/AP, GL, and strict relational calculations.
 - **ClickHouse**: BI/analytics/reporting store fed from processed facts. Never treat ClickHouse as transactional source of truth.

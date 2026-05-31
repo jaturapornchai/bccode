@@ -445,12 +445,61 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     return list.filter((branch) => `${branchDisplayName(branch)} ${branch.code ?? ""}`.toLowerCase().includes(needle));
   }, [branchQuery, branches, selectedCompany]);
 
+  const accessShopOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const options: Array<{ shop: ShopListItem; label: string }> = [];
+
+    flatCompanies.forEach(({ shop, company }) => {
+      const shopid = shop.shopid?.trim();
+      if (!shopid || seen.has(shopid)) return;
+      seen.add(shopid);
+
+      const companyCode = typeof company.code === "string" ? company.code.trim() : "";
+      const companyName = localizedName(company.names, companyCode || shopDisplayName(shop));
+      options.push({
+        shop,
+        label: companyCode ? `[${companyCode}] ${companyName}` : shopAccessDisplayName(shop, language),
+      });
+    });
+
+    shops.forEach((shop) => {
+      const shopid = shop.shopid?.trim();
+      if (!shopid || seen.has(shopid)) return;
+      seen.add(shopid);
+      options.push({ shop, label: shopAccessDisplayName(shop, language) });
+    });
+
+    return options;
+  }, [flatCompanies, language, shops]);
+
+  const selectedAccessShopLabel = useMemo(() => {
+    if (!selectedShopForAccess) return language === "th" ? "เลือกกิจการ" : "Select business";
+    return accessShopOptions.find((option) => option.shop.shopid === selectedShopForAccess.shopid)?.label
+      ?? shopAccessDisplayName(selectedShopForAccess, language);
+  }, [accessShopOptions, language, selectedShopForAccess]);
+
   const signedInAs = auth?.profile?.email || auth?.username || "";
   const currentTitle = step === "branches" ? text("selectBranchTitle") : text("selectCompanyTitle");
   const currentSummary =
     step === "branches"
       ? `${text("availableBranches")}: ${filteredBranches.length}`
       : `${text("availableCompanies")}: ${flatCompanies.length}`;
+
+  const returnToShopSelection = useCallback(async () => {
+    setActiveAccessRoute(null);
+    setSelectedShopForAccess(null);
+    setSelectedShop(null);
+    setSelectedCompany(null);
+    setBranches([]);
+    setBranchQuery("");
+
+    if (!auth) {
+      setStep("shops");
+      return;
+    }
+
+    await loadShops(auth);
+  }, [auth, loadShops]);
 
   function stopLinePolling() {
     if (linePollTimer.current !== null) {
@@ -669,14 +718,14 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
 
   async function openAccessSettings(route: string) {
     if (!auth) return;
-    if (shops.length === 0) {
+    const representativeShop = accessShopOptions[0]?.shop;
+    if (!representativeShop) {
       setNotice({ type: "error", text: language === "th" ? "ไม่พบข้อมูลบริษัทสำหรับกำหนดสิทธิ์" : "No companies found for access control." });
       return;
     }
     setBusy(true);
     setNotice(null);
     try {
-      const representativeShop = shops[0];
       setSelectedShopForAccess(representativeShop);
       await callWorkspaceApi(auth, "select-shop", {
         method: "POST",
@@ -857,10 +906,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               <button
                 className="secondary-button flex items-center gap-2 px-3 py-1.5 text-sm font-bold text-foreground hover:bg-muted hover:text-primary border border-border rounded-xl transition-all shadow-sm shrink-0"
                 type="button"
-                onClick={() => {
-                  setStep("shops");
-                  setActiveAccessRoute(null);
-                }}
+                onClick={() => void returnToShopSelection()}
               >
                 <ArrowLeft size={16} className="text-muted-foreground" />
                 <span>{language === "th" ? "ย้อนกลับ" : "Back"}</span>
@@ -879,16 +925,16 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   <button
                     className="secondary-button flex min-w-0 max-w-[42vw] items-center gap-2 px-3 py-1.5 text-sm font-bold text-foreground hover:bg-muted hover:text-primary border border-border rounded-xl transition-all shadow-sm"
                     type="button"
-                    disabled={busy || shops.length <= 1}
+                    disabled={busy || accessShopOptions.length <= 1}
                   >
                     <Store size={16} className="shrink-0 text-muted-foreground" />
                     <span className="min-w-0 truncate">
-                      {selectedShopForAccess ? shopAccessDisplayName(selectedShopForAccess, language) : (language === "th" ? "เลือกกิจการ" : "Select business")}
+                      {selectedAccessShopLabel}
                     </span>
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-80">
-                  {shops.map((shop) => {
+                  {accessShopOptions.map(({ shop, label }) => {
                     const active = shop.shopid === selectedShopForAccess?.shopid;
                     return (
                       <DropdownMenuItem
@@ -898,7 +944,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                         onClick={() => void handleAccessShopChange(shop)}
                       >
                         <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        <span className="min-w-0 flex-1 truncate">{shopAccessDisplayName(shop, language)}</span>
+                        <span className="min-w-0 flex-1 truncate">{label}</span>
                         {active ? <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" /> : null}
                       </DropdownMenuItem>
                     );
@@ -908,10 +954,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               <button
                 className="icon-button dialog-close"
                 type="button"
-                onClick={() => {
-                  setStep("shops");
-                  setActiveAccessRoute(null);
-                }}
+                onClick={() => void returnToShopSelection()}
               >
                 ×
               </button>
@@ -1174,7 +1217,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
         {step === "branches" ? (
           <>
             <div className="workspace-toolbar">
-              <button className="text-action compact-action" type="button" onClick={() => setStep("shops")}>
+              <button className="text-action compact-action" type="button" onClick={() => void returnToShopSelection()}>
                 <ArrowLeft size={16} /> {text("changeCompany")}
               </button>
               <label className="search-shell">
