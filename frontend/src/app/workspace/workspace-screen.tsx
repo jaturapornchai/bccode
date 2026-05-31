@@ -12,6 +12,7 @@ import {
   Crown,
   ExternalLink,
   GitBranch,
+  HelpCircle,
   KeyRound,
   Languages,
   Loader2,
@@ -1005,9 +1006,73 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               </label>
             </div>
             {flatCompanies.length === 0 ? (
-              <div className="workspace-empty-state">
-                <Building2 size={24} />
-                <strong>{text("noCompanies")}</strong>
+              <div className="workspace-empty-state flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto">
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-4">
+                  <Building2 size={32} />
+                </div>
+                <strong className="text-base text-foreground font-bold mb-2">
+                  {language === "th" 
+                    ? "ยังไม่มีบริษัทเปิดใช้งานในระบบของคุณ" 
+                    : "No active companies found in your system"}
+                </strong>
+                <p className="text-xs text-muted-foreground mb-6">
+                  {language === "th"
+                    ? "กรุณาสร้างบริษัทแรกเพื่อเปิดสิทธิ์และกำหนดสิทธิ์เข้าใช้งานระบบ"
+                    : "Please create your first company to grant workspace access."}
+                </p>
+                
+                <div className="w-full text-left bg-accent/35 border border-border/60 rounded-xl p-4 space-y-3.5">
+                  <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5 border-b pb-2">
+                    <HelpCircle size={14} className="text-primary" />
+                    <span>
+                      {language === "th" ? "ขั้นตอนการสร้างบริษัทสำหรับเริ่มต้นใช้งาน" : "Getting Started: Setup Company"}
+                    </span>
+                  </h4>
+                  
+                  <ul className="space-y-3 text-[11px] text-muted-foreground">
+                    <li className="flex items-start gap-2.5">
+                      <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5">1</span>
+                      <div>
+                        <strong className="text-foreground block">
+                          {language === "th" ? "เข้าเมนูตั้งค่าระบบ" : "Go to Settings"}
+                        </strong>
+                        <span>
+                          {language === "th" 
+                            ? "คลิกปุ่ม 'ตั้งค่าระบบ' 🔑 สีน้ำเงินที่มุมขวาบนของหน้านี้" 
+                            : "Click the 'Settings' 🔑 button at the top-right of this panel."}
+                        </span>
+                      </div>
+                    </li>
+                    
+                    <li className="flex items-start gap-2.5">
+                      <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5">2</span>
+                      <div>
+                        <strong className="text-foreground block">
+                          {language === "th" ? "เลือกหัวข้อข้อมูลบริษัท" : "Select Company & Branch Info"}
+                        </strong>
+                        <span>
+                          {language === "th"
+                            ? "ที่แถบเมนูด้านซ้าย เลือกหัวข้อ 'ข้อมูลบริษัทและสาขา'"
+                            : "On the left sidebar, select 'Company & Branch Info'."}
+                        </span>
+                      </div>
+                    </li>
+                    
+                    <li className="flex items-start gap-2.5">
+                      <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5">3</span>
+                      <div>
+                        <strong className="text-foreground block">
+                          {language === "th" ? "เพิ่มบริษัทใหม่และบันทึก" : "Add Company & Save"}
+                        </strong>
+                        <span>
+                          {language === "th"
+                            ? "คลิก '+ เพิ่มบริษัท' ด้านขวา กรอกข้อมูล (รหัส, ชื่อภาษาไทย) แล้วเลื่อนแถบด้านล่างสุดเพื่อบันทึก"
+                            : "Click '+ Add Company', fill in details, then slide to confirm saving."}
+                        </span>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
               </div>
             ) : (
               <div className="flex flex-wrap gap-6 justify-center w-full py-2">
