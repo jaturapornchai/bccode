@@ -9416,6 +9416,8 @@ type BranchOption = {
   guid_fixed: string;
   code: string;
   names: Array<{ code?: string; name?: string }>;
+  shopid?: string;
+  shop_name?: string;
 };
 
 function branchOptionDisplayName(
@@ -9429,7 +9431,11 @@ function branchOptionDisplayName(
     names.find((item) => item.code?.toLowerCase() === "th" && item.name)
       ?.name ??
     names.find((item) => item.name)?.name;
-  return (localized ?? option.code ?? option.guid_fixed).trim();
+  const branchName = (localized ?? option.code ?? option.guid_fixed).trim();
+  if (option.shop_name) {
+    return `${option.shop_name} - ${branchName}`;
+  }
+  return branchName;
 }
 
 function recordToBranchOption(record: SettingRecord): BranchOption {
@@ -9497,39 +9503,91 @@ function BranchMultiSelectFieldEditor({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const selected = useMemo(
-    () => selectedBranchesFromValue(form[field.key]),
-    [field.key, form],
-  );
+  const selected = useMemo(() => {
+    const rawSelected = selectedBranchesFromValue(form[field.key]);
+    return rawSelected.map((item) => {
+      const match = options.find((opt) => branchKeyOf(opt) === branchKeyOf(item));
+      if (match) {
+        return {
+          ...item,
+          shopid: match.shopid,
+          shop_name: match.shop_name,
+          names: match.names,
+        };
+      }
+      return item;
+    });
+  }, [field.key, form, options]);
 
   useEffect(() => {
     if (!auth || !workspace) return;
     const controller = new AbortController();
+    let cancelled = false;
     setLoading(true);
     setError("");
-    const params = new URLSearchParams({
-      limit: "1000",
-      offset: "0",
-      shopid: workspace.shop.shopid,
-    });
-    void fetch(`/api/system-settings/branch?${params.toString()}`, {
+
+    let shopids: string[] = [];
+    const formCompanies = form.company_guids;
+    if (Array.isArray(formCompanies) && formCompanies.length > 0) {
+      shopids = formCompanies
+        .map((s) => (typeof s === "string" ? s.trim() : stringValue(s?.guid_fixed ?? s?.shopid ?? "")))
+        .filter(Boolean);
+    }
+    if (shopids.length === 0) {
+      shopids = [workspace.shop.shopid];
+    }
+
+    void fetch(`/api/workspace/shops`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,
     })
-      .then(async (response) => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.json() as Promise<unknown>;
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Load shops failed");
+        return res.json() as Promise<any>;
       })
-      .then((payload) => {
-        const records = extractListRecords(payload);
-        const parsed = records
-          .map(recordToBranchOption)
-          .filter((option) => option.guid_fixed || option.code);
-        setOptions(parsed);
-        setLoading(false);
+      .then(async (shopsPayload) => {
+        if (cancelled) return;
+        const shopsList = Array.isArray(shopsPayload.data) ? shopsPayload.data : [];
+        const shopNameMap = new Map<string, string>();
+        for (const s of shopsList) {
+          shopNameMap.set(s.shopid, s.name1 || s.name || s.shopid);
+        }
+
+        const fetchPromises = shopids.map(async (sid) => {
+          const params = new URLSearchParams({
+            limit: "1000",
+            offset: "0",
+            shopid: sid,
+          });
+          const response = await fetch(`/api/system-settings/branch?${params.toString()}`, {
+            headers: requestHeaders(auth),
+            cache: "no-store",
+            signal: controller.signal,
+          });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const payload = await response.json();
+          const records = extractListRecords(payload);
+          return records
+            .map(recordToBranchOption)
+            .filter((opt) => opt.guid_fixed || opt.code)
+            .map((opt) => ({
+              ...opt,
+              shopid: sid,
+              shop_name: shopNameMap.get(sid) || sid,
+            }));
+        });
+
+        const allBranchesResults = await Promise.all(fetchPromises);
+        const mergedBranches = allBranchesResults.flat();
+
+        if (!cancelled) {
+          setOptions(mergedBranches);
+          setLoading(false);
+        }
       })
       .catch((catchError: unknown) => {
+        if (cancelled) return;
         if (
           catchError instanceof DOMException &&
           catchError.name === "AbortError"
@@ -9544,8 +9602,12 @@ function BranchMultiSelectFieldEditor({
         );
         setLoading(false);
       });
-    return () => controller.abort();
-  }, [auth, language, workspace]);
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [auth, language, workspace, form.company_guids]);
 
   function commitSelection(next: BranchOption[]) {
     setForm({ ...form, [field.key]: next });
