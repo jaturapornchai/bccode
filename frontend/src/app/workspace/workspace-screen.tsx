@@ -707,17 +707,17 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     return (
       <main className="w-screen h-screen bg-background flex flex-col overflow-hidden">
         <section className="w-full h-full flex flex-col bg-card" role="dialog" aria-modal="true">
-          <div className="dialog-header shrink-0 flex items-center justify-between">
+          <div className="dialog-header shrink-0 flex items-center justify-between px-6">
             <div className="flex items-center gap-6 min-w-0">
               <button
-                className="icon-button flex items-center gap-1.5 text-sm font-semibold hover:text-primary transition-colors pr-4 border-r border-border rounded-none"
+                className="secondary-button flex items-center gap-2 px-3 py-1.5 text-sm font-bold text-foreground hover:bg-muted hover:text-primary border border-border rounded-xl transition-all shadow-sm shrink-0"
                 type="button"
                 onClick={() => {
                   setStep("shops");
                   setActiveAccessRoute(null);
                 }}
               >
-                <ArrowLeft size={16} />
+                <ArrowLeft size={16} className="text-muted-foreground" />
                 <span>{language === "th" ? "ย้อนกลับ" : "Back"}</span>
               </button>
               <div>
