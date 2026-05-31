@@ -59,12 +59,13 @@ Related central entrypoints:
 - DEV PostgreSQL and ClickHouse run on the DEV server `45.144.166.112`.
 - PostgreSQL and ClickHouse credentials must come from local env/secret files.
 - Data store roles:
-  - MongoDB is the authoritative operational source for all business CRUD, documents, master data, and user-entered data, including products, barcodes, units, categories, debtors/creditors, branches, settings, and transactions.
-  - Default data source rule: unless Jead explicitly asks for a projection, relational calculation, migration, or BI/reporting flow, every operational create/read/update/delete/list/detail workflow must read and write MongoDB first.
+  - MongoDB is the only authoritative operational source for all business CRUD, documents, master data, settings, transactions, and user-entered data, including products, barcodes, units, categories, debtors/creditors, companies, branches, users, permissions, approvals, and transactions.
+  - Iron MongoDB source rule: unless Jead explicitly asks for a projection, rebuild, sync, relational calculation, migration, or BI/reporting flow, every operational create/read/update/delete/list/detail workflow must read and write MongoDB first.
   - Cloudflare R2/S3 stores all images/files/binary objects. MongoDB stores only metadata, ownership context, and private file paths. Do not store image blobs in MongoDB, PostgreSQL, or ClickHouse.
-  - PostgreSQL is a relational processing/projection engine for posted results, balances, stock costing, tax/VAT, AR/AP, GL, auditable relational calculations, and strict relational lookup outputs. It is not the direct CRUD source of truth.
-  - PostgreSQL may expose projections derived from MongoDB/system processing only when the flow is explicitly projection/relational. It must not be the primary user-facing source for companies, branches, settings, products, users, transactions, or other business master data.
-  - ClickHouse is the BI/analytics/reporting store fed from processed facts/projections. It is read-only for BI/report consumers and must not become an operational CRUD store.
+  - PostgreSQL is a rebuildable relational processing/projection engine for posted results, balances, stock costing, tax/VAT, AR/AP, GL, auditable relational calculations, strict relational lookup outputs, and integration-ready relational outputs. It is not the direct CRUD source of truth.
+  - PostgreSQL may expose projections derived from MongoDB/system processing only when the flow is explicitly projection/relational/rebuild/sync. It must not be the primary user-facing source for companies, branches, settings, products, users, permissions, approvals, transactions, or other business master data.
+  - ClickHouse is the rebuildable BI/analytics/reporting store fed from processed facts/projections. It is read-only for BI/report consumers and must not become an operational CRUD store.
+  - Conflict rule: when MongoDB and PostgreSQL/ClickHouse disagree, MongoDB wins. Fix the projection sync/rebuild path; do not patch PostgreSQL or ClickHouse as operational truth.
 
 ## No Fallback Enforcement
 - Runtime code, tools, screens, reports, uploads, language rendering, and agent workflows must not silently substitute missing config, missing data, unavailable APIs, old endpoints, mock data, derived credentials, or legacy storage.

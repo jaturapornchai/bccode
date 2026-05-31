@@ -10,7 +10,7 @@ description: Auto-activate when writing, reviewing, or modifying Go code.
 ## 2. Coding Patterns
 - **Context & Errors**: Always pass `ctx`. Return error types, do not `panic` in production.
 - **SQL Param**: Parameterize SQL queries (no string concat).
-- **Default Data Source**: Unless Jead explicitly asks for a projection, relational calculation, migration, or BI/reporting flow, operational APIs must read/write MongoDB first. Do not use PostgreSQL or ClickHouse as the user-facing source for CRUD/list/detail data.
-- **PostgreSQL Projection Writes**: Only write PostgreSQL tables when working on explicit sync/consumer/projection code. MongoDB remains the operational source of truth. Legacy projection tables may use columns without underscores (`unitname`, `groupcode`, `groupnames`, `itemtype`); verify the table before writing.
+- **Default Data Source**: Unless Jead explicitly asks for a projection, rebuild, sync, relational calculation, migration, or BI/reporting flow, operational APIs must read/write MongoDB first. Do not use PostgreSQL or ClickHouse as the user-facing source for CRUD/list/detail data.
+- **Projection Writes/Rebuilds**: Only read/write PostgreSQL or ClickHouse when working on explicit sync, rebuild, consumer, projection, relational calculation, or BI/reporting code. MongoDB remains the operational source of truth. Treat PostgreSQL and ClickHouse rows as rebuildable derived data; if they conflict with MongoDB, fix sync/rebuild instead of patching projections as truth. Legacy projection tables may use columns without underscores (`unitname`, `groupcode`, `groupnames`, `itemtype`); verify the table before writing.
 - **Mongo reorder**: MongoDB `$set` updates must target specific reordered fields (`xsorts`, parent/order keys) instead of saving the full document (full document write causes duplicate `_id` errors).
 - **Checks**: Run `go vet ./...` and `go build ./...` before committing.

@@ -14,11 +14,12 @@ description: Use when working with the BC Account business system. Knows domain 
 - **Branch Scope**: `branch_id` / branch code is scoped under `tenant_id`. Departments, working days, and holidays are branch-scoped (branches can have different calendars, timezones, and calendars).
 
 ## 2.1 Data Store Roles
-- **MongoDB**: authoritative operational source for all CRUD, documents, master data, and user-entered business data.
-- **Default Source**: When storage is not explicitly specified by Jead, use MongoDB for operational create/read/update/delete/list/detail flows. Do not read business master data from PostgreSQL or ClickHouse just because a projection exists.
+- **MongoDB**: the only authoritative operational source for all CRUD, documents, master data, settings, transactions, and user-entered business data.
+- **Default Source**: When storage is not explicitly specified by Jead, use MongoDB for operational create/read/update/delete/list/detail flows. Do not read business master data, settings, permissions, approvals, companies, branches, users, products, or transactions from PostgreSQL or ClickHouse just because a projection exists.
 - **Cloudflare R2/S3**: only binary/image/file object storage. MongoDB keeps metadata and private paths.
-- **PostgreSQL**: relational processing/projection store for postings, balances, VAT/tax, AR/AP, GL, and strict relational calculations.
-- **ClickHouse**: BI/analytics/reporting store fed from processed facts. Never treat ClickHouse as transactional source of truth.
+- **PostgreSQL**: rebuildable relational processing/projection store for postings, balances, VAT/tax, AR/AP, GL, strict relational calculations, and integration-ready relational outputs.
+- **ClickHouse**: rebuildable BI/analytics/reporting store fed from processed facts. Never treat ClickHouse as transactional source of truth.
+- **Projection Conflict Rule**: If PostgreSQL or ClickHouse differs from MongoDB, MongoDB wins. Fix sync/rebuild code or data pipelines instead of treating projections as operational truth.
 - **Product Classification**: `item_type` is 0=Stock, 1=Service, 2=Set, 3=Not Stock. `materialtype` is 0=General, 1=Material, 2=Semi-Finished, 3=Set, 4=Agricultural. Product Set records must use `item_type=2` together with `materialtype=3` in MongoDB and relational projections; API writes and projection consumers must reject mismatched Set classification instead of correcting it silently.
 
 ## 3. Legal & Settings Rules
