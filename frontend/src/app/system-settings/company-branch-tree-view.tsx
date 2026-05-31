@@ -303,7 +303,8 @@ export function CompanyBranchTreeView({
 
       const json = (await res.json().catch(() => ({}))) as { success?: boolean; id?: string; message?: string };
       if (!res.ok || json.success === false) {
-        throw new Error(saveErrorMessage(json.message, formType));
+        setSaveError(saveErrorMessage(json.message, formType));
+        return;
       }
       if (json.success) {
         setSaveSuccess(true);
