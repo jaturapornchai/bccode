@@ -726,26 +726,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   {language === "th" ? "จัดการสิทธิ์การเข้าถึง" : "Access Control"}
                 </h2>
               </div>
-              {shops.length > 0 ? (
-                <div className="flex items-center gap-2 border-l border-border pl-6">
-                  <span className="text-xs font-bold text-muted-foreground whitespace-nowrap uppercase tracking-wider">{language === "th" ? "จัดการบริษัท:" : "Shop:"}</span>
-                  <select
-                    className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer hover:border-primary/50 transition-colors"
-                    value={selectedShopForAccess?.shopid ?? ""}
-                    disabled={busy}
-                    onChange={(e) => {
-                      const shop = shops.find((s) => s.shopid === e.target.value);
-                      if (shop) void handleAccessShopChange(shop);
-                    }}
-                  >
-                    {shops.map((shop) => (
-                      <option key={shop.shopid} value={shop.shopid}>
-                        {shopDisplayName(shop)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : null}
+
             </div>
             <button
               className="icon-button dialog-close"
