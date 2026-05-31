@@ -407,6 +407,13 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
         branches: sortedBranches,
       };
     }).sort((a, b) => {
+      // Sort by shop name/id first
+      const shopA = shopDisplayName(a.shop) || a.shop.shopid || "";
+      const shopB = shopDisplayName(b.shop) || b.shop.shopid || "";
+      const shopCmp = shopA.localeCompare(shopB, "th", { sensitivity: "base" });
+      if (shopCmp !== 0) return shopCmp;
+
+      // Under the same shop, sort by company code
       const codeA = a.company.code || "";
       const codeB = b.company.code || "";
       const cmp = codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: "base" });
