@@ -37,6 +37,8 @@ import {
   UserX,
   UsersRound,
   ChevronsUpDown,
+  ChevronDown,
+  ChevronRight,
   UploadCloud,
   X,
 } from "lucide-react";
@@ -6383,28 +6385,18 @@ function FieldEditor({
   }
 
   if (field.type === "branch-multi-select") {
-    return (
-      <BranchMultiSelectFieldEditor
-        auth={auth}
-        field={field}
-        form={form}
-        label={label}
-        language={language}
-        setForm={setForm}
-        workspace={workspace}
-      />
-    );
+    // Hidden because it is integrated into CompanyBranchTreeSelector
+    return null;
   }
 
   if (field.type === "company-multi-select") {
     return (
-      <CompanyMultiSelectFieldEditor
+      <CompanyBranchTreeSelector
         auth={auth}
-        field={field}
         form={form}
-        label={label}
         language={language}
         setForm={setForm}
+        workspace={workspace}
       />
     );
   }
@@ -9971,26 +9963,27 @@ function companyOptionDisplayName(
   return (localized ?? option.code ?? option.guidfixed ?? "").trim();
 }
 
-function CompanyMultiSelectFieldEditor({
+function CompanyBranchTreeSelector({
   auth,
-  field,
   form,
-  label,
   language,
   setForm,
+  workspace,
 }: {
   auth: AuthSession | null;
-  field: SystemSettingField;
   form: FormState;
-  label: string;
   language: LanguageCode;
   setForm: (form: FormState) => void;
+  workspace: WorkspaceSession | null;
 }) {
-  const [options, setOptions] = useState<MasterEntry[]>([]);
+  const [shops, setShops] = useState<any[]>([]);
+  const [branchesMap, setBranchesMap] = useState<Record<string, BranchOption[]>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const selectedGuids = useMemo(() => {
-    const val = form[field.key];
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
+  const selectedShopIds = useMemo(() => {
+    const val = form.company_guids;
     if (Array.isArray(val)) {
       return val.map((item) => {
         if (typeof item === "string") return item.trim();
@@ -9999,316 +9992,246 @@ function CompanyMultiSelectFieldEditor({
       }).filter(Boolean);
     }
     return [];
-  }, [field.key, form]);
+  }, [form.company_guids]);
+
+  const selectedBranches = useMemo(() => {
+    return selectedBranchesFromValue(form.branches);
+  }, [form.branches]);
 
   useEffect(() => {
-    if (!auth) return;
+    if (!auth || !workspace) return;
     const controller = new AbortController();
+    let cancelled = false;
     setLoading(true);
     setError("");
+
     void fetch(`/api/workspace/shops`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,
     })
-      .then(async (response) => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.json() as Promise<any>;
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Load shops failed");
+        return res.json() as Promise<any>;
       })
-      .then((payload) => {
-        if (payload.success && Array.isArray(payload.data)) {
-          const parsed = payload.data.map((shop: any) => ({
-            guidfixed: shop.shopid,
-            code: "",
-            names: shop.names || [{ code: "th", name: shop.name1 || shop.name || "" }]
-          }));
-          setOptions(parsed);
+      .then(async (shopsPayload) => {
+        if (cancelled) return;
+        const shopsList = Array.isArray(shopsPayload.data) ? shopsPayload.data : [];
+        setShops(shopsList);
+
+        // Fetch branches for all shops
+        const fetchPromises = shopsList.map(async (shop: any) => {
+          const sid = shop.shopid;
+          const params = new URLSearchParams({
+            limit: "1000",
+            offset: "0",
+            shopid: sid,
+          });
+          const response = await fetch(`/api/system-settings/branch?${params.toString()}`, {
+            headers: requestHeaders(auth),
+            cache: "no-store",
+            signal: controller.signal,
+          });
+          if (!response.ok) return { sid, data: [] };
+          const payload = await response.json();
+          const records = extractListRecords(payload);
+          const parsed = records
+            .map(recordToBranchOption)
+            .filter((opt) => opt.guid_fixed || opt.code);
+          return { sid, data: parsed };
+        });
+
+        const results = await Promise.all(fetchPromises);
+        const nextMap: Record<string, BranchOption[]> = {};
+        for (const res of results) {
+          nextMap[res.sid] = res.data;
         }
-        setLoading(false);
+
+        if (!cancelled) {
+          setBranchesMap(nextMap);
+          setLoading(false);
+        }
       })
       .catch((catchError: unknown) => {
-        if (
-          catchError instanceof DOMException &&
-          catchError.name === "AbortError"
-        )
-          return;
+        if (cancelled) return;
         setError(
           catchError instanceof Error && catchError.message
             ? catchError.message
             : language === "th"
-              ? "โหลดข้อมูลบริษัทไม่สำเร็จ"
-              : "Failed to load companies",
+              ? "โหลดข้อมูลบริษัท/สาขาไม่สำเร็จ"
+              : "Failed to load organizational structure",
         );
         setLoading(false);
       });
-    return () => controller.abort();
-  }, [auth, language]);
 
-  function commitSelection(next: string[]) {
-    setForm({ ...form, [field.key]: next });
-  }
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [auth, language, workspace]);
 
-  function handleToggle(guid: string, checked: boolean) {
+  function handleToggleShop(shopId: string, checked: boolean) {
+    let nextShops = [...selectedShopIds];
     if (checked) {
-      if (!selectedGuids.includes(guid)) {
-        commitSelection([...selectedGuids, guid]);
+      if (!nextShops.includes(shopId)) nextShops.push(shopId);
+    } else {
+      nextShops = nextShops.filter((id) => id !== shopId);
+    }
+
+    // Toggle branches under this shop as well
+    const shopBranches = branchesMap[shopId] || [];
+    let nextBranches = [...selectedBranches];
+    if (checked) {
+      for (const br of shopBranches) {
+        if (!nextBranches.some((item) => branchKeyOf(item) === branchKeyOf(br))) {
+          nextBranches.push(br);
+        }
       }
     } else {
-      commitSelection(selectedGuids.filter((item) => item !== guid));
+      const shopBranchKeys = new Set(shopBranches.map((br) => branchKeyOf(br)));
+      nextBranches = nextBranches.filter((item) => !shopBranchKeys.has(branchKeyOf(item)));
     }
+
+    setForm({
+      ...form,
+      company_guids: nextShops,
+      branches: nextBranches,
+    });
   }
 
-  const summary =
-    language === "th"
-      ? `เลือก ${selectedGuids.length} / ${options.length} บริษัท`
-      : `${selectedGuids.length} / ${options.length} companies selected`;
+  function handleToggleBranch(shopId: string, br: BranchOption, checked: boolean) {
+    const brKey = branchKeyOf(br);
+    let nextBranches = [...selectedBranches];
+    if (checked) {
+      if (!nextBranches.some((item) => branchKeyOf(item) === brKey)) {
+        nextBranches.push(br);
+      }
+    } else {
+      nextBranches = nextBranches.filter((item) => branchKeyOf(item) !== brKey);
+    }
+
+    const shopBranches = branchesMap[shopId] || [];
+    const hasAnyChecked = shopBranches.some((b) =>
+      checked ? branchKeyOf(b) === brKey || nextBranches.some((item) => branchKeyOf(item) === branchKeyOf(b))
+              : nextBranches.some((item) => branchKeyOf(item) === branchKeyOf(b))
+    );
+
+    let nextShops = [...selectedShopIds];
+    if (hasAnyChecked) {
+      if (!nextShops.includes(shopId)) nextShops.push(shopId);
+    } else {
+      nextShops = nextShops.filter((id) => id !== shopId);
+    }
+
+    setForm({
+      ...form,
+      company_guids: nextShops,
+      branches: nextBranches,
+    });
+  }
+
+  function toggleCollapsed(shopId: string) {
+    setCollapsed((prev) => ({ ...prev, [shopId]: !prev[shopId] }));
+  }
 
   return (
-    <section className="grid w-full gap-3 rounded-2xl border border-border bg-background p-3 text-sm font-semibold">
+    <section className="grid w-full gap-3 rounded-2xl border border-border bg-background p-4 text-sm font-semibold shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
-        <span>
-          {label}
-          {field.required ? " *" : ""}
-        </span>
-        <span className="text-xs font-normal text-muted-foreground">{summary}</span>
+        <span>{language === "th" ? "สิทธิ์การเข้าถึงบริษัทและสาขา" : "Company & Branch Access"}</span>
+        {loading ? (
+          <span className="flex items-center gap-1 text-xs font-normal text-muted-foreground animate-pulse">
+            <Loader2 className="size-3 animate-spin" />
+            {language === "th" ? "กำลังโหลดข้อมูลโครงสร้าง…" : "Loading structure…"}
+          </span>
+        ) : null}
       </div>
-      {loading ? (
-        <div className="flex items-center gap-2 px-1 py-1 text-xs text-muted-foreground">
-          <Loader2 className="size-3 animate-spin" />
-          {language === "th" ? "กำลังโหลดบริษัท…" : "Loading companies…"}
-        </div>
-      ) : null}
-      {error ? (
-        <span className="text-xs font-normal text-destructive py-1">{error}</span>
-      ) : null}
-      {!loading && !error && options.length === 0 ? (
-        <p className="text-xs font-normal text-muted-foreground py-1">
-          {language === "th"
-            ? "ยังไม่มีบริษัทให้เลือก — เพิ่มบริษัทในหน้า \"บริษัท\" ก่อน"
-            : 'No companies to choose yet — add one on the "Company" screen first.'}
+      {error ? <p className="text-xs font-semibold text-destructive">{error}</p> : null}
+
+      {!loading && !error && shops.length === 0 ? (
+        <p className="text-xs font-normal text-muted-foreground py-2">
+          {language === "th" ? "ไม่พบข้อมูลบริษัทในระบบ" : "No companies found."}
         </p>
       ) : null}
-      {!loading && !error && options.length > 0 ? (
-        <div className="flex flex-col gap-2 py-1 font-normal">
-          {options.map((option) => {
-            const isChecked = selectedGuids.includes(option.guidfixed);
+
+      {!loading && !error && shops.length > 0 ? (
+        <div className="flex flex-col gap-2.5 py-1">
+          {shops.map((shop) => {
+            const sid = shop.shopid;
+            const shopName = shop.names?.find((n: any) => n.code === language)?.name || shop.name1 || shop.name || sid;
+            const isShopChecked = selectedShopIds.includes(sid);
+            const shopBranches = branchesMap[sid] || [];
+            const isCollapsed = collapsed[sid];
+            const selectedShopBranchesCount = shopBranches.filter((b) =>
+              selectedBranches.some((item) => branchKeyOf(item) === branchKeyOf(b))
+            ).length;
+
             return (
-              <label
-                key={option.guidfixed}
-                className="flex items-center gap-2.5 rounded-xl border border-border bg-card p-3 cursor-pointer hover:bg-muted/50 transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  className="size-4 accent-primary cursor-pointer"
-                  checked={isChecked}
-                  onChange={(e) => handleToggle(option.guidfixed, e.target.checked)}
-                />
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-medium text-foreground">
-                    {companyOptionDisplayName(option, language)}
-                  </span>
-                  {option.code ? (
-                    <span className="text-[10px] text-muted-foreground">
-                      {language === "th" ? `รหัส: ${option.code}` : `Code: ${option.code}`}
+              <div key={sid} className="flex flex-col gap-1.5 border border-border/60 bg-card rounded-xl p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => toggleCollapsed(sid)}
+                      className="p-1 hover:bg-muted rounded text-muted-foreground"
+                    >
+                      {isCollapsed ? (
+                        <ChevronRight className="size-4" />
+                      ) : (
+                        <ChevronDown className="size-4" />
+                      )}
+                    </button>
+                    <input
+                      type="checkbox"
+                      id={`shop-${sid}`}
+                      checked={isShopChecked}
+                      onChange={(e) => handleToggleShop(sid, e.target.checked)}
+                      className="size-4 text-primary border-border rounded cursor-pointer"
+                    />
+                    <label htmlFor={`shop-${sid}`} className="font-bold cursor-pointer truncate flex items-center gap-1.5 select-none">
+                      <Building2 className="size-4 text-primary shrink-0" />
+                      <span>{shopName}</span>
+                    </label>
+                  </div>
+                  {shopBranches.length > 0 ? (
+                    <span className="text-xs font-normal text-muted-foreground shrink-0">
+                      {language === "th"
+                        ? `เลือก ${selectedShopBranchesCount} / ${shopBranches.length} สาขา`
+                        : `${selectedShopBranchesCount} / ${shopBranches.length} selected`}
                     </span>
                   ) : null}
                 </div>
-              </label>
+
+                {!isCollapsed && shopBranches.length > 0 ? (
+                  <div className="pl-9 border-l border-border/80 ml-3.5 mt-1 flex flex-col gap-2">
+                    {shopBranches.map((br) => {
+                      const brKey = branchKeyOf(br);
+                      const isBrChecked = selectedBranches.some((item) => branchKeyOf(item) === brKey);
+                      const brName = branchOptionDisplayName(br, language);
+
+                      return (
+                        <label
+                          key={brKey}
+                          className="flex items-center gap-2.5 cursor-pointer py-0.5 select-none font-normal text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isBrChecked}
+                            onChange={(e) => handleToggleBranch(sid, br, e.target.checked)}
+                            className="size-3.5 text-primary border-border rounded cursor-pointer"
+                          />
+                          <GitBranch className="size-3.5 text-sky-500 shrink-0" />
+                          <span className="text-xs">{brName}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
             );
           })}
         </div>
       ) : null}
     </section>
-  );
-}
-
-function CompanyPickerDialog({
-  initialSelected,
-  language,
-  onCancel,
-  onConfirm,
-  options,
-}: {
-  initialSelected: string[];
-  language: LanguageCode;
-  onCancel: () => void;
-  onConfirm: (selected: string[]) => void;
-  options: MasterEntry[];
-}) {
-  const [draft, setDraft] = useState<string[]>(initialSelected);
-  const [query, setQuery] = useState("");
-  const draftKeys = useMemo(() => new Set(draft), [draft]);
-  const filteredOptions = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (!needle) return options;
-    return options.filter((option) => {
-      const name = companyOptionDisplayName(option, language).toLowerCase();
-      const code = option.code.toLowerCase();
-      return name.includes(needle) || code.includes(needle);
-    });
-  }, [language, options, query]);
-
-  useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onCancel();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onCancel]);
-
-  function toggleDraft(guid: string, checked: boolean) {
-    const without = draft.filter((item) => item !== guid);
-    setDraft(checked ? [...without, guid] : without);
-  }
-
-  function selectAllVisible() {
-    const nextDraft = new Set(draft);
-    for (const item of filteredOptions) nextDraft.add(item.guidfixed);
-    setDraft(Array.from(nextDraft));
-  }
-
-  function clearVisible() {
-    if (!query.trim()) {
-      setDraft([]);
-      return;
-    }
-    const visibleKeys = new Set(filteredOptions.map((item) => item.guidfixed));
-    setDraft(draft.filter((item) => !visibleKeys.has(item)));
-  }
-
-  const title = language === "th" ? "เลือกบริษัท" : "Pick companies";
-  const searchPlaceholder =
-    language === "th"
-      ? "ค้นหารหัสหรือชื่อบริษัท"
-      : "Search company code or name";
-  const summary =
-    language === "th"
-      ? `เลือก ${draft.length} / ${options.length} บริษัท (กรอง ${filteredOptions.length})`
-      : `${draft.length} / ${options.length} selected (${filteredOptions.length} filtered)`;
-  const selectAllLabel =
-    language === "th"
-      ? query.trim()
-        ? "เลือกทั้งหมดที่กรอง"
-        : "เลือกทุกบริษัท"
-      : query.trim()
-        ? "Select all filtered"
-        : "Select all";
-  const clearLabel =
-    language === "th"
-      ? query.trim()
-        ? "ล้างที่กรอง"
-        : "ล้างทั้งหมด"
-      : query.trim()
-        ? "Clear filtered"
-        : "Clear all";
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex flex-col bg-card text-card-foreground"
-      role="dialog"
-      aria-modal="true"
-      aria-label={title}
-    >
-      <header className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
-        <div className="flex items-center gap-2 text-sm font-semibold">
-          <Building2 className="size-4" />
-          {title}
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onCancel}
-          aria-label={language === "th" ? "ยกเลิก" : "Cancel"}
-        >
-          <X />
-        </Button>
-      </header>
-      <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <label className="relative flex min-w-0 flex-1 items-center">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            autoFocus
-            className="h-9 pl-9"
-            placeholder={searchPlaceholder}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </label>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={selectAllVisible}
-          disabled={filteredOptions.length === 0}
-        >
-          {selectAllLabel}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={clearVisible}
-          disabled={draft.length === 0}
-        >
-          {clearLabel}
-        </Button>
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
-        {filteredOptions.length === 0 ? (
-          <p className="grid h-full place-items-center text-sm text-muted-foreground">
-            {language === "th" ? "ไม่พบบริษัท" : "No companies found"}
-          </p>
-        ) : (
-          <ul className="grid gap-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-            {filteredOptions.map((option) => {
-              const checked = draftKeys.has(option.guidfixed);
-              return (
-                <li key={option.guidfixed}>
-                  <label
-                    className={cn(
-                      "flex cursor-pointer items-center gap-2 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
-                      checked
-                        ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
-                        : "border-border bg-card hover:border-primary/40 hover:bg-accent/40",
-                    )}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={(event) =>
-                        toggleDraft(option.guidfixed, event.target.checked)
-                      }
-                      className="size-4 accent-primary"
-                    />
-                    <span className="min-w-0 flex-1 truncate">
-                      {companyOptionDisplayName(option, language)}
-                    </span>
-                    {option.code ? (
-                      <span className="shrink-0 text-[10px] text-muted-foreground">
-                        {option.code}
-                      </span>
-                    ) : null}
-                  </label>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
-      <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-3 py-2">
-        <span className="text-xs text-muted-foreground">{summary}</span>
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            {language === "th" ? "ยกเลิก" : "Cancel"}
-          </Button>
-          <Button type="button" onClick={() => onConfirm(draft)}>
-            <Check />
-            {language === "th" ? "ยืนยัน" : "Confirm"}
-          </Button>
-        </div>
-      </footer>
-    </div>
   );
 }
 
