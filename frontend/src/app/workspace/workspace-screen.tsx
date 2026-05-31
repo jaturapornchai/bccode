@@ -34,6 +34,7 @@ import {
   type BranchListItem,
   type ShopListItem,
   workspaceStorageKeys,
+  notifyWorkspaceChanged,
 } from "@/lib/workspace-models";
 import {
   DropdownMenu,
@@ -273,6 +274,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   const [pendingUnitSetup, setPendingUnitSetup] = useState<PendingUnitSetup | null>(null);
   const [unitSetupSaving, setUnitSetupSaving] = useState(false);
   const [activeAccessRoute, setActiveAccessRoute] = useState<string | null>(null);
+  const [selectedShopForAccess, setSelectedShopForAccess] = useState<ShopListItem | null>(null);
   const isSelectedShopOwner = useMemo(() => {
     if (!selectedShop || !auth) return false;
     const isCreator = selectedShop.is_creator === true
@@ -530,6 +532,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     setNotice(null);
     try {
       const representativeShop = shops[0];
+      setSelectedShopForAccess(representativeShop);
       await callWorkspaceApi(auth, "select-shop", {
         method: "POST",
         body: { shopid: representativeShop.shopid },
@@ -545,6 +548,32 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       setActiveAccessRoute(route);
     } catch (error) {
       setNotice(error instanceof Error && error.message ? { type: "error", text: error.message } : { type: "error", text: language === "th" ? "เตรียมระบบกำหนดสิทธิ์ล้มเหลว" : "Failed to initialize access control." });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleAccessShopChange(shop: ShopListItem) {
+    if (!auth) return;
+    setBusy(true);
+    setNotice(null);
+    try {
+      setSelectedShopForAccess(shop);
+      await callWorkspaceApi(auth, "select-shop", {
+        method: "POST",
+        body: { shopid: shop.shopid },
+      });
+      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `shop-info?shopid=${encodeURIComponent(shop.shopid)}`);
+      const branchPayload = await callWorkspaceApi<{ data?: BranchListItem[] }>(auth, "branches?offset=0&limit=100&q=");
+      const nextBranches = Array.isArray(branchPayload.data) ? branchPayload.data : [];
+      const defaultBranch = nextBranches[0] ?? null;
+
+      localStorage.setItem(workspaceStorageKeys.shopInfo, JSON.stringify(shopInfo.data ?? null));
+      localStorage.setItem(workspaceStorageKeys.workspace, JSON.stringify({ shop, branch: defaultBranch, shopInfo: shopInfo.data ?? null }));
+
+      notifyWorkspaceChanged();
+    } catch (error) {
+      setNotice(error instanceof Error && error.message ? { type: "error", text: error.message } : { type: "error", text: language === "th" ? "เปลี่ยนบริษัทสำหรับกำหนดสิทธิ์ล้มเหลว" : "Failed to switch company." });
     } finally {
       setBusy(false);
     }
@@ -1018,16 +1047,38 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       {activeAccessRoute ? (
         <div className="dialog-backdrop" role="presentation">
           <section className="access-control-dialog" role="dialog" aria-modal="true">
-            <div className="dialog-header shrink-0">
-              <div>
-                <p className="eyebrow">{language === "th" ? "การเข้าถึง" : "ACCESS CONTROL"}</p>
-                <h2>
-                  {activeAccessRoute === "/user" && (language === "th" ? "ผู้ใช้งาน" : "Users")}
-                  {activeAccessRoute === "/permission_definition" && (language === "th" ? "กำหนดสิทธิ์หน้าจอ" : "Permission Definition")}
-                  {activeAccessRoute === "/permission_group" && (language === "th" ? "กำหนดสิทธิ์ตามกลุ่ม" : "Permission Group")}
-                  {activeAccessRoute === "/approval_setting" && (language === "th" ? "สิทธิ์การอนุมัติ" : "Approval Permission")}
-                  {activeAccessRoute === "/permission_link" && (language === "th" ? "กำหนดสิทธิ์พนักงาน" : "Permission Link")}
-                </h2>
+            <div className="dialog-header shrink-0 flex items-center justify-between">
+              <div className="flex items-center gap-6 min-w-0">
+                <div>
+                  <p className="eyebrow">{language === "th" ? "การเข้าถึง" : "ACCESS CONTROL"}</p>
+                  <h2 className="truncate max-w-[200px] md:max-w-none">
+                    {activeAccessRoute === "/user" && (language === "th" ? "ผู้ใช้งาน" : "Users")}
+                    {activeAccessRoute === "/permission_definition" && (language === "th" ? "กำหนดสิทธิ์หน้าจอ" : "Permission Definition")}
+                    {activeAccessRoute === "/permission_group" && (language === "th" ? "กำหนดสิทธิ์ตามกลุ่ม" : "Permission Group")}
+                    {activeAccessRoute === "/approval_setting" && (language === "th" ? "สิทธิ์การอนุมัติ" : "Approval Permission")}
+                    {activeAccessRoute === "/permission_link" && (language === "th" ? "กำหนดสิทธิ์พนักงาน" : "Permission Link")}
+                  </h2>
+                </div>
+                {shops.length > 0 ? (
+                  <div className="flex items-center gap-2 border-l border-border pl-6">
+                    <span className="text-xs font-bold text-muted-foreground whitespace-nowrap uppercase tracking-wider">{language === "th" ? "จัดการบริษัท:" : "Shop:"}</span>
+                    <select
+                      className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer hover:border-primary/50 transition-colors"
+                      value={selectedShopForAccess?.shopid ?? ""}
+                      disabled={busy}
+                      onChange={(e) => {
+                        const shop = shops.find((s) => s.shopid === e.target.value);
+                        if (shop) void handleAccessShopChange(shop);
+                      }}
+                    >
+                      {shops.map((shop) => (
+                        <option key={shop.shopid} value={shop.shopid}>
+                          {shopDisplayName(shop)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
               </div>
               <button className="icon-button dialog-close" type="button" onClick={() => setActiveAccessRoute(null)}>
                 ×
