@@ -18,11 +18,12 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LANGUAGES, type LanguageCode } from "@/lib/i18n";
+import type { LanguageCode } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { normalizeLanguageConfigs } from "./system-settings-screen";
 import { deriveMainApiUrl } from "@/lib/backend-url";
 import { NamesEditor } from "@/components/product-barcode/names-editor";
+import { isThaiHeadOfficeBranchCode } from "@/lib/thai-branch-code";
 
 interface CompanyBranchTreeViewProps {
   auth: { token: string; backendUrl: string } | null;
@@ -97,6 +98,7 @@ export function CompanyBranchTreeView({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const mainApiUrl = useMemo(() => {
     if (!auth?.backendUrl) return "";
@@ -133,6 +135,7 @@ export function CompanyBranchTreeView({
     const code = Math.floor(1000 + Math.random() * 9000).toString();
     setConfirmAction(action);
     setPendingDeleteNode(action === "delete" ? node ?? null : null);
+    setDeleteError("");
     setRandomCode(code);
     setInputCode("");
     setCodeError(false);
@@ -334,13 +337,18 @@ export function CompanyBranchTreeView({
         method: "DELETE",
         headers: { Authorization: `Bearer ${auth.token}` },
       });
-      const json = await res.json();
+      const json = (await res.json().catch(() => ({}))) as { success?: boolean; message?: string };
+      if (!res.ok || json.success === false) {
+        throw new Error(deleteErrorMessage(json.message, node));
+      }
       if (json.success) {
         await loadData();
         setSelectedNode(null);
         setFormType(null);
+        setDeleteError("");
       }
     } catch (e) {
+      setDeleteError(e instanceof Error && e.message ? e.message : "ลบข้อมูลไม่สำเร็จ");
       console.error(e);
     } finally {
       setLoading(false);
@@ -372,6 +380,11 @@ export function CompanyBranchTreeView({
               เพิ่มบริษัท
             </Button>
           </div>
+          {deleteError && (
+            <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive">
+              {deleteError}
+            </div>
+          )}
 
           {loading ? (
             <div className="flex justify-center py-12">
@@ -465,6 +478,7 @@ export function CompanyBranchTreeView({
                         {compBranches.map((br) => {
                           const brGuid = br.guid_fixed || "";
                           const isBrSelected = selectedNode?.type === "branch" && selectedNode.guid_fixed === brGuid;
+                          const cannotDeleteBranch = isThaiHeadOfficeBranchCode(br.code) || compBranches.length <= 1;
 
                           return (
                             <div
@@ -494,8 +508,11 @@ export function CompanyBranchTreeView({
                                   size="icon"
                                   variant="ghost"
                                   className="w-7 h-7 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10"
+                                  disabled={cannotDeleteBranch}
+                                  title={cannotDeleteBranch ? "สาขาสำนักงานใหญ่หรือสาขาสุดท้ายของบริษัทลบไม่ได้" : "ลบสาขา"}
                                   onClick={(e) => {
                                     e.stopPropagation();
+                                    if (cannotDeleteBranch) return;
                                     showConfirmCodeDialog("delete", {
                                       type: "branch",
                                       guid_fixed: brGuid,
@@ -703,4 +720,19 @@ export function CompanyBranchTreeView({
       )}
     </div>
   );
+}
+
+function deleteErrorMessage(message: string | undefined, node: SelectedNode): string {
+  switch (message) {
+    case "head office branch cannot be deleted":
+      return "ลบสาขาสำนักงานใหญ่ไม่ได้";
+    case "company must have at least one branch":
+      return "บริษัทต้องมีอย่างน้อย 1 สาขา";
+    case "Branch not found":
+      return "ไม่พบข้อมูลสาขาที่ต้องการลบ";
+    case "Company not found":
+      return "ไม่พบข้อมูลบริษัทที่ต้องการลบ";
+    default:
+      return message || (node.type === "company" ? "ลบบริษัทไม่สำเร็จ" : "ลบสาขาไม่สำเร็จ");
+  }
 }
