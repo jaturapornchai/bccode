@@ -100,8 +100,8 @@ const emptyLineDialog: LineDialogState = {
   expired: false,
 };
 const accessSettingNavItems = [
-  { route: "/company", label: { th: "ข้อมูลบริษัทและสาขา", en: "Company & Branch" } },
   { route: "/active_languages", label: { th: "ภาษาที่ใช้งาน", en: "Active Languages" } },
+  { route: "/company", label: { th: "ข้อมูลบริษัทและสาขา", en: "Company & Branch" } },
   { route: "/user", label: { th: "ผู้ใช้งาน", en: "Users" } },
   { route: "/permission_link", label: { th: "กำหนดสิทธิ์ผู้ใช้งาน", en: "Permission Link" } },
   { route: "/permission_definition", label: { th: "กำหนดสิทธิ์หน้าจอ", en: "Permission Definition" } },
@@ -970,7 +970,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               <button
                 className="secondary-button workspace-head-action flex items-center gap-1.5"
                 type="button"
-                onClick={() => void openAccessSettings("/company")}
+                onClick={() => void openAccessSettings("/active_languages")}
                 disabled={busy}
               >
                 <KeyRound size={17} />
