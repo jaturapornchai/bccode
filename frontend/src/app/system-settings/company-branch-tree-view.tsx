@@ -57,6 +57,7 @@ interface CompanyRecord {
   names?: LocalizedNames;
   tax_id?: string;
   is_active?: boolean;
+  deleted_at?: string | null;
 }
 
 interface BranchRecord {
@@ -65,6 +66,7 @@ interface BranchRecord {
   code?: string;
   names?: LocalizedNames;
   is_active?: boolean;
+  deleted_at?: string | null;
 }
 
 type NodeType = "company" | "branch";
@@ -88,6 +90,11 @@ const getNameFromObject = (names: LocalizedNames, code: string): string => {
   return typeof value === "string" ? value : "";
 };
 
+const isVisibleOrganizationRecord = <T extends { is_active?: boolean; deleted_at?: string | null }>(record: T): boolean => {
+  if (record.is_active === false) return false;
+  return !record.deleted_at || String(record.deleted_at).trim().length === 0;
+};
+
 export function CompanyBranchTreeView({
   auth,
   workspace,
@@ -101,6 +108,7 @@ export function CompanyBranchTreeView({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [deleteError, setDeleteError] = useState("");
+  const [loadError, setLoadError] = useState("");
 
   const mainApiUrl = useMemo(() => {
     if (!auth?.backendUrl) return "";
@@ -110,6 +118,25 @@ export function CompanyBranchTreeView({
       return auth.backendUrl;
     }
   }, [auth]);
+
+  const ensureActiveWorkspaceShop = useCallback(async () => {
+    const shopid = workspace?.shop?.shopid?.trim();
+    if (!auth || !shopid) return;
+
+    const res = await fetch("/api/workspace/select-shop", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-bc-backend-url": auth.backendUrl,
+        Authorization: `Bearer ${auth.token}`,
+      },
+      body: JSON.stringify({ backendUrl: auth.backendUrl, shopid }),
+    });
+    const json = (await res.json().catch(() => ({}))) as { success?: boolean; message?: string };
+    if (!res.ok || json.success === false) {
+      throw new Error(json.message || "เลือกบริษัทสำหรับโหลดข้อมูลไม่สำเร็จ");
+    }
+  }, [auth, workspace]);
 
   // Active languages for multilingual names
   const editorLanguages = useMemo(() => {
@@ -170,14 +197,20 @@ export function CompanyBranchTreeView({
   const loadData = useCallback(async () => {
     if (!auth || !mainApiUrl) return;
     setLoading(true);
+    setLoadError("");
     try {
+      await ensureActiveWorkspaceShop();
+
       // Load Companies
       const resComp = await fetch(`${mainApiUrl}/organization/company`, {
         headers: { Authorization: `Bearer ${auth.token}` },
       });
       const jsonComp = await resComp.json();
+      if (!resComp.ok || jsonComp.success === false) {
+        throw new Error(jsonComp.message || "โหลดข้อมูลบริษัทไม่สำเร็จ");
+      }
       if (jsonComp.success && Array.isArray(jsonComp.data)) {
-        setCompanies(jsonComp.data);
+        setCompanies(jsonComp.data.filter(isVisibleOrganizationRecord));
       }
 
       // Load Branches
@@ -185,15 +218,19 @@ export function CompanyBranchTreeView({
         headers: { Authorization: `Bearer ${auth.token}` },
       });
       const jsonBranch = await resBranch.json();
+      if (!resBranch.ok || jsonBranch.success === false) {
+        throw new Error(jsonBranch.message || "โหลดข้อมูลสาขาไม่สำเร็จ");
+      }
       if (jsonBranch.success && Array.isArray(jsonBranch.data)) {
-        setBranches(jsonBranch.data);
+        setBranches(jsonBranch.data.filter(isVisibleOrganizationRecord));
       }
     } catch (e) {
+      setLoadError(e instanceof Error && e.message ? e.message : "โหลดข้อมูลโครงสร้างองค์กรไม่สำเร็จ");
       console.error(e);
     } finally {
       setLoading(false);
     }
-  }, [auth, mainApiUrl]);
+  }, [auth, ensureActiveWorkspaceShop, mainApiUrl]);
 
   useEffect(() => {
     void loadData();
@@ -247,6 +284,8 @@ export function CompanyBranchTreeView({
     setSaveError("");
 
     try {
+      await ensureActiveWorkspaceShop();
+
       const namesList = formNames;
       const normalizedBranchCode = formType.includes("branch") ? normalizeThaiTaxBranchCode(formCode) : "";
 
@@ -351,6 +390,8 @@ export function CompanyBranchTreeView({
 
     setLoading(true);
     try {
+      await ensureActiveWorkspaceShop();
+
       const url = `${mainApiUrl}/organization/${node.type}/${node.guid_fixed}`;
       const res = await fetch(url, {
         method: "DELETE",
@@ -430,10 +471,19 @@ export function CompanyBranchTreeView({
               {deleteError}
             </div>
           )}
+          {loadError && (
+            <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive">
+              {loadError}
+            </div>
+          )}
 
           {loading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : sortedCompanies.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-8 text-center text-sm font-semibold text-muted-foreground">
+              ยังไม่มีข้อมูลบริษัทในกิจการนี้
             </div>
           ) : (
             <div className="space-y-2">
