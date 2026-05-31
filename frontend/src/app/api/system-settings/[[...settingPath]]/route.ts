@@ -198,7 +198,11 @@ function buildGetPath(request: Request, config: SystemSettingConfig, id: string)
     return `/listsourceshops?source_environment=${encodeURIComponent(sourceEnvironment)}`;
   }
 
-  const basePath = id ? `${config.basePath}/${encodeURIComponent(id)}` : (config.listPath ?? config.basePath ?? "");
+  let basePath = id ? `${config.basePath}/${encodeURIComponent(id)}` : (config.listPath ?? config.basePath ?? "");
+  const companyGuid = url.searchParams.get("company_guid");
+  if (!id && config.slug === "branch" && companyGuid) {
+    basePath = config.basePath ?? "";
+  }
   forwardPagingParams(url, query);
   const queryText = query.toString();
   return queryText ? `${basePath}?${queryText}` : basePath;
@@ -441,7 +445,7 @@ function stripProxyKeys(body: Record<string, unknown>): Record<string, unknown> 
 }
 
 function forwardPagingParams(sourceUrl: URL, target: URLSearchParams) {
-  for (const key of ["offset", "limit", "q", "page", "branch_key", "branchcode", "branchguid", "group-number"]) {
+  for (const key of ["offset", "limit", "q", "page", "branch_key", "branchcode", "branchguid", "group-number", "company_guid"]) {
     const value = sourceUrl.searchParams.get(key);
     if (value) target.set(key, value);
   }

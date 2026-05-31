@@ -10022,10 +10022,11 @@ function CompanyBranchTreeSelector({
         // Fetch branches for all shops
         const fetchPromises = shopsList.map(async (shop: any) => {
           const sid = shop.shopid;
+          const compGuid = String(shop.guid_fixed ?? shop.guidfixed ?? shop.guid ?? "").trim();
           const params = new URLSearchParams({
             limit: "1000",
             offset: "0",
-            shopid: sid,
+            company_guid: compGuid,
           });
           const response = await fetch(`/api/system-settings/branch?${params.toString()}`, {
             headers: requestHeaders(auth),
