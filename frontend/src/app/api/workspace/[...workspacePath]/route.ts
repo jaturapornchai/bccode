@@ -186,7 +186,7 @@ async function listShopsWithDisplayNames(request: Request, mainApiUrl: string): 
     const shops = getArrayFromPayload(result.payload, "data");
     const enriched = await Promise.all(shops.map((shop) => enrichShopDisplayName(request, mainApiUrl, authorization, shop)));
 
-    // Fetch branches sequentially for each shop using session select-shop
+    // Fetch companies and branches sequentially for each shop using session select-shop
     const enrichedWithBranches = [];
     for (const shop of enriched) {
       if (!isRecord(shop)) {
@@ -196,7 +196,7 @@ async function listShopsWithDisplayNames(request: Request, mainApiUrl: string): 
 
       const shopid = getPayloadString(shop, "shopid")?.trim();
       if (!shopid) {
-        enrichedWithBranches.push({ ...shop, branches: [] });
+        enrichedWithBranches.push({ ...shop, companies: [], branches: [] });
         continue;
       }
 
@@ -213,29 +213,42 @@ async function listShopsWithDisplayNames(request: Request, mainApiUrl: string): 
         );
 
         if (selectResult.ok) {
-          const branchResult = await callMainApiJson(
+          // Fetch Companies
+          const compResult = await callMainApiJson(
             request,
             mainApiUrl,
-            "/organization/branch/list?offset=0&limit=100&q=",
+            "/organization/company",
             { method: "GET" },
             authorization,
           );
 
-          if (branchResult.ok && !isApiFailure(branchResult.payload)) {
+          // Fetch Branches
+          const branchResult = await callMainApiJson(
+            request,
+            mainApiUrl,
+            "/organization/branch",
+            { method: "GET" },
+            authorization,
+          );
+
+          if (compResult.ok && branchResult.ok) {
+            const companies = getArrayFromPayload(compResult.payload, "data");
             const branches = getArrayFromPayload(branchResult.payload, "data");
             enrichedWithBranches.push({
               ...shop,
+              companies,
               branches,
             });
             continue;
           }
         }
       } catch (err) {
-        console.error(`Error loading branches for shop ${shopid}:`, err);
+        console.error(`Error loading organization data for shop ${shopid}:`, err);
       }
 
       enrichedWithBranches.push({
         ...shop,
+        companies: [],
         branches: [],
       });
     }

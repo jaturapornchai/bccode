@@ -30,6 +30,7 @@ import { backendText, useBackendLanguage, type BackendLanguageDictionary } from 
 import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
 import {
   branchDisplayName,
+  localizedName,
   shopDisplayName,
   type AuthSession,
   type BranchListItem,
@@ -356,55 +357,66 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     return () => stopLinePolling();
   }, []);
 
-  const filteredShops = useMemo(() => {
+  const flatCompanies = useMemo(() => {
+    const list: Array<{
+      shop: ShopListItem;
+      company: any;
+      branches: any[];
+    }> = [];
+
+    shops.forEach((shop) => {
+      const shopCompanies = (shop as any).companies || [];
+      const shopBranches = (shop as any).branches || [];
+
+      shopCompanies.forEach((company: any) => {
+        const compBranches = shopBranches.filter((b: any) => b.company_guid === company.guid_fixed);
+        list.push({
+          shop,
+          company,
+          branches: compBranches,
+        });
+      });
+    });
+
     const needle = query.trim().toLowerCase();
-    
-    // Sort branches by code (numeric comparison)
-    const sortBranches = (branchList: any[]) => {
-      if (!Array.isArray(branchList)) return [];
-      return [...branchList].sort((a, b) => {
+    let filtered = list;
+    if (needle) {
+      filtered = list.filter((item) => {
+        const companyName = localizedName(item.company.names, item.company.code || "");
+        const companyCode = item.company.code || "";
+        const shopName = shopDisplayName(item.shop);
+        
+        const matchCompany = `${companyName} ${companyCode}`.toLowerCase().includes(needle);
+        const matchShop = `${shopName} ${item.shop.shopid}`.toLowerCase().includes(needle);
+        const matchBranch = item.branches.some((b) => 
+          `${branchDisplayName(b)} ${b.code || ""}`.toLowerCase().includes(needle)
+        );
+
+        return matchCompany || matchShop || matchBranch;
+      });
+    }
+
+    return filtered.map((item) => {
+      const sortedBranches = [...item.branches].sort((a, b) => {
         const codeA = a.code || "";
         const codeB = b.code || "";
         return codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: "base" });
       });
-    };
-
-    // Sort shops alphabetically by display name
-    const sortShops = (shopList: ShopListItem[]) => {
-      return [...shopList].sort((a, b) => {
-        const nameA = shopDisplayName(a);
-        const nameB = shopDisplayName(b);
-        return nameA.localeCompare(nameB, "th", { sensitivity: "base" });
-      });
-    };
-
-    if (!needle) {
-      const shopsWithSortedBranches = shops.map((shop) => ({
-        ...shop,
-        branches: sortBranches((shop as any).branches || []),
-      }));
-      return sortShops(shopsWithSortedBranches);
-    }
-
-    const matched = shops
-      .map((shop) => {
-        const shopMatches = `${shopDisplayName(shop)} ${shop.shopid} ${shop.createdby ?? ""}`.toLowerCase().includes(needle);
-        const matchedBranches =
-          (shop as any).branches?.filter((branch: any) =>
-            `${branchDisplayName(branch)} ${branch.code ?? ""}`.toLowerCase().includes(needle)
-          ) || [];
-        if (shopMatches || matchedBranches.length > 0) {
-          return {
-            ...shop,
-            branches: sortBranches(shopMatches ? (shop as any).branches || [] : matchedBranches),
-          };
-        }
-        return null;
-      })
-      .filter(Boolean) as ShopListItem[];
-
-    return sortShops(matched);
-  }, [query, shops]);
+      return {
+        ...item,
+        branches: sortedBranches,
+      };
+    }).sort((a, b) => {
+      const codeA = a.company.code || "";
+      const codeB = b.company.code || "";
+      const cmp = codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: "base" });
+      if (cmp !== 0) return cmp;
+      
+      const nameA = localizedName(a.company.names, a.company.code || "");
+      const nameB = localizedName(b.company.names, b.company.code || "");
+      return nameA.localeCompare(nameB, "th", { sensitivity: "base" });
+    });
+  }, [query, shops, language]);
 
   const filteredBranches = useMemo(() => {
     const needle = branchQuery.trim().toLowerCase();
@@ -417,7 +429,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   const currentSummary =
     step === "branches"
       ? `${text("availableBranches")}: ${filteredBranches.length}`
-      : `${text("availableCompanies")}: ${filteredShops.length}`;
+      : `${text("availableCompanies")}: ${flatCompanies.length}`;
 
   function stopLinePolling() {
     if (linePollTimer.current !== null) {
@@ -938,36 +950,37 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={text("searchCompany")} />
               </label>
             </div>
-            {filteredShops.length === 0 ? (
+            {flatCompanies.length === 0 ? (
               <div className="workspace-empty-state">
-                <Store size={24} />
+                <Building2 size={24} />
                 <strong>{text("noCompanies")}</strong>
               </div>
             ) : (
               <div className="flex flex-wrap gap-6 justify-center w-full py-2">
-                {filteredShops.map((shop, shopIndex) => {
-                  const shopBranches = (shop as any).branches || [];
+                {flatCompanies.map((item, index) => {
+                  const { shop, company, branches } = item;
                   const isCreator = shop.is_creator === true
                     || Boolean(auth?.username && shop.createdby && shop.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase());
                   const languageCodes = shopLanguageCodes(shop);
                   const currencyLabel = shopCurrencyLabel(shop, language);
+                  const compName = localizedName(company.names, company.code || "");
                   
                   return (
-                    <div key={shop.shopid} className="group/shop relative w-full md:w-[calc(50%-12px)] lg:w-[380px] shrink-0 border border-border/80 rounded-2xl bg-card/85 backdrop-blur-md overflow-hidden shadow-md hover:shadow-xl transition-all duration-300">
+                    <div key={`${shop.shopid}-${company.guid_fixed || company.code}`} className="group/company relative w-full md:w-[calc(50%-12px)] lg:w-[350px] shrink-0 border border-border/80 rounded-2xl bg-card/85 backdrop-blur-md overflow-hidden shadow-md hover:shadow-xl transition-all duration-300">
                       {/* Left color bar accent */}
-                      <div className={`absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b ${shopIndex % 2 === 0 ? "from-indigo-500 to-indigo-600" : "from-teal-500 to-emerald-500"}`} />
+                      <div className={`absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b ${index % 2 === 0 ? "from-indigo-500 to-indigo-600" : "from-teal-500 to-emerald-500"}`} />
                       
-                      {/* Shop Header (Compact layout for grid view) */}
+                      {/* Company Header */}
                       <div className="flex flex-col p-4 pb-3 pl-6 border-b border-border/60 bg-muted/20">
                         <div className="flex items-center gap-3">
-                          <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${shopIndex % 2 === 0 ? "bg-indigo-500/10 text-indigo-500" : "bg-teal-500/10 text-teal-500"}`}>
-                            <Store size={20} />
+                          <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${index % 2 === 0 ? "bg-indigo-500/10 text-indigo-500" : "bg-teal-500/10 text-teal-500"}`}>
+                            <Building2 size={20} />
                           </span>
                           <div className="min-w-0">
-                            <h3 className="font-bold text-foreground text-sm sm:text-base tracking-tight truncate" title={shopDisplayName(shop)}>
-                              {shopDisplayName(shop)}
+                            <h3 className="font-bold text-foreground text-sm sm:text-base tracking-tight truncate" title={compName}>
+                              [{company.code}] {compName}
                             </h3>
-                            <p className="text-[10px] text-muted-foreground/80 mt-0.5 font-mono truncate">ID: {shop.shopid}</p>
+                            <p className="text-[10px] text-muted-foreground/80 mt-0.5 font-mono truncate">Shop ID: {shop.shopid}</p>
                           </div>
                         </div>
                         
@@ -992,58 +1005,61 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                         </div>
                       </div>
 
-                      {/* Branches List */}
-                      <div className="divide-y divide-border/50 bg-card pl-3">
-                        {shopBranches.length === 0 ? (
-                          <div className="p-5 text-xs text-muted-foreground text-center">
-                            ไม่พบข้อมูลสาขา
+                      {/* Branches List under Company */}
+                      <div className="divide-y divide-border/40 bg-card pl-3">
+                        {branches.length === 0 ? (
+                          <div className="p-4 text-xs text-muted-foreground/60 italic text-center flex items-center justify-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-border" />
+                            <span>ยังไม่มีข้อมูลสาขา</span>
                           </div>
                         ) : (
-                          <div className="relative">
-                            {/* Branch connector line */}
-                            <div className="absolute left-5 top-2 bottom-8 w-[1.5px] bg-border/40" />
-                            
-                            {shopBranches.map((branch: any) => {
-                              const itemKey = `${shop.shopid}-${branch.guid_fixed || branch.code}`;
-                              return (
-                                <div key={itemKey} className="relative flex items-center group/branch">
-                                  {/* Branch connector node */}
-                                  <div className="absolute left-5 w-3 h-[1.5px] bg-border/40" />
-                                  
-                                  <button
-                                    className="w-full flex items-center justify-between p-3 pl-10 hover:bg-muted/30 transition-all duration-200 text-left"
-                                    disabled={busy}
-                                    onClick={() => void selectShopAndBranch(shop, branch)}
-                                  >
-                                    <div className="flex items-center gap-3">
-                                      <span className="w-8 h-8 rounded-lg flex items-center justify-center bg-sky-500/10 text-sky-500 shrink-0 group-hover/branch:bg-sky-500 group-hover/branch:text-white transition-all duration-250">
-                                        <GitBranch size={15} />
-                                      </span>
-                                      <div className="min-w-0">
-                                        <span className="font-semibold text-xs text-foreground group-hover/branch:text-sky-500 transition-colors block truncate">
-                                          {branchDisplayName(branch)}
-                                        </span>
-                                        <p className="text-[9px] text-muted-foreground mt-0.5 font-mono truncate">
-                                          CODE: {branch.code || branch.guid_fixed}
-                                        </p>
-                                      </div>
-                                    </div>
+                          <div className="p-3 pl-4 relative">
+                            <div className="relative">
+                              {/* Branch connector line */}
+                              <div className="absolute left-4 top-2 bottom-6 w-[1.5px] bg-border/40" />
+                              
+                              {branches.map((branch: any) => {
+                                const itemKey = `${shop.shopid}-${company.guid_fixed || company.code}-${branch.guid_fixed || branch.code}`;
+                                return (
+                                  <div key={itemKey} className="relative flex items-center group/branch">
+                                    {/* Branch connector node */}
+                                    <div className="absolute left-4 w-3.5 h-[1.5px] bg-border/40" />
                                     
-                                    <div className="flex items-center gap-2 shrink-0 pr-3">
-                                      {branch.base_currency && (
-                                        <span className="px-1.5 py-0.5 text-[9px] bg-muted border border-border/40 text-muted-foreground rounded font-medium shrink-0">
-                                          {branch.base_currency}
+                                    <button
+                                      className="w-full flex items-center justify-between py-2 pl-9 pr-2 hover:bg-muted/30 rounded-xl transition-all duration-200 text-left"
+                                      disabled={busy}
+                                      onClick={() => void selectShopAndBranch(shop, branch)}
+                                    >
+                                      <div className="flex items-center gap-2.5 min-w-0">
+                                        <span className="w-7 h-7 rounded-lg flex items-center justify-center bg-sky-500/10 text-sky-500 shrink-0 group-hover/branch:bg-sky-500 group-hover/branch:text-white transition-all duration-200">
+                                          <GitBranch size={13} />
                                         </span>
-                                      )}
-                                      <span className="text-[11px] font-bold text-sky-500 flex items-center gap-0.5 transform translate-x-1 opacity-0 group-hover/branch:opacity-100 group-hover/branch:translate-x-0 transition-all duration-200 shrink-0">
-                                        <span>เข้าใช้งาน</span>
-                                        <ArrowRight size={12} />
-                                      </span>
-                                    </div>
-                                  </button>
-                                </div>
-                              );
-                            })}
+                                        <div className="min-w-0">
+                                          <span className="font-semibold text-xs text-foreground group-hover/branch:text-sky-500 transition-colors block truncate">
+                                            {branchDisplayName(branch)}
+                                          </span>
+                                          <p className="text-[9px] text-muted-foreground font-mono truncate">
+                                            CODE: {branch.code || branch.guid_fixed}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                                        {branch.base_currency && (
+                                          <span className="px-1.5 py-0.5 text-[9px] bg-muted border border-border/40 text-muted-foreground rounded font-medium shrink-0">
+                                            {branch.base_currency}
+                                          </span>
+                                        )}
+                                        <span className="text-[11px] font-bold text-sky-500 flex items-center gap-0.5 transform translate-x-1 opacity-0 group-hover/branch:opacity-100 group-hover/branch:translate-x-0 transition-all duration-200 shrink-0">
+                                          <span>เข้าใช้งาน</span>
+                                          <ArrowRight size={12} />
+                                        </span>
+                                      </div>
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         )}
                       </div>
