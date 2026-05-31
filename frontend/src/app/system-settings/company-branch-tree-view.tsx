@@ -13,6 +13,7 @@ import {
   Loader2,
   Check,
   ArrowRight,
+  KeyRound,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -120,6 +121,28 @@ export function CompanyBranchTreeView({
   // Selected Node for Right Form Editing
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
   const [formType, setFormType] = useState<"edit_company" | "edit_branch" | "create_company" | "create_branch" | null>(null);
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [randomCode, setRandomCode] = useState("");
+  const [inputCode, setInputCode] = useState("");
+  const [codeError, setCodeError] = useState(false);
+
+  const showConfirmCodeDialog = () => {
+    const code = Math.floor(1000 + Math.random() * 9000).toString();
+    setRandomCode(code);
+    setInputCode("");
+    setCodeError(false);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmCodeSave = () => {
+    if (inputCode === randomCode) {
+      setConfirmOpen(false);
+      void handleSave();
+    } else {
+      setCodeError(true);
+    }
+  };
 
   // Fetch Companies & Branches
   const loadData = useCallback(async () => {
@@ -574,14 +597,24 @@ export function CompanyBranchTreeView({
                     เปิดใช้งานในระบบ
                   </label>
                 </div>
-
+ 
                 <div className="pt-6 border-t mt-4">
-                  <SlideToConfirm
-                    onConfirm={handleSave}
-                    disabled={!formCode.trim()}
-                    saving={saving}
-                    success={saveSuccess}
-                  />
+                  <Button
+                    onClick={showConfirmCodeDialog}
+                    disabled={!formCode.trim() || saving || saveSuccess}
+                    className="w-full font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-full h-11"
+                  >
+                    {saving ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        กำลังบันทึกข้อมูล...
+                      </span>
+                    ) : saveSuccess ? (
+                      "บันทึกข้อมูลสำเร็จ"
+                    ) : (
+                      "บันทึกข้อมูล"
+                    )}
+                  </Button>
                 </div>
               </div>
             </div>
@@ -595,148 +628,61 @@ export function CompanyBranchTreeView({
         </CardContent>
       </Card>
       {confirmationDialog}
-    </div>
-  );
-}
+      
+      {confirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-card border rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200">
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
+                <KeyRound size={22} className="animate-pulse" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground">ยืนยันการบันทึกข้อมูล</h3>
+              <p className="text-xs text-muted-foreground">
+                กรุณากรอกรหัสยืนยันตัวเลข 4 หลักเพื่อดำเนินการบันทึกข้อมูลโครงสร้างองค์กร
+              </p>
+            </div>
 
-interface SlideToConfirmProps {
-  onConfirm: () => void;
-  disabled?: boolean;
-  saving?: boolean;
-  success?: boolean;
-}
+            <div className="bg-accent/40 rounded-xl p-3 border border-border/80 text-center">
+              <span className="text-xs font-semibold text-muted-foreground block mb-1">รหัสยืนยันของคุณคือ</span>
+              <span className="text-2xl font-black tracking-widest text-primary font-mono select-none">{randomCode}</span>
+            </div>
 
-function SlideToConfirm({ onConfirm, disabled, saving, success }: SlideToConfirmProps) {
-  const [position, setPosition] = useState(0); // 0 to 100
-  const [isDragging, setIsDragging] = useState(false);
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const startX = React.useRef(0);
-  const startPos = React.useRef(0);
+            <div className="space-y-1.5">
+              <Input
+                value={inputCode}
+                onChange={(e) => {
+                  setInputCode(e.target.value);
+                  if (codeError) setCodeError(false);
+                }}
+                placeholder="กรอกรหัส 4 หลักที่แสดงด้านบน"
+                className={`bg-accent/20 h-11 text-center font-bold tracking-widest font-mono text-base ${codeError ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                maxLength={4}
+              />
+              {codeError && (
+                <p className="text-[10px] text-destructive font-semibold text-center">รหัสยืนยันไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง</p>
+              )}
+            </div>
 
-  const handleStart = (clientX: number) => {
-    if (disabled || saving || success) return;
-    setIsDragging(true);
-    startX.current = clientX;
-    startPos.current = position;
-  };
-
-  const handleMove = useCallback((clientX: number) => {
-    if (!isDragging || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const maxDragWidth = rect.width - 48; // 40px handle + 4px padding each side
-    if (maxDragWidth <= 0) return;
-    const deltaX = clientX - startX.current;
-    const deltaPercent = (deltaX / maxDragWidth) * 100;
-    const percent = Math.min(Math.max(startPos.current + deltaPercent, 0), 100);
-    setPosition(percent);
-
-    if (percent >= 98) {
-      setIsDragging(false);
-      setPosition(100);
-      onConfirm();
-    }
-  }, [isDragging, onConfirm]);
-
-  const handleEnd = useCallback(() => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    if (position < 98) {
-      setPosition(0);
-    }
-  }, [isDragging, position]);
-
-  useEffect(() => {
-    const onMouseMove = (e: MouseEvent) => handleMove(e.clientX);
-    const onTouchMove = (e: TouchEvent) => {
-      if (e.touches.length > 0) {
-        handleMove(e.touches[0].clientX);
-      }
-    };
-    const onMouseUp = () => handleEnd();
-    const onTouchEnd = () => handleEnd();
-
-    if (isDragging) {
-      window.addEventListener("mousemove", onMouseMove);
-      window.addEventListener("mouseup", onMouseUp);
-      window.addEventListener("touchmove", onTouchMove, { passive: true });
-      window.addEventListener("touchend", onTouchEnd);
-    }
-
-    return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-      window.removeEventListener("touchmove", onTouchMove);
-      window.removeEventListener("touchend", onTouchEnd);
-    };
-  }, [isDragging, handleMove, handleEnd]);
-
-  useEffect(() => {
-    if (!saving && !success) {
-      setPosition(0);
-    }
-  }, [saving, success]);
-
-  return (
-    <div
-      ref={containerRef}
-      className={cn(
-        "relative flex items-center justify-center h-12 w-full rounded-full overflow-hidden select-none transition-all duration-300 border",
-        success
-          ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20"
-          : disabled
-          ? "bg-accent/30 border-muted text-muted-foreground/60 cursor-not-allowed"
-          : "bg-accent border-primary/10 text-accent-foreground shadow-inner"
-      )}
-      onMouseDown={(e) => handleStart(e.clientX)}
-      onTouchStart={(e) => {
-        if (e.touches.length > 0) {
-          handleStart(e.touches[0].clientX);
-        }
-      }}
-    >
-      {/* Dynamic Background Fill */}
-      {!success && !disabled && (
-        <div
-          className="absolute left-0 top-0 bottom-0 bg-primary/20 rounded-l-full pointer-events-none transition-all duration-75"
-          style={{ width: `calc(${position}% + 20px)` }}
-        />
-      )}
-
-      {/* Label Text */}
-      <span className="relative z-10 text-xs sm:text-sm font-semibold pointer-events-none transition-colors duration-300">
-        {saving && (
-          <span className="flex items-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            กำลังบันทึกข้อมูล...
-          </span>
-        )}
-        {success && (
-          <span className="flex items-center gap-2 text-white">
-            <Check className="w-4 h-4 animate-bounce" />
-            บันทึกข้อมูลสำเร็จ
-          </span>
-        )}
-        {!saving && !success && (
-          <span className={cn(isDragging && "opacity-40 transition-opacity")}>
-            {disabled ? "กรุณากรอกรหัสข้อมูลเพื่อเปิดใช้งาน" : "เลื่อนเพื่อยืนยันการบันทึก"}
-          </span>
-        )}
-      </span>
-
-      {/* Slide Handle */}
-      {!success && !disabled && (
-        <div
-          className={cn(
-            "absolute top-1 bottom-1 w-10 h-10 rounded-full flex items-center justify-center bg-primary text-primary-foreground shadow-md cursor-grab active:cursor-grabbing transition-all duration-75",
-            isDragging && "scale-105 shadow-lg shadow-primary/30"
-          )}
-          style={{
-            left: `calc(4px + ${position}% - ${position * 0.48}px)`,
-          }}
-        >
-          <ArrowRight className="w-5 h-5 animate-pulse" />
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1 rounded-xl h-11 text-xs font-semibold"
+                onClick={() => setConfirmOpen(false)}
+              >
+                ยกเลิก
+              </Button>
+              <Button
+                className="flex-1 rounded-xl h-11 text-xs font-semibold"
+                onClick={handleConfirmCodeSave}
+                disabled={inputCode.length !== 4}
+              >
+                ยืนยันบันทึก
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
 }
+
