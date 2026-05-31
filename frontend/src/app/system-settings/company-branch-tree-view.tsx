@@ -21,7 +21,6 @@ import { Input } from "@/components/ui/input";
 import { LANGUAGES, type LanguageCode } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { normalizeLanguageConfigs } from "./system-settings-screen";
-import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { deriveMainApiUrl } from "@/lib/backend-url";
 import { NamesEditor } from "@/components/product-barcode/names-editor";
 
@@ -68,6 +67,7 @@ interface BranchRecord {
 }
 
 type NodeType = "company" | "branch";
+type ConfirmAction = "save" | "delete";
 
 interface SelectedNode {
   type: NodeType;
@@ -92,7 +92,6 @@ export function CompanyBranchTreeView({
   language,
   onRefresh,
 }: CompanyBranchTreeViewProps) {
-  const { confirm, confirmationDialog } = useConfirmDialog();
   const [companies, setCompanies] = useState<CompanyRecord[]>([]);
   const [branches, setBranches] = useState<BranchRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -127,21 +126,38 @@ export function CompanyBranchTreeView({
   const [randomCode, setRandomCode] = useState("");
   const [inputCode, setInputCode] = useState("");
   const [codeError, setCodeError] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction>("save");
+  const [pendingDeleteNode, setPendingDeleteNode] = useState<SelectedNode | null>(null);
 
-  const showConfirmCodeDialog = () => {
+  const showConfirmCodeDialog = (action: ConfirmAction, node?: SelectedNode) => {
     const code = Math.floor(1000 + Math.random() * 9000).toString();
+    setConfirmAction(action);
+    setPendingDeleteNode(action === "delete" ? node ?? null : null);
     setRandomCode(code);
     setInputCode("");
     setCodeError(false);
     setConfirmOpen(true);
   };
 
-  const handleConfirmCodeSave = () => {
-    if (inputCode === randomCode) {
-      setConfirmOpen(false);
-      void handleSave();
-    } else {
+  const closeConfirmCodeDialog = () => {
+    setConfirmOpen(false);
+    setPendingDeleteNode(null);
+  };
+
+  const handleConfirmCodeSubmit = () => {
+    if (inputCode !== randomCode) {
       setCodeError(true);
+      return;
+    }
+
+    setConfirmOpen(false);
+    if (confirmAction === "delete" && pendingDeleteNode) {
+      void handleDelete(pendingDeleteNode);
+      setPendingDeleteNode(null);
+      return;
+    }
+    if (confirmAction === "save") {
+      void handleSave();
     }
   };
 
@@ -311,16 +327,6 @@ export function CompanyBranchTreeView({
   const handleDelete = async (node: SelectedNode) => {
     if (!auth || !node.guid_fixed) return;
 
-    const confirmed = await confirm({
-      title: node.type === "company" ? "ยืนยันการลบบริษัท" : "ยืนยันการลบสาขา",
-      description: "ข้อมูลที่ถูกลบจะไม่แสดงในระบบการทำงาน แต่ประวัติข้อมูลเดิมจะยังถูกรักษาไว้ในฐานข้อมูล",
-      confirmLabel: "ลบข้อมูล",
-      cancelLabel: "ยกเลิก",
-      tone: "danger",
-    });
-
-    if (!confirmed) return;
-
     setLoading(true);
     try {
       const url = `${mainApiUrl}/organization/${node.type}/${node.guid_fixed}`;
@@ -441,7 +447,7 @@ export function CompanyBranchTreeView({
                           className="w-7 h-7 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10"
                           onClick={(e) => {
                             e.stopPropagation();
-                            void handleDelete({
+                            showConfirmCodeDialog("delete", {
                               type: "company",
                               guid_fixed: compGuid,
                               data: comp,
@@ -490,7 +496,7 @@ export function CompanyBranchTreeView({
                                   className="w-7 h-7 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    void handleDelete({
+                                    showConfirmCodeDialog("delete", {
                                       type: "branch",
                                       guid_fixed: brGuid,
                                       company_guid: compGuid,
@@ -608,7 +614,7 @@ export function CompanyBranchTreeView({
  
                 <div className="pt-6 border-t mt-4">
                   <Button
-                    onClick={showConfirmCodeDialog}
+                    onClick={() => showConfirmCodeDialog("save")}
                     disabled={!formCode.trim() || saving || saveSuccess}
                     className="w-full font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-full h-11"
                   >
@@ -635,8 +641,6 @@ export function CompanyBranchTreeView({
           )}
         </CardContent>
       </Card>
-      {confirmationDialog}
-      
       {confirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-card border rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200">
@@ -644,9 +648,13 @@ export function CompanyBranchTreeView({
               <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
                 <KeyRound size={22} className="animate-pulse" />
               </div>
-              <h3 className="text-lg font-bold text-foreground">ยืนยันการบันทึกข้อมูล</h3>
+              <h3 className="text-lg font-bold text-foreground">
+                {confirmAction === "delete" ? "ยืนยันการลบข้อมูล" : "ยืนยันการบันทึกข้อมูล"}
+              </h3>
               <p className="text-xs text-muted-foreground">
-                กรุณากรอกรหัสยืนยันตัวเลข 4 หลักเพื่อดำเนินการบันทึกข้อมูลโครงสร้างองค์กร
+                {confirmAction === "delete"
+                  ? "กรุณากรอกรหัสยืนยันตัวเลข 4 หลักเพื่อดำเนินการลบข้อมูลโครงสร้างองค์กร"
+                  : "กรุณากรอกรหัสยืนยันตัวเลข 4 หลักเพื่อดำเนินการบันทึกข้อมูลโครงสร้างองค์กร"}
               </p>
             </div>
 
@@ -675,16 +683,19 @@ export function CompanyBranchTreeView({
               <Button
                 variant="outline"
                 className="flex-1 rounded-xl h-11 text-xs font-semibold"
-                onClick={() => setConfirmOpen(false)}
+                onClick={closeConfirmCodeDialog}
               >
                 ยกเลิก
               </Button>
               <Button
-                className="flex-1 rounded-xl h-11 text-xs font-semibold"
-                onClick={handleConfirmCodeSave}
+                className={cn(
+                  "flex-1 rounded-xl h-11 text-xs font-semibold",
+                  confirmAction === "delete" && "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                )}
+                onClick={handleConfirmCodeSubmit}
                 disabled={inputCode.length !== 4}
               >
-                ยืนยันบันทึก
+                {confirmAction === "delete" ? "ยืนยันลบ" : "ยืนยันบันทึก"}
               </Button>
             </div>
           </div>
@@ -693,4 +704,3 @@ export function CompanyBranchTreeView({
     </div>
   );
 }
-
