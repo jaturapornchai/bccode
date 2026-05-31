@@ -267,6 +267,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   const [shops, setShops] = useState<ShopListItem[]>([]);
   const [branches, setBranches] = useState<BranchListItem[]>([]);
   const [selectedShop, setSelectedShop] = useState<ShopListItem | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<any | null>(null);
   const [query, setQuery] = useState("");
   const [branchQuery, setBranchQuery] = useState("");
   const [companyName, setCompanyName] = useState("");
@@ -427,9 +428,13 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
 
   const filteredBranches = useMemo(() => {
     const needle = branchQuery.trim().toLowerCase();
-    if (!needle) return branches;
-    return branches.filter((branch) => `${branchDisplayName(branch)} ${branch.code ?? ""}`.toLowerCase().includes(needle));
-  }, [branchQuery, branches]);
+    let list = branches;
+    if (selectedCompany) {
+      list = branches.filter((b) => b.company_guid === selectedCompany.guid_fixed);
+    }
+    if (!needle) return list;
+    return list.filter((branch) => `${branchDisplayName(branch)} ${branch.code ?? ""}`.toLowerCase().includes(needle));
+  }, [branchQuery, branches, selectedCompany]);
 
   const signedInAs = auth?.profile?.email || auth?.username || "";
   const currentTitle = step === "branches" ? text("selectBranchTitle") : text("selectCompanyTitle");
@@ -603,6 +608,48 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       localStorage.setItem(workspaceStorageKeys.shopInfo, JSON.stringify(shopInfo.data ?? null));
       localStorage.setItem(workspaceStorageKeys.workspace, JSON.stringify({ shop, branch: defaultBranch, shopInfo: shopInfo.data ?? null }));
 
+      setStep("branches");
+    } catch (error) {
+      setNotice(error instanceof Error && error.message ? { type: "error", text: error.message } : { type: "error", textKey: "selectShopFailed" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function selectCompany(shop: ShopListItem, company: any) {
+    if (!auth) return;
+    setBusy(true);
+    setNotice(null);
+    try {
+      await callWorkspaceApi(auth, "select-shop", {
+        method: "POST",
+        body: { shopid: shop.shopid },
+      });
+      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `shop-info?shopid=${encodeURIComponent(shop.shopid)}`);
+      const branchPayload = await callWorkspaceApi<{ data?: BranchListItem[] }>(auth, "branches?offset=0&limit=100&q=");
+      let nextBranches = Array.isArray(branchPayload.data) ? branchPayload.data : [];
+
+      // Filter branches of the selected company
+      let compBranches = nextBranches.filter((b) => b.company_guid === company.guid_fixed);
+
+      if (compBranches.length === 0) {
+        // Create default branch (สำนักงานใหญ่) for this company
+        const created = await callWorkspaceApi<{ data?: BranchListItem; id?: string; ID?: string }>(auth, "branch", {
+          method: "POST",
+          body: { branch: createDefaultBranch(shop, shopInfo.data ?? null, company.guid_fixed) },
+        });
+        if (created.data) {
+          nextBranches = [...nextBranches, created.data];
+        } else {
+          const reloaded = await callWorkspaceApi<{ data?: BranchListItem[] }>(auth, "branches?offset=0&limit=100&q=");
+          nextBranches = Array.isArray(reloaded.data) ? reloaded.data : [];
+        }
+      }
+
+      setSelectedShop(shop);
+      setSelectedCompany(company);
+      setBranches(nextBranches);
+      localStorage.setItem(workspaceStorageKeys.shopInfo, JSON.stringify(shopInfo.data ?? null));
       setStep("branches");
     } catch (error) {
       setNotice(error instanceof Error && error.message ? { type: "error", text: error.message } : { type: "error", textKey: "selectShopFailed" });
@@ -965,7 +1012,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
             ) : (
               <div className="flex flex-wrap gap-6 justify-center w-full py-2">
                 {flatCompanies.map((item, index) => {
-                  const { shop, company, branches } = item;
+                  const { shop, company } = item;
                   const isCreator = shop.is_creator === true
                     || Boolean(auth?.username && shop.createdby && shop.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase());
                   const languageCodes = shopLanguageCodes(shop);
@@ -973,12 +1020,17 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   const compName = localizedName(company.names, company.code || "");
                   
                   return (
-                    <div key={`${shop.shopid}-${company.guid_fixed || company.code}`} className="group/company relative w-full md:w-[calc(50%-12px)] lg:w-[350px] shrink-0 border border-border/80 rounded-2xl bg-card/85 backdrop-blur-md overflow-hidden shadow-md hover:shadow-xl transition-all duration-300">
+                    <button
+                      key={`${shop.shopid}-${company.guid_fixed || company.code}`}
+                      disabled={busy}
+                      onClick={() => void selectCompany(shop, company)}
+                      className="group/company text-left relative w-full md:w-[calc(50%-12px)] lg:w-[350px] shrink-0 border border-border/80 rounded-2xl bg-card/85 backdrop-blur-md overflow-hidden shadow-md hover:shadow-xl hover:border-primary/40 hover:scale-[1.01] transition-all duration-300"
+                    >
                       {/* Left color bar accent */}
                       <div className={`absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b ${index % 2 === 0 ? "from-indigo-500 to-indigo-600" : "from-teal-500 to-emerald-500"}`} />
                       
                       {/* Company Header */}
-                      <div className="flex flex-col p-4 pb-3 pl-6 border-b border-border/60 bg-muted/20">
+                      <div className="flex flex-col p-4 pl-6">
                         <div className="flex items-center gap-3">
                           <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${index % 2 === 0 ? "bg-indigo-500/10 text-indigo-500" : "bg-teal-500/10 text-teal-500"}`}>
                             <Building2 size={20} />
@@ -991,7 +1043,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                           </div>
                         </div>
                         
-                        <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                        <div className="flex flex-wrap items-center gap-1.5 mt-3 mb-4">
                           <span className={`px-2 py-0.5 text-[9px] font-bold rounded border uppercase shrink-0 ${
                             isCreator 
                               ? "bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-500/20" 
@@ -1011,66 +1063,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                           )}
                         </div>
                       </div>
-
-                      {/* Branches List under Company */}
-                      <div className="divide-y divide-border/40 bg-card pl-3">
-                        {branches.length === 0 ? (
-                          <div className="p-4 text-xs text-muted-foreground/60 italic text-center flex items-center justify-center gap-1.5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-border" />
-                            <span>ยังไม่มีข้อมูลสาขา</span>
-                          </div>
-                        ) : (
-                          <div className="p-3 pl-4 relative">
-                            <div className="relative">
-                              {/* Branch connector line */}
-                              <div className="absolute left-4 top-2 bottom-6 w-[1.5px] bg-border/40" />
-                              
-                              {branches.map((branch: any) => {
-                                const itemKey = `${shop.shopid}-${company.guid_fixed || company.code}-${branch.guid_fixed || branch.code}`;
-                                return (
-                                  <div key={itemKey} className="relative flex items-center group/branch">
-                                    {/* Branch connector node */}
-                                    <div className="absolute left-4 w-3.5 h-[1.5px] bg-border/40" />
-                                    
-                                    <button
-                                      className="w-full flex items-center justify-between py-2 pl-9 pr-2 hover:bg-muted/30 rounded-xl transition-all duration-200 text-left"
-                                      disabled={busy}
-                                      onClick={() => void selectShopAndBranch(shop, branch)}
-                                    >
-                                      <div className="flex items-center gap-2.5 min-w-0">
-                                        <span className="w-7 h-7 rounded-lg flex items-center justify-center bg-sky-500/10 text-sky-500 shrink-0 group-hover/branch:bg-sky-500 group-hover/branch:text-white transition-all duration-200">
-                                          <GitBranch size={13} />
-                                        </span>
-                                        <div className="min-w-0">
-                                          <span className="font-semibold text-xs text-foreground group-hover/branch:text-sky-500 transition-colors block truncate">
-                                            {branchDisplayName(branch)}
-                                          </span>
-                                          <p className="text-[9px] text-muted-foreground font-mono truncate">
-                                            CODE: {branch.code || branch.guid_fixed}
-                                          </p>
-                                        </div>
-                                      </div>
-                                      
-                                      <div className="flex items-center gap-2 shrink-0 ml-2">
-                                        {branch.base_currency && (
-                                          <span className="px-1.5 py-0.5 text-[9px] bg-muted border border-border/40 text-muted-foreground rounded font-medium shrink-0">
-                                            {branch.base_currency}
-                                          </span>
-                                        )}
-                                        <span className="text-[11px] font-bold text-sky-500 flex items-center gap-0.5 transform translate-x-1 opacity-0 group-hover/branch:opacity-100 group-hover/branch:translate-x-0 transition-all duration-200 shrink-0">
-                                          <span>เข้าใช้งาน</span>
-                                          <ArrowRight size={12} />
-                                        </span>
-                                      </div>
-                                    </button>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -1370,7 +1363,7 @@ function parseShopInfo(raw: string | null): Record<string, unknown> | null {
   }
 }
 
-function createDefaultBranch(shop?: ShopListItem, shopInfo?: Record<string, unknown> | null): Record<string, unknown> {
+function createDefaultBranch(shop?: ShopListItem, shopInfo?: Record<string, unknown> | null, companyGuid?: string): Record<string, unknown> {
   const settings = recordValue(shopInfo?.settings);
   const languageCodes = activeLanguageCodes(settings);
   const companyNames = normalizedNames(shopInfo?.names, shop ? shopDisplayName(shop) : "");
@@ -1378,6 +1371,7 @@ function createDefaultBranch(shop?: ShopListItem, shopInfo?: Record<string, unkn
   return {
     guid_fixed: "",
     code: "00000",
+    company_guid: companyGuid || "",
     companynames: companyNames,
     names: defaultBranchNames(languageCodes),
     departments: [],
