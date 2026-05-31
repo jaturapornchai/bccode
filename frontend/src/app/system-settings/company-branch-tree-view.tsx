@@ -12,6 +12,7 @@ import {
   Save,
   Loader2,
   Check,
+  ArrowRight,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -93,6 +94,7 @@ export function CompanyBranchTreeView({
   const [branches, setBranches] = useState<BranchRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Active languages for multilingual names
   const editorLanguages = useMemo(() => {
@@ -244,6 +246,8 @@ export function CompanyBranchTreeView({
 
       const json = await res.json();
       if (json.success) {
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000);
         await loadData();
         if (formType.startsWith("create")) {
           // Select newly created node
@@ -493,10 +497,6 @@ export function CompanyBranchTreeView({
                     {formType.startsWith("create") ? "ระบุข้อมูลรายละเอียดหลักเพื่อเพิ่มข้อมูลเข้าระบบ" : "แก้ไขรายละเอียดข้อมูลและบันทึกประวัติ"}
                   </p>
                 </div>
-                <Button className="gap-2 font-semibold" onClick={handleSave} disabled={saving}>
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  บันทึกข้อมูล
-                </Button>
               </div>
 
               {/* Form fields */}
@@ -552,7 +552,7 @@ export function CompanyBranchTreeView({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 pt-2">
+                 <div className="flex items-center gap-2 pt-2">
                   <input
                     type="checkbox"
                     id="is_active"
@@ -563,6 +563,15 @@ export function CompanyBranchTreeView({
                   <label htmlFor="is_active" className="text-sm font-semibold text-foreground cursor-pointer select-none">
                     เปิดใช้งานในระบบ
                   </label>
+                </div>
+
+                <div className="pt-6 border-t mt-4">
+                  <SlideToConfirm
+                    onConfirm={handleSave}
+                    disabled={!formCode.trim()}
+                    saving={saving}
+                    success={saveSuccess}
+                  />
                 </div>
               </div>
             </div>
@@ -576,6 +585,148 @@ export function CompanyBranchTreeView({
         </CardContent>
       </Card>
       {confirmationDialog}
+    </div>
+  );
+}
+
+interface SlideToConfirmProps {
+  onConfirm: () => void;
+  disabled?: boolean;
+  saving?: boolean;
+  success?: boolean;
+}
+
+function SlideToConfirm({ onConfirm, disabled, saving, success }: SlideToConfirmProps) {
+  const [position, setPosition] = useState(0); // 0 to 100
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const startX = React.useRef(0);
+  const startPos = React.useRef(0);
+
+  const handleStart = (clientX: number) => {
+    if (disabled || saving || success) return;
+    setIsDragging(true);
+    startX.current = clientX;
+    startPos.current = position;
+  };
+
+  const handleMove = useCallback((clientX: number) => {
+    if (!isDragging || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const maxDragWidth = rect.width - 48; // 40px handle + 4px padding each side
+    if (maxDragWidth <= 0) return;
+    const deltaX = clientX - startX.current;
+    const deltaPercent = (deltaX / maxDragWidth) * 100;
+    const percent = Math.min(Math.max(startPos.current + deltaPercent, 0), 100);
+    setPosition(percent);
+
+    if (percent >= 98) {
+      setIsDragging(false);
+      setPosition(100);
+      onConfirm();
+    }
+  }, [isDragging, onConfirm]);
+
+  const handleEnd = useCallback(() => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    if (position < 98) {
+      setPosition(0);
+    }
+  }, [isDragging, position]);
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => handleMove(e.clientX);
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        handleMove(e.touches[0].clientX);
+      }
+    };
+    const onMouseUp = () => handleEnd();
+    const onTouchEnd = () => handleEnd();
+
+    if (isDragging) {
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("mouseup", onMouseUp);
+      window.addEventListener("touchmove", onTouchMove, { passive: true });
+      window.addEventListener("touchend", onTouchEnd);
+    }
+
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [isDragging, handleMove, handleEnd]);
+
+  useEffect(() => {
+    if (!saving && !success) {
+      setPosition(0);
+    }
+  }, [saving, success]);
+
+  return (
+    <div
+      ref={containerRef}
+      className={cn(
+        "relative flex items-center justify-center h-12 w-full rounded-full overflow-hidden select-none transition-all duration-300 border",
+        success
+          ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+          : disabled
+          ? "bg-accent/30 border-muted text-muted-foreground/60 cursor-not-allowed"
+          : "bg-accent border-primary/10 text-accent-foreground shadow-inner"
+      )}
+      onMouseDown={(e) => handleStart(e.clientX)}
+      onTouchStart={(e) => {
+        if (e.touches.length > 0) {
+          handleStart(e.touches[0].clientX);
+        }
+      }}
+    >
+      {/* Dynamic Background Fill */}
+      {!success && !disabled && (
+        <div
+          className="absolute left-0 top-0 bottom-0 bg-primary/20 rounded-l-full pointer-events-none transition-all duration-75"
+          style={{ width: `calc(${position}% + 20px)` }}
+        />
+      )}
+
+      {/* Label Text */}
+      <span className="relative z-10 text-xs sm:text-sm font-semibold pointer-events-none transition-colors duration-300">
+        {saving && (
+          <span className="flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            กำลังบันทึกข้อมูล...
+          </span>
+        )}
+        {success && (
+          <span className="flex items-center gap-2 text-white">
+            <Check className="w-4 h-4 animate-bounce" />
+            บันทึกข้อมูลสำเร็จ
+          </span>
+        )}
+        {!saving && !success && (
+          <span className={cn(isDragging && "opacity-40 transition-opacity")}>
+            {disabled ? "กรุณากรอกรหัสข้อมูลเพื่อเปิดใช้งาน" : "เลื่อนเพื่อยืนยันการบันทึก"}
+          </span>
+        )}
+      </span>
+
+      {/* Slide Handle */}
+      {!success && !disabled && (
+        <div
+          className={cn(
+            "absolute top-1 bottom-1 w-10 h-10 rounded-full flex items-center justify-center bg-primary text-primary-foreground shadow-md cursor-grab active:cursor-grabbing transition-all duration-75",
+            isDragging && "scale-105 shadow-lg shadow-primary/30"
+          )}
+          style={{
+            left: `calc(4px + ${position}% - ${position * 0.48}px)`,
+          }}
+        >
+          <ArrowRight className="w-5 h-5 animate-pulse" />
+        </div>
+      )}
     </div>
   );
 }

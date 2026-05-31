@@ -838,18 +838,12 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 <span>{language === "th" ? "ตั้งค่าระบบ" : "Settings"}</span>
               </button>
             ) : null}
-            {step === "shops" && canCreateCompany ? (
-              <button className="primary-button workspace-head-action flex items-center gap-1.5" type="button" onClick={() => setStep("create")}>
-                <Plus size={17} />
-                <span>{text("createCompanyNew")}</span>
-              </button>
-            ) : null}
           </div>
         </div>
 
         <div className="step-strip">
           <span className="active">{text("stepLogin")}</span>
-          <span className={step === "shops" || step === "branches" || step === "create" ? "active" : ""}>{text("stepCompany")}</span>
+          <span className={step === "shops" || step === "branches" ? "active" : ""}>{text("stepCompany")}</span>
           <span className={step === "branches" ? "active" : ""}>{text("stepBranch")}</span>
           <span>{text("stepMenu")}</span>
         </div>
@@ -930,24 +924,6 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
           </>
         ) : null}
 
-        {step === "create" ? (
-          <form className="create-company-form" onSubmit={createShop}>
-            <button className="text-action compact-action" type="button" onClick={() => setStep("shops")}>
-              <ArrowLeft size={16} /> {text("backToCompanies")}
-            </button>
-            <label className="field-group">
-              <span>{text("companyName")}</span>
-              <div className="input-shell">
-                <Building2 size={18} />
-                <input value={companyName} onChange={(event) => setCompanyName(event.target.value)} placeholder={text("companyNamePlaceholder")} />
-              </div>
-            </label>
-            <button className="primary-button" type="submit" disabled={busy}>
-              {busy ? <Loader2 className="spin" size={18} /> : <Plus size={18} />}
-              <span>{text("createCompany")}</span>
-            </button>
-          </form>
-        ) : null}
 
         {step === "branches" ? (
           <>
