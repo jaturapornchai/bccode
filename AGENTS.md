@@ -1,4 +1,4 @@
-# Project IRON LAW (Gemini 3.5 Flash optimized — loaded every turn, ≤2000 tok)
+# Project IRON LAW (model-agnostic — Claude, Codex, Gemini follow identically; loaded every turn, ≤2000 tok)
 
 ## Communication
 - Reply in Thai, action-first. No "ผมจะ..." preamble. Address Jead as `ลุงจืด`.
@@ -10,21 +10,21 @@
 - **การปรับปรุงกฎและทักษะทันที**: หากมีการอัปเดตโค้ด ปรับปรุงตรรกะ หรือระบบใด ๆ ตามคำสั่งของลุงจืด ให้ผู้พัฒนา/AI ทำการปรับปรุงกฎ (Rules), ทักษะ (Skills) หรือองค์ความรู้ (KM) ของระบบให้สอดคล้องเสมอทันที เพื่อให้ระบบความรู้ของ AI ทันสมัยและไม่กลับไปเขียนหรือแก้เป็นแบบเดิม
 
 
-## 🧠 THINKING LEVEL (Gemini 3.5 Flash core feature)
-Use `thinking_level` — DO NOT inflate prompt with chain-of-thought.
+## 🧠 REASONING DEPTH (all models — map to your own knob)
+Match reasoning depth to task complexity. The LEVEL below is the shared contract; each model maps it to its own mechanism: **Claude** = effort level · **Codex** = `model_reasoning_effort` · **Gemini** = `thinking_level`.
 
-| Task type | thinking_level | When |
+| Task type | depth | When |
 |---|---|---|
 | Q&A, lookup, format | **minimal** | "What is X?", rename, comment |
 | Boilerplate, CRUD, simple fix | **low** | /qcrud, single-file edit |
 | Complex coding, multi-file | **medium** (default) | refactor, debug, /qui |
 | Architecture, novel logic, multi-file rewrite | **high** | /plan, design decision |
 
-**⚠️ Default dropped from high → medium in 3.5 Flash.** If quality feels low, escalate explicitly.
+Default is **medium**. If quality feels low, escalate one level explicitly. Do NOT inflate the prompt with verbose chain-of-thought — use the reasoning knob instead.
 
-## 🚫 DO NOT change defaults
-- temperature, top_p, top_k → **never modify** (3.5 Flash optimized for default)
-- Use `thinking_level` instead of CoT prompting
+## 🚫 DO NOT change sampling defaults
+- temperature, top_p, top_k → **never modify** (keep each model's defaults)
+- Use the reasoning-depth knob instead of CoT prompting
 
 ## Speed & Token
 1. **READ minimum** — only files you need. Never scan whole dir.
@@ -36,21 +36,19 @@ Use `thinking_level` — DO NOT inflate prompt with chain-of-thought.
 7. **Clear thought preservation** if turn is simple Q&A (saves multi-turn input growth).
 8. **Push means whole project** — when Jead says `push to github`, `push to GitHub`, or equivalent without an explicit narrower scope, stage all project changes (`git add -A` from repo root), run the narrow verification/secret checks that fit the change, commit, and push the current branch to GitHub. Do not limit the push to only the current task's files unless Jead explicitly says so.
 9. **Auto-push meaningful changes** — after any moderate, multi-file, rule/schema/model, backend, frontend workflow, or otherwise important change, automatically stage the whole project, run the appropriate narrow verification and secret checks, commit, and push the current branch to GitHub. Do not wait for a separate push request unless the change is trivial/read-only or an R0/divergence/secret blocker requires asking first.
-10. **Agent Fast Execution Contract** — Codex, Claude Code, Gemini/Antigravity, and other agents must prefer targeted evidence over broad slow checks. Docs/rules-only changes need only `git diff --check` plus secret scan. Frontend code changes normally need `npm run typecheck`. Backend changes need touched-package tests or local `mainapi` rebuild/health check when runtime code changed. Do not run `go test ./...`, broad browser automation, or full-repo scans unless Jead explicitly asks or targeted checks are insufficient. Announce long commands, update every ~30 seconds, and after ~2 minutes report whether to continue, narrow, or stop.
+10. **Agent Fast Execution Contract** — Codex, Claude Code, Gemini/Antigravity, and other agents must prefer targeted evidence over broad slow checks. Docs/rules-only changes need only `git diff --check` plus secret scan. Frontend code changes rely on `next dev` HMR — run `npm run typecheck` only before commit/summary, not every edit. Backend changes: write correct code, run touched-package tests only if needed, and do NOT rebuild Docker until Jead says `rebuild`/`deploy`. Do not run `go test ./...`, broad browser automation, or full-repo scans unless Jead explicitly asks or targeted checks are insufficient. Announce long commands, update every ~30 seconds, and after ~2 minutes report whether to continue, narrow, or stop.
 
-## 💾 Caching strategy (Gemini-specific)
-- System prompts + project-context.md = **cache** (save 90% input cost)
-- Stable content (source files, docs) → place at TOP of context
-- Dynamic question → place at BOTTOM
-- Cache hit threshold: same content >50% match
-- Storage: $1/M tok/hour — clear cache > 4h unused
+## 💾 Caching strategy (all models with prompt caching)
+- Stable content (system prompt, project context, source, docs) → place at TOP so it can be cached.
+- Dynamic question/task → place at BOTTOM.
+- Keep the stable prefix unchanged across turns to maximize cache hits (saves most input cost).
 
 ## Quality (NO MAGIC)
 1. Never invent file path, API, lib — grep/glob first.
 2. Never claim "done" without test/build output pasted.
 3. Unsure → "ต้อง verify: <specific>" — don't guess.
 4. R0 (drop db, force-push, `git pull`/`reset --hard` over local, deploy, real $) → STOP + ask.
-5. **Backend changes auto-deploy**: If you modify any code under `backend/` directory, you MUST automatically rebuild and deploy to local Docker Desktop using: `cd backend; docker-compose up -d --no-deps --build mainapi`
+5. **Backend rebuild on request ONLY**: Do NOT auto-rebuild Docker when editing `backend/`. Backend is batch mode — write correct code, accumulate changes, and rebuild+verify `/healthz` ONLY when Jead says `rebuild`/`deploy`: `cd backend; docker-compose up -d --no-deps --build mainapi`. (See core-rules "Dev Workflow Mode".)
 6. **Rule & Skill & Database Model Upgrade**: If a change, fix, or debug finding alters system patterns, database models, or logic covered by rules/skills/database schemas, update the rules/skills/models (`d:\bccode\.agents\rules\bc-account-core-rules.md`, `d:\bccode\.agents\skills\`, or `d:\bccode\AGENTS.md`) immediately so the AI grows smarter over time.
 
 
@@ -79,20 +77,13 @@ Use `thinking_level` — DO NOT inflate prompt with chain-of-thought.
 - UI: shadcn/ui, Tailwind CSS
 - Test: go test, npm run typecheck
 
-## ⚠️ Gemini 3.5 Flash KNOWN WEAKNESSES
-1. **Multi-file architectural rewrite** — แพ้ Opus 4.7 ใน SWE-Pro
-   → ถ้า task ใหญ่ ให้ thinking_level=high + แตก subtask
-2. **Bash strict syntax** edge cases → re-check terminal command output
-3. **Novel logic** (non-memorized) → ให้ตัวอย่างก่อน
-4. **Computer Use ไม่รองรับ** ใน 3.5 Flash → fallback Gemini 3 Flash Preview
-5. **Image segmentation ไม่รองรับ** → fallback Gemini 2.5 Flash
-
-## ✅ Gemini 3.5 Flash STRENGTHS — leverage these
-- **MCP Atlas leader** (83.6%) → multi-tool orchestration first
-- **284 tok/s output** → real-time agentic loops
-- **Multimodal:** screenshots + diagrams + schemas → use as input often
-- **Frontend codegen:** screenshot → component = strong
-- **Tool use:** delegate non-trivial logic to MCP/tools, don't reason inline
+## ⚙️ Execution guidance (all models)
+- **Big/architectural change** → escalate reasoning depth to high + split into subtasks.
+- **Bash output** → re-read literally, check exit code (not just last line), watch syntax edge cases.
+- **Novel logic** (non-memorized) → ground with an example or source before generating.
+- **Multimodal input** (screenshots/diagrams/schemas) → use as primary reference when provided.
+- **Tool use** → delegate non-trivial work to MCP/tools and batch parallel calls; don't reason inline.
+- **Capability gaps** → if a model lacks a feature (e.g. computer use, image segmentation), state it and fall back per availability — never fake the result.
 
 ## Forbidden
 - ❌ Chain-of-thought verbose ("Let me think step by step...")

@@ -1,11 +1,11 @@
 ---
 name: crud-fast
-description: Generate CRUD endpoint with model, handler, validator, test. Trigger on "add CRUD", "create endpoint", "new resource", "scaffold api". Uses thinking_level=low.
+description: Generate CRUD endpoint with model, handler, validator, test. Trigger on "add CRUD", "create endpoint", "new resource", "scaffold api". Uses low reasoning depth.
 ---
 
-# CRUD Generation (Gemini 3.5 Flash — low thinking)
+# CRUD Generation (low reasoning depth — boilerplate)
 
-## Set thinking_level: low (boilerplate doesn't need deep reasoning)
+## Set reasoning depth: low (boilerplate doesn't need deep reasoning)
 
 ## Token-saving flow
 1. Ask ONLY missing fields. Skip if obvious.

@@ -1,41 +1,41 @@
 ---
 name: token-saver
-description: Active when context large or user mentions speed/cost. Enforces Gemini 3.5 Flash caching strategy + output discipline.
+description: Active when context large or user mentions speed/cost. Enforces prompt-caching strategy + output discipline. Model-agnostic.
 ---
 
-# Token Conservation (Gemini 3.5 Flash specific)
+# Token Conservation (all models)
 
-## 💾 Caching first (90% input savings)
-- System prompt + project-context = ALWAYS cached
+## 💾 Caching first (big input savings)
+- System prompt + project context = keep at TOP, unchanged across turns so it stays cached
 - Don't paraphrase cached content in answer
 - Reference by anchor, not full repeat
 
-## Output discipline (output 6x cost of input — Gemini pricing)
+## Output discipline (output costs more than input on most models)
 - Code: diff only
 - Explanation: ≤3 sentences
 - JSON output: use schema constraint, not free prose
 - No "let me", "I'll now", "first I'll"
 - No closing recap
 
-## Thought preservation control
-- Default ON (3.5 Flash) → input grows multi-turn
-- Simple Q&A → clear thoughts to save tokens
-- Long agent loop → keep on (improves quality)
+## Reasoning-depth control
+- Multi-turn context grows — keep prompts lean
+- Simple Q&A → minimal depth, clear reasoning to save tokens
+- Long agent loop → keep depth as needed (improves quality)
 
 ## Tool call discipline
-- Reduce thinking_level FIRST if over-calling
+- Reduce reasoning depth FIRST if over-calling
 - Constrain tools in system instruction
 - Batch tool calls when possible (parallel MCP)
 
 ## Context placement (cache-friendly)
-- TOP: stable (system, project-context, docs)
+- TOP: stable (system, project context, docs)
 - MIDDLE: relevant code excerpts
 - BOTTOM: user question
 
 ## Multi-step budget warning
 - 5-step agent = 2-3x base token usage
 - Budget: estimate before /plan execution
-- Hit limit → drop thinking_level + split task
+- Hit limit → drop reasoning depth + split task
 
 ## Read budget
 - Max 3 files/turn (unless multi-file task)

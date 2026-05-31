@@ -55,5 +55,5 @@ description: Use when creating, reviewing, or modifying the Next.js frontend in 
 - **Root Scripts**: Use Next.js `next/script` with explicit `id` and `beforeInteractive` for bootstrap scripts. No raw `<script>` tags.
 
 ## 7. Pre-Commit Verification
-- Run `npm run typecheck` in `frontend/` directory before marking complete.
+- Fast-iteration dev mode: rely on `next dev` HMR while iterating. Run `npm run typecheck` in `frontend/` only before commit or when summarizing — not after every edit.
 - Verify in both Light/Dark themes and check responsiveness in notebook/mobile.

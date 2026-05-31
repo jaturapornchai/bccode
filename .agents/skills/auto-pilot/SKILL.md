@@ -13,4 +13,4 @@ description: Primary skill for BC Account. Use for every task; routes via AI_IND
 - **No Mocks**: Use DEV database/API; no guessed configurations/schemas.
 - **Languages**: Query `languages.tsv` by exact key regex only (e.g. `rg -n "^key\t"`).
 - **Backend/Frontend**: Target `frontend/` (Next.js) or `backend/` (Go) scope.
-- **Verify**: Run typecheck, lint, or docker tests before completion.
+- **Verify**: Frontend dev = rely on `next dev` HMR; run `npm run typecheck` only before commit/summary. Backend = rebuild Docker ONLY when Jead says `rebuild`/`deploy` (batch mode). See core-rules "Dev Workflow Mode".

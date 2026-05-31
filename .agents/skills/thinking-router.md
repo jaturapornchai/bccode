@@ -1,9 +1,9 @@
 ---
 name: thinking-router
-description: Auto-select thinking_level based on task complexity. Trigger on every new task to set right reasoning depth before execution.
+description: Auto-select reasoning depth based on task complexity. Trigger on every new task to set the right reasoning depth before execution. Model-agnostic — each model maps depth to its own knob (Claude effort / Codex model_reasoning_effort / Gemini thinking_level).
 ---
 
-# Thinking Level Router
+# Reasoning Depth Router
 
 ## Auto-classify before any action
 
@@ -36,10 +36,11 @@ description: Auto-select thinking_level based on task complexity. Trigger on eve
 - Migration strategy
 
 ## Output before executing
-🧠 thinking_level: <minimal|low|medium|high>
+🧠 reasoning depth: <minimal|low|medium|high>
 reason: <1 line>
+(map to your model: Claude effort / Codex model_reasoning_effort / Gemini thinking_level)
 
 ## Override rules
 - User says "think harder" → bump up one level
 - User says "quick" → drop to minimal/low
-- Hit output cap 16k → split + drop level
+- Hit output cap → split task + drop one level

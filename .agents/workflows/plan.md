@@ -1,10 +1,10 @@
 ---
-description: Force planning before multi-file change. Uses thinking_level=high.
+description: Force planning before multi-file change. Uses high reasoning depth.
 ---
 
-# Plan First — thinking_level: HIGH
+# Plan First — reasoning depth: HIGH
 
-## ⚠️ This workflow forces high thinking (most expensive)
+## ⚠️ This workflow forces high reasoning depth (most expensive)
 Only use for architecture / multi-file rewrite / migration.
 
 ## Output before any code
@@ -16,7 +16,7 @@ Only use for architecture / multi-file rewrite / migration.
 5. **R level:** R0 (ask) / R1 (tell why) / R2 (just do)
 6. **Test plan:** <command + expected>
 7. **Token estimate:** <input k / output k>
-8. **Subtask split:** if est > 16k output → break into N steps
+8. **Subtask split:** if est > output cap → break into N steps
 
 ## Decision gates
 - R0/R1 → wait for confirm

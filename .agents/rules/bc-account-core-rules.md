@@ -40,10 +40,15 @@ Related central entrypoints:
 - Frontend runs locally on the host machine for speed, usually from `D:\bccode\frontend`.
 - Backend runs on Docker Desktop for local development, using MainAPI as the single entrypoint on `http://localhost:8888`.
 - Local backend startup must use Docker Desktop/Compose or an equivalent Docker run path that mounts local secret/config files at runtime.
-- Backend container rebuild (`cd D:\bccode\backend; docker-compose up -d --no-deps --build mainapi`) is optional during active development and can be skipped for minor fixes. Perform the build and verify `/healthz` when edits are complete or requested.
+- Backend runs in batch mode. Do NOT auto-rebuild the Docker container while editing `backend/`. Rebuild (`cd D:\bccode\backend; docker-compose up -d --no-deps --build mainapi`) and verify `/healthz` ONLY when Jead explicitly says `rebuild` or `deploy`. Accumulate backend edits and rebuild in batches, not per change. See "Dev Workflow Mode" below.
 - Do not require host Go/CGO/librdkafka setup for normal local backend runs unless the task is specifically backend compiler/toolchain work.
 - Kafka and Redis are mandatory for backend runtime. Local Docker Desktop backend must run both services and configure MainAPI to reach them through the Docker network, usually `KAFKA_SERVER_URL=kafka:29092` and `REDIS_CACHE_URI=redis:6379`.
 - Do not start replacement local database containers unless Jead explicitly requests isolated local testing.
+
+## Dev Workflow Mode (Frontend Fast / Backend Batch)
+- **Current phase**: the frontend is under active design/development; the backend is stable and changed only as needed. This mode is binding on all agents (Claude Code, Codex, Gemini/Antigravity) and overrides any older "must auto-rebuild on backend edit" or "typecheck after every frontend edit" instruction anywhere in the repo.
+- **Frontend = fast iteration**: move quickly, brainstorm and propose alternative design/UX ideas, and rely on `next dev` HMR to preview changes in the browser. Run `npm run typecheck` only before a commit or when summarizing a chunk of work — not after every edit. Do not block idea iteration on full verification.
+- **Backend = minimal + batch**: change backend only when necessary and keep edits small. Do NOT auto-rebuild the Docker container per change. Write correct code, accumulate backend edits, then rebuild (`cd backend; docker-compose up -d --no-deps --build mainapi`) and verify `/healthz` ONLY when Jead says `rebuild`/`deploy`. Summarize backend changes in rounds so Jead can review before each rebuild.
 
 ## Data And Storage
 - DEV MongoDB uses MongoDB Atlas.
@@ -165,8 +170,8 @@ Related central entrypoints:
 - Applies to Codex, Claude Code, Gemini/Antigravity, and any other agent working in `D:\bccode`.
 - Prefer targeted evidence over broad slow checks. Avoid full-repo scans, broad browser automation, and `go test ./...` unless Jead explicitly asks, the touched scope genuinely requires it, or narrower checks cannot provide useful evidence.
 - Docs/rules-only changes: run `git diff --check` and staged secret scanning only. Do not spend time on frontend/backend build or test commands for documentation-only changes.
-- Frontend changes: run `cd frontend; npm run typecheck` for TypeScript/TSX changes. Use browser verification only for UI behavior, layout, routing, or visual changes.
-- Backend changes: run tests for touched packages or the narrowest useful command. When backend runtime code changes, rebuild local Docker Desktop `mainapi` and check `/healthz` per project rules. Treat repo-wide backend test failures from known CGO/Kafka/env-sensitive packages as noisy unless the touched scope points there.
+- Frontend changes: frontend is in fast-iteration dev mode — rely on `next dev` HMR to preview in the browser. Run `cd frontend; npm run typecheck` only before commit or when summarizing, NOT after every edit. Use browser verification only for UI behavior, layout, routing, or visual changes.
+- Backend changes: write correct code and run tests for touched packages only if needed. Do NOT rebuild the Docker container until Jead says `rebuild`/`deploy`; accumulate changes and rebuild in batches. Treat repo-wide backend test failures from known CGO/Kafka/env-sensitive packages as noisy unless the touched scope points there.
 - Long-running commands must be visible. State the command and reason before running it, update Jead about every 30 seconds, and if it exceeds roughly 2 minutes, report whether continuing, narrowing, or stopping is the fastest safe path.
 - For meaningful changes, commit and push the whole project after targeted verification and secret checks. Do not block the push on irrelevant broad checks.
 

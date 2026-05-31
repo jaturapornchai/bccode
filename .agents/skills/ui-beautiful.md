@@ -1,13 +1,13 @@
 ---
 name: ui-beautiful
-description: Generate beautiful UI components — anti-slop, multimodal-aware. Trigger on "create UI", "build page", "design", "landing", "dashboard", "form". Uses thinking_level=medium + image input if provided.
+description: Generate beautiful UI components — anti-slop, multimodal-aware. Trigger on "create UI", "build page", "design", "landing", "dashboard", "form". Uses medium reasoning depth + image input if provided.
 ---
 
-# Anti-Slop UI (Gemini 3.5 Flash — leverages multimodal strength)
+# Anti-Slop UI (multimodal-aware)
 
-## Set thinking_level: medium
+## Set reasoning depth: medium
 
-## 📸 MULTIMODAL FIRST (Gemini 3.5 Flash strength)
+## 📸 MULTIMODAL FIRST (when the model supports image input)
 If user provides image/screenshot:
 - Use it as primary reference
 - Extract: color palette, type scale, spacing, component patterns
@@ -17,9 +17,9 @@ If no image:
 - Ask "มี reference image ไหม? (เพิ่ม fidelity 3-5x)"
 - Skip ask if user explicitly says "from scratch"
 
-## ⚠️ Known weakness: Gemini แพ้ Opus 4.7 ใน complex design system
-- ถ้าต้อง maintain consistency >5 components → escalate thinking=high
-- หรือ route ไป Claude Opus 4.7 (Antigravity multi-model routing)
+## ⚠️ Consistency at scale
+- If you must maintain consistency across >5 connected components → escalate reasoning depth to high
+- Split the design system into smaller passes and keep a shared token set (colors, spacing, type) across them
 
 ## NEVER generate (generic AI tells)
 - ❌ Center hero + 3-column card grid + CTA gradient

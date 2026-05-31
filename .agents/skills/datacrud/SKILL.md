@@ -41,6 +41,6 @@ description: Use when creating, reviewing, or modifying Next.js data CRUD screen
 - **Popups & Pickers**: By default, open below the trigger. However, if viewport space below is limited (e.g., less than 300px) and there is more space above, dynamically flip the picker to open above the trigger (Flipping Placement) by setting `bottom` relative to the trigger's top, clearing `top` style, and calculating appropriate `maxHeight`. Clamp width/left so it never overflows off-screen. **To prevent CSS transform or overflow-hidden on parent elements from breaking position: fixed positioning, always render popups, dropdowns, and pickers using React Portal (`createPortal`) targeted directly to `document.body`.**
 
 ## 6. Pre-Commit Verification
-- Run `npm run typecheck` in `frontend/` directory.
+- Run `npm run typecheck` in `frontend/` only before commit/summary (fast-iteration dev mode relies on `next dev` HMR while iterating).
 - Verify scrolling behavior: left pane, right pane, and dropdowns scroll independently using native scrolling. Verify trackpad and mobile scrolling works.
 - Verify dirty-form guard appears correctly.

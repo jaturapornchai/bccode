@@ -25,7 +25,7 @@ description: Trigger when about to claim task complete. Forces evidence-based ve
 - [ ] Mobile + desktop checked
 - [ ] Dark mode (if supported)
 
-### Bash output (Gemini 3.5 Flash weakness)
+### Bash output (all models — read carefully)
 - [ ] Re-read terminal output literally
 - [ ] Check exit code, not just last line
 - [ ] Watch for syntax edge cases

@@ -1,23 +1,22 @@
 # Agent Handoffs
 
-Cross-agent handoff contracts for the Gemini → Codex → Claude workflow.
-See role rules in `D:\bccode\.agents\rules\bc-account-core-rules.md` ("AI Models Collaboration Rules").
+Optional coordination notes for parallel / cross-session work. Any agent (Claude, Codex, Gemini) is full-stack and may pick up any layer — see core-rules "AI Capability & Instant Upgrades". Handoffs are NOT role locks; they only carry context so the next agent doesn't re-derive intent.
 
 ## Why
-Gemini edits frontend only. When a frontend change needs backend/model support, Gemini drops a handoff here so **Codex** can adapt the Go model/backend and **Claude** can review/plan — without re-deriving the frontend intent. The handoff is the contract; it keeps the three agents parallel and fast.
+When work spans sessions/agents, or one chunk is done and another remains (e.g. frontend done, backend pending), drop a handoff so any agent can continue without re-reading the whole history. The handoff is the contract; it keeps work parallel and fast.
 
 ## Flow
-Default direction is **Gemini → Codex → Claude**, but any agent may write a handoff to request work in another agent's lane (e.g. Codex → Gemini for a UI tweak, or anyone → Claude for review/plan). Same roles apply to all three — see core-rules "AI Models Collaboration Rules".
+Any agent may write a handoff to request follow-up work in any layer. There is no fixed model→model direction.
 
-1. **Gemini** finishes frontend work → creates `{YYYY-MM-DD}-{kebab-feature}.md` from the template below. Fills everything except the Codex/Claude status.
-2. **Codex** reads it + the real frontend code → implements/adjusts Go models, services, handlers, MCP tools, migrations → ticks the backend checklist and updates `Status: Codex`.
-3. **Claude** reviews the diff against this file, plans next steps, updates `Status: Claude`. Claude may edit any layer when end-to-end work is needed.
+1. An agent finishes a chunk → creates `{YYYY-MM-DD}-{kebab-feature}.md` from the template below, filling everything except the pending phases.
+2. The next agent reads it + the real source code → implements the remaining layer(s) → ticks the checklist and updates the phase status.
+3. A reviewer (any agent) checks the diff against this file, plans next steps, marks done. Any agent may edit any layer when end-to-end work is needed.
 
 ## Rules
 - One file per feature. English. Plain Markdown. Keep it short.
-- Every backend ask must be source-linked (`path:line`) — no vague "fix the API".
+- Every ask must be source-linked (`path:line`) — no vague "fix the API".
 - Do not store secrets, tokens, or full connection strings.
-- When done end-to-end, set all three `Status` lines to `DONE` (or `N/A`). Stale handoffs can be deleted once merged.
+- When done end-to-end, set all phases to `DONE` (or `N/A`). Stale handoffs can be deleted once merged.
 
 ## Template
 Copy the block below into a new `{YYYY-MM-DD}-{kebab-feature}.md`.
@@ -26,34 +25,34 @@ Copy the block below into a new `{YYYY-MM-DD}-{kebab-feature}.md`.
 # Handoff: <feature name>
 
 - Feature: <short name>
-- Author: Gemini
+- Author: <agent / session>
 - Date: <YYYY-MM-DD>
-- Scope: frontend-done / backend-todo
-- Status: Gemini=DONE | Codex=TODO | Claude=TODO
+- Scope: <what's done / what's left>
+- Status: frontend=<DONE|TODO|N/A> | backend=<DONE|TODO|N/A> | review=<DONE|TODO|N/A>
 
-## 1. Frontend change (done by Gemini)
-What changed in the UI and why. List touched files (`frontend/...`).
+## 1. What changed (done)
+What changed and why. List touched files (`frontend/...` or `backend/...`).
 
-## 2. Backend / model changes required (for Codex)
-Exactly what the Go model / backend must provide. Source-link existing code (`backend/...:line`).
+## 2. Remaining work required
+Exactly what the next layer must provide. Source-link existing code (`path:line`).
 - [ ] Model field(s): ...
 - [ ] Endpoint(s): method, path, request, response
 - [ ] Validation / business rule: ...
 - [ ] MCP tool / migration (if any): ...
 
-## 3. API contract expected by the frontend
-Request and response shapes the frontend already codes against (so backend matches exactly).
+## 3. API contract
+Request and response shapes the frontend codes against (so backend matches exactly).
 
 ## 4. Affected files
-- Frontend (done): `frontend/...`
-- Backend (todo): `backend/...`
+- Done: `...`
+- TODO: `...`
 
 ## 5. Verification checklist
-- [ ] `cd backend; go build ./...` (or Docker build for kafka/CGO paths)
-- [ ] `cd frontend; npm run typecheck`
+- [ ] `cd frontend; npm run typecheck` (before commit/summary — dev relies on `next dev` HMR)
+- [ ] `cd backend; go build ./...` for touched packages (full Docker rebuild ONLY when Jead says `rebuild`/`deploy`)
 - [ ] Real DEV data / API check (no mock for business behavior)
 - [ ] Light/dark + mobile check for any UI
 
-## 6. Notes for Claude (review + plan)
+## 6. Notes for reviewer
 Risks, open questions, follow-up phases.
 ```

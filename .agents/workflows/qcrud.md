@@ -1,8 +1,8 @@
 ---
-description: Generate CRUD single pass. Uses thinking_level=low.
+description: Generate CRUD single pass. Uses low reasoning depth.
 ---
 
-# Quick CRUD — thinking_level: LOW
+# Quick CRUD — reasoning depth: LOW
 
 Usage: `/qcrud <Resource> <field1:type> <field2:type> ...`
 
@@ -27,4 +27,4 @@ Example: `/qcrud Product name:string price:int stock:int category_id:uuid`
 3. Apply + run test + paste output
 4. If MCP db-mcp available → run migration auto
 
-## Token budget: ~3-5k output (low thinking)
+## Token budget: ~3-5k output (low reasoning depth)

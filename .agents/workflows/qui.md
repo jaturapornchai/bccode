@@ -1,12 +1,12 @@
 ---
-description: Generate beautiful UI single pass. Uses thinking_level=medium + multimodal input.
+description: Generate beautiful UI single pass. Uses medium reasoning depth + multimodal input.
 ---
 
-# Quick UI — thinking_level: MEDIUM
+# Quick UI — reasoning depth: MEDIUM
 
 Usage:
 - `/qui <component> [hint]`
-- `/qui <component> [paste image]` ← preferred (Gemini multimodal strength)
+- `/qui <component> [paste image]` ← preferred when the model supports image input
 
 Examples:
 - `/qui dashboard analytics with charts + KPI`
@@ -29,8 +29,8 @@ Examples:
 - [ ] Type scale ≤5 sizes
 - [ ] No purple→pink gradient
 
-## Token budget: ~5-8k output (medium thinking + UI code)
+## Token budget: ~5-8k output (medium reasoning depth + UI code)
 
 ## Escalation
 - >5 connected components needing consistent design system
-  → ask: "เพิ่ม thinking=high หรือ route ไป Opus 4.7?"
+  → escalate reasoning depth to high, or split into smaller passes with a shared token set

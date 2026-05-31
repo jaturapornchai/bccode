@@ -5,7 +5,7 @@ description: Auto-activate when writing, reviewing, or modifying Go code.
 
 ## 1. Mandatory Steps
 - **Inspect**: Skip full references check for local/internal components; perform definition lookup only for unfamiliar files.
-- **Local Rebuild**: Rebuild backend container (`cd D:\bccode\backend; docker-compose up -d --no-deps --build mainapi`) only when functional changes are completed or explicitly requested.
+- **Local Rebuild (on request ONLY)**: Backend is batch mode — do NOT auto-rebuild. Rebuild the container (`cd D:\bccode\backend; docker-compose up -d --no-deps --build mainapi`) and verify `/healthz` ONLY when Jead says `rebuild`/`deploy`. See core-rules "Dev Workflow Mode".
 
 ## 2. Coding Patterns
 - **Context & Errors**: Always pass `ctx`. Return error types, do not `panic` in production.
