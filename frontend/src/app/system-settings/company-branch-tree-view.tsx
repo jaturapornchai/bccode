@@ -374,6 +374,32 @@ export function CompanyBranchTreeView({
     }
   };
 
+  const sortedCompanies = useMemo(() => {
+    return [...companies].sort((a, b) => {
+      const codeA = a.code || "";
+      const codeB = b.code || "";
+      const cmp = codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: "base" });
+      if (cmp !== 0) return cmp;
+      
+      const nameA = getNameFromObject(a.names, language) || "";
+      const nameB = getNameFromObject(b.names, language) || "";
+      return nameA.localeCompare(nameB, "th", { sensitivity: "base" });
+    });
+  }, [companies, language]);
+
+  const sortedBranches = useMemo(() => {
+    return [...branches].sort((a, b) => {
+      const codeA = a.code || "";
+      const codeB = b.code || "";
+      const cmp = codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: "base" });
+      if (cmp !== 0) return cmp;
+      
+      const nameA = getNameFromObject(a.names, language) || "";
+      const nameB = getNameFromObject(b.names, language) || "";
+      return nameA.localeCompare(nameB, "th", { sensitivity: "base" });
+    });
+  }, [branches, language]);
+
   return (
     <div className="grid w-full grid-cols-1 gap-4 xl:grid-cols-[minmax(320px,0.85fr)_minmax(420px,1.15fr)]">
       {/* Left panel: Company -> Branch list */}
@@ -411,11 +437,11 @@ export function CompanyBranchTreeView({
             </div>
           ) : (
             <div className="space-y-2">
-              {companies.map((comp) => {
+              {sortedCompanies.map((comp) => {
                 const compGuid = comp.guid_fixed || "";
                 const isCollapsed = collapsedCompanies[compGuid];
                 const isSelected = selectedNode?.type === "company" && selectedNode.guid_fixed === compGuid;
-                const compBranches = branches.filter((b) => b.company_guid === compGuid);
+                const compBranches = sortedBranches.filter((b) => b.company_guid === compGuid);
 
                 return (
                   <div key={compGuid} className="space-y-1">
