@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { normalizeLanguageConfigs } from "./system-settings-screen";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { deriveMainApiUrl } from "@/lib/backend-url";
+import { NamesEditor } from "@/components/product-barcode/names-editor";
 
 interface CompanyBranchTreeViewProps {
   auth: { token: string; backendUrl: string } | null;
@@ -194,19 +195,24 @@ export function CompanyBranchTreeView({
   const [formCode, setFormCode] = useState("");
   const [formTaxId, setFormTaxId] = useState("");
   const [formIsActive, setFormIsActive] = useState(true);
-  const [formNames, setFormNames] = useState<Record<string, string>>({});
+  const [formNames, setFormNames] = useState<LocalizedNameEntry[]>([]);
 
   useEffect(() => {
     if (!selectedNode) return;
-    const namesObj: Record<string, string> = {};
+    const list: LocalizedNameEntry[] = [];
     const rawNames = selectedNode.data.names;
     editorLanguages.forEach((lang) => {
-      namesObj[lang] = getNameFromObject(rawNames, lang);
+      list.push({
+        code: lang,
+        name: getNameFromObject(rawNames, lang),
+        isauto: false,
+        isdelete: false,
+      });
     });
 
     setFormCode(selectedNode.data.code || "");
     setFormIsActive(selectedNode.data.is_active !== false);
-    setFormNames(namesObj);
+    setFormNames(list);
 
     if (selectedNode.type === "company") {
       setFormTaxId((selectedNode.data as CompanyRecord).tax_id || "");
@@ -219,12 +225,7 @@ export function CompanyBranchTreeView({
     setSaving(true);
 
     try {
-      const namesList = Object.entries(formNames).map(([code, name]) => ({
-        code,
-        name,
-        isauto: false,
-        isdelete: false,
-      }));
+      const namesList = formNames;
 
       let url = "";
       let method = "POST";
@@ -416,11 +417,11 @@ export function CompanyBranchTreeView({
                           [{comp.code}] {getNameFromObject(comp.names, language) || comp.code}
                         </span>
                       </div>
-                      <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1">
+                      <div className="flex items-center gap-1">
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="w-7 h-7 hover:text-primary"
+                          className="w-7 h-7 text-sky-500 hover:text-sky-600 hover:bg-sky-500/10"
                           title="เพิ่มสาขา"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -437,7 +438,7 @@ export function CompanyBranchTreeView({
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="w-7 h-7 hover:text-destructive"
+                          className="w-7 h-7 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10"
                           onClick={(e) => {
                             e.stopPropagation();
                             void handleDelete({
@@ -482,11 +483,11 @@ export function CompanyBranchTreeView({
                                   [{br.code}] {getNameFromObject(br.names, language) || br.code}
                                 </span>
                               </div>
-                              <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1">
+                              <div className="flex items-center gap-1">
                                 <Button
                                   size="icon"
                                   variant="ghost"
-                                  className="w-7 h-7 hover:text-destructive"
+                                  className="w-7 h-7 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     void handleDelete({
@@ -518,9 +519,14 @@ export function CompanyBranchTreeView({
         <CardContent className="p-6">
           {formType ? (
             <div className="space-y-6">
-              <div className="flex items-center justify-between border-b pb-4">
+              <div className="flex items-center justify-between border-b pb-4 gap-4">
                 <div>
-                  <h3 className="text-xl font-bold text-foreground">
+                  <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+                    {formType.includes("company") ? (
+                      <Building2 className="w-5.5 h-5.5 text-primary shrink-0" />
+                    ) : (
+                      <GitBranch className="w-5.5 h-5.5 text-sky-500 shrink-0" />
+                    )}
                     {formType === "create_company" && "เพิ่มบริษัทใหม่"}
                     {formType === "edit_company" && "แก้ไขข้อมูลบริษัท"}
                     {formType === "create_branch" && "เพิ่มสาขาใหม่"}
@@ -530,17 +536,36 @@ export function CompanyBranchTreeView({
                     {formType.startsWith("create") ? "ระบุข้อมูลรายละเอียดหลักเพื่อเพิ่มข้อมูลเข้าระบบ" : "แก้ไขรายละเอียดข้อมูลและบันทึกประวัติ"}
                   </p>
                 </div>
+                {formType === "edit_company" && selectedNode?.guid_fixed && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1 text-xs border-sky-500/30 text-sky-600 hover:bg-sky-500/10 hover:text-sky-700 font-bold shrink-0"
+                    onClick={() => {
+                      setSelectedNode({
+                        type: "branch",
+                        company_guid: selectedNode.guid_fixed,
+                        data: {},
+                      });
+                      setFormType("create_branch");
+                    }}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    เพิ่มสาขาในบริษัทนี้
+                  </Button>
+                )}
               </div>
 
-              {/* Form fields */}
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-foreground">รหัสบริษัท / รหัสสาขา *</label>
+                    <label className="text-sm font-semibold text-foreground">
+                      {formType.includes("company") ? "รหัสบริษัท *" : "รหัสสาขา *"}
+                    </label>
                     <Input
                       value={formCode}
                       onChange={(e) => setFormCode(e.target.value)}
-                      placeholder="เช่น COMP01, BR01"
+                      placeholder={formType.includes("company") ? "ระบุรหัสบริษัท เช่น 00000" : "ระบุรหัสสาขา 5 หลัก เช่น 00001"}
                       className="bg-accent/20"
                     />
                   </div>
@@ -559,30 +584,13 @@ export function CompanyBranchTreeView({
 
                 {/* Multilingual names */}
                 <div className="space-y-3">
-                  <label className="text-sm font-semibold text-foreground block">ชื่อบริษัท / สาขา (แยกตามภาษาที่ใช้งาน)</label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded-lg bg-accent/5">
-                    {editorLanguages.map((lang) => {
-                      const nativeLang = LANGUAGES.find((l) => l.code === lang);
-                      return (
-                        <div key={lang} className="space-y-1.5">
-                          <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-primary" />
-                            {nativeLang?.name || lang.toUpperCase()} ({lang})
-                          </span>
-                          <Input
-                            value={formNames[lang] || ""}
-                            onChange={(e) =>
-                              setFormNames((prev) => ({
-                                ...prev,
-                                [lang]: e.target.value,
-                              }))
-                            }
-                            placeholder="ระบุชื่อภาษาท้องถิ่น"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <NamesEditor
+                    names={formNames}
+                    onChange={setFormNames}
+                    languages={editorLanguages}
+                    label={formType.includes("company") ? "ชื่อบริษัท" : "ชื่อสาขา"}
+                    language={language}
+                  />
                 </div>
 
                  <div className="flex items-center gap-2 pt-2">

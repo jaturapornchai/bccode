@@ -11,8 +11,6 @@ import (
 	"smlcloudplatform/pkg/microservice"
 	"strconv"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type BranchHttp struct {
@@ -46,30 +44,19 @@ func (h BranchHttp) CreateBranch(ctx microservice.IContext) error {
 		return err
 	}
 
-	normalizedCode, err := branchModels.NormalizeThaiTaxBranchCode(req.Code)
-	if err != nil {
+	if err := branchModels.PrepareCreateBranch(&req, shopID, time.Now(), utils.NewGUID); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
-	req.Code = normalizedCode
-	req.ShopID = shopID
-	if req.GuidFixed == "" {
-		req.GuidFixed = utils.NewGUID()
-	}
-	req.CreatedAt = time.Now()
-	req.UpdatedAt = time.Now()
-	req.IsActive = true
 
 	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
 	db := pst.DBClient()
-	var existing branchModels.BranchPg
-	err = db.Where("shopid = ? AND code = ?", shopID, req.Code).First(&existing).Error
-	if err == nil {
-		ctx.ResponseError(http.StatusConflict, "branch code is exists")
-		return errors.New("branch code is exists")
+	if err := branchModels.EnsureCompanyExists(db, shopID, req.CompanyGuid); err != nil {
+		responseBranchWriteError(ctx, err)
+		return err
 	}
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+	if err := branchModels.EnsureBranchCodeAvailable(db, shopID, req.CompanyGuid, req.Code, ""); err != nil {
+		responseBranchWriteError(ctx, err)
 		return err
 	}
 	if err := db.Create(&req).Error; err != nil {
@@ -147,23 +134,17 @@ func (h BranchHttp) UpdateBranch(ctx microservice.IContext) error {
 		return err
 	}
 
-	normalizedCode, err := branchModels.NormalizeThaiTaxBranchCode(req.Code)
-	if err != nil {
+	if err := branchModels.PrepareUpdateBranch(&req); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
-	req.Code = normalizedCode
-	if req.Code != existing.Code {
-		var duplicate branchModels.BranchPg
-		err = db.Where("shopid = ? AND code = ? AND guid_fixed <> ?", shopID, req.Code, id).First(&duplicate).Error
-		if err == nil {
-			ctx.ResponseError(http.StatusConflict, "branch code is exists")
-			return errors.New("branch code is exists")
-		}
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			ctx.ResponseError(http.StatusInternalServerError, err.Error())
-			return err
-		}
+	if err := branchModels.EnsureCompanyExists(db, shopID, req.CompanyGuid); err != nil {
+		responseBranchWriteError(ctx, err)
+		return err
+	}
+	if err := branchModels.EnsureBranchCodeAvailable(db, shopID, req.CompanyGuid, req.Code, id); err != nil {
+		responseBranchWriteError(ctx, err)
+		return err
 	}
 	existing.Names = req.Names
 	existing.Code = req.Code
@@ -201,7 +182,7 @@ func (h BranchHttp) DeleteBranch(ctx microservice.IContext) error {
 	}
 
 	var total int64
-	if err := db.Model(&branchModels.BranchPg{}).Where("shopid = ?", shopID).Count(&total).Error; err != nil {
+	if err := branchModels.CompanyBranchCountLookup(db, shopID, data.CompanyGuid).Count(&total).Error; err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
@@ -221,6 +202,19 @@ func (h BranchHttp) DeleteBranch(ctx microservice.IContext) error {
 		ID:      id,
 	})
 	return nil
+}
+
+func responseBranchWriteError(ctx microservice.IContext, err error) {
+	switch {
+	case errors.Is(err, branchModels.ErrBranchCompanyGuidRequired):
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
+	case errors.Is(err, branchModels.ErrBranchCompanyNotFound):
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
+	case errors.Is(err, branchModels.ErrBranchCodeExists):
+		ctx.ResponseError(http.StatusConflict, err.Error())
+	default:
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+	}
 }
 
 func (h BranchHttp) SearchBranchStep(ctx microservice.IContext) error {
