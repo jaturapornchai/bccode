@@ -21,6 +21,7 @@ import { LANGUAGES, type LanguageCode } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { normalizeLanguageConfigs } from "./system-settings-screen";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
+import { deriveMainApiUrl } from "@/lib/backend-url";
 
 interface CompanyBranchTreeViewProps {
   auth: { token: string; backendUrl: string } | null;
@@ -96,6 +97,15 @@ export function CompanyBranchTreeView({
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  const mainApiUrl = useMemo(() => {
+    if (!auth?.backendUrl) return "";
+    try {
+      return deriveMainApiUrl(auth.backendUrl);
+    } catch {
+      return auth.backendUrl;
+    }
+  }, [auth]);
+
   // Active languages for multilingual names
   const editorLanguages = useMemo(() => {
     if (!workspace) return ["th"];
@@ -113,11 +123,11 @@ export function CompanyBranchTreeView({
 
   // Fetch Companies & Branches
   const loadData = useCallback(async () => {
-    if (!auth) return;
+    if (!auth || !mainApiUrl) return;
     setLoading(true);
     try {
       // Load Companies
-      const resComp = await fetch(`${auth.backendUrl}/organization/company`, {
+      const resComp = await fetch(`${mainApiUrl}/organization/company`, {
         headers: { Authorization: `Bearer ${auth.token}` },
       });
       const jsonComp = await resComp.json();
@@ -126,7 +136,7 @@ export function CompanyBranchTreeView({
       }
 
       // Load Branches
-      const resBranch = await fetch(`${auth.backendUrl}/organization/branch`, {
+      const resBranch = await fetch(`${mainApiUrl}/organization/branch`, {
         headers: { Authorization: `Bearer ${auth.token}` },
       });
       const jsonBranch = await resBranch.json();
@@ -138,7 +148,7 @@ export function CompanyBranchTreeView({
     } finally {
       setLoading(false);
     }
-  }, [auth]);
+  }, [auth, mainApiUrl]);
 
   useEffect(() => {
     void loadData();
@@ -198,7 +208,7 @@ export function CompanyBranchTreeView({
       let body: Record<string, unknown> = {};
 
       if (formType === "create_company") {
-        url = `${auth.backendUrl}/organization/company`;
+        url = `${mainApiUrl}/organization/company`;
         method = "POST";
         body = {
           code: formCode,
@@ -207,7 +217,7 @@ export function CompanyBranchTreeView({
           is_active: formIsActive,
         };
       } else if (formType === "edit_company") {
-        url = `${auth.backendUrl}/organization/company/${selectedNode.guid_fixed}`;
+        url = `${mainApiUrl}/organization/company/${selectedNode.guid_fixed}`;
         method = "PUT";
         body = {
           code: formCode,
@@ -216,7 +226,7 @@ export function CompanyBranchTreeView({
           is_active: formIsActive,
         };
       } else if (formType === "create_branch") {
-        url = `${auth.backendUrl}/organization/branch`;
+        url = `${mainApiUrl}/organization/branch`;
         method = "POST";
         body = {
           company_guid: selectedNode.company_guid,
@@ -225,7 +235,7 @@ export function CompanyBranchTreeView({
           is_active: formIsActive,
         };
       } else if (formType === "edit_branch") {
-        url = `${auth.backendUrl}/organization/branch/${selectedNode.guid_fixed}`;
+        url = `${mainApiUrl}/organization/branch/${selectedNode.guid_fixed}`;
         method = "PUT";
         body = {
           company_guid: selectedNode.company_guid,
@@ -289,7 +299,7 @@ export function CompanyBranchTreeView({
 
     setLoading(true);
     try {
-      const url = `${auth.backendUrl}/organization/${node.type}/${node.guid_fixed}`;
+      const url = `${mainApiUrl}/organization/${node.type}/${node.guid_fixed}`;
       const res = await fetch(url, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${auth.token}` },
