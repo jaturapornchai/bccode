@@ -2,6 +2,7 @@
 
 import { Loader2, Search, X } from "lucide-react";
 import { type RefObject, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { listMaster, type MasterEntry, type MasterName } from "@/lib/product-barcode/api";
@@ -11,6 +12,9 @@ import { type LanguageCode } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { AuthSession } from "@/lib/workspace-models";
 
+const thCollator = new Intl.Collator("th", { numeric: true, sensitivity: "base" });
+const enCollator = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
+
 const FIELD_PICKER_VIEWPORT_MARGIN = 16;
 const FIELD_PICKER_GAP = 4;
 const FIELD_PICKER_MAX_WIDTH = 520;
@@ -18,7 +22,8 @@ const FIELD_PICKER_MIN_WIDTH = 420;
 
 type FieldPickerPlacement = {
   left: number;
-  top: number;
+  top?: number | null;
+  bottom?: number | null;
   width: number;
   maxHeight: number;
 };
@@ -51,6 +56,8 @@ export interface MasterPickerProps {
   initialQuery?: string;
   placement?: "dialog" | "field";
   anchorRef?: RefObject<HTMLElement | null>;
+  companyGuid?: string;
+  filters?: Record<string, string | number | boolean | undefined>;
 }
 
 export function MasterPicker({
@@ -64,6 +71,8 @@ export function MasterPicker({
   initialQuery = "",
   placement = "dialog",
   anchorRef,
+  companyGuid,
+  filters,
 }: MasterPickerProps) {
   const text = getBarcodeText(language);
   const [query, setQuery] = useState(initialQuery);
@@ -73,6 +82,13 @@ export function MasterPicker({
   const [error, setError] = useState<string>("");
   const [fieldPlacement, setFieldPlacement] = useState<FieldPickerPlacement | null>(null);
   const fieldPanelRef = useRef<HTMLDivElement | null>(null);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
 
   useEffect(() => {
     if (!open) return;
@@ -90,7 +106,13 @@ export function MasterPicker({
     if (!open) return;
     setLoading(true);
     setError("");
-    const response = await listMaster(auth, master, { q: debounced, limit: 50, lang: String(language) });
+    const response = await listMaster(auth, master, {
+      q: debounced,
+      limit: 50,
+      lang: String(language),
+      company_guid: companyGuid,
+      filters,
+    });
     if (!response.success) {
       setError(response.message || text.requestFailed);
       setItems([]);
@@ -98,7 +120,7 @@ export function MasterPicker({
       setItems(response.data ?? []);
     }
     setLoading(false);
-  }, [open, auth, master, debounced, language, text.requestFailed]);
+  }, [open, auth, master, debounced, language, text.requestFailed, companyGuid, filters]);
 
   useEffect(() => {
     if (open) void load();
@@ -112,29 +134,48 @@ export function MasterPicker({
     const viewportHeight = window.innerHeight;
     const availableWidth = Math.max(0, viewportWidth - margin * 2);
     const anchorRect = anchorRef?.current?.getBoundingClientRect();
-    const anchorWidth = anchorRect?.width ?? 0;
+    if (!anchorRect) return;
+
+    const anchorWidth = anchorRect.width;
     const width = Math.min(
       Math.max(anchorWidth, FIELD_PICKER_MIN_WIDTH),
       FIELD_PICKER_MAX_WIDTH,
       availableWidth,
     );
-    const preferredLeft = anchorRect?.left ?? margin;
+    const preferredLeft = anchorRect.left;
     const maxLeft = Math.max(margin, viewportWidth - margin - width);
     const left = Math.min(Math.max(preferredLeft, margin), maxLeft);
-    const top = Math.max(margin, (anchorRect?.bottom ?? margin) + FIELD_PICKER_GAP);
-    const maxHeight = Math.max(96, viewportHeight - top - margin);
+
+    const spaceBelow = viewportHeight - anchorRect.bottom - margin;
+    const spaceAbove = anchorRect.top - margin;
+
+    // Flip to top if space below is small (< 300px) and above space is larger
+    const shouldFlip = spaceBelow < 300 && spaceAbove > spaceBelow;
+
+    let top: number | null = null;
+    let bottom: number | null = null;
+    let maxHeight: number;
+
+    if (shouldFlip) {
+      bottom = viewportHeight - anchorRect.top + FIELD_PICKER_GAP;
+      maxHeight = Math.max(96, spaceAbove - FIELD_PICKER_GAP);
+    } else {
+      top = anchorRect.bottom + FIELD_PICKER_GAP;
+      maxHeight = Math.max(96, spaceBelow - FIELD_PICKER_GAP);
+    }
 
     setFieldPlacement((current) => {
       if (
         current &&
         current.left === left &&
         current.top === top &&
+        current.bottom === bottom &&
         current.width === width &&
         current.maxHeight === maxHeight
       ) {
         return current;
       }
-      return { left, top, width, maxHeight };
+      return { left, top, bottom, width, maxHeight };
     });
   }, [anchorRef, open, placement]);
 
@@ -192,8 +233,7 @@ export function MasterPicker({
 
   const headerTitle = useMemo(() => title ?? `${text.pickerSelect}: ${master}`, [title, text.pickerSelect, master]);
   const sortedItems = useMemo(() => {
-    const locale = String(language).toLowerCase().startsWith("th") ? "th" : "en";
-    const collator = new Intl.Collator(locale, { numeric: true, sensitivity: "base" });
+    const collator = String(language).toLowerCase().startsWith("th") ? thCollator : enCollator;
     return [...items].sort((left, right) => {
       const leftName = pickName(left.names, language) || left.code || left.guidfixed;
       const rightName = pickName(right.names, language) || right.code || right.guidfixed;
@@ -201,7 +241,7 @@ export function MasterPicker({
     });
   }, [items, language]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
   const pickerPanel = (
     <div
@@ -213,7 +253,7 @@ export function MasterPicker({
       onClick={(event) => event.stopPropagation()}
     >
       <div className="flex items-center justify-between border-b border-border px-3 py-2">
-        <div className="text-sm font-semibold">{headerTitle}</div>
+        <div id="master-picker-title" className="text-sm font-semibold">{headerTitle}</div>
         <Button variant="ghost" size="sm" onClick={onClose} aria-label={text.pickerClose}>
           <X className="h-4 w-4" />
         </Button>
@@ -277,33 +317,38 @@ export function MasterPicker({
   );
 
   if (placement === "field") {
-    return (
+    return createPortal(
       <div
         ref={fieldPanelRef}
         className="fixed z-50"
         role="dialog"
         aria-modal="false"
+        aria-labelledby="master-picker-title"
         style={{
           left: fieldPlacement?.left ?? FIELD_PICKER_VIEWPORT_MARGIN,
-          top: fieldPlacement?.top ?? FIELD_PICKER_VIEWPORT_MARGIN,
+          top: fieldPlacement?.top !== null && fieldPlacement?.top !== undefined ? fieldPlacement.top : undefined,
+          bottom: fieldPlacement?.bottom !== null && fieldPlacement?.bottom !== undefined ? fieldPlacement.bottom : undefined,
           width: fieldPlacement?.width ?? FIELD_PICKER_MIN_WIDTH,
           maxHeight: fieldPlacement?.maxHeight,
           visibility: fieldPlacement ? "visible" : "hidden",
         }}
       >
         {pickerPanel}
-      </div>
+      </div>,
+      document.body
     );
   }
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-2 md:p-6"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
+      aria-labelledby="master-picker-title"
     >
       {pickerPanel}
-    </div>
+    </div>,
+      document.body
   );
 }

@@ -17,12 +17,12 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 )
 
-func ProcessInsertBarCodeListForPostgres(db *sql.DB, barcodes *[]models.BarcodeModel) {
+func ProcessInsertBarCodeListForPostgres(db *sql.DB, barcodes *[]models.BarcodeModel) error {
 	// เตรียม columns สำหรับ COPY FROM
 	columns := []string{
-		"barcode", "barcoderef", "itemcode", "name0", "unitcode", "unit_name",
-		"group_code", "group_names", "price1", "price_retail", "barcoderefunitstand", "barcoderefunitdivide",
-		"isstock", "item_type", "checksum", "imageuri",
+		"barcode", "barcoderef", "itemcode", "name0", "unitcode", "unitname",
+		"groupcode", "groupnames", "price1", "price_retail", "barcoderefunitstand", "barcoderefunitdivide",
+		"isstock", "itemtype", "checksum", "imageuri",
 	}
 
 	// แปลงข้อมูลเป็น format สำหรับ COPY FROM
@@ -55,8 +55,9 @@ func ProcessInsertBarCodeListForPostgres(db *sql.DB, barcodes *[]models.BarcodeM
 
 	err := mypg.BulkInsertWithCopy(ctx, db, "productbarcode", columns, rows)
 	if err != nil {
-		logger.Error("BulkInsertWithCopy productbarcode error: %v", err)
+		return err
 	}
+	return nil
 }
 
 func ProcessInsertBarCodeListForClickHouse(chClient clickhouse.Conn, barcodes *[]models.BarcodeModel) {
@@ -111,16 +112,19 @@ func ProcessInsertBarCodeListForClickHouse(chClient clickhouse.Conn, barcodes *[
 	}
 }
 
-func ProcessInsertBarCodeList(dbPg *sql.DB, chClient clickhouse.Conn, barcodes *[]models.BarcodeModel) {
+func ProcessInsertBarCodeList(dbPg *sql.DB, chClient clickhouse.Conn, barcodes *[]models.BarcodeModel) error {
 	if len(*barcodes) == 0 {
-		return
+		return nil
 	}
 
 	// Insert ลง PostgreSQL
-	ProcessInsertBarCodeListForPostgres(dbPg, barcodes)
+	if err := ProcessInsertBarCodeListForPostgres(dbPg, barcodes); err != nil {
+		return err
+	}
 
 	// Insert ลง ClickHouse
 	ProcessInsertBarCodeListForClickHouse(chClient, barcodes)
+	return nil
 }
 
 func ProcessBarcodeRebuildAll(shopId string) {
@@ -189,6 +193,9 @@ func ProcessBarcodeRebuildAll(shopId string) {
 	logger.Info("Fetched %d product barcodes from MongoDB for shop %s", len(productBarcodes), shopId)
 
 	// insert into Postgres and ClickHouse
-	ProcessInsertBarCodeList(pgDb, chClient, &productBarcodes)
+	if err := ProcessInsertBarCodeList(pgDb, chClient, &productBarcodes); err != nil {
+		logger.Error("BulkInsertWithCopy productbarcode error: %v", err)
+		return
+	}
 	logger.Info("Inserted %d product barcodes for shop %s", len(productBarcodes), shopId)
 }

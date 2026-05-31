@@ -393,6 +393,7 @@ func (h UnitHttp) SearchUnit(ctx microservice.IContext) error {
 
 	unitCode := ctx.QueryParam("unitcode")
 	shopsidParam := ctx.QueryParam("shopsid")
+	companyGuid := ctx.QueryParam("company_guid")
 
 	unitCodeFilters := []string{}
 	if len(unitCode) > 0 {
@@ -427,7 +428,7 @@ func (h UnitHttp) SearchUnit(ctx microservice.IContext) error {
 	}
 
 	// Default single shop query
-	docList, pagination, err := h.svc.SearchUnit(shopID, unitCodeFilters, pageable)
+	docList, pagination, err := h.svc.SearchUnit(shopID, companyGuid, unitCodeFilters, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -462,15 +463,15 @@ func (h UnitHttp) SearchUnitLimit(ctx microservice.IContext) error {
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
 
 	lang := ctx.QueryParam("lang")
-
 	unitCode := ctx.QueryParam("unitcode")
+	companyGuid := ctx.QueryParam("company_guid")
 
 	unitCodeFilters := []string{}
 	if len(unitCode) > 0 {
 		unitCodeFilters = strings.Split(unitCode, ",")
 	}
 
-	docList, total, err := h.svc.SearchUnitLimit(shopID, lang, unitCodeFilters, pageableStep)
+	docList, total, err := h.svc.SearchUnitLimit(shopID, companyGuid, lang, unitCodeFilters, pageableStep)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())

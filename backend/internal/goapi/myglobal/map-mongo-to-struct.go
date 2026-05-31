@@ -24,6 +24,7 @@ func MapBarcodeFromMongoToStruct(productBarcode models.ProcessMongoBarcodeModel)
 	barcodeModel.Barcode = productBarcode.Barcode
 	barcodeModel.UnitCode = productBarcode.ItemUnitCode
 	barcodeModel.ItemType = productBarcode.ItemType
+	barcodeModel.MaterialType = productBarcode.MaterialType
 
 	// ดึงชื่อสินค้าหลายภาษา
 	if len(productBarcode.Names) > 0 {

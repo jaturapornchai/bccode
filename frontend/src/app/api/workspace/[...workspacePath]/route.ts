@@ -80,6 +80,12 @@ export async function GET(request: Request, context: WorkspaceProxyContext) {
       const unitPath = `/unit/list?offset=${encodeURIComponent(offset)}&limit=${encodeURIComponent(limit)}&q=${encodeURIComponent(query)}&sort=unitcode:1`;
       return proxyMainApiJson(request, mainApiUrl, unitPath, { method: "GET" });
     }
+    case "product-units/search": {
+      const limit = url.searchParams.get("limit") ?? "1";
+      const shopsid = url.searchParams.get("shopsid") ?? "";
+      const unitPath = `/unit?limit=${encodeURIComponent(limit)}&shopsid=${encodeURIComponent(shopsid)}`;
+      return proxyMainApiJson(request, mainApiUrl, unitPath, { method: "GET" });
+    }
     case "product-units/standard": {
       const mainShopId = url.searchParams.get("mainShopId")?.trim() ?? url.searchParams.get("main_shop_id")?.trim() ?? "";
       const query = url.searchParams.get("q")?.trim() ?? "";
@@ -191,26 +197,41 @@ async function listShopsWithDisplayNames(request: Request, mainApiUrl: string): 
 }
 
 async function enrichShopDisplayName(request: Request, mainApiUrl: string, authorization: string, shop: unknown): Promise<unknown> {
-  if (!isRecord(shop) || hasShopDisplayName(shop)) return shop;
+  if (!isRecord(shop)) return shop;
 
   const shopid = getPayloadString(shop, "shopid")?.trim();
   if (!shopid) return shop;
 
-  const result = await callMainApiJson(request, mainApiUrl, `/shop/${encodeURIComponent(shopid)}`, { method: "GET" }, authorization);
-  if (!result.ok || isApiFailure(result.payload)) return shop;
-
-  const shopInfo = payloadDataRecord(result.payload);
-  if (!shopInfo) return shop;
+  let shopInfo: Record<string, unknown> = shop;
+  if (!hasShopDisplayName(shop) || !hasWorkspaceMetadata(shop)) {
+    const result = await callMainApiJson(request, mainApiUrl, `/shop/${encodeURIComponent(shopid)}`, { method: "GET" }, authorization);
+    const detailed = result.ok && !isApiFailure(result.payload) ? payloadDataRecord(result.payload) : null;
+    if (detailed) shopInfo = { ...shop, ...detailed };
+  }
 
   const names = getArray(shopInfo, "names")
     .map((name) => normalizeShopName(name))
     .filter((name): name is ShopName => Boolean(name));
   const name = firstPayloadString(shopInfo, ["name1", "companyname", "company_name", "name"]);
+  const settings = shopSettings(shopInfo);
+  const activeLanguages = activeLanguageCodes(settings);
+  const currencies = currencyCodes(settings);
 
   return {
     ...shop,
-    ...(name ? { name, name1: name } : {}),
-    ...(names.length > 0 ? { names } : {}),
+    ...(!hasShopDisplayName(shop) && name ? { name, name1: name } : {}),
+    ...(!hasShopDisplayName(shop) && names.length > 0 ? { names } : {}),
+    active_languages: activeLanguages,
+    language: getPayloadString(settings, "language") ?? activeLanguages[0],
+    languageconfigs: getArray(settings, "languageconfigs"),
+    base_currency: getPayloadString(settings, "base_currency")?.trim().toUpperCase() ?? "",
+    currencies,
+    date_format: getPayloadString(settings, "date_format")?.trim() ?? "",
+    timezone: getPayloadString(settings, "timezone")?.trim() ?? "",
+    timezone_label: getPayloadString(settings, "timezone_label")?.trim() ?? "",
+    timezone_offset: getPayloadString(settings, "timezone_offset")?.trim() ?? "",
+    year_type: yearTypeFromSettings(settings),
+    usebuddhistcalendar: booleanPayloadValue(settings, "usebuddhistcalendar"),
   };
 }
 
@@ -401,6 +422,108 @@ function normalizeShopName(value: unknown): ShopName | null {
     isauto: value.isauto === true,
     isdelete: value.isdelete === true,
   };
+}
+
+function hasWorkspaceMetadata(shop: Record<string, unknown>): boolean {
+  const settings = shopSettings(shop);
+  return getArray(settings, "languageconfigs").length > 0 ||
+    payloadStringArray(settings, "currencies").length > 0 ||
+    Boolean(
+      getPayloadString(settings, "language") ||
+      getPayloadString(settings, "base_currency") ||
+      getPayloadString(settings, "date_format") ||
+      getPayloadString(settings, "timezone"),
+    );
+}
+
+function shopSettings(shopInfo: Record<string, unknown>): Record<string, unknown> {
+  const settings = isRecord(shopInfo.settings) ? { ...shopInfo.settings } : {};
+  for (const key of [
+    "language",
+    "languageconfigs",
+    "base_currency",
+    "currencies",
+    "currency",
+    "currency_codes",
+    "currencylist",
+    "currency_list",
+    "date_format",
+    "timezone",
+    "timezone_label",
+    "timezone_offset",
+    "year_type",
+    "usebuddhistcalendar",
+  ]) {
+    if (settings[key] === undefined && shopInfo[key] !== undefined) settings[key] = shopInfo[key];
+  }
+  return settings;
+}
+
+function activeLanguageCodes(settings: Record<string, unknown>): string[] {
+  const configs = getArray(settings, "languageconfigs")
+    .map((item) => isRecord(item) ? item : null)
+    .filter((item): item is Record<string, unknown> => Boolean(item))
+    .filter((item) => languageConfigEnabled(item))
+    .map((item) => getPayloadString(item, "code")?.trim().toLowerCase() ?? "")
+    .filter(Boolean);
+  const language = getPayloadString(settings, "language")?.trim().toLowerCase();
+  return uniqueStrings(configs.length > 0 ? configs : [language || "th"]);
+}
+
+function currencyCodes(settings: Record<string, unknown>): string[] {
+  const codes = [
+    getPayloadString(settings, "base_currency"),
+    getPayloadString(settings, "currency"),
+    ...payloadStringArray(settings, "currencies"),
+    ...payloadStringArray(settings, "currency_codes"),
+    ...payloadStringArray(settings, "currencylist"),
+    ...payloadStringArray(settings, "currency_list"),
+  ]
+    .map((item) => item?.trim().toUpperCase() ?? "")
+    .filter(Boolean);
+  return uniqueStrings(codes);
+}
+
+function languageConfigEnabled(item: Record<string, unknown>): boolean {
+  const value = item.is_use ?? item.isuse ?? item.isUse;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  if (typeof value === "string") return !["false", "0", "no", "n"].includes(value.trim().toLowerCase());
+  return true;
+}
+
+function yearTypeFromSettings(settings: Record<string, unknown>): string {
+  const yearType = getPayloadString(settings, "year_type")?.trim().toLowerCase();
+  if (yearType) return yearType;
+  const useBuddhistCalendar = booleanPayloadValue(settings, "usebuddhistcalendar");
+  if (useBuddhistCalendar === undefined) return "";
+  return useBuddhistCalendar ? "buddhist" : "christian";
+}
+
+function booleanPayloadValue(payload: Record<string, unknown>, key: string): boolean | undefined {
+  const value = payload[key];
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["true", "1", "yes", "y", "buddhist"].includes(normalized)) return true;
+    if (["false", "0", "no", "n", "christian"].includes(normalized)) return false;
+  }
+  return undefined;
+}
+
+function payloadStringArray(payload: Record<string, unknown>, key: string): string[] {
+  const value = payload[key];
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => {
+    if (typeof item === "string") return item;
+    if (isRecord(item)) return getPayloadString(item, "code") ?? getPayloadString(item, "currency") ?? "";
+    return "";
+  });
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return Array.from(new Set(values.filter(Boolean)));
 }
 
 function getPayloadString(payload: Record<string, unknown>, key: string): string | undefined {

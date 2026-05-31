@@ -354,23 +354,31 @@ main.min-h-screen input.bg-background {
   border-radius: 8px;
   color: var(--text);
   background:
-    linear-gradient(140deg, color-mix(in srgb, var(--panel) 92%, var(--primary) 8%), color-mix(in srgb, var(--panel-soft) 84%, var(--amber) 16%)),
+    linear-gradient(90deg, color-mix(in srgb, var(--panel) 90%, transparent) 0 45%, color-mix(in srgb, var(--panel) 54%, transparent) 64%, transparent 100%),
+    linear-gradient(0deg, color-mix(in srgb, var(--panel) 50%, transparent), color-mix(in srgb, var(--panel) 18%, transparent)),
+    url("/login-background-light.webp?v=20260531-login-thai-sme"),
     var(--panel);
+  background-position: center;
+  background-size: cover;
   box-shadow: var(--shadow-card);
 }
 
 .brand-panel::before {
   content: "";
   position: absolute;
-  inset: 18px;
+  inset: 0;
   z-index: -1;
-  border: 1px solid color-mix(in srgb, var(--primary) 14%, transparent);
-  border-radius: 8px;
+  background: linear-gradient(180deg, transparent 0 56%, color-mix(in srgb, var(--bg) 18%, transparent));
+}
+
+:root[data-theme="dark"] .brand-panel {
   background:
-    linear-gradient(90deg, color-mix(in srgb, var(--primary) 10%, transparent) 1px, transparent 1px),
-    linear-gradient(0deg, color-mix(in srgb, var(--primary) 8%, transparent) 1px, transparent 1px);
-  background-size: 76px 76px;
-  opacity: 0.5;
+    linear-gradient(90deg, color-mix(in srgb, var(--panel) 94%, transparent) 0 46%, color-mix(in srgb, var(--panel) 64%, transparent) 66%, transparent 100%),
+    linear-gradient(0deg, color-mix(in srgb, var(--bg) 34%, transparent), color-mix(in srgb, var(--bg) 10%, transparent)),
+    url("/login-background-dark.webp?v=20260531-login-thai-sme"),
+    var(--panel);
+  background-position: center;
+  background-size: cover;
 }
 
 .brand-badge-row {
@@ -452,6 +460,14 @@ h2:not([class]) {
   color: var(--text-soft);
   font-size: 1.05rem;
   line-height: 1.6;
+}
+
+.brand-hero {
+  align-self: center;
+  width: 100%;
+  max-width: 680px;
+  display: grid;
+  align-items: center;
 }
 
 .brand-feature-grid {
@@ -568,6 +584,19 @@ h2:not([class]) {
   .brand-panel,
   .form-panel {
     min-height: calc(100vh - 32px);
+  }
+
+  .brand-panel {
+    padding: 18px;
+    gap: 14px;
+  }
+
+  .brand-hero {
+    gap: 12px;
+  }
+
+  .brand-copy h1 {
+    font-size: clamp(2.8rem, 5vw, 5.2rem);
   }
 
   .login-card {
@@ -2868,6 +2897,42 @@ h2:not([class]) {
   line-height: 1.25;
 }
 
+.shop-config-row {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.shop-config-chip {
+  min-width: 0;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(8, 101, 143, 0.14);
+  background: color-mix(in srgb, var(--panel-soft) 82%, var(--indigo) 18%);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.shop-config-chip svg {
+  flex: 0 0 auto;
+  color: var(--indigo);
+}
+
+:root[data-theme="dark"] .shop-config-chip {
+  border-color: rgba(255, 180, 169, 0.14);
+  background: rgba(255, 180, 169, 0.08);
+}
+
 .menu-card strong,
 .menu-card small {
   min-width: 0;
@@ -3256,6 +3321,10 @@ h2:not([class]) {
     grid-template-columns: 1fr;
   }
 
+  .brand-hero {
+    grid-template-columns: 1fr;
+  }
+
   .brand-mark {
     width: 58px;
     height: 58px;
@@ -3331,6 +3400,10 @@ h2:not([class]) {
 
   .brand-panel::before {
     inset: 10px;
+  }
+
+  .brand-copy h1 {
+    font-size: clamp(2.65rem, 16vw, 4.6rem);
   }
 
   .login-card {
@@ -3521,4 +3594,76 @@ h2:not([class]) {
     width: 100%;
     height: 10mm;
   }
+}
+
+/* ================================================================
+   BC Compact Data List — project-wide dense list/table styling
+   Use bc-list-toolbar, bc-list-header, bc-list-row on any data list.
+   ================================================================ */
+
+.bc-list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--line);
+  background-color: color-mix(in srgb, var(--icon-soft-bg) 46%, transparent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.bc-list-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 2px solid color-mix(in srgb, var(--primary) 40%, var(--line));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--primary) 8%, var(--muted-bg)),
+    color-mix(in srgb, var(--primary) 14%, var(--muted-bg))
+  );
+  backdrop-filter: blur(8px);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--primary) 70%, var(--text));
+  width: 100%;
+}
+
+.bc-list-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+  overflow-x: hidden;
+  width: 100%;
+  min-width: 0;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.bc-list-row:last-child {
+  border-bottom: 0;
+}
+
+.bc-list-header.grid,
+.bc-list-header.lg\:grid {
+  display: grid !important;
+}
+
+.bc-list-row.grid,
+.bc-list-row.lg\:grid {
+  display: grid !important;
 }

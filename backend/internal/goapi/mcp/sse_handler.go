@@ -315,7 +315,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 	tools := []MCPToolDef{
 		{
 			Name:        "search_products",
-			Description: "Search products with Thai full-text search and stock balance. Returns product info, units, prices, and stock balance by warehouse/location in formatted word (e.g., '1 กล่อง x 2 โหล x 3 ชิ้น')",
+			Description: "Search products from the PostgreSQL projection/read model built from MongoDB operational product data. Returns product info, units, prices, and stock balance by warehouse/location in formatted word (e.g., '1 กล่อง x 2 โหล x 3 ชิ้น')",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -452,7 +452,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 		// Dashboard Tools
 		{
 			Name:        "get_dashboard_kpis",
-			Description: "Get comprehensive KPI dashboard for CEO/executives. Includes sales, orders, profit, customers, inventory metrics.",
+			Description: "Get comprehensive KPI dashboard from processed relational projections. Includes sales, orders, profit, customers, inventory metrics.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -526,7 +526,7 @@ func (s *MCPServer) handleToolsList() map[string]interface{} {
 		// Inventory Tools
 		{
 			Name:        "get_inventory_value",
-			Description: "Get total inventory valuation with breakdown by category and warehouse.",
+			Description: "Get inventory valuation from PostgreSQL relational projections, with breakdown by category and warehouse.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{

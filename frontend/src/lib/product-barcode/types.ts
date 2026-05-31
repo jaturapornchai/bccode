@@ -59,6 +59,101 @@ export interface ProductOrderType {
   chargeprice?: number;
 }
 
+/** Supported marketplace platforms (matches backend `platform` values). */
+export const MARKETPLACE_PLATFORMS = ["shopee", "lazada", "tiktok"] as const;
+export type MarketplacePlatform = (typeof MARKETPLACE_PLATFORMS)[number];
+
+/** Listing status options shared across platforms. */
+export const MARKETPLACE_STATUS = ["", "LIVE", "UNLIST", "REVIEWING", "REJECTED", "DELETED"] as const;
+export type MarketplaceStatus = (typeof MARKETPLACE_STATUS)[number];
+
+/**
+ * One marketplace listing mapping for a product/barcode — matches Go
+ * `MarketplaceProductMap`. Unified shape across Shopee/Lazada/TikTok; unused
+ * fields per platform stay blank.
+ */
+export interface MarketplaceProductMap {
+  platform: string;
+  account_id: string;
+  shop_id: string;
+  market_item_id: string;
+  market_model_id: string;
+  item_url: string;
+  seller_sku: string;
+  shop_sku: string;
+  gtin: string;
+  category_id: string;
+  category_name: string;
+  brand_id: string;
+  currency: string;
+  custom_price: number;
+  platform_price: number;
+  platform_stock: number;
+  sync_stock: boolean;
+  sync_price: boolean;
+  status: string;
+  reject_reason: string;
+  days_to_ship: number;
+  is_pre_order: boolean;
+  sync_enabled: boolean;
+  sync_status: string;
+  last_sync_at: string;
+  last_sync_error: string;
+}
+
+/** Sub/variation barcode marketplace mapping — matches Go `MarketplaceSKUMap`. */
+export interface MarketplaceSKUMap {
+  platform: string;
+  account_id: string;
+  shop_id: string;
+  market_item_id: string;
+  market_model_id: string;
+  seller_sku: string;
+  shop_sku: string;
+  gtin: string;
+  currency: string;
+  sync_stock: boolean;
+  sync_price: boolean;
+  custom_price: number;
+  platform_price: number;
+  platform_stock: number;
+  status: string;
+  sync_enabled: boolean;
+  last_sync_at: string;
+}
+
+/** Build an empty marketplace listing map for a given platform. */
+export function emptyMarketplaceProductMap(platform: MarketplacePlatform): MarketplaceProductMap {
+  return {
+    platform,
+    account_id: "",
+    shop_id: "",
+    market_item_id: "",
+    market_model_id: "",
+    item_url: "",
+    seller_sku: "",
+    shop_sku: "",
+    gtin: "",
+    category_id: "",
+    category_name: "",
+    brand_id: "",
+    currency: "THB",
+    custom_price: 0,
+    platform_price: 0,
+    platform_stock: 0,
+    sync_stock: false,
+    sync_price: false,
+    status: "",
+    reject_reason: "",
+    days_to_ship: 0,
+    is_pre_order: false,
+    sync_enabled: false,
+    sync_status: "",
+    last_sync_at: "",
+    last_sync_error: "",
+  };
+}
+
 /** Sub/ref barcode — matches Go `RefProductBarcode`. */
 export interface RefProductBarcode {
   guid_fixed: string;
@@ -70,6 +165,14 @@ export interface RefProductBarcode {
   dividevalue: number;
   standvalue: number;
   qty: number;
+
+  // Marketplace & SKU Logistics
+  seller_sku?: string;
+  sku_package_weight?: number;
+  sku_package_length?: number;
+  sku_package_width?: number;
+  sku_package_height?: number;
+  marketplace_sku_mappings?: MarketplaceSKUMap[];
 }
 
 /** BOM entry — matches Go `BOMProductBarcode`. */
@@ -238,6 +341,8 @@ export interface ProductBarcode {
   manufacturerguid: string;
   manufacturercode: string;
   manufacturernames: NameX[];
+  manufacturers?: ProductManufacturer[];
+  suppliers?: ProductSupplier[];
 
   // Stock
   orderpoint: number;
@@ -309,6 +414,13 @@ export interface ProductBarcode {
   isalert: boolean;
   alertdescription: string;
   description: string;
+
+  // Marketplace & logistics (matches Go ProductBarcodeBase)
+  package_weight: number;
+  package_length: number;
+  package_width: number;
+  package_height: number;
+  marketplace_products: MarketplaceProductMap[];
 }
 
 /** Request body for create. */
@@ -507,5 +619,121 @@ export function emptyProductBarcode(): ProductBarcode {
     isalert: false,
     alertdescription: "",
     description: "",
+
+    package_weight: 0,
+    package_length: 0,
+    package_width: 0,
+    package_height: 0,
+    marketplace_products: [],
   };
+}
+
+export interface ProductManufacturer {
+  guid_fixed: string;
+  code: string;
+  names: NameX[];
+}
+
+export interface ProductSupplier {
+  guid_fixed: string;
+  code: string;
+  names: NameX[];
+}
+
+export interface Product {
+  guidfixed: string;
+  shopid: string;
+  code: string;
+  names: NameX[];
+  group_code: string;
+  group_names: NameX[];
+  manufacturerguid?: string;
+  manufacturercode?: string;
+  manufacturernames?: NameX[];
+  dimensions?: ProductDimension[];
+  vat_type?: number;
+  item_type?: number;
+  unitguid?: string;
+
+  // Classifications
+  groupsuboneguid?: string;
+  groupsubonecode?: string;
+  groupsubonenames?: NameX[];
+  groupsubtwoguid?: string;
+  groupsubtwocode?: string;
+  groupsubtwonames?: NameX[];
+  brandguid?: string;
+  brand_code?: string;
+  brandnames?: NameX[];
+  designguid?: string;
+  designcode?: string;
+  designnames?: NameX[];
+  modelguid?: string;
+  modelcode?: string;
+  modelnames?: NameX[];
+  patternguid?: string;
+  patterncode?: string;
+  patternnames?: NameX[];
+  gradeguid?: string;
+  gradecode?: string;
+  gradenames?: NameX[];
+  category_guid?: string;
+  categorycode?: string;
+  category_names?: NameX[];
+  classguid?: string;
+  classcode?: string;
+  classnames?: NameX[];
+  materialtype?: number;
+  tax_type?: number;
+  manufacturers?: ProductManufacturer[];
+  suppliers?: ProductSupplier[];
+
+  // Core Product Properties Moved from ProductBarcode
+  imageuri?: string;
+  images?: ProductImage[];
+  useimageorcolor?: boolean;
+  colorselect?: string;
+  colorselecthex?: string;
+  issumpoint?: boolean;
+  isalacarte?: boolean;
+  issplitunitprint?: boolean;
+  isonlystaff?: boolean;
+  foodtype?: number;
+  isstockforrestaurant?: boolean;
+  restaurant?: ProductRestaurant;
+  ordertypes?: ProductOrderType[];
+  options?: ProductOption[];
+  isalert?: boolean;
+  alertdescription?: string;
+  description?: string;
+  timeforsales?: ProductTimeForSale[];
+  businesstypes?: ProductBarcodeBusinessType[];
+  ignorebranches?: ProductBarcodeBranch[];
+
+  // Units and BOM properties
+  condition?: boolean;
+  dividevalue?: number;
+  standvalue?: number;
+  isusesubbarcodes?: boolean;
+  refbarcodes?: RefProductBarcode[];
+  bom?: BOMProductBarcode[];
+  barcodes?: RefProductBarcode[];
+  unitcode?: string;
+  unitnames?: NameX[];
+  item_unit_code?: string;
+  itemunitnames?: NameX[];
+
+  // Stock properties
+  orderpoint?: number;
+  minpoint?: number;
+  maxpoint?: number;
+  qty?: number;
+  stockbarcode?: string;
+
+  // Marketplace & Logistics
+  package_weight?: number;
+  package_length?: number;
+  package_width?: number;
+  package_height?: number;
+  marketplace_products?: MarketplaceProductMap[];
 }

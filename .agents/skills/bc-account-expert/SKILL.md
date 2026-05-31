@@ -2,49 +2,30 @@
 name: bc-account-expert
 description: Use when working with the BC Account business system. Knows domain knowledge, business rules, and system architecture.
 ---
-## BC Account Domain Knowledge
 
-### Business Context
-- BC Ai Account is a Thai SME business platform, not a generic CRUD/admin system.
-- Agents using this skill must act as domain experts in Thai SME accounting and operations: accounting, marketing, sales, purchasing, trading/distribution, restaurant operations, light manufacturing, general ledger, inventory accounting, accounts receivable, accounts payable, tax/VAT-aware workflows, branch/company operations, reporting, and auditability.
-- Existing users include Thai SME shops. Important customer patterns include construction materials, wholesale/trading, retail/POS, restaurant, and other SME workflows.
-- Multi-tenant boundary: `tenant_id` = one company/business/workspace. One owner/user can access many tenants through membership/roles, and each tenant can have many branches.
-- Existing `shop_id` / `shopid` values are legacy aliases for `tenant_id` during migration.
-- Company records are intentionally minimal in the UI: company name and company address only. Operational/legal/document settings belong to branch records.
-- Every company must have at least one branch. For Thailand tax/VAT branch numbering, the default head office branch is code `00000` with Thai name `สำนักงานใหญ่` (head office). Do not use `00001` for head office; `00001` means the first branch office. Persist Thai branch codes as normalized five-digit strings; backend branch create/update/import must enforce normalization, and normal CRUD must not delete the `00000` head-office branch.
-- Branch records own document company names, branch names, branch contact/address parts, branch phone, logo/image, country, tax ID, company registration number, VAT status/rate/type, base currency, timezone/date/year/decimal settings, business type, payment rounding, point config, machine type, coupon use type, departments, and business-property flags.
+## 1. Domain & Business Scope
+- **Domain**: Thai SME operations (Sales, Purchase, Inventory costing/average, Restaurant menu/service/table flows, Manufacturing/BOM consumption, General Ledger accounts/journal entries, AR/AP aging).
+- **Core Workflow Documents**: Quote/Order/Invoice/Receipt, Purchase Order/Bill/Payment, Stock receipt/transfer/count, POS, debitor/creditor aging, GL posting, and audits.
+- **Rules Inspection**: Read active repo source, legacy Flutter screen code (in `D:\bcdev`), and DEV database state before altering accounting, inventory, tax, sales, POS, AR/AP, or GL models.
 
-### Business Design Rules
-- Model features around real operating workflows and documents, not standalone storage tables.
-- Preserve document lifecycle, numbering, tax/VAT treatment, stock impact, accounting impact, permissions, reports, and traceability.
-- Before changing accounting, inventory, sales, purchase, AR/AP, restaurant, production, tax, or reporting behavior, inspect active source, legacy Flutter behavior when relevant, data contracts, and real DEV behavior.
-- Surface business impact and compatibility risk before changing schemas, APIs, GL postings, stock movement, tax logic, or report contracts.
+## 2. Multi-Tenant Structure
+- **Boundary**: `tenant_id` = one company/business/legal entity/workspace. One user can access many tenants through memberships/roles.
+- **Physical Keys**: Core physical storage uses `shopid` (Postgres, Mongo collections, Kafka, ClickHouse). GoAPI/MCP DTOs use `shop_id`. Maintain correct logical-to-physical mapping.
+- **Branch Scope**: `branch_id` / branch code is scoped under `tenant_id`. Departments, working days, and holidays are branch-scoped (branches can have different calendars, timezones, and calendars).
 
-### Core Modules
-- GL: General Ledger (Chart of Accounts, Journal)
-- AR: Accounts Receivable (customer, invoice, receipt, aging, credit control)
-- AP: Accounts Payable (supplier, purchase order, bill, payment, aging)
-- Sales: quotation, sale order, invoice, receipt, POS, pricing, promotion, customer workflow
-- Purchasing: purchase request, RFQ, purchase order, receiving, bill, supplier payment
-- INV: Inventory, stock card, warehouse/location, stock receiving/issuing/transfer/counting, product costing
-- Restaurant: menu/category, table/order flow, kitchen/service flow, bill/receipt, promotion
-- Manufacturing: BOM/recipe, material consumption, finished goods receipt, production cost
-- GL: General Ledger, chart of accounts, journal, posting, financial statements
-- Marketing: customer segmentation, promotion, coupon, campaign, loyalty/points
+## 2.1 Data Store Roles
+- **MongoDB**: authoritative operational source for all CRUD, documents, master data, and user-entered business data.
+- **Cloudflare R2/S3**: only binary/image/file object storage. MongoDB keeps metadata and private paths.
+- **PostgreSQL**: relational processing/projection store for postings, balances, VAT/tax, AR/AP, GL, and strict relational calculations.
+- **ClickHouse**: BI/analytics/reporting store fed from processed facts. Never treat ClickHouse as transactional source of truth.
+- **Product Classification**: `item_type` is 0=Stock, 1=Service, 2=Set, 3=Not Stock. `materialtype` is 0=General, 1=Material, 2=Semi-Finished, 3=Set, 4=Agricultural. Product Set records must use `item_type=2` together with `materialtype=3` in MongoDB and relational projections; API writes and projection consumers must reject mismatched Set classification instead of correcting it silently.
 
-### Pricing & Costing
-- Moving Average Cost (default)
-- FIFO / FEFO for perishables
-- Tiered pricing (wholesale/retail/special)
+## 3. Legal & Settings Rules
+- **Head Office**: Branch code `00000` with Thai name `สำนักงานใหญ่`. Pad/normalize branch code inputs to 5 digits (e.g. `1` -> `00001`). Do not delete `00000`.
+- **Branch Details**: Branch records own legal/tax settings: tax ID, registration number, VAT status/rate, company names, base currency, timezone, decimal configurations, roundings, and business flags.
+- **Thailand Address**: Selected provinces, districts, subdistricts must use codes. Zip codes must recompute dynamically. Use address API served by backend dataset.
 
-### Integration Points
-- LINE OA: via OpenClaw/HiClaw
-- MCP Tools: 66+ tools for AI agent
-- ESL: Electronic Shelf Label
-
-### Architecture
-- Backend: Go/Gin -> REST API
-- Frontend target: Next.js in `D:\bccode\frontend` from `https://github.com/jaturapornchai/bccode`
-- Frontend migration reference/template: Flutter in `D:\bcdev\frontend` from `https://github.com/jaturapornchai/bcdev` (especially `bcaiaccount`)
-- DB: PostgreSQL tenant-scoped data + ClickHouse analytics + MongoDB documents
-- AI: Codex Agent SDK + MCP
+## 4. Tax & Legal Knowledge (Research-First + Cache)
+- **Trigger = uncertainty.** Whenever you are unsure about any domain/business/accounting knowledge — and always before building/changing a tax/VAT/WHT/e-Tax/GL/statutory feature — research authoritative sources FIRST, then cache findings. Never guess, never skip. Full rule: core-rules "Tax & Accounting Correctness (Research-First)".
+- **Sources**: กรมสรรพากร `rd.go.th`; Revenue Code + Royal Decrees + ministerial regs; competitor Thai ERP (FlowAccount, PEAK, Express, BusinessPlus, SML, Xero TH).
+- **Verified knowledge cache — read this BEFORE re-searching**: `tax-legal-cache.md` (same folder). Append dated, source-linked entries after every new research pass; never guess a rate/field/form.

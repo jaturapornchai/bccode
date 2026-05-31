@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type ProductBarcodeBranchRequest struct {
 	Branch ProductBarcodeBranch `json:"branch"`
 	Products []string             `json:"products"`
@@ -10,10 +12,18 @@ type ProductBarcodeBusinessTypeRequest struct {
 	Products []string                   `json:"products"`
 }
 
+type BOMVersionRequest struct {
+	GuidFixed string       `json:"guid_fixed"`
+	StartDate time.Time    `json:"start_date"`
+	EndDate   *time.Time   `json:"end_date"`
+	BOM       []BOMRequest `json:"bom"`
+}
+
 type ProductBarcodeRequest struct {
 	ProductBarcodeBase
 	RefBarcodes []BarcodeRequest             `json:"refbarcodes"`
 	BOM []BOMRequest                 `json:"bom"`
+	BOMs []BOMVersionRequest          `json:"boms"`
 	IgnoreBranches []ProductBarcodeBranch       `json:"ignorebranches"`
 	BusinessTypes []ProductBarcodeBusinessType `json:"businesstypes"`
 }

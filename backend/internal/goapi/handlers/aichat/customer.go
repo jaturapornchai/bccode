@@ -7,7 +7,8 @@ import (
 	"smlcloudplatform/internal/goapi/mydb"
 )
 
-// GetCustomerData retrieves customer/debtor information from database
+// GetCustomerData retrieves customer/debtor information from legacy PostgreSQL projections.
+// MongoDB remains the operational source of truth for debtor/creditor CRUD.
 func GetCustomerData(ctx context.Context, shopID string) ([]StockData, error) {
 	db, err := mydb.GetGlobalConnectionFromPool(shopID)
 	if err != nil {

@@ -119,7 +119,11 @@ func (svc ProductBarcodeConsumeService) UpSert(shopID string, barcode string, do
 		err = svc.productPgRepo.Create(pgDoc)
 	}
 
-	return nil, nil
+	if err != nil {
+		return nil, err
+	}
+
+	return pgDoc, nil
 }
 
 func (svc ProductBarcodeConsumeService) Delete(ctx context.Context, shopID string, barcode string) error {

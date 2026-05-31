@@ -8,14 +8,24 @@ import { LANGUAGES, t, type LanguageCode } from "@/lib/i18n";
 type LanguageDialogProps = {
   language: LanguageCode;
   onLanguageChange: (language: LanguageCode) => void;
+  activeLanguageCodes?: string[];
 };
 
-export function LanguageDialog({ language, onLanguageChange }: LanguageDialogProps) {
+export function LanguageDialog({ language, onLanguageChange, activeLanguageCodes }: LanguageDialogProps) {
   const [open, setOpen] = useState(false);
   const selectedLanguage = useMemo(
     () => LANGUAGES.find((item) => item.code === language) ?? LANGUAGES[0],
     [language],
   );
+
+  const filteredLanguages = useMemo(() => {
+    if (!activeLanguageCodes || activeLanguageCodes.length === 0) {
+      return LANGUAGES;
+    }
+    return LANGUAGES.filter(
+      (item) => activeLanguageCodes.includes(item.code) || item.code === language
+    );
+  }, [activeLanguageCodes, language]);
 
   useEffect(() => {
     if (!open) return;
@@ -77,7 +87,7 @@ export function LanguageDialog({ language, onLanguageChange }: LanguageDialogPro
             </div>
 
             <div className="language-grid">
-              {LANGUAGES.map((item) => {
+              {filteredLanguages.map((item) => {
                 const selected = item.code === language;
 
                 return (

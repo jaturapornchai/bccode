@@ -1124,7 +1124,7 @@ func savePDFDocument(pdf *gofpdf.Fpdf, guid string) (string, error) {
 		return "", err
 	}
 
-	// Upload ไป SeaweedFS S3 แล้วลบ temp file
+	// Upload ไป Cloudflare R2 แล้วลบ temp file
 	uploadPDFToS3AndCleanup(filePath, "results/"+filename)
 
 	return filePath, nil

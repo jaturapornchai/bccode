@@ -44,7 +44,7 @@ func ReportGetHandler(c echo.Context) error {
 
 		// ตรวจสอบว่าเป็น S3 object key หรือ local path
 		if strings.HasPrefix(filePath, "reports/") {
-			// ─── S3 path: download จาก SeaweedFS ───
+			// ─── S3 path: download จาก Cloudflare R2 ───
 			logger.Info("Downloading report from S3: %s", filePath)
 			client, err := GetR2Client()
 			if err != nil {

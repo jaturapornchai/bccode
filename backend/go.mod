@@ -5,9 +5,8 @@ go 1.26
 require (
 	firebase.google.com/go/v4 v4.11.0
 	github.com/3dsinteractive/wrkgo v0.0.0-20210911134244-26f18db8d978
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.5.1
-	github.com/apex/log v1.9.0
 	github.com/confluentinc/confluent-kafka-go v1.9.2
+	github.com/dop251/goja v0.0.0-20260311135729-065cd970411c
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.12.0
@@ -24,6 +23,7 @@ require (
 	github.com/swaggo/swag v1.16.1
 	github.com/tj/assert v0.0.3
 	github.com/xuri/excelize/v2 v2.9.1
+	github.com/yuin/goldmark v1.8.2
 	go.uber.org/zap v1.27.0
 	google.golang.org/api v0.120.0
 	gopkg.in/DATA-DOG/go-sqlmock.v1 v1.3.0
@@ -39,9 +39,6 @@ require (
 	cloud.google.com/go/iam v1.0.0 // indirect
 	cloud.google.com/go/longrunning v0.4.1 // indirect
 	cloud.google.com/go/storage v1.30.1 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.6.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v1.3.0 // indirect
 	github.com/ClickHouse/ch-go v0.68.0 // indirect
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
@@ -68,7 +65,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dlclark/regexp2 v1.11.4 // indirect
-	github.com/dop251/goja v0.0.0-20260311135729-065cd970411c // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/elastic/elastic-transport-go/v8 v8.2.0 // indirect
 	github.com/fatih/color v1.15.0 // indirect
@@ -120,7 +116,6 @@ require (
 	github.com/xuri/efp v0.0.1 // indirect
 	github.com/xuri/nfp v0.0.1 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
-	github.com/yuin/goldmark v1.8.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
@@ -160,7 +155,7 @@ require (
 	github.com/jung-kurt/gofpdf v1.16.2
 	github.com/labstack/echo-contrib v0.14.1
 	github.com/labstack/echo/v4 v4.13.3
-	github.com/labstack/gommon v0.4.2
+	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/leodido/go-urn v1.2.3 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect

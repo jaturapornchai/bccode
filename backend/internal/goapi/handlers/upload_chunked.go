@@ -230,7 +230,7 @@ func UploadChunkHandler(c echo.Context) error {
 	})
 }
 
-// MergeChunksHandler merges all uploaded chunks and uploads to SeaweedFS S3
+// MergeChunksHandler merges all uploaded chunks and uploads to Cloudflare R2
 // POST /upload/merge
 // JSON body: { "uploadID": "uuid", "shopid": "optional" }
 // Returns: { "success": true, "fileName": "guid.ext", "fileUrl": "presigned", "checksum": "md5hash" }
@@ -326,7 +326,7 @@ func MergeChunksHandler(c echo.Context) error {
 	checksum := hex.EncodeToString(hash.Sum(nil))
 	totalSize := int64(mergedBuf.Len())
 
-	// Upload merged file ไป SeaweedFS S3
+	// Upload merged file ไป Cloudflare R2
 	s3Client, err := GetR2Client()
 	if err != nil {
 		logger.Error("S3 client not available: %v", err)

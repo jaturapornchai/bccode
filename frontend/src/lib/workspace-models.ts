@@ -17,10 +17,22 @@ export type ShopListItem = {
   createdby?: string;
   is_creator?: boolean;
   is_access_disabled?: boolean;
+  active_languages?: string[];
+  language?: string;
+  languageconfigs?: Array<LocalizedName & { codetranslator?: string; is_use?: boolean; isdefault?: boolean }>;
+  base_currency?: string;
+  currencies?: string[];
+  date_format?: string;
+  timezone?: string;
+  timezone_offset?: string;
+  timezone_label?: string;
+  year_type?: string;
+  usebuddhistcalendar?: boolean;
 };
 
 export type BranchListItem = {
   guid_fixed: string;
+  company_guid?: string;
   code?: string;
   names?: LocalizedName[];
   companynames?: LocalizedName[];
@@ -57,6 +69,14 @@ export const workspaceStorageKeys = {
   shopInfo: "bc_shop_info",
   branch: "bc_branch",
 };
+
+export const WORKSPACE_CHANGED_EVENT = "bc-workspace-changed";
+
+export function notifyWorkspaceChanged() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(WORKSPACE_CHANGED_EVENT));
+  }
+}
 
 export function localizedName(names: LocalizedName[] | undefined, fallback = ""): string {
   if (!Array.isArray(names) || names.length === 0) return fallback;

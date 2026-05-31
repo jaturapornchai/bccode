@@ -12,6 +12,7 @@ import (
 	branch_model "smlcloudplatform/internal/organization/branch/models"
 	branch_repositories "smlcloudplatform/internal/organization/branch/repositories"
 	branch_services "smlcloudplatform/internal/organization/branch/services"
+	company_model "smlcloudplatform/internal/organization/company/models"
 	businesstype_models "smlcloudplatform/internal/organization/businesstype/models"
 	businesstype_repositories "smlcloudplatform/internal/organization/businesstype/repositories"
 	businesstype_services "smlcloudplatform/internal/organization/businesstype/services"
@@ -399,6 +400,115 @@ func (h ShopHttp) initialShop(shopID string, authUsername string, shopReq models
 		}
 
 		return err
+	}
+
+	// Insert default company, branch, and warehouse into PostgreSQL tenant DB
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	dbPg := pst.DBClient()
+
+	companyNames := common.JSONB{}
+	if branchDefault.CompanyNames != nil {
+		companyNames = common.JSONB(*branchDefault.CompanyNames)
+	} else if len(shopReq.Names) > 0 {
+		companyNames = common.JSONB(shopReq.Names)
+	}
+
+	companyGUIDFixed := utils.NewGUID()
+	companyPg := company_model.CompanyPg{
+		ShopID:    shopID,
+		GuidFixed: companyGUIDFixed,
+		Code:      "00000",
+		Names:     companyNames,
+		IsActive:  true,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	if err := dbPg.Create(&companyPg).Error; err != nil {
+		logger.GetLogger().Error("HTTP:: Error creating default company in PostgreSQL: " + err.Error())
+	}
+
+	company2Names := common.JSONB{}
+	var namesList []common.NameX
+	namesBytes, _ := json.Marshal(companyNames)
+	if err := json.Unmarshal(namesBytes, &namesList); err == nil {
+		for i := range namesList {
+			suffix := " (สาขาย่อย)"
+			if namesList[i].Code != nil && *namesList[i].Code == "en" {
+				suffix = " (Branch)"
+			}
+			if namesList[i].Name != nil {
+				newName := *namesList[i].Name + suffix
+				namesList[i].Name = &newName
+			}
+		}
+		company2Names = common.JSONB(namesList)
+	} else {
+		company2Names = companyNames
+	}
+
+	company2GUIDFixed := utils.NewGUID()
+	company2Pg := company_model.CompanyPg{
+		ShopID:    shopID,
+		GuidFixed: company2GUIDFixed,
+		Code:      "00001",
+		Names:     company2Names,
+		IsActive:  true,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	if err := dbPg.Create(&company2Pg).Error; err != nil {
+		logger.GetLogger().Error("HTTP:: Error creating default second company in PostgreSQL: " + err.Error())
+	}
+
+	branchNames := common.JSONB{}
+	if branchDefault.Names != nil {
+		branchNames = common.JSONB(*branchDefault.Names)
+	}
+
+	branchPg := branch_model.BranchPg{
+		ShopID:      shopID,
+		GuidFixed:   branchGUIDFixed,
+		CompanyGuid: companyGUIDFixed,
+		Code:        "00000",
+		Names:       branchNames,
+		IsActive:    true,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+
+	if err := dbPg.Create(&branchPg).Error; err != nil {
+		logger.GetLogger().Error("HTTP:: Error creating default branch in PostgreSQL: " + err.Error())
+	}
+
+	whNames := common.JSONB{}
+	if warehouseDefault.Names != nil {
+		whNames = common.JSONB(*warehouseDefault.Names)
+	}
+
+	warehouseGUIDFixed := utils.NewGUID()
+	warehousePg := warehouse_models.WarehousePg{
+		ShopID:    shopID,
+		GuidFixed: warehouseGUIDFixed,
+		Code:      "00000",
+		Names:     whNames,
+		IsActive:  true,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	if err := dbPg.Create(&warehousePg).Error; err != nil {
+		logger.GetLogger().Error("HTTP:: Error creating default warehouse in PostgreSQL: " + err.Error())
+	}
+
+	// Link warehouse to company
+	whLink := warehouse_models.CompanyWarehousePg{
+		CompanyGuid:   companyGUIDFixed,
+		WarehouseGuid: warehouseGUIDFixed,
+	}
+	if err := dbPg.Create(&whLink).Error; err != nil {
+		logger.GetLogger().Error("HTTP:: Error creating default company_warehouse link in PostgreSQL: " + err.Error())
 	}
 
 	return nil

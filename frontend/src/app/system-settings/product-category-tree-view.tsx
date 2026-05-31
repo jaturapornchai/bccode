@@ -34,6 +34,7 @@ interface ProductCategoryTreeViewProps {
   onRefresh?: () => void;
   saving: boolean;
   loading: boolean;
+  readOnly?: boolean;
 }
 
 interface CategoryNode {
@@ -43,6 +44,7 @@ interface CategoryNode {
   names: CategoryName[];
   xsorts?: CategoryXSort[];
   group_number: number;
+  productCount?: number;
 }
 
 type CategoryName = { code: string; name: string };
@@ -52,6 +54,38 @@ type XSortPayload = { guid_fixed: string; code: string; xorder: number };
 const GROUP_CARD_GAP_PX = 8;
 const GROUP_CARD_MIN_WIDTH_PX = 230;
 const TREE_LAYOUT_ANIMATION_MS = 220;
+const CATEGORY_LEVEL_STYLES = [
+  {
+    caret: "text-primary",
+    grip: "text-primary/45 group-hover/row:text-primary",
+    name: "text-[15px] font-bold text-foreground",
+    order: "text-primary",
+  },
+  {
+    caret: "text-sky-600 dark:text-sky-300",
+    grip: "text-sky-500/55 group-hover/row:text-sky-600 dark:group-hover/row:text-sky-300",
+    name: "font-semibold text-sky-900 dark:text-sky-100",
+    order: "text-sky-600 dark:text-sky-300",
+  },
+  {
+    caret: "text-emerald-600 dark:text-emerald-300",
+    grip: "text-emerald-500/55 group-hover/row:text-emerald-600 dark:group-hover/row:text-emerald-300",
+    name: "font-semibold text-emerald-900 dark:text-emerald-100",
+    order: "text-emerald-600 dark:text-emerald-300",
+  },
+  {
+    caret: "text-amber-600 dark:text-amber-300",
+    grip: "text-amber-500/60 group-hover/row:text-amber-600 dark:group-hover/row:text-amber-300",
+    name: "font-medium text-amber-900 dark:text-amber-100",
+    order: "text-amber-600 dark:text-amber-300",
+  },
+  {
+    caret: "text-violet-600 dark:text-violet-300",
+    grip: "text-violet-500/55 group-hover/row:text-violet-600 dark:group-hover/row:text-violet-300",
+    name: "font-medium text-violet-900 dark:text-violet-100",
+    order: "text-violet-600 dark:text-violet-300",
+  },
+] as const;
 
 interface CategoryTreeNode {
   detail: CategoryNode;
@@ -84,6 +118,9 @@ type ParentOverride = {
   parentGuid: string;
   parentGuidAll: string;
 };
+
+const categoryLevelStyle = (level: number) =>
+  CATEGORY_LEVEL_STYLES[Math.min(Math.max(level, 0), CATEGORY_LEVEL_STYLES.length - 1)];
 
 const recordGuid = (record: SettingRecord): string =>
   String(record.guid_fixed || record.guidfixed || record.guid || "");
@@ -130,6 +167,7 @@ export function ProductCategoryTreeView({
   onRefresh,
   saving,
   loading,
+  readOnly = false,
 }: ProductCategoryTreeViewProps) {
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
   const [dragState, setDragState] = useState<DragState | null>(null);
@@ -139,6 +177,7 @@ export function ProductCategoryTreeView({
   const [parentOverrides, setParentOverrides] = useState<Record<string, ParentOverride>>({});
   const [reorderError, setReorderError] = useState<string>("");
   const [rootDropActive, setRootDropActive] = useState(false);
+  const [arrivalHighlight, setArrivalHighlight] = useState<{ guid: string; nonce: number } | null>(null);
   const groupSelectorRef = useRef<HTMLElement | null>(null);
   const treeListRef = useRef<HTMLDivElement | null>(null);
   const pointerDragRef = useRef<PointerDragState | null>(null);
@@ -154,6 +193,7 @@ export function ProductCategoryTreeView({
   const previewDropKeyRef = useRef("");
   const pendingLayoutRectsRef = useRef<Map<string, DOMRect> | null>(null);
   const layoutAnimationFrameRef = useRef<number | null>(null);
+  const arrivalTimerRef = useRef<number | null>(null);
   const [groupCardWidth, setGroupCardWidth] = useState<number | null>(null);
 
   const setDropTargetState = (next: { guid: string; position: DropPosition } | null) => {
@@ -181,6 +221,18 @@ export function ProductCategoryTreeView({
       if (guid) rects.set(guid, element.getBoundingClientRect());
     });
     pendingLayoutRectsRef.current = rects;
+  }, []);
+
+  const findCategoryRowElement = useCallback((guid: string): HTMLElement | null => {
+    const root = treeListRef.current;
+    if (!root) return null;
+
+    return Array.from(root.querySelectorAll<HTMLElement>("[data-category-row-guid]"))
+      .find((element) => element.dataset.categoryRowGuid === guid) ?? null;
+  }, []);
+
+  const markCategoryArrived = useCallback((guid: string) => {
+    setArrivalHighlight({ guid, nonce: Date.now() });
   }, []);
 
   const playPendingTreeLayoutAnimation = useCallback(() => {
@@ -240,6 +292,7 @@ export function ProductCategoryTreeView({
     setPreviewOrderOverridesState({});
     previewDropKeyRef.current = "";
     setParentOverrides({});
+    setArrivalHighlight(null);
     setDragState(null);
     dropTargetRef.current = null;
     rootDropActiveRef.current = false;
@@ -254,6 +307,9 @@ export function ProductCategoryTreeView({
       if (layoutAnimationFrameRef.current !== null) {
         window.cancelAnimationFrame(layoutAnimationFrameRef.current);
       }
+      if (arrivalTimerRef.current !== null) {
+        window.clearTimeout(arrivalTimerRef.current);
+      }
       if (dragWindowListenersRef.current) {
         window.removeEventListener("pointermove", dragWindowListenersRef.current.move);
         window.removeEventListener("pointerup", dragWindowListenersRef.current.up);
@@ -262,6 +318,71 @@ export function ProductCategoryTreeView({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!arrivalHighlight || typeof window === "undefined") return;
+
+    if (arrivalTimerRef.current !== null) {
+      window.clearTimeout(arrivalTimerRef.current);
+    }
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      const element = findCategoryRowElement(arrivalHighlight.guid);
+      if (!element) return;
+
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const container = treeListRef.current;
+      if (container) {
+        const containerRect = container.getBoundingClientRect();
+        const rowRect = element.getBoundingClientRect();
+        const rowOutsideView =
+          rowRect.top < containerRect.top + 8 ||
+          rowRect.bottom > containerRect.bottom - 8;
+        if (rowOutsideView) {
+          element.scrollIntoView({
+            block: "center",
+            behavior: reduceMotion ? "auto" : "smooth",
+          });
+        }
+      }
+
+      if (!reduceMotion) {
+        element.animate(
+          [
+            {
+              backgroundColor: "rgba(16, 185, 129, 0.06)",
+              boxShadow: "inset 0 0 0 0 rgba(16, 185, 129, 0), 0 0 0 0 rgba(16, 185, 129, 0)",
+              transform: "scale(1)",
+            },
+            {
+              backgroundColor: "rgba(16, 185, 129, 0.18)",
+              boxShadow: "inset 0 0 0 2px rgba(16, 185, 129, 0.55), 0 0 0 7px rgba(16, 185, 129, 0.14)",
+              transform: "scale(1.006)",
+            },
+            {
+              backgroundColor: "rgba(16, 185, 129, 0.04)",
+              boxShadow: "inset 0 0 0 0 rgba(16, 185, 129, 0), 0 0 0 0 rgba(16, 185, 129, 0)",
+              transform: "scale(1)",
+            },
+          ],
+          {
+            duration: 900,
+            easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+          }
+        );
+      }
+    });
+
+    arrivalTimerRef.current = window.setTimeout(() => {
+      setArrivalHighlight((current) =>
+        current?.guid === arrivalHighlight.guid && current.nonce === arrivalHighlight.nonce
+          ? null
+          : current
+      );
+    }, 1500);
+
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [arrivalHighlight, findCategoryRowElement]);
 
   useLayoutEffect(() => {
     if (groupNumber !== null) return;
@@ -316,6 +437,7 @@ export function ProductCategoryTreeView({
         names: toCategoryNames(r.names),
         xsorts: orderOverride ? [{ code: "X", xorder: orderOverride }] : toCategoryXSorts(r.xsorts),
         group_number: recordGroupNumber(r),
+        productCount: Array.isArray(r.codelist) ? r.codelist.length : 0,
       };
     });
   }, [records, orderOverrides, previewOrderOverrides, parentOverrides]);
@@ -615,13 +737,13 @@ export function ProductCategoryTreeView({
     targetGuid: string,
     position: Exclude<DropPosition, "inside">,
     siblings: CategoryTreeNode[]
-  ) => {
+  ): boolean => {
     const previewKey = `${activeDrag.guid}:${targetGuid}:${position}`;
-    if (previewDropKeyRef.current === previewKey) return;
+    if (previewDropKeyRef.current === previewKey) return true;
 
     const draggedNode = siblings.find((item) => item.detail.guid_fixed === activeDrag.guid);
     const targetIndex = siblings.findIndex((item) => item.detail.guid_fixed === targetGuid);
-    if (!draggedNode || targetIndex === -1) return;
+    if (!draggedNode || targetIndex === -1) return false;
 
     const withoutDragged = siblings.filter((item) => item.detail.guid_fixed !== activeDrag.guid);
     const targetIndexAfterRemoval = withoutDragged.findIndex((item) => item.detail.guid_fixed === targetGuid);
@@ -630,13 +752,14 @@ export function ProductCategoryTreeView({
     reorderedSiblings.splice(insertIndex, 0, draggedNode);
 
     const sameOrder = siblings.every((item, index) => item.detail.guid_fixed === reorderedSiblings[index]?.detail.guid_fixed);
-    if (sameOrder) return;
+    if (sameOrder) return false;
 
     captureTreeLayout();
     previewDropKeyRef.current = previewKey;
     setPreviewOrderOverridesState(
       Object.fromEntries(normalizeSiblingOrders(reorderedSiblings).map((item) => [item.guid_fixed, item.xorder]))
     );
+    return true;
   };
 
   const categoryErrorText = (prefixTh: string, prefixEn: string, err: unknown): string =>
@@ -673,40 +796,85 @@ export function ProductCategoryTreeView({
     if (draggedGuid === targetGuid) return;
     const previewActive = hasPreviewOrder();
 
-    const draggedNode = siblings.find((item) => item.detail.guid_fixed === draggedGuid);
-    const targetIndex = siblings.findIndex((item) => item.detail.guid_fixed === targetGuid);
-    if (!draggedNode || targetIndex === -1) return;
+    const draggedRecord = records.find((record) => recordGuid(record) === draggedGuid);
+    const draggedCategory = typedCategories.find((item) => item.guid_fixed === draggedGuid);
+    const targetCategory = typedCategories.find((item) => item.guid_fixed === targetGuid);
+    if (!draggedRecord || !draggedCategory || !targetCategory) return;
 
-    const withoutDragged = siblings.filter((item) => item.detail.guid_fixed !== draggedGuid);
-    const targetIndexAfterRemoval = withoutDragged.findIndex((item) => item.detail.guid_fixed === targetGuid);
+    const targetParentGuid = targetCategory.parent_guid || "";
+    const newParentGuidAll = buildParentGuidAll(targetParentGuid);
+    const oldParentGuid = draggedCategory.parent_guid || "";
+    const movingAcrossParents = oldParentGuid !== targetParentGuid;
+    const targetParentChain = targetCategory.parentguidall
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+    if (targetParentChain.includes(draggedGuid)) {
+      setReorderError(
+        language === "th"
+          ? "ย้ายไม่ได้: ไม่สามารถย้ายหมวดไปไว้ใต้หมวดย่อยของตัวเอง"
+          : "Move failed: category cannot be moved inside its own child branch."
+      );
+      clearDragPreview();
+      return;
+    }
+
+    const currentTargetSiblings = siblings.length
+      ? siblings.map((item) => item.detail)
+      : sortedChildrenOf(targetParentGuid);
+    const withoutDragged = currentTargetSiblings.filter((item) => item.guid_fixed !== draggedGuid);
+    const targetIndexAfterRemoval = withoutDragged.findIndex((item) => item.guid_fixed === targetGuid);
+    if (targetIndexAfterRemoval === -1) return;
     const insertIndex = targetIndexAfterRemoval + (position === "after" ? 1 : 0);
     const reorderedSiblings = [...withoutDragged];
-    reorderedSiblings.splice(insertIndex, 0, draggedNode);
+    const movedCategory: CategoryNode = {
+      ...draggedCategory,
+      parent_guid: targetParentGuid,
+      parentguidall: newParentGuidAll,
+    };
+    reorderedSiblings.splice(insertIndex, 0, movedCategory);
 
-    const sameOrder = siblings.every((item, index) => item.detail.guid_fixed === reorderedSiblings[index]?.detail.guid_fixed);
-    if (!previewActive && sameOrder) return;
+    const sameOrder = currentTargetSiblings.every((item, index) => item.guid_fixed === reorderedSiblings[index]?.guid_fixed);
+    if (!previewActive && !movingAcrossParents && sameOrder) return;
 
-    const previewOrders = previewOrderOverridesRef.current;
-    const previewSiblings = [...siblings].sort((a, b) => {
-      const orderA = previewOrders[a.detail.guid_fixed] ?? a.detail.xsorts?.[0]?.xorder ?? 0;
-      const orderB = previewOrders[b.detail.guid_fixed] ?? b.detail.xsorts?.[0]?.xorder ?? 0;
-      return orderA - orderB;
-    });
-    const updateList = normalizeSiblingOrders(previewActive ? previewSiblings : reorderedSiblings);
+    const targetSiblingPayload = normalizeSiblingOrders(reorderedSiblings);
+    const oldSiblingPayload = movingAcrossParents
+      ? normalizeSiblingOrders(sortedChildrenOf(oldParentGuid).filter((item) => item.guid_fixed !== draggedGuid))
+      : [];
+    const updateList = uniqueXSortPayload([...oldSiblingPayload, ...targetSiblingPayload]);
+    const draggedOrder = targetSiblingPayload.find((item) => item.guid_fixed === draggedGuid)?.xorder ?? 1;
+    const payload: SettingRecord = {
+      ...draggedRecord,
+      parent_guid: targetParentGuid,
+      parentguidall: newParentGuidAll,
+      group_number: groupNumber ?? recordGroupNumber(draggedRecord),
+      xsorts: [{ code: "X", xorder: draggedOrder }],
+    };
 
     captureTreeLayout();
     previewDropKeyRef.current = "";
     setReorderError("");
     setPreviewOrderOverridesState({});
+    if (targetParentGuid) {
+      setExpandedNodes((prev) => ({ ...prev, [targetParentGuid]: true }));
+    }
+    setParentOverrides((prev) => ({
+      ...prev,
+      [draggedGuid]: { parentGuid: targetParentGuid, parentGuidAll: newParentGuidAll },
+    }));
     setOrderOverrides((prev) => ({
       ...prev,
       ...Object.fromEntries(updateList.map((item) => [item.guid_fixed, item.xorder])),
     }));
 
     try {
+      if (movingAcrossParents) {
+        await saveCategoryRecord(draggedGuid, payload);
+      }
       await saveXSorts(updateList);
+      markCategoryArrived(draggedGuid);
     } catch (err) {
-      setReorderError(categoryErrorText("บันทึกลำดับไม่สำเร็จ", "Reorder failed", err));
+      setReorderError(categoryErrorText("ย้ายหรือบันทึกลำดับไม่สำเร็จ", "Move or reorder failed", err));
       onRefresh?.();
     }
   };
@@ -766,6 +934,7 @@ export function ProductCategoryTreeView({
         ...normalizeSiblingOrders(oldSiblings),
         ...normalizeSiblingOrders([...nextChildren, { ...draggedCategory, parent_guid: targetGuid, parentguidall: newParentGuidAll }]),
       ]));
+      markCategoryArrived(draggedGuid);
     } catch (err) {
       setReorderError(categoryErrorText("ย้ายหมวดสินค้าไม่สำเร็จ", "Move category failed", err));
       onRefresh?.();
@@ -812,31 +981,35 @@ export function ProductCategoryTreeView({
     try {
       await saveCategoryRecord(draggedGuid, payload);
       await saveXSorts(uniqueXSortPayload([...oldSiblingPayload, ...rootOrderPayload]));
+      markCategoryArrived(draggedGuid);
     } catch (err) {
       setReorderError(categoryErrorText("ย้ายหมวดสินค้าเป็นหมวดหลักไม่สำเร็จ", "Move category to root failed", err));
       onRefresh?.();
     }
   };
 
-  const canDragRows = !saving && !loading && !searchQuery.trim();
+  const canDragRows = !readOnly && !saving && !loading && !searchQuery.trim();
 
   const isInteractiveDragTarget = (target: EventTarget | null): boolean =>
     target instanceof Element &&
     Boolean(target.closest("button,a,input,textarea,select,[role='button']"));
 
-  const getSiblingDropPosition = (clientY: number, element: HTMLElement): Exclude<DropPosition, "inside"> => {
+  const getRowDropPosition = (clientY: number, element: HTMLElement): DropPosition => {
     const rect = element.getBoundingClientRect();
-    return clientY < rect.top + rect.height / 2 ? "before" : "after";
+    const topZone = rect.top + rect.height * 0.28;
+    const bottomZone = rect.bottom - rect.height * 0.28;
+    if (clientY < topZone) return "before";
+    if (clientY > bottomZone) return "after";
+    return "inside";
   };
 
   const canDropOnTarget = (
     activeDrag: DragState,
     node: CategoryTreeNode,
-    siblings: CategoryTreeNode[],
+    _siblings: CategoryTreeNode[],
     position: DropPosition
   ) => {
     if (activeDrag.guid === node.detail.guid_fixed) return false;
-    const sameLevel = siblings.some((item) => item.detail.guid_fixed === activeDrag.guid);
     const targetParentChain = node.detail.parentguidall
       .split(",")
       .map((item) => item.trim())
@@ -845,9 +1018,7 @@ export function ProductCategoryTreeView({
       position === "inside" &&
       !targetParentChain.includes(activeDrag.guid);
     const canReorderSibling =
-      position !== "inside" &&
-      sameLevel &&
-      activeDrag.parentGuid === (node.detail.parent_guid || "");
+      position !== "inside" && !targetParentChain.includes(activeDrag.guid);
     return canReorderSibling || canMoveAsChild;
   };
 
@@ -876,7 +1047,7 @@ export function ProductCategoryTreeView({
         | {
             distance: number;
             guid: string;
-            position: Exclude<DropPosition, "inside">;
+            position: DropPosition;
             siblings: CategoryTreeNode[];
           }
         | null = null;
@@ -888,7 +1059,7 @@ export function ProductCategoryTreeView({
         const candidateSiblings = lookups.siblingsByGuid.get(candidateGuid) || [];
         if (!candidateNode) continue;
 
-        const candidatePosition = getSiblingDropPosition(clientY, candidateElement);
+        const candidatePosition = getRowDropPosition(clientY, candidateElement);
         if (!canDropOnTarget(activeDrag, candidateNode, candidateSiblings, candidatePosition)) continue;
 
         const rect = candidateElement.getBoundingClientRect();
@@ -927,7 +1098,7 @@ export function ProductCategoryTreeView({
     const siblings = lookups.siblingsByGuid.get(targetGuid) || [];
     if (!node) return findNearestRowCandidate();
 
-    const position = getSiblingDropPosition(clientY, rowElement);
+    const position = getRowDropPosition(clientY, rowElement);
     if (!canDropOnTarget(activeDrag, node, siblings, position)) return findNearestRowCandidate();
 
     return { type: "row" as const, guid: targetGuid, position, siblings };
@@ -986,7 +1157,8 @@ export function ProductCategoryTreeView({
       if (candidate.position === "inside") {
         clearDragPreview();
       } else {
-        previewSiblingReorder(nextDrag, candidate.guid, candidate.position, candidate.siblings);
+        const didPreview = previewSiblingReorder(nextDrag, candidate.guid, candidate.position, candidate.siblings);
+        if (!didPreview) clearDragPreview();
       }
       return;
     }
@@ -1143,17 +1315,20 @@ export function ProductCategoryTreeView({
 
     return (
       <div
-        className="pointer-events-none fixed z-[9999] flex items-center justify-between rounded-xl border border-primary/35 bg-card/95 px-3 py-2 text-foreground shadow-2xl ring-2 ring-primary/25 backdrop-blur-sm"
+        className="pointer-events-none fixed z-[9999] flex items-center rounded-xl border border-dashed border-primary/55 bg-transparent px-2 py-1.5 text-foreground shadow-[0_0_0_1px_rgba(8,145,178,0.08),0_8px_20px_rgba(8,145,178,0.08)] ring-1 ring-primary/10"
         style={{
           left: dragState.rect.left,
           top: dragState.rect.top + dragState.offsetY,
           width: dragState.rect.width,
           minHeight: dragState.rect.height,
-          transform: "scale(1.015)",
-          transformOrigin: "center",
+          transform: "scale(1.006)",
+          transformOrigin: "left center",
         }}
       >
-        <div className="flex min-w-0 flex-1 items-center gap-2 pr-2">
+        <div
+          className="flex min-w-0 items-center gap-2 rounded-lg border border-primary/25 bg-background/75 px-2 py-1 shadow-sm backdrop-blur-[1px]"
+          style={{ maxWidth: "min(520px, calc(100% - 1rem))" }}
+        >
           <GripVertical className="size-4 shrink-0 text-primary" />
           <span className="min-w-[1.25rem] text-sm font-semibold text-slate-400">
             {order}
@@ -1168,10 +1343,15 @@ export function ProductCategoryTreeView({
                 : `${childCount} ${childCount === 1 ? "child" : "children"}`}
             </span>
           ) : null}
+          <span className="shrink-0 rounded-full border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 px-2 py-0.5 text-[11px] font-semibold leading-5 text-sky-700 dark:text-sky-300">
+            {language === "th"
+              ? `สินค้า ${detail.productCount ?? 0}`
+              : `${detail.productCount ?? 0} ${detail.productCount === 1 ? "product" : "products"}`}
+          </span>
+          <span className="shrink-0 rounded-full bg-primary/90 px-2 py-0.5 text-[11px] font-semibold leading-5 text-primary-foreground">
+            {language === "th" ? "กำลังย้าย" : "Moving"}
+          </span>
         </div>
-        <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold leading-5 text-primary-foreground">
-          {language === "th" ? "กำลังย้าย" : "Moving"}
-        </span>
       </div>
     );
   };
@@ -1186,6 +1366,7 @@ export function ProductCategoryTreeView({
           const isExpanded = expandedNodes[node.detail.guid_fixed] ?? false;
           const isSelected = selectedGuid === node.detail.guid_fixed;
           const isDragging = dragState?.guid === node.detail.guid_fixed;
+          const isArrivalHighlighted = arrivalHighlight?.guid === node.detail.guid_fixed;
           const activeDropTarget = dropTarget?.guid === node.detail.guid_fixed ? dropTarget.position : null;
           const canAcceptChildDrop = dragState
             ? canDropOnTarget(dragState, node, [], "inside")
@@ -1193,6 +1374,7 @@ export function ProductCategoryTreeView({
 
           const order = node.detail.xsorts?.[0]?.xorder ?? (index + 1);
           const displayName = getDisplayName(node.detail.names);
+          const levelStyle = categoryLevelStyle(level);
           return (
             <div key={node.detail.guid_fixed} className="grid w-full">
               <div
@@ -1204,6 +1386,8 @@ export function ProductCategoryTreeView({
                     : "hover:bg-muted/40",
                   isDragging &&
                     "pointer-events-none bg-primary/5 opacity-25 ring-1 ring-dashed ring-primary/30",
+                  isArrivalHighlighted &&
+                    "z-10 bg-emerald-50/80 ring-2 ring-emerald-400/60 dark:bg-emerald-950/35",
                   activeDropTarget && "bg-primary/10 shadow-[0_0_0_1px_var(--primary)]",
                   activeDropTarget === "inside" && "ring-2 ring-primary/30"
                 )}
@@ -1249,8 +1433,15 @@ export function ProductCategoryTreeView({
                     </span>
                   </span>
                 ) : null}
+                {activeDropTarget === "inside" ? (
+                  <span className="pointer-events-none absolute inset-x-2 top-1/2 z-30 flex -translate-y-1/2 items-center justify-center">
+                    <span className="rounded-full border border-emerald-700 bg-emerald-600 px-3 py-1 text-[11px] font-semibold leading-5 text-white shadow-md">
+                      {language === "th" ? "วางเข้าเป็นลูกของหมวดนี้" : "Drop inside this category"}
+                    </span>
+                  </span>
+                ) : null}
                 <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 pr-2">
-                  <GripVertical className="size-4 shrink-0 text-muted-foreground/60 transition-colors group-hover/row:text-primary" />
+                  <GripVertical className={cn("size-4 shrink-0 transition-colors", levelStyle.grip)} />
                   {/* Caret Toggle */}
                   <button
                     type="button"
@@ -1261,17 +1452,17 @@ export function ProductCategoryTreeView({
                     onClick={(e) => toggleExpand(node.detail.guid_fixed, e)}
                   >
                     {isExpanded ? (
-                      <ChevronDown className="size-4 text-emerald-600 dark:text-emerald-400" />
+                      <ChevronDown className={cn("size-4", levelStyle.caret)} />
                     ) : (
-                      <ChevronRight className="size-4 text-emerald-600 dark:text-emerald-400" />
+                      <ChevronRight className={cn("size-4", levelStyle.caret)} />
                     )}
                   </button>
 
-                  <span className="text-sm font-semibold text-slate-400 min-w-[1.25rem]">
+                  <span className={cn("min-w-[1.25rem] text-sm font-bold", levelStyle.order)}>
                     {order}
                   </span>
 
-                  <span className="min-w-0 flex-1 basis-40 whitespace-normal break-words text-sm font-medium text-foreground">
+                  <span className={cn("min-w-0 flex-1 basis-40 whitespace-normal break-words text-sm", levelStyle.name)}>
                     {displayName}
                   </span>
                   {hasChildren ? (
@@ -1295,6 +1486,19 @@ export function ProductCategoryTreeView({
                         : `${childCount} ${childCount === 1 ? "child" : "children"}`}
                     </button>
                   ) : null}
+                  <span className="shrink-0 rounded-full border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 px-2 py-0.5 text-[11px] font-semibold leading-5 text-sky-700 dark:text-sky-300">
+                    {language === "th"
+                      ? `สินค้า ${node.detail.productCount ?? 0}`
+                      : `${node.detail.productCount ?? 0} ${node.detail.productCount === 1 ? "product" : "products"}`}
+                  </span>
+                  {isArrivalHighlighted ? (
+                    <span
+                      key={arrivalHighlight?.nonce ?? node.detail.guid_fixed}
+                      className="shrink-0 animate-pulse rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-semibold leading-5 text-white shadow-sm"
+                    >
+                      {language === "th" ? "ย้ายมาแล้ว" : "Moved here"}
+                    </span>
+                  ) : null}
                   {canAcceptChildDrop ? (
                     <span
                       className={cn(
@@ -1311,55 +1515,57 @@ export function ProductCategoryTreeView({
                 </div>
 
                 {/* Row actions */}
-                <div className="flex shrink-0 items-center gap-1 opacity-60 transition-opacity group-hover/row:opacity-100">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-7 rounded-full text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
-                    aria-label={language === "th" ? "เพิ่มหมวดย่อย" : "Add subcategory"}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedGuid(node.detail.guid_fixed);
-                      onOpenCreate(node.detail.guid_fixed);
-                    }}
-                  >
-                    <FolderPlus className="size-3.5" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-7 rounded-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40"
-                    aria-label={language === "th" ? "แก้ไข" : "Edit"}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedGuid(node.detail.guid_fixed);
-                      const orig = records.find(
-                        (r) => recordGuid(r) === node.detail.guid_fixed
-                      );
-                      if (orig) onOpenEdit(recordWithOptimisticOverrides(orig));
-                    }}
-                  >
-                    <Edit3 className="size-3.5" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-7 rounded-full text-destructive hover:bg-destructive/10"
-                    aria-label={language === "th" ? "ลบ" : "Delete"}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const orig = records.find(
-                        (r) => recordGuid(r) === node.detail.guid_fixed
-                      );
-                      if (orig) onDeleteRecord(orig);
-                    }}
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
-                </div>
+                {!readOnly && (
+                  <div className="flex shrink-0 items-center gap-1 opacity-60 transition-opacity group-hover/row:opacity-100">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-7 rounded-full text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                      aria-label={language === "th" ? "เพิ่มหมวดย่อย" : "Add subcategory"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedGuid(node.detail.guid_fixed);
+                        onOpenCreate(node.detail.guid_fixed);
+                      }}
+                    >
+                      <FolderPlus className="size-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-7 rounded-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40"
+                      aria-label={language === "th" ? "แก้ไข" : "Edit"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedGuid(node.detail.guid_fixed);
+                        const orig = records.find(
+                          (r) => recordGuid(r) === node.detail.guid_fixed
+                        );
+                        if (orig) onOpenEdit(recordWithOptimisticOverrides(orig));
+                      }}
+                    >
+                      <Edit3 className="size-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-7 rounded-full text-destructive hover:bg-destructive/10"
+                      aria-label={language === "th" ? "ลบ" : "Delete"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const orig = records.find(
+                          (r) => recordGuid(r) === node.detail.guid_fixed
+                        );
+                        if (orig) onDeleteRecord(orig);
+                      }}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {/* Recursive Children rendering */}
@@ -1378,15 +1584,15 @@ export function ProductCategoryTreeView({
   return (
     <div className="grid h-full min-h-0 w-full gap-2">
       {/* Categories Tree list */}
-      <Card className="flex h-full min-h-[520px] flex-col overflow-hidden border-border bg-card shadow-sm">
+      <Card className="flex h-full min-h-0 flex-col overflow-hidden border-border bg-card shadow-sm">
         <CardContent className="flex min-h-0 flex-1 flex-col p-0">
           {loading ? (
-            <div className="flex min-h-24 items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
+            <div className="flex h-full min-h-24 items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
               <Loader2 className="animate-spin size-5" />
               {language === "th" ? "กำลังโหลดข้อมูล..." : "Loading..."}
             </div>
           ) : treeRoots.length === 0 ? (
-            <div className="flex min-h-24 flex-col items-center justify-center gap-1.5 p-4 text-center text-sm text-muted-foreground">
+            <div className="flex h-full min-h-24 flex-col items-center justify-center gap-1.5 p-4 text-center text-sm text-muted-foreground">
               <span className="font-medium">
                 {language === "th" ? "ไม่พบข้อมูลหมวดสินค้า" : "No categories found"}
               </span>
@@ -1397,7 +1603,7 @@ export function ProductCategoryTreeView({
               </span>
             </div>
           ) : (
-            <div ref={treeListRef} className="flex min-h-full flex-1 flex-col">
+            <div ref={treeListRef} className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
               {reorderError ? (
                 <div className="border-b border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
                   {reorderError}

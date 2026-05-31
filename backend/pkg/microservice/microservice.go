@@ -321,6 +321,55 @@ func (ms *Microservice) Log(tag string, message string) {
 
 }
 
+type tenantPersisterConfig struct {
+	config.IPersisterConfig
+	dbName string
+}
+
+func (t *tenantPersisterConfig) DB() string {
+	return t.dbName
+}
+
+var (
+	tenantModels []interface{}
+	DBCheckHook  func(dbName string) error
+)
+
+func RegisterTenantModel(models ...interface{}) {
+	tenantModels = append(tenantModels, models...)
+}
+
+func (ms *Microservice) PersisterTenant(cfg config.IPersisterConfig, dbName string) IPersister {
+	if dbName == "" {
+		return ms.Persister(cfg)
+	}
+	key := fmt.Sprintf("%s/%s", cfg.Host(), dbName)
+	ms.persistersMutex.Lock()
+	defer ms.persistersMutex.Unlock()
+	pst, ok := ms.persisters[key]
+	if !ok {
+		if DBCheckHook != nil {
+			if err := DBCheckHook(dbName); err != nil {
+				ms.Logger.Errorf("PersisterTenant: DBCheckHook failed for db=%s: %v", dbName, err)
+			}
+		}
+		tenantCfg := &tenantPersisterConfig{
+			IPersisterConfig: cfg,
+			dbName:           dbName,
+		}
+		pst = NewPersister(tenantCfg)
+		if len(tenantModels) > 0 {
+			if err := pst.AutoMigrate(tenantModels...); err != nil {
+				ms.Logger.Errorf("PersisterTenant: AutoMigrate failed for db=%s: %v", dbName, err)
+			} else {
+				ms.Logger.Infof("PersisterTenant: AutoMigrate completed for db=%s", dbName)
+			}
+		}
+		ms.persisters[key] = pst
+	}
+	return pst
+}
+
 func (ms *Microservice) Persister(cfg config.IPersisterConfig) IPersister {
 	pst, ok := ms.persisters[cfg.Host()]
 	if !ok {

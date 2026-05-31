@@ -23,6 +23,9 @@ func (ProductBarcodePhaser) PhaseProductBarcodeDoc(doc *models.ProductBarcodeDoc
 	if err != nil {
 		return nil, err
 	}
+	if err := models.ValidateProductClassification(productBarcode.ItemType, productBarcode.MaterialType); err != nil {
+		return nil, err
+	}
 
 	var productBarcodePG models.ProductBarcodePg
 	err = json.Unmarshal(j, &productBarcodePG)

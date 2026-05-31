@@ -227,19 +227,36 @@ type ShopUserInfo struct {
 	ShopID string `json:"shopid" bson:"shopid"`
 	Name   string `json:"name" bson:"name1"`
 	// Name1          string         `json:"name1" bson:"name1"`
-	MainShopId       string         `json:"main_shop_id" bson:"main_shop_id"`
-	Names            []models.NameX `json:"names" bson:"names"`
-	BranchCode       string         `json:"branchcode" bson:"branchcode"`
-	Role             UserRole       `json:"role" bson:"role"`
-	IsFavorite       bool           `json:"is_favorite" bson:"isfavorite"`
-	LastAccessedAt   time.Time      `json:"last_accessed_at" bson:"lastaccessedat"`
-	CreatedBy        string         `json:"createdby" bson:"createdby"`
-	IsCreator        bool           `json:"is_creator,omitempty" bson:"-"`
-	IsAccessDisabled bool           `json:"is_access_disabled" bson:"isaccessdisabled"`
-	AccessDisabledAt time.Time      `json:"access_disabled_at,omitempty" bson:"accessdisabledat,omitempty"`
-	AccessDisabledBy string         `json:"access_disabled_by,omitempty" bson:"accessdisabledby,omitempty"`
-	AccessEnabledAt  time.Time      `json:"access_enabled_at,omitempty" bson:"accessenabledat,omitempty"`
-	AccessEnabledBy  string         `json:"access_enabled_by,omitempty" bson:"accessenabledby,omitempty"`
+	MainShopId          string           `json:"main_shop_id" bson:"main_shop_id"`
+	Names               []models.NameX   `json:"names" bson:"names"`
+	BranchCode          string           `json:"branchcode" bson:"branchcode"`
+	Language            string           `json:"language" bson:"language"`
+	LanguageConfigs     []LanguageConfig `json:"languageconfigs" bson:"languageconfigs"`
+	BaseCurrency        string           `json:"base_currency" bson:"base_currency"`
+	Currencies          []string         `json:"currencies" bson:"currencies"`
+	Timezone            string           `json:"timezone" bson:"timezone"`
+	TimezoneLabel       string           `json:"timezone_label" bson:"timezone_label"`
+	TimezoneOffset      string           `json:"timezone_offset" bson:"timezone_offset"`
+	DateFormat          string           `json:"date_format" bson:"date_format"`
+	UseBuddhistCalendar bool             `json:"usebuddhistcalendar" bson:"usebuddhistcalendar"`
+	Role                UserRole         `json:"role" bson:"role"`
+	IsFavorite          bool             `json:"is_favorite" bson:"isfavorite"`
+	LastAccessedAt      time.Time        `json:"last_accessed_at" bson:"lastaccessedat"`
+	CreatedBy           string           `json:"createdby" bson:"createdby"`
+	IsCreator           bool             `json:"is_creator,omitempty" bson:"-"`
+	IsAccessDisabled    bool             `json:"is_access_disabled" bson:"isaccessdisabled"`
+	AccessDisabledAt    time.Time        `json:"access_disabled_at,omitempty" bson:"accessdisabledat,omitempty"`
+	AccessDisabledBy    string           `json:"access_disabled_by,omitempty" bson:"accessdisabledby,omitempty"`
+	AccessEnabledAt     time.Time        `json:"access_enabled_at,omitempty" bson:"accessenabledat,omitempty"`
+	AccessEnabledBy     string           `json:"access_enabled_by,omitempty" bson:"accessenabledby,omitempty"`
+}
+
+type LanguageConfig struct {
+	Code           string `json:"code" bson:"code"`
+	CodeTranslator string `json:"codetranslator" bson:"codetranslator"`
+	Name           string `json:"name" bson:"name"`
+	IsUse          bool   `json:"is_use" bson:"is_use"`
+	IsDefault      bool   `json:"isdefault" bson:"isdefault"`
 }
 
 func (*ShopUserInfo) CollectionName() string {

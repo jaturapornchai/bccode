@@ -108,6 +108,15 @@ describe("menu language labels", () => {
     expect(itemIds).not.toContain("holiday");
   });
 
+  it("labels the company settings entry as current company profile, not company creation", () => {
+    const settingsGroup = MENU_SECTIONS.find((section) => section.id === "settings")?.groups.find((group) => group.id === "company-system");
+    const companyItem = settingsGroup?.items.find((item) => item.id === "company");
+
+    expect(companyItem?.label.key).toBe("company_profile");
+    expect(companyItem?.label.th).toBe("ข้อมูลบริษัท");
+    expect(companyItem?.label.en).toBe("Company Profile");
+  });
+
   it("has backend language keys for every menu item", () => {
     const keys = backendLanguageKeys();
     const missing = MENU_SECTIONS.flatMap((section) =>
@@ -122,6 +131,31 @@ describe("menu language labels", () => {
   it("keeps menu item ids unique for permission codes", () => {
     const ids = flattenMenuItems().map((item) => item.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("keeps product operations in product tools instead of the core product group", () => {
+    const masterSection = MENU_SECTIONS.find((section) => section.id === "master");
+    const productGroup = masterSection?.groups.find((group) => group.id === "products");
+    const productToolsGroup = masterSection?.groups.find((group) => group.id === "product-tools");
+    const productIds = productGroup?.items.map((item) => item.id) ?? [];
+    const toolIds = productToolsGroup?.items.map((item) => item.id) ?? [];
+
+    expect(productIds).not.toContain("price-history");
+    expect(productIds).not.toContain("label-print");
+    expect(productIds).not.toContain("add-product-branch");
+    expect(productIds).not.toContain("add-product-department");
+    expect(productToolsGroup?.title.th).toBe("เครื่องมือสินค้า");
+    expect(toolIds).toEqual(["price-history", "label-print"]);
+  });
+
+  it("uses distinct product category labels for category structure and attribute category", () => {
+    const masterSection = MENU_SECTIONS.find((section) => section.id === "master");
+    const productGroup = masterSection?.groups.find((group) => group.id === "products");
+    const labelsById = new Map(productGroup?.items.map((item) => [item.id, item.label.th]) ?? []);
+
+    expect(labelsById.get("product-category")).toBe("โครงสร้างหมวดสินค้า");
+    expect(labelsById.get("category")).toBe("หมวดจำแนกสินค้า");
+    expect(productGroup?.items.filter((item) => item.label.th === "หมวดสินค้า")).toHaveLength(0);
   });
 
   it("has backend language keys for every keyed menu section and group", () => {

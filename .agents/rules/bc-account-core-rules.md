@@ -20,7 +20,13 @@ Related central entrypoints:
 - Do not depend on one vendor's hidden memory, connector-only feature, slash command, or runtime-only directive for core project behavior.
 - If a tool-specific instruction is unavoidable, label the target tool and state the limitation clearly. Do not hide missing tool capability behind automatic replacement behavior.
 - New or updated wiki/LLM pages must start from `D:\bccode\.agents\wiki\llm-index.md` and link to source evidence instead of becoming a large duplicated manual.
-- **Skill Upgrade Rule**: If a code change modifies a reusable system pattern, layout contract, or business rule covered by `D:\bccode\.agents\skills\`, update the matching skill in the same task. Keep the skill as a short rule pointer, not a duplicated manual.
+- **Skill, Rule & Database Model Upgrade Rule**: If a code change, system behavior, database model, schema change, or debug findings modify a reusable system pattern, layout contract, business rule, or database mapping covered by the rules or skills, the agent MUST immediately update the matching rule, skill, or database model in the same task. This ensures the rules/skills/models remain accurate, up-to-date, and get smarter over time. Keep them as short rule pointers, not duplicated manuals.
+
+## AI Capability & Instant Upgrades
+**Central rule — binding on all agents equally.** All three entrypoints route here: `D:\bccode\CLAUDE.md`, `D:\bccode\GEMINI.md`, and `D:\bccode\AGENTS.md` all read this file.
+
+- **AI Capability**: Every AI agent is capable of working full-stack across the entire project (including Frontend, Backend/Go API, Database, and MCP tools) without any model-based division of labor.
+- **Rule & Skill Upgrades**: Whenever a code change, business logic change, or system behavior is implemented based on Jead's instruction, the developer/AI agent MUST immediately update the corresponding rules, skills, database models, or KM (Knowledge Management) files to keep the system up to date and prevent reversion to obsolete behaviors.
 
 ## Wiki / LLM Knowledge
 - Use `D:\bccode\.agents\wiki\llm-index.md` as the shared routing layer for LLM-readable project knowledge.
@@ -34,7 +40,7 @@ Related central entrypoints:
 - Frontend runs locally on the host machine for speed, usually from `D:\bccode\frontend`.
 - Backend runs on Docker Desktop for local development, using MainAPI as the single entrypoint on `http://localhost:8888`.
 - Local backend startup must use Docker Desktop/Compose or an equivalent Docker run path that mounts local secret/config files at runtime.
-- Backend code/config changes must be deployed to Docker Desktop automatically before completion. Rebuild and recreate only the affected service by default: `cd D:\bccode\backend; docker-compose up -d --no-deps --build mainapi`, then verify `/healthz` or the changed backend route.
+- Backend container rebuild (`cd D:\bccode\backend; docker-compose up -d --no-deps --build mainapi`) is optional during active development and can be skipped for minor fixes. Perform the build and verify `/healthz` when edits are complete or requested.
 - Do not require host Go/CGO/librdkafka setup for normal local backend runs unless the task is specifically backend compiler/toolchain work.
 - Kafka and Redis are mandatory for backend runtime. Local Docker Desktop backend must run both services and configure MainAPI to reach them through the Docker network, usually `KAFKA_SERVER_URL=kafka:29092` and `REDIS_CACHE_URI=redis:6379`.
 - Do not start replacement local database containers unless Jead explicitly requests isolated local testing.
@@ -47,12 +53,24 @@ Related central entrypoints:
 - A standalone Cloudflare API token is not enough for this project's image/file upload path. If any R2 runtime value is missing, show the missing env/config error and stop.
 - DEV PostgreSQL and ClickHouse run on the DEV server `45.144.166.112`.
 - PostgreSQL and ClickHouse credentials must come from local env/secret files.
+- Data store roles:
+  - MongoDB is the authoritative operational source for all business CRUD, documents, master data, and user-entered data, including products, barcodes, units, categories, debtors/creditors, branches, settings, and transactions.
+  - Cloudflare R2/S3 stores all images/files/binary objects. MongoDB stores only metadata, ownership context, and private file paths. Do not store image blobs in MongoDB, PostgreSQL, or ClickHouse.
+  - PostgreSQL is a relational processing/projection engine for posted results, balances, stock costing, tax/VAT, AR/AP, GL, auditable relational calculations, and strict relational lookup outputs. It is not the direct CRUD source of truth.
+  - ClickHouse is the BI/analytics/reporting store fed from processed facts/projections. It is read-only for BI/report consumers and must not become an operational CRUD store.
 
 ## No Fallback Enforcement
 - Runtime code, tools, screens, reports, uploads, language rendering, and agent workflows must not silently substitute missing config, missing data, unavailable APIs, old endpoints, mock data, derived credentials, or legacy storage.
 - If a required source is missing, invalid, unauthorized, unreachable, or unverified, fail that operation and return a visible error that includes the safe real reason, such as the missing env var, missing language key, missing route, missing tenant/branch context, or rejected permission.
 - Compatibility paths are allowed only when they are explicit, versioned, documented, and tested. They must not run as hidden automatic fallback.
 - Cloudflare image/file upload must error when the Cloudflare/R2 runtime config is incomplete. Do not reroute to Azure Blob, SeaweedFS, local disk, derived token credentials, standalone Cloudflare API tokens, or mock storage.
+
+## Multilingual Data Enforcement
+- Multilingual business data editors must render inputs from the active company language configuration (`settings.languageconfigs`) in that configured order. Normal data forms must not provide their own add-language button; language add/remove/reorder belongs only to the Active Languages screen. **Always use the shared `<NamesEditor>` component (located at `D:\bccode\frontend\src\components\product-barcode\names-editor.tsx`) to render localized multi-language text fields. This ensures consistent grid layouts, country flags, and a premium look and feel across all CRUD screens (including Product Master and Barcode Screen).**
+- **Radio Buttons vs Combo Box (Select)**: หากฟิลด์ข้อมูลมีตัวเลือกคงที่จำนวนน้อย (ไม่เกิน 4 ตัวเลือก) ให้เลือกใช้ Radio buttons (`RadioOptionGroup` / ปุ่มตัวเลือกวิทยุ) แทน Dropdown (`CustomSelect` / Combo Box) เสมอ เพื่อให้ผู้ใช้เห็นตัวเลือกทั้งหมดได้ทันทีและลดจำนวนการคลิก เช่น ประเภทสินค้า ประเภทวัตถุดิบ ประเภทภาษี หรือตัวเลือกเปิด/ปิดการคิดคะแนนสะสม
+- Removing or reducing active languages changes field visibility only. Existing stored values for hidden languages must be preserved on load and save unless that hidden language becomes active and the user explicitly edits it.
+- Do not silently auto-fill, translate, or fallback one business data language value from another language. Missing language values must remain missing or be surfaced as the screen's explicit missing state.
+- When active languages or workspace configurations are updated, the change must immediately take effect across the entire app without requiring a manual page refresh. Screens like `MainMenuScreen`, `SystemSettingsScreen`, and `ProductBarcodeScreen` must listen to the custom `bc-workspace-changed` event and `storage` event to reload the active languages session immediately. Form inputs, name editors, and language selectors must update and adjust their multilingual fields immediately and reactively.
 
 ## Image Display Enforcement
 - Image/file upload fields must render an actual preview in read-only/detail screens and keep the stored URL/path visible for audit/debug.
@@ -73,6 +91,7 @@ Related central entrypoints:
 - Business modules must be designed around real operating documents and lifecycle flows, such as quotation, sale order, invoice, receipt, purchase request, purchase order, bill, payment, stock receipt, stock issue, transfer, stock count, restaurant sale, production/BOM consumption, finished goods receipt, debtor/creditor aging, and GL posting.
 - Do not implement accounting, inventory, tax, AR/AP, sales, purchase, restaurant, production, or reporting features as isolated data-entry screens without preserving document flow, numbering, tax/VAT treatment, stock impact, accounting impact, permissions, reports, and traceability.
 - When a change touches a business process, inspect the current source, legacy Flutter behavior when relevant, existing data contracts, and real DEV behavior before implementation. Surface business impact and compatibility risk before changing schemas, APIs, postings, stock movement, tax logic, or reporting behavior.
+- Product BOM/recipe setup is an independent recipe master: create a recipe code and recipe names first, then add product barcode units as ingredients or reference other recipe codes as sub-recipes. Do not make the recipe parent an existing product/barcode.
 
 ## Thai Branch Code Rule
 - For Thailand tax/VAT branch numbering, head office (`สำนักงานใหญ่`) is branch code `00000`.
@@ -92,6 +111,15 @@ Related central entrypoints:
 - Thai address UX must support both directions: province -> district -> subdistrict -> postal code, and postal code -> filtered province/district/subdistrict choices. Auto-fill only when a postal-code match is unambiguous; otherwise keep filtered choices visible for user confirmation.
 - Postal code must be recomputed when province, district, or subdistrict changes: district selection may fill postal code only when the district has one unique code or the existing postal code still matches that district; subdistrict selection must set the exact subdistrict postal code; invalid stale postal codes must be cleared.
 
+## Tax & Accounting Correctness (Research-First)
+- **Uncertainty is the trigger.** Whenever you are NOT sure about any domain / business / accounting / tax / legal / regulatory knowledge — even outside an active tax feature — do NOT guess and do NOT skip it. Go find the authoritative answer first so the program behaves correctly, then cache it (see below). Thai tax/accounting is the primary case, but the same rule covers any business-domain knowledge you are unsure about. Authoritative answers come from: competitor products, the Revenue Department (`rd.go.th`), and Thai tax law — plus official docs/specs for the specific domain.
+- Thai tax / VAT / WHT / e-Tax / GL / statutory-report features must be CORRECT by Thai law and real market practice — never guessed. Before building or changing any such feature, ALWAYS research authoritative sources first:
+  1. **กรมสรรพากร / Revenue Department (`rd.go.th`)** — VAT rate & rules, full tax-invoice required fields (Revenue Code §86/4), WHT rates & forms (PND 1/2/3/53/54), e-Tax Invoice & e-Receipt specs, filing deadlines.
+  2. **Thai tax law** — Revenue Code, Royal Decrees, ministerial regulations. Rates/thresholds change (e.g. the 7% VAT extension is renewed by Royal Decree) — verify the CURRENT value, never trust memory.
+  3. **Competitor Thai accounting/ERP software** (FlowAccount, PEAK, Express, BusinessPlus, SML, Xero TH, etc.) — to match how documents, fields, and flows are modeled in the real market so users get expected behavior.
+- Use IRON web-first (WebSearch/WebFetch); cite source URL + date. If a value cannot be verified, mark it unverified and STOP — no guessed rate, required field, or form layout (HONEST UNCERTAINTY).
+- **Cache every verified finding so the next task does not re-research.** Append dated, source-linked entries to `D:\bccode\.agents\skills\bc-account-expert\tax-legal-cache.md`. Keep the skill `SKILL.md` pointer short; detail goes in the cache file. This is mandatory follow-through, not optional.
+
 ## API Version Compatibility
 - Backend API contracts must be versioned. The current baseline is `v1`; future breaking changes must use `v2`, `v3`, and so on without silently breaking `v1`.
 - Supported backend API versions must run side-by-side in the same deployed backend. When `v2` is introduced, `v1` and `v2` must both remain callable at the same time to support older frontend web, iOS, and Android clients.
@@ -101,6 +129,11 @@ Related central entrypoints:
 - Backend responses for version-aware endpoints should expose the active backend API version and supported versions, so clients can block or warn before calling incompatible APIs.
 - Deploy or release work must verify the compatibility matrix: frontend web version, iOS version, Android version, required backend version, and deployed backend supported versions.
 - Do not remove, rename, or change the behavior of a `v1` contract until every dependent client version is verified as migrated or a compatibility adapter exists.
+
+## Backend-Centric Logic & MCP Architecture
+- **Backend-centric logic**: The backend is the main logic worker and the source of truth for all business processes, validation, and calculations. The frontend is restricted to rendering UI and performing basic CRUD operations.
+- **AI Agent Command via MCP**: In the future, the backend will be directly commanded and operated by an AI agent using the Model Context Protocol (MCP). Design all backend services, handlers, and workflows to be fully self-contained, API-driven, and accessible directly by AI agents without relying on any frontend state or logic.
+
 
 ## DEV Deployment
 - Deploy to DEV only when Jead explicitly says `deploy dev`.
@@ -119,8 +152,16 @@ Related central entrypoints:
 - If Jead provides a secret in chat, use it only for the current runtime task when necessary, then refer to it by env var name in durable project files.
 - Before commit/deploy work, check the changed files for accidental secrets when relevant.
 
+## Git / Source Safety
+- The local working tree is the **source of truth**. NEVER overwrite newer local code with older code from GitHub. The remote may be OLDER than local; pulling it destroys newer work.
+- **R0 — STOP and ask Jead first** before any command that replaces local files with remote state: `git pull`, `git fetch` + `git reset --hard origin/...`, `git checkout origin/<ref> -- <path>`, `git merge`/`git rebase` that discards local work, `git stash drop/clear`, or re-cloning over the repo.
+- Read-only inspection of the remote is allowed when it does NOT touch the working tree: `git fetch` alone, `git log origin/...`, `git diff origin/...`, `git status`. Only overwrite/merge/reset actions are forbidden.
+- Push (local → remote) only when Jead explicitly asks. Default is to keep local ahead of GitHub. If local and remote diverge, surface it and ask — do not auto-resolve by pulling.
+- When Jead says `push to github`, `push to GitHub`, or equivalent without explicitly narrowing the scope, treat it as a request to push the whole project: stage all repo changes with `git add -A` from the repository root, run appropriate diff/secret verification, commit, and push the current branch. Do not switch to task-only partial staging unless Jead explicitly requests a limited scope.
+
 ## Display and Information Completeness
 - **No Truncation / No Omission**: Displayed information, text, metadata, IDs, and labels must not be cut off, truncated (e.g. using `text-overflow: ellipsis` or overflow: hidden to hide text), or omitted. All details must be fully visible and wrapped properly to fit the layout.
+- **Project Date Display Contract**: Frontend business screens must render dates and timestamps through `D:\bccode\frontend\src\lib\date-time.ts` helpers (`formatDefaultDate`, `formatDefaultDateTime`, and `resolveWorkspaceDateTimeDisplayOptions`) using the active workspace timezone and year type. Do not call browser-default `Date.toLocaleString()`, `Date.toLocaleDateString()`, or ad hoc `Intl.DateTimeFormat` in screen components for business dates.
 
 ## Frontend Density Contract
 - BC Ai Account screens are dense business work surfaces. Preserve vertical space for records, tables, forms, and detail panes.
@@ -128,6 +169,15 @@ Related central entrypoints:
 - Prefer wrap-first compact rows over tall stacked chrome. If many controls are required, wrap them tightly or use accessible icon-only utility controls instead of expanding the top area.
 - Do not reintroduce large hero-like headers, decorative spacing, `py-3`/larger section padding, `h-10`/`h-11` utility controls, or tall open-tab cards in these zones unless Jead explicitly asks for a roomier layout.
 - Verify UI density changes with browser evidence when practical: desktop screenshot/bounding boxes for top chrome, plus a narrower viewport check when responsive behavior changed.
+- **No Native Alert/Confirm**: ห้ามใช้กล่องแจ้งเตือน/ยืนยันของเว็บเบราว์เซอร์ดั้งเดิม (`window.alert`, `window.confirm`) ใน Next.js component หรือ frontend screens เป็นอันขาด ให้เลือกใช้คอมโพเนนต์หรือ UI แจ้งเตือนแบบ Custom ที่สวยงาม (เช่น ฟังก์ชัน `confirm` จาก hook `useConfirmDialog` หรือ Dialog/Modal ของระบบ) เสมอเพื่อให้สอดคล้องกับดีไซน์ที่พรีเมียม
 
-## Brainstorming and Planning Process
-- **Brainstorm & Plan First Rule**: Before editing, creating, or implementing any features or UI, brainstorm the absolute best, most beautiful, and easiest-to-use UX/UI and technical solutions. Outline and review the implementation plan, write/update code incrementally, and perform thorough testing to verify the changes before claiming completion.
+## Frontend Semantic Background Contract
+- Every major frontend page must include a page-specific background image that clearly communicates the page's business meaning, not a generic decorative gradient or abstract filler.
+- Store and reference page backgrounds as optimized `.webp` assets. Do not use PNG/JPEG for new page backgrounds unless Jead explicitly asks for a source/reference asset; keep shipped UI backgrounds WebP.
+- Background images must look photorealistic and premium-camera captured: physically plausible lighting, perspective, scale, shadows, reflections, and material behavior, include presentable professional Thai people when the page context can naturally include people, with visible dimensional depth and controlled depth of field.
+- Backgrounds must support both light and dark themes. Use separate theme assets or theme-safe overlays when needed, while preserving text contrast, dense business layout usability, and compact work-surface spacing.
+- The background must be relevant to the screen's domain, for example Thai SMEs, Thai factories, Thai shops, accounting, inventory, purchasing, sales, production, or settings depending on the page.
+- Do not set protected authenticated R2/GoAPI image paths directly as CSS backgrounds. Project-local public backgrounds are allowed; private images must follow the authenticated object-URL preview rule.
+- Only Codex may generate new page background images for this project. Claude, Gemini, Antigravity, or any non-Codex agent must not generate image assets themselves; they may request/assign Codex to create the WebP backgrounds, then wire already-approved assets into the UI.
+
+- **Mandatory Plan Before Work Rule**: Before any task, command sequence, debugging, implementation, edit, deploy, commit, or push, the agent MUST output a concise plan first. This applies to every task, including single-file changes and simple fixes; for trivial read-only Q&A, the plan may be one short sentence. The plan should state objective, scope/files when known, risk level, steps, and verification path scaled to task size. หลังจากวางแผนเสร็จแล้ว ให้ดำเนินการแก้ไขและพัฒนาต่อให้เสร็จสิ้นทันทีโดยไม่ต้องหยุดรอคำอนุมัติ เว้นแต่งานเป็น R0 หรือมีคำถามที่จำเป็นต้องหยุดถามก่อน (After planning, proceed immediately without waiting for user approval unless the action is R0 or a blocking clarification is required). Verify with source, diff, command output, logs, tests, or browser evidence before claiming completion.

@@ -32,8 +32,8 @@ func ProductBarcodeUpdate(productData models.MongoProductBarcodeModel) error {
 	updatePostgreSQL := false
 
 	// เช็คว่ามีข้อมูลอยู่แล้วหรือไม่และ checksum ตรงกันหรือไม่
-	query := "SELECT checksum FROM productbarcode WHERE barcode = $1"
-	dataRows, err := QuerySelectAll(db, query, productData.Barcode)
+	query := "SELECT checksum FROM productbarcode WHERE shopid = $1 AND barcode = $2"
+	dataRows, err := QuerySelectAll(db, query, productData.ShopId, productData.Barcode)
 	if err != nil {
 		return fmt.Errorf("failed to check existing product: %w", err)
 	}
@@ -55,7 +55,7 @@ func ProductBarcodeUpdate(productData models.MongoProductBarcodeModel) error {
 		defer tx.Rollback()
 
 		// ลบข้อมูลเก่า
-		_, err = tx.ExecContext(ctx, "DELETE FROM productbarcode WHERE barcode = $1", productData.Barcode)
+		_, err = tx.ExecContext(ctx, "DELETE FROM productbarcode WHERE shopid = $1 AND barcode = $2", productData.ShopId, productData.Barcode)
 		if err != nil {
 			return fmt.Errorf("failed to delete existing product: %w", err)
 		}
@@ -99,7 +99,7 @@ func ProductBarcodeUpdate(productData models.MongoProductBarcodeModel) error {
 				barcode, barcoderef, itemcode, name0, unitcode, unitname,
 				groupcode, groupnames, price1, price_retail,
 				barcoderefunitstand, barcoderefunitdivide,
-				isstock, itemtype, checksum,
+				isstock, itemtype, materialtype, checksum,
 				shopid, guidfixed, imageuri, isusesubbarcodes,
 				brandcode, brandnames, categorycode, categorynames,
 				classcode, classnames, designcode, designnames,
@@ -109,21 +109,21 @@ func ProductBarcodeUpdate(productData models.MongoProductBarcodeModel) error {
 				groupsubtwocode, groupsubtwonames
 			) VALUES (
 				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-				$11, $12, $13, $14, $15,
-				$16, $17, $18, $19,
-				$20, $21, $22, $23,
-				$24, $25, $26, $27,
-				$28, $29, $30, $31,
-				$32, $33,
-				$34, $35,
-				$36, $37
+				$11, $12, $13, $14, $15, $16,
+				$17, $18, $19, $20,
+				$21, $22, $23, $24,
+				$25, $26, $27, $28,
+				$29, $30, $31, $32,
+				$33, $34,
+				$35, $36,
+				$37, $38
 			)`
 
 		_, err = tx.ExecContext(ctx, insertQuery,
 			productData.Barcode, barcodeRef, productData.ItemCode, productName, productData.ItemUnitCode, productUnitName,
 			productData.GroupCode, productGroupName, price, priceRetail,
 			productData.StandValue, productData.DivideValue,
-			boolToStock(productData.IsUseSubBarcodes), productData.ItemType, checkSumMongodb,
+			boolToStock(productData.IsUseSubBarcodes), productData.ItemType, productData.MaterialType, checkSumMongodb,
 			productData.ShopId, productData.GuidFixed, productData.ImageUri, productData.IsUseSubBarcodes,
 			productData.BrandCode, brandNames, productData.CategoryCode, categoryNames,
 			productData.ClassCode, classNames, productData.DesignCode, designNames,

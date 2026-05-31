@@ -1,87 +1,132 @@
 package handlers
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"net/http"
-	"sort"
 	"strings"
+	"time"
 
 	"smlcloudplatform/internal/goapi/logger"
 	mypg "smlcloudplatform/internal/goapi/mypg"
 
 	"github.com/labstack/echo/v4"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// ==================== Barcode List (PostgreSQL) ====================
+// ==================== Barcode List (MongoDB Atlas) ====================
 
-// BarcodeListRequest — Request body สำหรับดึงรายการบาร์โค้ดจาก PostgreSQL
+// BarcodeListRequest — Request body สำหรับดึงรายการบาร์โค้ด
 type BarcodeListRequest struct {
-	ShopID          string   `json:"shopid"`
-	Keyword         string   `json:"keyword"`
-	GroupCode       string   `json:"group_code"`
-	GroupCodeLegacy string   `json:"groupcode"`
-	BrandCode       string   `json:"brand_code"`
-	BrandCodeLegacy string   `json:"brandcode"`
-	CategoryCode    string   `json:"categorycode"`
-	ClassCode       string   `json:"classcode"`
-	DesignCode      string   `json:"designcode"`
-	GradeCode       string   `json:"gradecode"`
-	ModelCode       string   `json:"modelcode"`
-	PatternCode     string   `json:"patterncode"`
-	PriceMin        *float64 `json:"price_min"`
-	PriceMax        *float64 `json:"price_max"`
-	Limit           int      `json:"limit"`
-	Offset          int      `json:"offset"`
-	SortField       string   `json:"sort_field"`
-	SortOrder       string   `json:"sort_order"`
+	ShopID             string   `json:"shopid"`
+	Keyword            string   `json:"keyword"`
+	GroupCode          string   `json:"group_code"`
+	GroupCodeLegacy    string   `json:"groupcode"`
+	BrandCode          string   `json:"brand_code"`
+	BrandCodeLegacy    string   `json:"brandcode"`
+	CategoryCode       string   `json:"categorycode"`
+	ClassCode          string   `json:"classcode"`
+	DesignCode         string   `json:"designcode"`
+	GradeCode          string   `json:"gradecode"`
+	ModelCode          string   `json:"modelcode"`
+	PatternCode        string   `json:"patterncode"`
+	ItemType           *int     `json:"item_type"`
+	ItemTypeLegacy     *int     `json:"itemtype"`
+	MaterialType       *int     `json:"materialtype"`
+	MaterialTypeLegacy *int     `json:"material_type"`
+	PriceMin           *float64 `json:"price_min"`
+	PriceMax           *float64 `json:"price_max"`
+	Limit              int      `json:"limit"`
+	Offset             int      `json:"offset"`
+	SortField          string   `json:"sort_field"`
+	SortOrder          string   `json:"sort_order"`
 }
 
-// BarcodeListItem — รายการบาร์โค้ดสำหรับแสดงใน list (lightweight)
-type BarcodeListItem struct {
-	GuidFixed        string  `json:"guid_fixed"`
-	Barcode          string  `json:"barcode"`
-	Name             string  `json:"name0"`
-	UnitCode         string  `json:"unitcode"`
-	UnitName         string  `json:"unit_name"`
-	ItemCode         string  `json:"itemcode"`
-	BarcodeRef       string  `json:"barcoderef"`
-	GroupCode        string  `json:"group_code"`
-	GroupNames       string  `json:"group_names"`
-	BrandCode        string  `json:"brandcode"`
-	BrandNames       string  `json:"brandnames"`
-	CategoryCode     string  `json:"categorycode"`
-	CategoryNames    string  `json:"category_names"`
-	ClassCode        string  `json:"classcode"`
-	ClassNames       string  `json:"classnames"`
-	DesignCode       string  `json:"designcode"`
-	DesignNames      string  `json:"designnames"`
-	GradeCode        string  `json:"gradecode"`
-	GradeNames       string  `json:"gradenames"`
-	ModelCode        string  `json:"modelcode"`
-	ModelNames       string  `json:"modelnames"`
-	PatternCode      string  `json:"patterncode"`
-	PatternNames     string  `json:"patternnames"`
-	GroupSubOneCode  string  `json:"groupsubonecode"`
-	GroupSubOneNames string  `json:"groupsubonenames"`
-	GroupSubTwoCode  string  `json:"groupsubtwocode"`
-	GroupSubTwoNames string  `json:"groupsubtwonames"`
-	Price1           float64 `json:"price1"`
-	ImageUri         string  `json:"imageuri"`
-	StandValue       float64 `json:"standvalue"`
-	DivideValue      float64 `json:"dividevalue"`
-	IsStock          int     `json:"isstock"`
-	ItemType         int     `json:"itemtype"`
-	IsUseSubBarcodes bool    `json:"isusesubbarcodes"`
-	Checksum         string  `json:"checksum"`
-	ShopID           string  `json:"shopid"`
-	UnitCount        int     `json:"unit_count"`
-	AllUnitNames     string  `json:"all_unit_names"`
-	BalanceQty       float64 `json:"balance_qty"`
-	BalanceFormatted string  `json:"balance_formatted"`
+func mapString(doc bson.M, key string) string {
+	if val, ok := doc[key]; ok && val != nil {
+		if s, ok := val.(string); ok {
+			return s
+		}
+	}
+	return ""
 }
 
-// BarcodeListHandler — Handler สำหรับดึงรายการบาร์โค้ดจาก PostgreSQL
+func mapFloat(doc bson.M, key string) float64 {
+	if val, ok := doc[key]; ok && val != nil {
+		switch v := val.(type) {
+		case float64:
+			return v
+		case float32:
+			return float64(v)
+		case int64:
+			return float64(v)
+		case int32:
+			return float64(v)
+		case int:
+			return float64(v)
+		}
+	}
+	return 0.0
+}
+
+func mapInt(doc bson.M, key string) int {
+	if val, ok := doc[key]; ok && val != nil {
+		switch v := val.(type) {
+		case int64:
+			return int(v)
+		case int32:
+			return int(v)
+		case int:
+			return v
+		case float64:
+			return int(v)
+		}
+	}
+	return 0
+}
+
+func mapIntAny(doc bson.M, keys ...string) int {
+	for _, key := range keys {
+		if _, ok := doc[key]; ok {
+			return mapInt(doc, key)
+		}
+	}
+	return 0
+}
+
+func mapBool(doc bson.M, key string) bool {
+	if val, ok := doc[key]; ok && val != nil {
+		if b, ok := val.(bool); ok {
+			return b
+		}
+	}
+	return false
+}
+
+func mapNames(doc bson.M, key string) []map[string]string {
+	result := []map[string]string{}
+	if val, ok := doc[key]; ok && val != nil {
+		if arr, ok := val.(primitive.A); ok {
+			for _, item := range arr {
+				if m, ok := item.(bson.M); ok {
+					code, _ := m["code"].(string)
+					name, _ := m["name"].(string)
+					if code != "" {
+						result = append(result, map[string]string{
+							"code": code,
+							"name": name,
+						})
+					}
+				}
+			}
+		}
+	}
+	return result
+}
+
+// BarcodeListHandler — Handler สำหรับดึงรายการบาร์โค้ดจาก MongoDB Atlas
 // POST /api/product/barcode/list
 func BarcodeListHandler(c echo.Context) error {
 	var req BarcodeListRequest
@@ -104,6 +149,12 @@ func BarcodeListHandler(c echo.Context) error {
 	if req.BrandCode == "" {
 		req.BrandCode = req.BrandCodeLegacy
 	}
+	if req.ItemType == nil {
+		req.ItemType = req.ItemTypeLegacy
+	}
+	if req.MaterialType == nil {
+		req.MaterialType = req.MaterialTypeLegacy
+	}
 
 	// Defaults
 	if req.Limit <= 0 {
@@ -116,536 +167,370 @@ func BarcodeListHandler(c echo.Context) error {
 		req.Offset = 0
 	}
 
-	// Validate sort field (whitelist เพื่อป้องกัน SQL injection)
-	useRelevanceSort := req.SortField == "relevance"
-	validSortFields := map[string]string{
-		"barcode": "pb.barcode", "name0": "pb.name0", "itemcode": "pb.itemcode",
-		"group_names": "pb.groupnames", "price1": "pb.price1", "unit_name": "pb.unitname",
-		"groupnames": "pb.groupnames", "unitname": "pb.unitname",
-	}
-	if !useRelevanceSort {
-		if mapped, ok := validSortFields[req.SortField]; ok {
-			req.SortField = mapped
-		} else {
-			req.SortField = "pb.barcode"
-		}
-	}
-	sortOrder := "ASC"
-	if strings.ToLower(req.SortOrder) == "desc" {
-		sortOrder = "DESC"
-	}
-
-	// Connect to shop's PostgreSQL
-	db, err := mypg.PgSqlFastConnect(req.ShopID)
-	if err != nil {
-		logger.Error("BarcodeListHandler: connect PG: %v", err)
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+	// Connect to MongoDB Atlas
+	_, atlasDB := GetAtlasConnection()
+	if atlasDB == nil {
+		logger.Error("BarcodeListHandler: MongoDB connection is nil")
+		return c.JSON(http.StatusServiceUnavailable, map[string]interface{}{
 			"success": false,
-			"message": "Database connection failed",
+			"message": "MongoDB is not connected",
 		})
 	}
 
-	// แยกคำค้นหา + expand aliases
-	var searchWords []string
+	collection := atlasDB.Collection("productBarcodes")
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	// Build MongoDB filter
+	filter := bson.M{"shopid": req.ShopID}
+
 	if req.Keyword != "" {
-		searchWords = strings.Fields(req.Keyword)
-		searchWords = expandSearchAliases(db, searchWords)
-	}
-
-	// Build filter conditions (ไม่รวม keyword — จะใช้แยกใน two-phase search)
-	filterConditions, filterArgs, filterArgIdx := buildFilterConditions(req)
-
-	// ===== Two-Phase Search =====
-	var items []BarcodeListItem
-	var total int
-
-	if len(searchWords) > 0 {
-		// Phase 1: ILIKE search (เร็ว — ใช้ GIN trigram index)
-		items, total, err = searchILIKE(db, searchWords, filterConditions, filterArgs, filterArgIdx, req)
-		if err != nil {
-			logger.Error("BarcodeListHandler: ILIKE search: %v", err)
-		}
-
-		// Phase 2: Fuzzy fallback ถ้า ILIKE ได้ผลน้อย
-		if total < 3 && len(searchWords) == 1 {
-			fuzzyItems, fuzzyTotal, fuzzyErr := searchFuzzy(db, searchWords[0], filterConditions, filterArgs, filterArgIdx, req)
-			if fuzzyErr == nil && fuzzyTotal > total {
-				items = fuzzyItems
-				total = fuzzyTotal
+		keyword := strings.TrimSpace(req.Keyword)
+		words := strings.Fields(keyword)
+		if len(words) > 1 {
+			andConds := []bson.M{}
+			for _, w := range words {
+				andConds = append(andConds, bson.M{
+					"$or": []bson.M{
+						{"barcode": bson.M{"$regex": w, "$options": "i"}},
+						{"itemcode": bson.M{"$regex": w, "$options": "i"}},
+						{"names.name": bson.M{"$regex": w, "$options": "i"}},
+					},
+				})
+			}
+			filter["$and"] = andConds
+		} else {
+			filter["$or"] = []bson.M{
+				{"barcode": bson.M{"$regex": keyword, "$options": "i"}},
+				{"itemcode": bson.M{"$regex": keyword, "$options": "i"}},
+				{"names.name": bson.M{"$regex": keyword, "$options": "i"}},
 			}
 		}
-	} else {
-		// ไม่มี keyword — query ปกติ
-		items, total, err = searchNoKeyword(db, filterConditions, filterArgs, filterArgIdx, req, sortOrder)
-		if err != nil {
-			logger.Error("BarcodeListHandler: no keyword search: %v", err)
-			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"success": false,
-				"message": "Query failed",
-			})
+	}
+
+	// Apply other filters
+	if req.GroupCode != "" {
+		filter["group_code"] = req.GroupCode
+	}
+	if req.BrandCode != "" {
+		filter["brand_code"] = req.BrandCode
+	}
+	if req.CategoryCode != "" {
+		filter["categorycode"] = req.CategoryCode
+	}
+	if req.ClassCode != "" {
+		filter["classcode"] = req.ClassCode
+	}
+	if req.DesignCode != "" {
+		filter["designcode"] = req.DesignCode
+	}
+	if req.GradeCode != "" {
+		filter["gradecode"] = req.GradeCode
+	}
+	if req.ModelCode != "" {
+		filter["modelcode"] = req.ModelCode
+	}
+	if req.PatternCode != "" {
+		filter["patterncode"] = req.PatternCode
+	}
+	if req.ItemType != nil {
+		filter["item_type"] = *req.ItemType
+	}
+	if req.MaterialType != nil {
+		filter["materialtype"] = *req.MaterialType
+	}
+	if req.PriceMin != nil {
+		filter["prices.price"] = bson.M{"$gte": *req.PriceMin}
+	}
+	if req.PriceMax != nil {
+		if minFilter, ok := filter["prices.price"].(bson.M); ok {
+			minFilter["$lte"] = *req.PriceMax
+		} else {
+			filter["prices.price"] = bson.M{"$lte": *req.PriceMax}
 		}
 	}
 
-	// Relevance scoring + sort
-	if useRelevanceSort && len(searchWords) > 0 {
-		items = sortByRelevance(items, searchWords)
+	// Count total documents
+	totalCount, err := collection.CountDocuments(ctx, filter)
+	if err != nil {
+		logger.Error("BarcodeListHandler: count: %v", err)
+		totalCount = 0
 	}
 
-	// เพิ่มข้อมูลหน่วยนับ (unit_count + all_unit_names)
-	items = enrichUnitInfo(db, items)
+	// Find options
+	findOpts := options.Find()
+	findOpts.SetLimit(int64(req.Limit))
+	findOpts.SetSkip(int64(req.Offset))
 
-	// แปลงเป็น format ที่ Flutter เข้าใจ
-	result := formatBarcodeItems(items)
+	// Sort mapping
+	sortField := "barcode"
+	if req.SortField != "" {
+		sf := strings.ToLower(req.SortField)
+		if strings.Contains(sf, "barcode") {
+			sortField = "barcode"
+		} else if strings.Contains(sf, "name0") {
+			sortField = "names.0.name"
+		} else if strings.Contains(sf, "itemcode") {
+			sortField = "itemcode"
+		} else if strings.Contains(sf, "price1") {
+			sortField = "prices.0.price"
+		}
+	}
+	sortOrderVal := 1
+	if strings.ToLower(req.SortOrder) == "desc" {
+		sortOrderVal = -1
+	}
+	findOpts.SetSort(bson.M{sortField: sortOrderVal})
+
+	// Execute find query
+	cursor, err := collection.Find(ctx, filter, findOpts)
+	if err != nil {
+		logger.Error("BarcodeListHandler: find: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"success": false,
+			"message": "Query failed",
+		})
+	}
+	defer cursor.Close(ctx)
+
+	var docs []bson.M
+	if err := cursor.All(ctx, &docs); err != nil {
+		logger.Error("BarcodeListHandler: decode: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"success": false,
+			"message": "Query failed",
+		})
+	}
+
+	// Collect itemcodes and prepare initial response format
+	itemCodes := []string{}
+	itemCodeSet := map[string]bool{}
+	resultList := []map[string]interface{}{}
+
+	for _, doc := range docs {
+		itemCode := mapString(doc, "itemcode")
+		if itemCode != "" && !itemCodeSet[itemCode] {
+			itemCodeSet[itemCode] = true
+			itemCodes = append(itemCodes, itemCode)
+		}
+
+		// Prices parsing
+		prices := []map[string]interface{}{}
+		if val, ok := doc["prices"]; ok && val != nil {
+			if arr, ok := val.(primitive.A); ok {
+				for _, item := range arr {
+					if m, ok := item.(bson.M); ok {
+						keyNum := mapInt(m, "key_number")
+						if keyNum == 0 {
+							keyNum = mapInt(m, "keynumber")
+						}
+						prices = append(prices, map[string]interface{}{
+							"key_number": keyNum,
+							"price":      mapFloat(m, "price"),
+						})
+					}
+				}
+			}
+		}
+		if len(prices) == 0 {
+			prices = append(prices, map[string]interface{}{"key_number": 1, "price": 0.0})
+		}
+
+		itemType := mapIntAny(doc, "item_type", "itemtype")
+		materialType := mapIntAny(doc, "materialtype", "material_type")
+
+		resultList = append(resultList, map[string]interface{}{
+			"guid_fixed":        mapString(doc, "guidfixed"),
+			"barcode":           mapString(doc, "barcode"),
+			"names":             mapNames(doc, "names"),
+			"item_unit_code":    mapString(doc, "itemunitcode"),
+			"itemunitnames":     mapNames(doc, "itemunitnames"),
+			"itemcode":          itemCode,
+			"barcoderef":        mapString(doc, "barcoderef"),
+			"group_code":        mapString(doc, "group_code"),
+			"groupcode":         mapString(doc, "group_code"),
+			"group_names":       mapNames(doc, "group_names"),
+			"groupnames":        "",
+			"brand_code":        mapString(doc, "brand_code"),
+			"brandcode":         mapString(doc, "brand_code"),
+			"brandnames":        mapNames(doc, "brandnames"),
+			"categorycode":      mapString(doc, "categorycode"),
+			"category_code":     mapString(doc, "categorycode"),
+			"category_names":    mapNames(doc, "category_names"),
+			"categorynames":     mapNames(doc, "category_names"),
+			"classcode":         mapString(doc, "classcode"),
+			"class_code":        mapString(doc, "classcode"),
+			"classnames":        mapNames(doc, "classnames"),
+			"designcode":        mapString(doc, "designcode"),
+			"design_code":       mapString(doc, "designcode"),
+			"designnames":       mapNames(doc, "designnames"),
+			"gradecode":         mapString(doc, "gradecode"),
+			"grade_code":        mapString(doc, "gradecode"),
+			"gradenames":        mapNames(doc, "gradenames"),
+			"modelcode":         mapString(doc, "modelcode"),
+			"model_code":        mapString(doc, "modelcode"),
+			"modelnames":        mapNames(doc, "modelnames"),
+			"patterncode":       mapString(doc, "patterncode"),
+			"pattern_code":      mapString(doc, "patterncode"),
+			"patternnames":      mapNames(doc, "patternnames"),
+			"groupsubonecode":   mapString(doc, "groupsubonecode"),
+			"groupsubonenames":  mapNames(doc, "groupsubonenames"),
+			"groupsubtwocode":   mapString(doc, "groupsubtwocode"),
+			"groupsubtwonames":  mapNames(doc, "groupsubtwonames"),
+			"prices":            prices,
+			"imageuri":          mapString(doc, "imageuri"),
+			"standvalue":        mapFloat(doc, "standvalue"),
+			"dividevalue":       mapFloat(doc, "dividevalue"),
+			"isstock":           mapInt(doc, "isstock"),
+			"itemtype":          itemType,
+			"item_type":         itemType,
+			"materialtype":      materialType,
+			"material_type":     materialType,
+			"isusesubbarcodes":  mapBool(doc, "isusesubbarcodes"),
+			"checksum":          mapString(doc, "checksum"),
+			"shopid":            mapString(doc, "shopid"),
+			"refbarcodes":       doc["refbarcodes"],
+			"bom":               doc["bom"],
+			"businesstypes":     doc["businesstypes"],
+			"ignorebranches":    doc["ignorebranches"],
+			"unit_count":        1,
+			"all_unit_names":    "",
+			"balance_qty":       0.0,
+			"balance_formatted": "",
+		})
+	}
+
+	// 1. Enrich Unit Info from MongoDB
+	if len(itemCodes) > 0 {
+		unitFilter := bson.M{
+			"shopid":   req.ShopID,
+			"itemcode": bson.M{"$in": itemCodes},
+		}
+		unitCursor, err := collection.Find(ctx, unitFilter)
+		if err == nil {
+			var unitDocs []bson.M
+			if err := unitCursor.All(ctx, &unitDocs); err == nil {
+				type unitInfo struct {
+					name   string
+					stand  float64
+					divide float64
+					isRef  bool
+				}
+				itemUnitsMap := map[string][]unitInfo{}
+				for _, ud := range unitDocs {
+					code := mapString(ud, "itemcode")
+					if code == "" {
+						continue
+					}
+					unitName := ""
+					unitNames := mapNames(ud, "itemunitnames")
+					if len(unitNames) > 0 {
+						unitName = unitNames[0]["name"]
+					}
+					isRef := mapString(ud, "barcoderef") != ""
+
+					itemUnitsMap[code] = append(itemUnitsMap[code], unitInfo{
+						name:   unitName,
+						stand:  mapFloat(ud, "standvalue"),
+						divide: mapFloat(ud, "dividevalue"),
+						isRef:  isRef,
+					})
+				}
+
+				for _, res := range resultList {
+					code, _ := res["itemcode"].(string)
+					units, ok := itemUnitsMap[code]
+					if !ok || len(units) <= 1 {
+						res["unit_count"] = 1
+						if ok && len(units) == 1 {
+							res["all_unit_names"] = units[0].name
+						}
+						continue
+					}
+					res["unit_count"] = len(units)
+					parts := []string{}
+					baseUnit := ""
+					for _, u := range units {
+						if !u.isRef {
+							baseUnit = u.name
+							parts = append(parts, u.name)
+							break
+						}
+					}
+					for _, u := range units {
+						if u.isRef {
+							ratio := u.stand
+							if u.divide > 0 {
+								ratio = u.stand / u.divide
+							}
+							if ratio > 0 && ratio != 1 {
+								ratioStr := ""
+								if ratio == float64(int64(ratio)) {
+									ratioStr = fmt.Sprintf("%d", int64(ratio))
+								} else {
+									ratioStr = fmt.Sprintf("%.2f", ratio)
+								}
+								if baseUnit != "" {
+									parts = append(parts, fmt.Sprintf("%s(%s %s)", u.name, ratioStr, baseUnit))
+								} else {
+									parts = append(parts, fmt.Sprintf("%s(%s)", u.name, ratioStr))
+								}
+							} else {
+								parts = append(parts, u.name)
+							}
+						}
+					}
+					res["all_unit_names"] = strings.Join(parts, ", ")
+				}
+			}
+		}
+	}
+
+	// 2. Enrich Balance Qty from PostgreSQL
+	if len(itemCodes) > 0 {
+		balanceMap := map[string]float64{}
+		balanceWordMap := map[string]string{}
+
+		db, err := mypg.PgSqlFastConnect(req.ShopID)
+		if err == nil {
+			placeholders := make([]string, len(itemCodes))
+			args := make([]interface{}, len(itemCodes))
+			for i, code := range itemCodes {
+				placeholders[i] = fmt.Sprintf("$%d", i+1)
+				args[i] = code
+			}
+			balQuery := fmt.Sprintf(
+				"SELECT itemcode, COALESCE(balanceqty, 0), COALESCE(balanceqtyword, '') FROM product WHERE itemcode IN (%s)",
+				strings.Join(placeholders, ","),
+			)
+			rows, err := db.Query(balQuery, args...)
+			if err == nil {
+				defer rows.Close()
+				for rows.Next() {
+					var code, word string
+					var qty float64
+					if err := rows.Scan(&code, &qty, &word); err == nil {
+						balanceMap[code] = qty
+						balanceWordMap[code] = word
+					}
+				}
+			}
+		}
+
+		for _, res := range resultList {
+			code, _ := res["itemcode"].(string)
+			if qty, ok := balanceMap[code]; ok {
+				res["balance_qty"] = qty
+			}
+			if word, ok := balanceWordMap[code]; ok {
+				res["balance_formatted"] = word
+			}
+		}
+	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"success": true,
-		"data":    result,
-		"total":   total,
+		"data":    resultList,
+		"total":   totalCount,
 	})
-}
-
-// ==================== Filter Builder ====================
-
-func buildFilterConditions(req BarcodeListRequest) ([]string, []interface{}, int) {
-	conditions := []string{}
-	args := []interface{}{}
-	argIdx := 1
-
-	filterFields := []struct {
-		code   string
-		column string
-	}{
-		{req.GroupCode, "pb.groupcode"},
-		{req.BrandCode, "pb.brandcode"},
-		{req.CategoryCode, "pb.categorycode"},
-		{req.ClassCode, "pb.classcode"},
-		{req.DesignCode, "pb.designcode"},
-		{req.GradeCode, "pb.gradecode"},
-		{req.ModelCode, "pb.modelcode"},
-		{req.PatternCode, "pb.patterncode"},
-	}
-	for _, f := range filterFields {
-		if f.code != "" {
-			conditions = append(conditions, fmt.Sprintf("%s = $%d", f.column, argIdx))
-			args = append(args, f.code)
-			argIdx++
-		}
-	}
-
-	if req.PriceMin != nil {
-		conditions = append(conditions, fmt.Sprintf("pb.price1 >= $%d", argIdx))
-		args = append(args, *req.PriceMin)
-		argIdx++
-	}
-	if req.PriceMax != nil {
-		conditions = append(conditions, fmt.Sprintf("pb.price1 <= $%d", argIdx))
-		args = append(args, *req.PriceMax)
-		argIdx++
-	}
-
-	return conditions, args, argIdx
-}
-
-// ==================== Search: ILIKE (Phase 1) ====================
-
-func searchILIKE(db *sql.DB, words []string, filterConds []string, filterArgs []interface{}, argIdx int, req BarcodeListRequest) ([]BarcodeListItem, int, error) {
-	conditions := append([]string{}, filterConds...)
-	args := append([]interface{}{}, filterArgs...)
-
-	for _, word := range words {
-		kw := "%" + word + "%"
-		conditions = append(conditions, fmt.Sprintf(
-			"(pb.barcode ILIKE $%d OR pb.name0 ILIKE $%d OR pb.itemcode ILIKE $%d OR pb.groupnames ILIKE $%d)",
-			argIdx, argIdx, argIdx, argIdx,
-		))
-		args = append(args, kw)
-		argIdx++
-	}
-
-	return executeSearch(db, conditions, args, argIdx, req, "pb.barcode", "ASC")
-}
-
-// ==================== Search: Fuzzy (Phase 2) ====================
-
-func searchFuzzy(db *sql.DB, keyword string, filterConds []string, filterArgs []interface{}, argIdx int, req BarcodeListRequest) ([]BarcodeListItem, int, error) {
-	conditions := append([]string{}, filterConds...)
-	args := append([]interface{}{}, filterArgs...)
-
-	// ใช้ pg_trgm similarity — threshold 0.15 สำหรับภาษาไทย
-	conditions = append(conditions, fmt.Sprintf(
-		"(similarity(pb.name0, $%d) > 0.15 OR similarity(pb.barcode, $%d) > 0.15 OR similarity(pb.itemcode, $%d) > 0.15)",
-		argIdx, argIdx, argIdx,
-	))
-	args = append(args, keyword)
-	argIdx++
-
-	return executeSearch(db, conditions, args, argIdx, req, fmt.Sprintf("similarity(pb.name0, '%s')", strings.ReplaceAll(keyword, "'", "''")), "DESC")
-}
-
-// ==================== Search: No Keyword ====================
-
-func searchNoKeyword(db *sql.DB, filterConds []string, filterArgs []interface{}, argIdx int, req BarcodeListRequest, sortOrder string) ([]BarcodeListItem, int, error) {
-	sortField := req.SortField
-	if sortField == "relevance" {
-		sortField = "pb.barcode"
-	}
-	return executeSearch(db, filterConds, filterArgs, argIdx, req, sortField, sortOrder)
-}
-
-// ==================== Execute Search ====================
-
-func executeSearch(db *sql.DB, conditions []string, args []interface{}, argIdx int, req BarcodeListRequest, orderField string, orderDir string) ([]BarcodeListItem, int, error) {
-	whereClause := ""
-	if len(conditions) > 0 {
-		whereClause = "WHERE " + strings.Join(conditions, " AND ")
-	}
-
-	// Count
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM productbarcode pb %s", whereClause)
-	var total int
-	if err := db.QueryRow(countQuery, args...).Scan(&total); err != nil {
-		logger.Error("BarcodeListHandler: count: %v", err)
-		total = 0
-	}
-
-	// Data
-	dataQuery := fmt.Sprintf(`
-		SELECT COALESCE(pb.guidfixed,''), pb.barcode, COALESCE(pb.name0,''), COALESCE(pb.unitcode,''), COALESCE(pb.unitname,''),
-			   COALESCE(pb.itemcode,''), COALESCE(pb.barcoderef,''), COALESCE(pb.groupcode,''), COALESCE(pb.groupnames,''),
-			   COALESCE(pb.brandcode,''), COALESCE(pb.brandnames,''),
-			   COALESCE(pb.categorycode,''), COALESCE(pb.categorynames,''),
-			   COALESCE(pb.classcode,''), COALESCE(pb.classnames,''),
-			   COALESCE(pb.designcode,''), COALESCE(pb.designnames,''),
-			   COALESCE(pb.gradecode,''), COALESCE(pb.gradenames,''),
-			   COALESCE(pb.modelcode,''), COALESCE(pb.modelnames,''),
-			   COALESCE(pb.patterncode,''), COALESCE(pb.patternnames,''),
-			   COALESCE(pb.groupsubonecode,''), COALESCE(pb.groupsubonenames,''),
-			   COALESCE(pb.groupsubtwocode,''), COALESCE(pb.groupsubtwonames,''),
-			   COALESCE(pb.price1,0), COALESCE(pb.imageuri,''),
-			   COALESCE(pb.barcoderefunitstand,0), COALESCE(pb.barcoderefunitdivide,0),
-			   COALESCE(pb.isstock,0), COALESCE(pb.itemtype,0), COALESCE(pb.isusesubbarcodes,false),
-			   COALESCE(pb.checksum,''), COALESCE(pb.shopid,''),
-			   COALESCE(p.balanceqty,0), COALESCE(p.balanceqtyword,'')
-		FROM productbarcode pb
-		LEFT JOIN product p ON p.itemcode = pb.itemcode
-		%s
-		ORDER BY %s %s
-		LIMIT $%d OFFSET $%d
-	`, whereClause, orderField, orderDir, argIdx, argIdx+1)
-
-	args = append(args, req.Limit, req.Offset)
-
-	rows, err := db.Query(dataQuery, args...)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer rows.Close()
-
-	var items []BarcodeListItem
-	for rows.Next() {
-		var item BarcodeListItem
-		var price sql.NullFloat64
-		if err := rows.Scan(
-			&item.GuidFixed, &item.Barcode, &item.Name, &item.UnitCode, &item.UnitName,
-			&item.ItemCode, &item.BarcodeRef, &item.GroupCode, &item.GroupNames,
-			&item.BrandCode, &item.BrandNames,
-			&item.CategoryCode, &item.CategoryNames,
-			&item.ClassCode, &item.ClassNames,
-			&item.DesignCode, &item.DesignNames,
-			&item.GradeCode, &item.GradeNames,
-			&item.ModelCode, &item.ModelNames,
-			&item.PatternCode, &item.PatternNames,
-			&item.GroupSubOneCode, &item.GroupSubOneNames,
-			&item.GroupSubTwoCode, &item.GroupSubTwoNames,
-			&price, &item.ImageUri,
-			&item.StandValue, &item.DivideValue,
-			&item.IsStock, &item.ItemType, &item.IsUseSubBarcodes,
-			&item.Checksum, &item.ShopID,
-			&item.BalanceQty, &item.BalanceFormatted,
-		); err != nil {
-			logger.Error("BarcodeListHandler: scan: %v", err)
-			continue
-		}
-		if price.Valid {
-			item.Price1 = price.Float64
-		}
-		items = append(items, item)
-	}
-
-	return items, total, rows.Err()
-}
-
-// ==================== Relevance Scoring ====================
-
-func calculateBarcodeSearchScore(item BarcodeListItem, words []string) int {
-	score := 0
-	nameLower := strings.ToLower(item.Name)
-	barcodeLower := strings.ToLower(item.Barcode)
-	itemCodeLower := strings.ToLower(item.ItemCode)
-
-	for _, word := range words {
-		w := strings.ToLower(word)
-
-		// Exact match barcode: +1000
-		if barcodeLower == w {
-			score += 1000
-		}
-		// Exact match itemcode: +900
-		if itemCodeLower == w {
-			score += 900
-		}
-		// Prefix match name: +250
-		if strings.HasPrefix(nameLower, w) {
-			score += 250
-		} else if strings.Contains(nameLower, w) {
-			score += 50
-		}
-		// Prefix match itemcode: +200
-		if strings.HasPrefix(itemCodeLower, w) {
-			score += 200
-		}
-		// Prefix match barcode: +150
-		if strings.HasPrefix(barcodeLower, w) {
-			score += 150
-		}
-	}
-
-	// Bonus for shorter name
-	if len(item.Name) < 30 {
-		score += 10
-	}
-
-	return score
-}
-
-func sortByRelevance(items []BarcodeListItem, words []string) []BarcodeListItem {
-	sort.SliceStable(items, func(i, j int) bool {
-		scoreI := calculateBarcodeSearchScore(items[i], words)
-		scoreJ := calculateBarcodeSearchScore(items[j], words)
-		return scoreI > scoreJ
-	})
-	return items
-}
-
-// ==================== Alias Expansion ====================
-
-// expandSearchAliases — ตรวจแต่ละคำกับ search_aliases table
-// เช่น "ทีโอเอ" → "TOA", "มากิต้า" → "MAKITA"
-func expandSearchAliases(db *sql.DB, words []string) []string {
-	result := make([]string, len(words))
-	copy(result, words)
-
-	for i, word := range result {
-		var target string
-		err := db.QueryRow(
-			"SELECT target FROM search_aliases WHERE LOWER(alias) = LOWER($1) LIMIT 1",
-			word,
-		).Scan(&target)
-		if err == nil && target != "" {
-			logger.Info("BarcodeListHandler: alias expand: %s → %s", word, target)
-			result[i] = target
-		}
-	}
-
-	return result
-}
-
-// ==================== Enrich Unit Info ====================
-
-// enrichUnitInfo — เพิ่มข้อมูล unit_count + all_unit_names (พร้อมอัตราส่วน) ให้แต่ละ item
-func enrichUnitInfo(db *sql.DB, items []BarcodeListItem) []BarcodeListItem {
-	if len(items) == 0 {
-		return items
-	}
-
-	// Collect unique itemcodes
-	itemcodeSet := map[string]bool{}
-	for _, item := range items {
-		if item.ItemCode != "" {
-			itemcodeSet[item.ItemCode] = true
-		}
-	}
-
-	if len(itemcodeSet) == 0 {
-		for i := range items {
-			items[i].UnitCount = 1
-		}
-		return items
-	}
-
-	// Build IN clause
-	codes := make([]interface{}, 0, len(itemcodeSet))
-	placeholders := make([]string, 0, len(itemcodeSet))
-	idx := 1
-	for code := range itemcodeSet {
-		codes = append(codes, code)
-		placeholders = append(placeholders, fmt.Sprintf("$%d", idx))
-		idx++
-	}
-
-	// Query: ดึง unitname + อัตราส่วน per barcode per itemcode
-	query := fmt.Sprintf(
-		`SELECT itemcode, unitname,
-			COALESCE(barcoderefunitstand, 0) as stand,
-			COALESCE(barcoderefunitdivide, 0) as divide,
-			COALESCE(barcoderef, '') as barcoderef
-		FROM productbarcode
-		WHERE itemcode IN (%s)
-		ORDER BY itemcode, barcoderefunitstand ASC`,
-		strings.Join(placeholders, ","),
-	)
-
-	rows, err := db.Query(query, codes...)
-	if err != nil {
-		logger.Error("enrichUnitInfo: query: %v", err)
-		for i := range items {
-			items[i].UnitCount = 1
-		}
-		return items
-	}
-	defer rows.Close()
-
-	// เก็บ unit info per itemcode
-	type unitDetail struct {
-		UnitName   string
-		Stand      float64
-		Divide     float64
-		BarcodeRef string
-	}
-	detailMap := map[string][]unitDetail{}
-
-	for rows.Next() {
-		var code, unitName, barcodeRef string
-		var stand, divide float64
-		if err := rows.Scan(&code, &unitName, &stand, &divide, &barcodeRef); err != nil {
-			continue
-		}
-		detailMap[code] = append(detailMap[code], unitDetail{
-			UnitName:   unitName,
-			Stand:      stand,
-			Divide:     divide,
-			BarcodeRef: barcodeRef,
-		})
-	}
-
-	// Build all_unit_names พร้อมอัตราส่วน
-	for i := range items {
-		details, ok := detailMap[items[i].ItemCode]
-		if !ok || len(details) <= 1 {
-			items[i].UnitCount = 1
-			if ok && len(details) == 1 {
-				items[i].AllUnitNames = details[0].UnitName
-			}
-			continue
-		}
-
-		items[i].UnitCount = len(details)
-
-		// หา base unit (barcoderef ว่าง = หน่วยหลัก)
-		baseUnit := ""
-		for _, d := range details {
-			if d.BarcodeRef == "" {
-				baseUnit = d.UnitName
-				break
-			}
-		}
-
-		// สร้าง string เช่น "ชิ้น, กล่อง(40), โหล(12)"
-		parts := make([]string, 0, len(details))
-		for _, d := range details {
-			if d.BarcodeRef == "" {
-				// หน่วยหลัก
-				parts = append(parts, d.UnitName)
-			} else {
-				// หน่วยย่อย/ใหญ่กว่า — แสดงอัตราส่วน
-				ratio := d.Stand
-				if d.Divide > 0 {
-					ratio = d.Stand / d.Divide
-				}
-				if ratio > 0 && ratio != 1 {
-					ratioStr := formatRatio(ratio)
-					if baseUnit != "" {
-						parts = append(parts, fmt.Sprintf("%s(%s %s)", d.UnitName, ratioStr, baseUnit))
-					} else {
-						parts = append(parts, fmt.Sprintf("%s(%s)", d.UnitName, ratioStr))
-					}
-				} else {
-					parts = append(parts, d.UnitName)
-				}
-			}
-		}
-		items[i].AllUnitNames = strings.Join(parts, ", ")
-	}
-
-	return items
-}
-
-// formatRatio — แสดงตัวเลขอัตราส่วน ถ้าเป็นจำนวนเต็มไม่แสดงทศนิยม
-func formatRatio(v float64) string {
-	if v == float64(int64(v)) {
-		return fmt.Sprintf("%d", int64(v))
-	}
-	return fmt.Sprintf("%.2f", v)
-}
-
-// ==================== Format Response ====================
-
-func formatBarcodeItems(items []BarcodeListItem) []map[string]interface{} {
-	result := make([]map[string]interface{}, 0, len(items))
-	for _, item := range items {
-		result = append(result, map[string]interface{}{
-			"guid_fixed":        item.GuidFixed,
-			"barcode":           item.Barcode,
-			"names":             []map[string]string{{"code": "th", "name": item.Name}},
-			"item_unit_code":    item.UnitCode,
-			"itemunitnames":     []map[string]string{{"code": "th", "name": item.UnitName}},
-			"itemcode":          item.ItemCode,
-			"barcoderef":        item.BarcodeRef,
-			"group_code":        item.GroupCode,
-			"groupcode":         item.GroupCode,
-			"group_names":       []map[string]string{{"code": "th", "name": item.GroupNames}},
-			"groupnames":        item.GroupNames,
-			"brand_code":        item.BrandCode,
-			"brandcode":         item.BrandCode,
-			"brandnames":        []map[string]string{{"code": "th", "name": item.BrandNames}},
-			"categorycode":      item.CategoryCode,
-			"category_code":     item.CategoryCode,
-			"category_names":    []map[string]string{{"code": "th", "name": item.CategoryNames}},
-			"categorynames":     []map[string]string{{"code": "th", "name": item.CategoryNames}},
-			"classcode":         item.ClassCode,
-			"class_code":        item.ClassCode,
-			"classnames":        []map[string]string{{"code": "th", "name": item.ClassNames}},
-			"designcode":        item.DesignCode,
-			"design_code":       item.DesignCode,
-			"designnames":       []map[string]string{{"code": "th", "name": item.DesignNames}},
-			"gradecode":         item.GradeCode,
-			"grade_code":        item.GradeCode,
-			"gradenames":        []map[string]string{{"code": "th", "name": item.GradeNames}},
-			"modelcode":         item.ModelCode,
-			"model_code":        item.ModelCode,
-			"modelnames":        []map[string]string{{"code": "th", "name": item.ModelNames}},
-			"patterncode":       item.PatternCode,
-			"pattern_code":      item.PatternCode,
-			"patternnames":      []map[string]string{{"code": "th", "name": item.PatternNames}},
-			"groupsubonecode":   item.GroupSubOneCode,
-			"groupsubonenames":  []map[string]string{{"code": "th", "name": item.GroupSubOneNames}},
-			"groupsubtwocode":   item.GroupSubTwoCode,
-			"groupsubtwonames":  []map[string]string{{"code": "th", "name": item.GroupSubTwoNames}},
-			"prices":            []map[string]interface{}{{"key_number": 1, "price": item.Price1}},
-			"imageuri":          item.ImageUri,
-			"standvalue":        item.StandValue,
-			"dividevalue":       item.DivideValue,
-			"isstock":           item.IsStock,
-			"itemtype":          item.ItemType,
-			"item_type":         item.ItemType,
-			"isusesubbarcodes":  item.IsUseSubBarcodes,
-			"checksum":          item.Checksum,
-			"shopid":            item.ShopID,
-			"unit_count":        item.UnitCount,
-			"all_unit_names":    item.AllUnitNames,
-			"balance_qty":       item.BalanceQty,
-			"balance_formatted": item.BalanceFormatted,
-		})
-	}
-	return result
 }

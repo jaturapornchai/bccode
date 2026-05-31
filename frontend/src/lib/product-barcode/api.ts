@@ -44,7 +44,7 @@ async function jsonRequest<T = unknown>(input: RequestInfo | URL, init: RequestI
   }
 }
 
-/** List barcodes via PG endpoint (filters + sort + offset). */
+/** List barcodes via backend product-barcode endpoint (MongoDB source, filters + sort + offset). */
 export function listBarcodes(
   auth: AuthSession | null,
   body: ProductBarcodeListRequest,
@@ -155,13 +155,17 @@ export type MasterName =
   | "producttype"
   | "ordertype"
   | "businesstype"
-  | "branch";
+  | "branch"
+  | "creditor"
+  | "product";
 
 export interface MasterListRequest {
   q?: string;
   page?: number;
   limit?: number;
   lang?: string;
+  company_guid?: string;
+  filters?: Record<string, string | number | boolean | undefined>;
 }
 
 export function listMaster(
@@ -174,6 +178,11 @@ export function listMaster(
   if (request.page) qs.set("page", String(request.page));
   if (request.limit) qs.set("limit", String(request.limit));
   if (request.lang) qs.set("lang", request.lang);
+  if (request.company_guid) qs.set("company_guid", request.company_guid);
+  for (const [key, value] of Object.entries(request.filters ?? {})) {
+    const normalized = String(value ?? "").trim();
+    if (normalized) qs.set(key, normalized);
+  }
   const queryString = qs.toString();
   const url = `/api/product-barcode/master/${master}${queryString ? `?${queryString}` : ""}`;
   return jsonRequest<MasterEntry[]>(url, {

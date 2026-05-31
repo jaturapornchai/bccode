@@ -12,7 +12,6 @@ import (
 
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/models"
-	"smlcloudplatform/internal/goapi/myclickhouse"
 	"smlcloudplatform/internal/goapi/mydlq"
 	"smlcloudplatform/internal/goapi/myglobal"
 	"smlcloudplatform/internal/goapi/mypg"
@@ -341,22 +340,7 @@ func InsertDocDetailToPostgreSQLTx(ctx context.Context, tx *sql.Tx, shopId strin
 //
 // Returns: error
 func InsertDocumentToClickHouse(ctx context.Context, shopId string, docStruct models.DocStruct, docRefStructs []models.DocRefStruct, docPaymentStruct models.DocPaymentStruct, docDetailStructs []models.DocDetailStruct, stepNumber int) error {
-	logger.Debug("Step %d: Inserting to ClickHouse...", stepNumber)
-
-	// Insert doc - แค่ log error ไม่ return (ไม่ต้อง retry)
-	if err := myclickhouse.InsertDocListToClickHouse(ctx, shopId,
-		[]models.DocStruct{docStruct},
-		docRefStructs,
-		[]models.DocPaymentStruct{docPaymentStruct}); err != nil {
-		logger.Error("❌ ClickHouse doc insert failed (shopId=%s, docNo=%s): %v", shopId, docStruct.DocNo, err)
-	}
-
-	// Insert docdetail - แค่ log error ไม่ return (ไม่ต้อง retry)
-	if err := myclickhouse.InsertDocDetailListToClickHouse(ctx, shopId, docDetailStructs); err != nil {
-		logger.Error("❌ ClickHouse docdetail insert failed (shopId=%s, records=%d): %v", shopId, len(docDetailStructs), err)
-	}
-
-	logger.Success("Step %d completed: Data inserted to ClickHouse", stepNumber)
+	logger.Debug("Step %d: ClickHouse is disabled, skipping insert.", stepNumber)
 	return nil
 }
 
@@ -472,23 +456,9 @@ func DeleteDocumentFromDatabases(ctx context.Context, shopId, docNo string, tran
 	return nil
 }
 
-// SoftDeleteDocClickHouse ทำ soft delete เอกสารใน ClickHouse (UPDATE isdelete = 1)
+// SoftDeleteDocClickHouse ทำ soft delete เอกสารใน ClickHouse (เลิกใช้งานแล้ว)
 func SoftDeleteDocClickHouse(ctx context.Context, shopId, docNo string) {
-	conn, err := myclickhouse.ClickHouseFastConnect()
-	if err != nil {
-		logger.Error("เชื่อมต่อ ClickHouse สำหรับ soft delete ล้มเหลว: %v", err)
-		return
-	}
-
-	alterQuery := fmt.Sprintf(
-		"ALTER TABLE %s UPDATE isdelete = 1 WHERE shopid = '%s' AND docno = '%s'",
-		myclickhouse.TableName("doc"), shopId, docNo,
-	)
-	if err := conn.Exec(ctx, alterQuery); err != nil {
-		logger.Error("Soft delete ใน ClickHouse ล้มเหลว: %v", err)
-	} else {
-		logger.Info("[SoftDelete] ClickHouse: shopid=%s, docno=%s — isdelete=1", shopId, docNo)
-	}
+	// ClickHouse is permanently disabled
 }
 
 // ProcessDocumentStatusAsync - ประมวลผลสถานะเอกสารแบบ async หลังจาก Kafka เสร็จ

@@ -35,12 +35,14 @@ import (
 	"smlcloudplatform/internal/mastersync"
 	"smlcloudplatform/internal/media"
 	"smlcloudplatform/internal/member"
+	"smlcloudplatform/internal/migration"
 	"smlcloudplatform/internal/notify"
 	"smlcloudplatform/internal/ocr"
 	order_device "smlcloudplatform/internal/order/device"
 	order_setting "smlcloudplatform/internal/order/setting"
 	"smlcloudplatform/internal/organization/branch"
 	"smlcloudplatform/internal/organization/businesstype"
+	"smlcloudplatform/internal/organization/company"
 	"smlcloudplatform/internal/organization/costcenter"
 	"smlcloudplatform/internal/organization/department"
 	"smlcloudplatform/internal/organization/jobproject"
@@ -341,6 +343,11 @@ func main() {
 		azureFileBlob := microservice.NewFilePersister()
 		imagePersister := microservice.NewPersisterImage(azureFileBlob)
 
+		// Initialize dynamic DB hook and register tenant models
+		if err := migration.StartMigrateModel(ms, cfg); err != nil {
+			log.Printf("ERROR: Failed to initialize migrate model: %v", err)
+		}
+
 		httpServices := []HttpRegister{
 
 			apikeyservice.NewApiKeyServiceHttp(ms, cfg),
@@ -408,6 +415,7 @@ func main() {
 			customer.NewCustomerHttp(ms, cfg),
 			customergroup.NewCustomerGroupHttp(ms, cfg),
 
+			company.NewCompanyHttp(ms, cfg),
 			branch.NewBranchHttp(ms, cfg),
 			department.NewDepartmentHttp(ms, cfg),
 			businesstype.NewBusinessTypeHttp(ms, cfg),

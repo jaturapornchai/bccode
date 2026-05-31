@@ -17,8 +17,8 @@ import {
   UserPlus,
   UserRound,
 } from "lucide-react";
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import QRCode from "qrcode";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -95,6 +95,7 @@ const emptyLineDialog: LineDialogState = {
 
 export function LoginScreen() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [backendUrl, setBackendUrl] = useState("");
   const [language, setLanguage] = useState<LanguageCode>("th");
   const [username, setUsername] = useState("");
@@ -141,6 +142,7 @@ export function LoginScreen() {
   }, [backendUrl, loginState, providerLoginState, signUpForm.confirmPassword, signUpForm.password, signUpForm.username, signUpState]);
 
   useEffect(() => {
+    setMounted(true);
     setRuntimeMode({ ready: true, sameServerBackend: isPublicRuntimeHost() });
     const savedLanguage = normalizeLanguage(localStorage.getItem(storageKeys.language) ?? "th");
     const savedUsername = localStorage.getItem(storageKeys.username);
@@ -662,9 +664,11 @@ export function LoginScreen() {
             <strong>{t(language, "secureWorkspace")}</strong>
           </div>
         </div>
-        <div className="brand-copy">
-          <h1>{t(language, "loginTitle")}</h1>
-          <p>{t(language, "brandDescription")}</p>
+        <div className="brand-hero">
+          <div className="brand-copy">
+            <h1>{t(language, "loginTitle")}</h1>
+            <p>{t(language, "brandDescription")}</p>
+          </div>
         </div>
         <div className="brand-feature-grid" aria-label={t(language, "firstUseTitle")}>
           <div className="brand-feature-card">
@@ -811,7 +815,7 @@ export function LoginScreen() {
             </div>
           ) : null}
 
-          <button className="primary-button" type="submit" disabled={!canSubmit}>
+          <button className="primary-button" type="submit" disabled={!mounted || !canSubmit}>
             {loginState === "loading" ? <Loader2 className="spin" size={18} /> : <LockKeyhole size={18} />}
             <span>{loginState === "loading" ? t(language, "loggingIn") : t(language, "login")}</span>
           </button>
@@ -955,7 +959,7 @@ export function LoginScreen() {
                 </label>
 
                 <div className="line-dialog-actions">
-                  <button className="primary-button" type="submit" disabled={!canSignUp}>
+                  <button className="primary-button" type="submit" disabled={!mounted || !canSignUp}>
                     {signUpState === "loading" ? <Loader2 className="spin" size={18} /> : <UserPlus size={18} />}
                     <span>{signUpState === "loading" ? t(language, "creatingAccount") : t(language, "createAccount")}</span>
                   </button>

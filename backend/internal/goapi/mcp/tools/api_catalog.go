@@ -563,12 +563,12 @@ func getGoAPIEndpoints() []APIEndpoint {
 		{Method: "GET", Path: "/goapi/api/health/queue", Description: "Queue system status", Category: "health", Source: "goapi", AuthRequired: false},
 		{Method: "GET", Path: "/goapi/api/health/queue/:shopid", Description: "Queue status for specific shop", Category: "health", Source: "goapi", AuthRequired: false,
 			Parameters: []APIParam{{Name: "shopid", In: "path", Type: "string", Required: true, Description: "Shop ID"}}},
-		{Method: "GET", Path: "/goapi/api/health/database", Description: "Database connection health check (PostgreSQL + ClickHouse)", Category: "health", Source: "goapi", AuthRequired: false},
+		{Method: "GET", Path: "/goapi/api/health/database", Description: "Database connection health check for projection/BI stores (PostgreSQL + ClickHouse)", Category: "health", Source: "goapi", AuthRequired: false},
 		{Method: "GET", Path: "/goapi/api/health/system", Description: "System health - memory, goroutines, uptime", Category: "health", Source: "goapi", AuthRequired: false},
 
 		// ===== Database Operations =====
 		{Method: "GET", Path: "/goapi/reportget", Description: "Get report data via GET method", Category: "database", Source: "goapi", AuthRequired: false},
-		{Method: "POST", Path: "/goapi/get", Description: "Execute PostgreSQL SELECT query", Category: "database", Source: "goapi", AuthRequired: false,
+		{Method: "POST", Path: "/goapi/get", Description: "Execute PostgreSQL projection SELECT query", Category: "database", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type":     "object",
@@ -579,7 +579,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 					},
 				},
 				Example: map[string]interface{}{"shopid": "SHOP001", "sql": "SELECT * FROM products LIMIT 10"}}},
-		{Method: "POST", Path: "/goapi/exec", Description: "Execute PostgreSQL command (INSERT/UPDATE/DELETE)", Category: "database", Source: "goapi", AuthRequired: false,
+		{Method: "POST", Path: "/goapi/exec", Description: "Execute PostgreSQL projection/admin command (INSERT/UPDATE/DELETE)", Category: "database", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type":     "object",
@@ -590,7 +590,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 					},
 				},
 				Example: map[string]interface{}{"shopid": "SHOP001", "sql": "UPDATE products SET name='test' WHERE id=1"}}},
-		{Method: "POST", Path: "/goapi/getdoc", Description: "Get document data from PostgreSQL", Category: "database", Source: "goapi", AuthRequired: false,
+		{Method: "POST", Path: "/goapi/getdoc", Description: "Get legacy document projection data from PostgreSQL", Category: "database", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type":     "object",
@@ -957,7 +957,7 @@ func getGoAPIEndpoints() []APIEndpoint {
 			RequestBody: &APIRequestBody{ContentType: "multipart/form-data"}},
 
 		// ===== Chatbot (Gemini AI) =====
-		{Method: "POST", Path: "/goapi/api/v1/chatbot/chat-gemini", Description: "Chat with Gemini AI", Category: "chatbot", Source: "goapi", AuthRequired: false,
+		{Method: "POST", Path: "/goapi/api/v1/chatbot/chat-gemini", Description: "Legacy Gemini chat over PostgreSQL projection tables; prefer chat-agent for MongoDB operational data", Category: "chatbot", Source: "goapi", AuthRequired: false,
 			RequestBody: &APIRequestBody{ContentType: "application/json",
 				Schema: map[string]interface{}{
 					"type":     "object",

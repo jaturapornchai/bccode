@@ -1,0 +1,36 @@
+---
+description: Generate beautiful UI single pass. Uses thinking_level=medium + multimodal input.
+---
+
+# Quick UI — thinking_level: MEDIUM
+
+Usage:
+- `/qui <component> [hint]`
+- `/qui <component> [paste image]` ← preferred (Gemini multimodal strength)
+
+Examples:
+- `/qui dashboard analytics with charts + KPI`
+- `/qui landing SaaS dark hero + pricing` + screenshot
+- `/qui form multi-step onboarding 4 steps`
+
+## Process
+1. Load `ui-beautiful` skill
+2. Read brand from project-context.md
+3. If image → extract palette/spacing/type as primary spec
+4. Detect stack (shadcn/Tailwind/raw)
+5. Generate ONE variant
+6. Output: code + 3-line rationale + reference (Linear/Vercel/etc)
+
+## Anti-slop check before output
+- [ ] No 3-card grid center hero
+- [ ] One accent color only
+- [ ] Specific copy (numbers, names)
+- [ ] Spacing on 4-multiple
+- [ ] Type scale ≤5 sizes
+- [ ] No purple→pink gradient
+
+## Token budget: ~5-8k output (medium thinking + UI code)
+
+## Escalation
+- >5 connected components needing consistent design system
+  → ask: "เพิ่ม thinking=high หรือ route ไป Opus 4.7?"

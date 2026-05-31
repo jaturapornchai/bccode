@@ -28,7 +28,7 @@ type FileUploadResponse struct {
 	Message   string `json:"message"`
 }
 
-// FileUploadHandler - handles file upload to SeaweedFS S3
+// FileUploadHandler - handles file upload to Cloudflare R2
 // POST /upload
 // Form data: file (multipart/form-data), shopid (optional, must match auth token if provided)
 // Returns: JSON with file name and presigned URL
@@ -105,7 +105,7 @@ func FileUploadHandler(c echo.Context) error {
 		contentType = "application/octet-stream"
 	}
 
-	// Upload ไป SeaweedFS S3
+	// Upload ไป Cloudflare R2
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
@@ -143,7 +143,7 @@ func FileUploadHandler(c echo.Context) error {
 	})
 }
 
-// FileDownloadHandler - download file from SeaweedFS S3 via presigned URL
+// FileDownloadHandler - download file from Cloudflare R2 via presigned URL
 // GET /upload/download/:key
 func FileDownloadHandler(c echo.Context) error {
 	objectKey := c.Param("key")

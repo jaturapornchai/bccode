@@ -9,35 +9,35 @@ import (
 // ==================== Structs ====================
 
 type ModelSchemaRequest struct {
-	Model string `json:"model"`
+	Model    string `json:"model"`
 	Category string `json:"category"`
-	Keyword string `json:"keyword"`
+	Keyword  string `json:"keyword"`
 }
 
 type ModelSchemaResponse struct {
-	Models []ModelDef `json:"models"`
-	TotalCount int        `json:"total_count"`
-	Categories []string   `json:"categories"`
+	Models      []ModelDef `json:"models"`
+	TotalCount  int        `json:"total_count"`
+	Categories  []string   `json:"categories"`
 	GeneratedAt time.Time  `json:"generated_at"`
 }
 
 type ModelDef struct {
-	Name string     `json:"name"`
+	Name        string     `json:"name"`
 	Description string     `json:"description"`
-	Category string     `json:"category"`
-	SourceFile string     `json:"source_file"`
-	Fields []FieldDef `json:"fields"`
-	DartClass string     `json:"dart_class"`
+	Category    string     `json:"category"`
+	SourceFile  string     `json:"source_file"`
+	Fields      []FieldDef `json:"fields"`
+	DartClass   string     `json:"dart_class"`
 	TSInterface string     `json:"ts_interface"`
 }
 
 type FieldDef struct {
-	Name string `json:"name"`
-	JSONName string `json:"json_name"`
-	Type string `json:"go_type"`
-	DartType string `json:"dart_type"`
-	TSType string `json:"ts_type"`
-	Required bool   `json:"required"`
+	Name        string `json:"name"`
+	JSONName    string `json:"json_name"`
+	Type        string `json:"go_type"`
+	DartType    string `json:"dart_type"`
+	TSType      string `json:"ts_type"`
+	Required    bool   `json:"required"`
 	Description string `json:"description,omitempty"`
 }
 
@@ -295,7 +295,8 @@ func getAllModels() []ModelDef {
 				{Name: "UnitStand", JSONName: "unitstand", Type: "float64", DartType: "double", TSType: "number", Description: "Unit stand (multiplier)"},
 				{Name: "UnitDivide", JSONName: "unitdivide", Type: "float64", DartType: "double", TSType: "number", Description: "Unit divide (divisor)"},
 				{Name: "IsStock", JSONName: "isstock", Type: "int", DartType: "int", TSType: "number", Description: "1=track stock, 0=no stock"},
-				{Name: "ItemType", JSONName: "item_type", Type: "int", DartType: "int", TSType: "number", Description: "Item type"},
+				{Name: "ItemType", JSONName: "item_type", Type: "int", DartType: "int", TSType: "number", Description: "0=Stock, 1=Service, 2=Set, 3=Not Stock"},
+				{Name: "MaterialType", JSONName: "materialtype", Type: "int", DartType: "int", TSType: "number", Description: "0=General, 1=Material, 2=Semi-Finished, 3=Set, 4=Agricultural"},
 				{Name: "ImageUri", JSONName: "imageuri", Type: "string", DartType: "String", TSType: "string", Description: "Product image URL"},
 			},
 		},
@@ -549,7 +550,8 @@ func getAllModels() []ModelDef {
 				{Name: "GuidFixed", JSONName: "guid_fixed", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Product GUID"},
 				{Name: "ItemCode", JSONName: "itemcode", Type: "string", DartType: "String", TSType: "string", Required: true, Description: "Item code"},
 				{Name: "Names", JSONName: "names", Type: "[]NameX", DartType: "List<Map<String, dynamic>>", TSType: "Array<{code: string, name: string}>", Description: "Product names (multi-language)"},
-				{Name: "ItemType", JSONName: "item_type", Type: "int", DartType: "int", TSType: "number", Description: "0=normal, 1=service, 2=set/combo (see product_type enum)"},
+				{Name: "ItemType", JSONName: "item_type", Type: "int", DartType: "int", TSType: "number", Description: "0=Stock, 1=Service, 2=Set, 3=Not Stock"},
+				{Name: "MaterialType", JSONName: "materialtype", Type: "int", DartType: "int", TSType: "number", Description: "0=General, 1=Material, 2=Semi-Finished, 3=Set, 4=Agricultural"},
 				{Name: "GroupCode", JSONName: "group_code", Type: "string", DartType: "String", TSType: "string", Description: "Product group code"},
 				{Name: "CategoryGuid", JSONName: "category_guid", Type: "string", DartType: "String", TSType: "string", Description: "Category GUID"},
 				{Name: "TaxType", JSONName: "tax_type", Type: "int", DartType: "int", TSType: "number", Description: "0=taxable, 1=tax-exempt (see vat_cal enum)"},
@@ -574,6 +576,8 @@ func getAllModels() []ModelDef {
 				{Name: "DivideValue", JSONName: "dividevalue", Type: "float64", DartType: "double", TSType: "number", Description: "Unit divisor"},
 				{Name: "Price", JSONName: "price", Type: "float64", DartType: "double", TSType: "number", Description: "Selling price"},
 				{Name: "AverageCost", JSONName: "averagecost", Type: "float64", DartType: "double", TSType: "number", Description: "Average cost"},
+				{Name: "ItemType", JSONName: "item_type", Type: "int", DartType: "int", TSType: "number", Description: "0=Stock, 1=Service, 2=Set, 3=Not Stock"},
+				{Name: "MaterialType", JSONName: "materialtype", Type: "int", DartType: "int", TSType: "number", Description: "0=General, 1=Material, 2=Semi-Finished, 3=Set, 4=Agricultural"},
 				{Name: "IsDefault", JSONName: "isdefault", Type: "bool", DartType: "bool", TSType: "boolean", Description: "Default barcode/unit for product"},
 			},
 		},

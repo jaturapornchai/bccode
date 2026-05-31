@@ -34,9 +34,9 @@ type IUnitHttpService interface {
 	InfoUnit(shopID string, guid string) (models.UnitInfo, error)
 	InfoUnitWTFArray(shopID string, unitCodes []string) ([]interface{}, error)
 	InfoWTFArrayMaster(codes []string) ([]interface{}, error)
-	SearchUnit(shopID string, codeFilters []string, pageable micromodels.Pageable) ([]models.UnitInfo, mongopagination.PaginationData, error)
+	SearchUnit(shopID string, companyGuid string, codeFilters []string, pageable micromodels.Pageable) ([]models.UnitInfo, mongopagination.PaginationData, error)
 	SearchUnitMultiShops(shopsID []string, codeFilters []string, pageable micromodels.Pageable) ([]models.UnitInfo, mongopagination.PaginationData, error)
-	SearchUnitLimit(shopID string, langCode string, codeFilters []string, pageableStep micromodels.PageableStep) ([]models.UnitInfo, int, error)
+	SearchUnitLimit(shopID string, companyGuid string, langCode string, codeFilters []string, pageableStep micromodels.PageableStep) ([]models.UnitInfo, int, error)
 	SaveInBatch(shopID string, authUsername string, dataList []models.Unit) (common.BulkImport, error)
 	GetModuleName() string
 	ImportUnitsFromFile(file []byte, shopID string, authUsername string) (string, error)
@@ -212,6 +212,7 @@ func (svc UnitHttpService) CreateUnit(shopID string, authUsername string, doc mo
 	docData.ShopID = shopID
 	docData.GuidFixed = newGuidFixed
 	docData.Unit = doc
+	svc.syncUnitNames(&docData.Unit)
 
 	docData.CreatedBy = authUsername
 	docData.CreatedAt = time.Now()
@@ -249,6 +250,7 @@ func (svc UnitHttpService) UpdateUnit(shopID string, guid string, authUsername s
 	tempCode := findDoc.UnitCode
 
 	findDoc.Unit = doc
+	svc.syncUnitNames(&findDoc.Unit)
 
 	//
 	findDoc.UnitCode = tempCode
@@ -312,6 +314,7 @@ func (svc UnitHttpService) UpdateFieldUnit(shopID string, guid string, authUsern
 	})
 
 	findDoc.Unit.Names = &tempNames
+	svc.syncUnitNames(&findDoc.Unit)
 
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
@@ -520,7 +523,7 @@ func (svc UnitHttpService) InfoWTFArrayMaster(codes []string) ([]interface{}, er
 	return docList, nil
 }
 
-func (svc UnitHttpService) SearchUnit(shopID string, codeFilters []string, pageable micromodels.Pageable) ([]models.UnitInfo, mongopagination.PaginationData, error) {
+func (svc UnitHttpService) SearchUnit(shopID string, companyGuid string, codeFilters []string, pageable micromodels.Pageable) ([]models.UnitInfo, mongopagination.PaginationData, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -533,6 +536,14 @@ func (svc UnitHttpService) SearchUnit(shopID string, codeFilters []string, pagea
 	filters := map[string]interface{}{}
 	if len(codeFilters) > 0 {
 		filters["unitcode"] = bson.M{"$in": codeFilters}
+	}
+
+	if len(companyGuid) > 0 {
+		filters["$or"] = []interface{}{
+			bson.M{"company_guids": bson.M{"$exists": false}},
+			bson.M{"company_guids": bson.M{"$size": 0}},
+			bson.M{"company_guids": companyGuid},
+		}
 	}
 
 	docList, pagination, err := svc.repo.FindPageFilter(ctx, shopID, filters, searchInFields, pageable)
@@ -574,7 +585,7 @@ func (svc UnitHttpService) SearchUnitMultiShops(shopsID []string, codeFilters []
 	return docList, pagination, nil
 }
 
-func (svc UnitHttpService) SearchUnitLimit(shopID string, langCode string, codeFilters []string, pageableStep micromodels.PageableStep) ([]models.UnitInfo, int, error) {
+func (svc UnitHttpService) SearchUnitLimit(shopID string, companyGuid string, langCode string, codeFilters []string, pageableStep micromodels.PageableStep) ([]models.UnitInfo, int, error) {
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
@@ -585,8 +596,9 @@ func (svc UnitHttpService) SearchUnitLimit(shopID string, langCode string, codeF
 	}
 
 	selectFields := map[string]interface{}{
-		"guid_fixed": 1,
-		"unitcode":  1,
+		"guid_fixed":    1,
+		"unitcode":      1,
+		"company_guids": 1,
 	}
 
 	if langCode != "" {
@@ -597,9 +609,14 @@ func (svc UnitHttpService) SearchUnitLimit(shopID string, langCode string, codeF
 
 	filters := map[string]interface{}{}
 	if len(codeFilters) > 0 {
+		filters["unitcode"] = bson.M{"$in": codeFilters}
+	}
 
+	if len(companyGuid) > 0 {
 		filters["$or"] = []interface{}{
-			bson.M{"unitcode": bson.M{"$in": codeFilters}},
+			bson.M{"company_guids": bson.M{"$exists": false}},
+			bson.M{"company_guids": bson.M{"$size": 0}},
+			bson.M{"company_guids": companyGuid},
 		}
 	}
 
@@ -739,4 +756,56 @@ func (svc UnitHttpService) saveMasterSync(shopID string) {
 
 func (svc UnitHttpService) GetModuleName() string {
 	return "productunit"
+}
+
+func (svc UnitHttpService) syncUnitNames(doc *models.Unit) {
+	if doc.Names == nil {
+		return
+	}
+	doc.UnitName1 = ""
+	doc.UnitName2 = nil
+	doc.UnitName3 = nil
+	doc.UnitName4 = nil
+	doc.UnitName5 = nil
+
+	nameMap := make(map[string]string)
+	for _, n := range *doc.Names {
+		if n.Code != nil && n.Name != nil {
+			nameMap[*n.Code] = *n.Name
+		}
+	}
+
+	langs := []string{"th", "en", "lo", "my", "kh"}
+	matchedNames := []string{}
+
+	for _, lang := range langs {
+		if val, ok := nameMap[lang]; ok {
+			matchedNames = append(matchedNames, val)
+			delete(nameMap, lang)
+		}
+	}
+
+	for _, val := range nameMap {
+		matchedNames = append(matchedNames, val)
+	}
+
+	if len(matchedNames) > 0 {
+		doc.UnitName1 = matchedNames[0]
+	}
+	if len(matchedNames) > 1 {
+		val := matchedNames[1]
+		doc.UnitName2 = &val
+	}
+	if len(matchedNames) > 2 {
+		val := matchedNames[2]
+		doc.UnitName3 = &val
+	}
+	if len(matchedNames) > 3 {
+		val := matchedNames[3]
+		doc.UnitName4 = &val
+	}
+	if len(matchedNames) > 4 {
+		val := matchedNames[4]
+		doc.UnitName5 = &val
+	}
 }

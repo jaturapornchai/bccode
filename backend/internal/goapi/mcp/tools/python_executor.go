@@ -103,12 +103,12 @@ sys.stdout.flush()
 
 // PyExecResponse — ผลลัพธ์จากการรัน Python (มี shape เดียวกับ JS)
 type PyExecResponse struct {
-	Success bool     `json:"success"`
-	Result any      `json:"result,omitempty"`
-	Logs []string `json:"logs,omitempty"`
-	Error string   `json:"error,omitempty"`
+	Success     bool     `json:"success"`
+	Result      any      `json:"result,omitempty"`
+	Logs        []string `json:"logs,omitempty"`
+	Error       string   `json:"error,omitempty"`
 	ExecutionMs int64    `json:"execution_ms"`
-	QueriesRun int      `json:"queries_run"`
+	QueriesRun  int      `json:"queries_run"`
 }
 
 // ExecutePython รัน Python 3 script ใน subprocess sandbox
@@ -116,7 +116,7 @@ type PyExecResponse struct {
 // User script เขียน Python ปกติ และ assign ค่าสุดท้ายให้ __result__
 // เช่น:
 //
-//	rows = query_pg("SELECT itemcode, name0, price1 FROM productbarcode ORDER BY price1 DESC LIMIT 10")
+//	rows = query_mongo("productBarcodes", {"names.name": {"$regex": "coffee", "$options": "i"}}, 10)
 //	__result__ = {"count": len(rows), "items": rows}
 //
 // หรือแบบง่ายกว่า — ให้ AI คืนค่าจาก expression สุดท้ายอัตโนมัติไม่ได้

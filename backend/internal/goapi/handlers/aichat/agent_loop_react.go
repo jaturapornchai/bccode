@@ -134,20 +134,21 @@ Today: %s
 
 	sb.WriteString(`## Entity Search — write query_mongodb yourself
 
-There are no wrapper tools for entity search. Build query_mongodb + regex filter directly:
+There are no wrapper tools for entity search. Build query_mongodb + regex filter directly.
+MongoDB is the operational source of truth; PostgreSQL is only for relational projections/processed results.
 
-- **debtor = customer (same thing!)** → collection "debtor", filter {"names.name":{"$regex":"keyword","$options":"i"}}
-- **creditor / supplier** → collection "creditor", filter {"names.name":{"$regex":"keyword","$options":"i"}}
-- **NEVER use collection "customer"** — all customer types live in debtor
-- **product / barcode** → collection "barcodes", filter {"$or":[{"names.name":{"$regex":"keyword","$options":"i"}},{"barcode":"keyword"},{"itemcode":"keyword"}]}
+- **debtor = customer (same thing!)** → collection "debtors", filter {"names.name":{"$regex":"keyword","$options":"i"}}
+- **creditor / supplier** → collection "creditors", filter {"names.name":{"$regex":"keyword","$options":"i"}}
+- **NEVER use collection "customer"** — all customer types live in debtors
+- **product / barcode** → collection "productBarcodes", filter {"$or":[{"names.name":{"$regex":"keyword","$options":"i"}},{"barcode":"keyword"},{"itemcode":"keyword"}]}
 
 Examples:
-- User says "ลูกค้าสมชาย" → Action: query_mongodb / Action Input: {"collection":"debtor","filter":"{\"names.name\":{\"$regex\":\"สมชาย\",\"$options\":\"i\"}}","limit":20}
-- "ร้านอรุณโฮม" → strip "ร้าน" → query debtor with regex "อรุณโฮม"
-- "เจ้าหนี้ABC" → query creditor with regex "ABC"
+- User says "ลูกค้าสมชาย" → Action: query_mongodb / Action Input: {"collection":"debtors","filter":"{\"names.name\":{\"$regex\":\"สมชาย\",\"$options\":\"i\"}}","limit":20}
+- "ร้านอรุณโฮม" → strip "ร้าน" → query debtors with regex "อรุณโฮม"
+- "เจ้าหนี้ABC" → query creditors with regex "ABC"
 
 **Tip:** strip Thai prefixes "ร้าน"/"บริษัท"/"หจก."/"บจก."/"ห้างหุ้นส่วน" before regex (DB stores varied forms).
-If nothing found → shorten the keyword OR try the other collection (debtor ↔ creditor only — never "customer").
+If nothing found → shorten the keyword OR try the other collection (debtors ↔ creditors only — never "customer").
 
 ## Required Response Format
 
@@ -189,19 +190,19 @@ SECURITY NOTICE: ...
 
 ## Thai Business Schema Hints (READ CAREFULLY)
 
-**debtor = customer (same thing here):** NEVER use collection "customer" — everything is in debtor
+**debtor = customer (same thing here):** NEVER use collection "customer" — everything is in debtors
 
-**Collection names (singular):**
-- customer / debtor (all types) → ` + "`debtor`" + ` (fields: code, names[].name, taxid)
-- supplier / creditor → ` + "`creditor`" + `
-- product → ` + "`barcodes`" + ` (fields: barcode, itemcode, names[].name)
-- sales invoice → ` + "`transaction-saleinvoice`" + `
+**MongoDB collection names (operational source of truth):**
+- customer / debtor (all types) → ` + "`debtors`" + ` (fields: code, names[].name, tax_id)
+- supplier / creditor → ` + "`creditors`" + `
+- product / barcode → ` + "`productBarcodes`" + ` (fields: barcode, itemcode, names[].name)
+- sales invoice → ` + "`transactionSaleInvoice`" + `
 
 **Lookup rules (always use query_mongodb):**
-1. User asks "ร้านวัฒนา" / "ลูกค้าสมชาย" / "บริษัท XYZ" / "ลูกหนี้ X" → strip prefix → query_mongodb on "debtor" with regex
-2. If debtor empty → try creditor (no separate customer collection)
+1. User asks "ร้านวัฒนา" / "ลูกค้าสมชาย" / "บริษัท XYZ" / "ลูกหนี้ X" → strip prefix → query_mongodb on "debtors" with regex
+2. If debtors empty → try creditors (no separate customer collection)
 3. If both empty → final_answer "not found" — DO NOT search barcodes (people are not products)
-4. "สินค้า X" / "ของ X" / barcode → query_mongodb on "barcodes" only
+4. "สินค้า X" / "ของ X" / barcode → query_mongodb on "productBarcodes" only
 
 ## CRITICAL — LANGUAGE
 The system prompt is English for efficiency. **Your final answer to the user MUST be in Thai.**

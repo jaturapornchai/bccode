@@ -31,106 +31,20 @@ import (
 )
 
 var (
-	r2Client        *s3.Client
-	r2PresignClient *s3.Client // client สำหรับ presigned URL (ใช้ public endpoint)
-	r2BucketName    string
-	r2InitOnce      sync.Once
-	r2InitErr       error
-	isSeaweedFSMode bool // true เมื่อใช้ SeaweedFS S3 gateway
+	r2Client     *s3.Client
+	r2BucketName string
+	r2InitOnce   sync.Once
+	r2InitErr    error
 )
 
-// GetR2Client returns the explicitly configured S3-compatible client.
-// S3_ENDPOINT enables S3-compatible mode; otherwise Cloudflare R2 config is required.
+// GetR2Client returns the explicitly configured Cloudflare R2 client.
 func GetR2Client() (*s3.Client, error) {
 	r2InitOnce.Do(func() {
-		s3Endpoint := strings.TrimSpace(os.Getenv("S3_ENDPOINT"))
-
-		if s3Endpoint != "" {
-			// ─── SeaweedFS S3 Gateway Path ───
-			initSeaweedFS(s3Endpoint)
-		} else {
-			// ─── Cloudflare R2 Path ───
-			initR2()
-		}
+		// ─── Cloudflare R2 Path ───
+		initR2()
 	})
 
 	return r2Client, r2InitErr
-}
-
-// initSeaweedFS สร้าง S3 client สำหรับ SeaweedFS S3 gateway
-func initSeaweedFS(endpoint string) {
-	isSeaweedFSMode = true
-	accessKeyID := strings.TrimSpace(os.Getenv("S3_ACCESS_KEY_ID"))
-	secretAccessKey := strings.TrimSpace(os.Getenv("S3_SECRET_ACCESS_KEY"))
-	r2BucketName = strings.TrimSpace(os.Getenv("S3_BUCKET_NAME"))
-	publicEndpoint := strings.TrimSpace(os.Getenv("S3_PUBLIC_ENDPOINT"))
-
-	if accessKeyID == "" || secretAccessKey == "" || r2BucketName == "" {
-		missing := []string{}
-		if accessKeyID == "" {
-			missing = append(missing, "S3_ACCESS_KEY_ID")
-		}
-		if secretAccessKey == "" {
-			missing = append(missing, "S3_SECRET_ACCESS_KEY")
-		}
-		if r2BucketName == "" {
-			missing = append(missing, "S3_BUCKET_NAME")
-		}
-		r2InitErr = fmt.Errorf("missing S3 environment variables: %s", strings.Join(missing, ", "))
-		logger.Error("❌ SeaweedFS S3 Init Error: %v", r2InitErr)
-		return
-	}
-
-	// Internal client — สำหรับ upload/download ภายใน Docker network
-	resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-		return aws.Endpoint{
-			URL:               endpoint,
-			HostnameImmutable: true,
-		}, nil
-	})
-
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithEndpointResolverWithOptions(resolver),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, "")),
-		config.WithRegion("us-east-1"),
-	)
-	if err != nil {
-		r2InitErr = fmt.Errorf("unable to load SeaweedFS S3 SDK config: %w", err)
-		logger.Error("❌ SeaweedFS S3 Config Error: %v", r2InitErr)
-		return
-	}
-
-	r2Client = s3.NewFromConfig(cfg, func(o *s3.Options) {
-		o.UsePathStyle = true
-	})
-
-	// Presign client — ใช้ public endpoint เพื่อให้ browser เข้าถึงได้
-	// signature จะถูกคำนวณจาก public host ทำให้ไม่เกิด 403
-	if publicEndpoint != "" {
-		publicResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-			return aws.Endpoint{
-				URL:               publicEndpoint,
-				HostnameImmutable: true,
-			}, nil
-		})
-
-		publicCfg, pubErr := config.LoadDefaultConfig(context.TODO(),
-			config.WithEndpointResolverWithOptions(publicResolver),
-			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, "")),
-			config.WithRegion("us-east-1"),
-		)
-		if pubErr == nil {
-			r2PresignClient = s3.NewFromConfig(publicCfg, func(o *s3.Options) {
-				o.UsePathStyle = true
-			})
-			logger.Info("   Presign client using public endpoint: %s", publicEndpoint)
-		}
-	}
-
-	// Auto-create bucket ถ้ายังไม่มี
-	ensureBucketExists(r2Client, r2BucketName)
-
-	logger.Info("✅ SeaweedFS S3 client initialized (endpoint: %s, bucket: %s)", endpoint, r2BucketName)
 }
 
 // initR2 สร้าง S3 client สำหรับ Cloudflare R2
@@ -180,30 +94,6 @@ func initR2() {
 	logger.Info("✅ R2 client initialized successfully (bucket: %s)", r2BucketName)
 }
 
-// ensureBucketExists สร้าง bucket ถ้ายังไม่มี (สำหรับ SeaweedFS)
-func ensureBucketExists(client *s3.Client, bucketName string) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	_, err := client.HeadBucket(ctx, &s3.HeadBucketInput{
-		Bucket: aws.String(bucketName),
-	})
-	if err == nil {
-		logger.Info("   Bucket '%s' exists", bucketName)
-		return
-	}
-
-	// Bucket ไม่มี → สร้างใหม่
-	_, createErr := client.CreateBucket(ctx, &s3.CreateBucketInput{
-		Bucket: aws.String(bucketName),
-	})
-	if createErr != nil {
-		logger.Warn("   Failed to create bucket '%s': %v (may already exist)", bucketName, createErr)
-		return
-	}
-	logger.Success("   Created bucket '%s'", bucketName)
-}
-
 // getPresignedURL - สร้าง URL สำหรับดูไฟล์
 // Private mode (default): return proxy URL ผ่าน goapi (/s3/file/{key}) เพื่อไม่เปิด R2/S3 URL ตรง
 // Direct presigned URL mode: ต้องเปิด STORAGE_ALLOW_PRESIGNED_URL=true เท่านั้น
@@ -217,13 +107,7 @@ func getPresignedURL(client *s3.Client, r2Key string, expireMinutes int) (string
 		expireMinutes = 60 // default 1 hour
 	}
 
-	// ใช้ presign client ที่ sign ด้วย public endpoint (ถ้ามี)
-	signClient := client
-	if r2PresignClient != nil {
-		signClient = r2PresignClient
-	}
-
-	presignClient := s3.NewPresignClient(signClient)
+	presignClient := s3.NewPresignClient(client)
 
 	presignResult, err := presignClient.PresignGetObject(context.TODO(), &s3.GetObjectInput{
 		Bucket: aws.String(r2BucketName),

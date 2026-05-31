@@ -335,6 +335,22 @@ func (repo ShopUserRepository) FindByUsernamePage(ctx context.Context, username 
 			"foreignField": "guid_fixed",
 			"as":           "shopInfo",
 		}},
+		bson.M{"$lookup": bson.M{
+			"from": "currency",
+			"let":  bson.M{"shopId": "$shopid"},
+			"pipeline": []bson.M{
+				{"$match": bson.M{
+					"$expr": bson.M{"$and": []interface{}{
+						bson.M{"$eq": []interface{}{"$shopid", "$$shopId"}},
+						bson.M{"$ne": []interface{}{"$isdisabled", true}},
+					}},
+					"deletedat":  bson.M{"$exists": false},
+					"deleted_at": bson.M{"$exists": false},
+				}},
+				{"$project": bson.M{"code": 1}},
+			},
+			"as": "currencyInfo",
+		}},
 		bson.M{
 			"$match": bson.M{"shopInfo.deletedAt": bson.M{"$exists": false}},
 		},
@@ -350,9 +366,23 @@ func (repo ShopUserRepository) FindByUsernamePage(ctx context.Context, username 
 				"accessdisabledby": 1,
 				"accessenabledat":  1,
 				"accessenabledby":  1,
+				"main_shop_id":     bson.M{"$first": "$shopInfo.main_shop_id"},
 				"names":            bson.M{"$first": "$shopInfo.names"},
 				"branchcode":       bson.M{"$first": "$shopInfo.branchcode"},
 				"createdby":        bson.M{"$first": "$shopInfo.createdby"},
+				"language":         bson.M{"$first": "$shopInfo.settings.language"},
+				"languageconfigs":  bson.M{"$ifNull": []interface{}{bson.M{"$first": "$shopInfo.settings.languageconfigs"}, []interface{}{}}},
+				"base_currency":    bson.M{"$first": "$shopInfo.settings.base_currency"},
+				"currencies": bson.M{"$map": bson.M{
+					"input": "$currencyInfo",
+					"as":    "currency",
+					"in":    "$$currency.code",
+				}},
+				"timezone":            bson.M{"$first": "$shopInfo.settings.timezone"},
+				"timezone_label":      bson.M{"$first": "$shopInfo.settings.timezone_label"},
+				"timezone_offset":     bson.M{"$first": "$shopInfo.settings.timezone_offset"},
+				"date_format":         bson.M{"$first": "$shopInfo.settings.date_format"},
+				"usebuddhistcalendar": bson.M{"$first": "$shopInfo.settings.usebuddhistcalendar"},
 			},
 		},
 		bson.M{

@@ -6,9 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"smlcloudplatform/internal/goapi/logger"
 
-	myClickHouse "smlcloudplatform/internal/goapi/myclickhouse"
+	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/models"
 	"smlcloudplatform/internal/goapi/myglobal"
 	"smlcloudplatform/internal/goapi/mypg"
@@ -237,15 +236,16 @@ func ProductBarcodeInsertOrUpdateToPostgreSQL(productData models.MongoProductBar
 	}
 
 	// Delete existing record
-	_, err = db.ExecContext(ctx, "DELETE FROM productbarcode WHERE barcode = $1", productData.Barcode)
+	_, err = db.ExecContext(ctx, "DELETE FROM productbarcode WHERE shopid = $1 AND barcode = $2", productData.ShopId, productData.Barcode)
 	if err != nil {
 		logger.Warn("Could not delete existing barcode %s: %v", productData.Barcode, err)
 	}
 
 	// Insert new record (PostgreSQL)
 	_, err = db.ExecContext(ctx,
-		`INSERT INTO productbarcode (barcode, itemcode, name0, checksum, groupcode, groupnames, unitcode, unitname, price1, barcoderefunitstand, barcoderefunitdivide)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+		`INSERT INTO productbarcode (shopid, barcode, itemcode, name0, checksum, groupcode, groupnames, unitcode, unitname, price1, barcoderefunitstand, barcoderefunitdivide, itemtype, materialtype)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+		productData.ShopId,
 		productData.Barcode,
 		productData.ItemCode,
 		productName,
@@ -256,7 +256,9 @@ func ProductBarcodeInsertOrUpdateToPostgreSQL(productData models.MongoProductBar
 		unitName,
 		price,
 		productData.StandValue,
-		productData.DivideValue)
+		productData.DivideValue,
+		productData.ItemType,
+		productData.MaterialType)
 
 	if err != nil {
 		return fmt.Errorf("error inserting product barcode %s: %v", productData.Barcode, err)
@@ -337,13 +339,14 @@ func productBarcodeBulkUpdateInternalWithLogging(ctx context.Context, db *sql.DB
 		}
 
 		// For bulk update, use prepared statement to delete existing records
-		deleteQuery := "DELETE FROM productbarcode WHERE barcode = $1"
-		_, err := db.ExecContext(ctx, deleteQuery, productData.Barcode)
+		deleteQuery := "DELETE FROM productbarcode WHERE shopid = $1 AND barcode = $2"
+		_, err := db.ExecContext(ctx, deleteQuery, productData.ShopId, productData.Barcode)
 		if err != nil {
 			logger.Warn("Could not delete existing barcode %s: %v", productData.Barcode, err)
 		}
 
 		record := []any{
+			productData.ShopId,
 			productData.Barcode,
 			productData.ItemCode,
 			productName,
@@ -355,15 +358,17 @@ func productBarcodeBulkUpdateInternalWithLogging(ctx context.Context, db *sql.DB
 			price,
 			productData.StandValue,
 			productData.DivideValue,
+			productData.ItemType,
+			productData.MaterialType,
 		}
 		records = append(records, record)
 	}
 
 	// Use COPY FROM for bulk insert (PostgreSQL)
 	columns := []string{
-		"barcode", "itemcode", "name0", "checksum",
-		"group_code", "group_names", "unitcode", "unit_name", "price1",
-		"barcoderefunitstand", "barcoderefunitdivide",
+		"shopid", "barcode", "itemcode", "name0", "checksum",
+		"groupcode", "groupnames", "unitcode", "unitname", "price1",
+		"barcoderefunitstand", "barcoderefunitdivide", "itemtype", "materialtype",
 	}
 
 	err := mypg.BulkInsertWithCopy(ctx, db, "productbarcode", columns, records)
@@ -391,7 +396,7 @@ func ProductBarcodeDeleteFromPostgreSQL(productData models.MongoProductBarcodeMo
 	ctx := context.Background()
 
 	// ลบข้อมูลสินค้า (PostgreSQL)
-	result, err := db.ExecContext(ctx, "DELETE FROM productbarcode WHERE barcode = $1", productData.Barcode)
+	result, err := db.ExecContext(ctx, "DELETE FROM productbarcode WHERE shopid = $1 AND barcode = $2", productData.ShopId, productData.Barcode)
 	if err != nil {
 		return fmt.Errorf("error deleting product barcode %s: %v", productData.Barcode, err)
 	}
@@ -452,7 +457,7 @@ func productBarcodeBulkDeleteInternalWithLogging(ctx context.Context, db *sql.DB
 	var failedBarcodes []string
 
 	for _, productData := range productDataList {
-		result, err := db.ExecContext(ctx, "DELETE FROM productbarcode WHERE barcode = $1", productData.Barcode)
+		result, err := db.ExecContext(ctx, "DELETE FROM productbarcode WHERE shopid = $1 AND barcode = $2", productData.ShopId, productData.Barcode)
 		if err != nil {
 			logger.Error("failed to delete barcode %s: %v", productData.Barcode, err)
 			failedBarcodes = append(failedBarcodes, productData.Barcode)
@@ -489,155 +494,21 @@ func productBarcodeBulkDeleteInternalWithLogging(ctx context.Context, db *sql.DB
 	return nil
 }
 
-// ==================== ClickHouse Helper Functions (best-effort) ====================
-// ทุกฟังก์ชัน log error แต่ไม่ return error — ถ้า CH พังไม่กระทบ PG pipeline
+// ==================== ClickHouse Helper Functions (disabled) ====================
 
-// chEsc escape single quotes สำหรับ ClickHouse raw SQL
 func chEsc(s string) string {
 	return strings.ReplaceAll(s, "'", "\\'")
 }
 
-// clickHouseInsertOrUpdate — insert/update barcode เดียวใน ClickHouse
 func clickHouseInsertOrUpdate(shopID, barcode, itemcode, name0, unitcode, unitname, groupcode, groupnames string,
 	price, standValue, divideValue float64, checksum string) {
-
-	conn, err := myClickHouse.ClickHouseFastConnect()
-	if err != nil {
-		logger.Warn("[CH] เชื่อมต่อ ClickHouse ล้มเหลว: %v", err)
-		return
-	}
-
-	ctx := context.Background()
-	tableName := myClickHouse.TableName("productbarcode")
-
-	// ลบก่อน (ReplacingMergeTree ต้อง delete + insert)
-	deleteQuery := fmt.Sprintf("ALTER TABLE %s DELETE WHERE barcode = '%s' AND shopid = '%s'",
-		tableName, chEsc(barcode), chEsc(shopID))
-	if err := myClickHouse.ExecuteCommand(ctx, conn, deleteQuery); err != nil {
-		logger.Warn("[CH] ลบ barcode %s ล้มเหลว: %v", barcode, err)
-	}
-
-	// Insert
-	insertQuery := fmt.Sprintf(
-		"INSERT INTO %s (shopid, barcode, itemcode, name0, unitcode, unitname, groupcode, groupnames, price1, unitstand, unitdivide, checksum) VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %.2f, %.4f, %.4f, '%s')",
-		tableName,
-		chEsc(shopID), chEsc(barcode), chEsc(itemcode), chEsc(name0),
-		chEsc(unitcode), chEsc(unitname), chEsc(groupcode), chEsc(groupnames),
-		price, standValue, divideValue, chEsc(checksum))
-
-	if err := myClickHouse.ExecuteCommand(ctx, conn, insertQuery); err != nil {
-		logger.Warn("[CH] insert barcode %s ล้มเหลว: %v", barcode, err)
-	} else {
-		logger.Info("[CH] Inserted barcode: %s", barcode)
-	}
 }
 
-// clickHouseBulkInsert — bulk insert barcodes ใน ClickHouse
 func clickHouseBulkInsert(productDataList []models.MongoProductBarcodeModel) {
-	if len(productDataList) == 0 {
-		return
-	}
-
-	conn, err := myClickHouse.ClickHouseFastConnect()
-	if err != nil {
-		logger.Warn("[CH] เชื่อมต่อ ClickHouse ล้มเหลว (bulk insert): %v", err)
-		return
-	}
-
-	ctx := context.Background()
-	tableName := myClickHouse.TableName("productbarcode")
-	shopID := productDataList[0].ShopId
-
-	// ลบ barcodes เดิมก่อน
-	for _, pd := range productDataList {
-		deleteQuery := fmt.Sprintf("ALTER TABLE %s DELETE WHERE barcode = '%s' AND shopid = '%s'",
-			tableName, chEsc(pd.Barcode), chEsc(shopID))
-		if err := myClickHouse.ExecuteCommand(ctx, conn, deleteQuery); err != nil {
-			logger.Warn("[CH] ลบ barcode %s ล้มเหลว: %v", pd.Barcode, err)
-		}
-	}
-
-	// สร้าง VALUES สำหรับ bulk insert
-	var values []string
-	for _, pd := range productDataList {
-		name0 := ""
-		if len(pd.Names) > 0 {
-			name0 = pd.Names[0].Name
-		}
-		unitName := ""
-		if len(pd.ItemUnitNames) > 0 {
-			unitName = pd.ItemUnitNames[0].Name
-		}
-		groupName := ""
-		if len(pd.GroupNames) > 0 {
-			groupName = pd.GroupNames[0].Name
-		}
-		price := 0.0
-		if len(pd.Prices) > 0 {
-			price = pd.Prices[0].Price
-		}
-		checksum := myglobal.CalculateMD5(fmt.Sprintf("%v", pd))
-
-		v := fmt.Sprintf("('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %.2f, %.4f, %.4f, '%s')",
-			chEsc(pd.ShopId), chEsc(pd.Barcode), chEsc(pd.ItemCode), chEsc(name0),
-			chEsc(pd.ItemUnitCode), chEsc(unitName), chEsc(pd.GroupCode), chEsc(groupName),
-			price, pd.StandValue, pd.DivideValue, chEsc(checksum))
-		values = append(values, v)
-	}
-
-	insertQuery := fmt.Sprintf(
-		"INSERT INTO %s (shopid, barcode, itemcode, name0, unitcode, unitname, groupcode, groupnames, price1, unitstand, unitdivide, checksum) VALUES %s",
-		tableName, strings.Join(values, ", "))
-
-	if err := myClickHouse.ExecuteCommand(ctx, conn, insertQuery); err != nil {
-		logger.Warn("[CH] bulk insert %d barcodes ล้มเหลว: %v", len(values), err)
-	} else {
-		logger.Info("[CH] Bulk inserted %d barcodes", len(values))
-	}
 }
 
-// clickHouseDelete — ลบ barcode เดียวใน ClickHouse
 func clickHouseDelete(shopID, barcode string) {
-	conn, err := myClickHouse.ClickHouseFastConnect()
-	if err != nil {
-		logger.Warn("[CH] เชื่อมต่อ ClickHouse ล้มเหลว (delete): %v", err)
-		return
-	}
-
-	ctx := context.Background()
-	deleteQuery := fmt.Sprintf("ALTER TABLE %s DELETE WHERE barcode = '%s' AND shopid = '%s'",
-		myClickHouse.TableName("productbarcode"), chEsc(barcode), chEsc(shopID))
-
-	if err := myClickHouse.ExecuteCommand(ctx, conn, deleteQuery); err != nil {
-		logger.Warn("[CH] ลบ barcode %s ล้มเหลว: %v", barcode, err)
-	} else {
-		logger.Info("[CH] Deleted barcode: %s", barcode)
-	}
 }
 
-// clickHouseBulkDelete — ลบ barcodes แบบ bulk ใน ClickHouse
 func clickHouseBulkDelete(shopID string, productDataList []models.MongoProductBarcodeModel) {
-	conn, err := myClickHouse.ClickHouseFastConnect()
-	if err != nil {
-		logger.Warn("[CH] เชื่อมต่อ ClickHouse ล้มเหลว (bulk delete): %v", err)
-		return
-	}
-
-	ctx := context.Background()
-	tableName := myClickHouse.TableName("productbarcode")
-
-	// สร้าง IN list สำหรับ bulk delete
-	var barcodes []string
-	for _, pd := range productDataList {
-		barcodes = append(barcodes, fmt.Sprintf("'%s'", chEsc(pd.Barcode)))
-	}
-
-	deleteQuery := fmt.Sprintf("ALTER TABLE %s DELETE WHERE shopid = '%s' AND barcode IN (%s)",
-		tableName, chEsc(shopID), strings.Join(barcodes, ", "))
-
-	if err := myClickHouse.ExecuteCommand(ctx, conn, deleteQuery); err != nil {
-		logger.Warn("[CH] bulk delete %d barcodes ล้มเหลว: %v", len(barcodes), err)
-	} else {
-		logger.Info("[CH] Bulk deleted %d barcodes", len(barcodes))
-	}
 }

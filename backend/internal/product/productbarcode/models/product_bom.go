@@ -2,6 +2,7 @@ package models
 
 import (
 	"smlcloudplatform/internal/models"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -44,7 +45,11 @@ type ProductBarcodeBOMView struct {
 type ProductBarcodeBOMViewInfo struct {
 	models.DocIdentity    `bson:"inline"`
 	ProductBarcodeBOMView `bson:"inline"`
-	CheckSum string `json:"checksum" bson:"checksum"`
+	CheckSum string    `json:"checksum" bson:"checksum"`
+	IsCurrentUse bool      `json:"iscurrentuse" bson:"iscurrentuse"`
+	UseInDate time.Time `json:"useindate" bson:"useindate"`
+	StartDate time.Time `json:"startdate" bson:"startdate"`
+	EndDate *time.Time `json:"enddate" bson:"enddate"`
 }
 
 func (ProductBarcodeBOMViewInfo) CollectionName() string {

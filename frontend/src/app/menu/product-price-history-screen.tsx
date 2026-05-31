@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { formatDefaultDateTime, resolveWorkspaceDateTimeDisplayOptions } from "@/lib/date-time";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
@@ -102,6 +103,10 @@ export function ProductPriceHistoryScreen({ embedded = false, language: external
   const selectedProduct = useMemo(
     () => products.find((product) => product.barcode === selectedBarcode) ?? products[0] ?? null,
     [products, selectedBarcode],
+  );
+  const dateTimeDisplayOptions = useMemo(
+    () => resolveWorkspaceDateTimeDisplayOptions(workspace, language),
+    [language, workspace],
   );
 
   const loadProducts = useCallback(async (currentAuth: AuthSession | null, currentWorkspace: WorkspaceSession | null, searchText: string) => {
@@ -282,7 +287,7 @@ export function ProductPriceHistoryScreen({ embedded = false, language: external
                   <span>{dictionary.newPrice}: <b className="text-foreground">{formatNumber(item.newPrice)}</b></span>
                   <span>{dictionary.createdBy}: <b className="text-foreground">{item.createdBy || "-"}</b></span>
                   <span>{dictionary.action}: <b className="text-foreground">{item.action || "-"}</b></span>
-                  <span className="sm:col-span-2">{dictionary.createdAt}: <b className="text-foreground">{formatDate(item.createdAt)}</b></span>
+                  <span className="sm:col-span-2">{dictionary.createdAt}: <b className="text-foreground">{formatDefaultDateTime(item.createdAt, dateTimeDisplayOptions)}</b></span>
                 </div>
                 {item.remark ? <p className="text-xs text-muted-foreground">{item.remark}</p> : null}
               </div>
@@ -393,11 +398,4 @@ function extractMessage(payload: unknown): string | undefined {
 
 function formatNumber(value: number): string {
   return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
-
-function formatDate(value: string): string {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
 }

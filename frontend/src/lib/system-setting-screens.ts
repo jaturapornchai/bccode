@@ -16,6 +16,7 @@ export type SystemSettingField = {
   label: SystemSettingText;
   type:
     | "branch-multi-select"
+    | "company-multi-select"
     | "checkbox"
     | "combo"
     | "date"
@@ -314,10 +315,10 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     kind: "company",
     icon: "building",
     idField: "guid_fixed",
-    title: { th: "บริษัท", en: "Company" },
+    title: { th: "ข้อมูลบริษัท", en: "Company Profile" },
     subtitle: {
-      th: "แก้ไขชื่อและที่อยู่บริษัทปัจจุบัน",
-      en: "Edit the selected company name and address.",
+      th: "แก้ไขข้อมูลบริษัทปัจจุบันที่สร้างไว้แล้ว",
+      en: "Edit the selected company profile that already exists.",
     },
     fields: [
       namesField("names", "ชื่อบริษัท", "Company names"),
@@ -937,7 +938,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
       icon: "ruler",
       basePath: "/unit",
       listPath: "/unit/list",
-      idField: "guidfixed",
+      idField: "guid_fixed",
       title: { th: "หน่วยนับสินค้า", en: "Product Unit" },
       subtitle: {
         th: "จัดการรหัสหน่วยนับและชื่อหน่วยนับสินค้า",
@@ -946,6 +947,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
       fields: [
         textField("unitcode", "รหัสหน่วยนับ", "Unit code", true),
         namesField("names", "ชื่อหน่วยนับ", "Unit names"),
+        companyMultiSelectField("company_guids", "บริษัทที่ใช้งาน", "Active companies"),
       ],
     },
     codeNameConfig(
@@ -970,10 +972,10 @@ function productMasterConfigs(): SystemSettingConfig[] {
       basePath: "/product/category",
       listPath: "/product/category/list",
       idField: "guid_fixed",
-      title: { th: "หมวดสินค้า", en: "Product Category" },
+      title: { th: "โครงสร้างหมวดสินค้า", en: "Product Category Structure" },
       subtitle: {
-        th: "จัดการหมวดสินค้าและกลุ่มหมวดตามหน้าจอเดิม",
-        en: "Manage product categories and category groups.",
+        th: "จัดการโครงสร้างหมวดสินค้า กลุ่มหมวด และสินค้าในหมวด",
+        en: "Manage product category structure, category groups, and products in categories.",
       },
       fields: [
         { ...numberField("group_number", "ลำดับกลุ่ม", "Group number"), readOnly: true },
@@ -1014,7 +1016,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
       basePath: "/product/category",
       listPath: "/product/category/list",
       idField: "guid_fixed",
-      title: { th: "รายการหมวดสินค้า", en: "Product Category List" },
+      title: { th: "สินค้าในหมวด", en: "Products in Category" },
       subtitle: {
         th: "จัดการรายการสินค้าที่ผูกกับหมวดสินค้า",
         en: "Manage product items linked to product categories.",
@@ -1024,73 +1026,27 @@ function productMasterConfigs(): SystemSettingConfig[] {
         jsonField("codelist", "รายการสินค้า", "Product list JSON"),
       ],
     },
-    codeNameConfig(
-      "product_warehouse_screen",
-      "/product_warehouse_screen",
-      "warehouse",
-      "/warehouse",
-      "/warehouse/list",
-      "คลังสินค้า",
-      "Warehouse",
-      "รหัสคลังสินค้า",
-      "Warehouse code",
-      "ชื่อคลังสินค้า",
-      "Warehouse names",
-    ),
     {
-      slug: "product_location_screen",
-      route: "/product_location_screen",
-      manual: "product_location_screen",
+      slug: "product_warehouse_screen",
+      route: "/product_warehouse_screen",
+      manual: "product_warehouse_screen",
       kind: "main-crud",
-      icon: "location",
-      basePath: "/warehouse/location",
-      listPath: "/warehouse/location",
+      icon: "warehouse",
+      basePath: "/warehouse",
       idField: "guid_fixed",
-      editable: false,
-      title: { th: "ที่เก็บสินค้า", en: "Product Location" },
+      title: { th: "คลังสินค้า → โซนเก็บสินค้า → ชั้นวาง", en: "Warehouse → Storage Zone → Shelf" },
       subtitle: {
-        th: "แสดงคลัง ที่เก็บ และชั้นวางจากฐานข้อมูลจริง",
-        en: "View warehouses, locations, and shelves from the real database.",
+        th: "จัดการคลังสินค้า โซนเก็บสินค้า และชั้นวางสินค้า",
+        en: "Manage warehouses, storage zones, and shelves.",
       },
       fields: [
+        textField("code", "รหัสคลังสินค้า", "Warehouse code", true),
+        namesField("names", "ชื่อคลังสินค้า", "Warehouse names"),
         {
-          ...textField("warehousecode", "รหัสคลังสินค้า", "Warehouse code"),
-          readOnly: true,
+          key: "location",
+          label: { th: "โซนเก็บสินค้าและชั้นวาง", en: "Storage Zones & Shelves" },
+          type: "json",
         },
-        {
-          ...namesField("warehousenames", "ชื่อคลังสินค้า", "Warehouse names"),
-          readOnly: true,
-        },
-        {
-          ...textField("locationcode", "รหัสที่เก็บ", "Location code"),
-          readOnly: true,
-        },
-        {
-          ...namesField("locationnames", "ชื่อที่เก็บ", "Location names"),
-          readOnly: true,
-        },
-        { ...jsonField("shelf", "ชั้นวาง", "Shelf JSON"), readOnly: true },
-      ],
-    },
-    {
-      slug: "order_type_screen",
-      route: "/order_type_screen",
-      manual: "order_type_screen",
-      kind: "main-crud",
-      icon: "tag",
-      basePath: "/product/order-type",
-      listPath: "/product/order-type/list",
-      idField: "guid_fixed",
-      title: { th: "ประเภทสั่งอาหาร", en: "Order Type" },
-      subtitle: {
-        th: "จัดการประเภทคำสั่ง ราคา และหมายเหตุ",
-        en: "Manage order types, prices, and remarks.",
-      },
-      fields: [
-        textField("code", "รหัสประเภทคำสั่ง", "Order type code", true),
-        namesField("names", "ชื่อประเภทคำสั่ง", "Order type names"),
-        jsonField("prices", "ราคา", "Prices JSON"),
-        jsonField("remarks", "หมายเหตุ", "Remarks JSON"),
       ],
     },
     codeNameConfig(
@@ -1135,29 +1091,23 @@ function productMasterConfigs(): SystemSettingConfig[] {
       basePath: "/product/bom",
       listPath: "/product/bom/list",
       idField: "guid_fixed",
-      editable: false,
-      title: { th: "สูตรประกอบสินค้า", en: "Product BOM" },
+      editable: true,
+      title: { th: "สูตรผลิต", en: "Product BOM" },
       subtitle: {
-        th: "แสดงสูตรประกอบสินค้าจากฐานข้อมูลจริง",
-        en: "View product bill of materials from the real database.",
+        th: "จัดการรหัสสูตรผลิต วัตถุดิบ และสูตรย่อยจากฐานข้อมูลจริง",
+        en: "Manage recipe codes, ingredients, and sub-recipes from the real database.",
       },
       fields: [
-        { ...textField("barcode", "บาร์โค้ด", "Barcode"), readOnly: true },
+        textField("barcode", "รหัสสูตรผลิต", "Recipe code"),
         {
-          ...namesField("names", "ชื่อสินค้า", "Product names"),
-          readOnly: true,
+          ...namesField("names", "ชื่อสูตรผลิต", "Recipe names"),
         },
-        {
-          ...textField("item_unit_code", "รหัสหน่วยนับ", "Unit code"),
-          readOnly: true,
-        },
+        textField("item_unit_code", "หน่วยสูตร", "Recipe unit"),
         {
           ...namesField("itemunitnames", "ชื่อหน่วยนับ", "Unit names"),
-          readOnly: true,
         },
         {
-          ...jsonField("bom", "รายการสูตรประกอบ", "BOM items JSON"),
-          readOnly: true,
+          ...jsonField("bom", "รายการสูตรผลิต", "BOM items JSON"),
         },
       ],
     },
@@ -1187,8 +1137,8 @@ function productMasterConfigs(): SystemSettingConfig[] {
       "/master_category_screen",
       "category",
       "category",
-      "Category",
-      "Category",
+      "หมวดจำแนกสินค้า",
+      "Product Attribute Category",
     ),
     aicloudConfig(
       "master_class_screen",
@@ -1339,6 +1289,14 @@ function branchMultiSelectField(
   en: string,
 ): SystemSettingField {
   return { key, label: { th, en }, type: "branch-multi-select" };
+}
+
+function companyMultiSelectField(
+  key: string,
+  th: string,
+  en: string,
+): SystemSettingField {
+  return { key, label: { th, en }, type: "company-multi-select" };
 }
 
 function checkboxField(

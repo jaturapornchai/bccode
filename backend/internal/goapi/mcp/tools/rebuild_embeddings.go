@@ -21,15 +21,15 @@ const embeddingBatchSize = 50
 
 // RebuildEmbeddingsResponse ผลลัพธ์
 type RebuildEmbeddingsResponse struct {
-	Success bool      `json:"success"`
-	Message string    `json:"message"`
-	ShopID string    `json:"shop_id"`
-	EntityType string    `json:"entity_type"`
-	Total int       `json:"total"`
-	Updated int       `json:"updated"`
-	Skipped int       `json:"skipped"`
-	Errors int       `json:"errors"`
-	Duration string    `json:"duration"`
+	Success     bool      `json:"success"`
+	Message     string    `json:"message"`
+	ShopID      string    `json:"shop_id"`
+	EntityType  string    `json:"entity_type"`
+	Total       int       `json:"total"`
+	Updated     int       `json:"updated"`
+	Skipped     int       `json:"skipped"`
+	Errors      int       `json:"errors"`
+	Duration    string    `json:"duration"`
 	GeneratedAt time.Time `json:"generated_at"`
 }
 
@@ -39,7 +39,8 @@ type embedRow struct {
 	Text string
 }
 
-// RebuildEmbeddings สร้าง embeddings สำหรับ entity type ที่ระบุ
+// RebuildEmbeddings builds pgvector embeddings on PostgreSQL projection tables.
+// MongoDB remains the authoritative operational source for entity data.
 func RebuildEmbeddings(ctx context.Context, shopID string, forceAll bool, entityType string) (*RebuildEmbeddingsResponse, error) {
 	if shopID == "" {
 		return nil, fmt.Errorf("shop_id is required")

@@ -23,6 +23,7 @@ type BarcodeModel struct {
 	BarcodeRefUnitDivide float64
 	IsStock              int
 	ItemType             int
+	MaterialType         int
 	Checksum             string
 	ImageUri             string
 }
@@ -51,6 +52,7 @@ func NewBarcodeModel() BarcodeModel {
 		BarcodeRefUnitDivide: 0,
 		IsStock:              0,
 		ItemType:             0,
+		MaterialType:         0,
 		Checksum:             "",
 		ImageUri:             "",
 	}

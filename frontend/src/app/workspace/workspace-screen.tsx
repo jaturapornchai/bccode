@@ -4,11 +4,14 @@ import {
   AlertCircle,
   ArrowLeft,
   Building2,
+  CalendarDays,
   CheckCircle2,
+  Coins,
   Copy,
   Crown,
   ExternalLink,
   GitBranch,
+  Languages,
   Loader2,
   LogOut,
   MessageCircle,
@@ -490,11 +493,6 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       setBranches(nextBranches);
       localStorage.setItem(workspaceStorageKeys.shopInfo, JSON.stringify(shopInfo.data ?? null));
 
-      if (nextBranches.length <= 1) {
-        await enterWorkspaceWithUnitCheck(shop, nextBranches[0] ?? null, shopInfo.data ?? null);
-        return;
-      }
-
       setStep("branches");
     } catch (error) {
       setNotice(error instanceof Error && error.message ? { type: "error", text: error.message } : { type: "error", textKey: "selectShopFailed" });
@@ -706,6 +704,9 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 {filteredShops.map((shop, index) => {
                 const isCreator = shop.is_creator === true
                   || Boolean(auth?.username && shop.createdby && shop.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase());
+                const languageCodes = shopLanguageCodes(shop);
+                const currencyLabel = shopCurrencyLabel(shop, language);
+                const dateFormat = shopDateFormatLabel(shop, language);
                 return (
                   <button className="shop-card" disabled={busy} key={shop.shopid} type="button" onClick={() => void selectShop(shop)}>
                     <span className={`shop-avatar tone-${index % 6}`}><Store size={20} /></span>
@@ -720,6 +721,20 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                           </span>
                         ) : null}
                       </div>
+                      <span className="shop-config-row">
+                        <span className="shop-config-chip">
+                          <Languages size={12} />
+                          {language === "th" ? "ภาษา" : "Languages"}: {languageCodes.join(", ")}
+                        </span>
+                        <span className="shop-config-chip">
+                          <Coins size={12} />
+                          {language === "th" ? "สกุลเงิน" : "Currency"}: {currencyLabel}
+                        </span>
+                        <span className="shop-config-chip">
+                          <CalendarDays size={12} />
+                          {language === "th" ? "วันที่" : "Date"}: {dateFormat}
+                        </span>
+                      </span>
                     </span>
                     <span className="shop-badges">
                       <b className={isCreator ? "creator-badge" : "user-badge"}>
@@ -987,6 +1002,52 @@ function unitDisplayName(unit: ProductUnitOption, language: LanguageCode): strin
 
 function localeOf(language: LanguageCode): string {
   return language === "th" ? "th-TH" : "en-US";
+}
+
+function shopLanguageCodes(shop: ShopListItem): string[] {
+  return normalizedCodeList(shop.active_languages, ["th"]).map((code) => code.toUpperCase());
+}
+
+function shopCurrencyCodes(shop: ShopListItem): string[] {
+  return normalizedCodeList(shop.currencies, shop.base_currency ? [shop.base_currency] : ["THB"]).map((code) => code.toUpperCase());
+}
+
+function shopCurrencyLabel(shop: ShopListItem, language: LanguageCode): string {
+  const currencies = shopCurrencyCodes(shop);
+  const hasConfiguredCurrency = (Array.isArray(shop.currencies) && shop.currencies.length > 0) || Boolean(stringValue(shop.base_currency));
+  const defaultMarker = hasConfiguredCurrency ? "" : language === "th" ? " ค่าเริ่มต้น" : " default";
+  return `${currencies.join(", ")}${defaultMarker}`;
+}
+
+function shopDateFormatLabel(shop: ShopListItem, language: LanguageCode): string {
+  const hasConfiguredDateFormat = Boolean(stringValue(shop.date_format));
+  const format = stringValue(shop.date_format) || "dd/MM/yyyy";
+  const yearType = hasConfiguredDateFormat ? normalizedYearType(shop) : "buddhist";
+  const yearLabel = language === "th"
+    ? yearType === "buddhist" ? "พ.ศ." : "ค.ศ."
+    : yearType === "buddhist" ? "BE" : "CE";
+  const defaultMarker = hasConfiguredDateFormat ? "" : language === "th" ? " ค่าเริ่มต้น" : " default";
+  return `${format} ${yearLabel}${defaultMarker}`;
+}
+
+function normalizedYearType(shop: ShopListItem): "buddhist" | "christian" {
+  const yearType = stringValue(shop.year_type).toLowerCase();
+  if (["buddhist", "be", "พ.ศ."].includes(yearType)) return "buddhist";
+  if (["christian", "ce", "ค.ศ."].includes(yearType)) return "christian";
+  if (typeof shop.usebuddhistcalendar === "boolean") return shop.usebuddhistcalendar ? "buddhist" : "christian";
+  return "buddhist";
+}
+
+function normalizedCodeList(value: unknown, fallback: string[]): string[] {
+  const source: unknown[] = Array.isArray(value) && value.length > 0 ? value : fallback;
+  return Array.from(
+    new Set(
+      source
+        .map((item) => stringValue(item))
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  );
 }
 
 function parseShopInfo(raw: string | null): Record<string, unknown> | null {

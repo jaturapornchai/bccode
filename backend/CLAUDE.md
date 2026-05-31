@@ -105,14 +105,11 @@ Kafka and Redis are mandatory runtime services for MainAPI. Local Docker Desktop
 | **MainAPI** (gateway) | **8888** | `0.0.0.0` | จุดเข้าเดียว (GoAPI embedded) |
 | MongoDB | Atlas | external | DEV uses MongoDB Atlas via `MONGODB_DEV_URI` from local env/secret files |
 | PostgreSQL | 5432 | server | DEV PostgreSQL runs on `45.144.166.112` |
-| Redis | 6379 | `127.0.0.1` | redis:6379 |
+| Redis | 6379 | `0.0.0.0` | redis:6379 |
 | ClickHouse HTTP | 8123 | server | DEV ClickHouse runs on `45.144.166.112` |
 | ClickHouse Native | 9000 | server | DEV ClickHouse runs on `45.144.166.112` |
-| Kafka | 9092 | `127.0.0.1` | kafka:29092 |
+| Kafka | 9092 | `0.0.0.0` | kafka:29092 |
 | Zookeeper | — | docker only | zookeeper:2181 |
-| SeaweedFS Master | 9333 | `127.0.0.1` | seaweedfs-master:9333 |
-| SeaweedFS Filer | 18888 | `127.0.0.1` | seaweedfs-filer:8888 |
-| SeaweedFS S3 | 18333 | `127.0.0.1` | seaweedfs-filer:8333 |
 
 **DEV data services:**
 - MongoDB uses MongoDB Atlas. Supply `MONGODB_DEV_URI` and `MONGODB_DEV_DB` from local env/secret files only.

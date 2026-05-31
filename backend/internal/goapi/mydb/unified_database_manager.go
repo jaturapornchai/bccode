@@ -49,7 +49,7 @@ type DatabaseConfig struct {
 	PostgreSQLPassword string
 	PostgreSQLDatabase string
 	PostgreSQLSSLMode  string
-	
+
 	ClickHouseHost     string
 	ClickHousePort     string
 	ClickHouseUser     string
@@ -92,6 +92,41 @@ func NewDatabaseManager(config DatabaseConfig) (*DatabaseManager, error) {
 	return dm, nil
 }
 
+func createPostgreSQLDatabase(config DatabaseConfig, dbName string) error {
+	sslMode := config.PostgreSQLSSLMode
+	if sslMode == "" {
+		sslMode = "disable"
+	}
+
+	connStr := fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=postgres sslmode=%s connect_timeout=10",
+		config.PostgreSQLHost,
+		config.PostgreSQLPort,
+		config.PostgreSQLUser,
+		config.PostgreSQLPassword,
+		sslMode,
+	)
+
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		return fmt.Errorf("failed to open admin PostgreSQL connection: %w", err)
+	}
+	defer db.Close()
+
+	query := fmt.Sprintf(`CREATE DATABASE "%s"`, strings.ReplaceAll(dbName, `"`, `""`))
+
+	_, err = db.Exec(query)
+	if err != nil {
+		if strings.Contains(err.Error(), "already exists") {
+			return nil
+		}
+		return fmt.Errorf("failed to create database %s: %w", dbName, err)
+	}
+
+	logger.Success("PostgreSQL database '%s' created successfully", dbName)
+	return nil
+}
+
 func (dm *DatabaseManager) connectPostgreSQL(config DatabaseConfig) error {
 	dm.postgresMutex.Lock()
 	defer dm.postgresMutex.Unlock()
@@ -119,55 +154,65 @@ func (dm *DatabaseManager) connectPostgreSQL(config DatabaseConfig) error {
 		config.PostgreSQLDatabase,
 		sslMode,
 	)
-	
+
 	logger.Info("กำลังเชื่อมต่อ PostgreSQL host=%s db=%s (พร้อม connection pooling)",
 		config.PostgreSQLHost, config.PostgreSQLDatabase)
-	
+
 	var err error
 	dm.postgreSQLConn, err = sql.Open("postgres", connStr)
 	if err != nil {
 		return fmt.Errorf("failed to open PostgreSQL connection: %w", err)
 	}
-	
+
 	// ตั้งค่า connection pool สำหรับ high traffic (ลดลงครึ่งหนึ่งเพื่อไม่กระทบระบบอื่น)
-	// MaxOpenConns: จำนวน connection สูงสุด
 	dm.postgreSQLConn.SetMaxOpenConns(50)
-	// MaxIdleConns: จำนวน idle connection
 	dm.postgreSQLConn.SetMaxIdleConns(15)
-	// ConnMaxLifetime: อายุของ connection - ลดเหลือ 1 ชม. เพื่อ refresh connection บ่อยขึ้น
 	dm.postgreSQLConn.SetConnMaxLifetime(1 * time.Hour)
-	// ConnMaxIdleTime: idle time สูงสุด - ลดเหลือ 15 นาที เพื่อลด stale connections
 	dm.postgreSQLConn.SetConnMaxIdleTime(15 * time.Minute)
-	
+
 	// ทดสอบการเชื่อมต่อ
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	if err := dm.postgreSQLConn.PingContext(ctx); err != nil {
 		dm.postgreSQLConn.Close()
-		return fmt.Errorf("failed to ping PostgreSQL: %w", err)
+
+		errStr := err.Error()
+		if strings.Contains(errStr, "does not exist") || strings.Contains(errStr, "3D000") {
+			logger.Info("Database '%s' does not exist. Attempting to create it...", config.PostgreSQLDatabase)
+			if createErr := createPostgreSQLDatabase(config, config.PostgreSQLDatabase); createErr != nil {
+				return fmt.Errorf("failed to auto-create database: %w", createErr)
+			}
+
+			// Retry connecting
+			dm.postgreSQLConn, err = sql.Open("postgres", connStr)
+			if err != nil {
+				return fmt.Errorf("failed to reopen PostgreSQL connection: %w", err)
+			}
+
+			dm.postgreSQLConn.SetMaxOpenConns(50)
+			dm.postgreSQLConn.SetMaxIdleConns(15)
+			dm.postgreSQLConn.SetConnMaxLifetime(1 * time.Hour)
+			dm.postgreSQLConn.SetConnMaxIdleTime(15 * time.Minute)
+
+			ctxRetry, cancelRetry := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancelRetry()
+			if pingErr := dm.postgreSQLConn.PingContext(ctxRetry); pingErr != nil {
+				dm.postgreSQLConn.Close()
+				return fmt.Errorf("failed to ping PostgreSQL after database creation: %w", pingErr)
+			}
+		} else {
+			return fmt.Errorf("failed to ping PostgreSQL: %w", err)
+		}
 	}
-	
+
 	logger.Success("เชื่อมต่อ PostgreSQL สำเร็จ (pool: max_open=100, max_idle=30, lifetime=1h, idle_time=15m)")
 	return nil
 }
 
-// connectClickHouse เชื่อมต่อ ClickHouse พร้อม connection pooling
+// connectClickHouse เชื่อมต่อ ClickHouse พร้อม connection pooling (เลิกใช้งานแล้ว)
 func (dm *DatabaseManager) connectClickHouse(config DatabaseConfig) error {
-	dm.clickHouseMutex.Lock()
-	defer dm.clickHouseMutex.Unlock()
-	
-	logger.Info("กำลังเชื่อมต่อ ClickHouse host=%s db=%s", 
-		config.ClickHouseHost, config.ClickHouseDatabase)
-	
-	// ใช้ existing ClickHouse connection จาก myclickhouse package
-	conn, err := myclickhouse.ClickHouseFastConnect()
-	if err != nil {
-		return fmt.Errorf("failed to connect ClickHouse: %w", err)
-	}
-	
-	dm.clickHouseConn = conn
-	logger.Success("เชื่อมต่อ ClickHouse สำเร็จ (มี connection pool)")
+	// ปิดและ bypass การเชื่อมต่อ ClickHouse ทั้งหมด
 	return nil
 }
 
@@ -175,19 +220,19 @@ func (dm *DatabaseManager) connectClickHouse(config DatabaseConfig) error {
 func (dm *DatabaseManager) GetPostgreSQLConnection() (*sql.DB, error) {
 	dm.postgresMutex.RLock()
 	defer dm.postgresMutex.RUnlock()
-	
+
 	if dm.postgreSQLConn == nil {
 		return nil, fmt.Errorf("PostgreSQL connection is not initialized")
 	}
-	
+
 	// ตรวจสอบสุขภาพ
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	
+
 	if err := dm.postgreSQLConn.PingContext(ctx); err != nil {
 		return nil, fmt.Errorf("PostgreSQL connection is unhealthy: %w", err)
 	}
-	
+
 	return dm.postgreSQLConn, nil
 }
 
@@ -195,19 +240,19 @@ func (dm *DatabaseManager) GetPostgreSQLConnection() (*sql.DB, error) {
 func (dm *DatabaseManager) GetClickHouseConnection() (clickhouse.Conn, error) {
 	dm.clickHouseMutex.RLock()
 	defer dm.clickHouseMutex.RUnlock()
-	
+
 	if dm.clickHouseConn == nil {
 		return nil, fmt.Errorf("ClickHouse connection is not initialized")
 	}
-	
+
 	// ตรวจสอบสุขภาพ
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	
+
 	if err := dm.clickHouseConn.Ping(ctx); err != nil {
 		return nil, fmt.Errorf("ClickHouse connection is unhealthy: %w", err)
 	}
-	
+
 	return dm.clickHouseConn, nil
 }
 
@@ -351,13 +396,13 @@ func (dm *DatabaseManager) ExecClickHouse(ctx context.Context, query string) err
 // BatchInsertPostgreSQL แทรกข้อมูลแบบ batch บน PostgreSQL
 func (dm *DatabaseManager) BatchInsertPostgreSQL(ctx context.Context, tableName string, columns []string, data [][]any) error {
 	startTime := time.Now()
-	
+
 	db, err := dm.GetPostgreSQLConnection()
 	if err != nil {
 		dm.logPerformance(ctx, "PostgreSQL", "BatchInsert", fmt.Sprintf("INSERT %s", tableName), 0, startTime, "error", err)
 		return err
 	}
-	
+
 	// ใช้ existing PostgreSQL bulk insert function (ต้อง import จาก mypg package)
 	// สำหรับตอนนี้ใช้ simple approach
 	tx, err := db.BeginTx(ctx, nil)
@@ -366,23 +411,23 @@ func (dm *DatabaseManager) BatchInsertPostgreSQL(ctx context.Context, tableName 
 		return err
 	}
 	defer tx.Rollback()
-	
+
 	// สร้าง INSERT query
 	placeholders := make([]string, len(columns))
 	for i := range columns {
 		placeholders[i] = fmt.Sprintf("$%d", i+1)
 	}
-	
-	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", tableName, 
+
+	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", tableName,
 		strings.Join(columns, ", "), strings.Join(placeholders, ", "))
-	
+
 	stmt, err := tx.PrepareContext(ctx, query)
 	if err != nil {
 		dm.logPerformance(ctx, "PostgreSQL", "BatchInsert", fmt.Sprintf("INSERT %s", tableName), 0, startTime, "error", err)
 		return err
 	}
 	defer stmt.Close()
-	
+
 	successCount := 0
 	for i, row := range data {
 		_, err := stmt.ExecContext(ctx, row...)
@@ -393,12 +438,12 @@ func (dm *DatabaseManager) BatchInsertPostgreSQL(ctx context.Context, tableName 
 		}
 		successCount++
 	}
-	
+
 	if err := tx.Commit(); err != nil {
 		dm.logPerformance(ctx, "PostgreSQL", "BatchInsert", fmt.Sprintf("INSERT %s", tableName), 0, startTime, "error", err)
 		return err
 	}
-	
+
 	dm.logPerformance(ctx, "PostgreSQL", "BatchInsert", fmt.Sprintf("INSERT %s", tableName), int64(successCount), startTime, "success", nil)
 	return nil
 }
@@ -406,27 +451,27 @@ func (dm *DatabaseManager) BatchInsertPostgreSQL(ctx context.Context, tableName 
 // BatchInsertClickHouse แทรกข้อมูลแบบ batch บน ClickHouse
 func (dm *DatabaseManager) BatchInsertClickHouse(ctx context.Context, tableName string, columns []string, data [][]any) error {
 	startTime := time.Now()
-	
+
 	conn, err := dm.GetClickHouseConnection()
 	if err != nil {
 		dm.logPerformance(ctx, "ClickHouse", "BatchInsert", fmt.Sprintf("INSERT %s", tableName), 0, startTime, "error", err)
 		return err
 	}
-	
+
 	if len(data) == 0 {
 		dm.logPerformance(ctx, "ClickHouse", "BatchInsert", fmt.Sprintf("INSERT %s", tableName), 0, startTime, "success", nil)
 		return nil
 	}
-	
+
 	// เตรียม batch insert statement
 	placeholders := make([]string, len(columns))
 	for i := range columns {
 		placeholders[i] = "?"
 	}
-	
+
 	insertQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
 		tableName, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
-	
+
 	// สร้าง batch
 	batch, err := conn.PrepareBatch(ctx, insertQuery)
 	if err != nil {
@@ -434,7 +479,7 @@ func (dm *DatabaseManager) BatchInsertClickHouse(ctx context.Context, tableName 
 		return fmt.Errorf("failed to prepare batch: %w", err)
 	}
 	defer batch.Close()
-	
+
 	successCount := 0
 	for i, row := range data {
 		err := batch.Append(row...)
@@ -445,14 +490,14 @@ func (dm *DatabaseManager) BatchInsertClickHouse(ctx context.Context, tableName 
 		}
 		successCount++
 	}
-	
+
 	// ส่ง batch ทั้งหมด
 	err = batch.Send()
 	if err != nil {
 		dm.logPerformance(ctx, "ClickHouse", "BatchInsert", fmt.Sprintf("INSERT %s", tableName), 0, startTime, "error", err)
 		return fmt.Errorf("failed to send batch: %w", err)
 	}
-	
+
 	dm.logPerformance(ctx, "ClickHouse", "BatchInsert", fmt.Sprintf("INSERT %s", tableName), int64(successCount), startTime, "success", nil)
 	logger.Success("ClickHouse batch insert สำเร็จ: %d/%d rows", successCount, len(data))
 	return nil
@@ -460,14 +505,14 @@ func (dm *DatabaseManager) BatchInsertClickHouse(ctx context.Context, tableName 
 
 func (dm *DatabaseManager) logPerformance(ctx context.Context, database, operation, query string, rowsAffected int64, startTime time.Time, status string, err error) {
 	duration := time.Since(startTime)
-	
+
 	logMessage := fmt.Sprintf("[PERF] %s.%s: %s (duration: %v, rows: %d, status: %s)",
 		database, operation, truncateQuery(query), duration.Round(time.Millisecond), rowsAffected, status)
-	
+
 	if err != nil {
 		logMessage += fmt.Sprintf(", error: %v", err)
 	}
-	
+
 	// แสดงผลตามระดับ performance
 	switch {
 	case duration < 100*time.Millisecond:
@@ -517,30 +562,30 @@ func (dm *DatabaseManager) GetStats(databaseType DatabaseType) interface{} {
 func (dm *DatabaseManager) Close() error {
 	dm.postgresMutex.Lock()
 	defer dm.postgresMutex.Unlock()
-	
+
 	dm.clickHouseMutex.Lock()
 	defer dm.clickHouseMutex.Unlock()
-	
+
 	var errors []error
-	
+
 	if dm.postgreSQLConn != nil {
 		if err := dm.postgreSQLConn.Close(); err != nil {
 			errors = append(errors, fmt.Errorf("PostgreSQL close error: %w", err))
 		}
 		dm.postgreSQLConn = nil
 	}
-	
+
 	if dm.clickHouseConn != nil {
 		if err := dm.clickHouseConn.Close(); err != nil {
 			errors = append(errors, fmt.Errorf("ClickHouse close error: %w", err))
 		}
 		dm.clickHouseConn = nil
 	}
-	
+
 	if len(errors) > 0 {
 		return fmt.Errorf("errors closing connections: %v", errors)
 	}
-	
+
 	logger.Success("ปิด Database Manager สำเร็จ")
 	return nil
 }
@@ -591,20 +636,20 @@ func GetGlobalConnection(shopId string) (*sql.DB, error) {
 		PostgreSQLPassword: getEnv("POSTGRES_PASSWORD", ""),
 		PostgreSQLDatabase: shopId,
 		PostgreSQLSSLMode:  getEnv("POSTGRES_SSL_MODE", "disable"),
-		
+
 		ClickHouseHost:     getEnv("CLICKHOUSE_HOST", "localhost"),
 		ClickHousePort:     getEnv("CLICKHOUSE_PORT", "9000"),
 		ClickHouseUser:     getEnv("CLICKHOUSE_USER", "default"),
 		ClickHousePassword: getEnv("CLICKHOUSE_PASSWORD", ""),
 		ClickHouseDatabase: shopId,
 	}
-	
+
 	// สร้าง manager และ return PostgreSQL connection
 	manager, err := NewDatabaseManager(config)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return manager.GetPostgreSQLConnection()
 }
 
@@ -618,14 +663,14 @@ func GetGlobalManager(shopId string) (*DatabaseManager, error) {
 		PostgreSQLPassword: getEnv("POSTGRES_PASSWORD", ""),
 		PostgreSQLDatabase: shopId,
 		PostgreSQLSSLMode:  getEnv("POSTGRES_SSL_MODE", "disable"),
-		
+
 		ClickHouseHost:     getEnv("CLICKHOUSE_HOST", "localhost"),
 		ClickHousePort:     getEnv("CLICKHOUSE_PORT", "9000"),
 		ClickHouseUser:     getEnv("CLICKHOUSE_USER", "default"),
 		ClickHousePassword: getEnv("CLICKHOUSE_PASSWORD", ""),
 		ClickHouseDatabase: shopId,
 	}
-	
+
 	return NewDatabaseManager(config)
 }
 

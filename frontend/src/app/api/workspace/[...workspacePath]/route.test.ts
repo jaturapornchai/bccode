@@ -52,6 +52,58 @@ describe("workspace product unit setup route", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("uses company metadata returned by list-shop without requiring selected shop detail", async () => {
+    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      const requestUrl = String(url);
+      expect(init?.headers).toMatchObject({ Authorization: "Bearer test-token" });
+
+      if (requestUrl === "http://localhost:8888/list-shop?limit=100") {
+        return Response.json({
+          success: true,
+          data: [{
+            shopid: "SHOP001",
+            names: [{ code: "th", name: "บริษัท ทดสอบ จำกัด" }],
+            language: "th",
+            languageconfigs: [
+              { code: "th", name: "ภาษาไทย", is_use: true, isdefault: true },
+              { code: "en", name: "English", is_use: true, isdefault: false },
+              { code: "lo", name: "ພາສາລາວ", is_use: true, isdefault: false },
+            ],
+            base_currency: "THB",
+            currencies: ["THB", "USD"],
+            date_format: "dd/MM/yyyy",
+            timezone: "Asia/Bangkok",
+            usebuddhistcalendar: true,
+          }],
+          total: 1,
+        });
+      }
+
+      throw new Error(`Unexpected URL ${requestUrl}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      new Request("http://localhost/api/workspace/shops?backendUrl=http://localhost:8888/goapi", {
+        headers: { Authorization: "Bearer test-token" },
+      }),
+      workspaceContext("shops"),
+    );
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json.data[0]).toMatchObject({
+      shopid: "SHOP001",
+      active_languages: ["th", "en", "lo"],
+      base_currency: "THB",
+      currencies: ["THB", "USD"],
+      date_format: "dd/MM/yyyy",
+      timezone: "Asia/Bangkok",
+      year_type: "buddhist",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("proxies the product unit existence check to mainapi", async () => {
     const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       expect(String(url)).toBe("http://localhost:8888/unit/list?offset=0&limit=1&q=&sort=unitcode:1");

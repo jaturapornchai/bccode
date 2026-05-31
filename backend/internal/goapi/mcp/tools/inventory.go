@@ -18,46 +18,48 @@ type InventoryValueRequest struct {
 }
 
 type InventoryValueResponse struct {
-	Summary InvValueSummary    `json:"summary"`
-	ByWarehouse []WarehouseValue   `json:"by_warehouse"`
-	ByCategory []CategoryValue    `json:"by_category"`
-	TopValueItems []TopValueItem     `json:"top_value_items"`
-	GeneratedAt time.Time          `json:"generated_at"`
+	Summary       InvValueSummary  `json:"summary"`
+	ByWarehouse   []WarehouseValue `json:"by_warehouse"`
+	ByCategory    []CategoryValue  `json:"by_category"`
+	TopValueItems []TopValueItem   `json:"top_value_items"`
+	GeneratedAt   time.Time        `json:"generated_at"`
 }
 
 type InvValueSummary struct {
-	TotalValue float64 `json:"total_value"`
-	TotalValueWord string  `json:"total_value_word"`
-	TotalItems int     `json:"total_items"`
-	TotalSKUs int     `json:"total_skus"`
+	TotalValue         float64 `json:"total_value"`
+	TotalValueWord     string  `json:"total_value_word"`
+	TotalItems         int     `json:"total_items"`
+	TotalSKUs          int     `json:"total_skus"`
 	AverageValuePerSKU float64 `json:"average_value_per_sku"`
 }
 
 type WarehouseValue struct {
 	WarehouseCode string  `json:"warehouse_code"`
 	WarehouseName string  `json:"warehouse_name"`
-	Value float64 `json:"value"`
-	Percentage float64 `json:"percentage"`
-	ItemCount int     `json:"item_count"`
+	Value         float64 `json:"value"`
+	Percentage    float64 `json:"percentage"`
+	ItemCount     int     `json:"item_count"`
 }
 
 type CategoryValue struct {
 	CategoryCode string  `json:"category_code"`
 	CategoryName string  `json:"category_name"`
-	Value float64 `json:"value"`
-	Percentage float64 `json:"percentage"`
-	ItemCount int     `json:"item_count"`
+	Value        float64 `json:"value"`
+	Percentage   float64 `json:"percentage"`
+	ItemCount    int     `json:"item_count"`
 }
 
 type TopValueItem struct {
-	ItemCode string  `json:"itemcode"`
-	Name string  `json:"name"`
-	Quantity float64 `json:"quantity"`
-	UnitCost float64 `json:"unit_cost"`
+	ItemCode   string  `json:"itemcode"`
+	Name       string  `json:"name"`
+	Quantity   float64 `json:"quantity"`
+	UnitCost   float64 `json:"unit_cost"`
 	TotalValue float64 `json:"total_value"`
 	Percentage float64 `json:"percentage"`
 }
 
+// GetInventoryValue reads processed PostgreSQL inventory projections.
+// MongoDB remains the authoritative operational source for inventory documents.
 func GetInventoryValue(ctx context.Context, shopID, whcode string) (*InventoryValueResponse, error) {
 	if shopID == "" {
 		return nil, fmt.Errorf("shop_id is required")
@@ -114,10 +116,10 @@ func GetInventoryValue(ctx context.Context, shopID, whcode string) (*InventoryVa
 	}
 
 	response.Summary = InvValueSummary{
-		TotalValue:        totalValue,
-		TotalValueWord:    formatAmountWord(totalValue),
-		TotalItems:        int(totalQty),
-		TotalSKUs:         skuCount,
+		TotalValue:         totalValue,
+		TotalValueWord:     formatAmountWord(totalValue),
+		TotalItems:         int(totalQty),
+		TotalSKUs:          skuCount,
 		AverageValuePerSKU: avgValuePerSKU,
 	}
 
@@ -244,35 +246,35 @@ func GetInventoryValue(ctx context.Context, shopID, whcode string) (*InventoryVa
 // ==================== Low Stock Alerts ====================
 
 type LowStockAlertsRequest struct {
-	ShopID string `json:"shop_id"`
+	ShopID    string `json:"shop_id"`
 	Threshold int    `json:"threshold"` // Default 10
-	Limit int    `json:"limit"`     // Default 50
+	Limit     int    `json:"limit"`     // Default 50
 }
 
 type LowStockAlertsResponse struct {
-	Summary LowStockSummary  `json:"summary"`
-	Alerts []LowStockItem   `json:"alerts"`
-	GeneratedAt time.Time        `json:"generated_at"`
+	Summary     LowStockSummary `json:"summary"`
+	Alerts      []LowStockItem  `json:"alerts"`
+	GeneratedAt time.Time       `json:"generated_at"`
 }
 
 type LowStockSummary struct {
-	TotalLowStock int `json:"total_low_stock"`
+	TotalLowStock   int `json:"total_low_stock"`
 	TotalOutOfStock int `json:"total_out_of_stock"`
-	CriticalCount int `json:"critical_count"`    // < 5 units
-	WarningCount int `json:"warning_count"`     // 5-10 units
+	CriticalCount   int `json:"critical_count"` // < 5 units
+	WarningCount    int `json:"warning_count"`  // 5-10 units
 }
 
 type LowStockItem struct {
-	ItemCode string  `json:"itemcode"`
-	Name string  `json:"name"`
-	CurrentStock float64 `json:"current_stock"`
-	StockWord string  `json:"stock_word"`
-	MinStock float64 `json:"min_stock"`
-	ReorderQty float64 `json:"reorder_qty"`
-	LastSaleDate string  `json:"last_sale_date"`
+	ItemCode      string  `json:"itemcode"`
+	Name          string  `json:"name"`
+	CurrentStock  float64 `json:"current_stock"`
+	StockWord     string  `json:"stock_word"`
+	MinStock      float64 `json:"min_stock"`
+	ReorderQty    float64 `json:"reorder_qty"`
+	LastSaleDate  string  `json:"last_sale_date"`
 	AvgDailySales float64 `json:"avg_daily_sales"`
-	DaysOfStock int     `json:"days_of_stock"`
-	Priority string  `json:"priority"` // critical, high, medium, low
+	DaysOfStock   int     `json:"days_of_stock"`
+	Priority      string  `json:"priority"` // critical, high, medium, low
 	WarehouseCode string  `json:"warehouse_code"`
 }
 
@@ -378,36 +380,36 @@ func GetLowStockAlerts(ctx context.Context, shopID string, threshold, limit int)
 
 type DeadStockRequest struct {
 	ShopID string `json:"shop_id"`
-	Days int    `json:"days"`  // No movement for X days (default 90)
-	Limit int    `json:"limit"`
+	Days   int    `json:"days"` // No movement for X days (default 90)
+	Limit  int    `json:"limit"`
 }
 
 type DeadStockResponse struct {
-	Summary DeadStockSummary  `json:"summary"`
-	Items []DeadStockItem   `json:"items"`
-	GeneratedAt time.Time         `json:"generated_at"`
+	Summary     DeadStockSummary `json:"summary"`
+	Items       []DeadStockItem  `json:"items"`
+	GeneratedAt time.Time        `json:"generated_at"`
 }
 
 type DeadStockSummary struct {
-	TotalItems int     `json:"total_items"`
-	TotalValue float64 `json:"total_value"`
-	TotalValueWord string  `json:"total_value_word"`
-	ByAgeBucket []AgeBucket `json:"by_age_bucket"`
+	TotalItems     int         `json:"total_items"`
+	TotalValue     float64     `json:"total_value"`
+	TotalValueWord string      `json:"total_value_word"`
+	ByAgeBucket    []AgeBucket `json:"by_age_bucket"`
 }
 
 type AgeBucket struct {
-	Label string  `json:"label"`
+	Label     string  `json:"label"`
 	ItemCount int     `json:"item_count"`
-	Value float64 `json:"value"`
+	Value     float64 `json:"value"`
 }
 
 type DeadStockItem struct {
-	ItemCode string  `json:"itemcode"`
-	Name string  `json:"name"`
-	CurrentStock float64 `json:"current_stock"`
-	StockValue float64 `json:"stock_value"`
-	LastMovement string  `json:"last_movement_date"`
-	DaysSinceMove int     `json:"days_since_movement"`
+	ItemCode       string  `json:"itemcode"`
+	Name           string  `json:"name"`
+	CurrentStock   float64 `json:"current_stock"`
+	StockValue     float64 `json:"stock_value"`
+	LastMovement   string  `json:"last_movement_date"`
+	DaysSinceMove  int     `json:"days_since_movement"`
 	Recommendation string  `json:"recommendation"`
 }
 
@@ -527,40 +529,40 @@ func GetDeadStock(ctx context.Context, shopID string, days, limit int) (*DeadSto
 // ==================== Inventory Turnover ====================
 
 type InventoryTurnoverRequest struct {
-	ShopID string `json:"shop_id"`
+	ShopID   string `json:"shop_id"`
 	FromDate string `json:"from_date"`
-	ToDate string `json:"to_date"`
+	ToDate   string `json:"to_date"`
 }
 
 type InventoryTurnoverResponse struct {
-	Summary TurnoverSummary    `json:"summary"`
-	ByCategory []CategoryTurnover `json:"by_category"`
-	FastMovers []TurnoverItem     `json:"fast_movers"`
-	SlowMovers []TurnoverItem     `json:"slow_movers"`
+	Summary     TurnoverSummary    `json:"summary"`
+	ByCategory  []CategoryTurnover `json:"by_category"`
+	FastMovers  []TurnoverItem     `json:"fast_movers"`
+	SlowMovers  []TurnoverItem     `json:"slow_movers"`
 	GeneratedAt time.Time          `json:"generated_at"`
 }
 
 type TurnoverSummary struct {
-	OverallTurnover float64 `json:"overall_turnover_ratio"`
+	OverallTurnover     float64 `json:"overall_turnover_ratio"`
 	TurnoverDescription string  `json:"turnover_description"`
-	AverageDaysToSell int     `json:"average_days_to_sell"`
-	COGS float64 `json:"cogs"`
-	AverageInventory float64 `json:"average_inventory"`
+	AverageDaysToSell   int     `json:"average_days_to_sell"`
+	COGS                float64 `json:"cogs"`
+	AverageInventory    float64 `json:"average_inventory"`
 }
 
 type CategoryTurnover struct {
 	CategoryCode string  `json:"category_code"`
 	CategoryName string  `json:"category_name"`
-	Turnover float64 `json:"turnover_ratio"`
-	DaysToSell int     `json:"days_to_sell"`
+	Turnover     float64 `json:"turnover_ratio"`
+	DaysToSell   int     `json:"days_to_sell"`
 }
 
 type TurnoverItem struct {
-	ItemCode string  `json:"itemcode"`
-	Name string  `json:"name"`
-	Turnover float64 `json:"turnover_ratio"`
-	DaysToSell int     `json:"days_to_sell"`
-	UnitsSold float64 `json:"units_sold"`
+	ItemCode     string  `json:"itemcode"`
+	Name         string  `json:"name"`
+	Turnover     float64 `json:"turnover_ratio"`
+	DaysToSell   int     `json:"days_to_sell"`
+	UnitsSold    float64 `json:"units_sold"`
 	CurrentStock float64 `json:"current_stock"`
 }
 

@@ -13,6 +13,7 @@ type Unit struct {
 	UnitCode string `json:"unitcode" bson:"unitcode" validate:"required,max=100"`
 	models.UnitName          `bson:"inline"`
 	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	CompanyGuids []string `json:"company_guids" bson:"company_guids"`
 }
 
 type UnitInfo struct {

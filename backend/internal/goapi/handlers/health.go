@@ -88,9 +88,7 @@ func StartBackgroundTask() {
 
 // performBackgroundTask - ฟังก์ชันที่ทำงานจริง (เปลี่ยนตามต้องการ)
 func performBackgroundTask() error {
-	// Clone ClickHouse Database
-	CloneClickHouseDatabase()
-
+	// ClickHouse is permanently deprecated and disabled.
 	return nil
 } // GetBackgroundTaskStatus - ตรวจสอบสถานะ background task
 func GetBackgroundTaskStatus() map[string]interface{} {

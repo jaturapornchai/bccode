@@ -50,7 +50,7 @@ export const SETUP_CATEGORY_DEFS: CategoryDef[] = [
   {
     id: "mongodb",
     title: "MongoDB",
-    description: "ฐานข้อมูล MongoDB สำหรับระบบบัญชี",
+    description: "ฐานข้อมูลหลักสำหรับ CRUD เอกสาร และ master data",
     testType: "mongodb",
     items: [
       setupItem("mongodb", "uri", true, "MongoDB Connection URI"),
@@ -64,7 +64,7 @@ export const SETUP_CATEGORY_DEFS: CategoryDef[] = [
   {
     id: "postgresql",
     title: "PostgreSQL",
-    description: "ฐานข้อมูล transaction/mainapi",
+    description: "ฐานข้อมูลประมวลผล relation, posting, balance และบัญชี",
     testType: "postgresql",
     items: [
       setupItem("postgresql", "host", false, "PostgreSQL Host"),
@@ -80,7 +80,7 @@ export const SETUP_CATEGORY_DEFS: CategoryDef[] = [
   {
     id: "clickhouse",
     title: "ClickHouse",
-    description: "ฐานข้อมูลรายงาน/BI",
+    description: "ฐานข้อมูล BI/analytics สำหรับรายงาน",
     testType: "clickhouse",
     items: [
       setupItem("clickhouse", "host", false, "ClickHouse Host"),

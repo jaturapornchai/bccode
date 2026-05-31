@@ -96,7 +96,7 @@ export async function DELETE(request: Request, context: SystemSettingsProxyConte
   const base = resolveBaseUrl(request, resolved.config, isRecord(body) ? body : undefined);
   if (base instanceof NextResponse) return base;
 
-  const path = buildDeletePath(resolved.config, resolved.id);
+  const path = buildDeletePath(request, resolved.config, resolved.id);
   const payload = buildDeletePayload(request, resolved.config, resolved.id, isRecord(body) ? body : {});
   return proxyJson(request, base, path, {
     method: resolved.config.kind === "atlas" || resolved.config.kind === "ai-provider" ? "POST" : "DELETE",
@@ -228,43 +228,46 @@ function buildGetInit(request: Request, config: SystemSettingConfig): RequestIni
 }
 
 function buildWritePath(request: Request, config: SystemSettingConfig, id: string, method: "POST" | "PUT", body: Record<string, unknown>): string {
+  const url = new URL(request.url);
+  const search = url.search;
+  let path = "";
+
   if (config.kind === "company") {
-    const shopid = String(body.shopid ?? new URL(request.url).searchParams.get("shopid") ?? id);
-    return `/shop/${encodeURIComponent(shopid)}`;
-  }
-
-  if (config.kind === "restaurant-setting") {
-    return id ? `/restaurant/settings/${encodeURIComponent(id)}` : "/restaurant/settings";
-  }
-
-  if (config.kind === "atlas") {
-    return "/atlas/update";
-  }
-
-  if (config.kind === "goapi-crud") {
+    const shopid = String(body.shopid ?? url.searchParams.get("shopid") ?? id);
+    path = `/shop/${encodeURIComponent(shopid)}`;
+  } else if (config.kind === "restaurant-setting") {
+    path = id ? `/restaurant/settings/${encodeURIComponent(id)}` : "/restaurant/settings";
+  } else if (config.kind === "atlas") {
+    path = "/atlas/update";
+  } else if (config.kind === "goapi-crud") {
     const createWithExport = Boolean(body.createWithExport);
-    if (method === "POST" && createWithExport) return "/api/mcp/keys/create-with-export";
-    return id ? `${config.basePath}/${encodeURIComponent(id)}` : (config.basePath ?? "");
+    if (method === "POST" && createWithExport) path = "/api/mcp/keys/create-with-export";
+    else path = id ? `${config.basePath}/${encodeURIComponent(id)}` : (config.basePath ?? "");
+  } else if (config.kind === "ai-provider") {
+    path = "/api/v1/ai-provider/save";
+  } else if (config.kind === "copy-uat") {
+    path = body.action === "copy" ? "/copymongouattodev" : "/previewcopymongo";
+  } else if (config.slug === "user") {
+    path = "/shop/permission";
+  } else {
+    path = id ? `${config.basePath}/${encodeURIComponent(id)}` : (config.basePath ?? "");
   }
 
-  if (config.kind === "ai-provider") {
-    return "/api/v1/ai-provider/save";
-  }
-
-  if (config.kind === "copy-uat") {
-    return body.action === "copy" ? "/copymongouattodev" : "/previewcopymongo";
-  }
-
-  if (config.slug === "user") return "/shop/permission";
-  return id ? `${config.basePath}/${encodeURIComponent(id)}` : (config.basePath ?? "");
+  return search ? `${path}${search}` : path;
 }
 
-function buildDeletePath(config: SystemSettingConfig, id: string): string {
-  if (config.kind === "atlas") return "/atlas/delete";
-  if (config.kind === "ai-provider") return "/api/v1/ai-provider/delete";
-  if (config.kind === "goapi-crud") return `${config.basePath}/${encodeURIComponent(id)}`;
-  if (config.slug === "user") return `/shop/permission/${encodeURIComponent(id)}`;
-  return `${config.basePath}/${encodeURIComponent(id)}`;
+function buildDeletePath(request: Request, config: SystemSettingConfig, id: string): string {
+  const url = new URL(request.url);
+  const search = url.search;
+  let path = "";
+
+  if (config.kind === "atlas") path = "/atlas/delete";
+  else if (config.kind === "ai-provider") path = "/api/v1/ai-provider/delete";
+  else if (config.kind === "goapi-crud") path = `${config.basePath}/${encodeURIComponent(id)}`;
+  else if (config.slug === "user") path = `/shop/permission/${encodeURIComponent(id)}`;
+  else path = `${config.basePath}/${encodeURIComponent(id)}`;
+
+  return search ? `${path}${search}` : path;
 }
 
 function buildWritePayload(request: Request, config: SystemSettingConfig, id: string, body: Record<string, unknown>): Record<string, unknown> {

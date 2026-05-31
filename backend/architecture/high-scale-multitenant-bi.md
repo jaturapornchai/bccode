@@ -10,6 +10,13 @@ MongoDB -> Kafka -> PostgreSQL -> Kafka -> ClickHouse -> Dashboard/BI/Reports
 
 The design must support one owner seeing the overview of many companies/businesses and many branches without weakening tenant isolation.
 
+## Store Roles
+
+- MongoDB is the authoritative operational source for all CRUD, documents, master data, and user-entered business data.
+- Cloudflare R2/S3 stores images, attachments, and binary files. MongoDB stores only file metadata and private paths.
+- PostgreSQL is the relational processing/projection layer for postings, balances, tax/VAT, AR/AP, GL, stock costing, and strict relational calculations.
+- ClickHouse is the BI/analytics/reporting layer fed from processed facts. It is read-only for BI/report consumers and is never the transactional source of truth.
+
 ## Tenant Model
 
 Use four scopes:

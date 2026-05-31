@@ -37,65 +37,66 @@ type TokenizeResponse struct {
 
 // ProductSearchRequest represents the search request
 type ProductSearchRequest struct {
-	ShopID string `json:"shopid"`
-	Keyword string `json:"keyword"`
-	WHCode string `json:"whcode"`
-	LocationCode string `json:"locationcode"`
-	Limit int    `json:"limit"`
+	ShopID         string `json:"shopid"`
+	Keyword        string `json:"keyword"`
+	WHCode         string `json:"whcode"`
+	LocationCode   string `json:"locationcode"`
+	Limit          int    `json:"limit"`
 	IncludeBalance bool   `json:"include_balance"`
 }
 
 // ProductUnit represents a product unit with price
 type ProductUnit struct {
-	Barcode string  `json:"barcode"`
-	UnitCode string  `json:"unitcode"`
-	UnitName string  `json:"unit_name"`
-	UnitStand float64 `json:"unitstand"`
-	UnitDivide float64 `json:"unitdivide"`
-	Price1 float64 `json:"price1"`
+	Barcode     string  `json:"barcode"`
+	UnitCode    string  `json:"unitcode"`
+	UnitName    string  `json:"unit_name"`
+	UnitStand   float64 `json:"unitstand"`
+	UnitDivide  float64 `json:"unitdivide"`
+	Price1      float64 `json:"price1"`
 	PriceRetail float64 `json:"price_retail"`
 }
 
 // LocationBalance represents stock balance by location
 type LocationBalance struct {
 	LocationCode string  `json:"location_code"`
-	BalanceQty float64 `json:"balance_qty"`
-	BalanceWord string  `json:"balance_word"`
+	BalanceQty   float64 `json:"balance_qty"`
+	BalanceWord  string  `json:"balance_word"`
 }
 
 // WarehouseBalance represents stock balance by warehouse
 type WarehouseBalance struct {
 	WarehouseCode string            `json:"warehouse_code"`
-	BalanceQty float64           `json:"balance_qty"`
-	BalanceWord string            `json:"balance_word"`
-	Locations []LocationBalance `json:"locations,omitempty"`
+	BalanceQty    float64           `json:"balance_qty"`
+	BalanceWord   string            `json:"balance_word"`
+	Locations     []LocationBalance `json:"locations,omitempty"`
 }
 
 // BalanceInfo represents complete balance information
 type BalanceInfo struct {
-	Total float64            `json:"total"`
-	Formatted string             `json:"formatted"`
+	Total      float64            `json:"total"`
+	Formatted  string             `json:"formatted"`
 	Warehouses []WarehouseBalance `json:"warehouses,omitempty"`
 }
 
 // ProductItem represents a found product
 type ProductItem struct {
 	ItemCode string        `json:"itemcode"`
-	Name0 string        `json:"name0"`
-	Units []ProductUnit `json:"units"`
-	Balance *BalanceInfo  `json:"balance,omitempty"`
-	Score int           `json:"score"`
+	Name0    string        `json:"name0"`
+	Units    []ProductUnit `json:"units"`
+	Balance  *BalanceInfo  `json:"balance,omitempty"`
+	Score    int           `json:"score"`
 }
 
 // ProductSearchResponse represents the search response
 type ProductSearchResponse struct {
-	Status string        `json:"status"`
-	Count int           `json:"count"`
+	Status   string        `json:"status"`
+	Count    int           `json:"count"`
 	Products []ProductItem `json:"products"`
-	Tokens []string      `json:"tokens"`
+	Tokens   []string      `json:"tokens"`
 }
 
-// SearchProducts performs smart Thai search with alias expansion + fuzzy fallback
+// SearchProducts queries the PostgreSQL projection/read model for smart Thai product search.
+// MongoDB remains the authoritative operational source for product data.
 func SearchProducts(ctx context.Context, shopID, keyword, whcode, locationcode string, limit int, includeBalance bool) (*ProductSearchResponse, error) {
 	if keyword == "" {
 		return nil, fmt.Errorf("keyword is required")
@@ -120,7 +121,7 @@ func SearchProducts(ctx context.Context, shopID, keyword, whcode, locationcode s
 	}
 	logger.Info("[MCP SearchProducts] Tokens: %v", tokens)
 
-	// 2. Connect to database
+	// 2. Connect to PostgreSQL projection store
 	db, err := mypg.PgSqlFastConnect(shopID)
 	if err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)

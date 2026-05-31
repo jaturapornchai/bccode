@@ -263,6 +263,8 @@ func TestProductBarcodePhaser(t *testing.T) {
 
 		// Item details
 		assert.Equal(t, "ITEM99", got.ItemCode, "ItemCode should match")
+		assert.Equal(t, int8(0), got.ItemType, "ItemType should match")
+		assert.Equal(t, int8(0), got.MaterialType, "MaterialType should match")
 		assert.Equal(t, "BKT", got.UnitCode, "UnitCode should match from ItemUnitCode")
 
 		// Names
@@ -350,4 +352,38 @@ func TestProductBarcodePhaser(t *testing.T) {
 		bomList := []models.BOMProductBarcode(got.BOM)
 		assert.Equal(t, 0, len(bomList), "BOM should be empty")
 	})
+}
+
+func TestProductBarcodePhaserKeepsProductSetClassification(t *testing.T) {
+	doc := models.ProductBarcodeDoc{}
+	doc.ShopID = "shop-1"
+	doc.GuidFixed = "guid-1"
+	doc.Barcode = "SET-001"
+	doc.ItemCode = "SET-001"
+	doc.ItemType = models.ItemTypeSet
+	doc.MaterialType = models.MaterialTypeSet
+
+	phaser := usecases.ProductBarcodePhaser{}
+	got, err := phaser.PhaseProductBarcodeDoc(&doc)
+
+	assert.NoError(t, err)
+	assert.Equal(t, models.ItemTypeSet, got.ItemType)
+	assert.Equal(t, models.MaterialTypeSet, got.MaterialType)
+}
+
+func TestProductBarcodePhaserRejectsInvalidProductSetClassification(t *testing.T) {
+	doc := models.ProductBarcodeDoc{}
+	doc.ShopID = "shop-1"
+	doc.GuidFixed = "guid-1"
+	doc.Barcode = "SET-INVALID"
+	doc.ItemCode = "SET-INVALID"
+	doc.ItemType = models.ItemTypeSet
+	doc.MaterialType = models.MaterialTypeGeneral
+
+	phaser := usecases.ProductBarcodePhaser{}
+	got, err := phaser.PhaseProductBarcodeDoc(&doc)
+
+	assert.Nil(t, got)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "expected materialtype 3")
 }

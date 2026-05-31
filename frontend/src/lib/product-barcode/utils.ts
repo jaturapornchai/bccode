@@ -7,6 +7,7 @@ import { type LanguageCode } from "@/lib/i18n";
 import type {
   BOMProductBarcode,
   NameX,
+  Product,
   ProductBarcode,
   ProductBarcodeListRow,
   ProductPrice,
@@ -139,6 +140,49 @@ export function toRefBarcodeArray(value: unknown): RefProductBarcode[] {
   });
 }
 
+export type ProductUnitOption = RefProductBarcode & {
+  prices?: ProductPrice[];
+  averagecost?: number;
+  is_main_barcode?: boolean;
+  product_guid?: string;
+  product_code?: string;
+};
+
+/** Normalize unit/barcode choices from product detail. */
+export function toProductUnitOptions(product: unknown): ProductUnitOption[] {
+  if (!isRecord(product)) return [];
+  const productGuid = getFirstString(product, ["guid_fixed", "guidfixed"]);
+  const productCode = getString(product, "code");
+  const productNames = toNameXArray(product.names);
+  const source = Array.isArray(product.barcodes) ? product.barcodes : [];
+
+  return source.flatMap((entry) => {
+    if (!isRecord(entry)) return [];
+    const barcode = getString(entry, "barcode");
+    if (!barcode) return [];
+    return [
+      {
+        guid_fixed: getFirstString(entry, ["guid_fixed", "guidfixed", "barcodeguidfixed"]),
+        names: toNameXArray(entry.names).length ? toNameXArray(entry.names) : productNames,
+        item_unit_code: getFirstString(entry, ["item_unit_code", "itemunitcode", "unitcode"]),
+        itemunitnames: toNameXArray(entry.itemunitnames).length
+          ? toNameXArray(entry.itemunitnames)
+          : toNameXArray(entry.unitnames),
+        barcode,
+        condition: getBoolean(entry, "condition", true),
+        dividevalue: getNumber(entry, "dividevalue", 1),
+        standvalue: getNumber(entry, "standvalue", 1),
+        qty: getNumber(entry, "qty", 1),
+        prices: toPriceArray(entry.prices),
+        averagecost: getNumber(entry, "averagecost", getNumber(entry, "unit_cost", 0)),
+        is_main_barcode: getBoolean(entry, "is_main_barcode", false),
+        product_guid: productGuid,
+        product_code: productCode,
+      },
+    ];
+  });
+}
+
 /** Normalize BOM array. */
 export function toBomArray(value: unknown): BOMProductBarcode[] {
   if (!Array.isArray(value)) return [];
@@ -208,6 +252,63 @@ export function listRowToBarcode(row: ProductBarcodeListRow): Partial<ProductBar
 /** Validate barcode string — A-Z, 0-9, -, no space. */
 export function isValidBarcode(value: string): boolean {
   return /^[A-Za-z0-9-]+$/.test(value.trim());
+}
+
+/** Normalize raw API JSON from `/api/product` list into a `Product` shape. */
+export function rawToProduct(raw: unknown): Product {
+  const r: Record<string, unknown> = isRecord(raw) ? raw : {};
+  return {
+    guidfixed: getFirstString(r, ["guid_fixed", "guidfixed"]),
+    shopid: getString(r, "shopid"),
+    code: getString(r, "code"),
+    names: toNameXArray(r.names),
+    group_code: getString(r, "group_code"),
+    group_names: toNameXArray(r.group_names),
+    vat_type: getNumber(r, "vat_type", 0),
+    item_type: getNumber(r, "item_type", 0),
+    materialtype: getNumber(r, "materialtype", 0),
+    tax_type: getNumber(r, "tax_type", 0),
+    groupsuboneguid: getString(r, "groupsuboneguid"),
+    groupsubonecode: getString(r, "groupsubonecode"),
+    groupsubonenames: toNameXArray(r.groupsubonenames),
+    groupsubtwoguid: getString(r, "groupsubtwoguid"),
+    groupsubtwocode: getString(r, "groupsubtwocode"),
+    groupsubtwonames: toNameXArray(r.groupsubtwonames),
+    brandguid: getString(r, "brandguid"),
+    brand_code: getString(r, "brand_code"),
+    brandnames: toNameXArray(r.brandnames),
+    designguid: getString(r, "designguid"),
+    designcode: getString(r, "designcode"),
+    designnames: toNameXArray(r.designnames),
+    modelguid: getString(r, "modelguid"),
+    modelcode: getString(r, "modelcode"),
+    modelnames: toNameXArray(r.modelnames),
+    patternguid: getString(r, "patternguid"),
+    patterncode: getString(r, "patterncode"),
+    patternnames: toNameXArray(r.patternnames),
+    gradeguid: getString(r, "gradeguid"),
+    gradecode: getString(r, "gradecode"),
+    gradenames: toNameXArray(r.gradenames),
+    category_guid: getString(r, "category_guid"),
+    categorycode: getString(r, "categorycode"),
+    category_names: toNameXArray(r.category_names),
+    classguid: getString(r, "classguid"),
+    classcode: getString(r, "classcode"),
+    classnames: toNameXArray(r.classnames),
+    manufacturers: Array.isArray(r.manufacturers) ? (r.manufacturers as Product["manufacturers"]) : [],
+    suppliers: Array.isArray(r.suppliers) ? (r.suppliers as Product["suppliers"]) : [],
+    condition: getBoolean(r, "condition", false),
+    dividevalue: getNumber(r, "dividevalue", 1),
+    standvalue: getNumber(r, "standvalue", 1),
+    isusesubbarcodes: getBoolean(r, "isusesubbarcodes", false),
+    refbarcodes: toRefBarcodeArray(r.refbarcodes),
+    bom: toBomArray(r.bom),
+    orderpoint: getNumber(r, "orderpoint", 0),
+    minpoint: getNumber(r, "minpoint", 0),
+    maxpoint: getNumber(r, "maxpoint", 0),
+    qty: getNumber(r, "qty", 0),
+    stockbarcode: getString(r, "stockbarcode"),
+  };
 }
 
 /** Normalize raw API JSON into a full `ProductBarcode`, merging with defaults. */

@@ -3,6 +3,7 @@
 Purpose: keep Codex, Claude Code, and other agents fast. Read this file first, then open only the relevant source files.
 
 ## Default Workflow
+- Start every task with a concise plan before running command sequences, debugging, editing, deploying, committing, or pushing. Scale the plan to the task; even simple fixes need a short plan.
 - For project-wide rules, local runtime, storage, secrets, DEV deployment, wiki/LLM knowledge, or reusable agent context, read `.agents/rules/bc-account-core-rules.md` and `.agents/wiki/llm-index.md` first; keep agent assets portable across Claude Code, Codex/GPT-5.5, and Google Antigravity/Gemini.
 - Identify the task area below.
 - Use `rg -n "symbol|label|route"` before opening large files.
@@ -17,6 +18,7 @@ Purpose: keep Codex, Claude Code, and other agents fast. Read this file first, t
 - Backend local deploy after backend changes: `cd backend; docker-compose up -d --no-deps --build mainapi`
 - Backend health: `curl.exe --max-time 10 -s -i http://localhost:8888/healthz`
 - Real data check: use the selected DEV database/API path; do not rely on mock business data for completion claims.
+- DEV seed data: use `.agents/skills/dev-data-seeder/SKILL.md`; resolve the active `shopid` first, then seed through real DEV APIs and verify via the same screen API path.
 - Narrow search: `rg -n "term" <path>`
 - Focused git status: `git status --short -- <exact-path-or-module>`
 - Changed-file count only: `git diff --name-only -- <exact-path-or-module> | Measure-Object -Line`
@@ -38,6 +40,7 @@ Purpose: keep Codex, Claude Code, and other agents fast. Read this file first, t
 - Thai address dataset/cascading lookup: `backend/assets/address/thailand-addresses.json`, `backend/internal/goapi/handlers/address_handler.go`, `frontend/src/app/api/address/thailand/route.ts`, `frontend/src/lib/thailand-addresses.ts`, and the system-settings branch address fields.
 - Private image upload and preview: `.agents/rules/bc-account-core-rules.md` Image Display Enforcement, `frontend/src/lib/image-upload-proxy.ts`, `frontend/src/app/api/upload/image/route.ts`, `frontend/src/app/system-settings/system-settings-screen.tsx`, `backend/internal/goapi/handlers/image_r2.go`, `backend/internal/goapi/handlers/s3_proxy.go`, and `backend/internal/goapi/handlers/storage_private_test.go`.
 - Product category screen: `frontend/src/app/system-settings/product-category-tree-view.tsx`, `frontend/src/app/system-settings/system-settings-screen.tsx`, `frontend/src/lib/system-setting-screens.ts`, active backend model `backend/internal/product/productcategory/models/productcategory.go`, and legacy Flutter reference `D:\bcdev\frontend\bcaiaccount\lib\screens\config\product_category_screen.dart`.
+- Product/product set/barcode DEV sample data: `.agents/skills/dev-data-seeder/SKILL.md`, then verify `frontend/src/app/menu/product-screen.tsx`, `frontend/src/app/api/product/[[...productPath]]/route.ts`, and backend `/product` + `/product/barcode` routes.
 - Frontend density/top chrome: `frontend/src/app/menu/main-menu-screen.tsx`, `frontend/src/app/system-settings/system-settings-screen.tsx`, `frontend/src/app/globals.css`, plus `.agents/skills/nextjs-frontend/SKILL.md` and `.agents/skills/formdesign/SKILL.md`.
 - User management: same as System settings plus `backend/internal/authentication/**` and `backend/internal/shop/**` only when server behavior is involved.
 - Permissions/menu access: `frontend/src/lib/menu-data.ts`, `frontend/src/lib/menu-permissions.ts`, `frontend/src/app/system-settings/system-settings-screen.tsx`, related backend permission services when needed.

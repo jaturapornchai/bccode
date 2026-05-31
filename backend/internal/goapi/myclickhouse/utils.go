@@ -15,7 +15,6 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/google/uuid"
-	"github.com/joho/godotenv"
 )
 
 // Global ClickHouse connection pool
@@ -240,32 +239,7 @@ func QuerySelectAllWithUTF8(conn clickhouse.Conn, query string) ([]map[string]in
 }
 
 func ClickHouseFastConnect() (clickhouse.Conn, error) {
-	var err error
-
-	clickhouseMutex.Lock()
-	defer clickhouseMutex.Unlock()
-
-	clickhouseOnce.Do(func() {
-		clickhouseConn, err = CreateClickHouseConnection()
-	})
-
-	if err != nil {
-		clickhouseOnce = sync.Once{}
-		return nil, err
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
-	if err := clickhouseConn.Ping(ctx); err != nil {
-		clickhouseConn, err = CreateClickHouseConnection()
-		if err != nil {
-			clickhouseOnce = sync.Once{}
-			return nil, err
-		}
-	}
-
-	return clickhouseConn, nil
+	return nil, fmt.Errorf("clickhouse is disabled")
 }
 
 // getClickHouseOptions คืน Options สำหรับเชื่อมต่อ ClickHouse
@@ -306,97 +280,16 @@ func getClickHouseOptions(database string) *clickhouse.Options {
 
 // ensureDatabase สร้าง database ใน ClickHouse ถ้ายังไม่มี
 func ensureDatabase(dbName string) error {
-	// เชื่อมต่อไปที่ default database ก่อน
-	defaultConn, err := clickhouse.Open(getClickHouseOptions("default"))
-	if err != nil {
-		return fmt.Errorf("เชื่อมต่อ ClickHouse (default) ล้มเหลว: %w", err)
-	}
-	defer defaultConn.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	if err := defaultConn.Ping(ctx); err != nil {
-		return fmt.Errorf("ping ClickHouse (default) ล้มเหลว: %w", err)
-	}
-
-	// สร้าง database ถ้ายังไม่มี
-	createSQL := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", dbName)
-	if err := defaultConn.Exec(ctx, createSQL); err != nil {
-		return fmt.Errorf("สร้าง database %s ล้มเหลว: %w", dbName, err)
-	}
-
-	logger.Info("[ClickHouse] ตรวจสอบ/สร้าง database '%s' สำเร็จ", dbName)
-	return nil
+	return fmt.Errorf("clickhouse is disabled")
 }
 
 // สร้าง ClickHouse connection ใหม่ — ถ้า database ยังไม่มีจะสร้าง database + tables อัตโนมัติ
 func CreateClickHouseConnection() (clickhouse.Conn, error) {
-	envFile := ".env.development"
-	if os.Getenv("RUN_MODE") == "prod" {
-		envFile = ".env.prod"
-	}
-	godotenv.Load(envFile)
-
-	dbName := GetDatabaseName()
-	ctx := context.Background()
-	databaseCreated := false
-
-	// เชื่อมต่อไปที่ database ที่กำหนด
-	conn, err := clickhouse.Open(getClickHouseOptions(dbName))
-	if err != nil {
-		return nil, err
-	}
-
-	// ลอง ping — ถ้า database ไม่มีจะ error
-	if err := conn.Ping(ctx); err != nil {
-		conn.Close()
-		logger.Info("[ClickHouse] database '%s' อาจยังไม่มี — กำลังสร้าง...", dbName)
-
-		// สร้าง database อัตโนมัติ
-		if ensureErr := ensureDatabase(dbName); ensureErr != nil {
-			return nil, fmt.Errorf("สร้าง database ล้มเหลว: %w", ensureErr)
-		}
-		databaseCreated = true
-
-		// เชื่อมต่อใหม่
-		conn, err = clickhouse.Open(getClickHouseOptions(dbName))
-		if err != nil {
-			return nil, err
-		}
-
-		if err := conn.Ping(ctx); err != nil {
-			return nil, fmt.Errorf("เชื่อมต่อ ClickHouse หลังสร้าง database ล้มเหลว: %w", err)
-		}
-	}
-
-	// ตรวจสอบและสร้าง tables อัตโนมัติ (ใช้ IF NOT EXISTS — ปลอดภัย)
-	if err := ensureTables(conn, dbName); err != nil {
-		// ไม่ return error — ยังเชื่อมต่อได้ แค่ tables อาจไม่ครบ
-		logger.Error("[ClickHouse] สร้าง tables อัตโนมัติล้มเหลว: %v", err)
-	}
-
-	if databaseCreated {
-		logger.Info("[ClickHouse] สร้าง database '%s' พร้อม tables สำเร็จ", dbName)
-	} else {
-		logger.Info("[ClickHouse] เชื่อมต่อ database '%s' สำเร็จ", dbName)
-	}
-	return conn, nil
+	return nil, fmt.Errorf("clickhouse is disabled")
 }
 
 // CloseClickHouseConnection ปิด ClickHouse connection pool
 func CloseClickHouseConnection() error {
-	clickhouseMutex.Lock()
-	defer clickhouseMutex.Unlock()
-
-	if clickhouseConn != nil {
-		err := clickhouseConn.Close()
-		clickhouseConn = nil
-		if err != nil {
-			return err
-		}
-	}
-	closeAsyncWorkerPool()
 	return nil
 }
 

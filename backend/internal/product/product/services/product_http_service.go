@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/smlsoft/mongopagination"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -174,6 +173,10 @@ func (svc ProductHttpService) Create(doc *models.ProductDoc) error {
 		return errors.New("ShopID and Code are required")
 	}
 
+	if err := barcodeModel.ValidateProductClassification(doc.ItemType, doc.MaterialType); err != nil {
+		return err
+	}
+
 	// ✅ สร้าง `GuidFixed` ถ้ายังไม่มีค่า
 	if doc.GuidFixed == "" {
 		doc.GuidFixed = utils.NewGUID() // 🔥 สร้าง GUID ใหม่
@@ -226,6 +229,9 @@ func (svc ProductHttpService) Update(shopID string, code string, authUsername st
 	docData := findDoc
 	docData.ProductData = doc.ProductData
 	docData.Code = doc.Code
+	if err := barcodeModel.ValidateProductClassification(docData.ItemType, docData.MaterialType); err != nil {
+		return models.ProductDoc{}, err
+	}
 
 	docData.UpdatedBy = authUsername
 	docData.UpdatedAt = time.Now()
@@ -248,10 +254,7 @@ func (svc ProductHttpService) Delete(shopID string, guid string, user string) er
 		return errors.New("ShopID and Code are required")
 	}
 
-	deleteFilterQuery := map[string]interface{}{
-		"guid_fixed": bson.M{"$in": guid},
-	}
-	err := svc.repo.Delete(ctx, shopID, user, deleteFilterQuery)
+	err := svc.repo.DeleteByGuidfixed(ctx, shopID, guid, user)
 	if err != nil {
 		return err
 	}

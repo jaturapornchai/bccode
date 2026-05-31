@@ -14,6 +14,7 @@ import {
   toNumberOrNull,
   toPriceArray,
   toRefBarcodeArray,
+  toProductUnitOptions,
 } from "./utils";
 import { emptyProductBarcode, ITEM_TYPE } from "./types";
 
@@ -180,5 +181,51 @@ describe("utils — rawToProductBarcode", () => {
     const base = emptyProductBarcode();
     expect(rawToProductBarcode(null, base)).toBe(base);
     expect(rawToProductBarcode("oops", base)).toBe(base);
+  });
+});
+
+
+describe("utils — toProductUnitOptions", () => {
+  it("uses product.barcodes as the unit choices returned by /api/product detail", () => {
+    const options = toProductUnitOptions({
+      guidfixed: "PRODUCT-GUID",
+      code: "P001",
+      names: [{ code: "th", name: "สินค้า" }],
+      barcodes: [
+        {
+          guid_fixed: "BARCODE-GUID-1",
+          barcode: "885-PCS",
+          item_unit_code: "PCS",
+          itemunitnames: [{ code: "th", name: "ชิ้น" }],
+        },
+        {
+          guid_fixed: "BARCODE-GUID-2",
+          barcode: "885-BOX",
+          item_unit_code: "BOX",
+          itemunitnames: [{ code: "th", name: "กล่อง" }],
+        },
+      ],
+      refbarcodes: [{ barcode: "WRONG", item_unit_code: "OLD" }],
+    });
+
+    expect(options).toEqual([
+      expect.objectContaining({ guid_fixed: "BARCODE-GUID-1", barcode: "885-PCS", item_unit_code: "PCS" }),
+      expect.objectContaining({ guid_fixed: "BARCODE-GUID-2", barcode: "885-BOX", item_unit_code: "BOX" }),
+    ]);
+  });
+
+  it("does not invent a barcode when a product has no barcode/unit choices", () => {
+    expect(toProductUnitOptions({ guidfixed: "PRODUCT-GUID", code: "P001", names: [] })).toEqual([]);
+  });
+
+  it("does not use legacy refbarcodes as recipe unit choices", () => {
+    expect(
+      toProductUnitOptions({
+        guidfixed: "PRODUCT-GUID",
+        code: "P001",
+        names: [],
+        refbarcodes: [{ barcode: "LEGACY", item_unit_code: "OLD" }],
+      }),
+    ).toEqual([]);
   });
 });

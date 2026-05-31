@@ -17,12 +17,14 @@ import {
   ChevronLeft,
   ChevronRight,
   ImagePlus,
+  Info,
   Loader2,
   Minus,
   Plus,
   Save,
   Trash2,
   Upload,
+  Wand2,
   X,
 } from "lucide-react";
 import {
@@ -33,6 +35,7 @@ import {
   type ReactNode,
   type SetStateAction,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -44,61 +47,47 @@ import { MasterPicker } from "@/components/product-barcode/master-picker";
 import { uploadProductImage, type MasterName, type MasterEntry } from "@/lib/product-barcode/api";
 import { getBarcodeText } from "@/lib/product-barcode/language";
 import {
-  FOOD_TYPE,
   ITEM_TYPE,
+  MARKETPLACE_STATUS,
   MATERIAL_TYPE,
+  emptyMarketplaceProductMap,
+  type MarketplacePlatform,
+  type MarketplaceProductMap,
   type NameX,
+  type Product,
   type ProductBarcode,
-  type ProductPrice,
-  type RefProductBarcode,
-  type BOMProductBarcode,
   type ProductChoice,
+  type ProductImage,
+  type ProductManufacturer,
   type ProductOption,
-  type ProductTimeForSale,
-  type ProductDimension,
-  type ProductOrderType,
-  type ProductBarcodeBusinessType,
-  type ProductBarcodeBranch,
+  type ProductPrice,
+  type ProductSupplier,
 } from "@/lib/product-barcode/types";
 import { isValidBarcode, pickName, setNameXEntry } from "@/lib/product-barcode/utils";
-import type { LanguageCode } from "@/lib/i18n";
+import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { AuthSession } from "@/lib/workspace-models";
+import { NamesEditor } from "./names-editor";
 
 // ─── Tab definitions ──────────────────────────────────────────────────────
 
 type TabKey =
   | "basic"
-  | "classification"
   | "pricing"
-  | "stock"
-  | "units"
-  | "bom"
   | "media"
-  | "restaurant"
-  | "timeforsales"
-  | "dimensions"
-  | "business"
-  | "misc";
+  | "logistics"
+  | "product_detail";
 
 interface TabDef {
   key: TabKey;
-  label: keyof ReturnType<typeof getBarcodeText>;
+  label: keyof ReturnType<typeof getBarcodeText> | "tabProductDetail";
 }
 
 const TABS: TabDef[] = [
   { key: "basic", label: "tabBasic" },
-  { key: "classification", label: "tabClassification" },
   { key: "pricing", label: "tabPricing" },
-  { key: "stock", label: "tabStock" },
-  { key: "units", label: "tabUnits" },
-  { key: "bom", label: "tabBom" },
   { key: "media", label: "tabMedia" },
-  { key: "restaurant", label: "tabRestaurant" },
-  { key: "timeforsales", label: "tabTimeForSales" },
-  { key: "dimensions", label: "tabDimensions" },
-  { key: "business", label: "tabBusinessBranch" },
-  { key: "misc", label: "tabMisc" },
+  { key: "logistics", label: "tabDimensions" },
 ];
 
 // ─── Props ────────────────────────────────────────────────────────────────
@@ -109,6 +98,8 @@ export interface ProductBarcodeFormDialogProps {
   value: ProductBarcode;
   onChange: Dispatch<SetStateAction<ProductBarcode>>;
   onSave: (value: ProductBarcode) => void;
+  /** Optional: called instead of onSave when "Save & add new" is clicked in create mode. */
+  onSaveAndNew?: (value: ProductBarcode) => void;
   onCancel: () => void;
   saving?: boolean;
   language: LanguageCode | string;
@@ -117,10 +108,11 @@ export interface ProductBarcodeFormDialogProps {
   /** Optional extra controls (e.g. quick links to BOM / Price History / Label print). */
   extraActions?: ReactNode;
   embedded?: boolean;
+  companyGuid?: string;
 }
 
 export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
-  const { open, mode, value, onChange, onSave, onCancel, saving = false, language, auth, extraActions, embedded = false } = props;
+  const { open, mode, value, onChange, onSave, onSaveAndNew, onCancel, saving = false, language, auth, extraActions, embedded = false, companyGuid } = props;
   const text = getBarcodeText(language);
   const [tab, setTab] = useState<TabKey>("basic");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -128,6 +120,86 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
     () => (props.shopLanguages && props.shopLanguages.length > 0 ? props.shopLanguages : ["th", "en"]),
     [props.shopLanguages],
   );
+
+  const [productDetail, setProductDetail] = useState<Product | null>(null);
+  const [loadingProductDetail, setLoadingProductDetail] = useState(false);
+
+  useEffect(() => {
+    if (!auth || !value.item_guid) {
+      setProductDetail(null);
+      return;
+    }
+    let active = true;
+    setLoadingProductDetail(true);
+    fetch(`/api/product/${encodeURIComponent(value.item_guid)}`, {
+      headers: {
+        Authorization: `Bearer ${auth.token}`,
+        "x-bc-backend-url": auth.backendUrl,
+      },
+    })
+      .then((res) => res.json())
+      .then((resData) => {
+        if (active && resData && resData.success !== false) {
+          setProductDetail(resData.data || null);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load product details", err);
+      })
+      .finally(() => {
+        if (active) setLoadingProductDetail(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [auth, value.item_guid]);
+
+  useEffect(() => {
+    if (productDetail) {
+      onChange((current) => {
+        const nextItemType = typeof productDetail.item_type === "number" ? productDetail.item_type as ProductBarcode["item_type"] : current.item_type;
+        const nextMaterialType = typeof productDetail.materialtype === "number" ? productDetail.materialtype as ProductBarcode["materialtype"] : current.materialtype;
+        const nextVatCal = typeof productDetail.vat_type === "number" ? productDetail.vat_type : current.vatcal;
+        const nextSumPoint = typeof productDetail.issumpoint === "boolean" ? productDetail.issumpoint : current.issumpoint;
+
+        if (
+          current.item_type !== nextItemType ||
+          current.materialtype !== nextMaterialType ||
+          current.vatcal !== nextVatCal ||
+          current.issumpoint !== nextSumPoint
+        ) {
+          return {
+            ...current,
+            item_type: nextItemType,
+            materialtype: nextMaterialType,
+            vatcal: nextVatCal,
+            issumpoint: nextSumPoint,
+          };
+        }
+        return current;
+      });
+    }
+  }, [productDetail, onChange]);
+
+  const visibleTabs = useMemo<TabDef[]>(() => {
+    if (value.item_guid) {
+      return [
+        { key: "basic", label: "tabBasic" },
+        { key: "pricing", label: "tabPricing" },
+        { key: "logistics", label: "tabDimensions" },
+        { key: "product_detail", label: "tabProductDetail" },
+      ];
+    }
+    return TABS;
+  }, [value.item_guid]);
+
+  useEffect(() => {
+    const isCurrentTabVisible = visibleTabs.some((t) => t.key === tab);
+    if (!isCurrentTabVisible) {
+      setTab("basic");
+    }
+  }, [visibleTabs, tab]);
 
   const validate = useCallback((): boolean => {
     const next: Record<string, string> = {};
@@ -143,6 +215,13 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
   const saveIfValid = useCallback(() => {
       if (validate()) onSave(value);
   }, [validate, onSave, value]);
+
+  const saveAndNewIfValid = useCallback(() => {
+    if (validate()) {
+      if (onSaveAndNew) onSaveAndNew(value);
+      else onSave(value);
+    }
+  }, [validate, onSave, onSaveAndNew, value]);
 
   const submit = useCallback(
     (event: FormEvent) => {
@@ -194,7 +273,7 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
         {/* Tab bar (scrollable on mobile) */}
         <div className="border-b border-border bg-muted/30">
           <div className="flex flex-wrap gap-1 px-2 py-1.5">
-            {TABS.map((tabDef) => {
+            {visibleTabs.map((tabDef) => {
               const isActive = tab === tabDef.key;
               return (
                 <button
@@ -208,7 +287,7 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
                       : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   )}
                 >
-                  {text[tabDef.label]}
+                  {text[tabDef.label as keyof typeof text]}
                 </button>
               );
             })}
@@ -218,27 +297,19 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
         {/* Body */}
         <div className="min-h-0 flex-1 overflow-y-auto bg-background px-4 py-4">
           {tab === "basic" && (
-            <TabBasic value={value} onChange={onChange} text={text} errors={errors} shopLanguages={shopLanguages} auth={auth} language={language} />
-          )}
-          {tab === "classification" && (
-            <TabClassification value={value} onChange={onChange} text={text} auth={auth} language={language} />
+            <TabBasic value={value} onChange={onChange} text={text} errors={errors} shopLanguages={shopLanguages} auth={auth} language={language} companyGuid={companyGuid} />
           )}
           {tab === "pricing" && <TabPricing value={value} onChange={onChange} text={text} />}
-          {tab === "stock" && <TabStock value={value} onChange={onChange} text={text} />}
-          {tab === "units" && <TabUnits value={value} onChange={onChange} text={text} />}
-          {tab === "bom" && <TabBom value={value} onChange={onChange} text={text} />}
           {tab === "media" && (
             <TabMedia value={value} onChange={onChange} text={text} auth={auth} />
           )}
-          {tab === "restaurant" && (
-            <TabRestaurant value={value} onChange={onChange} text={text} auth={auth} language={language} shopLanguages={shopLanguages} />
+          {tab === "logistics" && (
+            <TabLogistics value={value} onChange={onChange} text={text} />
           )}
-          {tab === "timeforsales" && <TabTimeForSales value={value} onChange={onChange} text={text} />}
-          {tab === "dimensions" && <TabDimensions value={value} onChange={onChange} text={text} />}
-          {tab === "business" && (
-            <TabBusinessBranch value={value} onChange={onChange} text={text} auth={auth} language={language} />
+          {tab === "product_detail" && (
+            <TabProductDetail productDetail={productDetail} loading={loadingProductDetail} text={text} language={language} />
           )}
-          {tab === "misc" && <TabMisc value={value} onChange={onChange} text={text} />}
+
         </div>
 
         {/* Footer */}
@@ -249,10 +320,10 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
               variant="ghost"
               size="sm"
               onClick={() => {
-                const idx = TABS.findIndex((t) => t.key === tab);
-                if (idx > 0) setTab(TABS[idx - 1].key);
+                const idx = visibleTabs.findIndex((t) => t.key === tab);
+                if (idx > 0) setTab(visibleTabs[idx - 1].key);
               }}
-              disabled={TABS.findIndex((t) => t.key === tab) === 0}
+              disabled={visibleTabs.findIndex((t) => t.key === tab) === 0}
               aria-label="Previous tab"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -262,10 +333,10 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
               variant="ghost"
               size="sm"
               onClick={() => {
-                const idx = TABS.findIndex((t) => t.key === tab);
-                if (idx < TABS.length - 1) setTab(TABS[idx + 1].key);
+                const idx = visibleTabs.findIndex((t) => t.key === tab);
+                if (idx < visibleTabs.length - 1) setTab(visibleTabs[idx + 1].key);
               }}
-              disabled={TABS.findIndex((t) => t.key === tab) === TABS.length - 1}
+              disabled={visibleTabs.findIndex((t) => t.key === tab) === visibleTabs.length - 1}
               aria-label="Next tab"
             >
               <ChevronRight className="h-4 w-4" />
@@ -280,6 +351,12 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
             <Button type="button" variant="outline" size="sm" onClick={onCancel} disabled={saving}>
               {text.cancel}
             </Button>
+            {mode === "create" && (
+              <Button type="button" variant="secondary" size="sm" disabled={saving} onClick={saveAndNewIfValid}>
+                {saving ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Plus className="mr-1 h-4 w-4" />}
+                {text.saveAndNew}
+              </Button>
+            )}
             <Button type="submit" size="sm" disabled={saving}>
               {saving ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Save className="mr-1 h-4 w-4" />}
               {saving ? text.saving : text.save}
@@ -304,14 +381,14 @@ type Text = ReturnType<typeof getBarcodeText>;
 
 function FieldRow({ label, hint, children, required }: { label: string; hint?: string; children: ReactNode; required?: boolean }) {
   return (
-    <label className="flex flex-col gap-1 text-sm">
+    <div className="flex flex-col gap-1 text-sm">
       <span className="font-medium text-foreground">
         {label}
         {required ? <span className="ml-1 text-destructive">*</span> : null}
       </span>
       {children}
       {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
-    </label>
+    </div>
   );
 }
 
@@ -419,135 +496,12 @@ function NumberField({
         const n = Number(event.target.value);
         onChange(Number.isFinite(n) ? n : 0);
       }}
-      className={className}
+className={className}
     />
   );
 }
 
-function emptyReferenceBarcode(): RefProductBarcode {
-  return {
-    guid_fixed: "",
-    names: [],
-    item_unit_code: "",
-    itemunitnames: [],
-    barcode: "",
-    condition: false,
-    dividevalue: 1,
-    standvalue: 1,
-    qty: 1,
-  };
-}
 
-function canUseReferenceBarcode(itemType: ProductBarcode["item_type"]): boolean {
-  return itemType !== ITEM_TYPE.SERVICE && itemType !== ITEM_TYPE.NOT_STOCK;
-}
-
-function NamesEditor({
-  names,
-  onChange,
-  languages,
-  label,
-  firstRequired,
-  error,
-  progressiveLanguages = false,
-  addLanguageLabel = "Add language",
-  otherLanguageLabel = "Other language",
-}: {
-  names: NameX[];
-  onChange: (next: NameX[]) => void;
-  languages: string[];
-  label: string;
-  firstRequired?: boolean;
-  error?: string;
-  progressiveLanguages?: boolean;
-  addLanguageLabel?: string;
-  otherLanguageLabel?: string;
-}) {
-  const allLanguages = useMemo(() => {
-    const codes = new Set<string>();
-    const primary = languages.find((code) => code.trim())?.trim() || "th";
-    codes.add(primary);
-    languages.forEach((code) => {
-      if (code.trim()) codes.add(code.trim());
-    });
-    names.forEach((entry) => {
-      const code = entry.code?.trim();
-      if (code) codes.add(code);
-    });
-    return Array.from(codes);
-  }, [languages, names]);
-  const primaryLanguage = languages.find((code) => code.trim())?.trim() || allLanguages[0] || "th";
-  const [extraLanguages, setExtraLanguages] = useState<string[]>([]);
-  const visibleLanguages = progressiveLanguages
-    ? allLanguages.filter(
-        (code) =>
-          code === primaryLanguage ||
-          extraLanguages.includes(code) ||
-          names.some((entry) => entry.code === code && (entry.name ?? "").trim()),
-      )
-    : allLanguages;
-  const hiddenLanguages = progressiveLanguages
-    ? allLanguages.filter((code) => code !== primaryLanguage && !visibleLanguages.includes(code))
-    : [];
-  const [languageToAdd, setLanguageToAdd] = useState("");
-
-  return (
-    <div className="space-y-2">
-      <div className="text-sm font-medium">
-        {label}
-        {firstRequired ? <span className="ml-1 text-destructive">*</span> : null}
-      </div>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {visibleLanguages.map((code) => {
-          const entry = names.find((n) => n.code === code);
-          return (
-            <div key={code} className="flex items-center gap-2">
-              <span className="w-10 text-center text-xs font-mono uppercase text-muted-foreground">{code}</span>
-              <Input
-                value={entry?.name ?? ""}
-                onChange={(event) => onChange(setNameXEntry(names, code, event.target.value))}
-                placeholder={code}
-                aria-invalid={firstRequired && code === primaryLanguage && !entry?.name ? true : undefined}
-              />
-            </div>
-          );
-        })}
-      </div>
-      {progressiveLanguages && hiddenLanguages.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-            value={languageToAdd}
-            onChange={(event) => setLanguageToAdd(event.target.value)}
-            aria-label={otherLanguageLabel}
-          >
-            <option value="">{otherLanguageLabel}</option>
-            {hiddenLanguages.map((code) => (
-              <option key={code} value={code}>
-                {code.toUpperCase()}
-              </option>
-            ))}
-          </select>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const nextCode = languageToAdd || hiddenLanguages[0];
-              if (!nextCode) return;
-              setExtraLanguages((current) => (current.includes(nextCode) ? current : [...current, nextCode]));
-              setLanguageToAdd("");
-            }}
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            {addLanguageLabel}
-          </Button>
-        </div>
-      ) : null}
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
-    </div>
-  );
-}
 
 // ─── Master picker field ──────────────────────────────────────────────────
 
@@ -562,6 +516,7 @@ function MasterField({
   onClear,
   required,
   error,
+  companyGuid,
 }: {
   label: string;
   code: string;
@@ -573,6 +528,7 @@ function MasterField({
   onClear: () => void;
   required?: boolean;
   error?: string;
+  companyGuid?: string;
 }) {
   const [open, setOpen] = useState(false);
   const pickerAnchorRef = useRef<HTMLButtonElement | null>(null);
@@ -584,6 +540,7 @@ function MasterField({
           ref={pickerAnchorRef}
           type="button"
           onClick={() => setOpen(true)}
+          aria-label={label}
           className="flex h-10 min-w-0 flex-1 items-center justify-between rounded-lg border border-input bg-background px-3 text-left text-sm text-foreground hover:bg-muted/40"
         >
           <span className="truncate">{displayName || code || <span className="text-muted-foreground">—</span>}</span>
@@ -604,6 +561,7 @@ function MasterField({
           onSelect={onPick}
           placement="field"
           anchorRef={pickerAnchorRef}
+          companyGuid={companyGuid}
         />
       </div>
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
@@ -621,6 +579,7 @@ function TabBasic({
   text,
   errors,
   shopLanguages,
+  companyGuid,
 }: {
   auth: AuthSession | null;
   language: LanguageCode | string;
@@ -629,6 +588,7 @@ function TabBasic({
   text: Text;
   errors: Record<string, string>;
   shopLanguages: string[];
+  companyGuid?: string;
 }) {
   const upd = useCallback(
     <K extends keyof ProductBarcode>(key: K, val: ProductBarcode[K]) =>
@@ -637,60 +597,125 @@ function TabBasic({
   );
   const setItemType = useCallback(
     (nextType: ProductBarcode["item_type"]) =>
-      onChange((current) => {
-        const next: ProductBarcode = { ...current, item_type: nextType };
-        if (!canUseReferenceBarcode(nextType)) {
-          next.isusesubbarcodes = false;
-          next.refbarcodes = [];
-        } else if (nextType === ITEM_TYPE.STOCK && next.refbarcodes.length > 1) {
-          next.refbarcodes = next.refbarcodes.slice(0, 1);
-        }
-        return next;
-      }),
+      onChange((current) => ({ ...current, item_type: nextType })),
     [onChange],
   );
-  const setReferenceBarcodeEnabled = useCallback(
-    (enabled: boolean) =>
-      onChange((current) => {
-        if (!enabled || !canUseReferenceBarcode(current.item_type)) {
-          return { ...current, isusesubbarcodes: false, refbarcodes: [] };
-        }
-        return {
-          ...current,
-          isusesubbarcodes: true,
-          refbarcodes: current.refbarcodes.length > 0 ? current.refbarcodes : [emptyReferenceBarcode()],
-        };
-      }),
-    [onChange],
-  );
-  const referenceDisabled = !canUseReferenceBarcode(value.item_type);
+  const hasProduct = !!value.item_guid;
+
+  const itemTypeLabel = value.item_type === 0
+    ? text.itemTypeStock
+    : value.item_type === 1
+    ? text.itemTypeService
+    : value.item_type === 2
+    ? text.itemTypeSet
+    : "-";
+
+  const materialTypeLabel = value.materialtype === 0
+    ? text.materialGeneral
+    : value.materialtype === 1
+    ? text.materialMaterial
+    : value.materialtype === 2
+    ? text.materialSemiFinished
+    : value.materialtype === 3
+    ? text.materialSet
+    : value.materialtype === 4
+    ? text.materialAgricultural
+    : "-";
+
+  const vatCalLabel = value.vatcal === 0 ? text.vatIncluded : value.vatcal === 1 ? text.vatExcluded : "-";
+  const sumPointLabel = value.issumpoint ? text.isSumPointYes : text.isSumPointNo;
 
   return (
     <div className="space-y-3">
+      {hasProduct && (
+        <div className="flex items-start gap-3 rounded-lg border border-blue-200/50 bg-blue-50/50 p-3.5 dark:border-blue-900/30 dark:bg-blue-950/20 text-xs text-blue-800 dark:text-blue-300">
+          <Info className="h-4.5 w-4.5 shrink-0 text-blue-500 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-semibold text-blue-900 dark:text-blue-200">
+              {language === "th"
+                ? `บาร์โค้ดนี้ผูกอยู่กับสินค้าหลัก: ${value.itemcode} — ${pickName(value.names, language)}`
+                : `This barcode is linked to product: ${value.itemcode} — ${pickName(value.names, language)}`}
+            </p>
+            <p className="text-muted-foreground/90 dark:text-muted-foreground/80 leading-normal">
+              {language === "th"
+                ? "ข้อมูลชื่อสินค้า ประเภทไอเทม ประเภทสินค้า และประเภทภาษี จะถูกควบคุมตามสินค้าหลักโดยอัตโนมัติ"
+                : "Product name, item type, product type, and tax configuration are automatically inherited from the parent product."}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {hasProduct && (
+        <Section title={language === "th" ? "ข้อมูลควบคุมจากสินค้าหลัก" : "Inherited Control Properties"}>
+          <FieldGrid>
+            <ReadOnlyField label={text.itemTypeLabel} value={itemTypeLabel} />
+            <ReadOnlyField label={text.materialTypeLabel} value={materialTypeLabel} />
+            <ReadOnlyField label={text.vatType} value={vatCalLabel} />
+            <ReadOnlyField label={language === "th" ? "สะสมแต้ม" : "Sum Point"} value={sumPointLabel} />
+          </FieldGrid>
+        </Section>
+      )}
+
       <Section title={text.tabBasic}>
         <div className="space-y-3">
           <FieldGrid>
             <FieldRow label={text.barcode} hint={text.barcodeHelp} required>
-              <Input
-                value={value.barcode}
-                onChange={(event) =>
-                  upd(
-                    "barcode",
-                    event.target.value
-                      .toUpperCase()
-                      .replace(/[^A-Z0-9-]/g, ""),
-                  )
-                }
-                aria-invalid={Boolean(errors.barcode) || undefined}
-              />
+              <div className="flex gap-2">
+                <Input
+                  value={value.barcode}
+                  onChange={(event) =>
+                    upd(
+                       "barcode",
+                      event.target.value
+                        .toUpperCase()
+                        .replace(/[^A-Z0-9-]/g, ""),
+                    )
+                  }
+                  aria-invalid={Boolean(errors.barcode) || undefined}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  aria-label={text.generateBarcode}
+                  title={text.generateBarcode}
+                  onClick={() => {
+                    const ts = String(Date.now());
+                    // Produce a 13-digit numeric string (EAN-like)
+                    const candidate = ts.slice(-13).padStart(13, "0");
+                    upd("barcode", candidate);
+                  }}
+                >
+                  <Wand2 className="h-4 w-4" />
+                </Button>
+              </div>
               {errors.barcode ? <p className="text-xs text-destructive">{errors.barcode}</p> : null}
             </FieldRow>
-            <FieldRow label={text.itemCode}>
-              <Input
-                value={value.itemcode}
-                onChange={(event) => upd("itemcode", event.target.value.toUpperCase())}
-              />
-            </FieldRow>
+            <MasterField
+              label={text.product}
+              code={value.itemcode}
+              names={value.names}
+              master="product"
+              language={language}
+              auth={auth}
+              companyGuid={companyGuid}
+              onPick={(entry) =>
+                onChange((current) => ({
+                  ...current,
+                  item_guid: entry.guidfixed,
+                  itemcode: entry.code,
+                  names: entry.names && entry.names.length > 0 ? entry.names : current.names,
+                }))
+              }
+              onClear={() =>
+                onChange((current) => ({
+                  ...current,
+                  item_guid: "",
+                  itemcode: "",
+                }))
+              }
+            />
             <MasterField
               label={text.itemUnit}
               code={value.item_unit_code}
@@ -700,6 +725,7 @@ function TabBasic({
               auth={auth}
               required
               error={errors.item_unit_code}
+              companyGuid={companyGuid}
               onPick={(entry) =>
                 onChange((current) => ({
                   ...current,
@@ -725,65 +751,21 @@ function TabBasic({
             label={text.names}
             firstRequired
             error={errors.name0}
-            progressiveLanguages
-            addLanguageLabel={text.addLanguage}
-            otherLanguageLabel={text.otherLanguage}
-          />
-        </div>
-      </Section>
-
-      <Section title={text.itemType}>
-        <div className="space-y-3">
-          <RadioOptionGroup
-            label={text.itemType}
-            value={value.item_type}
-            onChange={(next) => setItemType(next)}
-            options={[
-              { value: ITEM_TYPE.STOCK, label: text.itemTypeStock },
-              { value: ITEM_TYPE.SERVICE, label: text.itemTypeService },
-              { value: ITEM_TYPE.SET, label: text.itemTypeSet },
-              { value: ITEM_TYPE.NOT_STOCK, label: text.itemTypeNotStock },
-            ]}
-          />
-          <div className="rounded-md border border-border bg-background px-3 py-2">
-            <Toggle
-              checked={value.isusesubbarcodes && !referenceDisabled}
-              disabled={referenceDisabled}
-              onCheckedChange={setReferenceBarcodeEnabled}
-              label={`${text.isUseSubBarcodes}${value.refbarcodes.length ? ` (${value.refbarcodes.length})` : ""}`}
-            />
-          </div>
-          <RadioOptionGroup
-            label={text.materialType}
-            value={value.materialtype}
-            onChange={(next) => upd("materialtype", next)}
-            options={[
-              { value: MATERIAL_TYPE.GENERAL, label: text.materialGeneral },
-              { value: MATERIAL_TYPE.MATERIAL, label: text.materialMaterial },
-              { value: MATERIAL_TYPE.SEMI_FINISHED, label: text.materialSemiFinished },
-            ]}
+            language={language}
+            disabled={hasProduct}
           />
         </div>
       </Section>
 
       <Section title={text.vatType}>
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid gap-3 lg:grid-cols-1">
           <RadioOptionGroup
             label={text.vatType}
             value={value.vatcal}
             onChange={(next) => upd("vatcal", next)}
             options={[
-              { value: 0, label: text.vatIncluded },
-              { value: 1, label: text.vatExcluded },
-            ]}
-          />
-          <RadioOptionGroup
-            label={text.isSumPoint}
-            value={value.issumpoint}
-            onChange={(next) => upd("issumpoint", next)}
-            options={[
-              { value: true, label: text.isSumPointYes },
-              { value: false, label: text.isSumPointNo },
+              { value: 0, label: text.vatIncluded, disabled: hasProduct },
+              { value: 1, label: text.vatExcluded, disabled: hasProduct },
             ]}
           />
         </div>
@@ -796,10 +778,16 @@ function TabBasic({
             onCheckedChange={(n) => upd("is_main_barcode", n)}
             label={text.isMainBarcode}
           />
-          <Toggle checked={value.isdividend} onCheckedChange={(n) => upd("isdividend", n)} label={text.isDividend} />
+          <Toggle
+            checked={value.isdividend}
+            onCheckedChange={(n) => upd("isdividend", n)}
+            disabled={hasProduct}
+            label={text.isDividend}
+          />
           <Toggle
             checked={value.isdiscountpointofpurchase}
             onCheckedChange={(n) => upd("isdiscountpointofpurchase", n)}
+            disabled={hasProduct}
             label={text.isDiscountPointOfPurchase}
           />
         </div>
@@ -808,172 +796,235 @@ function TabBasic({
   );
 }
 
-function TabClassification({
-  value,
-  onChange,
+function ReadOnlyField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 rounded-lg border border-border bg-muted/30 p-2">
+      <span className="text-[11px] font-semibold text-muted-foreground block">{label}</span>
+      <span className="mt-0.5 block truncate text-xs font-semibold text-foreground/90">{value}</span>
+    </div>
+  );
+}
+
+function TabProductDetail({
+  productDetail,
+  loading,
   text,
-  auth,
   language,
 }: {
-  value: ProductBarcode;
-  onChange: Dispatch<SetStateAction<ProductBarcode>>;
+  productDetail: Product | null;
+  loading: boolean;
   text: Text;
-  auth: AuthSession | null;
-  language: LanguageCode | string;
+  language: string;
 }) {
-  const setMaster = useCallback(
-    (
-      keys: { guid: keyof ProductBarcode; code: keyof ProductBarcode; names: keyof ProductBarcode },
-      entry: MasterEntry,
-    ) =>
-      onChange((current) => ({
-        ...current,
-        [keys.guid]: entry.guidfixed,
-        [keys.code]: entry.code,
-        [keys.names]: entry.names,
-      })),
-    [onChange],
-  );
-  const clearMaster = useCallback(
-    (keys: { guid: keyof ProductBarcode; code: keyof ProductBarcode; names: keyof ProductBarcode }) =>
-      onChange((current) => ({ ...current, [keys.guid]: "", [keys.code]: "", [keys.names]: [] })),
-    [onChange],
-  );
+  if (loading) {
+    return (
+      <div className="flex flex-col justify-center items-center p-12 gap-3 text-sm text-muted-foreground">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <span>{text.loadingProductDetail}</span>
+      </div>
+    );
+  }
+
+  if (!productDetail) {
+    return (
+      <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-center text-sm text-destructive">
+        {text.noProductDetailFound}
+      </div>
+    );
+  }
+
   return (
-    <Section title={text.tabClassification}>
-      <FieldGrid>
-        <MasterField
-          label={text.group}
-          code={value.group_code}
-          names={value.group_names}
-          master="group"
-          language={language}
-          auth={auth}
-          onPick={(entry) => setMaster({ guid: "groupguid", code: "group_code", names: "group_names" }, entry)}
-          onClear={() => clearMaster({ guid: "groupguid", code: "group_code", names: "group_names" })}
-        />
-        <MasterField
-          label={text.groupSubOne}
-          code={value.groupsubonecode}
-          names={value.groupsubonenames}
-          master="groupsubone"
-          language={language}
-          auth={auth}
-          onPick={(entry) =>
-            setMaster({ guid: "groupsuboneguid", code: "groupsubonecode", names: "groupsubonenames" }, entry)
-          }
-          onClear={() =>
-            clearMaster({ guid: "groupsuboneguid", code: "groupsubonecode", names: "groupsubonenames" })
-          }
-        />
-        <MasterField
-          label={text.groupSubTwo}
-          code={value.groupsubtwocode}
-          names={value.groupsubtwonames}
-          master="groupsubtwo"
-          language={language}
-          auth={auth}
-          onPick={(entry) =>
-            setMaster({ guid: "groupsubtwoguid", code: "groupsubtwocode", names: "groupsubtwonames" }, entry)
-          }
-          onClear={() =>
-            clearMaster({ guid: "groupsubtwoguid", code: "groupsubtwocode", names: "groupsubtwonames" })
-          }
-        />
-        <MasterField
-          label={text.brand}
-          code={value.brand_code}
-          names={value.brandnames}
-          master="brand"
-          language={language}
-          auth={auth}
-          onPick={(entry) => setMaster({ guid: "brandguid", code: "brand_code", names: "brandnames" }, entry)}
-          onClear={() => clearMaster({ guid: "brandguid", code: "brand_code", names: "brandnames" })}
-        />
-        <MasterField
-          label={text.category}
-          code={value.categorycode}
-          names={value.category_names}
-          master="category"
-          language={language}
-          auth={auth}
-          onPick={(entry) =>
-            setMaster({ guid: "category_guid", code: "categorycode", names: "category_names" }, entry)
-          }
-          onClear={() => clearMaster({ guid: "category_guid", code: "categorycode", names: "category_names" })}
-        />
-        <MasterField
-          label={text.classification}
-          code={value.classcode}
-          names={value.classnames}
-          master="class"
-          language={language}
-          auth={auth}
-          onPick={(entry) => setMaster({ guid: "classguid", code: "classcode", names: "classnames" }, entry)}
-          onClear={() => clearMaster({ guid: "classguid", code: "classcode", names: "classnames" })}
-        />
-        <MasterField
-          label={text.design}
-          code={value.designcode}
-          names={value.designnames}
-          master="design"
-          language={language}
-          auth={auth}
-          onPick={(entry) => setMaster({ guid: "designguid", code: "designcode", names: "designnames" }, entry)}
-          onClear={() => clearMaster({ guid: "designguid", code: "designcode", names: "designnames" })}
-        />
-        <MasterField
-          label={text.grade}
-          code={value.gradecode}
-          names={value.gradenames}
-          master="grade"
-          language={language}
-          auth={auth}
-          onPick={(entry) => setMaster({ guid: "gradeguid", code: "gradecode", names: "gradenames" }, entry)}
-          onClear={() => clearMaster({ guid: "gradeguid", code: "gradecode", names: "gradenames" })}
-        />
-        <MasterField
-          label={text.model}
-          code={value.modelcode}
-          names={value.modelnames}
-          master="model"
-          language={language}
-          auth={auth}
-          onPick={(entry) => setMaster({ guid: "modelguid", code: "modelcode", names: "modelnames" }, entry)}
-          onClear={() => clearMaster({ guid: "modelguid", code: "modelcode", names: "modelnames" })}
-        />
-        <MasterField
-          label={text.pattern}
-          code={value.patterncode}
-          names={value.patternnames}
-          master="pattern"
-          language={language}
-          auth={auth}
-          onPick={(entry) => setMaster({ guid: "patternguid", code: "patterncode", names: "patternnames" }, entry)}
-          onClear={() => clearMaster({ guid: "patternguid", code: "patterncode", names: "patternnames" })}
-        />
-        <MasterField
-          label={text.manufacturer}
-          code={value.manufacturercode}
-          names={value.manufacturernames}
-          master="producttype"
-          language={language}
-          auth={auth}
-          onPick={(entry) =>
-            setMaster(
-              { guid: "manufacturerguid", code: "manufacturercode", names: "manufacturernames" },
-              entry,
-            )
-          }
-          onClear={() =>
-            clearMaster({ guid: "manufacturerguid", code: "manufacturercode", names: "manufacturernames" })
-          }
-        />
-        <FieldRow label={text.productType}>
-          <NumberField value={value.producttype} onChange={(n) => onChange((c) => ({ ...c, producttype: n }))} step={1} />
-        </FieldRow>
-      </FieldGrid>
-    </Section>
+    <div className="space-y-4">
+      {/* Alert Banner */}
+      <div className="rounded-lg border border-border bg-muted/50 p-3.5 text-xs text-muted-foreground">
+        <div className="flex items-start gap-2">
+          <span className="text-base">ℹ️</span>
+          <div className="flex-1">
+            <span className="font-semibold block mb-0.5">{text.inheritedInfoBanner}</span>
+            {text.inheritedInfoDetail}{" "}
+            <strong> {productDetail.code} — {pickName(productDetail.names, language)}</strong>{" "}
+            {text.inheritedInfoEditHint} <strong>{text.productMenuName}</strong>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid container */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Left Column: Classification & Creditors */}
+        <div className="space-y-4">
+          <Section title={text.classificationSectionTitle}>
+            <div className="grid gap-2 grid-cols-2">
+              <ReadOnlyField label={text.group} value={productDetail.group_code ? `${productDetail.group_code} — ${pickName(productDetail.group_names, language)}` : "-"} />
+              <ReadOnlyField label={text.groupSubOne} value={productDetail.groupsubonecode ? `${productDetail.groupsubonecode} — ${pickName(productDetail.groupsubonenames, language)}` : "-"} />
+              <ReadOnlyField label={text.groupSubTwo} value={productDetail.groupsubtwocode ? `${productDetail.groupsubtwocode} — ${pickName(productDetail.groupsubtwonames, language)}` : "-"} />
+              <ReadOnlyField label={text.brand} value={productDetail.brand_code ? `${productDetail.brand_code} — ${pickName(productDetail.brandnames, language)}` : "-"} />
+              <ReadOnlyField label={text.category} value={productDetail.categorycode ? `${productDetail.categorycode} — ${pickName(productDetail.category_names, language)}` : "-"} />
+              <ReadOnlyField label={text.classification} value={productDetail.classcode ? `${productDetail.classcode} — ${pickName(productDetail.classnames, language)}` : "-"} />
+              <ReadOnlyField label={text.design} value={productDetail.designcode ? `${productDetail.designcode} — ${pickName(productDetail.designnames, language)}` : "-"} />
+              <ReadOnlyField label={text.grade} value={productDetail.gradecode ? `${productDetail.gradecode} — ${pickName(productDetail.gradenames, language)}` : "-"} />
+              <ReadOnlyField label={text.model} value={productDetail.modelcode ? `${productDetail.modelcode} — ${pickName(productDetail.modelnames, language)}` : "-"} />
+              <ReadOnlyField label={text.pattern} value={productDetail.patterncode ? `${productDetail.patterncode} — ${pickName(productDetail.patternnames, language)}` : "-"} />
+            </div>
+          </Section>
+
+          <Section title={text.creditorsSectionTitle}>
+            <div className="space-y-3">
+              <div>
+                <span className="text-[11px] font-semibold text-muted-foreground block mb-1">{text.manufacturersLabel}</span>
+                <div className="flex flex-wrap gap-1">
+                  {!productDetail.manufacturers || productDetail.manufacturers.length === 0 ? (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  ) : (
+                    productDetail.manufacturers.map((m: ProductManufacturer) => (
+                      <Badge key={m.guid_fixed} variant="outline" className="text-xs py-1">
+                        {m.code} — {pickName(m.names, language)}
+                      </Badge>
+                    ))
+                  )}
+                </div>
+              </div>
+              <div className="border-t border-border/50 pt-2.5">
+                <span className="text-[11px] font-semibold text-muted-foreground block mb-1">{text.suppliersLabel}</span>
+                <div className="flex flex-wrap gap-1">
+                  {!productDetail.suppliers || productDetail.suppliers.length === 0 ? (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  ) : (
+                    productDetail.suppliers.map((s: ProductSupplier) => (
+                      <Badge key={s.guid_fixed} variant="outline" className="text-xs py-1">
+                        {s.code} — {pickName(s.names, language)}
+                      </Badge>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </Section>
+
+          <Section title={text.mediaSectionTitle}>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="size-16 overflow-hidden rounded-md border bg-muted flex items-center justify-center">
+                  {productDetail.imageuri ? (
+                    <img src={productDetail.imageuri} alt="Main" className="size-full object-cover" />
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">{text.noImage}</span>
+                  )}
+                </div>
+                <div className="flex-1 space-y-1 text-xs">
+                  <div><strong>{text.displayMode}:</strong> {productDetail.useimageorcolor ?? true ? text.displayModeImage : text.displayModeColor}</div>
+                  {productDetail.colorselecthex && (
+                    <div className="flex items-center gap-1.5">
+                      <strong>{text.tagColor}:</strong>
+                      <span className="inline-block size-3 rounded border" style={{ background: productDetail.colorselecthex }} />
+                      <span>{productDetail.colorselect} ({productDetail.colorselecthex})</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {productDetail.images && productDetail.images.length > 0 && (
+                <div className="border-t border-border/50 pt-2.5">
+                  <span className="text-[11px] font-semibold text-muted-foreground block mb-1">{text.galleryLabel}</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {productDetail.images.map((img: ProductImage, idx: number) => (
+                      <img key={idx} src={img.uri} alt="Gallery" className="size-10 rounded border object-cover" />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </Section>
+        </div>
+
+        {/* Right Column: Restaurant & POS */}
+        <div className="space-y-4">
+          <Section title={text.restaurantSectionTitle}>
+            <div className="space-y-3 text-xs">
+              <div className="grid gap-2 grid-cols-2">
+                <div className="flex items-center gap-2 p-1.5 rounded border bg-muted/20">
+                  <input type="checkbox" checked={productDetail.restaurant?.isforrestaurant ?? false} readOnly disabled className="pointer-events-none" />
+                  <span>{text.isForRestaurantLabel}</span>
+                </div>
+                <div className="flex items-center gap-2 p-1.5 rounded border bg-muted/20">
+                  <input type="checkbox" checked={productDetail.restaurant?.isfortakeaway ?? false} readOnly disabled className="pointer-events-none" />
+                  <span>{text.isForTakeawayLabel}</span>
+                </div>
+                <div className="flex items-center gap-2 p-1.5 rounded border bg-muted/20">
+                  <input type="checkbox" checked={productDetail.restaurant?.isfordelivery ?? false} readOnly disabled className="pointer-events-none" />
+                  <span>{text.isForDeliveryLabel}</span>
+                </div>
+                <div className="flex items-center gap-2 p-1.5 rounded border bg-muted/20">
+                  <input type="checkbox" checked={productDetail.restaurant?.isforcustomer ?? false} readOnly disabled className="pointer-events-none" />
+                  <span>{text.isForCustomerLabel}</span>
+                </div>
+                <div className="flex items-center gap-2 p-1.5 rounded border bg-muted/20">
+                  <input type="checkbox" checked={productDetail.restaurant?.isforcustomerpreorder ?? false} readOnly disabled className="pointer-events-none" />
+                  <span>{text.isForCustomerPreOrderLabel}</span>
+                </div>
+                <div className="flex items-center gap-2 p-1.5 rounded border bg-muted/20">
+                  <input type="checkbox" checked={productDetail.isalacarte ?? false} readOnly disabled className="pointer-events-none" />
+                  <span>{text.isALaCarte}</span>
+                </div>
+                <div className="flex items-center gap-2 p-1.5 rounded border bg-muted/20">
+                  <input type="checkbox" checked={productDetail.isstockforrestaurant ?? false} readOnly disabled className="pointer-events-none" />
+                  <span>{text.isStockForRestaurantLabel}</span>
+                </div>
+                <div className="flex items-center gap-2 p-1.5 rounded border bg-muted/20">
+                  <input type="checkbox" checked={productDetail.issplitunitprint ?? false} readOnly disabled className="pointer-events-none" />
+                  <span>{text.isSplitUnitPrintLabel}</span>
+                </div>
+              </div>
+
+              <div className="border-t border-border/50 pt-2.5 grid gap-2 grid-cols-2">
+                <ReadOnlyField label={text.foodTypeSectionLabel} value={productDetail.foodtype === 0 ? text.foodTypeFood : productDetail.foodtype === 1 ? text.foodTypeDrink : productDetail.foodtype === 2 ? text.foodTypeAlcohol : text.foodTypeOther} />
+                <div className="flex items-center gap-2 p-1.5 rounded border bg-muted/20">
+                  <input type="checkbox" checked={productDetail.isonlystaff ?? false} readOnly disabled className="pointer-events-none" />
+                  <span>{text.isOnlyStaffLabel}</span>
+                </div>
+              </div>
+
+              {productDetail.options && productDetail.options.length > 0 && (
+                <div className="border-t border-border/50 pt-2.5">
+                  <span className="text-[11px] font-semibold text-muted-foreground block mb-1">{text.optionsSectionLabel}</span>
+                  <div className="space-y-1">
+                    {productDetail.options.map((opt: ProductOption) => (
+                      <div key={opt.guid} className="text-[11px] bg-muted/40 p-1.5 rounded border">
+                        <span className="font-semibold">{pickName(opt.names, language)}</span>
+                        <span className="text-muted-foreground"> ({opt.choicetype === 0 ? text.optionTypeMultiLabel : text.optionTypeSingleLabel}, {text.optionSelectRange.replace("%min", String(opt.minselect)).replace("%max", String(opt.maxselect))})</span>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {opt.choices?.map((c: ProductChoice) => (
+                            <Badge key={c.guid} variant="secondary" className="text-[10px] py-0.5">
+                              {pickName(c.names, language)} {Number(c.price) > 0 ? `(+${c.price}฿)` : ""}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </Section>
+
+          <Section title={text.timeSectionTitle}>
+            <div className="space-y-2 text-xs">
+              <Toggle checked={productDetail.isalert ?? false} onCheckedChange={() => {}} disabled label={text.alertToggleLabel} />
+              {productDetail.isalert && productDetail.alertdescription && (
+                <div className="bg-muted border border-border p-2 rounded text-xs text-foreground">
+                  <strong>{text.alertMessageLabel}:</strong> {productDetail.alertdescription}
+                </div>
+              )}
+              {productDetail.description && (
+                <div className="border-t border-border/50 pt-2">
+                  <span className="text-[11px] font-semibold text-muted-foreground block mb-0.5">{text.descriptionLabel}</span>
+                  <p className="text-xs text-muted-foreground whitespace-pre-wrap">{productDetail.description}</p>
+                </div>
+              )}
+            </div>
+          </Section>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1130,251 +1181,6 @@ function TabPricing({
         </FieldGrid>
       </Section>
     </div>
-  );
-}
-
-function TabStock({
-  value,
-  onChange,
-  text,
-}: {
-  value: ProductBarcode;
-  onChange: Dispatch<SetStateAction<ProductBarcode>>;
-  text: Text;
-}) {
-  const upd = useCallback(
-    <K extends keyof ProductBarcode>(key: K, val: ProductBarcode[K]) =>
-      onChange((c) => ({ ...c, [key]: val })),
-    [onChange],
-  );
-  return (
-    <Section title={text.tabStock}>
-      <FieldGrid>
-        <FieldRow label={text.orderPoint}>
-          <NumberField value={value.orderpoint} onChange={(n) => upd("orderpoint", n)} min={0} />
-        </FieldRow>
-        <FieldRow label={text.minPoint}>
-          <NumberField value={value.minpoint} onChange={(n) => upd("minpoint", n)} min={0} />
-        </FieldRow>
-        <FieldRow label={text.maxPoint}>
-          <NumberField value={value.maxpoint} onChange={(n) => upd("maxpoint", n)} min={0} />
-        </FieldRow>
-        <FieldRow label={text.qty}>
-          <NumberField value={value.qty} onChange={(n) => upd("qty", n)} />
-        </FieldRow>
-        <FieldRow label={text.stockBarcode}>
-          <Input value={value.stockbarcode} onChange={(event) => upd("stockbarcode", event.target.value)} />
-        </FieldRow>
-      </FieldGrid>
-    </Section>
-  );
-}
-
-function TabUnits({
-  value,
-  onChange,
-  text,
-}: {
-  value: ProductBarcode;
-  onChange: Dispatch<SetStateAction<ProductBarcode>>;
-  text: Text;
-}) {
-  const setRef = useCallback(
-    (mutator: (rows: RefProductBarcode[]) => RefProductBarcode[]) =>
-      onChange((c) => ({ ...c, refbarcodes: mutator(c.refbarcodes) })),
-    [onChange],
-  );
-  return (
-    <div className="space-y-4">
-      <Section title={text.tabUnits}>
-        <FieldGrid>
-          <FieldRow label={text.divideValue}>
-            <NumberField
-              value={value.dividevalue}
-              onChange={(n) => onChange((c) => ({ ...c, dividevalue: n }))}
-              min={0.0001}
-            />
-          </FieldRow>
-          <FieldRow label={text.standValue}>
-            <NumberField
-              value={value.standvalue}
-              onChange={(n) => onChange((c) => ({ ...c, standvalue: n }))}
-              min={0.0001}
-            />
-          </FieldRow>
-          <FieldRow label={text.condition}>
-            <Toggle
-              checked={value.condition}
-              onCheckedChange={(n) => onChange((c) => ({ ...c, condition: n }))}
-              label={text.condition}
-            />
-          </FieldRow>
-        </FieldGrid>
-      </Section>
-
-      {value.isusesubbarcodes ? (
-        <Section
-          title={text.refBarcodes}
-          action={
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setRef((rows) => [
-                  ...rows,
-                  {
-                    guid_fixed: "",
-                    names: [],
-                    item_unit_code: "",
-                    itemunitnames: [],
-                    barcode: "",
-                    condition: false,
-                    dividevalue: 1,
-                    standvalue: 1,
-                    qty: 1,
-                  },
-                ])
-              }
-            >
-              <Plus className="mr-1 h-4 w-4" />
-              {text.refBarcodeAdd}
-            </Button>
-          }
-        >
-          <div className="space-y-2">
-            {value.refbarcodes.length === 0 ? (
-              <p className="text-sm text-muted-foreground">—</p>
-            ) : (
-              value.refbarcodes.map((entry, idx) => (
-                <div
-                  key={idx}
-                  className="grid grid-cols-1 items-center gap-2 rounded-md border border-border p-2 md:grid-cols-[1.5fr_1fr_1fr_1fr_40px]"
-                >
-                  <Input
-                    placeholder={text.bomBarcode}
-                    value={entry.barcode}
-                    onChange={(event) =>
-                      setRef((rows) =>
-                        rows.map((row, rowIdx) => (rowIdx === idx ? { ...row, barcode: event.target.value } : row)),
-                      )
-                    }
-                  />
-                  <NumberField
-                    value={entry.qty}
-                    onChange={(n) => setRef((rows) => rows.map((row, rowIdx) => (rowIdx === idx ? { ...row, qty: n } : row)))}
-                    min={0}
-                  />
-                  <NumberField
-                    value={entry.dividevalue}
-                    onChange={(n) =>
-                      setRef((rows) =>
-                        rows.map((row, rowIdx) => (rowIdx === idx ? { ...row, dividevalue: n } : row)),
-                      )
-                    }
-                    min={0.0001}
-                  />
-                  <NumberField
-                    value={entry.standvalue}
-                    onChange={(n) =>
-                      setRef((rows) =>
-                        rows.map((row, rowIdx) => (rowIdx === idx ? { ...row, standvalue: n } : row)),
-                      )
-                    }
-                    min={0.0001}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setRef((rows) => rows.filter((_, rowIdx) => rowIdx !== idx))}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))
-            )}
-          </div>
-        </Section>
-      ) : null}
-    </div>
-  );
-}
-
-function TabBom({
-  value,
-  onChange,
-  text,
-}: {
-  value: ProductBarcode;
-  onChange: Dispatch<SetStateAction<ProductBarcode>>;
-  text: Text;
-}) {
-  const setBom = useCallback(
-    (mutator: (rows: BOMProductBarcode[]) => BOMProductBarcode[]) =>
-      onChange((c) => ({ ...c, bom: mutator(c.bom) })),
-    [onChange],
-  );
-  return (
-    <Section
-      title={text.bom}
-      action={
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            setBom((rows) => [
-              ...rows,
-              {
-                barcodeguidfixed: "",
-                names: [],
-                item_unit_code: "",
-                itemunitnames: [],
-                barcode: "",
-                qty: 1,
-              },
-            ])
-          }
-        >
-          <Plus className="mr-1 h-4 w-4" />
-          {text.bomAdd}
-        </Button>
-      }
-    >
-      {value.bom.length === 0 ? (
-        <p className="text-sm text-muted-foreground">—</p>
-      ) : (
-        <div className="space-y-2">
-          {value.bom.map((entry, idx) => (
-            <div key={idx} className="grid grid-cols-1 items-center gap-2 md:grid-cols-[1.5fr_1fr_40px]">
-              <Input
-                placeholder={text.bomBarcode}
-                value={entry.barcode}
-                onChange={(event) =>
-                  setBom((rows) =>
-                    rows.map((row, rowIdx) => (rowIdx === idx ? { ...row, barcode: event.target.value } : row)),
-                  )
-                }
-              />
-              <NumberField
-                value={entry.qty ?? 1}
-                onChange={(n) => setBom((rows) => rows.map((row, rowIdx) => (rowIdx === idx ? { ...row, qty: n } : row)))}
-                min={0}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => setBom((rows) => rows.filter((_, rowIdx) => rowIdx !== idx))}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
-    </Section>
   );
 }
 
@@ -1563,814 +1369,274 @@ function TabMedia({
   );
 }
 
-function TabRestaurant({
-  value,
-  onChange,
-  text,
-  auth,
-  language,
-  shopLanguages,
-}: {
-  value: ProductBarcode;
-  onChange: Dispatch<SetStateAction<ProductBarcode>>;
-  text: Text;
-  auth: AuthSession | null;
-  language: LanguageCode | string;
-  shopLanguages: string[];
-}) {
-  const updR = useCallback(
-    <K extends keyof ProductBarcode["restaurant"]>(key: K, val: ProductBarcode["restaurant"][K]) =>
-      onChange((c) => ({ ...c, restaurant: { ...c.restaurant, [key]: val } })),
-    [onChange],
-  );
-  return (
-    <div className="space-y-4">
-      <Section title={text.tabRestaurant}>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          <Toggle checked={value.restaurant.isforrestaurant} onCheckedChange={(n) => updR("isforrestaurant", n)} label={text.isForRestaurant} />
-          <Toggle checked={value.restaurant.isfortakeaway} onCheckedChange={(n) => updR("isfortakeaway", n)} label={text.isForTakeaway} />
-          <Toggle checked={value.restaurant.isfordelivery} onCheckedChange={(n) => updR("isfordelivery", n)} label={text.isForDelivery} />
-          <Toggle checked={value.restaurant.isforcustomer} onCheckedChange={(n) => updR("isforcustomer", n)} label={text.isForCustomer} />
-          <Toggle checked={value.restaurant.isforcustomerpreorder} onCheckedChange={(n) => updR("isforcustomerpreorder", n)} label={text.isForCustomerPreOrder} />
-          <Toggle checked={value.isalacarte} onCheckedChange={(n) => onChange((c) => ({ ...c, isalacarte: n }))} label={text.isALaCarte} />
-          <Toggle checked={value.isstockforrestaurant} onCheckedChange={(n) => onChange((c) => ({ ...c, isstockforrestaurant: n }))} label={text.isStockForRestaurant} />
-          <Toggle checked={value.issplitunitprint} onCheckedChange={(n) => onChange((c) => ({ ...c, issplitunitprint: n }))} label={text.isSplitUnitPrint} />
-          <Toggle checked={value.isonlystaff} onCheckedChange={(n) => onChange((c) => ({ ...c, isonlystaff: n }))} label={text.isOnlyStaff} />
-        </div>
-        <div className="mt-3">
-          <FieldRow label={text.foodType}>
-            <select
-              className="h-10 rounded-lg border border-input bg-background px-3 text-sm"
-              value={value.foodtype}
-              onChange={(event) => onChange((c) => ({ ...c, foodtype: Number(event.target.value) as ProductBarcode["foodtype"] }))}
-            >
-              <option value={FOOD_TYPE.FOOD}>{text.foodTypeFood}</option>
-              <option value={FOOD_TYPE.DRINK}>{text.foodTypeDrink}</option>
-              <option value={FOOD_TYPE.ALCOHOL}>{text.foodTypeAlcohol}</option>
-              <option value={FOOD_TYPE.OTHER}>{text.foodTypeOther}</option>
-            </select>
-          </FieldRow>
-        </div>
-      </Section>
+// ─── Marketplace tab (Shopee / Lazada / TikTok) ────────────────────────────
+// One tab per platform; all three share the same unified MarketplaceProductMap
+// shape. A product holds at most one entry per platform (filtered by `platform`).
 
-      <OrderTypesEditor value={value} onChange={onChange} text={text} language={language} auth={auth} />
-      <OptionsEditor value={value} onChange={onChange} text={text} shopLanguages={shopLanguages} />
-    </div>
-  );
-}
-
-function OrderTypesEditor({
-  value,
-  onChange,
-  text,
-  language,
-  auth,
-}: {
-  value: ProductBarcode;
-  onChange: Dispatch<SetStateAction<ProductBarcode>>;
-  text: Text;
-  language: LanguageCode | string;
-  auth: AuthSession | null;
-}) {
-  const [picker, setPicker] = useState<{ open: boolean; idx?: number }>({ open: false });
-  const setRows = useCallback(
-    (mutator: (rows: ProductOrderType[]) => ProductOrderType[]) =>
-      onChange((c) => ({ ...c, ordertypes: mutator(c.ordertypes) })),
-    [onChange],
-  );
-  return (
-    <Section
-      title={text.orderTypes}
-      action={
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            setRows((rows) => [...rows, { guidfixed: "", code: "", names: [], chargeprice: 0 }])
-          }
-        >
-          <Plus className="mr-1 h-4 w-4" />
-          {text.orderTypeAdd}
-        </Button>
-      }
-    >
-      {value.ordertypes.length === 0 ? (
-        <p className="text-sm text-muted-foreground">—</p>
-      ) : (
-        <div className="space-y-2">
-          {value.ordertypes.map((entry, idx) => (
-            <div key={idx} className="grid grid-cols-1 items-center gap-2 md:grid-cols-[2fr_1fr_40px]">
-              <button
-                type="button"
-                onClick={() => setPicker({ open: true, idx })}
-                className="flex h-10 w-full items-center justify-between rounded-lg border border-input bg-background px-3 text-left text-sm hover:bg-muted/40"
-              >
-                <span className="truncate">{pickName(entry.names, language) || entry.code || "—"}</span>
-                <span className="text-xs text-muted-foreground">{entry.code}</span>
-              </button>
-              <NumberField
-                value={entry.chargeprice ?? 0}
-                onChange={(n) =>
-                  setRows((rows) => rows.map((row, rowIdx) => (rowIdx === idx ? { ...row, chargeprice: n } : row)))
-                }
-                step="any"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => setRows((rows) => rows.filter((_, rowIdx) => rowIdx !== idx))}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
-      <MasterPicker
-        open={picker.open}
-        onClose={() => setPicker({ open: false })}
-        auth={auth}
-        language={language}
-        master="ordertype"
-        title={text.orderTypes}
-        onSelect={(entry) =>
-          setRows((rows) =>
-            rows.map((row, rowIdx) =>
-              rowIdx === picker.idx
-                ? { ...row, guidfixed: entry.guidfixed, code: entry.code, names: entry.names }
-                : row,
-            ),
-          )
-        }
-      />
-    </Section>
-  );
-}
-
-function OptionsEditor({
-  value,
-  onChange,
-  text,
-  shopLanguages,
-}: {
-  value: ProductBarcode;
-  onChange: Dispatch<SetStateAction<ProductBarcode>>;
-  text: Text;
-  shopLanguages: string[];
-}) {
-  const setOptions = useCallback(
-    (mutator: (rows: ProductOption[]) => ProductOption[]) =>
-      onChange((c) => ({ ...c, options: mutator(c.options) })),
-    [onChange],
-  );
-  return (
-    <Section
-      title={text.options}
-      action={
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            setOptions((rows) => [
-              ...rows,
-              { guid: cryptoRandomId(), names: [], choicetype: 0, choices: [] },
-            ])
-          }
-        >
-          <Plus className="mr-1 h-4 w-4" />
-          {text.optionAdd}
-        </Button>
-      }
-    >
-      {value.options.length === 0 ? (
-        <p className="text-sm text-muted-foreground">—</p>
-      ) : (
-        <div className="space-y-4">
-          {value.options.map((opt, optIdx) => (
-            <div key={opt.guid} className="space-y-2 rounded-md border border-border p-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs text-muted-foreground">#{optIdx + 1}</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setOptions((rows) => rows.filter((_, idx) => idx !== optIdx))}
-                  aria-label={text.delete}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-              <NamesEditor
-                names={opt.names}
-                onChange={(next) =>
-                  setOptions((rows) => rows.map((row, idx) => (idx === optIdx ? { ...row, names: next } : row)))
-                }
-                languages={shopLanguages}
-                label={text.optionType}
-              />
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-1 text-sm">
-                  <input
-                    type="radio"
-                    checked={opt.choicetype === 0}
-                    onChange={() =>
-                      setOptions((rows) =>
-                        rows.map((row, idx) => (idx === optIdx ? { ...row, choicetype: 0 } : row)),
-                      )
-                    }
-                  />
-                  {text.optionTypeMulti}
-                </label>
-                <label className="flex items-center gap-1 text-sm">
-                  <input
-                    type="radio"
-                    checked={opt.choicetype === 1}
-                    onChange={() =>
-                      setOptions((rows) =>
-                        rows.map((row, idx) => (idx === optIdx ? { ...row, choicetype: 1 } : row)),
-                      )
-                    }
-                  />
-                  {text.optionTypeSingle}
-                </label>
-              </div>
-              {opt.choicetype === 0 ? (
-                <FieldGrid>
-                  <FieldRow label={text.optionMinSelect}>
-                    <NumberField
-                      value={opt.minselect ?? 0}
-                      onChange={(n) =>
-                        setOptions((rows) =>
-                          rows.map((row, idx) => (idx === optIdx ? { ...row, minselect: n } : row)),
-                        )
-                      }
-                      min={0}
-                      step={1}
-                    />
-                  </FieldRow>
-                  <FieldRow label={text.optionMaxSelect}>
-                    <NumberField
-                      value={opt.maxselect ?? 0}
-                      onChange={(n) =>
-                        setOptions((rows) =>
-                          rows.map((row, idx) => (idx === optIdx ? { ...row, maxselect: n } : row)),
-                        )
-                      }
-                      min={0}
-                      step={1}
-                    />
-                  </FieldRow>
-                </FieldGrid>
-              ) : null}
-
-              <ChoicesEditor
-                option={opt}
-                onChange={(updated) =>
-                  setOptions((rows) => rows.map((row, idx) => (idx === optIdx ? updated : row)))
-                }
-                text={text}
-                shopLanguages={shopLanguages}
-              />
-            </div>
-          ))}
-        </div>
-      )}
-    </Section>
-  );
-}
-
-function ChoicesEditor({
-  option,
-  onChange,
-  text,
-  shopLanguages,
-}: {
-  option: ProductOption;
-  onChange: (next: ProductOption) => void;
-  text: Text;
-  shopLanguages: string[];
-}) {
-  const setChoices = (mutator: (rows: ProductChoice[]) => ProductChoice[]) =>
-    onChange({ ...option, choices: mutator(option.choices) });
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium">{text.optionChoices}</span>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            setChoices((rows) => [
-              ...rows,
-              { guid: cryptoRandomId(), names: [], isstock: false, isdefault: false },
-            ])
-          }
-        >
-          <Plus className="mr-1 h-4 w-4" />
-          {text.optionChoiceAdd}
-        </Button>
-      </div>
-      {option.choices.length === 0 ? (
-        <p className="text-sm text-muted-foreground">—</p>
-      ) : (
-        option.choices.map((choice, choiceIdx) => (
-          <div key={choice.guid} className="grid grid-cols-1 gap-2 rounded border border-border p-2 md:grid-cols-[2fr_1fr_auto]">
-            <NamesEditor
-              names={choice.names}
-              onChange={(next) =>
-                setChoices((rows) =>
-                  rows.map((row, idx) => (idx === choiceIdx ? { ...row, names: next } : row)),
-                )
-              }
-              languages={shopLanguages}
-              label={text.optionChoices}
-            />
-            <div className="flex flex-col gap-1">
-              <Input
-                placeholder={text.optionChoicePrice}
-                value={choice.price ?? ""}
-                onChange={(event) =>
-                  setChoices((rows) =>
-                    rows.map((row, idx) => (idx === choiceIdx ? { ...row, price: event.target.value } : row)),
-                  )
-                }
-              />
-              <Toggle
-                checked={choice.isstock}
-                onCheckedChange={(n) =>
-                  setChoices((rows) =>
-                    rows.map((row, idx) => (idx === choiceIdx ? { ...row, isstock: n } : row)),
-                  )
-                }
-                label={text.optionChoiceIsStock}
-              />
-              <Toggle
-                checked={choice.isdefault}
-                onCheckedChange={(n) =>
-                  setChoices((rows) =>
-                    rows.map((row, idx) => (idx === choiceIdx ? { ...row, isdefault: n } : row)),
-                  )
-                }
-                label={text.optionChoiceIsDefault}
-              />
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => setChoices((rows) => rows.filter((_, idx) => idx !== choiceIdx))}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        ))
-      )}
-    </div>
-  );
-}
-
-function TabTimeForSales({
+function TabMarketplace({
+  platform,
   value,
   onChange,
   text,
 }: {
+  platform: MarketplacePlatform;
   value: ProductBarcode;
   onChange: Dispatch<SetStateAction<ProductBarcode>>;
   text: Text;
 }) {
-  const setRows = useCallback(
-    (mutator: (rows: ProductTimeForSale[]) => ProductTimeForSale[]) =>
-      onChange((c) => ({ ...c, timeforsales: mutator(c.timeforsales) })),
-    [onChange],
-  );
-  const dayLabels = useMemo(
-    () => [text.sun, text.mon, text.tue, text.wed, text.thu, text.fri, text.sat],
-    [text.sun, text.mon, text.tue, text.wed, text.thu, text.fri, text.sat],
-  );
-  return (
-    <Section
-      title={text.timeForSales}
-      action={
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            setRows((rows) => [
-              ...rows,
-              { fromdate: "", todate: "", fromtime: "", totime: "", daysofweek: [] },
-            ])
-          }
-        >
-          <Plus className="mr-1 h-4 w-4" />
-          {text.timeForSalesAdd}
-        </Button>
-      }
-    >
-      {value.timeforsales.length === 0 ? (
-        <p className="text-sm text-muted-foreground">—</p>
-      ) : (
-        <div className="space-y-3">
-          {value.timeforsales.map((entry, idx) => (
-            <div key={idx} className="space-y-2 rounded border border-border p-2">
-              <FieldGrid>
-                <FieldRow label={text.fromDate}>
-                  <Input
-                    type="date"
-                    value={entry.fromdate}
-                    onChange={(event) =>
-                      setRows((rows) =>
-                        rows.map((row, rowIdx) => (rowIdx === idx ? { ...row, fromdate: event.target.value } : row)),
-                      )
-                    }
-                  />
-                </FieldRow>
-                <FieldRow label={text.toDate}>
-                  <Input
-                    type="date"
-                    value={entry.todate}
-                    onChange={(event) =>
-                      setRows((rows) =>
-                        rows.map((row, rowIdx) => (rowIdx === idx ? { ...row, todate: event.target.value } : row)),
-                      )
-                    }
-                  />
-                </FieldRow>
-                <FieldRow label={text.fromTime}>
-                  <Input
-                    type="time"
-                    value={entry.fromtime}
-                    onChange={(event) =>
-                      setRows((rows) =>
-                        rows.map((row, rowIdx) => (rowIdx === idx ? { ...row, fromtime: event.target.value } : row)),
-                      )
-                    }
-                  />
-                </FieldRow>
-                <FieldRow label={text.toTime}>
-                  <Input
-                    type="time"
-                    value={entry.totime}
-                    onChange={(event) =>
-                      setRows((rows) =>
-                        rows.map((row, rowIdx) => (rowIdx === idx ? { ...row, totime: event.target.value } : row)),
-                      )
-                    }
-                  />
-                </FieldRow>
-              </FieldGrid>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium">{text.daysOfWeek}</span>
-                {dayLabels.map((label, dayIdx) => {
-                  const selected = entry.daysofweek?.includes(dayIdx);
-                  return (
-                    <button
-                      key={dayIdx}
-                      type="button"
-                      onClick={() =>
-                        setRows((rows) =>
-                          rows.map((row, rowIdx) => {
-                            if (rowIdx !== idx) return row;
-                            const current = new Set(row.daysofweek ?? []);
-                            if (current.has(dayIdx)) current.delete(dayIdx);
-                            else current.add(dayIdx);
-                            return { ...row, daysofweek: Array.from(current).sort() };
-                          }),
-                        )
-                      }
-                      className={cn(
-                        "rounded-full border px-3 py-1 text-xs",
-                        selected ? "border-primary bg-primary text-primary-foreground" : "border-input hover:bg-muted",
-                      )}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="ml-auto"
-                  onClick={() => setRows((rows) => rows.filter((_, rowIdx) => rowIdx !== idx))}
-                  aria-label={text.delete}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </Section>
-  );
-}
+  const platformLabel =
+    platform === "shopee" ? text.tabShopee : platform === "lazada" ? text.tabLazada : text.tabTiktok;
 
-function TabDimensions({
-  value,
-  onChange,
-  text,
-}: {
-  value: ProductBarcode;
-  onChange: Dispatch<SetStateAction<ProductBarcode>>;
-  text: Text;
-}) {
-  const setRows = useCallback(
-    (mutator: (rows: ProductDimension[]) => ProductDimension[]) =>
-      onChange((c) => ({ ...c, dimensions: mutator(c.dimensions) })),
-    [onChange],
-  );
-  return (
-    <Section
-      title={text.dimensions}
-      action={
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            setRows((rows) => [
-              ...rows,
-              {
-                guidfixed: "",
-                names: [],
-                isdisabled: false,
-                item: { guidfixed: "", names: [], isdisabled: false },
-              },
-            ])
-          }
-        >
-          <Plus className="mr-1 h-4 w-4" />
-          {text.dimensionAdd}
-        </Button>
-      }
-    >
-      {value.dimensions.length === 0 ? (
-        <p className="text-sm text-muted-foreground">—</p>
-      ) : (
-        <div className="space-y-2">
-          {value.dimensions.map((entry, idx) => (
-            <div key={idx} className="grid grid-cols-1 items-center gap-2 md:grid-cols-[1fr_1fr_40px]">
-              <Input
-                placeholder={text.dimensionGroup}
-                value={pickName(entry.names, "th")}
-                onChange={(event) =>
-                  setRows((rows) =>
-                    rows.map((row, rowIdx) =>
-                      rowIdx === idx
-                        ? { ...row, names: setNameXEntry(row.names, "th", event.target.value) }
-                        : row,
-                    ),
-                  )
-                }
-              />
-              <Input
-                placeholder={text.dimensionItem}
-                value={pickName(entry.item.names, "th")}
-                onChange={(event) =>
-                  setRows((rows) =>
-                    rows.map((row, rowIdx) =>
-                      rowIdx === idx
-                        ? {
-                            ...row,
-                            item: { ...row.item, names: setNameXEntry(row.item.names, "th", event.target.value) },
-                          }
-                        : row,
-                    ),
-                  )
-                }
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => setRows((rows) => rows.filter((_, rowIdx) => rowIdx !== idx))}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
-    </Section>
-  );
-}
+  const entry = (value.marketplace_products ?? []).find((m) => m.platform === platform) ?? null;
 
-function TabBusinessBranch({
-  value,
-  onChange,
-  text,
-  auth,
-  language,
-}: {
-  value: ProductBarcode;
-  onChange: Dispatch<SetStateAction<ProductBarcode>>;
-  text: Text;
-  auth: AuthSession | null;
-  language: LanguageCode | string;
-}) {
-  return (
-    <div className="space-y-4">
-      <BusinessTypesEditor value={value} onChange={onChange} text={text} auth={auth} language={language} />
-      <IgnoreBranchesEditor value={value} onChange={onChange} text={text} auth={auth} language={language} />
-    </div>
-  );
-}
+  const enable = useCallback(() => {
+    onChange((current) => {
+      const cur = current.marketplace_products ?? [];
+      if (cur.some((m) => m.platform === platform)) return current;
+      return { ...current, marketplace_products: [...cur, emptyMarketplaceProductMap(platform)] };
+    });
+  }, [onChange, platform]);
 
-function BusinessTypesEditor({
-  value,
-  onChange,
-  text,
-  auth,
-  language,
-}: {
-  value: ProductBarcode;
-  onChange: Dispatch<SetStateAction<ProductBarcode>>;
-  text: Text;
-  auth: AuthSession | null;
-  language: LanguageCode | string;
-}) {
-  const [picker, setPicker] = useState(false);
-  const setRows = (mutator: (rows: ProductBarcodeBusinessType[]) => ProductBarcodeBusinessType[]) =>
-    onChange((c) => ({ ...c, businesstypes: mutator(c.businesstypes) }));
-  return (
-    <Section
-      title={text.businessTypes}
-      action={
-        <Button type="button" variant="outline" size="sm" onClick={() => setPicker(true)}>
-          <Plus className="mr-1 h-4 w-4" />
-          {text.businessTypeAdd}
-        </Button>
-      }
-    >
-      {value.businesstypes.length === 0 ? (
-        <p className="text-sm text-muted-foreground">—</p>
-      ) : (
-        <ul className="space-y-1">
-          {value.businesstypes.map((entry, idx) => (
-            <li key={idx} className="flex items-center justify-between gap-2 rounded border border-border px-2 py-1.5">
-              <span className="truncate text-sm">{pickName(entry.names, language) || entry.code}</span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => setRows((rows) => rows.filter((_, rowIdx) => rowIdx !== idx))}
-              >
-                <Minus className="h-4 w-4" />
-              </Button>
-            </li>
-          ))}
-        </ul>
-      )}
-      <MasterPicker
-        open={picker}
-        onClose={() => setPicker(false)}
-        auth={auth}
-        language={language}
-        master="businesstype"
-        title={text.businessTypes}
-        onSelect={(entry) =>
-          setRows((rows) => [
-            ...rows,
-            { guidfixed: entry.guidfixed, code: entry.code, names: entry.names, isignore: false },
-          ])
-        }
-      />
-    </Section>
-  );
-}
+  const disable = useCallback(() => {
+    onChange((current) => ({
+      ...current,
+      marketplace_products: (current.marketplace_products ?? []).filter((m) => m.platform !== platform),
+    }));
+  }, [onChange, platform]);
 
-function IgnoreBranchesEditor({
-  value,
-  onChange,
-  text,
-  auth,
-  language,
-}: {
-  value: ProductBarcode;
-  onChange: Dispatch<SetStateAction<ProductBarcode>>;
-  text: Text;
-  auth: AuthSession | null;
-  language: LanguageCode | string;
-}) {
-  const [picker, setPicker] = useState(false);
-  const setRows = (mutator: (rows: ProductBarcodeBranch[]) => ProductBarcodeBranch[]) =>
-    onChange((c) => ({ ...c, ignorebranches: mutator(c.ignorebranches) }));
-  return (
-    <Section
-      title={text.ignoreBranches}
-      action={
-        <Button type="button" variant="outline" size="sm" onClick={() => setPicker(true)}>
-          <Plus className="mr-1 h-4 w-4" />
-          {text.ignoreBranchAdd}
-        </Button>
-      }
-    >
-      <p className="mb-2 text-xs text-muted-foreground">{text.branchHint}</p>
-      {value.ignorebranches.length === 0 ? (
-        <p className="text-sm text-muted-foreground">—</p>
-      ) : (
-        <ul className="space-y-1">
-          {value.ignorebranches.map((entry, idx) => (
-            <li key={idx} className="flex items-center justify-between gap-2 rounded border border-border px-2 py-1.5">
-              <span className="truncate text-sm">{pickName(entry.names, language) || entry.code}</span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => setRows((rows) => rows.filter((_, rowIdx) => rowIdx !== idx))}
-              >
-                <Minus className="h-4 w-4" />
-              </Button>
-            </li>
-          ))}
-        </ul>
-      )}
-      <MasterPicker
-        open={picker}
-        onClose={() => setPicker(false)}
-        auth={auth}
-        language={language}
-        master="branch"
-        title={text.ignoreBranches}
-        onSelect={(entry) =>
-          setRows((rows) => [
-            ...rows,
-            { guidfixed: entry.guidfixed, code: entry.code, names: entry.names, isignore: true },
-          ])
-        }
-      />
-    </Section>
+  const upd = useCallback(
+    <K extends keyof MarketplaceProductMap>(key: K, val: MarketplaceProductMap[K]) => {
+      onChange((current) => {
+        const cur = current.marketplace_products ?? [];
+        const idx = cur.findIndex((m) => m.platform === platform);
+        if (idx < 0) return current;
+        const next = [...cur];
+        next[idx] = { ...next[idx], [key]: val };
+        return { ...current, marketplace_products: next };
+      });
+    },
+    [onChange, platform],
   );
-}
 
-function TabMisc({
-  value,
-  onChange,
-  text,
-}: {
-  value: ProductBarcode;
-  onChange: Dispatch<SetStateAction<ProductBarcode>>;
-  text: Text;
-}) {
   return (
-    <div className="space-y-4">
-      <Section title={text.tabMisc}>
-        <FieldGrid>
-          <FieldRow label={text.isAlert}>
-            <Toggle
-              checked={value.isalert}
-              onCheckedChange={(n) => onChange((c) => ({ ...c, isalert: n }))}
-              label={text.isAlert}
-            />
-          </FieldRow>
-          {value.isalert ? (
-            <FieldRow label={text.alertDescription}>
-              <textarea
-                className="min-h-[80px] rounded-lg border border-input bg-background p-2 text-sm"
-                value={value.alertdescription}
-                onChange={(event) => onChange((c) => ({ ...c, alertdescription: event.target.value }))}
-              />
-            </FieldRow>
-          ) : null}
-        </FieldGrid>
-      </Section>
-      <Section title={text.description}>
-        <textarea
-          className="min-h-[120px] w-full rounded-lg border border-input bg-background p-2 text-sm"
-          value={value.description}
-          onChange={(event) => onChange((c) => ({ ...c, description: event.target.value }))}
+    <div className="space-y-3">
+      <Section title={platformLabel}>
+        <Toggle
+          checked={!!entry}
+          onCheckedChange={(next) => (next ? enable() : disable())}
+          label={text.mkEnableOnPlatform.replace("%s", platformLabel)}
         />
       </Section>
-      <Section title="ID / GUID">
-        <FieldGrid>
-          <FieldRow label={text.guid}>
-            <Input value={value.guidfixed} readOnly />
-          </FieldRow>
-          <FieldRow label={text.shopId}>
-            <Input value={value.shopid ?? ""} readOnly />
-          </FieldRow>
-          <FieldRow label={text.itemGuid}>
-            <Input value={value.item_guid} readOnly />
-          </FieldRow>
-          <FieldRow label={text.refGuid}>
-            <Input value={value.refguidfixed} readOnly />
-          </FieldRow>
-        </FieldGrid>
-      </Section>
+
+      {!entry ? (
+        <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+          {text.mkNotLinked.replace("%s", platformLabel)}
+        </div>
+      ) : (
+        <>
+          <Section title={text.mkSectionListing}>
+            <FieldGrid>
+              <FieldRow label={text.mkAccountId}>
+                <Input value={entry.account_id} onChange={(e) => upd("account_id", e.target.value)} />
+              </FieldRow>
+              <FieldRow label={text.mkMarketItemId}>
+                <Input value={entry.market_item_id} onChange={(e) => upd("market_item_id", e.target.value)} />
+              </FieldRow>
+              <FieldRow label={text.mkMarketModelId}>
+                <Input value={entry.market_model_id} onChange={(e) => upd("market_model_id", e.target.value)} />
+              </FieldRow>
+              <FieldRow label={text.mkSellerSku}>
+                <Input value={entry.seller_sku} onChange={(e) => upd("seller_sku", e.target.value)} />
+              </FieldRow>
+              <FieldRow label={text.mkShopSku}>
+                <Input value={entry.shop_sku} onChange={(e) => upd("shop_sku", e.target.value)} />
+              </FieldRow>
+              <FieldRow label={text.mkGtin}>
+                <Input value={entry.gtin} onChange={(e) => upd("gtin", e.target.value)} />
+              </FieldRow>
+              <FieldRow label={text.mkCategoryId}>
+                <Input value={entry.category_id} onChange={(e) => upd("category_id", e.target.value)} />
+              </FieldRow>
+              <FieldRow label={text.mkCategoryName}>
+                <Input value={entry.category_name} onChange={(e) => upd("category_name", e.target.value)} />
+              </FieldRow>
+              <FieldRow label={text.mkBrandId}>
+                <Input value={entry.brand_id} onChange={(e) => upd("brand_id", e.target.value)} />
+              </FieldRow>
+              <FieldRow label={text.mkItemUrl}>
+                <Input value={entry.item_url} onChange={(e) => upd("item_url", e.target.value)} placeholder="https://…" />
+              </FieldRow>
+            </FieldGrid>
+            <div className="mt-3 space-y-3">
+              <RadioOptionGroup
+                label={text.mkStatus}
+                value={entry.status}
+                onChange={(next) => upd("status", next)}
+                options={[
+                  { value: "", label: text.mkStatusNone },
+                  { value: "LIVE", label: text.mkStatusLive },
+                  { value: "UNLIST", label: text.mkStatusUnlist },
+                  { value: "REVIEWING", label: text.mkStatusReviewing },
+                  { value: "REJECTED", label: text.mkStatusRejected },
+                  { value: "DELETED", label: text.mkStatusDeleted },
+                ]}
+              />
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <FieldRow label={text.mkDaysToShip}>
+                  <NumberField value={entry.days_to_ship} min={0} step={1} onChange={(n) => upd("days_to_ship", n)} />
+                </FieldRow>
+                <div className="flex items-end pb-1">
+                  <Toggle checked={entry.is_pre_order} onCheckedChange={(n) => upd("is_pre_order", n)} label={text.mkIsPreOrder} />
+                </div>
+              </div>
+              {entry.status === "REJECTED" && (
+                <FieldRow label={text.mkRejectReason}>
+                  <Input value={entry.reject_reason} onChange={(e) => upd("reject_reason", e.target.value)} />
+                </FieldRow>
+              )}
+            </div>
+          </Section>
+
+          <Section title={text.mkSectionPriceStock}>
+            <FieldGrid>
+              <FieldRow label={text.mkCurrency}>
+                <Input value={entry.currency} onChange={(e) => upd("currency", e.target.value.toUpperCase())} />
+              </FieldRow>
+              <FieldRow label={text.mkCustomPrice}>
+                <NumberField value={entry.custom_price} min={0} onChange={(n) => upd("custom_price", n)} />
+              </FieldRow>
+              <FieldRow label={text.mkPlatformPrice}>
+                <NumberField value={entry.platform_price} min={0} onChange={(n) => upd("platform_price", n)} />
+              </FieldRow>
+              <FieldRow label={text.mkPlatformStock}>
+                <NumberField value={entry.platform_stock} min={0} step={1} onChange={(n) => upd("platform_stock", n)} />
+              </FieldRow>
+            </FieldGrid>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <Toggle checked={entry.sync_stock} onCheckedChange={(n) => upd("sync_stock", n)} label={text.mkSyncStock} />
+              <Toggle checked={entry.sync_price} onCheckedChange={(n) => upd("sync_price", n)} label={text.mkSyncPrice} />
+            </div>
+          </Section>
+
+          <Section title={text.mkSectionSync}>
+            <div className="space-y-3">
+              <Toggle checked={entry.sync_enabled} onCheckedChange={(n) => upd("sync_enabled", n)} label={text.mkSyncEnabled} />
+              <FieldGrid>
+                <ReadOnlyField label={text.mkLastSyncAt} value={entry.last_sync_at || "—"} />
+                <ReadOnlyField label={text.mkLastSyncError} value={entry.last_sync_error || "—"} />
+              </FieldGrid>
+            </div>
+          </Section>
+        </>
+      )}
     </div>
   );
 }
 
-// ─── Internal helpers ────────────────────────────────────────────────────
+function TabLogistics({
+  value,
+  onChange,
+  text,
+}: {
+  value: ProductBarcode;
+  onChange: Dispatch<SetStateAction<ProductBarcode>>;
+  text: any;
+}) {
+  const upd = useCallback(
+    <K extends keyof ProductBarcode>(key: K, val: ProductBarcode[K]) =>
+      onChange((current) => ({ ...current, [key]: val })),
+    [onChange]
+  );
 
-function cryptoRandomId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return (crypto as Crypto).randomUUID();
-  }
-  return Math.random().toString(36).slice(2);
+  const volumetricWeight = useMemo(() => {
+    const w = value.package_width ?? 0;
+    const l = value.package_length ?? 0;
+    const h = value.package_height ?? 0;
+    return Number(((w * l * h) / 5000).toFixed(3));
+  }, [value.package_width, value.package_length, value.package_height]);
+
+  return (
+    <div className="space-y-4">
+      <Section title="ข้อมูลขนาดและน้ำหนักพัสดุ (Logistics Dimensions)">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FieldRow label="น้ำหนักพัสดุรวมกล่อง (kg)">
+            <Input
+              type="number"
+              min={0}
+              step="any"
+              value={value.package_weight ?? 0}
+              onChange={(e) => upd("package_weight", Math.max(0, Number(e.target.value) || 0))}
+            />
+          </FieldRow>
+          <FieldRow label="น้ำหนักเชิงปริมาตรประเมิน (kg)">
+            <Input
+              type="text"
+              value={`${volumetricWeight} kg`}
+              readOnly
+              className="bg-muted/40 font-mono"
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">คำนวณจาก (กว้าง x ยาว x สูง) / 5000</p>
+          </FieldRow>
+        </div>
+      </Section>
+
+      <Section title="มิติกล่องพัสดุ (เซนติเมตร)">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <FieldRow label="ความกว้างกล่อง (cm)">
+            <Input
+              type="number"
+              min={0}
+              value={value.package_width ?? 0}
+              onChange={(e) => upd("package_width", Math.max(0, Number(e.target.value) || 0))}
+            />
+          </FieldRow>
+          <FieldRow label="ความยาวกล่อง (cm)">
+            <Input
+              type="number"
+              min={0}
+              value={value.package_length ?? 0}
+              onChange={(e) => upd("package_length", Math.max(0, Number(e.target.value) || 0))}
+            />
+          </FieldRow>
+          <FieldRow label="ความสูงกล่อง (cm)">
+            <Input
+              type="number"
+              min={0}
+              value={value.package_height ?? 0}
+              onChange={(e) => upd("package_height", Math.max(0, Number(e.target.value) || 0))}
+            />
+          </FieldRow>
+        </div>
+      </Section>
+
+      <Section title="คุณลักษณะขนส่งพิเศษ (สติ๊กเกอร์ปะหน้า)">
+        <div className="p-3 bg-muted/20 border rounded-lg space-y-3 text-xs">
+          <p className="font-semibold text-muted-foreground">ธงสถานะสินค้าสำหรับเตรียมแพ็คและติดสติ๊กเกอร์จัดส่ง:</p>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={value.isalert ?? false}
+                onChange={(e) => upd("isalert", e.target.checked)}
+                className="rounded accent-primary size-4"
+              />
+              <div>
+                <span className="font-semibold block">สินค้าต้องระวังเป็นพิเศษ / แตกง่าย (Fragile)</span>
+                <span className="text-[10px] text-muted-foreground">ติดสัญลักษณ์ระวังแตกบนใบปะหน้า</span>
+              </div>
+            </label>
+          </div>
+          {value.isalert && (
+            <FieldRow label="คำเตือนเพิ่มเติมสำหรับพิมพ์ป้าย">
+              <Input
+                placeholder="เช่น ระวังแตกห้ามโยน / มีของเหลวซึมง่าย"
+                value={value.alertdescription || ""}
+                onChange={(e) => upd("alertdescription", e.target.value)}
+              />
+            </FieldRow>
+          )}
+        </div>
+      </Section>
+    </div>
+  );
 }

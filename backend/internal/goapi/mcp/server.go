@@ -27,18 +27,18 @@ type MCPServer struct {
 
 // ToolRequest represents a generic tool request
 type ToolRequest struct {
-	Tool string                 `json:"tool"`
+	Tool   string                 `json:"tool"`
 	Params map[string]interface{} `json:"params"`
 }
 
 // ToolResponse represents a generic tool response
 type ToolResponse struct {
-	Success bool        `json:"success"`
-	Data interface{} `json:"data,omitempty"`
-	Error string      `json:"error,omitempty"`
+	Success   bool        `json:"success"`
+	Data      interface{} `json:"data,omitempty"`
+	Error     string      `json:"error,omitempty"`
 	ErrorCode string      `json:"error_code,omitempty"`
 	Timestamp time.Time   `json:"timestamp"`
-	Tool string      `json:"tool"`
+	Tool      string      `json:"tool"`
 }
 
 // AvailableTools lists all available MCP tools
@@ -46,7 +46,7 @@ var AvailableTools = []map[string]interface{}{
 	// Product Search
 	{
 		"name":        "search_products",
-		"description": "Search products with Thai full-text search and stock balance (same as cart system)",
+		"description": "Search products from the PostgreSQL projection/read model built from MongoDB operational product data, with Thai full-text search and stock balance.",
 		"parameters": map[string]interface{}{
 			"shop_id":         "string (required) - Shop ID",
 			"keyword":         "string (required) - Search keyword (Thai or English)",
@@ -109,7 +109,7 @@ var AvailableTools = []map[string]interface{}{
 	// Dashboard Tools
 	{
 		"name":        "get_dashboard_kpis",
-		"description": "Get comprehensive KPI dashboard for CEO/executives. Includes sales, orders, profit, customers, inventory metrics with trends.",
+		"description": "Get comprehensive KPI dashboard from processed relational projections. Includes sales, orders, profit, customers, inventory metrics with trends.",
 		"parameters": map[string]interface{}{
 			"shop_id": "string (required) - Shop ID",
 			"period":  "string (optional) - Period: today, this_week, this_month, this_year (default: this_month)",
@@ -160,7 +160,7 @@ var AvailableTools = []map[string]interface{}{
 	// Inventory Tools
 	{
 		"name":        "get_inventory_value",
-		"description": "Get total inventory valuation with breakdown by category and warehouse.",
+		"description": "Get inventory valuation from PostgreSQL relational projections, with breakdown by category and warehouse.",
 		"parameters": map[string]interface{}{
 			"shop_id": "string (required) - Shop ID",
 			"whcode":  "string (optional) - Filter by warehouse code",
@@ -453,19 +453,19 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "create_barcode",
 		"description": "Create a new product barcode (สินค้า/บาร์โค้ด). Uses names[] for multi-language product names.",
 		"parameters": map[string]interface{}{
-			"shop_id":        "string (required) - Shop ID",
-			"barcode":        "string (required) - Barcode e.g. 8859100001234",
-			"itemcode":       "string (required) - Item/product code e.g. SKU001",
-			"names":          "string (required) - JSON array [{\"code\":\"th\",\"name\":\"สินค้า A\"},{\"code\":\"en\",\"name\":\"Product A\"}]",
-			"item_unit_code":   "string (optional) - Unit code e.g. EA, BOX",
-			"itemunitnames":  "string (optional) - JSON array of unit names [{\"code\":\"th\",\"name\":\"ชิ้น\"}]",
-			"prices":         "string (optional) - JSON array of prices [{\"keynumber\":1,\"price\":100.00}]",
-			"standvalue":     "number (optional) - Unit conversion numerator (default: 1). e.g. BOX=24 means 1 BOX = 24 base units",
-			"dividevalue":    "number (optional) - Unit conversion denominator (default: 1)",
-			"is_main_barcode":  "boolean (optional) - Is main barcode? Auto-detected if not provided: true when standvalue=1 & dividevalue=1",
+			"shop_id":         "string (required) - Shop ID",
+			"barcode":         "string (required) - Barcode e.g. 8859100001234",
+			"itemcode":        "string (required) - Item/product code e.g. SKU001",
+			"names":           "string (required) - JSON array [{\"code\":\"th\",\"name\":\"สินค้า A\"},{\"code\":\"en\",\"name\":\"Product A\"}]",
+			"item_unit_code":  "string (optional) - Unit code e.g. EA, BOX",
+			"itemunitnames":   "string (optional) - JSON array of unit names [{\"code\":\"th\",\"name\":\"ชิ้น\"}]",
+			"prices":          "string (optional) - JSON array of prices [{\"keynumber\":1,\"price\":100.00}]",
+			"standvalue":      "number (optional) - Unit conversion numerator (default: 1). e.g. BOX=24 means 1 BOX = 24 base units",
+			"dividevalue":     "number (optional) - Unit conversion denominator (default: 1)",
+			"is_main_barcode": "boolean (optional) - Is main barcode? Auto-detected if not provided: true when standvalue=1 & dividevalue=1",
 			"group_code":      "string (optional) - Product group code (กลุ่มสินค้า)",
 			"group_names":     "string (optional) - JSON array of group names [{\"code\":\"th\",\"name\":\"อาหาร\"}]",
-			"categorycode":   "string (optional) - Product category guidfixed (หมวดสินค้า)",
+			"categorycode":    "string (optional) - Product category guidfixed (หมวดสินค้า)",
 			"category_names":  "string (optional) - JSON array of category names [{\"code\":\"th\",\"name\":\"เนื้อสัตว์\"}]",
 		},
 	},
@@ -481,23 +481,23 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "update_barcode",
 		"description": "Update an existing product barcode by guidfixed.",
 		"parameters": map[string]interface{}{
-			"shop_id":   "string (required) - Shop ID",
-			"guid_fixed": "string (required) - GuidFixed of the barcode to update",
-			"names":     "string (optional) - JSON array of language names [{\"code\":\"th\",\"name\":\"ชื่อใหม่\"}]",
-			"item_unit_code":   "string (optional) - New unit code",
+			"shop_id":        "string (required) - Shop ID",
+			"guid_fixed":     "string (required) - GuidFixed of the barcode to update",
+			"names":          "string (optional) - JSON array of language names [{\"code\":\"th\",\"name\":\"ชื่อใหม่\"}]",
+			"item_unit_code": "string (optional) - New unit code",
 			"itemunitnames":  "string (optional) - JSON array of unit names",
 			"prices":         "string (optional) - JSON array of prices [{\"keynumber\":1,\"price\":150.00}]",
-			"group_code":      "string (optional) - Product group code (กลุ่มสินค้า)",
-			"group_names":     "string (optional) - JSON array of group names [{\"code\":\"th\",\"name\":\"อาหาร\"}]",
+			"group_code":     "string (optional) - Product group code (กลุ่มสินค้า)",
+			"group_names":    "string (optional) - JSON array of group names [{\"code\":\"th\",\"name\":\"อาหาร\"}]",
 			"categorycode":   "string (optional) - Product category guidfixed (หมวดสินค้า)",
-			"category_names":  "string (optional) - JSON array of category names [{\"code\":\"th\",\"name\":\"เนื้อสัตว์\"}]",
+			"category_names": "string (optional) - JSON array of category names [{\"code\":\"th\",\"name\":\"เนื้อสัตว์\"}]",
 		},
 	},
 	{
 		"name":        "delete_barcode",
 		"description": "Delete a product barcode by guidfixed.",
 		"parameters": map[string]interface{}{
-			"shop_id":   "string (required) - Shop ID",
+			"shop_id":    "string (required) - Shop ID",
 			"guid_fixed": "string (required) - GuidFixed of the barcode to delete",
 		},
 	},
@@ -528,13 +528,13 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "set_ref_barcode",
 		"description": "Set reference barcode for a barcode (unit conversion). E.g., BOX → EA means 1 BOX = 24 EA. Checks for circular references.",
 		"parameters": map[string]interface{}{
-			"shop_id":      "string (required) - Shop ID",
-			"barcode":      "string (required) - Source barcode (e.g., BOX barcode)",
-			"ref_barcode":  "string (required) - Target reference barcode (e.g., EA barcode). Must be same itemcode.",
-			"qty":          "number (optional) - Quantity for condition-based reference",
-			"standvalue":   "number (optional) - Override stand value (default: use existing)",
-			"dividevalue":  "number (optional) - Override divide value (default: use existing)",
-			"condition":    "boolean (optional) - Is conditional reference (default: false)",
+			"shop_id":     "string (required) - Shop ID",
+			"barcode":     "string (required) - Source barcode (e.g., BOX barcode)",
+			"ref_barcode": "string (required) - Target reference barcode (e.g., EA barcode). Must be same itemcode.",
+			"qty":         "number (optional) - Quantity for condition-based reference",
+			"standvalue":  "number (optional) - Override stand value (default: use existing)",
+			"dividevalue": "number (optional) - Override divide value (default: use existing)",
+			"condition":   "boolean (optional) - Is conditional reference (default: false)",
 		},
 	},
 	{
@@ -558,7 +558,7 @@ var AvailableTools = []map[string]interface{}{
 	// Rebuild Embeddings (สร้าง vector embeddings สำหรับ semantic search)
 	{
 		"name":        "rebuild_embeddings",
-		"description": "สร้าง vector embeddings สำหรับ semantic search ด้วย Ollama → pgvector. รองรับ product, debtor, creditor, customer. ใช้ entity_type=all เพื่อสร้างทั้งหมด",
+		"description": "Build vector embeddings for semantic search on PostgreSQL projection tables with Ollama -> pgvector. Supports product, debtor, creditor, customer. Use entity_type=all to rebuild all.",
 		"parameters": map[string]interface{}{
 			"shop_id":     "string (required) - Shop ID",
 			"entity_type": "string (optional) - product|debtor|creditor|customer|all (default: product)",
@@ -638,8 +638,8 @@ var AvailableTools = []map[string]interface{}{
 		"parameters": map[string]interface{}{
 			"shop_id":      "string (required) - Shop ID",
 			"names":        "string (required) - JSON array [{\"code\":\"th\",\"name\":\"เนื้อสัตว์\"},{\"code\":\"en\",\"name\":\"Meat\"}]",
-			"parent_guid":   "string (optional) - Parent category guidfixed (for hierarchy)",
-			"group_number":  "number (optional) - Group/sort number",
+			"parent_guid":  "string (optional) - Parent category guidfixed (for hierarchy)",
+			"group_number": "number (optional) - Group/sort number",
 		},
 	},
 	{
@@ -654,9 +654,9 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "update_product_category",
 		"description": "Update an existing product category by guidfixed.",
 		"parameters": map[string]interface{}{
-			"shop_id":     "string (required) - Shop ID",
+			"shop_id":      "string (required) - Shop ID",
 			"guid_fixed":   "string (required) - GuidFixed of the category to update",
-			"names":       "string (optional) - JSON array of multi-language names [{\"code\":\"th\",\"name\":\"เนื้อสัตว์\"}]",
+			"names":        "string (optional) - JSON array of multi-language names [{\"code\":\"th\",\"name\":\"เนื้อสัตว์\"}]",
 			"parent_guid":  "string (optional) - New parent category guidfixed",
 			"group_number": "number (optional) - New group/sort number",
 		},
@@ -665,7 +665,7 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "delete_product_category",
 		"description": "Delete a product category by guidfixed.",
 		"parameters": map[string]interface{}{
-			"shop_id":   "string (required) - Shop ID",
+			"shop_id":    "string (required) - Shop ID",
 			"guid_fixed": "string (required) - GuidFixed of the category to delete",
 		},
 	},
@@ -697,8 +697,8 @@ var AvailableTools = []map[string]interface{}{
 		"parameters": map[string]interface{}{
 			"code":              "string (required) — Creditor code e.g. 'CR-001'",
 			"names":             "string (required) — JSON array of names e.g. [{\"code\":\"th\",\"name\":\"บริษัท ABC\"}]",
-			"personal_type":      "number (optional) — 1=บุคคลธรรมดา, 2=นิติบุคคล (default: 0)",
-			"tax_id":             "string (optional) — Tax ID",
+			"personal_type":     "number (optional) — 1=บุคคลธรรมดา, 2=นิติบุคคล (default: 0)",
+			"tax_id":            "string (optional) — Tax ID",
 			"email":             "string (optional) — Email",
 			"creditday":         "number (optional) — Credit days",
 			"addressforbilling": "string (optional) — JSON object {address, countrycode, provincecode, districtcode, subdistrictcode, zipcode, phoneprimary}",
@@ -715,9 +715,9 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "update_creditor",
 		"description": "Update an existing creditor by guidfixed.",
 		"parameters": map[string]interface{}{
-			"guid_fixed":         "string (required) — GuidFixed of the creditor to update",
+			"guid_fixed":        "string (required) — GuidFixed of the creditor to update",
 			"names":             "string (optional) — JSON array of names",
-			"tax_id":             "string (optional) — New tax ID",
+			"tax_id":            "string (optional) — New tax ID",
 			"email":             "string (optional) — New email",
 			"creditday":         "number (optional) — New credit days",
 			"addressforbilling": "string (optional) — JSON object for billing address",
@@ -757,8 +757,8 @@ var AvailableTools = []map[string]interface{}{
 		"parameters": map[string]interface{}{
 			"code":              "string (required) — Debtor code e.g. 'DB-001'",
 			"names":             "string (required) — JSON array of names e.g. [{\"code\":\"th\",\"name\":\"ร้าน XYZ\"}]",
-			"personal_type":      "number (optional) — 1=บุคคลธรรมดา, 2=นิติบุคคล (default: 0)",
-			"tax_id":             "string (optional) — Tax ID",
+			"personal_type":     "number (optional) — 1=บุคคลธรรมดา, 2=นิติบุคคล (default: 0)",
+			"tax_id":            "string (optional) — Tax ID",
 			"email":             "string (optional) — Email",
 			"creditday":         "number (optional) — Credit days",
 			"addressforbilling": "string (optional) — JSON object {address, countrycode, provincecode, districtcode, subdistrictcode, zipcode, phoneprimary}",
@@ -775,9 +775,9 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "update_debtor",
 		"description": "Update an existing debtor by guidfixed.",
 		"parameters": map[string]interface{}{
-			"guid_fixed":         "string (required) — GuidFixed of the debtor to update",
+			"guid_fixed":        "string (required) — GuidFixed of the debtor to update",
 			"names":             "string (optional) — JSON array of names",
-			"tax_id":             "string (optional) — New tax ID",
+			"tax_id":            "string (optional) — New tax ID",
 			"email":             "string (optional) — New email",
 			"creditday":         "number (optional) — New credit days",
 			"addressforbilling": "string (optional) — JSON object for billing address",
@@ -815,14 +815,14 @@ var AvailableTools = []map[string]interface{}{
 		"name":        "create_purchase_order",
 		"description": "Create a new purchase order (ใบสั่งซื้อ). Requires docno.",
 		"parameters": map[string]interface{}{
-			"docno":       "string (required) — Document number e.g. 'PO-2026-0001'",
-			"custcode":    "string (optional) — Creditor code",
-			"custnames":   "string (optional) — JSON array of creditor names e.g. [{\"code\":\"th\",\"name\":\"บริษัท ABC\"}]",
-			"details":     "string (optional) — JSON array of line items [{\"barcode\":\"123\",\"itemcode\":\"SKU1\",\"qty\":10,\"price\":100,\"sumamount\":1000}]",
-			"description": "string (optional) — Description/remark",
-			"transflag":   "number (optional) — Transaction flag (default: 0)",
+			"docno":        "string (required) — Document number e.g. 'PO-2026-0001'",
+			"custcode":     "string (optional) — Creditor code",
+			"custnames":    "string (optional) — JSON array of creditor names e.g. [{\"code\":\"th\",\"name\":\"บริษัท ABC\"}]",
+			"details":      "string (optional) — JSON array of line items [{\"barcode\":\"123\",\"itemcode\":\"SKU1\",\"qty\":10,\"price\":100,\"sumamount\":1000}]",
+			"description":  "string (optional) — Description/remark",
+			"transflag":    "number (optional) — Transaction flag (default: 0)",
 			"vat_type":     "number (optional) — VAT type (0=none, 1=inclusive, 2=exclusive)",
-			"vatrate":     "number (optional) — VAT rate %",
+			"vatrate":      "number (optional) — VAT rate %",
 			"total_amount": "number (optional) — Total amount",
 		},
 	},
@@ -831,11 +831,11 @@ var AvailableTools = []map[string]interface{}{
 		"description": "Update an existing purchase order by guidfixed.",
 		"parameters": map[string]interface{}{
 			"guid_fixed":   "string (required) — GuidFixed of the purchase order to update",
-			"custnames":   "string (optional) — JSON array of creditor names",
-			"details":     "string (optional) — JSON array of line items",
-			"description": "string (optional) — New description",
+			"custnames":    "string (optional) — JSON array of creditor names",
+			"details":      "string (optional) — JSON array of line items",
+			"description":  "string (optional) — New description",
 			"total_amount": "number (optional) — New total amount",
-			"status":      "number (optional) — New status (0=draft, 1=pending, 2=approved, 3=rejected)",
+			"status":       "number (optional) — New status (0=draft, 1=pending, 2=approved, 3=rejected)",
 		},
 	},
 	{
@@ -875,14 +875,14 @@ var AvailableTools = []map[string]interface{}{
 			"requested_delivery_date": "string (optional) — Requested delivery date (YYYY-MM-DD)",
 			"details":                 "string (optional) — JSON array of items [{\"barcode\":\"123\",\"itemcode\":\"SKU1\",\"qty\":10,\"price\":100,\"sumamount\":1000}]",
 			"description":             "string (optional) — Description/remark",
-			"total_amount":             "number (optional) — Total amount",
+			"total_amount":            "number (optional) — Total amount",
 		},
 	},
 	{
 		"name":        "update_purchase_requisition",
 		"description": "Update an existing purchase requisition by guidfixed.",
 		"parameters": map[string]interface{}{
-			"guid_fixed":               "string (required) — GuidFixed of the PR to update",
+			"guid_fixed":              "string (required) — GuidFixed of the PR to update",
 			"requester_code":          "string (optional) — New requester code",
 			"requester_name":          "string (optional) — New requester name",
 			"department_code":         "string (optional) — New department code",
@@ -894,7 +894,7 @@ var AvailableTools = []map[string]interface{}{
 			"requested_delivery_date": "string (optional) — New delivery date",
 			"details":                 "string (optional) — JSON array of items",
 			"description":             "string (optional) — New description",
-			"total_amount":             "number (optional) — New total amount",
+			"total_amount":            "number (optional) — New total amount",
 			"status":                  "number (optional) — New status (0=draft, 1=pending, 2=approved, 3=rejected)",
 			"conversion_status":       "string (optional) — none/converted_to_rfq/converted_to_po",
 		},

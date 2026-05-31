@@ -11,20 +11,25 @@ import (
 
 // QueryIntent represents AI's interpretation of the question
 type QueryIntent struct {
-	QueryType string `json:"query_type"`    // "count", "list", "search", "stat", "general"
-	SQL string `json:"sql"`           // Generated SQL query
-	NeedsData bool   `json:"needs_data"`    // Whether to execute query
+	QueryType    string `json:"query_type"`    // "count", "list", "search", "stat", "general"
+	SQL          string `json:"sql"`           // Generated SQL query
+	NeedsData    bool   `json:"needs_data"`    // Whether to execute query
 	DirectAnswer string `json:"direct_answer"` // If no query needed
-	Limit int    `json:"limit"`         // Result limit
+	Limit        int    `json:"limit"`         // Result limit
 }
 
-// GenerateQueryFromQuestion uses AI to interpret question and generate SQL
+// GenerateQueryFromQuestion is the legacy chat-gemini SQL planner.
+// It may read PostgreSQL projection tables only; MongoDB remains the operational source of truth.
 func GenerateQueryFromQuestion(ctx context.Context, question string, functionName string) (*QueryIntent, error) {
 	ai := aiprovider.GetProvider()
 
-	systemPrompt := `คุณเป็น SQL Query Generator สำหรับระบบ POS
+	systemPrompt := `คุณเป็น Legacy SQL Query Generator สำหรับระบบ POS
+
+ใช้ได้เฉพาะ PostgreSQL projection/read model ที่ sync/ประมวลผลมาจาก MongoDB เท่านั้น
+ห้ามอธิบายว่า PostgreSQL เป็น source of truth ของ CRUD; source of truth คือ MongoDB
+ถ้าต้องการ operational CRUD/master/document data แบบจริง ให้ใช้ chat-agent/query_mongodb แทน chat-gemini
 	
-**Database Schema:**
+**PostgreSQL Projection Schema (read-only):**
 ตาราง product:
 - itemcode (รหัสสินค้า)
 - name0 (ชื่อสินค้า)  
@@ -36,7 +41,7 @@ func GenerateQueryFromQuestion(ctx context.Context, question string, functionNam
 
 **หน้าที่:**
 1. วิเคราะห์คำถามของผู้ใช้
-2. สร้าง SQL query ที่เหมาะสม
+2. สร้าง SQL query ที่เหมาะสมต่อ projection table เท่านั้น
 3. กำหนด query_type: "count" (นับจำนวน), "list" (แสดงรายการ), "search" (ค้นหา), "stat" (สถิติ), "general" (คำถามทั่วไป)
 
 **ตัวอย่าง:**
@@ -69,7 +74,8 @@ Response:
 }
 
 **กฎสำคัญ:**
-- ใช้ PostgreSQL syntax
+- ใช้ PostgreSQL syntax เฉพาะ projection/read model
+- ห้ามใช้ endpoint นี้เป็น CRUD source; operational data ต้องไป MongoDB/chat-agent
 - GROUP BY ต้องรวม p.itemcode, p.name0, p.unitname
 - ใช้ COALESCE สำหรับ barcode
 - LIMIT สูงสุด 100

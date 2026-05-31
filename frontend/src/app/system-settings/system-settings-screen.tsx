@@ -13,6 +13,7 @@ import {
   Crown,
   DownloadCloud,
   Edit3,
+  Pencil,
   FileCog,
   FolderOpen,
   FolderPlus,
@@ -87,6 +88,11 @@ import {
 } from "@/lib/system-setting-screens";
 import { MapPickerDialog } from "@/components/map-picker-dialog";
 import { ProductCategoryTreeView } from "./product-category-tree-view";
+import { ProductCategoryItemsEditor } from "./product-category-items-editor";
+import { WarehouseTreeView } from "./warehouse-tree-view";
+import { CompanyBranchTreeView } from "./company-branch-tree-view";
+import { WarehouseLocationsEditor } from "./warehouse-locations-editor";
+import { ProductBomEditor } from "./product-bom-editor";
 import { imageNeedsAuthenticatedFetch } from "@/lib/image-upload-proxy";
 import { normalizeThaiTaxBranchCode } from "@/lib/thai-branch-code";
 import {
@@ -110,6 +116,7 @@ import {
 import { LANGUAGES, normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { MENU_SECTIONS, menuText } from "@/lib/menu-data";
 import type { MasterEntry, MasterName } from "@/lib/product-barcode/api";
+import { pickName } from "@/lib/product-barcode/utils";
 import {
   branchDisplayName,
   shopDisplayName,
@@ -117,6 +124,8 @@ import {
   type BranchListItem,
   type WorkspaceSession,
   workspaceStorageKeys,
+  WORKSPACE_CHANGED_EVENT,
+  notifyWorkspaceChanged,
 } from "@/lib/workspace-models";
 import { cn } from "@/lib/utils";
 import { LanguageDialog } from "../language-dialog";
@@ -913,6 +922,8 @@ const fieldValueAliases: Record<string, string[]> = {
   "branch.year_type": ["yeartype"],
   "product_category_group_select_screen.group_number": ["groupnumber"],
   "product_category_group_select_screen.parent_guid": ["parentguid"],
+  "productcategorylist.group_number": ["groupnumber"],
+  "productcategorylist.parent_guid": ["parentguid"],
 };
 
 const dayNames: Record<LanguageCode, string[]> = {
@@ -962,6 +973,35 @@ const dayNames: Record<LanguageCode, string[]> = {
   ],
 };
 
+function isCreatorRecord(
+  record: SettingRecord,
+  workspace: WorkspaceSession | null,
+): boolean {
+  if (Boolean(record.is_creator)) return true;
+  const creator = stringValue(
+    record.createdby ??
+      workspace?.shop.createdby ??
+      getByPath(workspace?.shopInfo ?? {}, "createdby"),
+  );
+  const username = stringValue(record.username ?? record.email ?? record.code);
+  return Boolean(
+    creator && username && creator.toLowerCase() === username.toLowerCase(),
+  );
+}
+
+function isSelfUserRecord(
+  record: SettingRecord,
+  auth: AuthSession | null,
+): boolean {
+  const username = stringValue(
+    record.username ?? record.email ?? record.code,
+  ).toLowerCase();
+  const identities = [auth?.username, auth?.profile?.email]
+    .map((item) => stringValue(item).toLowerCase())
+    .filter(Boolean);
+  return Boolean(username && identities.includes(username));
+}
+
 export function SystemSettingsScreen({
   embedded = false,
   initialBackendLanguage,
@@ -1005,6 +1045,7 @@ export function SystemSettingsScreen({
   const [groupNumber, setGroupNumber] = useState<number | null>(null);
   const [categorySelectedGuid, setCategorySelectedGuid] = useState("");
   const [categorySearchQuery, setCategorySearchQuery] = useState("");
+  const [categoryUnsavedChanges, setCategoryUnsavedChanges] = useState(false);
   const groupNumberRef = useRef<number | null>(null);
   groupNumberRef.current = groupNumber;
   const [copySourceEnvironment, setCopySourceEnvironment] = useState<
@@ -1015,6 +1056,108 @@ export function SystemSettingsScreen({
     useState<StandardUnitDialogState>(emptyStandardUnitDialog);
   const { confirm, confirmationDialog } = useConfirmDialog();
   const activeBackendUrl = auth?.backendUrl ?? initialBackendUrl;
+
+  // BOM Resizable Split States
+  const BOM_SPLIT_DEFAULT_LEFT = 30;
+  const BOM_SPLIT_STORAGE_KEY = "bc_bom_split_left";
+  const BOM_SPLIT_MIN_LEFT = 15;
+  const BOM_SPLIT_MAX_LEFT = 85;
+
+  const [bomSplitLeftPercent, setBomSplitLeftPercent] = useState(BOM_SPLIT_DEFAULT_LEFT);
+  const [resizingBomSplit, setResizingBomSplit] = useState(false);
+  const bomSplitContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Restore split settings
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = window.localStorage.getItem(BOM_SPLIT_STORAGE_KEY);
+    if (saved) {
+      const parsed = Number(saved);
+      if (Number.isFinite(parsed)) {
+        setBomSplitLeftPercent(Math.min(BOM_SPLIT_MAX_LEFT, Math.max(BOM_SPLIT_MIN_LEFT, parsed)));
+      }
+    }
+  }, []);
+
+  const bomSplitStyle = useMemo(
+    () =>
+      ({
+        "--bom-list-fr": `${bomSplitLeftPercent}fr`,
+        "--bom-detail-fr": `${100 - bomSplitLeftPercent}fr`,
+      } as React.CSSProperties),
+    [bomSplitLeftPercent],
+  );
+
+  const updateBomSplitFromClientX = useCallback((clientX: number) => {
+    const container = bomSplitContainerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const offset = clientX - rect.left;
+    const next = (offset / rect.width) * 100;
+    setBomSplitLeftPercent(Math.min(BOM_SPLIT_MAX_LEFT, Math.max(BOM_SPLIT_MIN_LEFT, next)));
+  }, []);
+
+  useEffect(() => {
+    if (!resizingBomSplit) return;
+    const onPointerMove = (event: PointerEvent) => {
+      updateBomSplitFromClientX(event.clientX);
+    };
+    const onPointerUp = () => {
+      setResizingBomSplit(false);
+    };
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+  }, [resizingBomSplit, updateBomSplitFromClientX]);
+
+  const startBomSplitResize = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      setResizingBomSplit(true);
+      updateBomSplitFromClientX(event.clientX);
+    },
+    [updateBomSplitFromClientX],
+  );
+
+  const startBomSplitMouseResize = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      setResizingBomSplit(true);
+      updateBomSplitFromClientX(event.clientX);
+    },
+    [updateBomSplitFromClientX],
+  );
+
+  const moveBomSplitResize = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!resizingBomSplit) return;
+      updateBomSplitFromClientX(event.clientX);
+    },
+    [resizingBomSplit, updateBomSplitFromClientX],
+  );
+
+  const stopBomSplitResize = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    event.currentTarget.releasePointerCapture(event.pointerId);
+    setResizingBomSplit(false);
+    setBomSplitLeftPercent((current) => {
+      const next = Math.min(BOM_SPLIT_MAX_LEFT, Math.max(BOM_SPLIT_MIN_LEFT, current));
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(BOM_SPLIT_STORAGE_KEY, String(Math.round(next)));
+      }
+      return next;
+    });
+  }, []);
+
+  const adjustBomSplitWithKeyboard = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    let direction = 0;
+    if (event.key === "ArrowLeft") direction = -2;
+    else if (event.key === "ArrowRight") direction = 2;
+    if (direction === 0) return;
+    event.preventDefault();
+    setBomSplitLeftPercent((current) => Math.min(BOM_SPLIT_MAX_LEFT, Math.max(BOM_SPLIT_MIN_LEFT, current + direction)));
+  }, []);
   const backendLanguage = useBackendLanguage(
     language,
     activeBackendUrl,
@@ -1079,7 +1222,7 @@ export function SystemSettingsScreen({
       else setLoading(true);
       setNotice(null);
       try {
-        const limitValue = currentConfig.slug === "product_category_group_select_screen" ? "100000" : String(SETTINGS_LIST_PAGE_SIZE);
+        const limitValue = (currentConfig.slug === "product_category_group_select_screen" || currentConfig.slug === "productcategorylist") ? "100000" : String(SETTINGS_LIST_PAGE_SIZE);
         const searchParams = new URLSearchParams({
           limit: limitValue,
           offset: String(offset),
@@ -1087,7 +1230,7 @@ export function SystemSettingsScreen({
           q: query,
           shopid: currentWorkspace.shop.shopid,
         });
-        if (currentConfig.slug === "product_category_group_select_screen" && groupNumberRef.current !== null) {
+        if ((currentConfig.slug === "product_category_group_select_screen" || currentConfig.slug === "productcategorylist") && groupNumberRef.current !== null) {
           searchParams.set("group-number", String(groupNumberRef.current));
         }
         const scope = resolveDateTimeScope(currentWorkspace);
@@ -1201,7 +1344,22 @@ export function SystemSettingsScreen({
   ]);
 
   useEffect(() => {
-    if (config?.slug === "product_category_group_select_screen" && auth && workspace) {
+    const handleWorkspaceChange = () => {
+      const nextWorkspace = readWorkspace();
+      if (nextWorkspace) {
+        setWorkspace(nextWorkspace);
+      }
+    };
+    window.addEventListener(WORKSPACE_CHANGED_EVENT, handleWorkspaceChange);
+    window.addEventListener("storage", handleWorkspaceChange);
+    return () => {
+      window.removeEventListener(WORKSPACE_CHANGED_EVENT, handleWorkspaceChange);
+      window.removeEventListener("storage", handleWorkspaceChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if ((config?.slug === "product_category_group_select_screen" || config?.slug === "productcategorylist") && auth && workspace) {
       void loadRecords(auth, workspace, config);
     }
   }, [groupNumber, config, auth, workspace, loadRecords]);
@@ -1314,7 +1472,11 @@ export function SystemSettingsScreen({
     );
   }
   const currentConfig = config;
-  const canEdit = currentConfig.editable !== false;
+  const isCreator = workspace?.shop?.is_creator === true ||
+    Boolean(auth?.username && workspace?.shop?.createdby && workspace?.shop?.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase());
+  const isOwnerOrAdmin = isCreator || workspace?.shop?.role === 1 || workspace?.shop?.role === 2;
+  const isProductUnit = currentConfig.slug === "productunit";
+  const canEdit = currentConfig.editable !== false && (!isProductUnit || isOwnerOrAdmin);
 
   function openCreate() {
     setEditing(null);
@@ -1336,6 +1498,24 @@ export function SystemSettingsScreen({
   }
 
   async function openEdit(record: SettingRecord) {
+    const newId = recordId(record, currentConfig);
+    const oldId = editing ? recordId(editing, currentConfig) : "";
+    if (categoryUnsavedChanges && newId !== oldId) {
+      const confirmLeave = await confirm({
+        title: language === "th" ? "คุณมีข้อมูลที่ยังไม่ได้บันทึก" : "You have unsaved changes",
+        description: language === "th"
+          ? "คุณมีข้อมูลสินค้าที่ผูกในหมวดหมู่ที่ยังไม่ได้บันทึก ต้องการเปลี่ยนหมวดหมู่โดยไม่บันทึกหรือไม่?"
+          : "You have unsaved changes. Do you want to leave without saving?",
+        confirmLabel: language === "th" ? "เปลี่ยนหมวดหมู่โดยไม่บันทึก" : "Leave without saving",
+        cancelLabel: language === "th" ? "กลับไปแก้ไข" : "Cancel",
+        tone: "warning",
+      });
+      if (!confirmLeave) {
+        setCategorySelectedGuid(categorySelectedGuid);
+        return;
+      }
+      setCategoryUnsavedChanges(false);
+    }
     setSelectedRecordId(recordId(record, currentConfig));
     setEditing(record);
     setForm(formFromRecord(record, currentConfig, language));
@@ -1386,7 +1566,7 @@ export function SystemSettingsScreen({
       return;
     }
 
-    if (currentConfig.slug === "product_category_group_select_screen") {
+    if (currentConfig.slug === "product_category_group_select_screen" || currentConfig.slug === "productcategorylist") {
       const parentGuid = stringValue(
         payload.parent_guid ?? payload.parentguid ?? form.parent_guid,
       );
@@ -1483,7 +1663,9 @@ export function SystemSettingsScreen({
         throw new Error(extractMessage(data) ?? text("requestFailed"));
       const saveMessage = extractMessage(data);
       if (currentConfig.kind === "company") {
-        const nextWorkspace = { ...workspace, shopInfo: payload };
+        const existingShopInfo = workspace.shopInfo ?? {};
+        const mergedShopInfo = { ...existingShopInfo, ...payload };
+        const nextWorkspace = { ...workspace, shopInfo: mergedShopInfo };
         setWorkspace(nextWorkspace);
         localStorage.setItem(
           workspaceStorageKeys.workspace,
@@ -1491,13 +1673,55 @@ export function SystemSettingsScreen({
         );
         localStorage.setItem(
           workspaceStorageKeys.shopInfo,
-          JSON.stringify(payload),
+          JSON.stringify(mergedShopInfo),
         );
+        notifyWorkspaceChanged();
         setFormOpen(true);
         setEditing(payload);
       } else {
+        if (currentConfig.slug === "branch") {
+          const payloadGuid = payload.guid_fixed ?? payload.guid ?? id;
+          if (
+            payloadGuid &&
+            workspace.branch &&
+            (payloadGuid === workspace.branch.guid_fixed ||
+              payloadGuid === workspace.branch.code)
+          ) {
+            const nextBranch = { ...workspace.branch, ...payload };
+            const nextWorkspace = { ...workspace, branch: nextBranch };
+            setWorkspace(nextWorkspace);
+            localStorage.setItem(
+              workspaceStorageKeys.workspace,
+              JSON.stringify(nextWorkspace),
+            );
+            localStorage.setItem(
+              workspaceStorageKeys.branch,
+              JSON.stringify(nextBranch),
+            );
+          }
+        }
+        if (currentConfig.slug === "user" && isSelfUserRecord(payload, auth)) {
+          const nextAuth = {
+            ...auth,
+            username: stringValue(
+              payload.username ?? payload.email ?? payload.code ?? auth.username,
+            ),
+            profile: {
+              ...(auth?.profile ?? {}),
+              name: stringValue(
+                payload.name1 ?? payload.name ?? auth?.profile?.name,
+              ),
+              email: stringValue(payload.email ?? auth?.profile?.email),
+            },
+          };
+          localStorage.setItem(
+            workspaceStorageKeys.auth,
+            JSON.stringify(nextAuth),
+          );
+        }
         setFormOpen(false);
         setEditing(null);
+        notifyWorkspaceChanged();
       }
       await loadRecords(auth, workspace, currentConfig);
       setNotice({ type: "success", text: saveSuccessText(saveMessage) });
@@ -1548,6 +1772,7 @@ export function SystemSettingsScreen({
       if (!response.ok || isFailed(data))
         throw new Error(extractMessage(data) ?? text("requestFailed"));
       setNotice({ type: "success", text: text("saved") });
+      notifyWorkspaceChanged();
       await loadRecords(auth, workspace, currentConfig);
     } catch (error) {
       setNotice({ type: "error", text: errorText(error) });
@@ -1608,6 +1833,7 @@ export function SystemSettingsScreen({
       if (!response.ok || isFailed(data))
         throw new Error(extractMessage(data) ?? text("requestFailed"));
       setNotice({ type: "success", text: text("saved") });
+      notifyWorkspaceChanged();
       await loadRecords(auth, workspace, currentConfig);
     } catch (error) {
       setNotice({ type: "error", text: errorText(error) });
@@ -1683,6 +1909,7 @@ export function SystemSettingsScreen({
       if (!response.ok || isFailed(data))
         throw new Error(extractMessage(data) ?? text("requestFailed"));
       setNotice({ type: "success", text: text("saved") });
+      notifyWorkspaceChanged();
       await loadRecords(auth, workspace, currentConfig);
     } catch (error) {
       setNotice({ type: "error", text: errorText(error) });
@@ -1809,6 +2036,7 @@ export function SystemSettingsScreen({
         type: "success",
         text: extractMessage(payload) ?? text("saved"),
       });
+      notifyWorkspaceChanged();
       await loadRecords(auth, workspace, currentConfig);
     } catch (error) {
       setStandardUnitDialog((current) => ({
@@ -1840,7 +2068,7 @@ export function SystemSettingsScreen({
   }
 
   const showProductCategoryHeaderControls =
-    config.slug === "product_category_group_select_screen" &&
+    (config.slug === "product_category_group_select_screen" || config.slug === "productcategorylist") &&
     !hideChrome &&
     groupNumber !== null;
 
@@ -1906,7 +2134,20 @@ export function SystemSettingsScreen({
                   variant="outline"
                   size="icon"
                   className="size-8 shrink-0 rounded-lg"
-                  onClick={() => {
+                  onClick={async () => {
+                    if (categoryUnsavedChanges) {
+                      const confirmLeave = await confirm({
+                        title: language === "th" ? "คุณมีข้อมูลที่ยังไม่ได้บันทึก" : "You have unsaved changes",
+                        description: language === "th"
+                          ? "คุณมีข้อมูลสินค้าที่ผูกในหมวดหมู่ที่ยังไม่ได้บันทึก ต้องการกลับโดยไม่บันทึกหรือไม่?"
+                          : "You have unsaved changes. Do you want to leave without saving?",
+                        confirmLabel: language === "th" ? "กลับโดยไม่บันทึก" : "Leave without saving",
+                        cancelLabel: language === "th" ? "กลับไปแก้ไข" : "Cancel",
+                        tone: "warning",
+                      });
+                      if (!confirmLeave) return;
+                      setCategoryUnsavedChanges(false);
+                    }
                     setGroupNumber(null);
                     setCategorySelectedGuid("");
                     setCategorySearchQuery("");
@@ -1926,27 +2167,31 @@ export function SystemSettingsScreen({
                   value={categorySearchQuery}
                   onChange={(event) => setCategorySearchQuery(event.target.value)}
                 />
-                <Button
-                  type="button"
-                  size="sm"
-                  className="h-8 shrink-0 rounded-lg gap-1.5"
-                  onClick={() => handleOpenCategoryCreate()}
-                  disabled={loading || saving}
-                >
-                  <Plus className="size-4" />
-                  {language === "th" ? "เพิ่มหมวดหลัก" : "Add Root"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-8 shrink-0 rounded-lg gap-1.5"
-                  onClick={() => categorySelectedGuid && handleOpenCategoryCreate(categorySelectedGuid)}
-                  disabled={loading || saving || !categorySelectedGuid}
-                >
-                  <FolderPlus className="size-4 text-emerald-600 dark:text-emerald-400" />
-                  {language === "th" ? "เพิ่มหมวดย่อย" : "Add Subcategory"}
-                </Button>
+                {config.slug === "product_category_group_select_screen" && (
+                  <>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-8 shrink-0 rounded-lg gap-1.5"
+                      onClick={() => handleOpenCategoryCreate()}
+                      disabled={loading || saving}
+                    >
+                      <Plus className="size-4" />
+                      {language === "th" ? "เพิ่มหมวดหลัก" : "Add Root"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 shrink-0 rounded-lg gap-1.5"
+                      onClick={() => categorySelectedGuid && handleOpenCategoryCreate(categorySelectedGuid)}
+                      disabled={loading || saving || !categorySelectedGuid}
+                    >
+                      <FolderPlus className="size-4 text-emerald-600 dark:text-emerald-400" />
+                      {language === "th" ? "เพิ่มหมวดย่อย" : "Add Subcategory"}
+                    </Button>
+                  </>
+                )}
               </div>
             ) : null}
             {embedded ? null : (
@@ -2011,7 +2256,190 @@ export function SystemSettingsScreen({
           initialBackendUrl={initialBackendUrl}
           language={language}
         />
-      ) : config.slug === "product_category_group_select_screen" && !hideChrome ? (
+      ) : config.slug === "product_warehouse_screen" && !hideChrome ? (
+        <WarehouseTreeView
+          auth={auth}
+          workspace={workspace}
+          language={language}
+          records={records}
+          onRefresh={() => void loadRecords(auth, workspace, config)}
+          saving={saving}
+          loading={loading}
+        />
+      ) : (config.slug === "company" || config.slug === "branch") && !hideChrome ? (
+        <CompanyBranchTreeView
+          auth={auth}
+          workspace={workspace}
+          language={language}
+          onRefresh={() => void loadRecords(auth, workspace, config)}
+        />
+      ) : config.slug === "product_bom" && !hideChrome ? (
+        <div
+          ref={bomSplitContainerRef}
+          className="grid min-h-0 min-w-0 gap-3 xl:grid-cols-[minmax(0,var(--bom-list-fr))_8px_minmax(0,var(--bom-detail-fr))] xl:gap-0 flex-1 xl:h-full flex-col xl:flex-row items-stretch w-full min-h-[calc(100dvh-12rem)]"
+          style={bomSplitStyle}
+        >
+          {/* Left Column: BOM List / Sidebar */}
+          <Card className={cn(
+            "min-w-0 overflow-hidden xl:flex xl:h-full xl:min-h-0 xl:flex-col border-b xl:border-b-0 xl:border-r border-border bg-muted/10 rounded-none border-y-0 border-l-0 shadow-none bg-card flex flex-col min-h-[300px] lg:min-h-0",
+            selectedRecordId ? "hidden xl:flex" : "flex"
+          )}>
+            <CardHeader className="p-3 border-b border-border bg-muted/20 shrink-0">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <CardTitle className="text-sm font-bold flex items-center gap-1.5">
+                  <span>{language === "th" ? "รายการสูตรผลิต" : "Recipes"}</span>
+                  <Badge variant="secondary" className="text-[10px] font-semibold h-4 px-1.5">
+                    {visibleRecords.length} / {records.length} {language === "th" ? "รายการ" : "items"}
+                  </Badge>
+                </CardTitle>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  className="h-8 w-8 rounded-full"
+                  onClick={() => {
+                    const today = new Date().toISOString().substring(0, 10);
+                    const newVirtualBOM: any = {
+                      guid_fixed: "virtual-" + Math.random().toString(36).substring(2, 11),
+                      isNew: true,
+                      barcode: "",
+                      itemcode: "",
+                      names: [{ code: language, name: "" }],
+                      item_unit_code: "RECIPE",
+                      itemunitnames: [{ code: language, name: language === "th" ? "สูตร" : "Recipe" }],
+                      price: 0,
+                      bom: [],
+                      boms: [{ guid_fixed: "", start_date: today, end_date: null, bom: [] }],
+                    };
+                    setRecords((prev) => {
+                      const clean = prev.filter((r: any) => !r.guid_fixed?.startsWith("virtual-"));
+                      return [newVirtualBOM, ...clean];
+                    });
+                    setSelectedRecordId(newVirtualBOM.guid_fixed);
+                  }}
+                  disabled={loading}
+                >
+                  <Plus className="size-4" />
+                </Button>
+              </div>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+                <Input
+                  className="pl-9 h-9"
+                  placeholder={language === "th" ? "ค้นหาสูตร..." : "Search recipe..."}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </div>
+            </CardHeader>
+            <CardContent className="p-0 flex-1 overflow-y-auto scrollbar-thin">
+              {loading && !records.length ? (
+                <div className="flex items-center justify-center p-8 gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="animate-spin size-4" />
+                  {text("loading")}
+                </div>
+              ) : visibleRecords.length === 0 ? (
+                <div className="text-center p-8 text-sm text-muted-foreground">
+                  {language === "th" ? "ไม่พบสูตรผลิต" : "No recipes found"}
+                </div>
+              ) : (
+                <div className="divide-y divide-border/60">
+                  {visibleRecords.map((record: any, index: number) => {
+                    const guid = recordId(record, config);
+                    const isSelected = guid === selectedRecordId;
+                    const name = pickName(record.names, language) || record.barcode || (language === "th" ? "(สูตรใหม่)" : "(New Recipe)");
+                    return (
+                      <button
+                        key={guid}
+                        className={cn(
+                          "w-full text-left p-3 hover:bg-muted/40 transition-colors flex flex-col gap-1",
+                          isSelected
+                            ? "bg-muted/80 border-r-2 border-primary"
+                            : index % 2 === 0
+                              ? "bg-background"
+                              : "bg-muted/5"
+                        )}
+                        onClick={() => {
+                          setSelectedRecordId(guid);
+                          setEditing(null);
+                        }}
+                      >
+                        <span className="font-semibold text-foreground text-sm break-words">
+                          {name}
+                        </span>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground font-medium">
+                          <span className="font-mono">{record.barcode || (language === "th" ? "ยังไม่กำหนด" : "Not set")}</span>
+                          <span className="bg-muted px-1.5 py-0.5 rounded font-semibold text-[10px]">
+                            {record.item_unit_code || "RECIPE"}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Resizable split separator bar */}
+          <div
+            aria-label="Adjust layout split"
+            aria-orientation="vertical"
+            aria-valuemax={BOM_SPLIT_MAX_LEFT}
+            aria-valuemin={BOM_SPLIT_MIN_LEFT}
+            aria-valuenow={Math.round(bomSplitLeftPercent)}
+            className={cn(
+              "group hidden cursor-col-resize touch-none items-stretch justify-center rounded-md outline-none xl:flex",
+              resizingBomSplit && "cursor-col-resize",
+            )}
+            onKeyDown={adjustBomSplitWithKeyboard}
+            onMouseDown={startBomSplitMouseResize}
+            onPointerCancel={stopBomSplitResize}
+            onPointerDown={startBomSplitResize}
+            onPointerMove={moveBomSplitResize}
+            onPointerUp={stopBomSplitResize}
+            role="separator"
+            tabIndex={0}
+          >
+            <div
+              className={cn(
+                "my-1 w-1 rounded-full bg-border transition-colors group-hover:bg-primary group-focus-visible:bg-primary",
+                resizingBomSplit && "bg-primary",
+              )}
+            />
+          </div>
+
+          {/* Right Column: Custom BOM Editor */}
+          <div className={cn(
+            "flex-1 overflow-y-auto bg-background min-h-0 xl:h-full xl:min-h-0 p-4",
+            !selectedRecordId ? "hidden xl:block" : "block"
+          )}>
+            {selectedRecordId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mb-4 xl:hidden flex items-center gap-2"
+                onClick={() => setSelectedRecordId("")}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                {language === "th" ? "กลับไปที่รายการ" : "Back to list"}
+              </Button>
+            )}
+            <ProductBomEditor
+              auth={auth}
+              workspace={workspace}
+              language={language}
+              selectedRecord={selectedRecord as any}
+              records={records as any}
+              onRefresh={() => void loadRecords(auth, workspace, config)}
+              onClose={() => setSelectedRecordId("")}
+              setSelectedRecordId={setSelectedRecordId}
+              setRecords={setRecords}
+            />
+          </div>
+
+        </div>
+      ) : (config.slug === "product_category_group_select_screen" || config.slug === "productcategorylist") && !hideChrome ? (
         <div
           className={cn(
             "grid w-full min-w-0 items-stretch gap-3",
@@ -2036,10 +2464,24 @@ export function SystemSettingsScreen({
             onRefresh={() => void loadRecords(auth, workspace, config)}
             saving={saving}
             loading={loading}
+            readOnly={config.slug === "productcategorylist"}
           />
           {groupNumber === null ? null : (
             <div className="min-h-0 h-full">
-              {formOpen ? (
+              {config.slug === "productcategorylist" ? (
+                <ProductCategoryItemsEditor
+                  auth={auth}
+                  workspace={workspace}
+                  language={language}
+                  categorySelectedGuid={categorySelectedGuid}
+                  categoryRecord={editing}
+                  setEditing={setEditing}
+                  saving={saving}
+                  setSaving={setSaving}
+                  onRefresh={() => void loadRecords(auth, workspace, config)}
+                  onUnsavedChangesChange={setCategoryUnsavedChanges}
+                />
+              ) : formOpen ? (
                 <SettingFormDialog
                   inline
                   auth={auth}
@@ -2362,7 +2804,11 @@ function SettingCard({
   const isCreator = isUser && isCreatorRecord(record, workspace);
   const isSelf = isUser && isSelfUserRecord(record, auth);
   const accessDisabled = isUser && userAccessDisabled(record);
-  const canEdit = config.editable !== false;
+  const isOwnerCreator = workspace?.shop?.is_creator === true ||
+    Boolean(auth?.username && workspace?.shop?.createdby && workspace?.shop?.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase());
+  const isOwnerOrAdmin = isOwnerCreator || workspace?.shop?.role === 1 || workspace?.shop?.role === 2;
+  const isProductUnit = config.slug === "productunit";
+  const canEdit = config.editable !== false && (!isProductUnit || isOwnerOrAdmin);
   return (
     <Card
       className={cn(
@@ -2580,8 +3026,8 @@ function SettingDataList({
   const [hoveredRecordId, setHoveredRecordId] = useState("");
   const [mounted, setMounted] = useState(false);
   const columns = useMemo(
-    () => settingListColumns(config, language, dictionary, text),
-    [config, dictionary, language, text],
+    () => settingListColumns(config, language, dictionary, text, auth),
+    [config, dictionary, language, text, auth],
   );
 
   useEffect(() => {
@@ -2681,7 +3127,7 @@ function SettingDataList({
           }
           aria-label={text("list")}
         >
-          <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/30 px-3 py-1.5">
+          <div className="bc-list-toolbar">
             <div className="min-w-0">
               <h2 className="truncate text-sm font-semibold">
                 {systemSettingTitle(config, language, dictionary)}
@@ -2698,7 +3144,7 @@ function SettingDataList({
             className="min-h-[260px] w-full overflow-x-hidden overflow-y-auto scrollbar-thin"
             style={{ maxHeight: listMaxHeight }}
           >
-            <div className="sticky top-0 z-10 flex w-full flex-wrap items-center gap-2 border-b border-border bg-muted/95 px-3 py-1.5 text-xs font-semibold text-muted-foreground backdrop-blur">
+            <div className="bc-list-header">
               {columns.map((column) => (
                 <span
                   className={cn("min-w-0 break-words", column.className)}
@@ -2729,7 +3175,7 @@ function SettingDataList({
               return (
                 <div
                   className={cn(
-                    "flex w-full cursor-pointer flex-wrap items-center gap-2 overflow-x-hidden border-b border-border px-3 py-1.5 text-left text-sm transition-colors last:border-b-0",
+                    "bc-list-row",
                     isEditing
                       ? "bg-amber-100 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100"
                       : active
@@ -2787,6 +3233,7 @@ function SettingDataList({
                         type="button"
                         size="icon"
                         variant="outline"
+                        className="size-7 rounded-lg bg-background text-primary hover:bg-primary/10 border-border"
                         onClick={() => onEdit(record)}
                         disabled={
                           config.slug === "user" &&
@@ -2795,7 +3242,7 @@ function SettingDataList({
                         aria-label={text("edit")}
                         title={text("edit")}
                       >
-                        <Edit3 />
+                        <Pencil className="size-3.5" />
                       </Button>
                     ) : null}
                     {config.slug === "user" &&
@@ -2805,12 +3252,13 @@ function SettingDataList({
                         type="button"
                         size="icon"
                         variant="outline"
+                        className="size-7 rounded-lg bg-background text-primary hover:bg-primary/10 border-border"
                         onClick={() => onResetPassword(record)}
                         disabled={saving}
                         aria-label={text("resetPassword")}
                         title={text("resetPassword")}
                       >
-                        <KeyRound />
+                        <KeyRound className="size-3.5" />
                       </Button>
                     ) : null}
                     {config.kind === "company" ||
@@ -2819,12 +3267,13 @@ function SettingDataList({
                         type="button"
                         size="icon"
                         variant="outline"
+                        className="size-7 rounded-lg bg-background text-destructive hover:bg-destructive/10 border-border"
                         onClick={() => onDelete(record)}
                         disabled={isCreator || isSelfUserRecord(record, auth)}
                         aria-label={text("delete")}
                         title={text("delete")}
                       >
-                        <Trash2 />
+                        <Trash2 className="size-3.5" />
                       </Button>
                     )}
                   </span>
@@ -2959,11 +3408,75 @@ function settingListRowStyle({
   };
 }
 
+function CompanyMultiSelectCell({
+  value,
+  language,
+  auth,
+}: {
+  value: unknown;
+  language: LanguageCode;
+  auth: AuthSession | null;
+}) {
+  const [options, setOptions] = useState<MasterEntry[]>([]);
+  const selectedGuids = useMemo(() => {
+    if (Array.isArray(value)) {
+      return value.map((item) => {
+        if (typeof item === "string") return item.trim();
+        if (isRecord(item)) return stringValue(item.guid_fixed ?? item.guidfixed ?? item.guid ?? "");
+        return "";
+      }).filter(Boolean);
+    }
+    return [];
+  }, [value]);
+
+  useEffect(() => {
+    if (!auth || selectedGuids.length === 0) return;
+    const controller = new AbortController();
+    void fetch(`/api/workspace/shops`, {
+      headers: requestHeaders(auth),
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (response.ok) return response.json();
+      })
+      .then((payload) => {
+        if (payload && payload.success && Array.isArray(payload.data)) {
+          const parsed = payload.data.map((shop: any) => ({
+            guidfixed: shop.shopid,
+            code: "",
+            names: shop.names || [{ code: "th", name: shop.name1 || shop.name || "" }]
+          }));
+          setOptions(parsed);
+        }
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [auth, selectedGuids.length]);
+
+  if (selectedGuids.length === 0) return <span>-</span>;
+
+  const names = selectedGuids.map((guid) => {
+    const match = options.find((opt) => opt.guidfixed === guid);
+    if (match) {
+      return companyOptionDisplayName(match, language);
+    }
+    return "";
+  }).filter(Boolean);
+
+  if (names.length === 0) {
+    return <span>{selectedGuids.length} บริษัท</span>;
+  }
+
+  return <span title={names.join(", ")}>{names.join(", ")}</span>;
+}
+
 function settingListColumns(
   config: SystemSettingConfig,
   language: LanguageCode,
   dictionary: BackendLanguageDictionary,
   text: (key: keyof typeof uiEn) => string,
+  auth: AuthSession | null,
 ): SettingListColumn[] {
   if (config.slug === "user") {
     const roleField = config.fields.find((field) => field.key === "role");
@@ -3151,6 +3664,15 @@ function settingListColumns(
       className,
       render: (record) => {
         const val = getByPath(record, field.key);
+        if (field.type === "company-multi-select") {
+          return (
+            <CompanyMultiSelectCell
+              value={val}
+              language={language}
+              auth={auth}
+            />
+          );
+        }
         const displayVal = fieldDisplayValue(field, val, language);
         return (
           <span className="block truncate" title={String(displayVal)}>
@@ -3195,7 +3717,11 @@ function SettingDetailPanel({
   const isCreator = isUser && isCreatorRecord(record, workspace);
   const isSelf = isUser && isSelfUserRecord(record, auth);
   const accessDisabled = isUser && userAccessDisabled(record);
-  const canEdit = config.editable !== false;
+  const isOwnerCreator = workspace?.shop?.is_creator === true ||
+    Boolean(auth?.username && workspace?.shop?.createdby && workspace?.shop?.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase());
+  const isOwnerOrAdmin = isOwnerCreator || workspace?.shop?.role === 1 || workspace?.shop?.role === 2;
+  const isProductUnit = config.slug === "productunit";
+  const canEdit = config.editable !== false && (!isProductUnit || isOwnerOrAdmin);
   return (
     <section className="grid gap-4">
       <div className="flex flex-col gap-3 rounded-2xl border border-border/80 bg-gradient-to-r from-secondary/15 via-secondary/5 to-transparent p-4 shadow-sm">
@@ -3336,6 +3862,7 @@ function SettingDetailPanel({
                   form={record}
                   language={language}
                   label={fieldLabel(field, language, config, dictionary)}
+                  workspace={workspace}
                 />
               </div>
             );
@@ -3375,6 +3902,19 @@ function SettingDetailPanel({
                   label={label}
                   language={language}
                   value={getByPath(record, field.key)}
+                />
+              </div>
+            );
+          }
+          if (field.type === "company-multi-select") {
+            const label = fieldLabel(field, language, config, dictionary);
+            return (
+              <div className={fieldGridItemClass(field, config)} key={field.key}>
+                <CompanyMultiSelectReadOnlyDetail
+                  label={label}
+                  language={language}
+                  value={getByPath(record, field.key)}
+                  auth={auth}
                 />
               </div>
             );
@@ -3758,6 +4298,7 @@ function fieldGridItemClass(
   if (isBranchLatitudeField(config, field)) return "min-w-0 md:col-span-2";
   if (
     field.type === "branch-multi-select" ||
+    field.type === "company-multi-select" ||
     field.type === "image-upload" ||
     field.type === "image-gallery" ||
     field.type === "json" ||
@@ -3832,15 +4373,17 @@ function LocalizedNamesReadOnlyDetail({
   form,
   label,
   language,
+  workspace,
 }: {
   config: SystemSettingConfig;
   field: SystemSettingField;
   form: SettingRecord;
   label: string;
   language: LanguageCode;
+  workspace?: WorkspaceSession | null;
 }) {
   const names = getLocalizedNameArray(getPathOrFlatValue(form, field.key));
-  const editorLanguages = nameEditorLanguageCodes(form, config, language);
+  const editorLanguages = nameEditorLanguageCodes(form, config, language, workspace);
   return (
     <section className="grid gap-1 rounded-2xl border border-border bg-background p-2 text-sm font-semibold md:col-span-2">
       <div>{label}</div>
@@ -5520,6 +6063,20 @@ function FieldEditor({
     );
   }
 
+  if (config.slug === "product_warehouse_screen" && field.key === "location") {
+    return (
+      <div className="md:col-span-2">
+        <label className="text-sm font-semibold mb-1 block">{label}</label>
+        <WarehouseLocationsEditor
+          form={form}
+          setForm={setForm}
+          language={language}
+          workspace={workspace}
+        />
+      </div>
+    );
+  }
+
   if (isThailandAddressPrimaryField(config, field)) {
     return (
       <ThailandAddressFieldEditor
@@ -5610,7 +6167,7 @@ function FieldEditor({
 
   if (field.type === "names") {
     const names = isRecord(value) ? value : {};
-    const editorLanguages = nameEditorLanguageCodes(form, config, language);
+    const editorLanguages = nameEditorLanguageCodes(form, config, language, workspace);
     return (
       <section className="grid gap-1 rounded-2xl border border-border bg-background p-2 md:col-span-2">
         <div className="text-sm font-semibold">
@@ -5798,6 +6355,19 @@ function FieldEditor({
         language={language}
         setForm={setForm}
         workspace={workspace}
+      />
+    );
+  }
+
+  if (field.type === "company-multi-select") {
+    return (
+      <CompanyMultiSelectFieldEditor
+        auth={auth}
+        field={field}
+        form={form}
+        label={label}
+        language={language}
+        setForm={setForm}
       />
     );
   }
@@ -7684,7 +8254,7 @@ function setDefaultLanguageConfig(
   });
 }
 
-function normalizeLanguageConfigs(
+export function normalizeLanguageConfigs(
   value: unknown,
   defaultCode: unknown,
   options: NormalizeLanguageOptions = {},
@@ -7931,6 +8501,7 @@ function nameEditorLanguageCodes(
   form: FormState,
   config: SystemSettingConfig,
   language: LanguageCode,
+  workspace?: WorkspaceSession | null,
 ): string[] {
   if (config.kind === "company") {
     return normalizeLanguageConfigs(
@@ -7940,6 +8511,31 @@ function nameEditorLanguageCodes(
   }
   if (config.slug === "branch") {
     return normalizeLanguageList(form.languages, form.language);
+  }
+  if (workspace) {
+    const shopInfo = isRecord(workspace.shopInfo) ? workspace.shopInfo : {};
+    const settings = isRecord(shopInfo.settings) ? shopInfo.settings : {};
+
+    const rawConfigs = settings.languageconfigs ?? shopInfo["settings.languageconfigs"] ?? shopInfo.languageconfigs;
+    const rawLang = settings.language ?? shopInfo["settings.language"] ?? shopInfo.language;
+
+    if (Array.isArray(rawConfigs)) {
+      const activeCodes = rawConfigs
+        .filter(isRecord)
+        .map((item) => {
+          const isUse = item.is_use === undefined && item.isuse === undefined ? true : (item.is_use === true || item.is_use === "true" || item.isuse === true || item.isuse === "true");
+          return {
+            code: supportedLanguageCode(item.code, ""),
+            isUse,
+          };
+        })
+        .filter((item) => item.code && item.isUse)
+        .map((item) => item.code);
+      if (activeCodes.length > 0) {
+        const primary = supportedLanguageCode(rawLang, language);
+        return [primary, ...activeCodes.filter((code) => code !== primary)];
+      }
+    }
   }
   return [language];
 }
@@ -8177,6 +8773,13 @@ function ImageUploadFieldEditor({
   const previewStyle = previewValue
     ? { backgroundImage: `url(${JSON.stringify(previewValue)})` }
     : undefined;
+
+  // Reset local preview and errors when active form record changes (e.g., category changes)
+  const formGuid = String(form.guid_fixed || form.guidfixed || form.guid || "");
+  useEffect(() => {
+    setLocalPreview("");
+    setError("");
+  }, [formGuid]);
 
   useEffect(() => {
     if (!localPreview) return;
@@ -9244,6 +9847,447 @@ function BranchMultiSelectReadOnlyDetail({
                 {option.code ? (
                   <span className="ml-1 text-[10px] font-normal text-muted-foreground">
                     {option.code}
+                  </span>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function companyOptionDisplayName(
+  option: { guidfixed?: string; code?: string; names?: any },
+  language: LanguageCode,
+): string {
+  const names = option.names ?? [];
+  const localized =
+    names.find((item: any) => item.code?.toLowerCase() === language && item.name)
+      ?.name ??
+    names.find((item: any) => item.code?.toLowerCase() === "th" && item.name)
+      ?.name ??
+    names.find((item: any) => item.name)?.name;
+  return (localized ?? option.code ?? option.guidfixed ?? "").trim();
+}
+
+function CompanyMultiSelectFieldEditor({
+  auth,
+  field,
+  form,
+  label,
+  language,
+  setForm,
+}: {
+  auth: AuthSession | null;
+  field: SystemSettingField;
+  form: FormState;
+  label: string;
+  language: LanguageCode;
+  setForm: (form: FormState) => void;
+}) {
+  const [options, setOptions] = useState<MasterEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const selectedGuids = useMemo(() => {
+    const val = form[field.key];
+    if (Array.isArray(val)) {
+      return val.map((item) => {
+        if (typeof item === "string") return item.trim();
+        if (isRecord(item)) return stringValue(item.guid_fixed ?? item.guidfixed ?? item.guid ?? "");
+        return "";
+      }).filter(Boolean);
+    }
+    return [];
+  }, [field.key, form]);
+
+  useEffect(() => {
+    if (!auth) return;
+    const controller = new AbortController();
+    setLoading(true);
+    setError("");
+    void fetch(`/api/workspace/shops`, {
+      headers: requestHeaders(auth),
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json() as Promise<any>;
+      })
+      .then((payload) => {
+        if (payload.success && Array.isArray(payload.data)) {
+          const parsed = payload.data.map((shop: any) => ({
+            guidfixed: shop.shopid,
+            code: "",
+            names: shop.names || [{ code: "th", name: shop.name1 || shop.name || "" }]
+          }));
+          setOptions(parsed);
+        }
+        setLoading(false);
+      })
+      .catch((catchError: unknown) => {
+        if (
+          catchError instanceof DOMException &&
+          catchError.name === "AbortError"
+        )
+          return;
+        setError(
+          catchError instanceof Error && catchError.message
+            ? catchError.message
+            : language === "th"
+              ? "โหลดข้อมูลบริษัทไม่สำเร็จ"
+              : "Failed to load companies",
+        );
+        setLoading(false);
+      });
+    return () => controller.abort();
+  }, [auth, language]);
+
+  function commitSelection(next: string[]) {
+    setForm({ ...form, [field.key]: next });
+  }
+
+  function handleToggle(guid: string, checked: boolean) {
+    if (checked) {
+      if (!selectedGuids.includes(guid)) {
+        commitSelection([...selectedGuids, guid]);
+      }
+    } else {
+      commitSelection(selectedGuids.filter((item) => item !== guid));
+    }
+  }
+
+  const summary =
+    language === "th"
+      ? `เลือก ${selectedGuids.length} / ${options.length} บริษัท`
+      : `${selectedGuids.length} / ${options.length} companies selected`;
+
+  return (
+    <section className="grid w-full gap-3 rounded-2xl border border-border bg-background p-3 text-sm font-semibold">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
+        <span>
+          {label}
+          {field.required ? " *" : ""}
+        </span>
+        <span className="text-xs font-normal text-muted-foreground">{summary}</span>
+      </div>
+      {loading ? (
+        <div className="flex items-center gap-2 px-1 py-1 text-xs text-muted-foreground">
+          <Loader2 className="size-3 animate-spin" />
+          {language === "th" ? "กำลังโหลดบริษัท…" : "Loading companies…"}
+        </div>
+      ) : null}
+      {error ? (
+        <span className="text-xs font-normal text-destructive py-1">{error}</span>
+      ) : null}
+      {!loading && !error && options.length === 0 ? (
+        <p className="text-xs font-normal text-muted-foreground py-1">
+          {language === "th"
+            ? "ยังไม่มีบริษัทให้เลือก — เพิ่มบริษัทในหน้า \"บริษัท\" ก่อน"
+            : 'No companies to choose yet — add one on the "Company" screen first.'}
+        </p>
+      ) : null}
+      {!loading && !error && options.length > 0 ? (
+        <div className="flex flex-col gap-2 py-1 font-normal">
+          {options.map((option) => {
+            const isChecked = selectedGuids.includes(option.guidfixed);
+            return (
+              <label
+                key={option.guidfixed}
+                className="flex items-center gap-2.5 rounded-xl border border-border bg-card p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  className="size-4 accent-primary cursor-pointer"
+                  checked={isChecked}
+                  onChange={(e) => handleToggle(option.guidfixed, e.target.checked)}
+                />
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-medium text-foreground">
+                    {companyOptionDisplayName(option, language)}
+                  </span>
+                  {option.code ? (
+                    <span className="text-[10px] text-muted-foreground">
+                      {language === "th" ? `รหัส: ${option.code}` : `Code: ${option.code}`}
+                    </span>
+                  ) : null}
+                </div>
+              </label>
+            );
+          })}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function CompanyPickerDialog({
+  initialSelected,
+  language,
+  onCancel,
+  onConfirm,
+  options,
+}: {
+  initialSelected: string[];
+  language: LanguageCode;
+  onCancel: () => void;
+  onConfirm: (selected: string[]) => void;
+  options: MasterEntry[];
+}) {
+  const [draft, setDraft] = useState<string[]>(initialSelected);
+  const [query, setQuery] = useState("");
+  const draftKeys = useMemo(() => new Set(draft), [draft]);
+  const filteredOptions = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return options;
+    return options.filter((option) => {
+      const name = companyOptionDisplayName(option, language).toLowerCase();
+      const code = option.code.toLowerCase();
+      return name.includes(needle) || code.includes(needle);
+    });
+  }, [language, options, query]);
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onCancel]);
+
+  function toggleDraft(guid: string, checked: boolean) {
+    const without = draft.filter((item) => item !== guid);
+    setDraft(checked ? [...without, guid] : without);
+  }
+
+  function selectAllVisible() {
+    const nextDraft = new Set(draft);
+    for (const item of filteredOptions) nextDraft.add(item.guidfixed);
+    setDraft(Array.from(nextDraft));
+  }
+
+  function clearVisible() {
+    if (!query.trim()) {
+      setDraft([]);
+      return;
+    }
+    const visibleKeys = new Set(filteredOptions.map((item) => item.guidfixed));
+    setDraft(draft.filter((item) => !visibleKeys.has(item)));
+  }
+
+  const title = language === "th" ? "เลือกบริษัท" : "Pick companies";
+  const searchPlaceholder =
+    language === "th"
+      ? "ค้นหารหัสหรือชื่อบริษัท"
+      : "Search company code or name";
+  const summary =
+    language === "th"
+      ? `เลือก ${draft.length} / ${options.length} บริษัท (กรอง ${filteredOptions.length})`
+      : `${draft.length} / ${options.length} selected (${filteredOptions.length} filtered)`;
+  const selectAllLabel =
+    language === "th"
+      ? query.trim()
+        ? "เลือกทั้งหมดที่กรอง"
+        : "เลือกทุกบริษัท"
+      : query.trim()
+        ? "Select all filtered"
+        : "Select all";
+  const clearLabel =
+    language === "th"
+      ? query.trim()
+        ? "ล้างที่กรอง"
+        : "ล้างทั้งหมด"
+      : query.trim()
+        ? "Clear filtered"
+        : "Clear all";
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex flex-col bg-card text-card-foreground"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+    >
+      <header className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          <Building2 className="size-4" />
+          {title}
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onCancel}
+          aria-label={language === "th" ? "ยกเลิก" : "Cancel"}
+        >
+          <X />
+        </Button>
+      </header>
+      <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
+        <label className="relative flex min-w-0 flex-1 items-center">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            autoFocus
+            className="h-9 pl-9"
+            placeholder={searchPlaceholder}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </label>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={selectAllVisible}
+          disabled={filteredOptions.length === 0}
+        >
+          {selectAllLabel}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={clearVisible}
+          disabled={draft.length === 0}
+        >
+          {clearLabel}
+        </Button>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
+        {filteredOptions.length === 0 ? (
+          <p className="grid h-full place-items-center text-sm text-muted-foreground">
+            {language === "th" ? "ไม่พบบริษัท" : "No companies found"}
+          </p>
+        ) : (
+          <ul className="grid gap-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+            {filteredOptions.map((option) => {
+              const checked = draftKeys.has(option.guidfixed);
+              return (
+                <li key={option.guidfixed}>
+                  <label
+                    className={cn(
+                      "flex cursor-pointer items-center gap-2 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
+                      checked
+                        ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
+                        : "border-border bg-card hover:border-primary/40 hover:bg-accent/40",
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(event) =>
+                        toggleDraft(option.guidfixed, event.target.checked)
+                      }
+                      className="size-4 accent-primary"
+                    />
+                    <span className="min-w-0 flex-1 truncate">
+                      {companyOptionDisplayName(option, language)}
+                    </span>
+                    {option.code ? (
+                      <span className="shrink-0 text-[10px] text-muted-foreground">
+                        {option.code}
+                      </span>
+                    ) : null}
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+      <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-3 py-2">
+        <span className="text-xs text-muted-foreground">{summary}</span>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            {language === "th" ? "ยกเลิก" : "Cancel"}
+          </Button>
+          <Button type="button" onClick={() => onConfirm(draft)}>
+            <Check />
+            {language === "th" ? "ยืนยัน" : "Confirm"}
+          </Button>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+function CompanyMultiSelectReadOnlyDetail({
+  label,
+  language,
+  value,
+  auth,
+}: {
+  label: string;
+  language: LanguageCode;
+  value: unknown;
+  auth: AuthSession | null;
+}) {
+  const [options, setOptions] = useState<MasterEntry[]>([]);
+  const selectedGuids = useMemo(() => {
+    if (Array.isArray(value)) {
+      return value.map((item) => {
+        if (typeof item === "string") return item.trim();
+        if (isRecord(item)) return stringValue(item.guid_fixed ?? item.guidfixed ?? item.guid ?? "");
+        return "";
+      }).filter(Boolean);
+    }
+    return [];
+  }, [value]);
+
+  useEffect(() => {
+    if (!auth || selectedGuids.length === 0) return;
+    const controller = new AbortController();
+    void fetch(`/api/workspace/shops`, {
+      headers: requestHeaders(auth),
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (response.ok) return response.json();
+      })
+      .then((payload) => {
+        if (payload && payload.success && Array.isArray(payload.data)) {
+          const parsed = payload.data.map((shop: any) => ({
+            guidfixed: shop.shopid,
+            code: "",
+            names: shop.names || [{ code: "th", name: shop.name1 || shop.name || "" }]
+          }));
+          setOptions(parsed);
+        }
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [auth, selectedGuids.length]);
+
+  const selectedOptions = useMemo(() => {
+    return selectedGuids.map((guid) => {
+      const match = options.find((opt) => opt.guidfixed === guid);
+      if (match) return match;
+      return { guidfixed: guid, code: "", names: [] } as MasterEntry;
+    });
+  }, [selectedGuids, options]);
+
+  return (
+    <div className="grid gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] border-l-2 border-l-secondary">
+      <span className="text-xs font-semibold text-muted-foreground">
+        {label}
+      </span>
+      {selectedGuids.length === 0 ? (
+        <b className="text-foreground font-medium">-</b>
+      ) : (
+        <ul className="flex flex-wrap gap-1">
+          {selectedOptions.map((option) => {
+            return (
+              <li
+                key={option.guidfixed}
+                className="rounded-md border border-border bg-background px-2 py-0.5 text-xs font-semibold"
+              >
+                {companyOptionDisplayName(option, language)}
+                {option.code ? (
+                  <span className="ml-1 text-[10px] font-normal text-muted-foreground">
+                    ({option.code})
                   </span>
                 ) : null}
               </li>
@@ -11286,6 +12330,16 @@ function formFromRecord(
       }
     } else if (field.type === "branch-multi-select") {
       form[field.key] = selectedBranchesFromValue(value);
+    } else if (field.type === "company-multi-select") {
+      form[field.key] = Array.isArray(value)
+        ? value.map((v) =>
+            typeof v === "string"
+              ? v.trim()
+              : isRecord(v)
+                ? String(v.guidfixed ?? v.guid_fixed ?? "")
+                : "",
+          ).filter(Boolean)
+        : [];
     } else form[field.key] = value ?? "";
   }
   if (config.slug === "company") {
@@ -11298,6 +12352,7 @@ function formFromRecord(
   }
   applyCompanyDefaults(form, config);
   applyBranchDefaults(form, config);
+  form.guid_fixed = record.guid_fixed || record.guidfixed || record.guid || "";
   return form;
 }
 
@@ -11416,7 +12471,7 @@ function buildPayload(
           value,
           language,
           getByPath(payload, field.key),
-          nameEditorLanguageCodes(form, config, language),
+          nameEditorLanguageCodes(form, config, language, workspace),
         ),
       );
     } else if (field.type === "language-configs")
@@ -11443,6 +12498,20 @@ function buildPayload(
       setByPath(payload, field.key, normalizeTimeSalePayload(value));
     else if (field.type === "branch-multi-select")
       setByPath(payload, field.key, selectedBranchesFromValue(value));
+    else if (field.type === "company-multi-select")
+      setByPath(
+        payload,
+        field.key,
+        Array.isArray(value)
+          ? value.map((v) =>
+              typeof v === "string"
+                ? v.trim()
+                : isRecord(v)
+                  ? String(v.guidfixed ?? v.guid_fixed ?? "")
+                  : "",
+            ).filter(Boolean)
+          : [],
+      );
     else if (field.type === "json")
       setByPath(payload, field.key, parseJsonField(value, field.key));
     else if (field.type === "checkbox")
@@ -11771,34 +12840,7 @@ function recordBranchCaption(record: SettingRecord): string {
   );
 }
 
-function isCreatorRecord(
-  record: SettingRecord,
-  workspace: WorkspaceSession | null,
-): boolean {
-  if (Boolean(record.is_creator)) return true;
-  const creator = stringValue(
-    record.createdby ??
-      workspace?.shop.createdby ??
-      getByPath(workspace?.shopInfo ?? {}, "createdby"),
-  );
-  const username = stringValue(record.username ?? record.email ?? record.code);
-  return Boolean(
-    creator && username && creator.toLowerCase() === username.toLowerCase(),
-  );
-}
 
-function isSelfUserRecord(
-  record: SettingRecord,
-  auth: AuthSession | null,
-): boolean {
-  const username = stringValue(
-    record.username ?? record.email ?? record.code,
-  ).toLowerCase();
-  const identities = [auth?.username, auth?.profile?.email]
-    .map((item) => stringValue(item).toLowerCase())
-    .filter(Boolean);
-  return Boolean(username && identities.includes(username));
-}
 
 function userAccessDisabled(record: SettingRecord): boolean {
   return Boolean(

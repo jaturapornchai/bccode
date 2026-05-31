@@ -72,8 +72,11 @@ import { buildChartData, buildKpis, fetchErpMenuRows, type ErpMenuRow } from "./
 import { MenuKpiChart } from "./menu-kpi-chart";
 import { MenuQueryProvider } from "./menu-query-provider";
 import { ProductBarcodeScreen } from "./product-barcode-screen";
+import { ProductScreen } from "./product-screen";
+import { ProductSetScreen } from "./product-set-screen";
 import { ProductBarcodeShelfScreen } from "./product-barcode-shelf-screen";
 import { ProductPriceHistoryScreen } from "./product-price-history-screen";
+import { MarketplaceMappingsScreen } from "./marketplace-screen";
 
 type WorkTab = {
   id: string;
@@ -457,7 +460,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const kpis = useMemo(() => buildKpis(rows, backendLanguage), [backendLanguage, rows]);
   const chartData = useMemo(() => buildChartData(rows, language, backendLanguage), [backendLanguage, language, rows]);
   const activeWorkTab = useMemo(() => tabs.find((tab) => tab.id === activeTabId) ?? firstTab, [activeTabId, tabs]);
-  const activeTabNeedsFixedViewport = activeWorkTab.route === "/product_barcode";
+  const activeTabNeedsFixedViewport = activeWorkTab.route === "/product_barcode" || activeWorkTab.route === "/product" || activeWorkTab.route === "/productset";
 
   function openMenuItem(item: MenuItem) {
     if (!canAccessMenuItem(item)) return;
@@ -928,7 +931,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                   {tabs.map((tab) => (
                     <section
                       aria-hidden={tab.id !== activeTabId}
-                      className={cn("min-w-0", tab.route === "/product_barcode" && "lg:h-full lg:min-h-0 lg:overflow-hidden")}
+                      className={cn("min-w-0", (tab.route === "/product_barcode" || tab.route === "/product" || tab.route === "/productset") && "lg:h-full lg:min-h-0 lg:overflow-hidden")}
                       hidden={tab.id !== activeTabId}
                       key={tab.id}
                       role="tabpanel"
@@ -2021,6 +2024,14 @@ function WorkTabPanel({ activeTab, backendLanguage, language, tabCount }: { acti
     return <LineOaLinkScreen embedded language={language} />;
   }
 
+  if (activeTab.route === "/product") {
+    return <ProductScreen embedded language={language} />;
+  }
+
+  if (activeTab.route === "/productset") {
+    return <ProductSetScreen embedded language={language} />;
+  }
+
   if (activeTab.route === "/product_barcode") {
     return <ProductBarcodeScreen embedded language={language} />;
   }
@@ -2031,6 +2042,18 @@ function WorkTabPanel({ activeTab, backendLanguage, language, tabCount }: { acti
 
   if (activeTab.route === "/price_history") {
     return <ProductPriceHistoryScreen embedded language={language} />;
+  }
+
+  if (activeTab.route === "/marketplace/shopee") {
+    return <MarketplaceMappingsScreen platform="shopee" embedded language={language} />;
+  }
+
+  if (activeTab.route === "/marketplace/lazada") {
+    return <MarketplaceMappingsScreen platform="lazada" embedded language={language} />;
+  }
+
+  if (activeTab.route === "/marketplace/tiktok") {
+    return <MarketplaceMappingsScreen platform="tiktok" embedded language={language} />;
   }
 
   const systemSettingConfig = getSystemSettingConfig(activeTab.route);

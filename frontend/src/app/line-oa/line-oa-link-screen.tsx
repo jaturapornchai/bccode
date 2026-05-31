@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { backendText, useBackendLanguage, type BackendLanguageDictionary } from "@/lib/backend-language";
+import { formatDefaultDateTime, resolveWorkspaceDateTimeDisplayOptions } from "@/lib/date-time";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import {
   branchDisplayName,
@@ -193,6 +194,10 @@ export function LineOaLinkScreen({
   const [qrDataUrl, setQrDataUrl] = useState("");
   const activeBackendUrl = auth?.backendUrl ?? initialBackendUrl;
   const backendLanguage = useBackendLanguage(language, activeBackendUrl, language === initialLanguage ? initialBackendLanguage : undefined);
+  const dateTimeDisplayOptions = useMemo(
+    () => resolveWorkspaceDateTimeDisplayOptions(workspace, language),
+    [language, workspace],
+  );
 
   const text = useCallback(
     (key: LineOaTextKey) => {
@@ -370,7 +375,7 @@ export function LineOaLinkScreen({
               <InfoTile label={text("status")} value={profile.linked ? text("linked") : text("notLinked")} />
               <InfoTile label={text("lineDisplayName")} value={profile.displayName || "-"} />
               <InfoTile label={text("lineUserId")} value={profile.lineUserId || "-"} />
-              <InfoTile label={text("linkedAt")} value={profile.linkedAt ? formatLinkedAt(profile.linkedAt, language) : "-"} />
+              <InfoTile label={text("linkedAt")} value={profile.linkedAt ? formatDefaultDateTime(profile.linkedAt, dateTimeDisplayOptions) : "-"} />
               <InfoTile label={text("selectedCompany")} value={companyName} />
             </div>
 
@@ -498,15 +503,6 @@ function readStorage<T>(key: string): T | null {
 
 function getLocalText(language: LanguageCode, key: LineOaTextKey): string {
   return lineOaText[language]?.[key] ?? lineOaTextEn[key] ?? key;
-}
-
-function formatLinkedAt(value: string, language: LanguageCode): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(language === "th" ? "th-TH" : "en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
 }
 
 function getString(payload: Record<string, unknown>, key: string): string {

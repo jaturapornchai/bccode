@@ -45,7 +45,13 @@ import {
   emptyProductBarcode,
   type ProductBarcode as ProductBarcodeObject,
 } from "@/lib/product-barcode/types";
-import { rawToProductBarcode } from "@/lib/product-barcode/utils";
+import {
+  createBarcode,
+  deleteBarcodes,
+  listBarcodes,
+  updateBarcode,
+} from "@/lib/product-barcode/api";
+import { rawToProductBarcode, toNumberOrNull } from "@/lib/product-barcode/utils";
 import { cn } from "@/lib/utils";
 import {
   branchDisplayName,
@@ -55,7 +61,10 @@ import {
   type LocalizedName,
   type WorkspaceSession,
   workspaceStorageKeys,
+  WORKSPACE_CHANGED_EVENT,
 } from "@/lib/workspace-models";
+import { languageCodesFromWorkspace } from "@/components/product-barcode/names-editor";
+import { getBarcodeText, type BarcodeText } from "@/lib/product-barcode/language";
 
 type ProductBarcodeScreenProps = {
   embedded?: boolean;
@@ -174,260 +183,9 @@ type Notice = { type: "success" | "error" | "info"; text: string } | null;
 
 const pageSize = 80;
 
-const barcodeText = {
-  th: {
-    title: "สินค้า",
-    subtitle: "จัดการรายการสินค้าแบบเดียวกับหน้าจอ Flutter เดิม",
-    refresh: "รีเฟรช",
-    export: "ส่งออก",
-    selectDelete: "เลือกเพื่อลบ",
-    cancelSelect: "ยกเลิกเลือก",
-    add: "เพิ่ม",
-    search: "ค้นหา บาร์โค้ด ชื่อสินค้า หรือรหัสสินค้า",
-    filter: "ตัวกรอง",
-    groupCode: "กลุ่มสินค้า",
-    brandCode: "ยี่ห้อ",
-    categoryCode: "หมวดสินค้า",
-    classCode: "Class",
-    designCode: "Design",
-    gradeCode: "Grade",
-    modelCode: "Model",
-    patternCode: "Pattern",
-    priceMin: "ราคาต่ำสุด",
-    priceMax: "ราคาสูงสุด",
-    clearFilter: "ล้างตัวกรอง",
-    total: "ทั้งหมด",
-    selected: "เลือกแล้ว",
-    barcode: "บาร์โค้ด",
-    productName: "ชื่อสินค้า",
-    unit: "หน่วย",
-    itemCode: "รหัสสินค้า",
-    balance: "คงเหลือ",
-    retailPrice: "ราคาขาย",
-    image: "รูป",
-    detailTitle: "รายละเอียดบาร์โค้ด",
-    noSelection: "เลือกรายการด้านซ้ายเพื่อดูรายละเอียด",
-    loading: "กำลังโหลดข้อมูลสินค้า",
-    noData: "ไม่พบข้อมูลสินค้าจากฐานข้อมูลจริง",
-    apiRequired: "กรุณาเข้าสู่ระบบและเลือกบริษัทก่อนเปิดหน้าจอนี้",
-    requestFailed: "โหลดข้อมูลไม่สำเร็จ",
-    edit: "แก้ไข",
-    copy: "คัดลอก",
-    delete: "ลบ",
-    save: "บันทึก",
-    close: "ปิด",
-    createTitle: "เพิ่มสินค้า",
-    editTitle: "แก้ไขสินค้า",
-    jsonPayload: "ข้อมูล JSON ครบทุก field",
-    invalidJson: "JSON ไม่ถูกต้อง",
-    saveSuccess: "บันทึกสินค้าแล้ว",
-    deleteConfirm: "ต้องการลบสินค้าที่เลือกจริงหรือไม่",
-    deleteCurrentConfirm: "ต้องการลบจริงหรือไม่",
-    unsavedConfirm: "มีข้อมูลที่ยังไม่ได้บันทึก ต้องการทิ้งการแก้ไขหรือไม่?",
-    deleteSuccess: "ลบสินค้าแล้ว",
-    missingGuid: "รายการที่เลือกไม่มี GUID สำหรับลบ",
-    exportSuccess: "ส่งออกข้อมูลที่แสดงอยู่แล้ว",
-    tenant: "บริษัท",
-    branch: "สาขา",
-    multiUnit: "หลายหน่วย",
-    basicInfo: "ข้อมูลหลัก",
-    classification: "กลุ่ม/หมวด/คุณสมบัติ",
-    stockAndUnit: "หน่วยนับ/สต็อก/ราคา",
-    taxAndFlags: "ภาษีและสถานะ",
-    relations: "ข้อมูลเชื่อมโยง",
-    rawFields: "ข้อมูลทั้งหมดจาก API",
-    guid: "GUID",
-    shopId: "รหัสบริษัท",
-    barcodeRef: "บาร์โค้ดอ้างอิง",
-    itemGuid: "GUID สินค้า",
-    itemGuidFixed: "GUID สินค้าถาวร",
-    parentGuid: "GUID แม่",
-    checksum: "Checksum",
-    shelf: "ชั้นวาง",
-    color: "สี",
-    standValue: "ตัวตั้ง",
-    divideValue: "ตัวหาร",
-    unitCount: "จำนวนหน่วยนับ",
-    itemType: "ประเภทสินค้า",
-    productType: "ประเภทบาร์โค้ด",
-    foodType: "ประเภทอาหาร",
-    materialType: "ประเภทวัตถุดิบ",
-    taxType: "ประเภทภาษี",
-    vatType: "ประเภท VAT",
-    vatCal: "วิธีคำนวณ VAT",
-    isStock: "นับสต็อก",
-    isMainBarcode: "บาร์โค้ดหลัก",
-    isMainItem: "สินค้าหลัก",
-    isUseSubBarcodes: "ใช้บาร์โค้ดย่อย",
-    useImageOrColor: "ใช้รูป/สี",
-    condition: "มีเงื่อนไข",
-    isSumPoint: "สะสมแต้ม",
-    isDividend: "ร่วมปันผล",
-    isALaCarte: "อลาคาร์ท",
-    isSplitUnitPrint: "พิมพ์แยกหน่วย",
-    isOnlyStaff: "เฉพาะพนักงาน",
-    isStockForRestaurant: "สต็อกร้านอาหาร",
-    isDiscountPointOfPurchase: "ลดราคา ณ จุดขาย",
-    isAlert: "แจ้งเตือน",
-    isDisable: "ปิดใช้งาน",
-    showIsDividend: "ข้อความปันผล",
-    rowNumber: "ลำดับแถว",
-    maxDiscount: "ส่วนลดสูงสุด",
-    discount: "ส่วนลด",
-    description: "รายละเอียดสินค้า",
-    alertDescription: "รายละเอียดแจ้งเตือน",
-    manufacturer: "ผู้ผลิต",
-    subGroup1: "กลุ่มย่อย 1",
-    subGroup2: "กลุ่มย่อย 2",
-    prices: "ราคา",
-    refBarcodes: "บาร์โค้ดอ้างอิง",
-    subBarcodes: "บาร์โค้ดย่อย",
-    bom: "สูตรประกอบ",
-    options: "ตัวเลือก",
-    orderTypes: "ประเภทคำสั่ง",
-    dimensions: "มิติ",
-    businessTypes: "ประเภทธุรกิจ",
-    ignoreBranches: "สาขาที่ไม่ใช้",
-    branches: "สาขา",
-    categories: "หมวดสินค้า",
-    timeForSales: "เวลาขาย",
-    fixedCost: "ต้นทุนมาตรฐาน",
-    labelPrint: "พิมพ์ป้ายสินค้า",
-    priceHistory: "ประวัติราคา",
-    bomView: "ดูสูตรการผลิต",
-    yes: "ใช่",
-    no: "ไม่ใช่",
-  },
-  en: {
-    title: "Product",
-    subtitle: "Manage products using the legacy Flutter workflow as reference.",
-    refresh: "Refresh",
-    export: "Export",
-    selectDelete: "Select delete",
-    cancelSelect: "Cancel select",
-    add: "Add",
-    search: "Search barcode, product name, or item code",
-    filter: "Filter",
-    groupCode: "Product group",
-    brandCode: "Brand",
-    categoryCode: "Category",
-    classCode: "Class",
-    designCode: "Design",
-    gradeCode: "Grade",
-    modelCode: "Model",
-    patternCode: "Pattern",
-    priceMin: "Min price",
-    priceMax: "Max price",
-    clearFilter: "Clear filters",
-    total: "Total",
-    selected: "Selected",
-    barcode: "Barcode",
-    productName: "Product name",
-    unit: "Unit",
-    itemCode: "Item code",
-    balance: "Balance",
-    retailPrice: "Retail price",
-    image: "Image",
-    detailTitle: "Barcode detail",
-    noSelection: "Select a row on the left to view detail",
-    loading: "Loading product data",
-    noData: "No product data found in the real database",
-    apiRequired: "Please login and select a company before opening this screen.",
-    requestFailed: "Could not load data",
-    edit: "Edit",
-    copy: "Copy",
-    delete: "Delete",
-    save: "Save",
-    close: "Close",
-    createTitle: "Add product",
-    editTitle: "Edit product",
-    jsonPayload: "Full-field JSON payload",
-    invalidJson: "Invalid JSON",
-    saveSuccess: "Product saved.",
-    deleteConfirm: "Confirm delete selected products?",
-    deleteCurrentConfirm: "Confirm delete this product?",
-    unsavedConfirm: "You have unsaved changes. Discard them?",
-    deleteSuccess: "Products deleted.",
-    missingGuid: "Selected rows do not have GUIDs for deletion.",
-    exportSuccess: "Exported the currently displayed data.",
-    tenant: "Company",
-    branch: "Branch",
-    multiUnit: "Multi-unit",
-    basicInfo: "Basic info",
-    classification: "Classification",
-    stockAndUnit: "Unit, stock, and price",
-    taxAndFlags: "Tax and status",
-    relations: "Linked data",
-    rawFields: "All API fields",
-    guid: "GUID",
-    shopId: "Company ID",
-    barcodeRef: "Barcode reference",
-    itemGuid: "Item GUID",
-    itemGuidFixed: "Fixed item GUID",
-    parentGuid: "Parent GUID",
-    checksum: "Checksum",
-    shelf: "Shelf",
-    color: "Color",
-    standValue: "Stand value",
-    divideValue: "Divide value",
-    unitCount: "Unit count",
-    itemType: "Item type",
-    productType: "Product type",
-    foodType: "Food type",
-    materialType: "Material type",
-    taxType: "Tax type",
-    vatType: "VAT type",
-    vatCal: "VAT calculation",
-    isStock: "Stock item",
-    isMainBarcode: "Main barcode",
-    isMainItem: "Main item",
-    isUseSubBarcodes: "Use sub barcodes",
-    useImageOrColor: "Use image/color",
-    condition: "Condition",
-    isSumPoint: "Sum point",
-    isDividend: "Dividend",
-    isALaCarte: "A la carte",
-    isSplitUnitPrint: "Split unit print",
-    isOnlyStaff: "Staff only",
-    isStockForRestaurant: "Restaurant stock",
-    isDiscountPointOfPurchase: "POS discount",
-    isAlert: "Alert",
-    isDisable: "Disabled",
-    showIsDividend: "Dividend text",
-    rowNumber: "Row number",
-    maxDiscount: "Max discount",
-    discount: "Discount",
-    description: "Description",
-    alertDescription: "Alert description",
-    manufacturer: "Manufacturer",
-    subGroup1: "Sub group 1",
-    subGroup2: "Sub group 2",
-    prices: "Prices",
-    refBarcodes: "Ref barcodes",
-    subBarcodes: "Sub barcodes",
-    bom: "BOM",
-    options: "Options",
-    orderTypes: "Order types",
-    dimensions: "Dimensions",
-    businessTypes: "Business types",
-    ignoreBranches: "Ignored branches",
-    branches: "Branches",
-    categories: "Categories",
-    timeForSales: "Sale times",
-    fixedCost: "Fixed cost",
-    labelPrint: "Print label",
-    priceHistory: "Price history",
-    bomView: "View BOM",
-    yes: "Yes",
-    no: "No",
-  },
-} as const;
-
-type BarcodeText = Record<keyof typeof barcodeText.th, string>;
-
 export function ProductBarcodeScreen({ embedded = false, language = "th" }: ProductBarcodeScreenProps) {
   const lang = normalizeLanguage(language);
-  const text: BarcodeText = lang === "th" ? barcodeText.th : barcodeText.en;
+  const text = getBarcodeText(lang);
   const { confirm, confirmationDialog } = useConfirmDialog();
 
   const [auth, setAuth] = useState<AuthSession | null>(null);
@@ -437,7 +195,15 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearch(searchInput);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchInput]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [showImage, setShowImage] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
@@ -452,6 +218,8 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
   const [splitLeftPercent, setSplitLeftPercent] = useState(PRODUCT_SPLIT_DEFAULT_LEFT);
   const [resizingSplit, setResizingSplit] = useState(false);
   const splitContainerRef = useRef<HTMLDivElement | null>(null);
+  const loadBarcodesAbortRef = useRef<AbortController | undefined>(undefined);
+  const loadDetailAbortRef = useRef<AbortController | undefined>(undefined);
   const [filters, setFilters] = useState({
     groupCode: "",
     brandCode: "",
@@ -464,10 +232,32 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     priceMin: "",
     priceMax: "",
   });
+  const [debouncedFilters, setDebouncedFilters] = useState(filters);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedFilters(filters);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [filters]);
 
   useEffect(() => {
     setAuth(readAuthSession());
     setWorkspace(readWorkspaceSession());
+  }, []);
+
+  useEffect(() => {
+    const handleWorkspaceChange = () => {
+      const nextWorkspace = readWorkspaceSession();
+      if (nextWorkspace) {
+        setWorkspace(nextWorkspace);
+      }
+    };
+    window.addEventListener(WORKSPACE_CHANGED_EVENT, handleWorkspaceChange);
+    window.addEventListener("storage", handleWorkspaceChange);
+    return () => {
+      window.removeEventListener(WORKSPACE_CHANGED_EVENT, handleWorkspaceChange);
+      window.removeEventListener("storage", handleWorkspaceChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -477,11 +267,6 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     const next = clampProductSplitLeft(Number(saved));
     setSplitLeftPercent(next);
   }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(PRODUCT_SPLIT_STORAGE_KEY, String(Math.round(splitLeftPercent)));
-  }, [splitLeftPercent]);
 
   const activeShopId = workspace?.shop.shopid ?? "";
   const activeBranch = workspace?.branch ? branchDisplayName(workspace.branch) : "-";
@@ -570,6 +355,12 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
     setResizingSplit(false);
+    setSplitLeftPercent((current) => {
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(PRODUCT_SPLIT_STORAGE_KEY, String(Math.round(current)));
+      }
+      return current;
+    });
   }, []);
 
   const adjustSplitWithKeyboard = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
@@ -590,40 +381,33 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
       return;
     }
 
+    loadBarcodesAbortRef.current?.abort();
+    const controller = new AbortController();
+    loadBarcodesAbortRef.current = controller;
+
     setLoading(true);
     setNotice(null);
     try {
-      const payload = {
-        backendUrl: auth.backendUrl,
+      const data = await listBarcodes(auth, {
         shopid: activeShopId,
         keyword: search.trim(),
-        group_code: filters.groupCode.trim(),
-        brand_code: filters.brandCode.trim(),
-        categorycode: filters.categoryCode.trim(),
-        classcode: filters.classCode.trim(),
-        designcode: filters.designCode.trim(),
-        gradecode: filters.gradeCode.trim(),
-        modelcode: filters.modelCode.trim(),
-        patterncode: filters.patternCode.trim(),
-        price_min: toNumberOrNull(filters.priceMin),
-        price_max: toNumberOrNull(filters.priceMax),
+        groupcode: debouncedFilters.groupCode.trim(),
+        brandcode: debouncedFilters.brandCode.trim(),
+        categorycode: debouncedFilters.categoryCode.trim(),
+        classcode: debouncedFilters.classCode.trim(),
+        designcode: debouncedFilters.designCode.trim(),
+        gradecode: debouncedFilters.gradeCode.trim(),
+        modelcode: debouncedFilters.modelCode.trim(),
+        patterncode: debouncedFilters.patternCode.trim(),
+        price_min: toNumberOrNull(debouncedFilters.priceMin),
+        price_max: toNumberOrNull(debouncedFilters.priceMax),
         limit: pageSize,
         offset: 0,
         sort_field: search.trim() ? "relevance" : "barcode",
         sort_order: search.trim() ? "desc" : "asc",
-      };
-
-      const response = await fetch("/api/product-barcode/list", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-bc-backend-url": auth.backendUrl,
-          Authorization: `Bearer ${auth.token}`,
-        },
-        body: JSON.stringify(payload),
       });
-      const data = (await response.json()) as BarcodeApiResponse;
-      if (!response.ok || data.success === false) {
+      if (controller.signal.aborted) return;
+      if (!data.success) {
         throw new Error(data.message || text.requestFailed);
       }
 
@@ -637,20 +421,25 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
       });
       setCheckedBarcodes([]);
     } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return;
       setItems([]);
       setTotal(0);
       setSelectedBarcode("");
       setNotice({ type: "error", text: error instanceof Error && error.message ? error.message : text.requestFailed });
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
-  }, [activeShopId, auth, filters, search, text.apiRequired, text.requestFailed]);
+  }, [activeShopId, auth, debouncedFilters, search, text.apiRequired, text.requestFailed]);
 
   const loadBarcodeDetail = useCallback(
     async (item: ProductBarcodeRecord) => {
       if (!auth || !item.guidFixed) return;
       const key = detailKey(item);
       if (detailItems[key]) return;
+
+      loadDetailAbortRef.current?.abort();
+      const controller = new AbortController();
+      loadDetailAbortRef.current = controller;
 
       try {
         const response = await fetch(`/api/product-barcode/${encodeURIComponent(item.guidFixed)}`, {
@@ -659,6 +448,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
             "x-bc-backend-url": auth.backendUrl,
             Authorization: `Bearer ${auth.token}`,
           },
+          signal: controller.signal,
         });
         const data = (await response.json()) as BarcodeApiResponse;
         if (!response.ok || data.success === false) return;
@@ -668,7 +458,8 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
         const mergedDetail = isRecord(detail) ? { ...item.raw, ...detail } : detail;
         const normalized = normalizeBarcodeRecord(mergedDetail);
         setDetailItems((current) => ({ ...current, [key]: normalized }));
-      } catch {
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") return;
         // Detail loading is best-effort; the list row still has enough data to remain usable.
       }
     },
@@ -704,8 +495,8 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     return confirm({
       title: text.unsavedConfirm,
       description: editorBarcode.barcode ? `${text.barcode}: ${editorBarcode.barcode}` : undefined,
-      details: lang === "th" ? "การเปลี่ยนแปลงในฟอร์มนี้ยังไม่ได้บันทึก ถ้ายืนยัน ระบบจะปิดฟอร์มและทิ้งข้อมูลที่แก้ไขอยู่" : "Unsaved form changes will be discarded.",
-      confirmLabel: lang === "th" ? "ทิ้งการแก้ไข" : "Discard",
+      details: text.unsavedDetail,
+      confirmLabel: text.discardLabel,
       cancelLabel: text.close,
       tone: "warning",
     });
@@ -815,15 +606,13 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     setEditorDirty(true);
   }
 
-  async function saveEditor(value: ProductBarcodeObject) {
+  async function saveEditor(value: ProductBarcodeObject, keepOpen = false) {
     if (!auth) {
       setNotice({ type: "error", text: text.apiRequired });
       return;
     }
 
-    const payload: Record<string, unknown> = { ...(value as unknown as Record<string, unknown>) };
     const guid = editorGuid || String(value.guidfixed ?? "");
-    const url = editorMode === "edit" ? `/api/product-barcode/${encodeURIComponent(guid)}` : "/api/product-barcode";
     if (editorMode === "edit" && !guid) {
       setNotice({ type: "error", text: text.missingGuid });
       return;
@@ -832,23 +621,26 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     setEditorSaving(true);
     setNotice(null);
     try {
-      const response = await fetch(url, {
-        method: editorMode === "edit" ? "PUT" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-bc-backend-url": auth.backendUrl,
-          Authorization: `Bearer ${auth.token}`,
-        },
-        body: JSON.stringify({ backendUrl: auth.backendUrl, data: payload }),
-      });
-      const data = (await response.json()) as BarcodeApiResponse;
-      if (!response.ok || data.success === false) {
+      const data =
+        editorMode === "edit"
+          ? await updateBarcode(auth, guid, value)
+          : await createBarcode(auth, value);
+      if (!data.success) {
         throw new Error(data.message || text.requestFailed);
       }
 
-      setEditorOpen(false);
-      setEditorGuid("");
-      setEditorDirty(false);
+      if (keepOpen) {
+        // "Save & add new": reset to a blank record and stay open
+        const next = emptyProductBarcode();
+        next.shopid = activeShopId;
+        setEditorGuid("");
+        setEditorDirty(false);
+        setEditorBarcode(next);
+      } else {
+        setEditorOpen(false);
+        setEditorGuid("");
+        setEditorDirty(false);
+      }
       await loadBarcodes();
       setNotice({ type: "success", text: text.saveSuccess });
     } catch (error) {
@@ -884,17 +676,8 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     setLoading(true);
     setNotice(null);
     try {
-      const response = await fetch("/api/product-barcode", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          "x-bc-backend-url": auth.backendUrl,
-          Authorization: `Bearer ${auth.token}`,
-        },
-        body: JSON.stringify({ backendUrl: auth.backendUrl, guids }),
-      });
-      const data = (await response.json()) as BarcodeApiResponse;
-      if (!response.ok || data.success === false) {
+      const data = await deleteBarcodes(auth, guids);
+      if (!data.success) {
         throw new Error(data.message || text.requestFailed);
       }
 
@@ -909,19 +692,20 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     }
   }
 
-  async function deleteCurrentItem() {
+  async function deleteCurrentItem(itemOverride?: ProductBarcodeRecord) {
     if (!auth) {
       setNotice({ type: "error", text: text.apiRequired });
       return;
     }
 
-    const guid = (selected?.guidFixed || editorGuid || String(editorBarcode.guidfixed ?? "")).trim();
+    const target = itemOverride ?? selected;
+    const guid = (target?.guidFixed || editorGuid || String(editorBarcode.guidfixed ?? "")).trim();
     if (!guid) {
       setNotice({ type: "error", text: text.missingGuid });
       return;
     }
 
-    const barcode = selected?.barcode ?? editorBarcode.barcode ?? "";
+    const barcode = target?.barcode ?? editorBarcode.barcode ?? "";
     const confirmed = await confirm({
       title: text.deleteCurrentConfirm,
       description: barcode ? `${text.barcode}: ${barcode}` : undefined,
@@ -935,15 +719,8 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     setLoading(true);
     setNotice(null);
     try {
-      const response = await fetch(`/api/product-barcode/${encodeURIComponent(guid)}`, {
-        method: "DELETE",
-        headers: {
-          "x-bc-backend-url": auth.backendUrl,
-          Authorization: `Bearer ${auth.token}`,
-        },
-      });
-      const data = (await response.json()) as BarcodeApiResponse;
-      if (!response.ok || data.success === false) {
+      const data = await deleteBarcodes(auth, [guid]);
+      if (!data.success) {
         throw new Error(data.message || text.requestFailed);
       }
 
@@ -1108,8 +885,10 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
         style={productSplitStyle}
       >
         <Card
-          className="min-w-0 overflow-hidden xl:flex xl:h-full xl:min-h-0 xl:flex-col"
+          aria-label={text.title}
+          className="min-w-0 overflow-hidden focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none xl:flex xl:h-full xl:min-h-0 xl:flex-col"
           onKeyDown={handleListKeyDown}
+          role="list"
           tabIndex={0}
         >
           <CardHeader className="shrink-0 border-b border-border p-3">
@@ -1118,8 +897,8 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   className="pl-9"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
+                  value={searchInput}
+                  onChange={(event) => setSearchInput(event.target.value)}
                   placeholder={text.search}
                 />
               </div>
@@ -1194,14 +973,14 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
             ) : null}
           </CardHeader>
           <CardContent className="grid min-h-[420px] p-0 xl:min-h-0 xl:flex-1 xl:grid-rows-[auto_minmax(0,1fr)]">
-            <div className="hidden grid-cols-[1.2fr_2fr_0.9fr_1fr_0.9fr_0.9fr_auto] gap-2 border-b border-border bg-muted/70 px-3 py-2 text-xs font-semibold text-foreground lg:grid">
+            <div className="bc-list-header hidden lg:grid grid-cols-[1.2fr_2fr_0.8fr_1.1fr_0.8fr_0.9fr_80px] gap-x-2">
               <span>{text.barcode}</span>
               <span>{text.productName}</span>
               <span>{text.unit}</span>
               <span>{text.itemCode}</span>
               <span>{text.balance}</span>
               <span className="text-right">{text.retailPrice}</span>
-              <span className="text-center">{showImage || selectMode ? text.image : ""}</span>
+              <span className="text-center">{text.actions}</span>
             </div>
             <div className="relative min-h-[360px] xl:min-h-0">
               {loading ? (
@@ -1228,10 +1007,12 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
                       index={index}
                       item={item}
                       key={item.guidFixed || item.barcode}
+                      onDelete={() => void deleteCurrentItem(item)}
                       onEdit={() => void openEditEditor(item)}
                       onSelect={() => void selectListItem(item)}
                       onToggleChecked={() => toggleChecked(item.barcode)}
                       selected={selected?.barcode === item.barcode}
+                      editing={selected?.barcode === item.barcode && editorOpen && editorMode === "edit"}
                       selectMode={selectMode}
                       showImage={showImage}
                       text={text}
@@ -1244,7 +1025,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
         </Card>
 
         <div
-          aria-label="ปรับขนาดรายการสินค้าและรายละเอียดบาร์โค้ด"
+          aria-label={text.resizeAriaLabel}
           aria-orientation="vertical"
           aria-valuemax={PRODUCT_SPLIT_MAX_LEFT}
           aria-valuemin={PRODUCT_SPLIT_MIN_LEFT}
@@ -1277,11 +1058,13 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
             value={editorBarcode}
             onChange={handleEditorChange}
             onSave={(val) => void saveEditor(val)}
+            onSaveAndNew={(val) => void saveEditor(val, true)}
             onCancel={() => void closeEditor()}
             saving={editorSaving}
             language={lang}
             shopLanguages={shopLanguages}
             auth={auth}
+            companyGuid={workspace?.branch?.company_guid}
             extraActions={
               editorMode === "edit" ? (
                 <>
@@ -1320,10 +1103,12 @@ function BarcodeRow({
   imageUrl,
   index,
   item,
+  onDelete,
   onEdit,
   onSelect,
   onToggleChecked,
   selected,
+  editing,
   selectMode,
   showImage,
   text,
@@ -1332,24 +1117,42 @@ function BarcodeRow({
   imageUrl: string;
   index: number;
   item: ProductBarcodeRecord;
+  onDelete: () => void;
   onEdit: () => void;
   onSelect: () => void;
   onToggleChecked: () => void;
   selected: boolean;
+  editing: boolean;
   selectMode: boolean;
   showImage: boolean;
   text: BarcodeText;
 }) {
+  function handleRowKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    if (selectMode) onToggleChecked();
+    else onSelect();
+  }
+
   return (
-    <button
+    <div
+      aria-label={`${text.barcode}: ${item.barcode || item.itemCode || "-"}`}
+      aria-pressed={selected}
       className={cn(
-        "grid w-full min-w-0 gap-2 border-b border-border px-3 py-2 text-left text-sm transition hover:bg-primary/5 lg:grid-cols-[1.2fr_2fr_0.9fr_1fr_0.9fr_0.9fr_auto]",
-        index % 2 === 0 ? "bg-background" : "bg-muted/20",
-        selected && "bg-primary/10 font-semibold",
+        "bc-list-row grid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 lg:grid-cols-[1.2fr_2fr_0.8fr_1.1fr_0.8fr_0.9fr_80px] gap-x-2",
+        editing
+          ? "bg-amber-100/70 hover:bg-amber-100/90 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100 border-amber-200/50"
+          : selected
+            ? "bg-primary/10 hover:bg-primary/15"
+            : index % 2 === 0
+              ? "bg-background hover:bg-primary/5"
+              : "bg-muted/20 hover:bg-primary/5",
       )}
       onClick={selectMode ? onToggleChecked : onSelect}
       onDoubleClick={selectMode ? undefined : onEdit}
-      type="button"
+      onKeyDown={handleRowKeyDown}
+      role="button"
+      tabIndex={0}
     >
       <div className="min-w-0">
         <span className="lg:hidden text-xs font-semibold text-muted-foreground">{text.barcode}</span>
@@ -1379,7 +1182,11 @@ function BarcodeRow({
         <span className="lg:hidden text-xs font-semibold text-muted-foreground">{text.retailPrice}</span>
         <div>{formatMoney(item.price)}</div>
       </div>
-      <div className="flex items-center justify-start gap-2 lg:justify-center">
+      <div
+        className="flex items-center justify-start gap-2 lg:justify-center"
+        onClick={(event) => event.stopPropagation()}
+        onDoubleClick={(event) => event.stopPropagation()}
+      >
         {showImage ? (
           imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -1395,8 +1202,30 @@ function BarcodeRow({
             {checked ? <CheckSquare size={14} /> : null}
           </span>
         ) : null}
+        <Button
+          aria-label={text.edit}
+          className="size-8 rounded-lg bg-background/90 text-primary shadow-sm hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
+          onClick={onEdit}
+          size="icon"
+          title={text.edit}
+          type="button"
+          variant="outline"
+        >
+          <Pencil className="size-4" />
+        </Button>
+        <Button
+          aria-label={text.delete}
+          className="size-8 rounded-lg bg-background/90 text-destructive shadow-sm hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+          onClick={onDelete}
+          size="icon"
+          title={text.delete}
+          type="button"
+          variant="outline"
+        >
+          <Trash2 className="size-4" />
+        </Button>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -1457,11 +1286,33 @@ function ProductBarcodeDetail({
     : [];
   const statusFields = item
     ? [
-        { label: text.itemType, value: String(item.itemType || "") },
+        {
+          label: text.itemType,
+          value: item.itemType === 0 ? text.itemTypeStock
+            : item.itemType === 1 ? text.itemTypeService
+            : item.itemType === 2 ? text.itemTypeSet
+            : item.itemType === 3 ? text.itemTypeNotStock
+            : String(item.itemType || ""),
+        },
         { label: text.productType, value: String(item.productType || "") },
-        { label: text.foodType, value: String(item.foodType || "") },
-        { label: text.materialType, value: String(item.materialType || "") },
-        { label: text.isStock, value: String(item.isStock || "") },
+        {
+          label: text.foodType,
+          value: item.foodType === 0 ? text.foodTypeFood
+            : item.foodType === 1 ? text.foodTypeDrink
+            : item.foodType === 2 ? text.foodTypeAlcohol
+            : item.foodType === 3 ? text.foodTypeOther
+            : String(item.foodType || ""),
+        },
+        {
+          label: text.materialType,
+          value: item.materialType === 0 ? text.materialGeneral
+            : item.materialType === 1 ? text.materialMaterial
+            : item.materialType === 2 ? text.materialSemiFinished
+            : item.materialType === 3 ? text.materialSet
+            : item.materialType === 4 ? text.materialAgricultural
+            : String(item.materialType || ""),
+        },
+        { label: text.isStock, value: formatBoolean(item.isStock === 1, text) },
         { label: text.isMainBarcode, value: formatBoolean(item.isMainBarcode, text) },
         { label: text.isMainItem, value: formatBoolean(item.isMainItem, text) },
         { label: text.isUseSubBarcodes, value: formatBoolean(item.isUseSubBarcodes, text) },
@@ -1537,7 +1388,7 @@ function ProductBarcodeDetail({
               <p className="mt-1 text-sm text-muted-foreground">{item.name}</p>
             </div>
             <DetailSection fields={basicFields} title={text.basicInfo} />
-            <DetailSection fields={classificationFields} title={text.classification} />
+            <DetailSection fields={classificationFields} title={text.classificationSection} />
             <DetailSection fields={stockFields} title={text.stockAndUnit} />
             <DetailSection fields={statusFields} title={text.taxAndFlags} />
             <DetailSection fields={relationFields} title={text.relations} />
@@ -1647,41 +1498,7 @@ function readWorkspaceSession(): WorkspaceSession | null {
   }
 }
 
-function languageCodesFromWorkspace(workspace: WorkspaceSession | null): string[] {
-  const shopInfo = isRecord(workspace?.shopInfo) ? workspace.shopInfo : {};
-  const settings = isRecord(shopInfo.settings) ? shopInfo.settings : {};
-  const rows = Array.isArray(settings.languageconfigs)
-    ? settings.languageconfigs
-        .filter(isRecord)
-        .map((item) => ({
-          code: supportedLanguageCode(item.code, ""),
-          isUse: item.is_use === undefined && item.isuse === undefined ? true : booleanFromUnknown(item.is_use ?? item.isuse),
-          isDefault: booleanFromUnknown(item.isdefault),
-        }))
-        .filter((item) => item.code && item.isUse)
-    : [];
-  const configuredDefault = supportedLanguageCode(settings.language, "");
-  const primary = rows.find((item) => item.isDefault)?.code || configuredDefault || rows[0]?.code || "th";
-  const ordered = [primary, ...rows.map((item) => item.code).filter((code) => code && code !== primary)];
-  return Array.from(new Set(ordered));
-}
-
-function supportedLanguageCode(value: unknown, fallback: string): string {
-  const raw = typeof value === "string" ? value.trim().toLowerCase() : "";
-  if (!raw) return fallback;
-  const normalized = normalizeLanguage(raw);
-  return LANGUAGES.some((item) => item.code === normalized) ? normalized : fallback;
-}
-
-function booleanFromUnknown(value: unknown): boolean {
-  if (typeof value === "boolean") return value;
-  if (typeof value === "number") return value !== 0;
-  if (typeof value === "string") {
-    const normalized = value.trim().toLowerCase();
-    return normalized === "true" || normalized === "1" || normalized === "yes" || normalized === "y";
-  }
-  return false;
-}
+// Language logic is now imported from names-editor.tsx
 
 function normalizeBarcodeList(value: unknown): ProductBarcodeRecord[] {
   if (!Array.isArray(value)) return [];
@@ -1884,19 +1701,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function toNumberOrNull(value: string): number | null {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  const parsed = Number(trimmed);
-  return Number.isFinite(parsed) ? parsed : null;
-}
+const moneyFormatter = new Intl.NumberFormat("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const numberFormatter = new Intl.NumberFormat("th-TH", { maximumFractionDigits: 4 });
 
 function formatMoney(value: number): string {
-  return new Intl.NumberFormat("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value || 0);
+  return moneyFormatter.format(value || 0);
 }
 
 function formatNumber(value: number): string {
-  return new Intl.NumberFormat("th-TH", { maximumFractionDigits: 4 }).format(value || 0);
+  return numberFormatter.format(value || 0);
 }
 
 function formatCount(value: number): string {

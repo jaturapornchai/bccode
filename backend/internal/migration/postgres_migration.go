@@ -2,44 +2,54 @@ package migration
 
 import (
 	"smlcloudplatform/internal/config"
+	"smlcloudplatform/internal/goapi/mydb"
+	orgBranch "smlcloudplatform/internal/organization/branch/models"
+	orgCompany "smlcloudplatform/internal/organization/company/models"
+	pbModels "smlcloudplatform/internal/product/productbarcode/models"
+	whModels "smlcloudplatform/internal/warehouse/models"
 	vfgl "smlcloudplatform/internal/vfgl/journal/models"
 	"smlcloudplatform/pkg/microservice"
 )
 
 func StartMigrateModel(ms *microservice.Microservice, cfg config.IConfig) error {
-	pst := ms.Persister(cfg.PersisterConfig())
+	// Initialize the dynamic DB connection/creation hook
+	microservice.DBCheckHook = func(dbName string) error {
+		_, err := mydb.GetGlobalConnectionFromPool(dbName)
+		return err
+	}
 
-	// pst.DropTable(&models.InventoryData{}, &models.InventoryOption{}, &models.Option{}, &models.InventoryImage{}, &models.InventoryTag{}, &models.Choice{})
-
-	// if err := pst.SetupJoinTable(&models.InventoryData{}, "Options", &models.InventoryOption{}); err != nil {
-	// 	fmt.Printf("Failed to setup join table , got error %v \n", err)
-	// 	return err
-	// }
-
-	// pst.DropTable(vfgl.JournalPg{}, vfgl.JournalDetailPg{})
-
-	pst.AutoMigrate(
-		// &saleinvoice.SaleinvoiceTable{},
-		// &saleinvoice.SaleinvoiceDetailTable{},
-		// &models.InventoryImage{},
-		// &models.InventoryTag{},
-
-		// &models.CategoryData{},
-
-		// &models.InventoryData{},
-		// &models.InventoryOption{},
-		// &models.Option{},
-		// &models.Choice{},
-		// &models.InventoryIndex{},
-		// models.Trans{},
-		// models.TransItemDetail{},
+	// Register models for auto-migration inside tenant databases
+	microservice.RegisterTenantModel(
 		vfgl.JournalPg{},
 		vfgl.JournalDetailPg{},
 		vfgl.JournalVatPg{},
 		vfgl.JournalTaxPg{},
+
+		orgCompany.CompanyPg{},
+		orgBranch.BranchPg{},
+		whModels.WarehousePg{},
+		whModels.CompanyWarehousePg{},
+		whModels.ZonePg{},
+		whModels.ShelfPg{},
+		pbModels.ProductBarcodePg{},
 	)
 
-	// pst.AutoMigrate()
+	// Run migration for the default/admin database
+	pst := ms.Persister(cfg.PersisterConfig())
+	pst.AutoMigrate(
+		vfgl.JournalPg{},
+		vfgl.JournalDetailPg{},
+		vfgl.JournalVatPg{},
+		vfgl.JournalTaxPg{},
+
+		orgCompany.CompanyPg{},
+		orgBranch.BranchPg{},
+		whModels.WarehousePg{},
+		whModels.CompanyWarehousePg{},
+		whModels.ZonePg{},
+		whModels.ShelfPg{},
+		pbModels.ProductBarcodePg{},
+	)
 
 	return nil
 }

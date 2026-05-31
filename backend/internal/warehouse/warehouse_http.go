@@ -4,990 +4,592 @@ import (
 	"encoding/json"
 	"net/http"
 	"smlcloudplatform/internal/config"
-	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/utils"
-	"smlcloudplatform/internal/warehouse/models"
-	"smlcloudplatform/internal/warehouse/repositories"
-	"smlcloudplatform/internal/warehouse/services"
+	warehouseModels "smlcloudplatform/internal/warehouse/models"
 	"smlcloudplatform/pkg/microservice"
-)
+	"time"
 
-type IWarehouseHttp interface{}
+	"gorm.io/gorm"
+)
 
 type WarehouseHttp struct {
 	ms  *microservice.Microservice
 	cfg config.IConfig
-	svc services.IWarehouseHttpService
 }
 
 func NewWarehouseHttp(ms *microservice.Microservice, cfg config.IConfig) WarehouseHttp {
-	pst := ms.MongoPersister(cfg.MongoPersisterConfig())
-	cache := ms.Cacher(cfg.CacherConfig())
-	producer := ms.Producer(cfg.MQConfig())
-
-	repoMq := repositories.NewWarehouseMessageQueueRepository(producer)
-	repo := repositories.NewWarehouseRepository(pst)
-
-	masterSyncCacheRepo := mastersync.NewMasterSyncCacheRepository(cache)
-	svc := services.NewWarehouseHttpService(repo, repoMq, masterSyncCacheRepo)
-
 	return WarehouseHttp{
 		ms:  ms,
 		cfg: cfg,
-		svc: svc,
 	}
+}
+
+type WarehouseResponse struct {
+	warehouseModels.WarehousePg
+	Companies []string `json:"company_guids"`
 }
 
 func (h WarehouseHttp) RegisterHttp() {
-
-	h.ms.POST("/warehouse/bulk", h.SaveBulk)
-
-	h.ms.GET("/warehouse", h.SearchWarehousePage)
-	h.ms.GET("/warehouse/list", h.SearchWarehouseStep)
-	h.ms.GET("/warehouse/location", h.SearchWarehouseLocationPage)
-	h.ms.GET("/warehouse/location/shelf", h.SearchWarehouseLocationShelfPage)
 	h.ms.POST("/warehouse", h.CreateWarehouse)
+	h.ms.GET("/warehouse", h.SearchWarehouse)
 	h.ms.GET("/warehouse/:id", h.InfoWarehouse)
-	h.ms.GET("/warehouse/code/:code", h.InfoWarehouseByCode)
 	h.ms.PUT("/warehouse/:id", h.UpdateWarehouse)
 	h.ms.DELETE("/warehouse/:id", h.DeleteWarehouse)
-	h.ms.DELETE("/warehouse", h.DeleteWarehouseByGUIDs)
 
-	h.ms.GET("/warehouse/:warehouseCode/location/:locationCode", h.InfoLocation)
-	h.ms.POST("/warehouse/:warehouseCode/location", h.CreateLocation)
-	h.ms.PUT("/warehouse/:warehouseCode/location/:locationCode", h.UpdateLocation)
-	h.ms.DELETE("/warehouse/:warehouseCode/location", h.DeleteLocation)
+	// Zone endpoints
+	h.ms.POST("/warehouse/:warehouseGuid/zone", h.CreateZone)
+	h.ms.GET("/warehouse/:warehouseGuid/zone", h.SearchZone)
+	h.ms.GET("/warehouse/:warehouseGuid/zone/:id", h.InfoZone)
+	h.ms.PUT("/warehouse/:warehouseGuid/zone/:id", h.UpdateZone)
+	h.ms.DELETE("/warehouse/:warehouseGuid/zone/:id", h.DeleteZone)
 
-	h.ms.GET("/warehouse/:warehouseCode/location/:locationCode/shelf/:shelfCode", h.InfoShelf)
-	h.ms.POST("/warehouse/:warehouseCode/location/:locationCode/shelf", h.CreateShelf)
-	h.ms.PUT("/warehouse/:warehouseCode/location/:locationCode/shelf/:shelfCode", h.UpdateShelf)
-	h.ms.DELETE("/warehouse/:warehouseCode/location/:locationCode/shelf", h.DeleteShelf)
-
-	// ProductBarcode in Shelf endpoints
-	h.ms.GET("/warehouse/:warehouseCode/location/:locationCode/shelf/:shelfCode/products", h.GetShelfProducts)
-	h.ms.POST("/warehouse/:warehouseCode/location/:locationCode/shelf/:shelfCode/products", h.AddProductToShelf)
-	h.ms.DELETE("/warehouse/:warehouseCode/location/:locationCode/shelf/:shelfCode/products/:productGuidFixed", h.RemoveProductFromShelf)
-
-	// Bulk ProductBarcode operations
-	h.ms.POST("/warehouse/:warehouseCode/location/:locationCode/shelf/:shelfCode/products/bulk", h.BulkAddProductsToShelf)
-	h.ms.DELETE("/warehouse/:warehouseCode/location/:locationCode/shelf/:shelfCode/products/bulk", h.BulkRemoveProductsFromShelf)
+	// Shelf endpoints
+	h.ms.POST("/warehouse/:warehouseGuid/zone/:zoneGuid/shelf", h.CreateShelf)
+	h.ms.GET("/warehouse/:warehouseGuid/zone/:zoneGuid/shelf", h.SearchShelf)
+	h.ms.GET("/warehouse/:warehouseGuid/zone/:zoneGuid/shelf/:id", h.InfoShelf)
+	h.ms.PUT("/warehouse/:warehouseGuid/zone/:zoneGuid/shelf/:id", h.UpdateShelf)
+	h.ms.DELETE("/warehouse/:warehouseGuid/zone/:zoneGuid/shelf/:id", h.DeleteShelf)
 }
 
-// Create Warehouse godoc
-// @Description Create Warehouse
-// @Tags		Warehouse
-// @Param		Warehouse  body      models.Warehouse  true  "Warehouse"
-// @Accept 		json
-// @Success		201	{object}	common.ResponseSuccessWithID
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /warehouse [post]
 func (h WarehouseHttp) CreateWarehouse(ctx microservice.IContext) error {
-	authUsername := ctx.UserInfo().Username
 	shopID := ctx.UserInfo().ShopID
 	input := ctx.ReadInput()
 
-	docReq := &models.Warehouse{}
-	err := json.Unmarshal([]byte(input), &docReq)
-
-	if err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+	type CreateWarehouseRequest struct {
+		warehouseModels.WarehousePg
+		CompanyGuids []string `json:"company_guids"`
 	}
 
-	if err = ctx.Validate(docReq); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	idx, err := h.svc.CreateWarehouse(shopID, authUsername, *docReq)
-
-	if err != nil {
+	var req CreateWarehouseRequest
+	if err := json.Unmarshal([]byte(input), &req); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
+		return err
+	}
+
+	req.ShopID = shopID
+	if req.GuidFixed == "" {
+		req.GuidFixed = utils.NewGUID()
+	}
+	req.CreatedAt = time.Now()
+	req.UpdatedAt = time.Now()
+	req.IsActive = true
+
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	db := pst.DBClient()
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&req.WarehousePg).Error; err != nil {
+			return err
+		}
+
+		for _, compGuid := range req.CompanyGuids {
+			cw := warehouseModels.CompanyWarehousePg{
+				CompanyGuid:   compGuid,
+				WarehouseGuid: req.GuidFixed,
+			}
+			if err := tx.Create(&cw).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
 
 	ctx.Response(http.StatusCreated, common.ApiResponse{
 		Success: true,
-		ID:      idx,
+		ID:      req.GuidFixed,
 	})
 	return nil
 }
 
-// Update Warehouse godoc
-// @Description Update Warehouse
-// @Tags		Warehouse
-// @Param		id  path      string  true  "Warehouse ID"
-// @Param		Warehouse  body      models.Warehouse  true  "Warehouse"
-// @Accept 		json
-// @Success		201	{object}	common.ResponseSuccessWithID
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /warehouse/{id} [put]
-func (h WarehouseHttp) UpdateWarehouse(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
-
-	id := ctx.Param("id")
-	input := ctx.ReadInput()
-
-	docReq := &models.Warehouse{}
-	err := json.Unmarshal([]byte(input), &docReq)
-
-	if err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	if err = ctx.Validate(docReq); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	err = h.svc.UpdateWarehouse(shopID, id, authUsername, *docReq)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusCreated, common.ApiResponse{
-		Success: true,
-		ID:      id,
-	})
-
-	return nil
-}
-
-// Create Warehouse Location godoc
-// @Description Create Warehouse Location
-// @Tags		Warehouse
-// @Param		warehouseCode  path      string  true  "Warehouse Code"
-// @Param		LocationRequest  body      models.LocationRequest  true  "Location Request"
-// @Accept 		json
-// @Success		201	{object}	common.ResponseSuccessWithID
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /warehouse/{warehouseCode}/location [post]
-func (h WarehouseHttp) CreateLocation(ctx microservice.IContext) error {
-	authUsername := ctx.UserInfo().Username
+func (h WarehouseHttp) SearchWarehouse(ctx microservice.IContext) error {
 	shopID := ctx.UserInfo().ShopID
-	input := ctx.ReadInput()
+	companyGuid := ctx.QueryParam("company_guid")
 
-	warehouseCode := ctx.Param("warehouseCode")
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	db := pst.DBClient()
 
-	docReq := &models.LocationRequest{}
-	err := json.Unmarshal([]byte(input), &docReq)
-
-	if err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
+	var list []warehouseModels.WarehousePg
+	if companyGuid != "" {
+		// Get warehouses shared with this company
+		var whGuids []string
+		if err := db.Table("company_warehouses").Where("company_guid = ?", companyGuid).Pluck("warehouse_guid", &whGuids).Error; err != nil {
+			ctx.ResponseError(http.StatusInternalServerError, err.Error())
+			return err
+		}
+		if len(whGuids) == 0 {
+			ctx.Response(http.StatusOK, common.ApiResponse{
+				Success: true,
+				Data:    []WarehouseResponse{},
+			})
+			return nil
+		}
+		if err := db.Where("shopid = ? AND guid_fixed IN ?", shopID, whGuids).Preload("Zones.Shelves").Find(&list).Error; err != nil {
+			ctx.ResponseError(http.StatusInternalServerError, err.Error())
+			return err
+		}
+	} else {
+		if err := db.Where("shopid = ?", shopID).Preload("Zones.Shelves").Find(&list).Error; err != nil {
+			ctx.ResponseError(http.StatusInternalServerError, err.Error())
+			return err
+		}
 	}
 
-	if err = ctx.Validate(docReq); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	err = h.svc.CreateLocation(shopID, authUsername, warehouseCode, *docReq)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusCreated, common.ApiResponse{
-		Success: true,
-	})
-	return nil
-}
-
-// Update Warehouse Location godoc
-// @Description Update Warehouse Location
-// @Tags		Warehouse
-// @Param		warehouseCode  path      string  true  "Warehouse Code"
-// @Param		locationCode  path      string  true  "location Code"
-// @Param		LocationRequest  body      models.LocationRequest  true  "Location Request"
-// @Accept 		json
-// @Success		201	{object}	common.ResponseSuccessWithID
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /warehouse/{warehouseCode}/location/{locationCode} [put]
-func (h WarehouseHttp) UpdateLocation(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
-
-	warehouseCode := ctx.Param("warehouseCode")
-	locationCode := ctx.Param("locationCode")
-
-	input := ctx.ReadInput()
-
-	docReq := &models.LocationRequest{}
-	err := json.Unmarshal([]byte(input), &docReq)
-
-	if err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	if err = ctx.Validate(docReq); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	err = h.svc.UpdateLocation(shopID, authUsername, warehouseCode, locationCode, *docReq)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusCreated, common.ApiResponse{
-		Success: true,
-	})
-
-	return nil
-}
-
-// Delete Warehouse Location godoc
-// @Description Delete Warehouse Location
-// @Tags		Warehouse
-// @Param		warehouseCode  path      string  true  "Warehouse Code"
-// @Param		LocationCode  body      []string  true  "Location Code"
-// @Accept 		json
-// @Success		200	{object}	common.ResponseSuccessWithID
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /warehouse/{warehouseCode}/location/ [delete]
-func (h WarehouseHttp) DeleteLocation(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
-	authUsername := userInfo.Username
-
-	input := ctx.ReadInput()
-
-	warehouseCode := ctx.Param("warehouseCode")
-
-	docReq := []string{}
-	err := json.Unmarshal([]byte(input), &docReq)
-
-	if err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	err = h.svc.DeleteLocationByCodes(shopID, authUsername, warehouseCode, docReq)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
+	var responseList []WarehouseResponse
+	for _, wh := range list {
+		var compGuids []string
+		db.Table("company_warehouses").Where("warehouse_guid = ?", wh.GuidFixed).Pluck("company_guid", &compGuids)
+		responseList = append(responseList, WarehouseResponse{
+			WarehousePg: wh,
+			Companies:   compGuids,
+		})
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
-	})
-
-	return nil
-}
-
-// Create Warehouse Shelf godoc
-// @Description Create Warehouse Shelf
-// @Tags		Warehouse
-// @Param		warehouseCode  path      string  true  "Warehouse Code"
-// @Param		locationCode  path      string  true  "Location Code"
-// @Param		ShelfRequest  body      models.ShelfRequest  true  "Shelf Request"
-// @Accept 		json
-// @Success		201	{object}	common.ResponseSuccessWithID
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /warehouse/{warehouseCode}/location/{locationCode}/shelf [post]
-func (h WarehouseHttp) CreateShelf(ctx microservice.IContext) error {
-	authUsername := ctx.UserInfo().Username
-	shopID := ctx.UserInfo().ShopID
-	input := ctx.ReadInput()
-
-	warehouseCode := ctx.Param("warehouseCode")
-	locationCode := ctx.Param("locationCode")
-
-	docReq := &models.ShelfRequest{}
-	err := json.Unmarshal([]byte(input), &docReq)
-
-	if err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	if err = ctx.Validate(docReq); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	err = h.svc.CreateShelf(shopID, authUsername, warehouseCode, locationCode, *docReq)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusCreated, common.ApiResponse{
-		Success: true,
+		Data:    responseList,
 	})
 	return nil
 }
 
-// Update Warehouse Shelf godoc
-// @Description Update Warehouse Shelf
-// @Tags		Warehouse
-// @Param		warehouseCode  path      string  true  "Warehouse Code"
-// @Param		locationCode  path      string  true  "location Code"
-// @Param		shelfCode  path      string  true  "shelf Code"
-// @Param		ShelfRequest  body      models.ShelfRequest  true  "Shelf Request"
-// @Accept 		json
-// @Success		201	{object}	common.ResponseSuccessWithID
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /warehouse/{warehouseCode}/location/{locationCode}/shelf/{shelfCode} [put]
-func (h WarehouseHttp) UpdateShelf(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
-
-	warehouseCode := ctx.Param("warehouseCode")
-	locationCode := ctx.Param("locationCode")
-	shelfCode := ctx.Param("shelfCode")
-
-	input := ctx.ReadInput()
-
-	docReq := &models.ShelfRequest{}
-	err := json.Unmarshal([]byte(input), &docReq)
-
-	if err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	if err = ctx.Validate(docReq); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	err = h.svc.UpdateShelf(shopID, authUsername, warehouseCode, locationCode, shelfCode, *docReq)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusCreated, common.ApiResponse{
-		Success: true,
-	})
-
-	return nil
-}
-
-// Delete Warehouse Shelf godoc
-// @Description Delete Warehouse Shelf
-// @Tags		Warehouse
-// @Param		warehouseCode  path      string  true  "Warehouse Code"
-// @Param		locationCode  path      string  true  "location Code"
-// @Param		ShelfCode  body      []string  true  "Shelf Code"
-// @Accept 		json
-// @Success		200	{object}	common.ResponseSuccessWithID
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /warehouse/{warehouseCode}/location/{locationCode}/shelf [delete]
-func (h WarehouseHttp) DeleteShelf(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
-	authUsername := userInfo.Username
-
-	input := ctx.ReadInput()
-
-	warehouseCode := ctx.Param("warehouseCode")
-	locationCode := ctx.Param("locationCode")
-
-	docReq := []string{}
-	err := json.Unmarshal([]byte(input), &docReq)
-
-	if err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	err = h.svc.DeleteShelfByCodes(shopID, authUsername, warehouseCode, locationCode, docReq)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-	})
-
-	return nil
-}
-
-// Delete Warehouse godoc
-// @Description Delete Warehouse
-// @Tags		Warehouse
-// @Param		id  path      string  true  "Warehouse ID"
-// @Accept 		json
-// @Success		200	{object}	common.ResponseSuccessWithID
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /warehouse/{id} [delete]
-func (h WarehouseHttp) DeleteWarehouse(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
-	authUsername := userInfo.Username
-
-	id := ctx.Param("id")
-
-	err := h.svc.DeleteWarehouse(shopID, id, authUsername)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		ID:      id,
-	})
-
-	return nil
-}
-
-// Delete Warehouse godoc
-// @Description Delete Warehouse
-// @Tags		Warehouse
-// @Param		Warehouse  body      []string  true  "Warehouse GUIDs"
-// @Accept 		json
-// @Success		200	{object}	common.ResponseSuccessWithID
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /warehouse [delete]
-func (h WarehouseHttp) DeleteWarehouseByGUIDs(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
-	authUsername := userInfo.Username
-
-	input := ctx.ReadInput()
-
-	docReq := []string{}
-	err := json.Unmarshal([]byte(input), &docReq)
-
-	if err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	err = h.svc.DeleteWarehouseByGUIDs(shopID, authUsername, docReq)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-	})
-
-	return nil
-}
-
-// Get Warehouse godoc
-// @Description get struct array by ID
-// @Tags		Warehouse
-// @Param		id  path      string  true  "Warehouse ID"
-// @Accept 		json
-// @Success		200	{object}	common.ApiResponse
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /warehouse/{id} [get]
 func (h WarehouseHttp) InfoWarehouse(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
-
+	shopID := ctx.UserInfo().ShopID
 	id := ctx.Param("id")
 
-	h.ms.Logger.Debugf("Get Warehouse %v", id)
-	doc, err := h.svc.InfoWarehouse(shopID, id)
-
-	if err != nil {
-		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	db := pst.DBClient()
+	var data warehouseModels.WarehousePg
+	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).Preload("Zones.Shelves").First(&data).Error; err != nil {
+		ctx.ResponseError(http.StatusNotFound, "Warehouse not found")
 		return err
 	}
+
+	var compGuids []string
+	db.Table("company_warehouses").Where("warehouse_guid = ?", data.GuidFixed).Pluck("company_guid", &compGuids)
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
-		Data:    doc,
-	})
-	return nil
-}
-
-// Get Warehouse By Code godoc
-// @Description get Warehouse by code
-// @Tags		Warehouse
-// @Param		id  path      string  true  "Warehouse ID"
-// @Accept 		json
-// @Success		200	{object}	common.ApiResponse
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /warehouse/code/{code} [get]
-func (h WarehouseHttp) InfoWarehouseByCode(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
-
-	code := ctx.Param("code")
-
-	doc, err := h.svc.InfoWarehouseByCode(shopID, code)
-
-	if err != nil {
-		h.ms.Logger.Errorf("Error getting document by code %v: %v", code, err)
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		Data:    doc,
-	})
-	return nil
-}
-
-// List Warehouse godoc
-// @Description List Warehouse
-// @Tags		Warehouse
-// @Param		q		query	string		false  "Search Value"
-// @Param		page	query	integer		false  "page"
-// @Param		limit	query	integer		false  "limit"
-// @Accept 		json
-// @Success		200	{array}		common.ApiResponse
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /warehouse [get]
-func (h WarehouseHttp) SearchWarehousePage(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
-
-	pageable := utils.GetPageable(ctx.QueryParam)
-
-	docList, pagination, err := h.svc.SearchWarehouse(shopID, map[string]interface{}{}, pageable)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success:    true,
-		Data:       docList,
-		Pagination: pagination,
-	})
-	return nil
-}
-
-// Get List Location By Code godoc
-// @Description get Location by code
-// @Tags		Warehouse
-// @Param		warehouseCode  path      string  true  "Warehouse Code"
-// @Param		locationCode  path      string  true  "Location Code"
-// @Accept 		json
-// @Success		200	{object}	common.ApiResponse
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /warehouse/{warehouseCode}/location/{locationCode} [get]
-func (h WarehouseHttp) InfoLocation(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
-
-	warehouseCode := ctx.Param("warehouseCode")
-	locationCode := ctx.Param("locationCode")
-
-	doc, err := h.svc.InfoLocation(shopID, warehouseCode, locationCode)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		Data:    doc,
-	})
-	return nil
-}
-
-// List Warehouse Location godoc
-// @Description get data warehouse location list
-// @Tags		Warehouse
-// @Param		q		query	string		false  "Search Value"
-// @Param		page	query	integer		false  "page"
-// @Param		limit	query	integer		false  "limit"
-// @Accept 		json
-// @Success		200	{array}		common.ApiResponse
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /warehouse/location [get]
-func (h WarehouseHttp) SearchWarehouseLocationPage(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
-
-	pageable := utils.GetPageable(ctx.QueryParam)
-
-	docList, pagination, err := h.svc.SearchLocation(shopID, pageable)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success:    true,
-		Data:       docList,
-		Pagination: pagination,
-	})
-	return nil
-}
-
-// Get Shelf By Code godoc
-// @Description get Shelf by code
-// @Tags		Warehouse
-// @Param		warehouseCode  path      string  true  "Warehouse Code"
-// @Param		locationCode  path      string  true  "Location Code"
-// @Param		shelfCode  path      string  true  "Shelf Code"
-// @Accept 		json
-// @Success		200	{object}	common.ApiResponse
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /warehouse/{warehouseCode}/location/{locationCode}/shelf/{shelfCode} [get]
-func (h WarehouseHttp) InfoShelf(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
-
-	warehouseCode := ctx.Param("warehouseCode")
-	locationCode := ctx.Param("locationCode")
-	shelfCode := ctx.Param("shelfCode")
-
-	doc, err := h.svc.InfoShelf(shopID, warehouseCode, locationCode, shelfCode)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		Data:    doc,
-	})
-	return nil
-}
-
-// List Warehouse Location Shelf godoc
-// @Description get data warehouse location shelf list
-// @Tags		Warehouse
-// @Param		q		query	string		false  "Search Value"
-// @Param		page	query	integer		false  "page"
-// @Param		limit	query	integer		false  "limit"
-// @Accept 		json
-// @Success		200	{array}		common.ApiResponse
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /warehouse/location/shelf [get]
-func (h WarehouseHttp) SearchWarehouseLocationShelfPage(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
-
-	pageable := utils.GetPageable(ctx.QueryParam)
-
-	docList, pagination, err := h.svc.SearchShelf(shopID, pageable)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success:    true,
-		Data:       docList,
-		Pagination: pagination,
-	})
-	return nil
-}
-
-// List Warehouse godoc
-// @Description search limit offset
-// @Tags		Warehouse
-// @Param		q		query	string		false  "Search Value"
-// @Param		offset	query	integer		false  "offset"
-// @Param		limit	query	integer		false  "limit"
-// @Param		lang	query	string		false  "lang"
-// @Accept 		json
-// @Success		200	{array}		common.ApiResponse
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /warehouse/list [get]
-func (h WarehouseHttp) SearchWarehouseStep(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
-
-	pageableStep := utils.GetPageableStep(ctx.QueryParam)
-
-	lang := ctx.QueryParam("lang")
-
-	docList, total, err := h.svc.SearchWarehouseStep(shopID, lang, pageableStep)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		Data:    docList,
-		Total:   total,
-	})
-	return nil
-}
-
-// Create Warehouse Bulk godoc
-// @Description Create Warehouse
-// @Tags		Warehouse
-// @Param		Warehouse  body      []models.Warehouse  true  "Warehouse"
-// @Accept 		json
-// @Success		201	{object}	common.BulkResponse
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /warehouse/bulk [post]
-func (h WarehouseHttp) SaveBulk(ctx microservice.IContext) error {
-
-	userInfo := ctx.UserInfo()
-	authUsername := userInfo.Username
-	shopID := userInfo.ShopID
-
-	input := ctx.ReadInput()
-
-	dataReq := []models.Warehouse{}
-	err := json.Unmarshal([]byte(input), &dataReq)
-
-	if err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	bulkResponse, err := h.svc.SaveInBatch(shopID, authUsername, dataReq)
-
-	if err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	ctx.Response(
-		http.StatusCreated,
-		common.BulkResponse{
-			Success:    true,
-			BulkImport: bulkResponse,
+		Data: WarehouseResponse{
+			WarehousePg: data,
+			Companies:   compGuids,
 		},
-	)
-
+	})
 	return nil
 }
 
-// ProductBarcode in Shelf Management Endpoints
+func (h WarehouseHttp) UpdateWarehouse(ctx microservice.IContext) error {
+	shopID := ctx.UserInfo().ShopID
+	id := ctx.Param("id")
+	input := ctx.ReadInput()
 
-// Get Shelf Products godoc
-// @Description Get all products in a specific shelf
-// @Tags		Warehouse
-// @Param		warehouseCode	path	string	true	"Warehouse Code"
-// @Param		locationCode	path	string	true	"Location Code"
-// @Param		shelfCode		path	string	true	"Shelf Code"
-// @Success		200 {object} models.ApiResponse{data=[]models.ShelfProductBarcode}
-// @Failure		400 {object} models.ApiResponse
-// @Router /warehouse/{warehouseCode}/location/{locationCode}/shelf/{shelfCode}/products [get]
-func (h WarehouseHttp) GetShelfProducts(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	db := pst.DBClient()
+	var existing warehouseModels.WarehousePg
+	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).First(&existing).Error; err != nil {
+		ctx.ResponseError(http.StatusNotFound, "Warehouse not found")
+		return err
+	}
 
-	warehouseCode := ctx.Param("warehouseCode")
-	locationCode := ctx.Param("locationCode")
-	shelfCode := ctx.Param("shelfCode")
+	type UpdateWarehouseRequest struct {
+		warehouseModels.WarehousePg
+		CompanyGuids []string `json:"company_guids"`
+	}
 
-	products, err := h.svc.GetShelfProductBarcodes(shopID, warehouseCode, locationCode, shelfCode)
-	if err != nil {
+	var req UpdateWarehouseRequest
+	if err := json.Unmarshal([]byte(input), &req); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
+		return err
+	}
+
+	existing.Names = req.Names
+	existing.Code = req.Code
+	existing.Latitude = req.Latitude
+	existing.Longitude = req.Longitude
+	existing.IsActive = req.IsActive
+	existing.UpdatedAt = time.Now()
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Save(&existing).Error; err != nil {
+			return err
+		}
+
+		// Delete existing junction rows
+		if err := tx.Table("company_warehouses").Where("warehouse_guid = ?", id).Delete(nil).Error; err != nil {
+			return err
+		}
+
+		// Insert new junction rows
+		for _, compGuid := range req.CompanyGuids {
+			cw := warehouseModels.CompanyWarehousePg{
+				CompanyGuid:   compGuid,
+				WarehouseGuid: id,
+			}
+			if err := tx.Create(&cw).Error; err != nil {
+				return err
+			}
+		}
+
+		// Delete existing shelves of zones belonging to this warehouse
+		var zoneGuids []string
+		if err := tx.Table("warehouse_zones").Where("warehouse_guid = ?", id).Pluck("guid_fixed", &zoneGuids).Error; err != nil {
+			return err
+		}
+		if len(zoneGuids) > 0 {
+			if err := tx.Unscoped().Where("zone_guid IN ?", zoneGuids).Delete(&warehouseModels.ShelfPg{}).Error; err != nil {
+				return err
+			}
+		}
+
+		// Delete existing zones
+		if err := tx.Unscoped().Where("warehouse_guid = ?", id).Delete(&warehouseModels.ZonePg{}).Error; err != nil {
+			return err
+		}
+
+		// Insert new zones and shelves
+		for _, zone := range req.Zones {
+			zone.WarehouseGuid = id
+			zone.ShopID = shopID
+			if zone.GuidFixed == "" {
+				zone.GuidFixed = utils.NewGUID()
+			}
+			zone.CreatedAt = time.Now()
+			zone.UpdatedAt = time.Now()
+			zone.IsActive = true
+
+			// Prevent GORM from auto-saving association with incomplete fields (e.g. empty GUID)
+			shelvesToCreate := zone.Shelves
+			zone.Shelves = nil
+
+			if err := tx.Create(&zone).Error; err != nil {
+				return err
+			}
+
+			for _, shelf := range shelvesToCreate {
+				shelf.ZoneGuid = zone.GuidFixed
+				shelf.ShopID = shopID
+				if shelf.GuidFixed == "" {
+					shelf.GuidFixed = utils.NewGUID()
+				}
+				shelf.CreatedAt = time.Now()
+				shelf.UpdatedAt = time.Now()
+				shelf.IsActive = true
+
+				if err := tx.Create(&shelf).Error; err != nil {
+					return err
+				}
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
-		Data:    products,
+		ID:      id,
 	})
 	return nil
 }
 
-// Add Product to Shelf godoc
-// @Description Add a product barcode to a specific shelf
-// @Tags		Warehouse
-// @Param		warehouseCode	path	string	true	"Warehouse Code"
-// @Param		locationCode	path	string	true	"Location Code"
-// @Param		shelfCode		path	string	true	"Shelf Code"
-// @Param		request			body	models.ShelfProductBarcode	true	"Product Barcode Data"
-// @Success		201 {object} models.ApiResponse
-// @Failure		400 {object} models.ApiResponse
-// @Router /warehouse/{warehouseCode}/location/{locationCode}/shelf/{shelfCode}/products [post]
-func (h WarehouseHttp) AddProductToShelf(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
-	authUsername := userInfo.Username
+func (h WarehouseHttp) DeleteWarehouse(ctx microservice.IContext) error {
+	shopID := ctx.UserInfo().ShopID
+	id := ctx.Param("id")
 
-	warehouseCode := ctx.Param("warehouseCode")
-	locationCode := ctx.Param("locationCode")
-	shelfCode := ctx.Param("shelfCode")
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	db := pst.DBClient()
+	var data warehouseModels.WarehousePg
+	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).First(&data).Error; err != nil {
+		ctx.ResponseError(http.StatusNotFound, "Warehouse not found")
+		return err
+	}
 
+	// Soft delete
+	if err := db.Delete(&data).Error; err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		ID:      id,
+	})
+	return nil
+}
+
+// Zone CRUD
+func (h WarehouseHttp) CreateZone(ctx microservice.IContext) error {
+	shopID := ctx.UserInfo().ShopID
+	warehouseGuid := ctx.Param("warehouseGuid")
 	input := ctx.ReadInput()
-	var productBarcode models.ShelfProductBarcode
-	if err := json.Unmarshal([]byte(input), &productBarcode); err != nil {
+
+	var req warehouseModels.ZonePg
+	if err := json.Unmarshal([]byte(input), &req); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
 
-	if err := ctx.Validate(productBarcode); err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
+	req.ShopID = shopID
+	req.WarehouseGuid = warehouseGuid
+	if req.GuidFixed == "" {
+		req.GuidFixed = utils.NewGUID()
 	}
+	req.CreatedAt = time.Now()
+	req.UpdatedAt = time.Now()
+	req.IsActive = true
 
-	err := h.svc.AddProductBarcodeToShelf(shopID, authUsername, warehouseCode, locationCode, shelfCode, productBarcode)
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	db := pst.DBClient()
+	if err := db.Create(&req).Error; err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
 
 	ctx.Response(http.StatusCreated, common.ApiResponse{
 		Success: true,
-		Message: "Product added to shelf successfully",
+		ID:      req.GuidFixed,
 	})
 	return nil
 }
 
-// Remove Product from Shelf godoc
-// @Description Remove a product barcode from a specific shelf
-// @Tags		Warehouse
-// @Param		warehouseCode		path	string	true	"Warehouse Code"
-// @Param		locationCode		path	string	true	"Location Code"
-// @Param		shelfCode			path	string	true	"Shelf Code"
-// @Param		productGuidFixed	path	string	true	"Product GUID Fixed"
-// @Success		200 {object} models.ApiResponse
-// @Failure		400 {object} models.ApiResponse
-// @Router /warehouse/{warehouseCode}/location/{locationCode}/shelf/{shelfCode}/products/{productGuidFixed} [delete]
-func (h WarehouseHttp) RemoveProductFromShelf(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
-	authUsername := userInfo.Username
+func (h WarehouseHttp) SearchZone(ctx microservice.IContext) error {
+	shopID := ctx.UserInfo().ShopID
+	warehouseGuid := ctx.Param("warehouseGuid")
 
-	warehouseCode := ctx.Param("warehouseCode")
-	locationCode := ctx.Param("locationCode")
-	shelfCode := ctx.Param("shelfCode")
-	productGuidFixed := ctx.Param("productGuidFixed")
-
-	err := h.svc.RemoveProductBarcodeFromShelf(shopID, authUsername, warehouseCode, locationCode, shelfCode, productGuidFixed)
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	db := pst.DBClient()
+	var list []warehouseModels.ZonePg
+	if err := db.Where("shopid = ? AND warehouse_guid = ?", shopID, warehouseGuid).Find(&list).Error; err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
-		Message: "Product removed from shelf successfully",
+		Data:    list,
 	})
 	return nil
 }
 
-// Bulk Add Products to Shelf godoc
-// @Description Add multiple product barcodes to a specific shelf
-// @Tags		Warehouse
-// @Param		warehouseCode	path	string	true	"Warehouse Code"
-// @Param		locationCode	path	string	true	"Location Code"
-// @Param		shelfCode		path	string	true	"Shelf Code"
-// @Param		request			body	models.BulkShelfProductRequest	true	"Bulk Product Data"
-// @Success		200 {object} models.BulkProductOperationResponse
-// @Failure		400 {object} models.ApiResponse
-// @Router /warehouse/{warehouseCode}/location/{locationCode}/shelf/{shelfCode}/products/bulk [post]
-func (h WarehouseHttp) BulkAddProductsToShelf(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
-	authUsername := userInfo.Username
+func (h WarehouseHttp) InfoZone(ctx microservice.IContext) error {
+	shopID := ctx.UserInfo().ShopID
+	id := ctx.Param("id")
 
-	warehouseCode := ctx.Param("warehouseCode")
-	locationCode := ctx.Param("locationCode")
-	shelfCode := ctx.Param("shelfCode")
-
-	input := ctx.ReadInput()
-	var request models.BulkShelfProductRequest
-	if err := json.Unmarshal([]byte(input), &request); err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	db := pst.DBClient()
+	var data warehouseModels.ZonePg
+	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).First(&data).Error; err != nil {
+		ctx.ResponseError(http.StatusNotFound, "Zone not found")
 		return err
 	}
 
-	if err := ctx.Validate(request); err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	response := h.svc.BulkAddProductBarcodesToShelf(shopID, authUsername, warehouseCode, locationCode, shelfCode, request.Products)
-
-	statusCode := http.StatusOK
-	if !response.Success {
-		statusCode = http.StatusBadRequest
-	}
-
-	ctx.Response(statusCode, response)
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Data:    data,
+	})
 	return nil
 }
 
-// Bulk Remove Products from Shelf godoc
-// @Description Remove multiple product barcodes from a specific shelf
-// @Tags		Warehouse
-// @Param		warehouseCode	path	string	true	"Warehouse Code"
-// @Param		locationCode	path	string	true	"Location Code"
-// @Param		shelfCode		path	string	true	"Shelf Code"
-// @Param		request			body	models.BulkRemoveProductRequest	true	"Bulk Remove Product Data"
-// @Success		200 {object} models.BulkProductOperationResponse
-// @Failure		400 {object} models.ApiResponse
-// @Router /warehouse/{warehouseCode}/location/{locationCode}/shelf/{shelfCode}/products/bulk [delete]
-func (h WarehouseHttp) BulkRemoveProductsFromShelf(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	shopID := userInfo.ShopID
-	authUsername := userInfo.Username
-
-	warehouseCode := ctx.Param("warehouseCode")
-	locationCode := ctx.Param("locationCode")
-	shelfCode := ctx.Param("shelfCode")
-
+func (h WarehouseHttp) UpdateZone(ctx microservice.IContext) error {
+	shopID := ctx.UserInfo().ShopID
+	id := ctx.Param("id")
 	input := ctx.ReadInput()
-	var request models.BulkRemoveProductRequest
-	if err := json.Unmarshal([]byte(input), &request); err != nil {
+
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	db := pst.DBClient()
+	var existing warehouseModels.ZonePg
+	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).First(&existing).Error; err != nil {
+		ctx.ResponseError(http.StatusNotFound, "Zone not found")
+		return err
+	}
+
+	var req warehouseModels.ZonePg
+	if err := json.Unmarshal([]byte(input), &req); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
 
-	if err := ctx.Validate(request); err != nil {
+	existing.Names = req.Names
+	existing.Code = req.Code
+	existing.SuitableProductTypes = req.SuitableProductTypes
+	existing.IsActive = req.IsActive
+	existing.UpdatedAt = time.Now()
+
+	if err := db.Save(&existing).Error; err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		ID:      id,
+	})
+	return nil
+}
+
+func (h WarehouseHttp) DeleteZone(ctx microservice.IContext) error {
+	shopID := ctx.UserInfo().ShopID
+	id := ctx.Param("id")
+
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	db := pst.DBClient()
+	var data warehouseModels.ZonePg
+	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).First(&data).Error; err != nil {
+		ctx.ResponseError(http.StatusNotFound, "Zone not found")
+		return err
+	}
+
+	// Soft delete
+	if err := db.Delete(&data).Error; err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		ID:      id,
+	})
+	return nil
+}
+
+// Shelf CRUD
+func (h WarehouseHttp) CreateShelf(ctx microservice.IContext) error {
+	shopID := ctx.UserInfo().ShopID
+	zoneGuid := ctx.Param("zoneGuid")
+	input := ctx.ReadInput()
+
+	var req warehouseModels.ShelfPg
+	if err := json.Unmarshal([]byte(input), &req); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
 
-	response := h.svc.BulkRemoveProductBarcodesFromShelf(shopID, authUsername, warehouseCode, locationCode, shelfCode, request.ProductGuidFixedList)
+	req.ShopID = shopID
+	req.ZoneGuid = zoneGuid
+	if req.GuidFixed == "" {
+		req.GuidFixed = utils.NewGUID()
+	}
+	req.CreatedAt = time.Now()
+	req.UpdatedAt = time.Now()
+	req.IsActive = true
 
-	statusCode := http.StatusOK
-	if !response.Success {
-		statusCode = http.StatusBadRequest
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	db := pst.DBClient()
+	if err := db.Create(&req).Error; err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
-	ctx.Response(statusCode, response)
+	ctx.Response(http.StatusCreated, common.ApiResponse{
+		Success: true,
+		ID:      req.GuidFixed,
+	})
+	return nil
+}
+
+func (h WarehouseHttp) SearchShelf(ctx microservice.IContext) error {
+	shopID := ctx.UserInfo().ShopID
+	zoneGuid := ctx.Param("zoneGuid")
+
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	db := pst.DBClient()
+	var list []warehouseModels.ShelfPg
+	if err := db.Where("shopid = ? AND zone_guid = ?", shopID, zoneGuid).Find(&list).Error; err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Data:    list,
+	})
+	return nil
+}
+
+func (h WarehouseHttp) InfoShelf(ctx microservice.IContext) error {
+	shopID := ctx.UserInfo().ShopID
+	id := ctx.Param("id")
+
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	db := pst.DBClient()
+	var data warehouseModels.ShelfPg
+	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).First(&data).Error; err != nil {
+		ctx.ResponseError(http.StatusNotFound, "Shelf not found")
+		return err
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Data:    data,
+	})
+	return nil
+}
+
+func (h WarehouseHttp) UpdateShelf(ctx microservice.IContext) error {
+	shopID := ctx.UserInfo().ShopID
+	id := ctx.Param("id")
+	input := ctx.ReadInput()
+
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	db := pst.DBClient()
+	var existing warehouseModels.ShelfPg
+	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).First(&existing).Error; err != nil {
+		ctx.ResponseError(http.StatusNotFound, "Shelf not found")
+		return err
+	}
+
+	var req warehouseModels.ShelfPg
+	if err := json.Unmarshal([]byte(input), &req); err != nil {
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
+		return err
+	}
+
+	existing.Name = req.Name
+	existing.Code = req.Code
+	existing.IsActive = req.IsActive
+	existing.UpdatedAt = time.Now()
+
+	if err := db.Save(&existing).Error; err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		ID:      id,
+	})
+	return nil
+}
+
+func (h WarehouseHttp) DeleteShelf(ctx microservice.IContext) error {
+	shopID := ctx.UserInfo().ShopID
+	id := ctx.Param("id")
+
+	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
+	db := pst.DBClient()
+	var data warehouseModels.ShelfPg
+	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).First(&data).Error; err != nil {
+		ctx.ResponseError(http.StatusNotFound, "Shelf not found")
+		return err
+	}
+
+	// Soft delete
+	if err := db.Delete(&data).Error; err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		ID:      id,
+	})
 	return nil
 }

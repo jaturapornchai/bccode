@@ -145,6 +145,9 @@ func (svc ProductBarcodeHttpService) CreateProductBarcode(shopID string, authUse
 	docData.ShopID = shopID
 	docData.GuidFixed = newGuidFixed
 	docData.ProductBarcode = docReq.ToProductBarcode()
+	if err := models.ValidateProductClassification(docData.ItemType, docData.MaterialType); err != nil {
+		return "", err
+	}
 	docData.IgnoreBranches = &docReq.IgnoreBranches
 	docData.BusinessTypes = &docReq.BusinessTypes
 
@@ -209,10 +212,29 @@ func (svc ProductBarcodeHttpService) CreateProductBarcode(shopID string, authUse
 		return "", err
 	}
 
-	docData.BOM, err = svc.prepareBOM(ctx, shopID, docReq.BOM)
-
+	docData.BOMs, err = svc.prepareBOMs(ctx, shopID, docReq.BOMs)
 	if err != nil {
 		return "", err
+	}
+
+	if docData.BOMs != nil && len(*docData.BOMs) > 0 {
+		var activeBOM *[]models.BOMProductBarcode
+		now := time.Now()
+		for _, ver := range *docData.BOMs {
+			if (ver.StartDate.Before(now) || ver.StartDate.Equal(now)) && (ver.EndDate == nil || ver.EndDate.After(now)) {
+				activeBOM = ver.BOM
+				break
+			}
+		}
+		if activeBOM == nil {
+			activeBOM = (*docData.BOMs)[len(*docData.BOMs)-1].BOM
+		}
+		docData.BOM = activeBOM
+	} else {
+		docData.BOM, err = svc.prepareBOM(ctx, shopID, docReq.BOM)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	_, err = svc.repo.Create(ctx, docData)
@@ -282,6 +304,9 @@ func (svc ProductBarcodeHttpService) UpdateProductBarcode(shopID string, guid st
 	}
 
 	docData.ProductBarcode = docReq.ToProductBarcode()
+	if err := models.ValidateProductClassification(docData.ItemType, docData.MaterialType); err != nil {
+		return err
+	}
 
 	docData.Barcode = findDoc.Barcode
 	docData.IgnoreBranches = &docReq.IgnoreBranches
@@ -296,10 +321,29 @@ func (svc ProductBarcodeHttpService) UpdateProductBarcode(shopID string, guid st
 		return err
 	}
 
-	docData.BOM, err = svc.prepareBOM(ctx, shopID, docReq.BOM)
-
+	docData.BOMs, err = svc.prepareBOMs(ctx, shopID, docReq.BOMs)
 	if err != nil {
 		return err
+	}
+
+	if docData.BOMs != nil && len(*docData.BOMs) > 0 {
+		var activeBOM *[]models.BOMProductBarcode
+		now := time.Now()
+		for _, ver := range *docData.BOMs {
+			if (ver.StartDate.Before(now) || ver.StartDate.Equal(now)) && (ver.EndDate == nil || ver.EndDate.After(now)) {
+				activeBOM = ver.BOM
+				break
+			}
+		}
+		if activeBOM == nil {
+			activeBOM = (*docData.BOMs)[len(*docData.BOMs)-1].BOM
+		}
+		docData.BOM = activeBOM
+	} else {
+		docData.BOM, err = svc.prepareBOM(ctx, shopID, docReq.BOM)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = svc.updateMetaInRefBarcode(ctx, shopID, docData)
@@ -464,6 +508,34 @@ func (svc ProductBarcodeHttpService) prepareBOM(ctx context.Context, shopID stri
 	}
 
 	return &tempBarcodes, nil
+}
+
+func (svc ProductBarcodeHttpService) prepareBOMs(ctx context.Context, shopID string, reqBOMs []models.BOMVersionRequest) (*[]models.ProductBarcodeBOMVersion, error) {
+	if reqBOMs == nil {
+		return nil, nil
+	}
+
+	var versions []models.ProductBarcodeBOMVersion
+	for _, reqVer := range reqBOMs {
+		bomItems, err := svc.prepareBOM(ctx, shopID, reqVer.BOM)
+		if err != nil {
+			return nil, err
+		}
+
+		guid := reqVer.GuidFixed
+		if guid == "" {
+			guid = utils.NewGUID()
+		}
+
+		versions = append(versions, models.ProductBarcodeBOMVersion{
+			GuidFixed: guid,
+			StartDate: reqVer.StartDate,
+			EndDate:   reqVer.EndDate,
+			BOM:       bomItems,
+		})
+	}
+
+	return &versions, nil
 }
 
 func (svc ProductBarcodeHttpService) updateMetaInRefBarcode(ctx context.Context, shopID string, docData models.ProductBarcodeDoc) error {
@@ -687,6 +759,251 @@ func (svc ProductBarcodeHttpService) InfoProductBarcode(shopID string, guid stri
 
 			findDoc.GroupNames = &tempGroupNames
 			findDoc.ItemType = findMasterDoc.ItemType
+
+			// Map new classification fields from Product to ProductBarcode
+			findDoc.GroupsuboneGuid = findMasterDoc.GroupsuboneGuid
+			findDoc.GroupsuboneCode = findMasterDoc.GroupsuboneCode
+			findDoc.GroupsuboneNames = findMasterDoc.GroupsuboneNames
+
+			findDoc.GroupsubtwoGuid = findMasterDoc.GroupsubtwoGuid
+			findDoc.GroupsubtwoCode = findMasterDoc.GroupsubtwoCode
+			findDoc.GroupsubtwoNames = findMasterDoc.GroupsubtwoNames
+
+			findDoc.BrandGuid = findMasterDoc.BrandGuid
+			findDoc.BrandCode = findMasterDoc.BrandCode
+			findDoc.BrandNames = findMasterDoc.BrandNames
+
+			findDoc.DesignGuid = findMasterDoc.DesignGuid
+			findDoc.DesignCode = findMasterDoc.DesignCode
+			findDoc.DesignNames = findMasterDoc.DesignNames
+
+			findDoc.ModelGuid = findMasterDoc.ModelGuid
+			findDoc.ModelCode = findMasterDoc.ModelCode
+			findDoc.ModelNames = findMasterDoc.ModelNames
+
+			findDoc.PatternGuid = findMasterDoc.PatternGuid
+			findDoc.PatternCode = findMasterDoc.PatternCode
+			findDoc.PatternNames = findMasterDoc.PatternNames
+
+			findDoc.GradeGuid = findMasterDoc.GradeGuid
+			findDoc.GradeCode = findMasterDoc.GradeCode
+			findDoc.GradeNames = findMasterDoc.GradeNames
+
+			findDoc.CategoryGuid = findMasterDoc.CategoryGuid
+			findDoc.CategoryCode = findMasterDoc.CategoryCode
+			findDoc.CategoryNames = findMasterDoc.CategoryNames
+
+			findDoc.ClassGuid = findMasterDoc.ClassGuid
+			findDoc.ClassCode = findMasterDoc.ClassCode
+			findDoc.ClassNames = findMasterDoc.ClassNames
+
+			findDoc.MaterialType = findMasterDoc.MaterialType
+			findDoc.TaxType = findMasterDoc.TaxType
+			findDoc.VatType = findMasterDoc.VatType
+			findDoc.VatCal = int(findMasterDoc.VatType)
+
+			if findMasterDoc.Manufacturers != nil {
+				tempManuf := []models.ProductBarcodeManufacturer{}
+				for _, m := range *findMasterDoc.Manufacturers {
+					tempManuf = append(tempManuf, models.ProductBarcodeManufacturer{
+						DocIdentity: common.DocIdentity{GuidFixed: m.GuidFixed},
+						Code:        m.Code,
+						Names:       m.Names,
+					})
+				}
+				findDoc.Manufacturers = &tempManuf
+			} else {
+				findDoc.Manufacturers = &[]models.ProductBarcodeManufacturer{}
+			}
+
+			if findMasterDoc.Suppliers != nil {
+				tempSuppl := []models.ProductBarcodeSupplier{}
+				for _, s := range *findMasterDoc.Suppliers {
+					tempSuppl = append(tempSuppl, models.ProductBarcodeSupplier{
+						DocIdentity: common.DocIdentity{GuidFixed: s.GuidFixed},
+						Code:        s.Code,
+						Names:       s.Names,
+					})
+				}
+				findDoc.Suppliers = &tempSuppl
+			} else {
+				findDoc.Suppliers = &[]models.ProductBarcodeSupplier{}
+			}
+
+			// Map Image and color settings
+			findDoc.ImageURI = findMasterDoc.ImageURI
+			if findMasterDoc.Images != nil {
+				tempImages := []models.ProductImage{}
+				for _, img := range *findMasterDoc.Images {
+					tempImages = append(tempImages, models.ProductImage{
+						XOrder: img.XOrder,
+						URI:    img.URI,
+					})
+				}
+				findDoc.Images = &tempImages
+			}
+			findDoc.UseImageOrColor = findMasterDoc.UseImageOrColor
+			findDoc.ColorSelect = findMasterDoc.ColorSelect
+			findDoc.ColorSelectHex = findMasterDoc.ColorSelectHex
+
+			// Map POS / Restaurant settings
+			findDoc.IsSumPoint = findMasterDoc.IsSumPoint
+			findDoc.IsALaCarte = findMasterDoc.IsALaCarte
+			findDoc.IsSplitUnitPrint = findMasterDoc.IsSplitUnitPrint
+			findDoc.IsOnlyStaff = findMasterDoc.IsOnlyStaff
+			findDoc.FoodType = findMasterDoc.FoodType
+			findDoc.IsStockForRestaurant = findMasterDoc.IsStockForRestaurant
+
+			findDoc.Restaurant = models.ProductRestaurant{
+				IsForRestaurant:       findMasterDoc.Restaurant.IsForRestaurant,
+				IsForTakeAway:         findMasterDoc.Restaurant.IsForTakeAway,
+				IsForDelivery:         findMasterDoc.Restaurant.IsForDelivery,
+				IsForCustomer:         findMasterDoc.Restaurant.IsForCustomer,
+				IsForCustomerPreOrder: findMasterDoc.Restaurant.IsForCustomerPreOrder,
+			}
+
+			if findMasterDoc.OrderTypes != nil {
+				tempOT := []models.ProductOrderType{}
+				for _, ot := range *findMasterDoc.OrderTypes {
+					row := models.ProductOrderType{
+						Code:  ot.Code,
+						Names: ot.Names,
+						Price: ot.Price,
+					}
+					row.GuidFixed = ot.GuidFixed
+					tempOT = append(tempOT, row)
+				}
+				findDoc.OrderTypes = &tempOT
+			}
+
+			if findMasterDoc.Options != nil {
+				tempOpts := []models.ProductOption{}
+				for _, opt := range *findMasterDoc.Options {
+					tempChoices := []models.ProductChoice{}
+					if opt.Choices != nil {
+						for _, ch := range *opt.Choices {
+							tempChoices = append(tempChoices, models.ProductChoice{
+								GUID:            ch.GUID,
+								Names:           ch.Names,
+								ImageURI:        ch.ImageURI,
+								RefBarcode:      ch.RefBarcode,
+								RefBarcodeNames: ch.RefBarcodeNames,
+								RefProductCode:  ch.RefProductCode,
+								RefUnitCode:     ch.RefUnitCode,
+								IsStock:         ch.IsStock,
+								IsDefault:       ch.IsDefault,
+								Qty:             ch.Qty,
+								Price:           ch.Price,
+							})
+						}
+					}
+					tempOpts = append(tempOpts, models.ProductOption{
+						GUID:       opt.GUID,
+						Names:      opt.Names,
+						ChoiceType: int8(opt.ChoiceType),
+						MinSelect:  uint16(opt.MinSelect),
+						MaxSelect:  uint16(opt.MaxSelect),
+						Choices:    &tempChoices,
+					})
+				}
+				findDoc.Options = &tempOpts
+			}
+
+			// Map alerts and description
+			findDoc.IsAlert = findMasterDoc.IsAlert
+			findDoc.AlertDescription = findMasterDoc.AlertDescription
+			findDoc.Description = findMasterDoc.Description
+
+			// Map TimeForSales
+			if findMasterDoc.TimeForSales != nil {
+				tempTfs := []models.ProductTimeForSale{}
+				for _, tfs := range *findMasterDoc.TimeForSales {
+					tempTfs = append(tempTfs, models.ProductTimeForSale{
+						DaysOfWeek: tfs.DaysOfWeek,
+						FromDate:   tfs.FromDate,
+						ToDate:     tfs.ToDate,
+						FromTime:   tfs.FromTime,
+						ToTime:     tfs.ToTime,
+					})
+				}
+				findDoc.TimeForSales = &tempTfs
+			}
+
+			// Map BusinessTypes and IgnoreBranches
+			if findMasterDoc.BusinessTypes != nil {
+				tempBt := []models.ProductBarcodeBusinessType{}
+				for _, bt := range *findMasterDoc.BusinessTypes {
+					row := models.ProductBarcodeBusinessType{
+						Code:     bt.Code,
+						Names:    bt.Names,
+						IsIgnore: bt.IsIgnore,
+					}
+					row.GuidFixed = bt.GuidFixed
+					tempBt = append(tempBt, row)
+				}
+				findDoc.BusinessTypes = &tempBt
+			}
+
+			if findMasterDoc.IgnoreBranches != nil {
+				tempIb := []models.ProductBarcodeBranch{}
+				for _, ib := range *findMasterDoc.IgnoreBranches {
+					row := models.ProductBarcodeBranch{
+						Code:     ib.Code,
+						Names:    ib.Names,
+						IsIgnore: ib.IsIgnore,
+					}
+					row.GuidFixed = ib.GuidFixed
+					tempIb = append(tempIb, row)
+				}
+				findDoc.IgnoreBranches = &tempIb
+			}
+
+			// Map Units and BOM from Product to ProductBarcode (Backward compatibility)
+			findDoc.Condition = findMasterDoc.Condition
+			findDoc.DivideValue = findMasterDoc.DivideValue
+			findDoc.StandValue = findMasterDoc.StandValue
+			findDoc.IsUseSubBarcodes = findMasterDoc.IsUseSubBarcodes
+
+			if findMasterDoc.RefBarcodes != nil {
+				tempRefs := []models.RefProductBarcode{}
+				for _, r := range *findMasterDoc.RefBarcodes {
+					tempRefs = append(tempRefs, models.RefProductBarcode{
+						GuidFixed:     r.GuidFixed,
+						Names:         r.Names,
+						ItemUnitCode:  r.ItemUnitCode,
+						ItemUnitNames: r.ItemUnitNames,
+						Barcode:       r.Barcode,
+						Condition:     r.Condition,
+						DivideValue:   r.DivideValue,
+						StandValue:    r.StandValue,
+						Qty:           r.Qty,
+					})
+				}
+				findDoc.RefBarcodes = &tempRefs
+			} else {
+				findDoc.RefBarcodes = &[]models.RefProductBarcode{}
+			}
+
+			if findMasterDoc.BOM != nil {
+				tempBOM := []models.BOMProductBarcode{}
+				for _, b := range *findMasterDoc.BOM {
+					tempBOM = append(tempBOM, models.BOMProductBarcode{
+						BarcodeGuidFixed: b.BarcodeGuidFixed,
+						Level:            b.Level,
+						Names:            b.Names,
+						ItemUnitCode:     b.ItemUnitCode,
+						ItemUnitNames:    b.ItemUnitNames,
+						Barcode:          b.Barcode,
+						Condition:        b.Condition,
+						DivideValue:      b.DivideValue,
+						StandValue:       b.StandValue,
+						Qty:              b.Qty,
+					})
+				}
+				findDoc.BOM = &tempBOM
+			} else {
+				findDoc.BOM = &[]models.BOMProductBarcode{}
+			}
 		}
 	}
 
@@ -778,6 +1095,250 @@ func (svc ProductBarcodeHttpService) InfoProductBarcodeByBarcode(shopID string, 
 
 			findDoc.GroupNames = &tempGroupNames
 			findDoc.ItemType = findMasterDoc.ItemType
+
+			// Map new classification fields from Product to ProductBarcode
+			findDoc.GroupsuboneGuid = findMasterDoc.GroupsuboneGuid
+			findDoc.GroupsuboneCode = findMasterDoc.GroupsuboneCode
+			findDoc.GroupsuboneNames = findMasterDoc.GroupsuboneNames
+
+			findDoc.GroupsubtwoGuid = findMasterDoc.GroupsubtwoGuid
+			findDoc.GroupsubtwoCode = findMasterDoc.GroupsubtwoCode
+			findDoc.GroupsubtwoNames = findMasterDoc.GroupsubtwoNames
+
+			findDoc.BrandGuid = findMasterDoc.BrandGuid
+			findDoc.BrandCode = findMasterDoc.BrandCode
+			findDoc.BrandNames = findMasterDoc.BrandNames
+
+			findDoc.DesignGuid = findMasterDoc.DesignGuid
+			findDoc.DesignCode = findMasterDoc.DesignCode
+			findDoc.DesignNames = findMasterDoc.DesignNames
+
+			findDoc.ModelGuid = findMasterDoc.ModelGuid
+			findDoc.ModelCode = findMasterDoc.ModelCode
+			findDoc.ModelNames = findMasterDoc.ModelNames
+
+			findDoc.PatternGuid = findMasterDoc.PatternGuid
+			findDoc.PatternCode = findMasterDoc.PatternCode
+			findDoc.PatternNames = findMasterDoc.PatternNames
+
+			findDoc.GradeGuid = findMasterDoc.GradeGuid
+			findDoc.GradeCode = findMasterDoc.GradeCode
+			findDoc.GradeNames = findMasterDoc.GradeNames
+
+			findDoc.CategoryGuid = findMasterDoc.CategoryGuid
+			findDoc.CategoryCode = findMasterDoc.CategoryCode
+			findDoc.CategoryNames = findMasterDoc.CategoryNames
+
+			findDoc.ClassGuid = findMasterDoc.ClassGuid
+			findDoc.ClassCode = findMasterDoc.ClassCode
+			findDoc.ClassNames = findMasterDoc.ClassNames
+
+			findDoc.MaterialType = findMasterDoc.MaterialType
+			findDoc.TaxType = findMasterDoc.TaxType
+			findDoc.VatType = findMasterDoc.VatType
+			findDoc.VatCal = int(findMasterDoc.VatType)
+
+			if findMasterDoc.Manufacturers != nil {
+				tempManuf := []models.ProductBarcodeManufacturer{}
+				for _, m := range *findMasterDoc.Manufacturers {
+					tempManuf = append(tempManuf, models.ProductBarcodeManufacturer{
+						DocIdentity: common.DocIdentity{GuidFixed: m.GuidFixed},
+						Code:        m.Code,
+						Names:       m.Names,
+					})
+				}
+				findDoc.Manufacturers = &tempManuf
+			} else {
+				findDoc.Manufacturers = &[]models.ProductBarcodeManufacturer{}
+			}
+
+			if findMasterDoc.Suppliers != nil {
+				tempSuppl := []models.ProductBarcodeSupplier{}
+				for _, s := range *findMasterDoc.Suppliers {
+					tempSuppl = append(tempSuppl, models.ProductBarcodeSupplier{
+						DocIdentity: common.DocIdentity{GuidFixed: s.GuidFixed},
+						Code:        s.Code,
+						Names:       s.Names,
+					})
+				}
+				findDoc.Suppliers = &tempSuppl
+			} else {
+				findDoc.Suppliers = &[]models.ProductBarcodeSupplier{}
+			}
+
+			// Map Image and color settings
+			findDoc.ImageURI = findMasterDoc.ImageURI
+			if findMasterDoc.Images != nil {
+				tempImages := []models.ProductImage{}
+				for _, img := range *findMasterDoc.Images {
+					tempImages = append(tempImages, models.ProductImage{
+						XOrder: img.XOrder,
+						URI:    img.URI,
+					})
+				}
+				findDoc.Images = &tempImages
+			}
+			findDoc.UseImageOrColor = findMasterDoc.UseImageOrColor
+			findDoc.ColorSelect = findMasterDoc.ColorSelect
+			findDoc.ColorSelectHex = findMasterDoc.ColorSelectHex
+
+			// Map POS / Restaurant settings
+			findDoc.IsSumPoint = findMasterDoc.IsSumPoint
+			findDoc.IsALaCarte = findMasterDoc.IsALaCarte
+			findDoc.IsSplitUnitPrint = findMasterDoc.IsSplitUnitPrint
+			findDoc.IsOnlyStaff = findMasterDoc.IsOnlyStaff
+			findDoc.FoodType = findMasterDoc.FoodType
+			findDoc.IsStockForRestaurant = findMasterDoc.IsStockForRestaurant
+
+			findDoc.Restaurant = models.ProductRestaurant{
+				IsForRestaurant:       findMasterDoc.Restaurant.IsForRestaurant,
+				IsForTakeAway:         findMasterDoc.Restaurant.IsForTakeAway,
+				IsForDelivery:         findMasterDoc.Restaurant.IsForDelivery,
+				IsForCustomer:         findMasterDoc.Restaurant.IsForCustomer,
+				IsForCustomerPreOrder: findMasterDoc.Restaurant.IsForCustomerPreOrder,
+			}
+
+			if findMasterDoc.OrderTypes != nil {
+				tempOT := []models.ProductOrderType{}
+				for _, ot := range *findMasterDoc.OrderTypes {
+					row := models.ProductOrderType{
+						Code:  ot.Code,
+						Names: ot.Names,
+						Price: ot.Price,
+					}
+					row.GuidFixed = ot.GuidFixed
+					tempOT = append(tempOT, row)
+				}
+				findDoc.OrderTypes = &tempOT
+			}
+
+			if findMasterDoc.Options != nil {
+				tempOpts := []models.ProductOption{}
+				for _, opt := range *findMasterDoc.Options {
+					tempChoices := []models.ProductChoice{}
+					if opt.Choices != nil {
+						for _, ch := range *opt.Choices {
+							tempChoices = append(tempChoices, models.ProductChoice{
+								GUID:            ch.GUID,
+								Names:           ch.Names,
+								ImageURI:        ch.ImageURI,
+								RefBarcode:      ch.RefBarcode,
+								RefBarcodeNames: ch.RefBarcodeNames,
+								RefProductCode:  ch.RefProductCode,
+								RefUnitCode:     ch.RefUnitCode,
+								IsStock:         ch.IsStock,
+								IsDefault:       ch.IsDefault,
+								Qty:             ch.Qty,
+								Price:           ch.Price,
+							})
+						}
+					}
+					tempOpts = append(tempOpts, models.ProductOption{
+						GUID:       opt.GUID,
+						Names:      opt.Names,
+						ChoiceType: int8(opt.ChoiceType),
+						MinSelect:  uint16(opt.MinSelect),
+						MaxSelect:  uint16(opt.MaxSelect),
+						Choices:    &tempChoices,
+					})
+				}
+				findDoc.Options = &tempOpts
+			}
+
+			// Map alerts and description
+			findDoc.IsAlert = findMasterDoc.IsAlert
+			findDoc.AlertDescription = findMasterDoc.AlertDescription
+			findDoc.Description = findMasterDoc.Description
+
+			// Map TimeForSales
+			if findMasterDoc.TimeForSales != nil {
+				tempTfs := []models.ProductTimeForSale{}
+				for _, tfs := range *findMasterDoc.TimeForSales {
+					tempTfs = append(tempTfs, models.ProductTimeForSale{
+						DaysOfWeek: tfs.DaysOfWeek,
+						FromDate:   tfs.FromDate,
+						ToDate:     tfs.ToDate,
+						FromTime:   tfs.FromTime,
+						ToTime:     tfs.ToTime,
+					})
+				}
+				findDoc.TimeForSales = &tempTfs
+			}
+
+			// Map BusinessTypes and IgnoreBranches
+			if findMasterDoc.BusinessTypes != nil {
+				tempBt := []models.ProductBarcodeBusinessType{}
+				for _, bt := range *findMasterDoc.BusinessTypes {
+					row := models.ProductBarcodeBusinessType{
+						Code:     bt.Code,
+						Names:    bt.Names,
+						IsIgnore: bt.IsIgnore,
+					}
+					row.GuidFixed = bt.GuidFixed
+					tempBt = append(tempBt, row)
+				}
+				findDoc.BusinessTypes = &tempBt
+			}
+			if findMasterDoc.IgnoreBranches != nil {
+				tempIb := []models.ProductBarcodeBranch{}
+				for _, ib := range *findMasterDoc.IgnoreBranches {
+					row := models.ProductBarcodeBranch{
+						Code:     ib.Code,
+						Names:    ib.Names,
+						IsIgnore: ib.IsIgnore,
+					}
+					row.GuidFixed = ib.GuidFixed
+					tempIb = append(tempIb, row)
+				}
+				findDoc.IgnoreBranches = &tempIb
+			}
+
+			// Map Units and BOM from Product to ProductBarcode (Backward compatibility)
+			findDoc.Condition = findMasterDoc.Condition
+			findDoc.DivideValue = findMasterDoc.DivideValue
+			findDoc.StandValue = findMasterDoc.StandValue
+			findDoc.IsUseSubBarcodes = findMasterDoc.IsUseSubBarcodes
+
+			if findMasterDoc.RefBarcodes != nil {
+				tempRefs := []models.RefProductBarcode{}
+				for _, r := range *findMasterDoc.RefBarcodes {
+					tempRefs = append(tempRefs, models.RefProductBarcode{
+						GuidFixed:     r.GuidFixed,
+						Names:         r.Names,
+						ItemUnitCode:  r.ItemUnitCode,
+						ItemUnitNames: r.ItemUnitNames,
+						Barcode:       r.Barcode,
+						Condition:     r.Condition,
+						DivideValue:   r.DivideValue,
+						StandValue:    r.StandValue,
+						Qty:           r.Qty,
+					})
+				}
+				findDoc.RefBarcodes = &tempRefs
+			} else {
+				findDoc.RefBarcodes = &[]models.RefProductBarcode{}
+			}
+
+			if findMasterDoc.BOM != nil {
+				tempBOM := []models.BOMProductBarcode{}
+				for _, b := range *findMasterDoc.BOM {
+					tempBOM = append(tempBOM, models.BOMProductBarcode{
+						BarcodeGuidFixed: b.BarcodeGuidFixed,
+						Level:            b.Level,
+						Names:            b.Names,
+						ItemUnitCode:     b.ItemUnitCode,
+						ItemUnitNames:    b.ItemUnitNames,
+						Barcode:          b.Barcode,
+						Condition:        b.Condition,
+						DivideValue:      b.DivideValue,
+						StandValue:       b.StandValue,
+						Qty:              b.Qty,
+					})
+				}
+				findDoc.BOM = &tempBOM
+			} else {
+				findDoc.BOM = &[]models.BOMProductBarcode{}
+			}
 		}
 	}
 
@@ -1146,13 +1707,7 @@ func (svc ProductBarcodeHttpService) SaveInBatch(shopID string, authUsername str
 				docReq.IgnoreBranches = *dataReq.IgnoreBranches
 			}
 
-			svc.UpdateProductBarcode(shopID, doc.GuidFixed, authUsername, docReq)
-
-			// err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
-			// if err != nil {
-			// 	return nil
-			// }
-			return nil
+			return svc.UpdateProductBarcode(shopID, doc.GuidFixed, authUsername, docReq)
 		},
 	)
 
@@ -1413,12 +1968,12 @@ func (svc ProductBarcodeHttpService) Export(shopID string, languageCode string, 
 		"barcode",        //บาร์โค้ด",
 		"productname",    //"ชื่อสินค้า",
 		"unitcode",       //"หน่วยนับ",
-		"unit_name",       //"ชื่อหน่วยนับ",
+		"unit_name",      //"ชื่อหน่วยนับ",
 		"price",          //ราคาขาย",
 		"price member",   //ราคาขาย",
 		"price delivery", //ราคาขาย",
-		"item_type",       //ประเภทสินค้า",
-		"group_code",      //กลุ่มสินค้า",
+		"item_type",      //ประเภทสินค้า",
+		"group_code",     //กลุ่มสินค้า",
 	}
 
 	headerRow := []string{}
@@ -1629,6 +2184,9 @@ func (svc ProductBarcodeHttpService) Import(shopID string, authUsername string, 
 			// }
 			docData := doc
 			docData.ProductBarcode = docReq.ToProductBarcode()
+			if err := models.ValidateProductClassification(docData.ItemType, docData.MaterialType); err != nil {
+				return err
+			}
 			docData.Barcode = doc.Barcode
 			docData.IgnoreBranches = &docReq.IgnoreBranches
 			docData.BusinessTypes = &docReq.BusinessTypes
@@ -1636,9 +2194,9 @@ func (svc ProductBarcodeHttpService) Import(shopID string, authUsername string, 
 			docData.UpdatedBy = authUsername
 			docData.UpdatedAt = time.Now()
 
-			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, doc)
+			err = svc.repo.Update(ctx, shopID, doc.GuidFixed, docData)
 			if err != nil {
-				return nil
+				return err
 			}
 			return nil
 		},
@@ -1680,6 +2238,9 @@ func (svc ProductBarcodeHttpService) Import(shopID string, authUsername string, 
 				docData.ShopID = shopID
 				docData.GuidFixed = newGuidFixed
 				docData.ProductBarcode = docReq.ToProductBarcode()
+				if err := models.ValidateProductClassification(docData.ItemType, docData.MaterialType); err != nil {
+					return err
+				}
 				docData.IgnoreBranches = &docReq.IgnoreBranches
 				docData.BusinessTypes = &docReq.BusinessTypes
 				docData.CreatedBy = authUsername
@@ -1935,9 +2496,9 @@ func (s ProductBarcodeHttpService) processBatchRefBarcodeUpdate(shopID, authUser
 		updateData := bson.M{
 			"$set": bson.M{
 				"refbarcodes":      []models.RefProductBarcode{refBarcode},
-				"is_main_barcode":    false,
+				"is_main_barcode":  false,
 				"updatedby":        authUsername,
-				"updated_at":        time.Now(),
+				"updated_at":       time.Now(),
 				"isusesubbarcodes": true,
 			},
 		}

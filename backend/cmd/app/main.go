@@ -29,6 +29,7 @@ import (
 	"smlcloudplatform/internal/ocr"
 	"smlcloudplatform/internal/organization/branch"
 	"smlcloudplatform/internal/organization/businesstype"
+	"smlcloudplatform/internal/organization/company"
 	"smlcloudplatform/internal/organization/costcenter"
 	"smlcloudplatform/internal/organization/department"
 	"smlcloudplatform/internal/organization/jobproject"
@@ -265,6 +266,7 @@ func main() {
 		costcenter.NewCostCenterHttp(ms, cfg),
 		jobproject.NewJobProjectHttp(ms, cfg),
 		businesstype.NewBusinessTypeHttp(ms, cfg),
+		company.NewCompanyHttp(ms, cfg),
 		branch.NewBranchHttp(ms, cfg),
 
 		//transaction

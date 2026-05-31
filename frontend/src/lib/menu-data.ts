@@ -129,7 +129,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("stock-balance-item", "คงเหลือตามสินค้า", "Stock by Item", "/report/stock_balance_item", "report"),
           tx("stock-balance-warehouse", "คงเหลือตามคลัง", "Stock by Warehouse", "/report/stock_balance_warehouse", "report"),
-          tx("stock-balance-location", "คงเหลือตามที่เก็บ", "Stock by Location", "/report/stock_balance_location", "report"),
+          tx("stock-balance-location", "คงเหลือตามโซนเก็บสินค้า", "Stock by Storage Zone", "/report/stock_balance_location", "report"),
           tx("stock-movement-cost", "เคลื่อนไหวสินค้าพร้อมต้นทุน", "Stock Movement with Cost", "/report/stock_movement_cost", "report"),
         ],
       },
@@ -175,43 +175,43 @@ export const MENU_SECTIONS: MenuSection[] = [
     groups: [
       {
         id: "products",
-        title: ml("product_management", "จัดการสินค้า", "Products"),
+        title: ml("product_management", "สินค้า", "Products"),
         items: [
+          // Core product management (daily use)
+          tx("product", "สินค้า", "Product", "/product", "master"),
           { ...tx("barcode", "บาร์โค้ด", "Barcode", "/product_barcode", "master"), label: ml("barcode", "บาร์โค้ด", "Barcode") },
+          tx("productset", "สินค้าชุด", "Product Set", "/productset", "master"),
           tx("product-unit", "หน่วยนับสินค้า", "Product Unit", "/productunit", "master"),
-          tx("label-print", "พิมพ์ป้ายสินค้า", "Print Product Label", "/product_barcode_shelf", "master"),
           tx("promotion", "โปรโมชั่น", "Promotion", "/promotion_screen", "master"),
-          tx("price-history", "ประวัติแก้ไขราคา", "Price Edit History", "/price_history", "master"),
-        ],
-      },
-      {
-        id: "product-settings",
-        title: ml("product_settings", "ตั้งค่าสินค้า", "Product Settings"),
-        items: [
-          tx("product-category", "หมวดสินค้า", "Product Category", "/product_category_group_select_screen", "master"),
-          tx("product-category-list", "รายการหมวดสินค้า", "Product Category List", "/productcategorylist", "master"),
+          // Categorization & grouping
           tx("product-group", "กลุ่มสินค้า", "Product Group", "/productgroup", "master"),
-          tx("warehouse", "คลังสินค้า", "Warehouse", "/product_warehouse_screen", "master"),
-          tx("location", "ที่เก็บสินค้า", "Location", "/product_location_screen", "master"),
-          tx("order-type", "ประเภทคำสั่ง", "Order Type", "/order_type_screen", "master"),
+          tx("product-category", "โครงสร้างหมวดสินค้า", "Product Category Structure", "/product_category_group_select_screen", "master"),
+          tx("product-category-list", "จัดสินค้าในหมวดสินค้า", "Product Category List", "/productcategorylist", "master"),
           tx("product-type", "ประเภทสินค้า", "Product Type", "/product_type_screen", "master"),
-          tx("dimension", "มิติสินค้า", "Product Dimension", "/product_dimension", "master"),
-          tx("bom", "สูตรประกอบสินค้า", "Product BOM", "/product_bom", "master"),
-          tx("brand", "ยี่ห้อ", "Brand", "/master_brand_screen", "master"),
-          tx("category", "Category", "Category", "/master_category_screen", "master"),
-          tx("class", "Class", "Class", "/master_class_screen", "master"),
-          tx("design", "Design", "Design", "/master_design_screen", "master"),
-          tx("grade", "Grade", "Grade", "/master_grade_screen", "master"),
-          tx("model", "Model", "Model", "/master_model_screen", "master"),
-          tx("pattern", "Pattern", "Pattern", "/master_pattern_screen", "master"),
+          tx("brand", "ยี่ห้อสินค้า", "Brand", "/master_brand_screen", "master"),
+          tx("category", "หมวดจำแนกสินค้า", "Product Attribute Category", "/master_category_screen", "master"),
+          // Manufacturing & warehouse
+          tx("bom", "สูตรผลิต", "Product BOM", "/product_bom", "master"),
+          tx("warehouse", "คลัง", "Warehouse", "/product_warehouse_screen", "master"),
+          // Extended attributes
+          tx("dimension", "มิติ", "Dimension", "/product_dimension", "master"),
+          tx("class", "ระดับ", "Class", "/master_class_screen", "master"),
+          tx("design", "รูปทรง", "Design", "/master_design_screen", "master"),
+          tx("grade", "เกรด", "Grade", "/master_grade_screen", "master"),
+          tx("model", "รุ่น", "Model", "/master_model_screen", "master"),
+          tx("pattern", "รูปแบบสินค้า", "Pattern", "/master_pattern_screen", "master"),
+          // Marketplace
+          tx("shopee-mappings", "Shopee Mappings", "Shopee Mappings", "/marketplace/shopee", "master"),
+          tx("lazada-mappings", "Lazada Mappings", "Lazada Mappings", "/marketplace/lazada", "master"),
+          tx("tiktok-mappings", "TikTok Mappings", "TikTok Mappings", "/marketplace/tiktok", "master"),
         ],
       },
       {
-        id: "database",
-        title: ml("product_database", "จัดการฐานข้อมูลสินค้า", "Product Database"),
+        id: "product-tools",
+        title: ml("product_tools", "เครื่องมือสินค้า", "Product Tools"),
         items: [
-          tx("add-product-branch", "เพิ่มสินค้าเข้าตามสาขา", "Add Product to Branch", "/add_product_to_branch_screen", "master"),
-          tx("add-product-department", "เพิ่มสินค้าเข้าตามแผนก", "Add Product to Department", "/add_product_to_department_screen", "master"),
+          tx("price-history", "ประวัติแก้ไขราคา", "Price Edit History", "/price_history", "master"),
+          tx("label-print", "พิมพ์ป้ายสินค้า", "Print Product Label", "/product_barcode_shelf", "master"),
         ],
       },
       {
@@ -307,7 +307,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("permission-link", "กำหนดสิทธิ์พนักงาน", "Permission Link", "/permission_link", "settings"),
           tx("currency", "สกุลเงิน", "Currency", "/currency", "settings"),
           tx("company-type", "ประเภทธุรกิจ", "Business Type", "/business_type_screen", "settings"),
-          tx("company", "บริษัท", "Company", "/company", "settings"),
+          { ...tx("company", "ข้อมูลบริษัท", "Company Profile", "/company", "settings"), label: ml("company_profile", "ข้อมูลบริษัท", "Company Profile") },
           tx("branch", "สาขา", "Branch", "/branch", "settings"),
           tx("employee", "พนักงาน", "Employee", "/employee", "settings"),
           tx("line-oa-user-link", "เชื่อม LINE OA", "Connect LINE OA", "/line-oa", "settings"),

@@ -30,7 +30,10 @@ const MASTER_PATHS: Record<string, string> = {
   producttype: "/product/type",
   ordertype: "/product/order-type",
   businesstype: "/product-section/business-type",
-  branch: "/shop/branch",
+  branch: "/list-shop",
+  company: "/organization/company",
+  creditor: "/debtaccount/creditor",
+  product: "/product",
 };
 
 type MasterContext = { params: Promise<{ master?: string }> };
@@ -55,7 +58,7 @@ export async function GET(request: Request, context: MasterContext) {
 
   const url = new URL(request.url);
   const qs = new URLSearchParams();
-  for (const key of ["q", "page", "limit", "lang"] as const) {
+  for (const key of ["q", "page", "limit", "lang", "company_guid", "item_type", "materialtype"] as const) {
     const value = url.searchParams.get(key);
     if (value) qs.set(key, value);
   }
@@ -72,8 +75,12 @@ export async function GET(request: Request, context: MasterContext) {
     const rawData = Array.isArray(payload.data) ? payload.data : [];
     const entries = rawData.flatMap((entry: unknown) => {
       if (!isRecord(entry)) return [];
-      const guid = String(entry.guidfixed ?? entry.guid_fixed ?? "");
-      const code = String(entry.code ?? entry.unitcode ?? entry.itemunitcode ?? entry.groupcode ?? entry.brand_code ?? entry.categorycode ?? "");
+      let guid = String(entry.guidfixed ?? entry.guid_fixed ?? "");
+      let code = String(entry.code ?? entry.unitcode ?? entry.itemunitcode ?? entry.groupcode ?? entry.brand_code ?? entry.categorycode ?? "");
+      if (masterKey === "branch") {
+        guid = String(entry.shopid ?? "");
+        code = String(entry.branchcode && entry.branchcode !== "" ? entry.branchcode : (entry.shopid ?? ""));
+      }
       const namesSource = entry.names ?? entry.unitnames ?? entry.unit_names ?? entry.itemunitnames ?? entry.item_unit_names;
       const names = Array.isArray(namesSource) ? namesSource : [];
       return [{ guidfixed: guid, code, names }];

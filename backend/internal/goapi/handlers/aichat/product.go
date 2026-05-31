@@ -7,7 +7,8 @@ import (
 	"smlcloudplatform/internal/goapi/mydb"
 )
 
-// GetProductData retrieves product information from database
+// GetProductData retrieves product information from legacy PostgreSQL projections.
+// MongoDB remains the operational source of truth for product CRUD.
 func GetProductData(ctx context.Context, shopID string) ([]StockData, error) {
 	db, err := mydb.GetGlobalConnectionFromPool(shopID)
 	if err != nil {

@@ -105,16 +105,16 @@ func buildLazyAnswerReminder(question string) string {
 
 	if digitCount == 13 {
 		// taxid
-		hint.WriteString(fmt.Sprintf("```javascript\n// Question is exactly 13 digits = Thai tax ID\nconst id = \"%s\";\nlet r = query_pg(\"SELECT 'debtor' as src, code, taxid, names FROM debtor WHERE taxid = '\" + id + \"' UNION ALL SELECT 'creditor' as src, code, taxid, names FROM creditor WHERE taxid = '\" + id + \"' LIMIT 5\");\nif (r.length === 0) r = query_pg(\"SELECT 'product' as src, itemcode, barcode, name0 FROM productbarcode WHERE barcode = '\" + id + \"' LIMIT 5\");\nreturn {found: r.length, items: r};\n```\n\n", q))
+		hint.WriteString(fmt.Sprintf("```javascript\n// Question is exactly 13 digits = Thai tax ID\nconst id = \"%s\";\nlet r = query_mongo(\"debtors\", {\"tax_id\": id}, 5);\nif (r.length === 0) r = query_mongo(\"creditors\", {\"tax_id\": id}, 5);\nif (r.length === 0) r = query_mongo(\"productBarcodes\", {\"barcode\": id}, 5);\nreturn {found: r.length, items: r};\n```\n\n", q))
 	} else if digitCount >= 8 && digitCount <= 14 {
 		// barcode-ish
-		hint.WriteString(fmt.Sprintf("```javascript\n// %d-digit number = likely a barcode\nconst rows = query_pg(\"SELECT itemcode, barcode, name0, price1 FROM productbarcode WHERE barcode = '%s' LIMIT 5\");\nreturn rows;\n```\n\n", digitCount, q))
+		hint.WriteString(fmt.Sprintf("```javascript\n// %d-digit number = likely a barcode\nconst rows = query_mongo(\"productBarcodes\", {\"barcode\":\"%s\"}, 5);\nreturn rows;\n```\n\n", digitCount, q))
 	} else {
 		// generic name search
-		hint.WriteString("```javascript\n// Search by name using ILIKE across multiple tables\nlet r = query_pg(\"SELECT itemcode, name0, price1 FROM productbarcode WHERE name0 ILIKE '%KEYWORD%' LIMIT 5\");\nif (r.length === 0) r = query_pg(\"SELECT code, names FROM debtor WHERE names::text ILIKE '%KEYWORD%' LIMIT 5\");\nreturn r;\n```\n\n")
+		hint.WriteString("```javascript\n// Search operational data in MongoDB source-of-truth collections\nlet r = query_mongo(\"productBarcodes\", {\"names.name\":{\"$regex\":\"KEYWORD\",\"$options\":\"i\"}}, 5);\nif (r.length === 0) r = query_mongo(\"debtors\", {\"names.name\":{\"$regex\":\"KEYWORD\",\"$options\":\"i\"}}, 5);\nif (r.length === 0) r = query_mongo(\"creditors\", {\"names.name\":{\"$regex\":\"KEYWORD\",\"$options\":\"i\"}}, 5);\nreturn r;\n```\n\n")
 	}
 
-	hint.WriteString("**Rule:** If you still don't call a tool this round, the system will force-retry. Please call `execute_js` or `query_postgresql` **NOW**. Reply in Thai when you have data.")
+	hint.WriteString("**Rule:** If you still don't call a tool this round, the system will force-retry. Please call `execute_js` or `query_mongodb` **NOW**. Reply in Thai when you have data.")
 	return hint.String()
 }
 
@@ -369,7 +369,7 @@ func buildAgentToolDefs() []aiprovider.OAITool {
 					"properties": map[string]interface{}{
 						"collection": map[string]interface{}{
 							"type":        "string",
-							"description": "ชื่อ collection เช่น barcodes, saleinvoices, purchaseorders",
+							"description": "ชื่อ collection เช่น productBarcodes, debtors, creditors, transactionSaleInvoice",
 						},
 						"filter": map[string]interface{}{
 							"type":        "string",
@@ -427,7 +427,7 @@ func buildAgentToolDefs() []aiprovider.OAITool {
 			Type: "function",
 			Function: aiprovider.OAIFunction{
 				Name:        "query_clickhouse",
-				Description: "รัน SQL query บน ClickHouse (readonly SELECT เท่านั้น) — สำหรับ analytics ข้อมูลขนาดใหญ่",
+				Description: "รัน SQL query บน ClickHouse (readonly SELECT เท่านั้น) — สำหรับ BI/analytics/reporting ข้อมูลขนาดใหญ่",
 				Parameters: map[string]interface{}{
 					"type": "object",
 					"properties": map[string]interface{}{
@@ -461,7 +461,7 @@ func buildAgentToolDefs() []aiprovider.OAITool {
 			Type: "function",
 			Function: aiprovider.OAIFunction{
 				Name:        "query_postgresql",
-				Description: "รัน SQL query บน PostgreSQL (readonly SELECT เท่านั้น) — สำหรับข้อมูล transactional",
+				Description: "รัน SQL query บน PostgreSQL (readonly SELECT เท่านั้น) — สำหรับ relational processing/projection results เช่น postings, balances, tax/VAT, AR/AP, GL ไม่ใช่ CRUD source",
 				Parameters: map[string]interface{}{
 					"type": "object",
 					"properties": map[string]interface{}{
@@ -486,10 +486,10 @@ func buildAgentToolDefs() []aiprovider.OAITool {
 				Name: "execute_python",
 				Description: "**PREFERRED TOOL for data queries and analysis.** Run Python 3 in a readonly sandbox. " +
 					"Write idiomatic Python — list comprehensions, dicts, f-strings, loops — exactly as you would in a Jupyter notebook. " +
-					"Sandbox helpers (already imported): query_pg(sql, limit=200), query_mongo(collection, filter=None, limit=200), " +
+					"Sandbox helpers (already imported): query_mongo(collection, filter=None, limit=200) for MongoDB operational data, query_pg(sql, limit=200) for PostgreSQL relational projections, " +
 					"query_ch(sql, limit=200), log(*args). " +
 					"**Assign your final answer to the variable `__result__`** (no `return` at top level — this runs as a script, not a function). " +
-					"Example: `rows = query_pg(\"SELECT itemcode, name0, price1 FROM productbarcode ORDER BY price1 DESC LIMIT 10\"); " +
+					"Example: `rows = query_mongo(\"productBarcodes\", {\"names.name\":{\"$regex\":\"coffee\",\"$options\":\"i\"}}, 10); " +
 					"__result__ = {\"count\": len(rows), \"items\": rows}`. " +
 					"Use try/except to handle query errors and fall back to other searches. Timeout: 30s.",
 				Parameters: map[string]interface{}{
@@ -510,7 +510,7 @@ func buildAgentToolDefs() []aiprovider.OAITool {
 			Function: aiprovider.OAIFunction{
 				Name: "execute_js",
 				Description: "Fallback JavaScript sandbox (use execute_python instead when possible — Python is preferred). " +
-					"Readonly Goja sandbox. Helpers: query_pg(sql, limit?), query_mongo(collection, filter?, limit?), " +
+					"Readonly Goja sandbox. Helpers: query_mongo(collection, filter?, limit?) for MongoDB operational data, query_pg(sql, limit?) for PostgreSQL relational projections, " +
 					"query_ch(sql, limit?), log(...). Script must `return` a value. Timeout 30s.",
 				Parameters: map[string]interface{}{
 					"type": "object",

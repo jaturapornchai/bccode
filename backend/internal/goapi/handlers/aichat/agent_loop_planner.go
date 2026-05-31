@@ -40,16 +40,16 @@ import (
 
 // QueryPlanItem — 1 query ที่จะยิงใน Phase 2
 type QueryPlanItem struct {
-	Tool string         `json:"tool"`
-	Args map[string]any `json:"args"`
+	Tool  string         `json:"tool"`
+	Args  map[string]any `json:"args"`
 	Label string         `json:"label,omitempty"`
 }
 
 // QueryPlan — output ของ Phase 1 (Planner)
 type QueryPlan struct {
 	IntentSummary string          `json:"intent_summary"`
-	Queries []QueryPlanItem `json:"queries"`
-	DirectAnswer string          `json:"direct_answer,omitempty"`
+	Queries       []QueryPlanItem `json:"queries"`
+	DirectAnswer  string          `json:"direct_answer,omitempty"`
 }
 
 // ExecutedQuery — ผลลัพธ์ของ query 1 ตัวใน Phase 2
@@ -423,7 +423,7 @@ func plannerSystemPrompt() string {
 {
   "intent_summary": "สรุปสั้นๆ ว่าผู้ใช้ถามอะไร (ภาษาไทย 1-2 ประโยค)",
   "queries": [
-    {"tool": "query_postgresql", "args": {"sql": "..."}, "label": "เหตุผล"}
+    {"tool": "query_mongodb", "args": {"collection": "...", "filter": "{...json...}", "limit": 20}, "label": "เหตุผล"}
   ],
   "direct_answer": ""
 }
@@ -433,37 +433,28 @@ func plannerSystemPrompt() string {
 ## กฎสำคัญ
 1. **ถ้าเป็น small talk/ทักทาย/ถามตัวตน** → queries=[], direct_answer="สวัสดีค่ะ ..." (ตอบแทนเลย)
 2. **ถ้าเป็นคำถามข้อมูล** → direct_answer="" แล้วใส่ queries
-3. **แตกเป็นหลาย query ถ้าจำเป็น** (เช่น barcode ลอง exact + partial, entity ลอง debtor + creditor)
+3. **แตกเป็นหลาย query ถ้าจำเป็น** (เช่น barcode ลอง exact + regex, entity ลอง debtors + creditors)
 4. **ทุก query ต้องมี filter/where** — ห้ามส่ง filter ว่าง (ได้ข้อมูลสุ่มไม่มีประโยชน์)
 5. **ถ้าเป็น SQL** → ใส่ LIMIT เสมอ
-6. **ลูกหนี้ = ลูกค้า** — ใช้ table ` + "`debtor`" + ` เท่านั้น (ไม่มี customer table)
+6. **ลูกหนี้ = ลูกค้า** — ใช้ MongoDB collection ` + "`debtors`" + ` เท่านั้น (ไม่มี customer collection)
 
 ## Tools ที่ใช้ได้
 
-### query_postgresql — args: {"sql": "SELECT ..."}
-PG scope ตาม shop อัตโนมัติ ไม่ต้อง WHERE shopid
-Tables สำคัญ:
-- ` + "`debtor`" + ` (ลูกหนี้/ลูกค้า) — columns: guidfixed, code, taxid, email, names (jsonb array of {name})
-- ` + "`creditor`" + ` (เจ้าหนี้) — โครงสร้างเหมือน debtor
-- ` + "`productbarcode`" + ` (สินค้า) — columns: itemcode, barcode, name0, unitcode, price1, price_retail, brandnames, categorynames
-- ` + "`doc`" + ` (document header) — columns: docno, docdate, duedate, transflag, totalamount, custcode, custname, isdelete
-  - transflag: 16,18=ใบขาย, 12,14=ใบซื้อ
-- ` + "`docdetail`" + ` (line items) — columns: itemcode, totalqty, calcflag (+1=IN, -1=OUT)
-
-**Query names ใน debtor/creditor ต้อง unnest jsonb:**
-` + "```sql" + `
-SELECT d.code, d.taxid, string_agg(DISTINCT n.elem->>'name',' / ') AS names
-FROM debtor d, jsonb_array_elements(d.names) AS n(elem)
-WHERE n.elem->>'name' ILIKE '%keyword%'
-GROUP BY d.code, d.taxid LIMIT 20
-` + "```" + `
-
 ### query_mongodb — args: {"collection": "...", "filter": "{...json...}", "limit": 20}
-Collections: debtor, creditor, barcodes, transaction-saleinvoice
+MongoDB is the operational source of truth.
+Collections:
+- ` + "`productBarcodes`" + ` (สินค้า/บาร์โค้ด) — barcode, itemcode, names[].name, prices
+- ` + "`debtors`" + ` (ลูกหนี้/ลูกค้า) — code, tax_id, email, names[].name
+- ` + "`creditors`" + ` (เจ้าหนี้/ซัพพลายเออร์) — code, tax_id, email, names[].name
+- ` + "`transactionSaleInvoice`" + ` (เอกสารขาย)
 filter เป็น JSON string ของ Mongo filter
 
+### query_postgresql — args: {"sql": "SELECT ..."}
+ใช้เฉพาะ relational processing/projection results เช่น posting, balance, stock costing, VAT/tax, AR/AP, GL.
+ถ้าไม่รู้ table/column ให้ introspect information_schema ก่อน ห้ามเดา และห้ามใช้ PostgreSQL เป็น CRUD source.
+
 ### query_clickhouse — args: {"sql": "SELECT ..."}
-Analytics/สถิติยอดขาย ใช้เมื่อต้องการ aggregate ข้อมูลใหญ่
+BI/analytics/reporting facts ใช้เมื่อต้องการ aggregate ข้อมูลใหญ่จาก processed facts เท่านั้น
 
 ### web_search — args: {"query": "..."}
 ค้นเว็บภายนอก ใช้เมื่อผู้ใช้ถามข้อมูลที่ไม่อยู่ในระบบ (ราคาตลาด, สูตรอาหาร, ข่าว)
@@ -476,10 +467,10 @@ Analytics/สถิติยอดขาย ใช้เมื่อต้อง
 ## ตัวอย่าง
 
 user: "8850007003001"
-→ {"intent_summary":"ผู้ใช้ค้นหาสินค้าด้วย barcode 8850007003001","queries":[{"tool":"query_postgresql","args":{"sql":"SELECT itemcode, barcode, name0, unitcode, price1, price_retail FROM productbarcode WHERE barcode = '8850007003001' LIMIT 5"},"label":"exact barcode"},{"tool":"query_postgresql","args":{"sql":"SELECT itemcode, barcode, name0 FROM productbarcode WHERE barcode ILIKE '%8850007003001%' LIMIT 10"},"label":"partial barcode (เผื่อมี suffix)"}],"direct_answer":""}
+→ {"intent_summary":"ผู้ใช้ค้นหาสินค้าด้วย barcode 8850007003001","queries":[{"tool":"query_mongodb","args":{"collection":"productBarcodes","filter":"{\"barcode\":\"8850007003001\"}","limit":5},"label":"exact barcode"},{"tool":"query_mongodb","args":{"collection":"productBarcodes","filter":"{\"barcode\":{\"$regex\":\"8850007003001\",\"$options\":\"i\"}}","limit":10},"label":"partial barcode"}],"direct_answer":""}
 
 user: "ร้านโฮม"
-→ {"intent_summary":"ค้นหาลูกหนี้/เจ้าหนี้ที่มีชื่อ 'โฮม'","queries":[{"tool":"query_postgresql","args":{"sql":"SELECT d.code, string_agg(DISTINCT n.elem->>'name',' / ') AS names FROM debtor d, jsonb_array_elements(d.names) AS n(elem) WHERE n.elem->>'name' ILIKE '%โฮม%' GROUP BY d.code LIMIT 20"},"label":"debtor โฮม"},{"tool":"query_postgresql","args":{"sql":"SELECT c.code, string_agg(DISTINCT n.elem->>'name',' / ') AS names FROM creditor c, jsonb_array_elements(c.names) AS n(elem) WHERE n.elem->>'name' ILIKE '%โฮม%' GROUP BY c.code LIMIT 20"},"label":"creditor โฮม"}],"direct_answer":""}
+→ {"intent_summary":"ค้นหาลูกหนี้/เจ้าหนี้ที่มีชื่อ 'โฮม'","queries":[{"tool":"query_mongodb","args":{"collection":"debtors","filter":"{\"names.name\":{\"$regex\":\"โฮม\",\"$options\":\"i\"}}","limit":20},"label":"debtors โฮม"},{"tool":"query_mongodb","args":{"collection":"creditors","filter":"{\"names.name\":{\"$regex\":\"โฮม\",\"$options\":\"i\"}}","limit":20},"label":"creditors โฮม"}],"direct_answer":""}
 
 user: "สวัสดี"
 → {"intent_summary":"ทักทาย","queries":[],"direct_answer":"สวัสดีค่ะ! น้องกุ้งยินดีให้บริการค่ะ 🦐 วันนี้อยากให้ช่วยเรื่องอะไรคะ?"}
@@ -488,7 +479,7 @@ user: "ยอดขายวันนี้"
 → {"intent_summary":"ดูยอดขายวันนี้","queries":[{"tool":"get_daily_sales","args":{"date":"` + today + `"},"label":"daily sales today"}],"direct_answer":""}
 
 user: "สีทาบ้านราคาเท่าไหร่"
-→ {"intent_summary":"ค้นหาสินค้าสีทาบ้านในระบบ","queries":[{"tool":"query_postgresql","args":{"sql":"SELECT itemcode, barcode, name0, price1, price_retail FROM productbarcode WHERE name0 ILIKE '%สีทา%' OR name0 ILIKE '%paint%' OR categorynames ILIKE '%สี%' LIMIT 20"},"label":"product paint"}],"direct_answer":""}`
+→ {"intent_summary":"ค้นหาสินค้าสีทาบ้านในระบบ","queries":[{"tool":"query_mongodb","args":{"collection":"productBarcodes","filter":"{\"names.name\":{\"$regex\":\"สีทา|paint\",\"$options\":\"i\"}}","limit":20},"label":"product paint"}],"direct_answer":""}`
 }
 
 func synthesizerSystemPrompt() string {

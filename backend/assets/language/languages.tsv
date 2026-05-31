@@ -773,6 +773,7 @@ colors	สี	Colors	颜色	色	ពណ៌	색상	ສີ	အရောင်	Màu	
 combine_table	รวมโต๊ะ	Combine Tables	合并桌子	テーブルを結合	បញ្ចូលតុ	테이블 합치기	ລວມໂຕະ	စားပွဲပေါင်းပါ	Gộp bàn	Combine Tables	Combine Tables	Combine Tables
 command_sent_processing	ส่งคำสั่งแล้ว กำลังประมวลผล...	Command sent, processing...	命令已发送，正在处理...	コマンド送信済み、処理中...	បានផ្ញើពាក្យបញ្ជា កំពុងដំណើរការ...	명령 전송 완료, 처리 중...	ສົ່ງຄຳສັ່ງແລ້ວ ກຳລັງປະມວນຜົນ...	အမိန့်ပေးပို့ပြီး လုပ်ဆောင်နေသည်...	Đã gửi lệnh, đang xử lý...	Command sent, processing...	Command sent, processing...	Command sent, processing...
 company	บริษัท	Company	公司	会社	ក្រុមហ៊ុន	회사	ບໍລິສັດ	ကုမ္ပဏီ	Công ty	Company	Company	Company
+company_profile	ข้อมูลบริษัท	Company Profile	公司资料	会社プロフィール	ព័ត៌មានក្រុមហ៊ុន	회사 프로필	ຂໍ້ມູນບໍລິສັດ	ကုမ္ပဏီပရိုဖိုင်	Hồ sơ công ty	Company Profile	Company Profile	Company Profile
 company_address	ที่อยู่	Address	地址	住所	អាសយដ្ឋាន	주소	ທີ່ຢູ່	လိပ်စာ	Địa chỉ	Address	Address	Address
 company_branch	สาขา	Branch	分店	支店	សាខា	지점	ສາຂາ	ဌာနခွဲ	Chi nhánh	Branch	Branch	Branch
 company_branch_address	ที่อยู่สาขา	Branch Address	分店地址	支店住所	អាសយដ្ឋានសាខា	지점 주소	ທີ່ຢູ່ສາຂາ	ဌာနခွဲလိပ်စာ	Địa chỉ chi nhánh	Branch Address	Branch Address	Branch Address
@@ -4516,7 +4517,12 @@ vat_sale	รายงานภาษีขาย	VAT Sale	销项税报告	売上
 vat_buy	รายงานภาษีซื้อ	VAT Purchase	进项税报告	仕入税レポート	របាយការណ៍ពន្ធទិញ	매입세 보고서	ລາຍງານພາສີຊື້	ဝယ်ယူခွန်အစီရင်ခံစာ	Báo cáo thuế mua vào	Laporan cukai belian	Laporan pajak pembelian	Ulat ng buwis sa pagbili
 reprocess	ทดสอบประมวลผลใหม่	Reprocess Test	重新处理测试	再処理テスト	សាកល្បងដំណើរការឡើងវិញ	재처리 테스트	ທົດສອບປະມວນຜົນໃໝ່	ပြန်လည်လုပ်ဆောင်မှုစမ်းသပ်	Kiểm tra xử lý lại	Ujian proses semula	Tes proses ulang	Reprocess test
 label_print	พิมพ์ป้ายสินค้า	Print Product Label	打印商品标签	商品ラベル印刷	បោះពុម្ពស្លាកផលិតផល	상품 라벨 인쇄	ພິມປ້າຍສິນຄ້າ	ကုန်ပစ္စည်းတံဆိပ်ပုံနှိပ်	In nhãn hàng hóa	Cetak label produk	Cetak label produk	I-print ang product label
-bom	สูตรประกอบสินค้า	Product BOM	产品BOM	製品BOM	BOM ផលិតផល	제품 BOM	ສູດການຜະລິດ	ကုန်ပစ္စည်း BOM	BOM sản phẩm	BOM produk	BOM produk	Product BOM
+product_tools	เครื่องมือสินค้า	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools	Product Tools
+productset	สินค้าชุด	Product Set	Product Set	Product Set	Product Set	Product Set	Product Set	Product Set	Product Set	Product Set	Product Set	Product Set
+shopee_mappings	Shopee Mappings	Shopee Mappings	Shopee Mappings	Shopee Mappings	Shopee Mappings	Shopee Mappings	Shopee Mappings	Shopee Mappings	Shopee Mappings	Shopee Mappings	Shopee Mappings	Shopee Mappings
+lazada_mappings	Lazada Mappings	Lazada Mappings	Lazada Mappings	Lazada Mappings	Lazada Mappings	Lazada Mappings	Lazada Mappings	Lazada Mappings	Lazada Mappings	Lazada Mappings	Lazada Mappings	Lazada Mappings
+tiktok_mappings	TikTok Mappings	TikTok Mappings	TikTok Mappings	TikTok Mappings	TikTok Mappings	TikTok Mappings	TikTok Mappings	TikTok Mappings	TikTok Mappings	TikTok Mappings	TikTok Mappings	TikTok Mappings
+bom	สูตรผลิต	Product BOM	产品BOM	製品BOM	BOM ផលិតផល	제품 BOM	ສູດການຜະລິດ	ကုန်ပစ္စည်း BOM	BOM sản phẩm	BOM produk	BOM produk	Product BOM
 add_product_branch	เพิ่มสินค้าเข้าตามสาขา	Add Product to Branch	添加商品到分店	支店に商品を追加	បន្ថែមផលិតផលទៅសាខា	지점에 상품 추가	ເພີ່ມສິນຄ້າໃຫ້ສາຂາ	ဌာနခွဲသို့ ကုန်ပစ္စည်းထည့်	Thêm hàng vào chi nhánh	Tambah produk ke cawangan	Tambah produk ke cabang	Magdagdag ng produkto sa branch
 add_product_department	เพิ่มสินค้าเข้าตามแผนก	Add Product to Department	添加商品到部门	部門に商品を追加	បន្ថែមផលិតផលទៅនាយកដ្ឋាន	부서에 상품 추가	ເພີ່ມສິນຄ້າໃຫ້ພະແນກ	ဌာနသို့ ကုန်ပစ္စည်းထည့်	Thêm hàng vào phòng ban	Tambah produk ke jabatan	Tambah produk ke departemen	Magdagdag ng produkto sa department
 coupon_setting	ตั้งค่าคูปอง	Coupon Setting	优惠券设置	クーポン設定	ការកំណត់គូប៉ុង	쿠폰 설정	ຕັ້ງຄ່າຄູປອງ	ကူပွန်ဆက်တင်	Cài đặt phiếu giảm giá	Tetapan kupon	Pengaturan kupon	Coupon setting

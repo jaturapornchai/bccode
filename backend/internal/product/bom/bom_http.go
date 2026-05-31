@@ -1,9 +1,11 @@
 package bom
 
 import (
+	"encoding/json"
 	"net/http"
 	"smlcloudplatform/internal/config"
 	common "smlcloudplatform/internal/models"
+	"smlcloudplatform/internal/product/bom/models"
 	"smlcloudplatform/internal/product/bom/repositories"
 	"smlcloudplatform/internal/product/bom/services"
 	product_repositories "smlcloudplatform/internal/product/productbarcode/repositories"
@@ -51,6 +53,7 @@ func (h BOMHttp) RegisterHttp() {
 	h.ms.GET("/product/bom/list", h.SearchBOMStep)
 	h.ms.POST("/product/bom", h.CreateBOM)
 	h.ms.GET("/product/bom/:id", h.InfoBOM)
+	h.ms.PUT("/product/bom/:id", h.UpdateBOM)
 	h.ms.DELETE("/product/bom/:id", h.DeleteBOM)
 }
 
@@ -67,6 +70,27 @@ func (h BOMHttp) RegisterHttp() {
 func (h BOMHttp) CreateBOM(ctx microservice.IContext) error {
 	authUsername := ctx.UserInfo().Username
 	shopID := ctx.UserInfo().ShopID
+	input := ctx.ReadInput()
+	if input != "" && input != "null" {
+		docReq := &models.ProductBarcodeBOMSaveRequest{}
+		err := json.Unmarshal([]byte(input), docReq)
+		if err != nil {
+			ctx.ResponseError(http.StatusBadRequest, err.Error())
+			return err
+		}
+
+		idx, err := h.svc.SaveRecipeBOM(shopID, authUsername, "", *docReq)
+		if err != nil {
+			ctx.ResponseError(http.StatusBadRequest, err.Error())
+			return err
+		}
+
+		ctx.Response(http.StatusCreated, common.ApiResponse{
+			Success: true,
+			ID:      idx,
+		})
+		return nil
+	}
 
 	barcode := ctx.QueryParam("barcode")
 
@@ -90,6 +114,46 @@ func (h BOMHttp) CreateBOM(ctx microservice.IContext) error {
 	}
 
 	ctx.Response(http.StatusCreated, common.ApiResponse{
+		Success: true,
+		ID:      idx,
+	})
+	return nil
+}
+
+// Update BOM godoc
+// @Description Update recipe BOM
+// @Tags		BOM
+// @Param		id  path      string  true  "BOM guidfixed"
+// @Param		BOM  body      models.ProductBarcodeBOMSaveRequest  true  "BOM"
+// @Accept 		json
+// @Success		200	{object}	common.ResponseSuccessWithID
+// @Failure		401 {object}	common.AuthResponseFailed
+// @Security     AccessToken
+// @Router /product/bom/{id} [put]
+func (h BOMHttp) UpdateBOM(ctx microservice.IContext) error {
+	userInfo := ctx.UserInfo()
+	authUsername := userInfo.Username
+	shopID := userInfo.ShopID
+	id := ctx.Param("id")
+	if id == "" {
+		ctx.ResponseError(http.StatusBadRequest, "guid is empty")
+		return nil
+	}
+
+	docReq := &models.ProductBarcodeBOMSaveRequest{}
+	err := json.Unmarshal([]byte(ctx.ReadInput()), docReq)
+	if err != nil {
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
+		return err
+	}
+
+	idx, err := h.svc.SaveRecipeBOM(shopID, authUsername, id, *docReq)
+	if err != nil {
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
+		return err
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
 		ID:      idx,
 	})

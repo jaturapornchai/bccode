@@ -20,20 +20,28 @@ type Warehouse struct {
 	Code string          `json:"code" bson:"code"`
 	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
 	Location *[]Location     `json:"location" bson:"location" validate:"omitempty,unique=Code,dive"`
+	Latitude  float64 `json:"latitude" bson:"latitude"`
+	Longitude float64 `json:"longitude" bson:"longitude"`
 }
 
 type Location struct {
-	Code string          `json:"code" bson:"code"`
-	Names *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
-	Shelf []Shelf         `json:"shelf" bson:"shelf" validate:"omitempty,unique=Code,dive"`
+	Code                 string          `json:"code" bson:"code"`
+	Names                *[]models.NameX `json:"names" bson:"names" validate:"required,min=1,unique=Code,dive"`
+	Shelf                []Shelf         `json:"shelf" bson:"shelf" validate:"omitempty,unique=Code,dive"`
+	SuitableProductTypes string          `json:"suitable_product_types" bson:"suitable_product_types"`
 }
 
 type Shelf struct {
-	Code string                `json:"code" bson:"code"`
-	Name string                `json:"name" bson:"name" validate:"required,min=1"`
-	Min int                   `json:"min" bson:"min" validate:"omitempty,gte=0"`
-	Max int                   `json:"max" bson:"max" validate:"omitempty,gte=0"`
-	ProductItems []ShelfProductBarcode `json:"productitems" bson:"productitems"`
+	Code                 string                `json:"code" bson:"code"`
+	Name                 string                `json:"name" bson:"name" validate:"required,min=1"`
+	Min                  int                   `json:"min" bson:"min" validate:"omitempty,gte=0"`
+	Max                  int                   `json:"max" bson:"max" validate:"omitempty,gte=0"`
+	ProductItems         []ShelfProductBarcode `json:"productitems" bson:"productitems"`
+	MaxWeight            float64               `json:"max_weight" bson:"max_weight"`
+	Width                float64               `json:"width" bson:"width"`
+	Length               float64               `json:"length" bson:"length"`
+	Height               float64               `json:"height" bson:"height"`
+	SuitableProductTypes string                `json:"suitable_product_types" bson:"suitable_product_types"`
 }
 
 type ShelfProductBarcode struct {
@@ -284,6 +292,8 @@ type WarehousePG struct {
 	Code string       `json:"code" gorm:"column:code"`
 	Names models.JSONB `json:"names" gorm:"column:names;type:jsonb"`
 	Location LocationsPG  `json:"location" gorm:"column:location;type:jsonb"`
+	Latitude  float64      `json:"latitude" gorm:"column:latitude"`
+	Longitude float64      `json:"longitude" gorm:"column:longitude"`
 }
 
 func (WarehousePG) TableName() string {
