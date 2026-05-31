@@ -11,6 +11,15 @@ Purpose: keep Codex, Claude Code, and other agents fast. Read this file first, t
 - Patch the smallest safe scope.
 - Verify with focused commands, not whole-repo checks.
 
+## Agent Fast Execution Contract
+- Applies to Codex, Claude Code, Gemini/Antigravity, and any agent working in this repo.
+- Default to targeted checks. Do not run expensive whole-repo commands such as `go test ./...`, broad browser automation, or full-repo scans unless Jead explicitly asks, the touched scope genuinely requires it, or targeted checks cannot provide useful evidence.
+- Docs/rules-only changes: use `git diff --check` plus staged secret scanning. Do not run frontend/backend build or test commands.
+- Frontend code changes: run `cd frontend; npm run typecheck`. Use browser verification only when UI behavior, layout, routing, or visual output changed.
+- Backend code changes: run tests for the touched package(s) or the narrowest useful command. If runtime code under `backend/` changes, rebuild local `mainapi` and check `/healthz` per project rules. Avoid repo-wide backend tests by default because this repo has known CGO/Kafka/env-sensitive noisy packages.
+- Long commands must be visible: state what is running, update Jead about every 30 seconds, and if a command exceeds roughly 2 minutes, report whether to continue, narrow, or stop based on evidence.
+- For meaningful changes, push the whole project after targeted verification and secret checks. Keep commits moving; do not wait on irrelevant broad checks.
+
 ## Fast Commands
 - Frontend typecheck: `cd frontend; npm run typecheck`
 - Focused frontend lint: `cd frontend; npm run lint -- <file>`

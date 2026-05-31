@@ -100,6 +100,7 @@ Related central entrypoints:
 - Persist Thai tax branch codes as normalized five-digit strings. Accept UI aliases such as `สำนักงานใหญ่`, `สนญ`, `HQ`, and `HO` only as input aliases that normalize to `00000`; accept numeric input such as `1` or `01` only after padding to `00001`.
 - Backend branch create/update/import endpoints must enforce this normalization and reject non-numeric or longer-than-five-digit branch codes. Frontend normalization is a UX aid only, not the source of truth.
 - A company must keep at least one branch. The head-office branch (`00000`) must not be deleted through normal branch CRUD.
+- **Workspace Company & Branch Selection**: When a company is selected in the workspace selection screen, the system must check the branch list. If no branch exists, it must automatically create the head-office branch (`00000` with Thai name `สำนักงานใหญ่`). The user must always be routed to the branch selection screen even if there is only a single branch available. Under no circumstances should the system automatically bypass the branch selection step.
 - Company records stay minimal: company name and company address. Branch records own tax/legal/document settings such as tax ID, VAT status/rate/type, document company names, branch names, contact/address, currency, timezone, and business flags.
 - Use the read-only audit command at `D:\bccode\backend\cmd\branch_code_audit\main.go` before any branch-code data migration. It must read MongoDB credentials from environment variables only and must not write data.
 
@@ -158,6 +159,16 @@ Related central entrypoints:
 - Read-only inspection of the remote is allowed when it does NOT touch the working tree: `git fetch` alone, `git log origin/...`, `git diff origin/...`, `git status`. Only overwrite/merge/reset actions are forbidden.
 - Push (local → remote) only when Jead explicitly asks. Default is to keep local ahead of GitHub. If local and remote diverge, surface it and ask — do not auto-resolve by pulling.
 - When Jead says `push to github`, `push to GitHub`, or equivalent without explicitly narrowing the scope, treat it as a request to push the whole project: stage all repo changes with `git add -A` from the repository root, run appropriate diff/secret verification, commit, and push the current branch. Do not switch to task-only partial staging unless Jead explicitly requests a limited scope.
+- After any moderate, multi-file, rule/schema/model, backend, frontend workflow, or otherwise important change, automatically push the whole project to GitHub: stage all repo changes with `git add -A`, run the narrow verification and secret checks appropriate to the change, commit, and push the current branch. Trivial read-only work does not need a push. R0 actions, remote divergence, or suspected secrets still require stopping and asking first.
+
+## Agent Fast Execution Contract
+- Applies to Codex, Claude Code, Gemini/Antigravity, and any other agent working in `D:\bccode`.
+- Prefer targeted evidence over broad slow checks. Avoid full-repo scans, broad browser automation, and `go test ./...` unless Jead explicitly asks, the touched scope genuinely requires it, or narrower checks cannot provide useful evidence.
+- Docs/rules-only changes: run `git diff --check` and staged secret scanning only. Do not spend time on frontend/backend build or test commands for documentation-only changes.
+- Frontend changes: run `cd frontend; npm run typecheck` for TypeScript/TSX changes. Use browser verification only for UI behavior, layout, routing, or visual changes.
+- Backend changes: run tests for touched packages or the narrowest useful command. When backend runtime code changes, rebuild local Docker Desktop `mainapi` and check `/healthz` per project rules. Treat repo-wide backend test failures from known CGO/Kafka/env-sensitive packages as noisy unless the touched scope points there.
+- Long-running commands must be visible. State the command and reason before running it, update Jead about every 30 seconds, and if it exceeds roughly 2 minutes, report whether continuing, narrowing, or stopping is the fastest safe path.
+- For meaningful changes, commit and push the whole project after targeted verification and secret checks. Do not block the push on irrelevant broad checks.
 
 ## Display and Information Completeness
 - **No Truncation / No Omission**: Displayed information, text, metadata, IDs, and labels must not be cut off, truncated (e.g. using `text-overflow: ellipsis` or overflow: hidden to hide text), or omitted. All details must be fully visible and wrapped properly to fit the layout.
