@@ -136,7 +136,7 @@ const emptyLineDialog: LineDialogState = {
   error: "",
   expired: false,
 };
-const companyMenuIds = new Set(["company", "branch", "employee", "company-type", "currency", "active-languages"]);
+const companyMenuIds = new Set(["company", "branch", "employee", "company-type", "currency"]);
 const generalMenuIds = new Set([
   "line-oa-user-link",
   "form-design",

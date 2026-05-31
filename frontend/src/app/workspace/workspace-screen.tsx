@@ -99,6 +99,15 @@ const emptyLineDialog: LineDialogState = {
   error: "",
   expired: false,
 };
+const accessSettingNavItems = [
+  { route: "/company", label: { th: "ข้อมูลบริษัทและสาขา", en: "Company & Branch" } },
+  { route: "/active_languages", label: { th: "ภาษาที่ใช้งาน", en: "Active Languages" } },
+  { route: "/user", label: { th: "ผู้ใช้งาน", en: "Users" } },
+  { route: "/permission_link", label: { th: "กำหนดสิทธิ์ผู้ใช้งาน", en: "Permission Link" } },
+  { route: "/permission_definition", label: { th: "กำหนดสิทธิ์หน้าจอ", en: "Permission Definition" } },
+  { route: "/permission_group", label: { th: "กำหนดสิทธิ์ตามกลุ่ม", en: "Permission Group" } },
+  { route: "/approval_setting", label: { th: "สิทธิ์การอนุมัติ", en: "Approval Permission" } },
+] as const;
 
 const workspaceTextEn = {
   backToCompanies: "Back to companies",
@@ -882,14 +891,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               <p className="px-2 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
                 {language === "th" ? "ตั้งค่าระบบและการเข้าถึง" : "Settings & Access"}
               </p>
-              {[
-                { route: "/company", label: language === "th" ? "ข้อมูลบริษัทและสาขา" : "Company & Branch" },
-                { route: "/user", label: language === "th" ? "ผู้ใช้งาน" : "Users" },
-                { route: "/permission_link", label: language === "th" ? "กำหนดสิทธิ์ผู้ใช้งาน" : "Permission Link" },
-                { route: "/permission_definition", label: language === "th" ? "กำหนดสิทธิ์หน้าจอ" : "Permission Definition" },
-                { route: "/permission_group", label: language === "th" ? "กำหนดสิทธิ์ตามกลุ่ม" : "Permission Group" },
-                { route: "/approval_setting", label: language === "th" ? "สิทธิ์การอนุมัติ" : "Approval Permission" },
-              ].map((item) => {
+              {accessSettingNavItems.map((item) => {
                 const isActive = activeAccessRoute === item.route;
                 return (
                   <button
@@ -902,7 +904,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                     type="button"
                     onClick={() => setActiveAccessRoute(item.route)}
                   >
-                    <span>{item.label}</span>
+                    <span>{language === "th" ? item.label.th : item.label.en}</span>
                   </button>
                 );
               })}
