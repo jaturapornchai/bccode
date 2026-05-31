@@ -300,11 +300,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         title: { key: "system_settings", th: "ตั้งค่าระบบ", en: "System Settings" },
         items: [
           tx("active-languages", "ภาษาที่ใช้งาน", "Active Languages", "/active_languages", "settings"),
-          tx("user", "ผู้ใช้งาน", "User", "/user", "settings"),
-          tx("permission-definition", "กำหนดสิทธิ์หน้าจอ", "Permission Definition", "/permission_definition", "settings"),
-          tx("permission-group", "กำหนดสิทธิ์ตามกลุ่ม", "Permission Group", "/permission_group", "settings"),
-          tx("approval-setting", "สิทธิ์การอนุมัติ", "Approval Permission", "/approval_setting", "settings"),
-          tx("permission-link", "กำหนดสิทธิ์พนักงาน", "Permission Link", "/permission_link", "settings"),
+
           tx("currency", "สกุลเงิน", "Currency", "/currency", "settings"),
           tx("company-type", "ประเภทธุรกิจ", "Business Type", "/business_type_screen", "settings"),
           { ...tx("company", "ข้อมูลบริษัท", "Company Profile", "/company", "settings"), label: ml("company_profile", "ข้อมูลบริษัท", "Company Profile") },

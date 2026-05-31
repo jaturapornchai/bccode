@@ -11,6 +11,7 @@ import {
   Crown,
   ExternalLink,
   GitBranch,
+  KeyRound,
   Languages,
   Loader2,
   LogOut,
@@ -34,9 +35,17 @@ import {
   type ShopListItem,
   workspaceStorageKeys,
 } from "@/lib/workspace-models";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { LanguageDialog } from "../language-dialog";
 import { ManualLink } from "../manual-link";
 import { ThemeToggle } from "../theme-toggle";
+import { SystemSettingsScreen } from "../system-settings/system-settings-screen";
 
 type Step = "loading" | "shops" | "create" | "branches";
 type Notice = { type: "success" | "error" | "info"; text?: string; textKey?: WorkspaceTextKey } | null;
@@ -263,6 +272,14 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   const [lineDialog, setLineDialog] = useState<LineDialogState>(emptyLineDialog);
   const [pendingUnitSetup, setPendingUnitSetup] = useState<PendingUnitSetup | null>(null);
   const [unitSetupSaving, setUnitSetupSaving] = useState(false);
+  const [activeAccessRoute, setActiveAccessRoute] = useState<string | null>(null);
+  const isSelectedShopOwner = useMemo(() => {
+    if (!selectedShop || !auth) return false;
+    const isCreator = selectedShop.is_creator === true
+      || Boolean(auth.username && selectedShop.createdby && selectedShop.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase())
+      || Boolean(auth.profile?.email && selectedShop.createdby && selectedShop.createdby.trim().toLowerCase() === auth.profile.email.trim().toLowerCase());
+    return isCreator || Number(selectedShop.role) === 2;
+  }, [selectedShop, auth]);
   const linePollTimer = useRef<number | null>(null);
   const activeBackendUrl = auth?.backendUrl ?? initialBackendUrl;
   const backendLanguage = useBackendLanguage(language, activeBackendUrl, language === initialLanguage ? initialBackendLanguage : undefined);
@@ -491,11 +508,43 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
 
       setSelectedShop(shop);
       setBranches(nextBranches);
+      const defaultBranch = nextBranches[0] ?? null;
       localStorage.setItem(workspaceStorageKeys.shopInfo, JSON.stringify(shopInfo.data ?? null));
+      localStorage.setItem(workspaceStorageKeys.workspace, JSON.stringify({ shop, branch: defaultBranch, shopInfo: shopInfo.data ?? null }));
 
       setStep("branches");
     } catch (error) {
       setNotice(error instanceof Error && error.message ? { type: "error", text: error.message } : { type: "error", textKey: "selectShopFailed" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function openAccessSettings(route: string) {
+    if (!auth) return;
+    if (shops.length === 0) {
+      setNotice({ type: "error", text: language === "th" ? "ไม่พบข้อมูลบริษัทสำหรับกำหนดสิทธิ์" : "No companies found for access control." });
+      return;
+    }
+    setBusy(true);
+    setNotice(null);
+    try {
+      const representativeShop = shops[0];
+      await callWorkspaceApi(auth, "select-shop", {
+        method: "POST",
+        body: { shopid: representativeShop.shopid },
+      });
+      const shopInfo = await callWorkspaceApi<{ data?: Record<string, unknown> }>(auth, `shop-info?shopid=${encodeURIComponent(representativeShop.shopid)}`);
+      const branchPayload = await callWorkspaceApi<{ data?: BranchListItem[] }>(auth, "branches?offset=0&limit=100&q=");
+      const nextBranches = Array.isArray(branchPayload.data) ? branchPayload.data : [];
+      const defaultBranch = nextBranches[0] ?? null;
+
+      localStorage.setItem(workspaceStorageKeys.shopInfo, JSON.stringify(shopInfo.data ?? null));
+      localStorage.setItem(workspaceStorageKeys.workspace, JSON.stringify({ shop: representativeShop, branch: defaultBranch, shopInfo: shopInfo.data ?? null }));
+
+      setActiveAccessRoute(route);
+    } catch (error) {
+      setNotice(error instanceof Error && error.message ? { type: "error", text: error.message } : { type: "error", text: language === "th" ? "เตรียมระบบกำหนดสิทธิ์ล้มเหลว" : "Failed to initialize access control." });
     } finally {
       setBusy(false);
     }
@@ -661,11 +710,41 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
             <h2>{currentTitle}</h2>
             <p>{currentSummary}</p>
           </div>
-          {step === "shops" && canCreateCompany ? (
-            <button className="primary-button workspace-head-action" type="button" onClick={() => setStep("create")}>
-              <Plus size={17} /> {text("createCompanyNew")}
-            </button>
-          ) : null}
+          <div className="flex items-center gap-2">
+            {step === "shops" ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="secondary-button workspace-head-action flex items-center gap-1.5" type="button">
+                    <KeyRound size={17} />
+                    <span>{language === "th" ? "การเข้าถึง" : "Access"}</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-card border border-border">
+                  <DropdownMenuItem className="cursor-pointer font-medium" onClick={() => void openAccessSettings("/user")}>
+                    {language === "th" ? "ผู้ใช้งาน" : "Users"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer font-medium" onClick={() => void openAccessSettings("/permission_definition")}>
+                    {language === "th" ? "กำหนดสิทธิ์หน้าจอ" : "Permission Definition"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer font-medium" onClick={() => void openAccessSettings("/permission_group")}>
+                    {language === "th" ? "กำหนดสิทธิ์ตามกลุ่ม" : "Permission Group"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer font-medium" onClick={() => void openAccessSettings("/approval_setting")}>
+                    {language === "th" ? "สิทธิ์การอนุมัติ" : "Approval Permission"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer font-medium" onClick={() => void openAccessSettings("/permission_link")}>
+                    {language === "th" ? "กำหนดสิทธิ์พนักงาน" : "Permission Link"}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
+            {step === "shops" && canCreateCompany ? (
+              <button className="primary-button workspace-head-action flex items-center gap-1.5" type="button" onClick={() => setStep("create")}>
+                <Plus size={17} />
+                <span>{text("createCompanyNew")}</span>
+              </button>
+            ) : null}
+          </div>
         </div>
 
         <div className="step-strip">
@@ -931,6 +1010,38 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 {unitSetupSaving ? <Loader2 className="spin" aria-hidden="true" size={18} /> : <Plus aria-hidden="true" size={18} />}
                 <span>{unitSetupConfirmText}</span>
               </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {activeAccessRoute ? (
+        <div className="dialog-backdrop" role="presentation">
+          <section className="line-login-dialog max-w-5xl w-full h-[90dvh] flex flex-col" role="dialog" aria-modal="true">
+            <div className="dialog-header shrink-0">
+              <div>
+                <p className="eyebrow">{language === "th" ? "การเข้าถึง" : "ACCESS CONTROL"}</p>
+                <h2>
+                  {activeAccessRoute === "/user" && (language === "th" ? "ผู้ใช้งาน" : "Users")}
+                  {activeAccessRoute === "/permission_definition" && (language === "th" ? "กำหนดสิทธิ์หน้าจอ" : "Permission Definition")}
+                  {activeAccessRoute === "/permission_group" && (language === "th" ? "กำหนดสิทธิ์ตามกลุ่ม" : "Permission Group")}
+                  {activeAccessRoute === "/approval_setting" && (language === "th" ? "สิทธิ์การอนุมัติ" : "Approval Permission")}
+                  {activeAccessRoute === "/permission_link" && (language === "th" ? "กำหนดสิทธิ์พนักงาน" : "Permission Link")}
+                </h2>
+              </div>
+              <button className="icon-button dialog-close" type="button" onClick={() => setActiveAccessRoute(null)}>
+                ×
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 bg-card rounded-b-2xl">
+              <SystemSettingsScreen
+                route={activeAccessRoute}
+                embedded
+                hideChrome
+                branchOverride={null}
+                language={language}
+                initialLanguage={language}
+              />
             </div>
           </section>
         </div>

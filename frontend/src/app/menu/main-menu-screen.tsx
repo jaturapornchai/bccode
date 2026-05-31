@@ -136,9 +136,19 @@ const emptyLineDialog: LineDialogState = {
   error: "",
   expired: false,
 };
-const accessMenuIds = new Set(["user", "permission-definition", "permission-group", "approval-setting", "permission-link"]);
+const companyMenuIds = new Set(["company", "branch", "employee", "company-type", "currency", "active-languages"]);
+const generalMenuIds = new Set([
+  "line-oa-user-link",
+  "form-design",
+  "line-notify",
+  "mcp-token",
+  "ai-provider",
+  "copy-uat-dev"
+]);
+
 const systemTreeFolders = [
-  { id: "access-control", itemIds: accessMenuIds, label: { key: "access_control", th: "การเข้าถึง", en: "Access" }, seedId: "user" },
+  { id: "company-settings", itemIds: companyMenuIds, label: { key: "company_settings", th: "ตั้งค่าบริษัท", en: "Company Settings" }, seedId: "company" },
+  { id: "general-settings", itemIds: generalMenuIds, label: { key: "general_settings", th: "ตั้งค่าทั่วไป", en: "General Settings" }, seedId: "line-oa-user-link" },
 ];
 const menuUiKeys = {
   closeTab: "close_tab",
