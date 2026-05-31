@@ -705,8 +705,8 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
 
   if (step === "access" && activeAccessRoute) {
     return (
-      <main className="workspace-page">
-        <section className="access-control-dialog w-full h-[100vh] rounded-none border-none shadow-none flex flex-col" role="dialog" aria-modal="true">
+      <main className="w-screen h-screen bg-background flex flex-col overflow-hidden">
+        <section className="w-full h-full flex flex-col bg-card" role="dialog" aria-modal="true">
           <div className="dialog-header shrink-0 flex items-center justify-between">
             <div className="flex items-center gap-6 min-w-0">
               <button
