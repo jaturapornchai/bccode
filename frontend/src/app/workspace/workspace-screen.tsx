@@ -358,8 +358,35 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
 
   const filteredShops = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return shops;
-    return shops
+    
+    // Sort branches by code (numeric comparison)
+    const sortBranches = (branchList: any[]) => {
+      if (!Array.isArray(branchList)) return [];
+      return [...branchList].sort((a, b) => {
+        const codeA = a.code || "";
+        const codeB = b.code || "";
+        return codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: "base" });
+      });
+    };
+
+    // Sort shops alphabetically by display name
+    const sortShops = (shopList: ShopListItem[]) => {
+      return [...shopList].sort((a, b) => {
+        const nameA = shopDisplayName(a);
+        const nameB = shopDisplayName(b);
+        return nameA.localeCompare(nameB, "th", { sensitivity: "base" });
+      });
+    };
+
+    if (!needle) {
+      const shopsWithSortedBranches = shops.map((shop) => ({
+        ...shop,
+        branches: sortBranches((shop as any).branches || []),
+      }));
+      return sortShops(shopsWithSortedBranches);
+    }
+
+    const matched = shops
       .map((shop) => {
         const shopMatches = `${shopDisplayName(shop)} ${shop.shopid} ${shop.createdby ?? ""}`.toLowerCase().includes(needle);
         const matchedBranches =
@@ -369,12 +396,14 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
         if (shopMatches || matchedBranches.length > 0) {
           return {
             ...shop,
-            branches: shopMatches ? (shop as any).branches : matchedBranches,
+            branches: sortBranches(shopMatches ? (shop as any).branches || [] : matchedBranches),
           };
         }
         return null;
       })
       .filter(Boolean) as ShopListItem[];
+
+    return sortShops(matched);
   }, [query, shops]);
 
   const filteredBranches = useMemo(() => {
