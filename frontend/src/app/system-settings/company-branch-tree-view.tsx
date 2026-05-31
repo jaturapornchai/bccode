@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { normalizeLanguageConfigs } from "./system-settings-screen";
 import { deriveMainApiUrl } from "@/lib/backend-url";
 import { NamesEditor } from "@/components/product-barcode/names-editor";
-import { isThaiHeadOfficeBranchCode } from "@/lib/thai-branch-code";
+import { isThaiHeadOfficeBranchCode, normalizeThaiTaxBranchCode } from "@/lib/thai-branch-code";
 
 interface CompanyBranchTreeViewProps {
   auth: { token: string; backendUrl: string } | null;
@@ -69,6 +69,7 @@ interface BranchRecord {
 
 type NodeType = "company" | "branch";
 type ConfirmAction = "save" | "delete";
+type OrganizationFormType = "edit_company" | "edit_branch" | "create_company" | "create_branch";
 
 interface SelectedNode {
   type: NodeType;
@@ -98,6 +99,7 @@ export function CompanyBranchTreeView({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [deleteError, setDeleteError] = useState("");
 
   const mainApiUrl = useMemo(() => {
@@ -122,7 +124,7 @@ export function CompanyBranchTreeView({
 
   // Selected Node for Right Form Editing
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
-  const [formType, setFormType] = useState<"edit_company" | "edit_branch" | "create_company" | "create_branch" | null>(null);
+  const [formType, setFormType] = useState<OrganizationFormType | null>(null);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [randomCode, setRandomCode] = useState("");
@@ -242,9 +244,11 @@ export function CompanyBranchTreeView({
   const handleSave = async () => {
     if (!auth || !selectedNode || !formType) return;
     setSaving(true);
+    setSaveError("");
 
     try {
       const namesList = formNames;
+      const normalizedBranchCode = formType.includes("branch") ? normalizeThaiTaxBranchCode(formCode) : "";
 
       let url = "";
       let method = "POST";
@@ -273,7 +277,7 @@ export function CompanyBranchTreeView({
         method = "POST";
         body = {
           company_guid: selectedNode.company_guid,
-          code: formCode,
+          code: normalizedBranchCode,
           names: namesList,
           is_active: formIsActive,
         };
@@ -282,7 +286,7 @@ export function CompanyBranchTreeView({
         method = "PUT";
         body = {
           company_guid: selectedNode.company_guid,
-          code: formCode,
+          code: normalizedBranchCode,
           names: namesList,
           is_active: formIsActive,
         };
@@ -297,29 +301,43 @@ export function CompanyBranchTreeView({
         body: JSON.stringify(body),
       });
 
-      const json = await res.json();
+      const json = (await res.json().catch(() => ({}))) as { success?: boolean; id?: string; message?: string };
+      if (!res.ok || json.success === false) {
+        throw new Error(saveErrorMessage(json.message, formType));
+      }
       if (json.success) {
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 2000);
         await loadData();
         if (formType.startsWith("create")) {
+          const createdCode = formType === "create_branch" ? normalizedBranchCode : formCode;
+          const createdData = {
+            guid_fixed: json.id,
+            code: createdCode,
+            names: namesList,
+            is_active: formIsActive,
+            ...(formType === "create_company" ? { tax_id: formTaxId } : {}),
+          };
+          if (formType === "create_company") {
+            setCompanies((prev) => prev.some((row) => row.guid_fixed === json.id) ? prev : [...prev, createdData]);
+          } else {
+            setBranches((prev) => prev.some((row) => row.guid_fixed === json.id) ? prev : [
+              ...prev,
+              { ...createdData, company_guid: selectedNode.company_guid },
+            ]);
+          }
           // Select newly created node
           setSelectedNode({
             type: formType === "create_company" ? "company" : "branch",
             guid_fixed: json.id,
             company_guid: selectedNode.company_guid,
-            data: {
-              guid_fixed: json.id,
-              code: formCode,
-              names: namesList,
-              is_active: formIsActive,
-              ...(formType === "create_company" ? { tax_id: formTaxId } : {}),
-            },
+            data: createdData,
           });
           setFormType(formType === "create_company" ? "edit_company" : "edit_branch");
         }
       }
     } catch (e) {
+      setSaveError(e instanceof Error && e.message ? e.message : "บันทึกข้อมูลไม่สำเร็จ");
       console.error(e);
     } finally {
       setSaving(false);
@@ -615,6 +633,11 @@ export function CompanyBranchTreeView({
                     language={language}
                   />
                 </div>
+                {saveError && (
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive">
+                    {saveError}
+                  </div>
+                )}
 
                  <div className="flex items-center gap-2 pt-2">
                   <input
@@ -734,5 +757,25 @@ function deleteErrorMessage(message: string | undefined, node: SelectedNode): st
       return "ไม่พบข้อมูลบริษัทที่ต้องการลบ";
     default:
       return message || (node.type === "company" ? "ลบบริษัทไม่สำเร็จ" : "ลบสาขาไม่สำเร็จ");
+  }
+}
+
+function saveErrorMessage(message: string | undefined, formType: OrganizationFormType): string {
+  void formType;
+  switch (message) {
+    case "branch code is required":
+      return "กรุณากรอกรหัสสาขา";
+    case "branch code must be numeric and no more than 5 digits":
+    case "branch code must be no more than 5 digits":
+      return "รหัสสาขาต้องเป็นตัวเลขไม่เกิน 5 หลัก";
+    case "company_guid is required":
+      return "ไม่พบบริษัทของสาขาที่กำลังเพิ่ม กรุณากดเพิ่มสาขาจากบริษัทอีกครั้ง";
+    case "company not found":
+      return "ไม่พบบริษัทในกิจการนี้ กรุณาโหลดข้อมูลใหม่แล้วลองอีกครั้ง";
+    case "branch code is exists":
+      return "รหัสสาขานี้มีอยู่แล้วในบริษัทนี้";
+    default:
+      if (message?.includes("duplicate key")) return "รหัสนี้ซ้ำกับข้อมูลเดิม";
+      return message || "บันทึกข้อมูลไม่สำเร็จ";
   }
 }
