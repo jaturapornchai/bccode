@@ -2367,17 +2367,39 @@ h2:not([class]) {
   color: var(--text);
 }
 
-:root[data-theme="light"] .workspace-page,
+:root[data-theme="light"] .workspace-page {
+  background:
+    linear-gradient(90deg, rgba(248, 250, 252, 0.94) 0%, rgba(248, 250, 252, 0.84) 44%, rgba(248, 250, 252, 0.72) 100%),
+    radial-gradient(circle at top left, rgba(99, 102, 241, 0.10) 0%, transparent 40%),
+    radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.08) 0%, transparent 45%),
+    url("/workspace-background-light.webp?v=20260531-workspace-thai-sme"),
+    #f8fafc;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
 :root[data-theme="light"] .menu-page {
-  background: 
+  background:
     radial-gradient(circle at top left, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
     radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.05) 0%, transparent 45%),
     #f8fafc;
 }
 
-:root[data-theme="dark"] .workspace-page,
+:root[data-theme="dark"] .workspace-page {
+  background:
+    linear-gradient(90deg, rgba(15, 23, 42, 0.94) 0%, rgba(15, 23, 42, 0.86) 45%, rgba(15, 23, 42, 0.74) 100%),
+    radial-gradient(circle at top left, rgba(99, 102, 241, 0.18) 0%, transparent 45%),
+    radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.12) 0%, transparent 45%),
+    url("/workspace-background-dark.webp?v=20260531-workspace-thai-sme"),
+    #0f172a;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
 :root[data-theme="dark"] .menu-page {
-  background: 
+  background:
     radial-gradient(circle at top left, rgba(99, 102, 241, 0.15) 0%, transparent 45%),
     radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.08) 0%, transparent 45%),
     #0f172a;
@@ -2403,8 +2425,12 @@ h2:not([class]) {
   transition: all 0.3s ease;
 }
 
+:root[data-theme="light"] .workspace-topbar {
+  background: rgba(255, 255, 255, 0.68);
+}
+
 :root[data-theme="dark"] .workspace-topbar {
-  background: rgba(30, 41, 59, 0.7);
+  background: rgba(15, 23, 42, 0.68);
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
 }
@@ -2489,11 +2515,19 @@ h2:not([class]) {
   transition: all 0.3s ease;
 }
 
+:root[data-theme="light"] .workspace-panel {
+  background: rgba(255, 255, 255, 0.68);
+}
+
 :root[data-theme="dark"] .workspace-panel,
 :root[data-theme="dark"] .menu-workspace {
   background: rgba(30, 41, 59, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+:root[data-theme="dark"] .workspace-panel {
+  background: rgba(15, 23, 42, 0.58);
 }
 
 .workspace-panel-head {
