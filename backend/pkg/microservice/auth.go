@@ -56,6 +56,13 @@ type AuthService struct {
 	encrypt               encrypt.Encrypt
 }
 
+func cacheString(value interface{}) string {
+	if value == nil {
+		return ""
+	}
+	return fmt.Sprintf("%v", value)
+}
+
 func NewAuthService(cacher ICacher, expireTimeBearer time.Duration, expireTimeRefresh time.Duration) *AuthService {
 
 	return &AuthService{
@@ -123,7 +130,7 @@ func (authService *AuthService) MWFuncWithRedisMixShop(cacher ICacher, shopPath 
 
 			if len(tempUserInfo.Username) < 1 {
 
-				tempUserInfoRaw, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "shopid", "role"})
+				tempUserInfoRaw, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid", "shopid", "role"})
 
 				if err != nil {
 					return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Token Invalid."})
@@ -134,12 +141,16 @@ func (authService *AuthService) MWFuncWithRedisMixShop(cacher ICacher, shopPath 
 					tempUserInfo.Name = fmt.Sprintf("%v", tempUserInfoRaw[1])
 
 					if tempUserInfoRaw[2] != nil {
-						tempUserInfo.ShopID = fmt.Sprintf("%v", tempUserInfoRaw[2])
+						tempUserInfo.UID = cacheString(tempUserInfoRaw[2])
+					}
+
+					if tempUserInfoRaw[3] != nil {
+						tempUserInfo.ShopID = fmt.Sprintf("%v", tempUserInfoRaw[3])
 					}
 				}
 
-				if tempUserInfoRaw[3] != nil {
-					userRole, err := strconv.Atoi(fmt.Sprintf("%v", tempUserInfoRaw[3]))
+				if tempUserInfoRaw[4] != nil {
+					userRole, err := strconv.Atoi(fmt.Sprintf("%v", tempUserInfoRaw[4]))
 					tempUserInfo.Role = uint8(userRole)
 
 					if err != nil {
@@ -174,6 +185,7 @@ func (authService *AuthService) MWFuncWithRedisMixShop(cacher ICacher, shopPath 
 			userInfo := models.UserInfo{
 				Username: tempUserInfo.Username,
 				Name:     tempUserInfo.Name,
+				UID:      tempUserInfo.UID,
 			}
 
 			if !thisPathExceptShopSelected {
@@ -223,7 +235,7 @@ func (authService *AuthService) MWFuncWithRedis(cacher ICacher, publicPath ...st
 
 			cacheKey := authService.GetPrefixCacheKey(tokenCtx.tokenType) + tokenCtx.token
 
-			tempUserInfo, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "shopid", "role"})
+			tempUserInfo, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid", "shopid", "role"})
 
 			if err != nil || tempUserInfo[0] == nil {
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Token Invalid."})
@@ -231,25 +243,26 @@ func (authService *AuthService) MWFuncWithRedis(cacher ICacher, publicPath ...st
 
 			tempShopID := ""
 
-			if tempUserInfo[2] != nil {
-				tempShopID = fmt.Sprintf("%v", tempUserInfo[2])
+			if tempUserInfo[3] != nil {
+				tempShopID = fmt.Sprintf("%v", tempUserInfo[3])
 			}
 
 			if len(string(tempShopID)) < 1 {
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Shop not selected."})
 			}
 
-			userRole, err := strconv.ParseUint(fmt.Sprintf("%v", tempUserInfo[3]), 10, 8)
+			userRole, err := strconv.ParseUint(fmt.Sprintf("%v", tempUserInfo[4]), 10, 8)
 
 			if err != nil {
 				fmt.Println(err)
-				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": fmt.Sprintf("User role invalid. %v", tempUserInfo[3])})
+				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": fmt.Sprintf("User role invalid. %v", tempUserInfo[4])})
 			}
 
 			userInfo := models.UserInfo{
 				Username: fmt.Sprintf("%v", tempUserInfo[0]),
 				Name:     fmt.Sprintf("%v", tempUserInfo[1]),
-				ShopID:   fmt.Sprintf("%v", tempUserInfo[2]),
+				UID:      cacheString(tempUserInfo[2]),
+				ShopID:   cacheString(tempUserInfo[3]),
 				Role:     uint8(userRole),
 			}
 
@@ -282,7 +295,7 @@ func (authService *AuthService) MWFuncWithShop(cacher ICacher, publicPath ...str
 
 			cacheKey := authService.GetPrefixCacheKey(tokenCtx.tokenType) + tokenCtx.token
 
-			tempUserInfo, err := authService.cacher.HMGet(cacheKey, []string{"username", "name"})
+			tempUserInfo, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid"})
 
 			if err != nil {
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Token Invalid."})
@@ -295,6 +308,7 @@ func (authService *AuthService) MWFuncWithShop(cacher ICacher, publicPath ...str
 			userInfo := models.UserInfo{
 				Username: fmt.Sprintf("%v", tempUserInfo[0]),
 				Name:     fmt.Sprintf("%v", tempUserInfo[1]),
+				UID:      cacheString(tempUserInfo[2]),
 			}
 
 			c.Set("UserInfo", userInfo)
@@ -405,6 +419,7 @@ func (authService *AuthService) GenerateTokenWithRedis(tokenType TokenType, user
 	authService.cacher.HMSet(cacheKey, map[string]interface{}{
 		"username": userInfo.Username,
 		"name":     userInfo.Name,
+		"uid":      userInfo.UID,
 	})
 	authService.SetTokenExpire(tokenType, cacheKey)
 
@@ -419,6 +434,7 @@ func (authService *AuthService) GenerateTokenWithRedisExpire(tokenType TokenType
 	authService.cacher.HMSet(cacheKey, map[string]interface{}{
 		"username": userInfo.Username,
 		"name":     userInfo.Name,
+		"uid":      userInfo.UID,
 		"shopid":   userInfo.ShopID,
 		"role":     userInfo.Role,
 	})
@@ -445,7 +461,7 @@ func (authService *AuthService) SelectShop(tokenType TokenType, tokenStr string,
 func (authService *AuthService) RefreshToken(token string) (string, string, error) {
 	cacheKey := authService.GetPrefixCacheKey(AUTHTYPE_REFRESH) + token
 
-	tempUserInfo, err := authService.cacher.HMGet(cacheKey, []string{"username", "name"})
+	tempUserInfo, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid"})
 
 	if err != nil || tempUserInfo[0] == nil {
 		return "", "", err
@@ -454,6 +470,7 @@ func (authService *AuthService) RefreshToken(token string) (string, string, erro
 	userInfo := models.UserInfo{
 		Username: fmt.Sprintf("%v", tempUserInfo[0]),
 		Name:     fmt.Sprintf("%v", tempUserInfo[1]),
+		UID:      cacheString(tempUserInfo[2]),
 	}
 
 	tokenStr, err := authService.GenerateTokenWithRedis(AUTHTYPE_BEARER, userInfo)

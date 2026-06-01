@@ -168,7 +168,7 @@ func (h ShopMemberHttp) ListShopUser(ctx microservice.IContext) error {
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.ListShopByUser(authUsername, pageable)
+	docList, pagination, err := h.svc.ListShopByUser(authUsername, userInfo.UID, pageable)
 
 	if err != nil {
 		ctx.ResponseError(400, "find failed")

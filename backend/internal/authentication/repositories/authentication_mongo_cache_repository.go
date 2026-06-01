@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"smlcloudplatform/internal/authentication/models"
+	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/pkg/microservice"
+	"strings"
 	"time"
 
 	"github.com/jellydator/ttlcache/v3"
@@ -155,6 +157,15 @@ func (r AuthenticationMongoCacheRepository) CreateUser(ctx context.Context, user
 }
 
 func (r AuthenticationMongoCacheRepository) UpdateUser(ctx context.Context, username string, user models.UserDoc) error {
+	existingUser := &models.UserDoc{}
+	if err := r.pst.FindOne(ctx, &models.UserDoc{}, bson.M{"username": username}, existingUser); err == nil {
+		if strings.TrimSpace(existingUser.UID) != "" {
+			user.UID = existingUser.UID
+		}
+	}
+	if strings.TrimSpace(user.UID) == "" {
+		user.UID = utils.NewGUID()
+	}
 
 	filterDoc := map[string]interface{}{
 		"username": username,
@@ -166,7 +177,10 @@ func (r AuthenticationMongoCacheRepository) UpdateUser(ctx context.Context, user
 		return err
 	}
 
-	r.clearnCache(user.Username)
+	r.clearnCache(username)
+	if user.Username != username {
+		r.clearnCache(user.Username)
+	}
 
 	return nil
 }

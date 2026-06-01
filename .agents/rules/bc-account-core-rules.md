@@ -112,6 +112,8 @@ Related central entrypoints:
 - User-facing codes, names, document numbers, SKU, barcode, and similar fields exist for users to see, search, print, and communicate; they are not the persisted record identity.
 - Business reference fields between records must store the relevant user/business code, not the target record GUID, when the domain expects code-based references. Example: product or barcode unit references must store `unitcode` (รหัสหน่วยนับ), not the product unit `guid_fixed`.
 - The referenced master record still has its own immutable `guid_fixed`; the relation value is the business code. If a legacy screen/API uses a code as CRUD identity, migrate CRUD identity toward GUID while keeping code-based search or explicit lookup endpoints for user convenience.
+- User identity is stable on `users.uid`. `username` / email / employee code is mutable business/login text. User memberships, shop access, tokens, approvals, and downstream projections must carry or resolve `users.uid`; keep username-based dual-read only as a transition path for old data/tokens. Do not overwrite an existing `users.uid` on profile/password/permission updates.
+- `shopUsers.shopid` is the tenant/workspace id and equals `shops.guid_fixed`; do not rename it. `shopUsers.user_uid` references `users.uid` and is the primary join key for rename-safe membership lookup, while `shopUsers.username` remains visible/searchable transition data.
 
 ## Thai SME Business Domain
 - BC Ai Account supports Thai SME business operations, not generic admin CRUD.

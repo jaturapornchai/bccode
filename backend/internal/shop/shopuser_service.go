@@ -19,7 +19,7 @@ type IShopUserService interface {
 	CleanupEmptyUsers(shopID string) (int64, error)
 
 	InfoShopByUser(shopID string, username string) (models.ShopUserProfile, error)
-	ListShopByUser(authUsername string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error)
+	ListShopByUser(authUsername string, authUserUID string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error)
 	ListUserInShop(shopID string, pageable micromodels.Pageable) ([]models.ShopUserProfile, mongopagination.PaginationData, error)
 
 	// SyncLineData - sync LINE data จาก LIFF (ใช้สำหรับ callback จาก lineoa-liff)
@@ -110,6 +110,7 @@ func (svc ShopUserService) InfoShopByUser(shopID string, username string) (model
 	// Basic info
 	shopUserProfile.ShopID = shopUser.ShopID
 	shopUserProfile.Username = username
+	shopUserProfile.UserUID = shopUser.UserUID
 	shopUserProfile.Role = shopUser.Role
 	shopUserProfile.IsAccessDisabled = shopUser.IsAccessDisabled
 	shopUserProfile.AccessDisabledAt = shopUser.AccessDisabledAt
@@ -149,9 +150,16 @@ func (svc ShopUserService) InfoShopByUser(shopID string, username string) (model
 	return shopUserProfile, err
 }
 
-func (svc ShopUserService) ListShopByUser(authUsername string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error) {
+func (svc ShopUserService) ListShopByUser(authUsername string, authUserUID string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error) {
 
-	docList, pagination, err := svc.repo.FindByUsernamePage(context.Background(), authUsername, pageable)
+	var docList []models.ShopUserInfo
+	var pagination mongopagination.PaginationData
+	var err error
+	if strings.TrimSpace(authUserUID) != "" {
+		docList, pagination, err = svc.repo.FindByUserUIDPage(context.Background(), authUserUID, pageable)
+	} else {
+		docList, pagination, err = svc.repo.FindByUsernamePage(context.Background(), authUsername, pageable)
+	}
 
 	if err != nil {
 		return docList, pagination, err
@@ -212,6 +220,7 @@ func (svc ShopUserService) ListUserInShop(shopID string, pageable micromodels.Pa
 
 		shopUserProfile.ShopID = doc.ShopID
 		shopUserProfile.Username = doc.Username
+		shopUserProfile.UserUID = doc.UserUID
 		shopUserProfile.Role = doc.Role
 		shopUserProfile.Position = doc.Position
 		shopUserProfile.Department = doc.Department
@@ -316,6 +325,7 @@ func (svc ShopUserService) create(ctx context.Context, shopID string, username s
 func (svc ShopUserService) SaveUserFullProfile(shopID string, authUsername string, req *models.UserRoleRequest) error {
 	username := utils.NormalizeUsername(req.Username)
 	editusername := utils.NormalizeUsername(req.EditUsername)
+	req.EditUsername = editusername
 
 	if sameUsername(authUsername, username) || sameUsername(authUsername, editusername) {
 		return errors.New("can not edit self permission")
@@ -335,9 +345,16 @@ func (svc ShopUserService) SaveUserFullProfile(shopID string, authUsername strin
 		return err
 	}
 
-	existingTarget, existingTargetErr := svc.repo.FindByShopIDAndUsername(context.Background(), shopID, username)
+	lookupUsername := username
+	if editusername != "" {
+		lookupUsername = editusername
+	}
+	existingTarget, existingTargetErr := svc.repo.FindByShopIDAndUsername(context.Background(), shopID, lookupUsername)
 	if existingTargetErr != nil {
 		existingTarget = models.ShopUser{}
+	}
+	if existingTarget.UserUID != "" {
+		req.UserUID = existingTarget.UserUID
 	}
 
 	if err = applyAccessStatus(req, existingTarget, authUsername, time.Now().UTC(), sameUsername(username, createdBy)); err != nil {

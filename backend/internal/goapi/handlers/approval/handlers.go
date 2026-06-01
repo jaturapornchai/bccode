@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"smlcloudplatform/internal/goapi/logger"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -146,6 +147,7 @@ func checkConnection(c echo.Context) error {
 
 // ApproverInfo represents approver information in each rule
 type ApproverInfo struct {
+	ApproverUserUID string `bson:"approver_user_uid,omitempty" json:"approver_user_uid,omitempty"`
 	UserCode        string `bson:"user_code" json:"user_code"`
 	UserName        string `bson:"user_name" json:"user_name"`
 	Email           string `bson:"email,omitempty" json:"email,omitempty"`
@@ -184,6 +186,18 @@ type POApprovalSettingRequest struct {
 	Rules            []ApprovalRule `json:"rules"`
 	IsActive         *bool          `json:"is_active"`
 	Action           string         `json:"action"` // list, get, save, delete
+}
+
+func enrichApproverUserUIDs(ctx context.Context, rules []ApprovalRule) []ApprovalRule {
+	for ruleIdx := range rules {
+		for approverIdx := range rules[ruleIdx].Approvers {
+			if strings.TrimSpace(rules[ruleIdx].Approvers[approverIdx].ApproverUserUID) != "" {
+				continue
+			}
+			rules[ruleIdx].Approvers[approverIdx].ApproverUserUID = getUserUID(ctx, rules[ruleIdx].Approvers[approverIdx].UserCode)
+		}
+	}
+	return rules
 }
 
 // NOTE: Purchase Type Handlers ถูกย้ายไป mainapi แล้ว
@@ -333,6 +347,7 @@ func SavePOApprovalSettingHandler(c echo.Context) error {
 	if rules == nil {
 		rules = []ApprovalRule{}
 	}
+	rules = enrichApproverUserUIDs(ctx, rules)
 
 	filter := bson.M{"shop_id": req.ShopID, "purchase_type_code": req.PurchaseTypeCode}
 	update := bson.M{
@@ -428,14 +443,14 @@ const POApprovalStatusCollection = "po_approval_status"
 
 // ApprovalHistory ประวัติการอนุมัติ
 type ApprovalHistory struct {
-	Action          string    `bson:"action" json:"action"`                       // submit, approve, reject
-	ActionBy        string    `bson:"action_by" json:"action_by"`                 // รหัสผู้ดำเนินการ
-	ActionByName    string    `bson:"action_by_name" json:"action_by_name"`       // ชื่อผู้ดำเนินการ
+	Action          string    `bson:"action" json:"action"`                                           // submit, approve, reject
+	ActionBy        string    `bson:"action_by" json:"action_by"`                                     // รหัสผู้ดำเนินการ
+	ActionByName    string    `bson:"action_by_name" json:"action_by_name"`                           // ชื่อผู้ดำเนินการ
 	ApproverUserUID string    `bson:"approver_user_uid,omitempty" json:"approver_user_uid,omitempty"` // UID ของผู้อนุมัติ
-	Level           int       `bson:"level" json:"level"`                         // ระดับการอนุมัติ
-	Comment         string    `bson:"comment,omitempty" json:"comment,omitempty"` // หมายเหตุ
-	ActionAt        time.Time `bson:"action_at" json:"action_at"`                 // เวลาดำเนินการ (UTC)
-	Source          string    `bson:"source,omitempty" json:"source,omitempty"`   // ช่องทาง: line, email, app
+	Level           int       `bson:"level" json:"level"`                                             // ระดับการอนุมัติ
+	Comment         string    `bson:"comment,omitempty" json:"comment,omitempty"`                     // หมายเหตุ
+	ActionAt        time.Time `bson:"action_at" json:"action_at"`                                     // เวลาดำเนินการ (UTC)
+	Source          string    `bson:"source,omitempty" json:"source,omitempty"`                       // ช่องทาง: line, email, app
 }
 
 // POApprovalStatusItem รายการสินค้าใน PO สำหรับแสดงใน LIFF

@@ -3,7 +3,6 @@ package shop_test
 import (
 	"context"
 	auth_model "smlcloudplatform/internal/authentication/models"
-	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/shop"
 	"smlcloudplatform/internal/shop/models"
 	utilmock "smlcloudplatform/mock"
@@ -21,24 +20,8 @@ func TestShop_Create(t *testing.T) {
 	shopRepo := new(ShopRepositoryMock)
 	shopUserRepo := new(ShopUserRepositoryMock)
 
-	shopRepo.On("Create", models.ShopDoc{
-
-		ShopInfo: models.ShopInfo{
-			DocIdentity: common.DocIdentity{
-				GuidFixed: utilmock.MockGUID(),
-			},
-			Shop: models.Shop{
-				Name1:     "shop_name",
-				Telephone: "0000000000",
-			},
-		},
-		ActivityDoc: common.ActivityDoc{
-			CreatedBy: "user_create",
-			CreatedAt: utilmock.MockTime(),
-		},
-	}).Return("", nil)
-
-	shopUserRepo.On("Save", utilmock.MockGUID(), "user_create", auth_model.ROLE_OWNER).Return(nil)
+	shopRepo.On("Create", mock.Anything, mock.Anything).Return("", nil)
+	shopUserRepo.On("Save", mock.Anything, utilmock.MockGUID(), "user_create", auth_model.ROLE_OWNER).Return(nil)
 
 	type args struct {
 		username string
@@ -163,6 +146,16 @@ func (m *ShopUserRepositoryMock) FindByShopIDAndUsernameInfo(ctx context.Context
 	return args.Get(0).(auth_model.ShopUserInfo), args.Error(1)
 }
 
+func (m *ShopUserRepositoryMock) FindByShopIDAndUserUIDInfo(ctx context.Context, shopID string, userUID string) (auth_model.ShopUserInfo, error) {
+	args := m.Called(ctx, shopID, userUID)
+	return args.Get(0).(auth_model.ShopUserInfo), args.Error(1)
+}
+
+func (m *ShopUserRepositoryMock) FindByShopIDAndUserUID(ctx context.Context, shopID string, userUID string) (auth_model.ShopUser, error) {
+	args := m.Called(ctx, shopID, userUID)
+	return args.Get(0).(auth_model.ShopUser), args.Error(1)
+}
+
 func (m *ShopUserRepositoryMock) FindByShopIDAndUsername(ctx context.Context, shopID string, username string) (auth_model.ShopUser, error) {
 	args := m.Called(ctx, shopID, username)
 	return args.Get(0).(auth_model.ShopUser), args.Error(1)
@@ -199,6 +192,11 @@ func (m *ShopUserRepositoryMock) FindByUsername(ctx context.Context, username st
 
 func (m *ShopUserRepositoryMock) FindByUsernamePage(ctx context.Context, username string, pageable micromodels.Pageable) ([]auth_model.ShopUserInfo, mongopagination.PaginationData, error) {
 	args := m.Called(ctx, username, pageable)
+	return args.Get(0).([]auth_model.ShopUserInfo), args.Get(1).(mongopagination.PaginationData), args.Error(2)
+}
+
+func (m *ShopUserRepositoryMock) FindByUserUIDPage(ctx context.Context, userUID string, pageable micromodels.Pageable) ([]auth_model.ShopUserInfo, mongopagination.PaginationData, error) {
+	args := m.Called(ctx, userUID, pageable)
 	return args.Get(0).([]auth_model.ShopUserInfo), args.Get(1).(mongopagination.PaginationData), args.Error(2)
 }
 

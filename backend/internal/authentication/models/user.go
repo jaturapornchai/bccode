@@ -268,6 +268,7 @@ type UserRoleRequest struct {
 	ShopID           string    `json:"shopid" bson:"shopid"`
 	EditUsername     string    `json:"editusername" bson:"editusername"`
 	Username         string    `json:"username" bson:"username"`
+	UserUID          string    `json:"user_uid,omitempty" bson:"user_uid,omitempty"`
 	UserProfileName  string    `json:"user_profile_name" bson:"user_profile_name"`
 	Email            string    `json:"email,omitempty" bson:"email,omitempty"`
 	Role             UserRole  `json:"role" bson:"role"`

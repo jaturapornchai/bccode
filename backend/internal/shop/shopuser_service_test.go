@@ -104,6 +104,38 @@ func TestShopUserSaveFullProfileDisablesMember(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestShopUserSaveFullProfilePreservesUserUIDWhenUsernameChanges(t *testing.T) {
+	shopUserRepo := new(ShopUserRepositoryMock)
+	ctx := context.Background()
+	shopID := "shop_id"
+	authUsername := "owner@example.com"
+	oldUsername := "old@example.com"
+	newUsername := "new@example.com"
+	userUID := "stable-user-uid"
+
+	target := testShopUser(shopID, oldUsername, models.ROLE_ADMIN)
+	target.UserUID = userUID
+
+	shopUserRepo.On("FindByShopIDAndUsername", ctx, shopID, authUsername).Return(testShopUser(shopID, authUsername, models.ROLE_OWNER), nil)
+	shopUserRepo.On("FindShopCreatedBy", ctx, shopID).Return(authUsername, nil)
+	shopUserRepo.On("FindByShopIDAndUsername", ctx, shopID, oldUsername).Return(target, nil)
+	shopUserRepo.On("SaveFullProfile", ctx, shopID, mock.MatchedBy(func(req *models.UserRoleRequest) bool {
+		return req.Username == newUsername &&
+			req.EditUsername == oldUsername &&
+			req.UserUID == userUID
+	})).Return(nil)
+
+	shopUserSvc := shop.NewShopUserService(shopUserRepo)
+
+	err := shopUserSvc.SaveUserFullProfile(shopID, authUsername, &models.UserRoleRequest{
+		EditUsername: oldUsername,
+		Username:     newUsername,
+		Role:         models.ROLE_ADMIN,
+	})
+
+	require.NoError(t, err)
+}
+
 func testShopUser(shopID string, username string, role models.UserRole) models.ShopUser {
 	shopUser := models.ShopUser{}
 	shopUser.ShopID = shopID

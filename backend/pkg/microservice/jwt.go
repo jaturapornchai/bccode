@@ -110,15 +110,15 @@ func (jwtService *JwtService) MWFuncWithRedis(cacher ICacher, publicPath ...stri
 			}
 
 			cacheKey := jwtService.prefixCacheKey + tokenStr
-			tempUserInfo, err := jwtService.cacher.HMGet(cacheKey, []string{"username", "name", "shopid"})
+			tempUserInfo, err := jwtService.cacher.HMGet(cacheKey, []string{"username", "name", "uid", "shopid"})
 
 			if err != nil {
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Token Invalid."})
 			}
 			tempShopID := ""
 
-			if tempUserInfo[2] != nil {
-				tempShopID = fmt.Sprintf("%v", tempUserInfo[2])
+			if tempUserInfo[3] != nil {
+				tempShopID = fmt.Sprintf("%v", tempUserInfo[3])
 			}
 
 			if len(string(tempShopID)) < 1 {
@@ -128,7 +128,8 @@ func (jwtService *JwtService) MWFuncWithRedis(cacher ICacher, publicPath ...stri
 			userInfo := models.UserInfo{
 				Username: fmt.Sprintf("%v", tempUserInfo[0]),
 				Name:     fmt.Sprintf("%v", tempUserInfo[1]),
-				ShopID:   fmt.Sprintf("%v", tempUserInfo[2]),
+				UID:      cacheString(tempUserInfo[2]),
+				ShopID:   cacheString(tempUserInfo[3]),
 			}
 
 			cacher.Expire("auth-"+tokenStr, jwtService.expire)
@@ -152,7 +153,7 @@ func (jwtService *JwtService) MWFuncWithShop(cacher ICacher) echo.MiddlewareFunc
 			}
 
 			cacheKey := jwtService.prefixCacheKey + tokenStr
-			tempUserInfo, err := jwtService.cacher.HMGet(cacheKey, []string{"username", "name"})
+			tempUserInfo, err := jwtService.cacher.HMGet(cacheKey, []string{"username", "name", "uid"})
 
 			if err != nil {
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false, "message": "Token Invalid."})
@@ -161,6 +162,7 @@ func (jwtService *JwtService) MWFuncWithShop(cacher ICacher) echo.MiddlewareFunc
 			userInfo := models.UserInfo{
 				Username: fmt.Sprintf("%v", tempUserInfo[0]),
 				Name:     fmt.Sprintf("%v", tempUserInfo[1]),
+				UID:      cacheString(tempUserInfo[2]),
 			}
 
 			c.Set("UserInfo", userInfo)
@@ -292,6 +294,7 @@ func (jwtService *JwtService) GenerateTokenWithRedis(userInfo models.UserInfo) (
 	jwtService.cacher.HMSet(cacheKey, map[string]interface{}{
 		"username": userInfo.Username,
 		"name":     userInfo.Name,
+		"uid":      userInfo.UID,
 	})
 
 	return tokenStr, nil

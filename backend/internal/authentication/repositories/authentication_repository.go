@@ -3,7 +3,9 @@ package repositories
 import (
 	"context"
 	"smlcloudplatform/internal/authentication/models"
+	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/pkg/microservice"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -75,6 +77,15 @@ func (r AuthenticationRepository) CreateUser(ctx context.Context, user models.Us
 }
 
 func (r AuthenticationRepository) UpdateUser(ctx context.Context, username string, user models.UserDoc) error {
+	existingUser := &models.UserDoc{}
+	if err := r.pst.FindOne(ctx, &models.UserDoc{}, bson.M{"username": username}, existingUser); err == nil {
+		if strings.TrimSpace(existingUser.UID) != "" {
+			user.UID = existingUser.UID
+		}
+	}
+	if strings.TrimSpace(user.UID) == "" {
+		user.UID = utils.NewGUID()
+	}
 
 	filterDoc := map[string]interface{}{
 		"username": username,

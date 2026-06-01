@@ -27,6 +27,7 @@ func mockLoginData(authRepo *AuthenticationRepositoryMock, shopUserRepo *ShopUse
 	tokenMock := "TOKEN_MOCK"
 	//authRepo FindUser
 	userDoc1 := models.UserDoc{}
+	userDoc1.UID = "uid-tester1"
 	userDoc1.Username = "tester1"
 	userDoc1.Password = "tester1"
 	userDoc1.Name = "tester1"
@@ -36,33 +37,55 @@ func mockLoginData(authRepo *AuthenticationRepositoryMock, shopUserRepo *ShopUse
 	authRepo.On("FindUser", "tester2").Return(&models.UserDoc{}, nil)
 
 	authRepo.On("FindUser", "user_register").Return(&models.UserDoc{}, nil)
+	authRepo.On("FindByIdentity", "email", "user_register").Return(&models.UserDoc{}, nil)
+	authRepo.On("FindByIdentity", "email", userDoc1.Username).Return(&userDoc1, nil)
 
 	//authRepo CreateUser
 	userDoc2 := models.UserDoc{}
+	userDoc2.UID = MockGUID()
 	userDoc2.Username = "user_register"
+	userDoc2.Email = "user_register"
 	userDoc2.Password = "register_password_success"
 	userDoc2.Name = "user_register"
 	userDoc2.CreatedAt = MockTime()
 
-	authRepo.On("CreateUser", userDoc2).Return(MockObjectID(), nil)
+	authRepo.On("CreateUser", mock.MatchedBy(func(doc models.UserDoc) bool {
+		return doc.UID == userDoc2.UID &&
+			doc.Username == userDoc2.Username &&
+			doc.Email == userDoc2.Email &&
+			doc.Password == userDoc2.Password &&
+			doc.Name == userDoc2.Name &&
+			doc.CreatedAt.Equal(userDoc2.CreatedAt)
+	})).Return(MockObjectID(), nil)
 
 	//microAuth
-	microAuthServiceMock.On("GenerateTokenWithRedis", micromodels.UserInfo{
+	microAuthServiceMock.On("GenerateTokenWithRedis", microservice.AUTHTYPE_BEARER, micromodels.UserInfo{
 		Username: userDoc1.Username,
 		Name:     userDoc1.Name,
+		UID:      userDoc1.UID,
+	}).Return(tokenMock, nil)
+	microAuthServiceMock.On("GenerateTokenWithRedis", microservice.AUTHTYPE_REFRESH, micromodels.UserInfo{
+		Username: userDoc1.Username,
+		Name:     userDoc1.Name,
+		UID:      userDoc1.UID,
 	}).Return(tokenMock, nil)
 
-	microAuthServiceMock.On("SelectShop", tokenMock, shopID, role).Return(nil)
+	microAuthServiceMock.On("SelectShop", microservice.AUTHTYPE_BEARER, tokenMock, shopID, role).Return(nil)
 
 	shopUser := models.ShopUser{}
+	shopUser.ID = MockObjectID()
 	shopUser.Username = userDoc1.Username
+	shopUser.UserUID = userDoc1.UID
 	shopUser.ShopID = shopID
 	shopUser.Role = role
 
 	//shopUser
+	shopUserRepo.On("FindByShopIDAndUserUID", shopID, userDoc1.UID).Return(shopUser, nil)
 	shopUserRepo.On("FindByShopIDAndUsername", shopID, userDoc1.Username).Return(shopUser, nil)
 
+	shopUserRepo.On("FindByShopIDAndUserUID", "SHOP_ID_INVALID", userDoc1.UID).Return(models.ShopUser{}, nil)
 	shopUserRepo.On("FindByShopIDAndUsername", "SHOP_ID_INVALID", userDoc1.Username).Return(models.ShopUser{}, nil)
+	shopUserRepo.On("UpdateLastAccess", shopID, userDoc1.Username, MockTime()).Return(nil)
 }
 
 func TestAuthService_Login(t *testing.T) {
@@ -183,7 +206,7 @@ func TestAuthService_Login(t *testing.T) {
 			} else {
 				assert.Nil(t, err)
 				assert.NotEmpty(t, tokenResult)
-				assert.EqualValues(t, tt.wantData, tokenResult)
+				assert.EqualValues(t, tt.wantData, tokenResult.Token)
 			}
 		})
 	}
@@ -453,7 +476,7 @@ func TestAuthService_ProfileFlagsDefaultPassword(t *testing.T) {
 		MockFirebaseAdapter(),
 		MockLineAdapter())
 
-	profile, err := authService.Profile("default_user")
+	profile, err := authService.Profile("default_user", "")
 
 	assert.Nil(t, err)
 	assert.Equal(t, "default_user@example.com", profile.Email)
@@ -652,7 +675,7 @@ func TestAuthService_AccessShop(t *testing.T) {
 				MockTime,
 				MockFirebaseAdapter(),
 				MockLineAdapter())
-			err := authService.AccessShop(tt.args.shopID, tt.args.username, tt.args.authorizationHeader, authContext)
+			err := authService.AccessShop(tt.args.shopID, tt.args.username, "", tt.args.authorizationHeader, authContext)
 
 			if tt.wantErr {
 				assert.NotNil(t, err)
@@ -754,6 +777,16 @@ func (m *ShopUserRepositoryMock) FindByShopIDAndUsernameInfo(ctx context.Context
 	return args.Get(0).(models.ShopUserInfo), args.Error(1)
 }
 
+func (m *ShopUserRepositoryMock) FindByShopIDAndUserUIDInfo(ctx context.Context, shopID string, userUID string) (models.ShopUserInfo, error) {
+	args := m.Called(shopID, userUID)
+	return args.Get(0).(models.ShopUserInfo), args.Error(1)
+}
+
+func (m *ShopUserRepositoryMock) FindByShopIDAndUserUID(ctx context.Context, shopID string, userUID string) (models.ShopUser, error) {
+	args := m.Called(shopID, userUID)
+	return args.Get(0).(models.ShopUser), args.Error(1)
+}
+
 func (m *ShopUserRepositoryMock) FindByShopIDAndUsername(ctx context.Context, shopID string, username string) (models.ShopUser, error) {
 	args := m.Called(shopID, username)
 	return args.Get(0).(models.ShopUser), args.Error(1)
@@ -791,6 +824,12 @@ func (m *ShopUserRepositoryMock) FindByUsernamePage(ctx context.Context, usernam
 	args := m.Called(username, pageable)
 	return args.Get(0).([]models.ShopUserInfo), args.Get(1).(mongopagination.PaginationData), args.Error(2)
 }
+
+func (m *ShopUserRepositoryMock) FindByUserUIDPage(ctx context.Context, userUID string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error) {
+	args := m.Called(userUID, pageable)
+	return args.Get(0).([]models.ShopUserInfo), args.Get(1).(mongopagination.PaginationData), args.Error(2)
+}
+
 func (m *ShopUserRepositoryMock) FindByUserInShopPage(ctx context.Context, shopID string, pageable micromodels.Pageable) ([]models.ShopUser, mongopagination.PaginationData, error) {
 	args := m.Called(shopID, pageable)
 	return args.Get(0).([]models.ShopUser), args.Get(1).(mongopagination.PaginationData), args.Error(2)
@@ -822,6 +861,9 @@ type ShopUserAccessLogRepositoryMock struct {
 }
 
 func (m *ShopUserAccessLogRepositoryMock) Create(ctx context.Context, shopUserAccessLog models.ShopUserAccessLog) error {
+	if len(m.ExpectedCalls) == 0 {
+		return nil
+	}
 	args := m.Called(shopUserAccessLog)
 	return args.Error(0)
 }

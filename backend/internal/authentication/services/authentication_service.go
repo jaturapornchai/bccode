@@ -33,9 +33,9 @@ type IAuthenticationService interface {
 	UpdatePassword(username string, currentPassword string, newPassword string) error
 	ResetPasswordToDefault(shopID string, authUsername string, targetUsername string) error
 	Logout(authorizationHeader string) error
-	Profile(username string) (auth_models.UserProfile, error)
-	AccessShop(shopID string, username string, authorizationHeader string, authContext models.AuthenticationContext) error
-	UpdateFavoriteShop(shopID string, username string, isFavorite bool) error
+	Profile(username string, userUID string) (auth_models.UserProfile, error)
+	AccessShop(shopID string, username string, userUID string, authorizationHeader string, authContext models.AuthenticationContext) error
+	UpdateFavoriteShop(shopID string, username string, userUID string, isFavorite bool) error
 	LoginWithFirebaseToken(token string) (string, error)
 	LoginWithLineToken(token string) (string, error)
 	LoginWithLineUserID(lineUserID string, displayName string, pictureUrl string, email string) (string, string, error)
@@ -299,7 +299,14 @@ func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc,
 	}
 
 	if len(shopID) > 0 {
-		shopUser, err := svc.shopUserRepo.FindByShopIDAndUsername(context.Background(), shopID, findUser.Username)
+		var shopUser auth_models.ShopUser
+		var err error
+		if strings.TrimSpace(findUser.UID) != "" {
+			shopUser, err = svc.shopUserRepo.FindByShopIDAndUserUID(context.Background(), shopID, findUser.UID)
+		}
+		if strings.TrimSpace(findUser.UID) == "" || err != nil {
+			shopUser, err = svc.shopUserRepo.FindByShopIDAndUsername(context.Background(), shopID, findUser.Username)
+		}
 
 		if err != nil {
 			return models.TokenLoginResponse{}, err
@@ -323,7 +330,7 @@ func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc,
 
 		lastAccessedAt := svc.timeNow()
 
-		err = svc.shopUserRepo.UpdateLastAccess(context.Background(), shopID, findUser.Username, lastAccessedAt)
+		err = svc.shopUserRepo.UpdateLastAccess(context.Background(), shopID, shopUser.Username, lastAccessedAt)
 		if err != nil {
 			logger.GetLogger().Error(err.Error())
 		}
@@ -740,10 +747,17 @@ func (svc AuthenticationService) Logout(authorizationHeader string) error {
 	return svc.authService.ExpireToken(microservice.AUTHTYPE_BEARER, authorizationHeader)
 }
 
-func (svc AuthenticationService) Profile(username string) (auth_models.UserProfile, error) {
+func (svc AuthenticationService) Profile(username string, userUID string) (auth_models.UserProfile, error) {
 
 	userProfile := auth_models.UserProfile{}
-	user, err := svc.authRepo.FindUser(context.Background(), username)
+	var user *auth_models.UserDoc
+	var err error
+	if strings.TrimSpace(userUID) != "" {
+		user, err = svc.authRepo.FindByIdentity(context.Background(), "uid", userUID)
+	}
+	if err != nil || strings.TrimSpace(userUID) == "" {
+		user, err = svc.authRepo.FindUser(context.Background(), username)
+	}
 	if err != nil {
 		return userProfile, err
 	}
@@ -758,7 +772,7 @@ func (svc AuthenticationService) Profile(username string) (auth_models.UserProfi
 	return userProfile, nil
 }
 
-func (svc AuthenticationService) AccessShop(shopID string, username string, authorizationHeader string, authContext models.AuthenticationContext) error {
+func (svc AuthenticationService) AccessShop(shopID string, username string, userUID string, authorizationHeader string, authContext models.AuthenticationContext) error {
 
 	if shopID == "" {
 		return errors.New("shop invalid")
@@ -778,7 +792,13 @@ func (svc AuthenticationService) AccessShop(shopID string, username string, auth
 		return errors.New("token invalid")
 	}
 
-	shopUser, err := svc.shopUserRepo.FindByShopIDAndUsername(context.Background(), shopID, username)
+	var shopUser auth_models.ShopUser
+	if strings.TrimSpace(userUID) != "" {
+		shopUser, err = svc.shopUserRepo.FindByShopIDAndUserUID(context.Background(), shopID, userUID)
+	}
+	if strings.TrimSpace(userUID) == "" || err != nil {
+		shopUser, err = svc.shopUserRepo.FindByShopIDAndUsername(context.Background(), shopID, username)
+	}
 
 	if err != nil {
 		return err
@@ -799,7 +819,7 @@ func (svc AuthenticationService) AccessShop(shopID string, username string, auth
 	}
 
 	lastAccessedAt := svc.timeNow()
-	err = svc.shopUserRepo.UpdateLastAccess(context.Background(), shopID, username, lastAccessedAt)
+	err = svc.shopUserRepo.UpdateLastAccess(context.Background(), shopID, shopUser.Username, lastAccessedAt)
 	if err != nil {
 		logger.GetLogger().Error(err.Error())
 	}
@@ -808,7 +828,7 @@ func (svc AuthenticationService) AccessShop(shopID string, username string, auth
 		context.Background(),
 		auth_models.ShopUserAccessLog{
 			ShopID:         shopID,
-			Username:       username,
+			Username:       shopUser.Username,
 			Ip:             authContext.Ip,
 			LastAccessedAt: lastAccessedAt,
 		})
@@ -820,7 +840,7 @@ func (svc AuthenticationService) AccessShop(shopID string, username string, auth
 	return nil
 }
 
-func (svc AuthenticationService) UpdateFavoriteShop(shopID string, username string, isFavorite bool) error {
+func (svc AuthenticationService) UpdateFavoriteShop(shopID string, username string, userUID string, isFavorite bool) error {
 
 	if shopID == "" {
 		return errors.New("shop invalid")
@@ -830,7 +850,14 @@ func (svc AuthenticationService) UpdateFavoriteShop(shopID string, username stri
 		return errors.New("username invalid")
 	}
 
-	shopUser, err := svc.shopUserRepo.FindByShopIDAndUsername(context.Background(), shopID, username)
+	var shopUser auth_models.ShopUser
+	var err error
+	if strings.TrimSpace(userUID) != "" {
+		shopUser, err = svc.shopUserRepo.FindByShopIDAndUserUID(context.Background(), shopID, userUID)
+	}
+	if strings.TrimSpace(userUID) == "" || err != nil {
+		shopUser, err = svc.shopUserRepo.FindByShopIDAndUsername(context.Background(), shopID, username)
+	}
 
 	if err != nil {
 		return err
@@ -840,7 +867,7 @@ func (svc AuthenticationService) UpdateFavoriteShop(shopID string, username stri
 		return errors.New("shop invalid")
 	}
 
-	err = svc.shopUserRepo.SaveFavorite(context.Background(), shopID, username, isFavorite)
+	err = svc.shopUserRepo.SaveFavorite(context.Background(), shopID, shopUser.Username, isFavorite)
 	if err != nil {
 		return errors.New("favorite failed")
 	}

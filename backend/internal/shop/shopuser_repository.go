@@ -27,6 +27,8 @@ type IShopUserRepository interface {
 	SaveFavorite(ctx context.Context, shopID string, username string, isFavorite bool) error
 	Delete(ctx context.Context, shopID string, username string) error
 	DeleteEmptyUsernames(ctx context.Context, shopID string) (int64, error)
+	FindByShopIDAndUserUIDInfo(ctx context.Context, shopID string, userUID string) (models.ShopUserInfo, error)
+	FindByShopIDAndUserUID(ctx context.Context, shopID string, userUID string) (models.ShopUser, error)
 	FindByShopIDAndUsernameInfo(ctx context.Context, shopID string, username string) (models.ShopUserInfo, error)
 	FindByShopIDAndUsername(ctx context.Context, shopID string, username string) (models.ShopUser, error)
 	FindByShopIDAndLineUserID(ctx context.Context, shopID string, lineUserID string) (models.ShopUser, error)
@@ -36,6 +38,7 @@ type IShopUserRepository interface {
 	FindByShopID(ctx context.Context, shopID string) (*[]models.ShopUser, error)
 	FindByUsername(ctx context.Context, username string) (*[]models.ShopUser, error)
 	FindByUsernamePage(ctx context.Context, username string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error)
+	FindByUserUIDPage(ctx context.Context, userUID string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error)
 	FindByUserInShopPage(ctx context.Context, shopID string, pageable micromodels.Pageable) ([]models.ShopUser, mongopagination.PaginationData, error)
 	FindByUserInShopPageWithProfileMatches(ctx context.Context, shopID string, pageable micromodels.Pageable, profileUsernames []string) ([]models.ShopUser, mongopagination.PaginationData, error)
 	FindUsernamesByProfileQuery(ctx context.Context, query string) ([]string, error)
@@ -67,7 +70,12 @@ func (svc ShopUserRepository) Create(ctx context.Context, shopUser *models.ShopU
 }
 
 func (svc ShopUserRepository) Update(ctx context.Context, id primitive.ObjectID, shopID string, username string, role models.UserRole) error {
-	userUID := svc.lookupUserUID(ctx, username)
+	existing := &models.ShopUser{}
+	_ = svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"_id": id, "shopid": shopID}, existing)
+	userUID := strings.TrimSpace(existing.UserUID)
+	if userUID == "" {
+		userUID = svc.lookupUserUID(ctx, username)
+	}
 
 	err := svc.pst.Update(ctx, &models.ShopUser{}, bson.M{"_id": id, "shopid": shopID}, bson.M{"$set": bson.M{"username": username, "role": role, "user_uid": userUID}})
 
@@ -80,9 +88,13 @@ func (svc ShopUserRepository) Update(ctx context.Context, id primitive.ObjectID,
 
 func (svc ShopUserRepository) Save(ctx context.Context, shopID string, username string, role models.UserRole) error {
 	userUID := svc.lookupUserUID(ctx, username)
+	filter := bson.M{"shopid": shopID, "username": username}
+	if userUID != "" {
+		filter = bson.M{"shopid": shopID, "user_uid": userUID}
+	}
 
 	optUpdate := options.Update().SetUpsert(true)
-	err := svc.pst.Update(ctx, &models.ShopUser{}, bson.M{"shopid": shopID, "username": username}, bson.M{"$set": bson.M{"role": role, "user_uid": userUID}}, optUpdate)
+	err := svc.pst.Update(ctx, &models.ShopUser{}, filter, bson.M{"$set": bson.M{"username": username, "role": role, "user_uid": userUID}}, optUpdate)
 
 	if err != nil {
 		return err
@@ -92,9 +104,13 @@ func (svc ShopUserRepository) Save(ctx context.Context, shopID string, username 
 }
 
 func (svc ShopUserRepository) SaveFullProfile(ctx context.Context, shopID string, req *models.UserRoleRequest) error {
-	userUID := svc.lookupUserUID(ctx, req.Username)
+	userUID := strings.TrimSpace(req.UserUID)
+	if userUID == "" {
+		userUID = svc.lookupUserUID(ctx, req.Username)
+	}
 	updateData := bson.M{
 		"user_uid":          userUID,
+		"username":          req.Username,
 		"role":              req.Role,
 		"isaccessdisabled":  req.IsAccessDisabled,
 		"accessdisabledat":  req.AccessDisabledAt,
@@ -116,8 +132,15 @@ func (svc ShopUserRepository) SaveFullProfile(ctx context.Context, shopID string
 		updateData["quotation_approval"] = req.QuotationApproval
 	}
 
+	filter := bson.M{"shopid": shopID, "username": req.Username}
+	if userUID != "" {
+		filter = bson.M{"shopid": shopID, "user_uid": userUID}
+	} else if strings.TrimSpace(req.EditUsername) != "" {
+		filter = bson.M{"shopid": shopID, "username": req.EditUsername}
+	}
+
 	optUpdate := options.Update().SetUpsert(true)
-	err := svc.pst.Update(ctx, &models.ShopUser{}, bson.M{"shopid": shopID, "username": req.Username}, bson.M{"$set": updateData}, optUpdate)
+	err := svc.pst.Update(ctx, &models.ShopUser{}, filter, bson.M{"$set": updateData}, optUpdate)
 
 	if err != nil {
 		return err
@@ -155,7 +178,7 @@ func (svc ShopUserRepository) saveUserLoginProfile(ctx context.Context, req *mod
 func (svc ShopUserRepository) UpdateLastAccess(ctx context.Context, shopID string, username string, lastAccessedAt time.Time) error {
 
 	optUpdate := options.Update().SetUpsert(true)
-	err := svc.pst.Update(ctx, &models.ShopUser{}, bson.M{"shopid": shopID, "username": username}, bson.M{"$set": bson.M{"lastaccessedat": lastAccessedAt}}, optUpdate)
+	err := svc.pst.Update(ctx, &models.ShopUser{}, svc.shopUserIdentityFilter(ctx, shopID, username), bson.M{"$set": bson.M{"lastaccessedat": lastAccessedAt}}, optUpdate)
 
 	if err != nil {
 		return err
@@ -167,7 +190,7 @@ func (svc ShopUserRepository) UpdateLastAccess(ctx context.Context, shopID strin
 func (svc ShopUserRepository) SaveFavorite(ctx context.Context, shopID string, username string, isFavorite bool) error {
 
 	optUpdate := options.Update().SetUpsert(true)
-	err := svc.pst.Update(ctx, &models.ShopUser{}, bson.M{"shopid": shopID, "username": username}, bson.M{"$set": bson.M{"isfavorite": isFavorite}}, optUpdate)
+	err := svc.pst.Update(ctx, &models.ShopUser{}, svc.shopUserIdentityFilter(ctx, shopID, username), bson.M{"$set": bson.M{"isfavorite": isFavorite}}, optUpdate)
 
 	if err != nil {
 		return err
@@ -178,7 +201,7 @@ func (svc ShopUserRepository) SaveFavorite(ctx context.Context, shopID string, u
 
 func (svc ShopUserRepository) Delete(ctx context.Context, shopID string, username string) error {
 
-	err := svc.pst.Delete(ctx, &models.ShopUser{}, bson.M{"shopid": shopID, "username": username})
+	err := svc.pst.Delete(ctx, &models.ShopUser{}, svc.shopUserIdentityFilter(ctx, shopID, username))
 
 	if err != nil {
 		return err
@@ -211,6 +234,24 @@ func (svc ShopUserRepository) DeleteEmptyUsernames(ctx context.Context, shopID s
 	}
 
 	return result.DeletedCount, nil
+}
+
+func (svc ShopUserRepository) FindByShopIDAndUserUIDInfo(ctx context.Context, shopID string, userUID string) (models.ShopUserInfo, error) {
+	shopUser := &models.ShopUserInfo{}
+	err := svc.pst.FindOne(ctx, &models.ShopUserInfo{}, bson.M{"shopid": shopID, "user_uid": userUID}, shopUser)
+	if err != nil {
+		return models.ShopUserInfo{}, err
+	}
+	return *shopUser, nil
+}
+
+func (svc ShopUserRepository) FindByShopIDAndUserUID(ctx context.Context, shopID string, userUID string) (models.ShopUser, error) {
+	shopUser := &models.ShopUser{}
+	err := svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"shopid": shopID, "user_uid": userUID}, shopUser)
+	if err != nil {
+		return models.ShopUser{}, err
+	}
+	return *shopUser, nil
 }
 
 func (svc ShopUserRepository) FindByShopIDAndUsernameInfo(ctx context.Context, shopID string, username string) (models.ShopUserInfo, error) {
@@ -327,8 +368,23 @@ func (svc ShopUserRepository) FindByUsername(ctx context.Context, username strin
 }
 
 func (repo ShopUserRepository) FindByUsernamePage(ctx context.Context, username string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error) {
+	return repo.findByUserPage(ctx, bson.M{"username": username}, pageable)
+}
 
+func (repo ShopUserRepository) FindByUserUIDPage(ctx context.Context, userUID string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error) {
+	return repo.findByUserPage(ctx, bson.M{"user_uid": userUID}, pageable)
+}
+
+func (repo ShopUserRepository) findByUserPage(ctx context.Context, userMatch bson.M, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error) {
 	docList := []models.ShopUserInfo{}
+	matchFilter := bson.M{
+		"deletedat": bson.M{
+			"$exists": false,
+		},
+	}
+	for key, value := range userMatch {
+		matchFilter[key] = value
+	}
 
 	searchFilterList := []interface{}{}
 
@@ -345,12 +401,7 @@ func (repo ShopUserRepository) FindByUsernamePage(ctx context.Context, username 
 	}
 
 	aggPaginatedData, err := repo.pst.AggregatePage(ctx, &models.ShopUser{}, pageable,
-		bson.M{"$match": bson.M{
-			"username": username,
-			"deletedat": bson.M{
-				"$exists": false,
-			},
-		}},
+		bson.M{"$match": matchFilter},
 		bson.M{"$lookup": bson.M{
 			"from":         "shops",
 			"localField":   "shopid",
@@ -569,6 +620,14 @@ func isEmailUsername(username string) bool {
 		return false
 	}
 	return strings.EqualFold(address.Address, strings.TrimSpace(username))
+}
+
+func (svc ShopUserRepository) shopUserIdentityFilter(ctx context.Context, shopID string, username string) bson.M {
+	filter := bson.M{"shopid": shopID, "username": username}
+	if userUID := svc.lookupUserUID(ctx, username); userUID != "" {
+		filter = bson.M{"shopid": shopID, "user_uid": userUID}
+	}
+	return filter
 }
 
 func (svc ShopUserRepository) lookupUserUID(ctx context.Context, username string) string {

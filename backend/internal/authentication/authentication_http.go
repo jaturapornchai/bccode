@@ -986,6 +986,7 @@ func (h AuthenticationHttp) VerifyToken(ctx microservice.IContext) error {
 	ctx.Response(http.StatusOK, map[string]interface{}{
 		"success":  true,
 		"username": userInfo.Username,
+		"uid":      userInfo.UID,
 		"name":     userInfo.Name,
 	})
 	return nil
@@ -1001,7 +1002,8 @@ func (h AuthenticationHttp) VerifyToken(ctx microservice.IContext) error {
 func (h AuthenticationHttp) Profile(ctx microservice.IContext) error {
 
 	// stime := time.Now()
-	userProfile, err := h.authenticationService.Profile(ctx.UserInfo().Username)
+	userInfo := ctx.UserInfo()
+	userProfile, err := h.authenticationService.Profile(userInfo.Username, userInfo.UID)
 
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
@@ -1057,7 +1059,8 @@ func (h AuthenticationHttp) ProfileShop(ctx microservice.IContext) error {
 // @Security     AccessToken
 // @Router /select-shop [post]
 func (h AuthenticationHttp) SelectShop(ctx microservice.IContext) error {
-	authUsername := ctx.UserInfo().Username
+	userInfo := ctx.UserInfo()
+	authUsername := userInfo.Username
 	authorizationHeader := ctx.Header("Authorization")
 
 	input := ctx.ReadInput()
@@ -1077,7 +1080,7 @@ func (h AuthenticationHttp) SelectShop(ctx microservice.IContext) error {
 		Ip: ctx.RealIp(),
 	}
 
-	err = h.authenticationService.AccessShop(shopSelectReq.ShopID, authUsername, authorizationHeader, authContext)
+	err = h.authenticationService.AccessShop(shopSelectReq.ShopID, authUsername, userInfo.UID, authorizationHeader, authContext)
 
 	if err != nil {
 		ctx.Response(http.StatusBadRequest, common.ApiResponse{
@@ -1103,11 +1106,12 @@ func (h AuthenticationHttp) SelectShop(ctx microservice.IContext) error {
 // @Security     AccessToken
 // @Router /list-shop [get]
 func (h AuthenticationHttp) ListShopCanAccess(ctx microservice.IContext) error {
-	authUsername := ctx.UserInfo().Username
+	userInfo := ctx.UserInfo()
+	authUsername := userInfo.Username
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.shopUserService.ListShopByUser(authUsername, pageable)
+	docList, pagination, err := h.shopUserService.ListShopByUser(authUsername, userInfo.UID, pageable)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -1135,7 +1139,8 @@ func (h AuthenticationHttp) ListShopCanAccess(ctx microservice.IContext) error {
 // @Security     AccessToken
 // @Router /favorite-shop [put]
 func (h AuthenticationHttp) UpdateShopFavorite(ctx microservice.IContext) error {
-	authUsername := ctx.UserInfo().Username
+	userInfo := ctx.UserInfo()
+	authUsername := userInfo.Username
 
 	input := ctx.ReadInput()
 
@@ -1147,7 +1152,7 @@ func (h AuthenticationHttp) UpdateShopFavorite(ctx microservice.IContext) error 
 		return err
 	}
 
-	err = h.authenticationService.UpdateFavoriteShop(reqBody.ShopID, authUsername, reqBody.IsFavorite)
+	err = h.authenticationService.UpdateFavoriteShop(reqBody.ShopID, authUsername, userInfo.UID, reqBody.IsFavorite)
 
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
