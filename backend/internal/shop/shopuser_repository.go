@@ -53,6 +53,9 @@ func NewShopUserRepository(pst microservice.IPersisterMongo) ShopUserRepository 
 }
 
 func (svc ShopUserRepository) Create(ctx context.Context, shopUser *models.ShopUser) error {
+	if shopUser.UserUID == "" {
+		shopUser.UserUID = svc.lookupUserUID(ctx, shopUser.Username)
+	}
 
 	_, err := svc.pst.Create(ctx, &models.ShopUser{}, shopUser)
 
@@ -64,8 +67,9 @@ func (svc ShopUserRepository) Create(ctx context.Context, shopUser *models.ShopU
 }
 
 func (svc ShopUserRepository) Update(ctx context.Context, id primitive.ObjectID, shopID string, username string, role models.UserRole) error {
+	userUID := svc.lookupUserUID(ctx, username)
 
-	err := svc.pst.Update(ctx, &models.ShopUser{}, bson.M{"_id": id, "shopid": shopID}, bson.M{"$set": bson.M{"username": username, "role": role}})
+	err := svc.pst.Update(ctx, &models.ShopUser{}, bson.M{"_id": id, "shopid": shopID}, bson.M{"$set": bson.M{"username": username, "role": role, "user_uid": userUID}})
 
 	if err != nil {
 		return err
@@ -75,9 +79,10 @@ func (svc ShopUserRepository) Update(ctx context.Context, id primitive.ObjectID,
 }
 
 func (svc ShopUserRepository) Save(ctx context.Context, shopID string, username string, role models.UserRole) error {
+	userUID := svc.lookupUserUID(ctx, username)
 
 	optUpdate := options.Update().SetUpsert(true)
-	err := svc.pst.Update(ctx, &models.ShopUser{}, bson.M{"shopid": shopID, "username": username}, bson.M{"$set": bson.M{"role": role}}, optUpdate)
+	err := svc.pst.Update(ctx, &models.ShopUser{}, bson.M{"shopid": shopID, "username": username}, bson.M{"$set": bson.M{"role": role, "user_uid": userUID}}, optUpdate)
 
 	if err != nil {
 		return err
@@ -86,9 +91,10 @@ func (svc ShopUserRepository) Save(ctx context.Context, shopID string, username 
 	return nil
 }
 
-// SaveFullProfile - บันทึกข้อมูลผู้ใช้แบบครบถ้วน (รวม position, department, LINE, approval)
 func (svc ShopUserRepository) SaveFullProfile(ctx context.Context, shopID string, req *models.UserRoleRequest) error {
+	userUID := svc.lookupUserUID(ctx, req.Username)
 	updateData := bson.M{
+		"user_uid":          userUID,
 		"role":              req.Role,
 		"isaccessdisabled":  req.IsAccessDisabled,
 		"accessdisabledat":  req.AccessDisabledAt,
@@ -210,8 +216,17 @@ func (svc ShopUserRepository) DeleteEmptyUsernames(ctx context.Context, shopID s
 func (svc ShopUserRepository) FindByShopIDAndUsernameInfo(ctx context.Context, shopID string, username string) (models.ShopUserInfo, error) {
 
 	shopUser := &models.ShopUserInfo{}
+	userUID := svc.lookupUserUID(ctx, username)
 
-	err := svc.pst.FindOne(ctx, &models.ShopUserInfo{}, bson.M{"shopid": shopID, "username": username}, shopUser)
+	var err error
+	if userUID != "" {
+		err = svc.pst.FindOne(ctx, &models.ShopUserInfo{}, bson.M{"shopid": shopID, "user_uid": userUID}, shopUser)
+	}
+
+	if err != nil || userUID == "" {
+		err = svc.pst.FindOne(ctx, &models.ShopUserInfo{}, bson.M{"shopid": shopID, "username": username}, shopUser)
+	}
+
 	if err != nil {
 		return models.ShopUserInfo{}, err
 	}
@@ -222,8 +237,17 @@ func (svc ShopUserRepository) FindByShopIDAndUsernameInfo(ctx context.Context, s
 func (svc ShopUserRepository) FindByShopIDAndUsername(ctx context.Context, shopID string, username string) (models.ShopUser, error) {
 
 	shopUser := &models.ShopUser{}
+	userUID := svc.lookupUserUID(ctx, username)
 
-	err := svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"shopid": shopID, "username": username}, shopUser)
+	var err error
+	if userUID != "" {
+		err = svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"shopid": shopID, "user_uid": userUID}, shopUser)
+	}
+
+	if err != nil || userUID == "" {
+		err = svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"shopid": shopID, "username": username}, shopUser)
+	}
+
 	if err != nil {
 		return models.ShopUser{}, err
 	}
@@ -269,9 +293,7 @@ func (svc ShopUserRepository) FindByLineUserID(ctx context.Context, lineUserID s
 
 func (svc ShopUserRepository) FindRole(ctx context.Context, shopID string, username string) (models.UserRole, error) {
 
-	shopUser := &models.ShopUser{}
-
-	err := svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{"shopid": shopID, "username": username}, shopUser)
+	shopUser, err := svc.FindByShopIDAndUsername(ctx, shopID, username)
 
 	if err != nil {
 		return models.ROLE_USER, err
@@ -547,4 +569,17 @@ func isEmailUsername(username string) bool {
 		return false
 	}
 	return strings.EqualFold(address.Address, strings.TrimSpace(username))
+}
+
+func (svc ShopUserRepository) lookupUserUID(ctx context.Context, username string) string {
+	username = strings.TrimSpace(username)
+	if username == "" {
+		return ""
+	}
+	userDoc := &models.UserDoc{}
+	err := svc.pst.FindOne(ctx, &models.UserDoc{}, bson.M{"username": username}, userDoc)
+	if err != nil {
+		return ""
+	}
+	return userDoc.UID
 }

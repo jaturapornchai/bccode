@@ -111,6 +111,21 @@ func getCollection(name string) *mongo.Collection {
 	return atlasDB.Collection(name)
 }
 
+// getUserUID ค้นหา uid จาก users ด้วย username
+func getUserUID(ctx context.Context, username string) string {
+	if atlasDB == nil || username == "" {
+		return ""
+	}
+	var doc struct {
+		UID string `bson:"uid"`
+	}
+	err := atlasDB.Collection("users").FindOne(ctx, bson.M{"username": username}).Decode(&doc)
+	if err != nil {
+		return ""
+	}
+	return doc.UID
+}
+
 // checkConnection returns error response if not connected
 func checkConnection(c echo.Context) error {
 	if !IsConnected() {
@@ -413,13 +428,14 @@ const POApprovalStatusCollection = "po_approval_status"
 
 // ApprovalHistory ประวัติการอนุมัติ
 type ApprovalHistory struct {
-	Action       string    `bson:"action" json:"action"`                       // submit, approve, reject
-	ActionBy     string    `bson:"action_by" json:"action_by"`                 // รหัสผู้ดำเนินการ
-	ActionByName string    `bson:"action_by_name" json:"action_by_name"`       // ชื่อผู้ดำเนินการ
-	Level        int       `bson:"level" json:"level"`                         // ระดับการอนุมัติ
-	Comment      string    `bson:"comment,omitempty" json:"comment,omitempty"` // หมายเหตุ
-	ActionAt     time.Time `bson:"action_at" json:"action_at"`                 // เวลาดำเนินการ (UTC)
-	Source       string    `bson:"source,omitempty" json:"source,omitempty"`   // ช่องทาง: line, email, app
+	Action          string    `bson:"action" json:"action"`                       // submit, approve, reject
+	ActionBy        string    `bson:"action_by" json:"action_by"`                 // รหัสผู้ดำเนินการ
+	ActionByName    string    `bson:"action_by_name" json:"action_by_name"`       // ชื่อผู้ดำเนินการ
+	ApproverUserUID string    `bson:"approver_user_uid,omitempty" json:"approver_user_uid,omitempty"` // UID ของผู้อนุมัติ
+	Level           int       `bson:"level" json:"level"`                         // ระดับการอนุมัติ
+	Comment         string    `bson:"comment,omitempty" json:"comment,omitempty"` // หมายเหตุ
+	ActionAt        time.Time `bson:"action_at" json:"action_at"`                 // เวลาดำเนินการ (UTC)
+	Source          string    `bson:"source,omitempty" json:"source,omitempty"`   // ช่องทาง: line, email, app
 }
 
 // POApprovalStatusItem รายการสินค้าใน PO สำหรับแสดงใน LIFF
@@ -778,12 +794,13 @@ func SubmitPOApprovalHandler(c echo.Context) error {
 	}
 
 	newHistoryEntry := ApprovalHistory{
-		Action:       actionType,
-		ActionBy:     req.ActionBy,
-		ActionByName: req.ActionByName,
-		Level:        req.ApprovalLevel,
-		Comment:      req.Comment,
-		ActionAt:     now,
+		Action:          actionType,
+		ActionBy:        req.ActionBy,
+		ActionByName:    req.ActionByName,
+		ApproverUserUID: getUserUID(ctx, req.ActionBy),
+		Level:           req.ApprovalLevel,
+		Comment:         req.Comment,
+		ActionAt:        now,
 	}
 
 	collection := getTokenCollection(POApprovalStatusCollection)
@@ -805,12 +822,13 @@ func SubmitPOApprovalHandler(c echo.Context) error {
 	// ถ้าอนุมัติอัตโนมัติ ให้เพิ่มประวัติการอนุมัติด้วย
 	if status == "auto_approved" {
 		history = append(history, ApprovalHistory{
-			Action:       "auto_approve",
-			ActionBy:     req.ActionBy,
-			ActionByName: req.ActionByName,
-			Level:        req.ApprovalLevel,
-			Comment:      "อนุมัติอัตโนมัติ (ไม่มีกฎอนุมัติหรือผู้บันทึกมีสิทธิ์เพียงพอ)",
-			ActionAt:     now,
+			Action:          "auto_approve",
+			ActionBy:        req.ActionBy,
+			ActionByName:    req.ActionByName,
+			ApproverUserUID: getUserUID(ctx, req.ActionBy),
+			Level:           req.ApprovalLevel,
+			Comment:         "อนุมัติอัตโนมัติ (ไม่มีกฎอนุมัติหรือผู้บันทึกมีสิทธิ์เพียงพอ)",
+			ActionAt:        now,
 		})
 	}
 
@@ -1126,13 +1144,14 @@ func ApprovePOHandler(c echo.Context) error {
 	}
 
 	newHistory := ApprovalHistory{
-		Action:       "approve",
-		ActionBy:     req.ActionBy,
-		ActionByName: req.ActionByName,
-		Level:        req.ApprovalLevel,
-		Comment:      req.Comment,
-		ActionAt:     now,
-		Source:       source,
+		Action:          "approve",
+		ActionBy:        req.ActionBy,
+		ActionByName:    req.ActionByName,
+		ApproverUserUID: getUserUID(ctx, req.ActionBy),
+		Level:           req.ApprovalLevel,
+		Comment:         req.Comment,
+		ActionAt:        now,
+		Source:          source,
 	}
 
 	// Atomic: FindOneAndUpdate กับ filter status=pending → ป้องกัน 2 คน approve พร้อมกัน
@@ -1225,13 +1244,14 @@ func RejectPOHandler(c echo.Context) error {
 	}
 
 	newHistory := ApprovalHistory{
-		Action:       "reject",
-		ActionBy:     req.ActionBy,
-		ActionByName: req.ActionByName,
-		Level:        req.ApprovalLevel,
-		Comment:      req.Comment,
-		ActionAt:     now,
-		Source:       source,
+		Action:          "reject",
+		ActionBy:        req.ActionBy,
+		ActionByName:    req.ActionByName,
+		ApproverUserUID: getUserUID(ctx, req.ActionBy),
+		Level:           req.ApprovalLevel,
+		Comment:         req.Comment,
+		ActionAt:        now,
+		Source:          source,
 	}
 
 	// Atomic: FindOneAndUpdate กับ filter status=pending
@@ -1385,13 +1405,14 @@ func WithdrawPOHandler(c echo.Context) error {
 	}
 
 	newHistory := ApprovalHistory{
-		Action:       "withdraw",
-		ActionBy:     req.ActionBy,
-		ActionByName: req.ActionByName,
-		Level:        req.ApprovalLevel,
-		Comment:      comment,
-		ActionAt:     now,
-		Source:       source,
+		Action:          "withdraw",
+		ActionBy:        req.ActionBy,
+		ActionByName:    req.ActionByName,
+		ApproverUserUID: getUserUID(ctx, req.ActionBy),
+		Level:           req.ApprovalLevel,
+		Comment:         comment,
+		ActionAt:        now,
+		Source:          source,
 	}
 
 	// Atomic: FindOneAndUpdate กับ filter status=pending → ป้องกัน race condition
@@ -2390,12 +2411,13 @@ func UpdatePOApprovalStatusToCancelled(shopID, docNo, cancelReason, cancelUserCo
 		history = []ApprovalHistory{}
 	}
 	history = append(history, ApprovalHistory{
-		Action:       "cancel",
-		ActionBy:     cancelUserCode,
-		ActionByName: cancelUserName,
-		Comment:      cancelReason,
-		ActionAt:     time.Now(),
-		Source:       "system",
+		Action:          "cancel",
+		ActionBy:        cancelUserCode,
+		ActionByName:    cancelUserName,
+		ApproverUserUID: getUserUID(ctx, cancelUserCode),
+		Comment:         cancelReason,
+		ActionAt:        time.Now(),
+		Source:          "system",
 	})
 
 	// อัปเดตสถานะเป็น cancelled

@@ -128,13 +128,13 @@ func (svc AuthenticationService) LoginWithPhoneNumberOTP(userLoginReq *auth_mode
 		return models.TokenLoginResponse{}, errors.New("username or password is invalid")
 	}
 
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: findUser.Username, Name: findUser.Name})
+	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: findUser.Username, Name: findUser.Name, UID: findUser.UID})
 
 	if err != nil {
 		return models.TokenLoginResponse{}, errors.New("login failed")
 	}
 
-	refreshTokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_REFRESH, micromodel.UserInfo{Username: findUser.Username, Name: findUser.Name})
+	refreshTokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_REFRESH, micromodel.UserInfo{Username: findUser.Username, Name: findUser.Name, UID: findUser.UID})
 
 	if err != nil {
 		svc.authService.DeleteToken(microservice.AUTHTYPE_BEARER, tokenString)
@@ -276,7 +276,7 @@ func (svc AuthenticationService) LoginEmail(userLoginReq *auth_models.PosLoginRe
 		}
 	}
 
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: findUser.Username, Name: findUser.Name})
+	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: findUser.Username, Name: findUser.Name, UID: findUser.UID})
 
 	if err != nil {
 		return "", errors.New("generate token error")
@@ -285,13 +285,13 @@ func (svc AuthenticationService) LoginEmail(userLoginReq *auth_models.PosLoginRe
 }
 
 func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc, shopID string, authContext models.AuthenticationContext) (models.TokenLoginResponse, error) {
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: findUser.Username, Name: findUser.Name})
+	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: findUser.Username, Name: findUser.Name, UID: findUser.UID})
 
 	if err != nil {
 		return models.TokenLoginResponse{}, errors.New("login failed")
 	}
 
-	refreshTokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_REFRESH, micromodel.UserInfo{Username: findUser.Username, Name: findUser.Name})
+	refreshTokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_REFRESH, micromodel.UserInfo{Username: findUser.Username, Name: findUser.Name, UID: findUser.UID})
 
 	if err != nil {
 		svc.authService.DeleteToken(microservice.AUTHTYPE_BEARER, tokenString)
@@ -886,7 +886,7 @@ func (svc AuthenticationService) LoginWithFirebaseToken(token string) (string, e
 		return "", &auth_models.UserDisableLoginError{}
 	}
 
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: userFind.Username, Name: userFind.Name})
+	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: userFind.Username, Name: userFind.Name, UID: userFind.UID})
 
 	if err != nil {
 		return "", errors.New("generate token error")
@@ -932,7 +932,7 @@ func (svc AuthenticationService) LoginWithGoogleEmail(email string, displayName 
 		return "", &auth_models.UserDisableLoginError{}
 	}
 
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: userFind.Username, Name: userFind.Name})
+	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: userFind.Username, Name: userFind.Name, UID: userFind.UID})
 	if err != nil {
 		return "", errors.New("generate token error")
 	}
@@ -978,7 +978,7 @@ func (svc AuthenticationService) LoginWithLineToken(token string) (string, error
 		return "", &auth_models.UserDisableLoginError{}
 	}
 
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: userFind.Username, Name: userFind.Name})
+	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: userFind.Username, Name: userFind.Name, UID: userFind.UID})
 
 	if err != nil {
 		return "", errors.New("generate token error")
@@ -1019,7 +1019,7 @@ func (svc AuthenticationService) LoginWithLineUserID(lineUserID string, displayN
 		return "", "", &auth_models.UserDisableLoginError{}
 	}
 
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: userFind.Username, Name: userFind.Name})
+	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, micromodel.UserInfo{Username: userFind.Username, Name: userFind.Name, UID: userFind.UID})
 
 	if err != nil {
 		return "", "", errors.New("generate token error")

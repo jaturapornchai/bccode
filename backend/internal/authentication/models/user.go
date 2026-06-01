@@ -183,6 +183,7 @@ const DefaultUserPassword = "12345"
 
 type ShopUserBase struct {
 	Username string   `json:"username" bson:"username"`
+	UserUID  string   `json:"user_uid" bson:"user_uid"`
 	ShopID   string   `json:"shopid" bson:"shopid"`
 	Role     UserRole `json:"role" bson:"role"`
 }

@@ -5,4 +5,5 @@ type UserInfo struct {
 	Name     string `json:"name"`
 	ShopID   string `json:"shopid" `
 	Role     uint8  `json:"role"`
+	UID      string `json:"uid"`
 }
