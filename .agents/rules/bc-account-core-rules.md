@@ -115,6 +115,12 @@ Related central entrypoints:
 - User identity is stable on `users.uid`. `username` / email / employee code is mutable business/login text. User memberships, shop access, tokens, approvals, and downstream projections must carry or resolve `users.uid`; keep username-based dual-read only as a transition path for old data/tokens. Do not overwrite an existing `users.uid` on profile/password/permission updates.
 - `shopUsers.shopid` is the tenant/workspace id and equals `shops.guid_fixed`; do not rename it. `shopUsers.user_uid` references `users.uid` and is the primary join key for rename-safe membership lookup, while `shopUsers.username` remains visible/searchable transition data.
 
+## Lower Snake Case Naming Iron Rule
+- New or changed operational identifiers must be lowercase `snake_case`: MongoDB collection names, document fields, embedded fields, JSON keys, API query/body keys, Kafka event fields, PostgreSQL/ClickHouse projection columns, index names, schema/model constants, and any string identifier used as a persisted/API contract.
+- Do not introduce camelCase, PascalCase, mixedCase, spaces, hyphens, or non-ASCII identifier names in new persisted/API contracts.
+- Existing legacy identifiers may remain only as explicit compatibility paths. Rename them through migration/backfill, dual-read/dual-write when needed, index rebuilds, downstream projection rebuilds, and rollback notes.
+- Language-local variables should follow the language's compiler/tooling conventions unless they are persisted/API/schema contract names. Contract string values still must be lower `snake_case`.
+
 ## Thai SME Business Domain
 - BC Ai Account supports Thai SME business operations, not generic admin CRUD.
 - Agents working on this project must behave as Thai SME accounting and business-domain experts across accounting, marketing, sales, purchasing, trading/distribution, restaurant operations, light manufacturing, general ledger, inventory accounting, accounts receivable, accounts payable, tax/VAT-aware workflows, company/branch operations, reporting, and auditability.
