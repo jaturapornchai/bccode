@@ -19,6 +19,7 @@ Purpose: keep Codex, Claude Code, and other agents fast. Read this file first, t
 - Backend code changes: write correct code; run touched-package tests only if needed. After backend Go-code edits are complete, auto deploy `mainapi` on local Docker Desktop with the fast local path (`cd backend; .\scripts\deploy-mainapi-fast.ps1`) and verify `/healthz`. Use full image rebuild (`docker-compose up -d --no-deps --build mainapi`) when Dockerfile, dependencies, runtime assets, compose, config, or image contents changed. DEV server deploy still needs `deploy dev`. Avoid repo-wide backend tests by default because this repo has known CGO/Kafka/env-sensitive noisy packages.
 - Long commands must be visible: state what is running, update Jead about every 30 seconds, and if a command exceeds roughly 2 minutes, report whether to continue, narrow, or stop based on evidence.
 - For meaningful changes, push the whole project after targeted verification and secret checks. Keep commits moving; do not wait on irrelevant broad checks.
+- `D:\bccode-model` is outside the `D:\bccode` GitHub project. Do not include it in `push to github` for this repo unless Jead explicitly provides a separate remote for that folder.
 
 ## Fast Commands
 - Frontend typecheck: `cd frontend; npm run typecheck`
