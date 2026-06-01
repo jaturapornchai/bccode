@@ -32,7 +32,7 @@ export async function GET(request: Request, context: SystemSettingsProxyContext)
   const base = resolveBaseUrl(request, resolved.config);
   if (base instanceof NextResponse) return base;
 
-  return proxyJson(request, base, buildGetPath(request, resolved.config, resolved.id), buildGetInit(request, resolved.config));
+  return proxyJson(request, base, buildGetPath(request, resolved.config, resolved.id), buildGetInit(request, resolved.config, resolved.id));
 }
 
 export async function POST(request: Request, context: SystemSettingsProxyContext) {
@@ -76,7 +76,7 @@ export async function PUT(request: Request, context: SystemSettingsProxyContext)
   if (base instanceof NextResponse) return base;
 
   if (Array.isArray(body)) {
-    const path = resolved.id ? `${resolved.config.basePath}/${encodeURIComponent(resolved.id)}` : (resolved.config.basePath ?? "");
+    const path = resolved.id ? `${resolved.config.basePath}/${encodeProxyPathId(resolved.config, resolved.id)}` : (resolved.config.basePath ?? "");
     return proxyJson(request, base, path, { method: "PUT", body: JSON.stringify(body) });
   }
 
@@ -106,13 +106,22 @@ export async function DELETE(request: Request, context: SystemSettingsProxyConte
 
 async function resolveProxy(context: SystemSettingsProxyContext): Promise<ResolvedProxy | NextResponse> {
   const { settingPath } = await context.params;
-  const [slug, ...rest] = settingPath ?? [];
+  const [rawSlug, ...rest] = settingPath ?? [];
+  const slug = decodePathSegment(rawSlug ?? "");
   if (!slug) return NextResponse.json({ success: false, message: "ไม่พบหน้าจอตั้งค่า" }, { status: 404 });
 
   const config = getSystemSettingConfig(slug);
   if (!config) return NextResponse.json({ success: false, message: "หน้าจอตั้งค่านี้ยังไม่รองรับ" }, { status: 404 });
 
-  return { config, id: rest.join("/") };
+  return { config, id: rest.map(decodePathSegment).join("/") };
+}
+
+function decodePathSegment(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }
 
 function resolveBaseUrl(request: Request, config: SystemSettingConfig, body?: ApiProxyBody): string | NextResponse {
@@ -198,7 +207,7 @@ function buildGetPath(request: Request, config: SystemSettingConfig, id: string)
     return `/listsourceshops?source_environment=${encodeURIComponent(sourceEnvironment)}`;
   }
 
-  let basePath = id ? `${config.basePath}/${encodeURIComponent(id)}` : (config.listPath ?? config.basePath ?? "");
+  let basePath = id ? `${config.basePath}/${encodeProxyPathId(config, id)}` : (config.listPath ?? config.basePath ?? "");
   const companyGuid = url.searchParams.get("company_guid");
   if (!id && config.slug === "branch" && companyGuid) {
     basePath = config.basePath ?? "";
@@ -208,19 +217,24 @@ function buildGetPath(request: Request, config: SystemSettingConfig, id: string)
   return queryText ? `${basePath}?${queryText}` : basePath;
 }
 
-function buildGetInit(request: Request, config: SystemSettingConfig): RequestInit {
+function buildGetInit(request: Request, config: SystemSettingConfig, id = ""): RequestInit {
   const url = new URL(request.url);
   const shopid = url.searchParams.get("shopid") ?? url.searchParams.get("shop_id") ?? "";
 
   if (config.kind === "atlas") {
+    const body: Record<string, unknown> = {
+      collection: config.collection,
+      shopid,
+      limit: Number(url.searchParams.get("limit") ?? "1000"),
+      skip: Number(url.searchParams.get("offset") ?? "0"),
+    };
+    if (id) {
+      body.email = id;
+      body.cartid = id;
+    }
     return {
       method: "POST",
-      body: JSON.stringify({
-        collection: config.collection,
-        shopid,
-        limit: Number(url.searchParams.get("limit") ?? "1000"),
-        skip: Number(url.searchParams.get("offset") ?? "0"),
-      }),
+      body: JSON.stringify(body),
     };
   }
 
@@ -246,7 +260,7 @@ function buildWritePath(request: Request, config: SystemSettingConfig, id: strin
   } else if (config.kind === "goapi-crud") {
     const createWithExport = Boolean(body.createWithExport);
     if (method === "POST" && createWithExport) path = "/api/mcp/keys/create-with-export";
-    else path = id ? `${config.basePath}/${encodeURIComponent(id)}` : (config.basePath ?? "");
+    else path = id ? `${config.basePath}/${encodeProxyPathId(config, id)}` : (config.basePath ?? "");
   } else if (config.kind === "ai-provider") {
     path = "/api/v1/ai-provider/save";
   } else if (config.kind === "copy-uat") {
@@ -254,7 +268,7 @@ function buildWritePath(request: Request, config: SystemSettingConfig, id: strin
   } else if (config.slug === "user") {
     path = "/shop/permission";
   } else {
-    path = id ? `${config.basePath}/${encodeURIComponent(id)}` : (config.basePath ?? "");
+    path = id ? `${config.basePath}/${encodeProxyPathId(config, id)}` : (config.basePath ?? "");
   }
 
   return search ? `${path}${search}` : path;
@@ -267,9 +281,9 @@ function buildDeletePath(request: Request, config: SystemSettingConfig, id: stri
 
   if (config.kind === "atlas") path = "/atlas/delete";
   else if (config.kind === "ai-provider") path = "/api/v1/ai-provider/delete";
-  else if (config.kind === "goapi-crud") path = `${config.basePath}/${encodeURIComponent(id)}`;
-  else if (config.slug === "user") path = `/shop/permission/${encodeURIComponent(id)}`;
-  else path = `${config.basePath}/${encodeURIComponent(id)}`;
+  else if (config.kind === "goapi-crud") path = `${config.basePath}/${encodeProxyPathId(config, id)}`;
+  else if (config.slug === "user") path = `/shop/permission/${encodeProxyPathId(config, id)}`;
+  else path = `${config.basePath}/${encodeProxyPathId(config, id)}`;
 
   return search ? `${path}${search}` : path;
 }
@@ -350,6 +364,13 @@ function buildDeletePayload(
   }
 
   return undefined;
+}
+
+function encodeProxyPathId(config: SystemSettingConfig, id: string): string {
+  if (config.slug === "user") {
+    return encodeURIComponent(id).replace(/%40/gi, "@").replace(/%2B/gi, "+");
+  }
+  return encodeURIComponent(id);
 }
 
 async function ensureUsernameLoginUser(request: Request, baseUrl: string, payload: Record<string, unknown>): Promise<NextResponse | null> {
@@ -445,7 +466,7 @@ function stripProxyKeys(body: Record<string, unknown>): Record<string, unknown> 
 }
 
 function forwardPagingParams(sourceUrl: URL, target: URLSearchParams) {
-  for (const key of ["offset", "limit", "q", "page", "branch_key", "branchcode", "branchguid", "group-number", "company_guid"]) {
+  for (const key of ["offset", "limit", "q", "page", "branch_key", "branchcode", "branchguid", "group-number", "company_guid", "sort"]) {
     const value = sourceUrl.searchParams.get(key);
     if (value) target.set(key, value);
   }

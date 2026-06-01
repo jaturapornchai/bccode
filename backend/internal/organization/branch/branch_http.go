@@ -1,16 +1,32 @@
 package branch
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
+	"regexp"
 	"smlcloudplatform/internal/config"
 	common "smlcloudplatform/internal/models"
 	branchModels "smlcloudplatform/internal/organization/branch/models"
+	companyModels "smlcloudplatform/internal/organization/company/models"
+	orgEvents "smlcloudplatform/internal/organization/events"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/pkg/microservice"
 	"strconv"
+	"strings"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+const (
+	branchTopicCreated = "when-organization-branch-created"
+	branchTopicUpdated = "when-organization-branch-updated"
+	branchTopicDeleted = "when-organization-branch-deleted"
 )
 
 type BranchHttp struct {
@@ -36,30 +52,38 @@ func (h BranchHttp) RegisterHttp() {
 
 func (h BranchHttp) CreateBranch(ctx microservice.IContext) error {
 	shopID := ctx.UserInfo().ShopID
+	authUsername := ctx.UserInfo().Username
 	input := ctx.ReadInput()
 
-	var req branchModels.BranchPg
+	var req branchModels.BranchOrgDoc
 	if err := json.Unmarshal([]byte(input), &req); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
 
-	if err := branchModels.PrepareCreateBranch(&req, shopID, time.Now(), utils.NewGUID); err != nil {
+	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
+
+	if err := prepareBranchCreate(&req, shopID, authUsername); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
+	if err := ensureBranchCompanyExists(mongoCtx, pst, shopID, req.CompanyGuid); err != nil {
+		responseBranchWriteError(ctx, err)
+		return err
+	}
+	if err := ensureBranchCodeAvailableMongo(mongoCtx, pst, shopID, req.CompanyGuid, req.Code, ""); err != nil {
+		responseBranchWriteError(ctx, err)
+		return err
+	}
+	if _, err := pst.Create(mongoCtx, branchModels.BranchOrgDoc{}, req); err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
-	db := pst.DBClient()
-	if err := branchModels.EnsureCompanyExists(db, shopID, req.CompanyGuid); err != nil {
-		responseBranchWriteError(ctx, err)
-		return err
-	}
-	if err := branchModels.EnsureBranchCodeAvailable(db, shopID, req.CompanyGuid, req.Code, ""); err != nil {
-		responseBranchWriteError(ctx, err)
-		return err
-	}
-	if err := db.Create(&req).Error; err != nil {
+	kafkaSync, err := orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), shopID, "organization_branch", "created", branchTopicCreated, req.GuidFixed, req)
+	if err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
@@ -67,6 +91,7 @@ func (h BranchHttp) CreateBranch(ctx microservice.IContext) error {
 	ctx.Response(http.StatusCreated, common.ApiResponse{
 		Success: true,
 		ID:      req.GuidFixed,
+		Data:    map[string]string{"kafka_sync": kafkaSync},
 	})
 	return nil
 }
@@ -75,16 +100,18 @@ func (h BranchHttp) SearchBranch(ctx microservice.IContext) error {
 	shopID := ctx.UserInfo().ShopID
 	companyGuid := ctx.QueryParam("company_guid")
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
-	db := pst.DBClient()
-	var list []branchModels.BranchPg
+	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
 
-	query := db.Where("shopid = ?", shopID)
+	filter := visibleBranchFilter(shopID)
 	if companyGuid != "" {
-		query = query.Where("company_guid = ?", companyGuid)
+		filter["company_guid"] = strings.TrimSpace(companyGuid)
 	}
 
-	if err := query.Find(&list).Error; err != nil {
+	var list []branchModels.BranchOrgDoc
+	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: 1}, {Key: "code", Value: 1}})
+	if err := pst.Find(mongoCtx, branchModels.BranchOrgDoc{}, filter, &list, opts); err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
@@ -100,10 +127,12 @@ func (h BranchHttp) InfoBranch(ctx microservice.IContext) error {
 	shopID := ctx.UserInfo().ShopID
 	id := ctx.Param("id")
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
-	db := pst.DBClient()
-	var data branchModels.BranchPg
-	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).First(&data).Error; err != nil {
+	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
+
+	var data branchModels.BranchOrgDoc
+	if err := pst.FindOne(mongoCtx, branchModels.BranchOrgDoc{}, bson.M{"shopid": shopID, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}, &data); err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Branch not found")
 		return err
 	}
@@ -117,32 +146,35 @@ func (h BranchHttp) InfoBranch(ctx microservice.IContext) error {
 
 func (h BranchHttp) UpdateBranch(ctx microservice.IContext) error {
 	shopID := ctx.UserInfo().ShopID
+	authUsername := ctx.UserInfo().Username
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
-	db := pst.DBClient()
-	var existing branchModels.BranchPg
-	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).First(&existing).Error; err != nil {
+	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
+
+	var existing branchModels.BranchOrgDoc
+	if err := pst.FindOne(mongoCtx, branchModels.BranchOrgDoc{}, bson.M{"shopid": shopID, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}, &existing); err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Branch not found")
 		return err
 	}
 
-	var req branchModels.BranchPg
+	var req branchModels.BranchOrgDoc
 	if err := json.Unmarshal([]byte(input), &req); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
 
-	if err := branchModels.PrepareUpdateBranch(&req); err != nil {
+	if err := prepareBranchUpdate(&req); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
-	if err := branchModels.EnsureCompanyExists(db, shopID, req.CompanyGuid); err != nil {
+	if err := ensureBranchCompanyExists(mongoCtx, pst, shopID, req.CompanyGuid); err != nil {
 		responseBranchWriteError(ctx, err)
 		return err
 	}
-	if err := branchModels.EnsureBranchCodeAvailable(db, shopID, req.CompanyGuid, req.Code, id); err != nil {
+	if err := ensureBranchCodeAvailableMongo(mongoCtx, pst, shopID, req.CompanyGuid, req.Code, id); err != nil {
 		responseBranchWriteError(ctx, err)
 		return err
 	}
@@ -151,8 +183,22 @@ func (h BranchHttp) UpdateBranch(ctx microservice.IContext) error {
 	existing.CompanyGuid = req.CompanyGuid
 	existing.IsActive = req.IsActive
 	existing.UpdatedAt = time.Now()
+	existing.UpdatedBy = authUsername
 
-	if err := db.Save(&existing).Error; err != nil {
+	if err := pst.Update(mongoCtx, branchModels.BranchOrgDoc{}, bson.M{"shopid": shopID, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}, bson.M{"$set": bson.M{
+		"names":        existing.Names,
+		"code":         existing.Code,
+		"company_guid": existing.CompanyGuid,
+		"is_active":    existing.IsActive,
+		"updated_at":   existing.UpdatedAt,
+		"updatedby":    existing.UpdatedBy,
+	}}); err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+
+	kafkaSync, err := orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), shopID, "organization_branch", "updated", branchTopicUpdated, id, existing)
+	if err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
@@ -160,18 +206,22 @@ func (h BranchHttp) UpdateBranch(ctx microservice.IContext) error {
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
 		ID:      id,
+		Data:    map[string]string{"kafka_sync": kafkaSync},
 	})
 	return nil
 }
 
 func (h BranchHttp) DeleteBranch(ctx microservice.IContext) error {
 	shopID := ctx.UserInfo().ShopID
+	authUsername := ctx.UserInfo().Username
 	id := ctx.Param("id")
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
-	db := pst.DBClient()
-	var data branchModels.BranchPg
-	if err := db.Where("shopid = ? AND guid_fixed = ?", shopID, id).First(&data).Error; err != nil {
+	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
+
+	var data branchModels.BranchOrgDoc
+	if err := pst.FindOne(mongoCtx, branchModels.BranchOrgDoc{}, bson.M{"shopid": shopID, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}, &data); err != nil {
 		ctx.ResponseError(http.StatusNotFound, "Branch not found")
 		return err
 	}
@@ -181,8 +231,8 @@ func (h BranchHttp) DeleteBranch(ctx microservice.IContext) error {
 		return errors.New("head office branch cannot be deleted")
 	}
 
-	var total int64
-	if err := branchModels.CompanyBranchCountLookup(db, shopID, data.CompanyGuid).Count(&total).Error; err != nil {
+	total, err := countCompanyBranches(mongoCtx, pst, shopID, data.CompanyGuid)
+	if err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
@@ -191,8 +241,21 @@ func (h BranchHttp) DeleteBranch(ctx microservice.IContext) error {
 		return errors.New("company must have at least one branch")
 	}
 
-	// Soft delete
-	if err := db.Delete(&data).Error; err != nil {
+	now := time.Now()
+	data.DeletedAt = &now
+	data.DeletedBy = authUsername
+	data.UpdatedAt = now
+	if err := pst.Update(mongoCtx, branchModels.BranchOrgDoc{}, bson.M{"shopid": shopID, "guid_fixed": id, "deleted_at": bson.M{"$exists": false}}, bson.M{"$set": bson.M{
+		"deleted_at": data.DeletedAt,
+		"deletedby":  data.DeletedBy,
+		"updated_at": data.UpdatedAt,
+	}}); err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+
+	kafkaSync, err := orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), shopID, "organization_branch", "deleted", branchTopicDeleted, id, data)
+	if err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
@@ -200,6 +263,7 @@ func (h BranchHttp) DeleteBranch(ctx microservice.IContext) error {
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
 		ID:      id,
+		Data:    map[string]string{"kafka_sync": kafkaSync},
 	})
 	return nil
 }
@@ -236,22 +300,25 @@ func (h BranchHttp) SearchBranchStep(ctx microservice.IContext) error {
 		}
 	}
 
-	pst := h.ms.PersisterTenant(h.cfg.PersisterConfig(), shopID)
-	db := pst.DBClient()
-	var list []branchModels.BranchPg
+	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
 
-	query := db.Where("shopid = ?", shopID)
+	filter := visibleBranchFilter(shopID)
 	if q != "" {
-		query = query.Where("code ILIKE ? OR names::text ILIKE ?", "%"+q+"%", "%"+q+"%")
+		re := primitive.Regex{Pattern: regexp.QuoteMeta(q), Options: "i"}
+		filter["$or"] = []bson.M{{"code": re}, {"names.name": re}}
 	}
 
-	var total int64
-	if err := query.Model(&branchModels.BranchPg{}).Count(&total).Error; err != nil {
+	total, err := pst.Count(mongoCtx, branchModels.BranchOrgDoc{}, filter)
+	if err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
 
-	if err := query.Offset(offset).Limit(limit).Find(&list).Error; err != nil {
+	var list []branchModels.BranchOrgDoc
+	opts := options.Find().SetSkip(int64(offset)).SetLimit(int64(limit)).SetSort(bson.D{{Key: "created_at", Value: 1}, {Key: "code", Value: 1}})
+	if err := pst.Find(mongoCtx, branchModels.BranchOrgDoc{}, filter, &list, opts); err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
@@ -262,4 +329,70 @@ func (h BranchHttp) SearchBranchStep(ctx microservice.IContext) error {
 		Total:   total,
 	})
 	return nil
+}
+
+func prepareBranchCreate(req *branchModels.BranchOrgDoc, shopID string, authUsername string) error {
+	if err := prepareBranchUpdate(req); err != nil {
+		return err
+	}
+	now := time.Now()
+	req.ShopID = shopID
+	if req.GuidFixed == "" {
+		req.GuidFixed = utils.NewGUID()
+	}
+	req.CreatedAt = now
+	req.UpdatedAt = now
+	req.IsActive = true
+	req.CreatedBy = authUsername
+	return nil
+}
+
+func prepareBranchUpdate(req *branchModels.BranchOrgDoc) error {
+	req.CompanyGuid = strings.TrimSpace(req.CompanyGuid)
+	if req.CompanyGuid == "" {
+		return branchModels.ErrBranchCompanyGuidRequired
+	}
+
+	normalizedCode, err := branchModels.NormalizeThaiTaxBranchCode(req.Code)
+	if err != nil {
+		return err
+	}
+	req.Code = normalizedCode
+	return nil
+}
+
+func visibleBranchFilter(shopID string) bson.M {
+	return bson.M{"shopid": shopID, "deleted_at": bson.M{"$exists": false}}
+}
+
+func ensureBranchCompanyExists(ctx context.Context, pst microservice.IPersisterMongo, shopID string, companyGuid string) error {
+	var company companyModels.CompanyDoc
+	err := pst.FindOne(ctx, companyModels.CompanyDoc{}, bson.M{"shopid": shopID, "guid_fixed": companyGuid, "deleted_at": bson.M{"$exists": false}}, &company)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return branchModels.ErrBranchCompanyNotFound
+	}
+	return err
+}
+
+func ensureBranchCodeAvailableMongo(ctx context.Context, pst microservice.IPersisterMongo, shopID string, companyGuid string, code string, excludeGuid string) error {
+	filter := visibleBranchFilter(shopID)
+	filter["company_guid"] = companyGuid
+	filter["code"] = code
+	if excludeGuid != "" {
+		filter["guid_fixed"] = bson.M{"$ne": excludeGuid}
+	}
+	count, err := pst.Count(ctx, branchModels.BranchOrgDoc{}, filter)
+	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+		return err
+	}
+	if count > 0 {
+		return branchModels.ErrBranchCodeExists
+	}
+	return nil
+}
+
+func countCompanyBranches(ctx context.Context, pst microservice.IPersisterMongo, shopID string, companyGuid string) (int, error) {
+	filter := visibleBranchFilter(shopID)
+	filter["company_guid"] = companyGuid
+	return pst.Count(ctx, branchModels.BranchOrgDoc{}, filter)
 }

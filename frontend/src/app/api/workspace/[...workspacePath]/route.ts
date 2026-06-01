@@ -89,7 +89,8 @@ export async function GET(request: Request, context: WorkspaceProxyContext) {
     case "product-units/standard": {
       const mainShopId = url.searchParams.get("mainShopId")?.trim() ?? url.searchParams.get("main_shop_id")?.trim() ?? "";
       const query = url.searchParams.get("q")?.trim() ?? "";
-      return listMissingStandardProductUnits(request, mainApiUrl, mainShopId, query);
+      const includeExisting = url.searchParams.get("includeExisting") === "true";
+      return listMissingStandardProductUnits(request, mainApiUrl, mainShopId, query, includeExisting);
     }
     default:
       return NextResponse.json({ success: false, message: "ไม่พบ workspace endpoint" }, { status: 404 });
@@ -153,7 +154,7 @@ export async function POST(request: Request, context: WorkspaceProxyContext) {
   }
 }
 
-async function listMissingStandardProductUnits(request: Request, mainApiUrl: string, mainShopId: string, query: string): Promise<NextResponse> {
+async function listMissingStandardProductUnits(request: Request, mainApiUrl: string, mainShopId: string, query: string, includeExisting = false): Promise<NextResponse> {
   const authorization = requireBearerToken(request);
   if (typeof authorization !== "string") return authorization;
 
@@ -162,7 +163,7 @@ async function listMissingStandardProductUnits(request: Request, mainApiUrl: str
     if (!existing.ok) return mainApiError(existing.result, "ตรวจสอบหน่วยนับสินค้าไม่สำเร็จ");
 
     const source = await loadStandardUnits(request, mainApiUrl, authorization, mainShopId);
-    const units = filterMissingUnits(source.units, existing.codes, query);
+    const units = filterMissingUnits(source.units, existing.codes, query, [], includeExisting);
 
     return NextResponse.json({
       success: true,
@@ -178,6 +179,11 @@ async function listMissingStandardProductUnits(request: Request, mainApiUrl: str
 async function listShopsWithDisplayNames(request: Request, mainApiUrl: string): Promise<NextResponse> {
   const authorization = requireBearerToken(request);
   if (typeof authorization !== "string") return authorization;
+  const url = new URL(request.url);
+  const activeShopId =
+    url.searchParams.get("active_shopid")?.trim() ??
+    url.searchParams.get("shopid")?.trim() ??
+    "";
 
   try {
     const result = await callMainApiJson(request, mainApiUrl, "/list-shop?limit=100", { method: "GET" }, authorization);
@@ -253,6 +259,22 @@ async function listShopsWithDisplayNames(request: Request, mainApiUrl: string): 
       });
     }
 
+    if (activeShopId) {
+      const restoreResult = await callMainApiJson(
+        request,
+        mainApiUrl,
+        "/select-shop",
+        {
+          method: "POST",
+          body: JSON.stringify({ shopid: activeShopId }),
+        },
+        authorization,
+      );
+      if (!restoreResult.ok || isApiFailure(restoreResult.payload)) {
+        return mainApiError(restoreResult, "คืนค่าบริษัทที่เลือกไม่สำเร็จ");
+      }
+    }
+
     if (isRecord(result.payload)) {
       return NextResponse.json({ ...result.payload, data: enrichedWithBranches }, { status: result.status });
     }
@@ -311,7 +333,13 @@ async function createDefaultProductUnits(request: Request, mainApiUrl: string, m
     if (!existing.ok) return mainApiError(existing.result, "ตรวจสอบหน่วยนับสินค้าไม่สำเร็จ");
 
     const source = await loadStandardUnits(request, mainApiUrl, authorization, mainShopId);
-    const units = filterMissingUnits(source.units, existing.codes, "", selectedCodes);
+    const units = filterMissingUnits(
+      source.units,
+      existing.codes,
+      "",
+      selectedCodes,
+      selectedCodes.length > 0,
+    );
 
     if (units.length === 0) {
       return NextResponse.json({ success: true, message: "ไม่มีหน่วยนับใหม่ที่ต้องเพิ่ม", data: { count: 0, source: source.source } });
@@ -380,13 +408,19 @@ async function loadStandardUnits(
   return { source: "template", units: await loadTemplateUnits() };
 }
 
-function filterMissingUnits(units: ProductUnit[], existingCodes: Set<string>, query: string, selectedCodes: string[] = []): ProductUnit[] {
+function filterMissingUnits(
+  units: ProductUnit[],
+  existingCodes: Set<string>,
+  query: string,
+  selectedCodes: string[] = [],
+  includeExisting = false,
+): ProductUnit[] {
   const needle = query.trim().toLowerCase();
   const selected = new Set(selectedCodes.map(normalizeUnitCode));
 
   return units.filter((unit) => {
     const normalizedCode = normalizeUnitCode(unit.unitcode);
-    if (existingCodes.has(normalizedCode)) return false;
+    if (!includeExisting && existingCodes.has(normalizedCode)) return false;
     if (selected.size > 0 && !selected.has(normalizedCode)) return false;
     if (!needle) return true;
     const haystack = `${unit.unitcode} ${unit.names.map((name) => name.name).join(" ")}`.toLowerCase();

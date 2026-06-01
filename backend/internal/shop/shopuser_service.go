@@ -98,6 +98,9 @@ func (svc ShopUserService) InfoShopByUser(shopID string, username string) (model
 	if err != nil {
 		return models.ShopUserProfile{}, err
 	}
+	if shopUser.Username == "" {
+		return models.ShopUserProfile{}, errors.New("user not found")
+	}
 
 	userProfiles, err := svc.repo.FindUserProfileByUsernames(context.Background(), []string{username})
 	if err != nil {

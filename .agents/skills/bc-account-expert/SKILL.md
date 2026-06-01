@@ -16,11 +16,14 @@ description: Use when working with the BC Account business system. Knows domain 
 ## 2.1 Data Store Roles
 - **MongoDB**: the only authoritative operational source for all CRUD, documents, master data, settings, transactions, and user-entered business data.
 - **Default Source**: When storage is not explicitly specified by Jead, use MongoDB for operational create/read/update/delete/list/detail flows. Do not read business master data, settings, permissions, approvals, companies, branches, users, products, or transactions from PostgreSQL or ClickHouse just because a projection exists.
+- **Operational CRUD Pipeline**: Operational writes flow `MongoDB -> Kafka -> PostgreSQL -> ClickHouse`. Write MongoDB first, emit Kafka or a durable MongoDB outbox event, let projection consumers rebuild PostgreSQL, then feed ClickHouse for BI/reporting. Do not let user-facing CRUD write PostgreSQL or ClickHouse directly.
+- **Frontend CRUD Mutations**: Frontend create/edit/delete flows call MongoDB-backed operational APIs only. Projection or BI endpoints are never mutation sources for normal screens; Kafka and downstream projection sync are backend responsibilities.
 - **Cloudflare R2/S3**: only binary/image/file object storage. MongoDB keeps metadata and private paths.
 - **PostgreSQL**: rebuildable relational processing/projection store for postings, balances, VAT/tax, AR/AP, GL, strict relational calculations, and integration-ready relational outputs.
 - **ClickHouse**: rebuildable BI/analytics/reporting store fed from processed facts. Never treat ClickHouse as transactional source of truth.
 - **Projection Conflict Rule**: If PostgreSQL or ClickHouse differs from MongoDB, MongoDB wins. Fix sync/rebuild code or data pipelines instead of treating projections as operational truth.
 - **Product Classification**: `item_type` is 0=Stock, 1=Service, 2=Set, 3=Not Stock. `materialtype` is 0=General, 1=Material, 2=Semi-Finished, 3=Set, 4=Agricultural. Product Set records must use `item_type=2` together with `materialtype=3` in MongoDB and relational projections; API writes and projection consumers must reject mismatched Set classification instead of correcting it silently.
+- **Product Unit Access**: Product unit master data uses `units.company_guids` for company-level availability. Do not model or edit branch-level access on product units. Products, barcodes, and business documents reference units by `unitcode`; `guid_fixed` remains the immutable CRUD/sync identity.
 
 ## 3. Legal & Settings Rules
 - **Head Office**: Branch code `00000` with Thai name `สำนักงานใหญ่`. Pad/normalize branch code inputs to 5 digits (e.g. `1` -> `00001`). Do not delete `00000`.

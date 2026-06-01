@@ -590,7 +590,6 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       checkboxField("isenabled", "เปิดใช้งาน", "Enabled"),
       checkboxField("isusepos", "ใช้งาน POS", "Use POS"),
       companyMultiSelectField("company_guids", "สิทธิ์การเข้าถึงบริษัท", "Active companies"),
-      branchMultiSelectField("branches", "สิทธิ์การเข้าถึงสาขา", "Active branches"),
     ],
   },
   {
@@ -654,7 +653,6 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       textField("position", "ตำแหน่ง", "Position"),
       textField("department", "แผนก", "Department"),
       companyMultiSelectField("company_guids", "สิทธิ์การเข้าถึงบริษัท", "Active companies"),
-      branchMultiSelectField("branches", "สิทธิ์การเข้าถึงสาขา", "Active branches"),
       {
         ...textField("line_user_id", "LINE User ID", "LINE User ID"),
         readOnly: true,
@@ -786,8 +784,8 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     deleteKey: "employeeCode",
     title: { th: "กำหนดสิทธิ์ผู้ใช้งาน", en: "User Permission" },
     subtitle: {
-      th: "กำหนดสิทธิ์การเข้าถึงบริษัทและสาขาของผู้ใช้งาน",
-      en: "Configure company and branch access permissions for users.",
+      th: "กำหนดสิทธิ์การเข้าถึงบริษัทของผู้ใช้งาน",
+      en: "Configure company access permissions for users.",
     },
     fields: [
       textField(
@@ -799,7 +797,6 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       textField("employeeName", "ชื่อ", "Name"),
       textField("groupCode", "กลุ่มสิทธิ์", "Permission group", false),
       companyMultiSelectField("company_guids", "สิทธิ์การเข้าถึงบริษัท", "Active companies"),
-      branchMultiSelectField("branches", "สิทธิ์การเข้าถึงสาขา", "Active branches"),
       jsonField("permissionCodes", "สิทธิ์", "Permissions"),
       jsonField("approvalCodes", "สิทธิ์การอนุมัติ", "Approval permissions"),
     ],
@@ -952,7 +949,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
       fields: [
         textField("unitcode", "รหัสหน่วยนับ", "Unit code", true),
         namesField("names", "ชื่อหน่วยนับ", "Unit names"),
-        companyMultiSelectField("company_guids", "บริษัทที่ใช้งาน", "Active companies"),
+        companyMultiSelectField("company_guids", "สิทธิ์การเข้าถึงบริษัท", "Active companies"),
       ],
     },
     codeNameConfig(

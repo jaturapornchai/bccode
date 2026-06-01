@@ -16,7 +16,7 @@ Purpose: keep Codex, Claude Code, and other agents fast. Read this file first, t
 - Default to targeted checks. Do not run expensive whole-repo commands such as `go test ./...`, broad browser automation, or full-repo scans unless Jead explicitly asks, the touched scope genuinely requires it, or targeted checks cannot provide useful evidence.
 - Docs/rules-only changes: use `git diff --check` plus staged secret scanning. Do not run frontend/backend build or test commands.
 - Frontend code changes: fast-iteration dev mode — rely on `next dev` HMR; run `cd frontend; npm run typecheck` only before commit/summary, not every edit. Use browser verification only when UI behavior, layout, routing, or visual output changed.
-- Backend code changes: write correct code; run touched-package tests only if needed. Do NOT rebuild `mainapi` until Jead says `rebuild`/`deploy` (batch mode). Avoid repo-wide backend tests by default because this repo has known CGO/Kafka/env-sensitive noisy packages.
+- Backend code changes: write correct code; run touched-package tests only if needed. After backend Go-code edits are complete, auto deploy `mainapi` on local Docker Desktop with the fast local path (`cd backend; .\scripts\deploy-mainapi-fast.ps1`) and verify `/healthz`. Use full image rebuild (`docker-compose up -d --no-deps --build mainapi`) when Dockerfile, dependencies, runtime assets, compose, config, or image contents changed. DEV server deploy still needs `deploy dev`. Avoid repo-wide backend tests by default because this repo has known CGO/Kafka/env-sensitive noisy packages.
 - Long commands must be visible: state what is running, update Jead about every 30 seconds, and if a command exceeds roughly 2 minutes, report whether to continue, narrow, or stop based on evidence.
 - For meaningful changes, push the whole project after targeted verification and secret checks. Keep commits moving; do not wait on irrelevant broad checks.
 
@@ -24,7 +24,11 @@ Purpose: keep Codex, Claude Code, and other agents fast. Read this file first, t
 - Frontend typecheck: `cd frontend; npm run typecheck`
 - Focused frontend lint: `cd frontend; npm run lint -- <file>`
 - Backend local runtime: use Docker Desktop; MainAPI should answer at `http://localhost:8888`; Kafka and Redis must run with MainAPI.
-- Backend local rebuild (when Jead says `rebuild`/`deploy` ONLY): `cd backend; docker-compose up -d --no-deps --build mainapi`
+- Operational CRUD data flow: write/read MongoDB first; propagate writes through `MongoDB -> Kafka -> PostgreSQL -> ClickHouse`. Use PostgreSQL/ClickHouse only from explicit rebuild/sync/projection/BI workers.
+- Frontend CRUD mutations: create/edit/delete screens call MongoDB-backed operational APIs only; Kafka/projection fan-out is backend responsibility.
+- Data-list row click: select and show read-only detail only. Edit mode requires the pencil/edit action; amber/orange row highlight is editing-only.
+- Company access selectors: `company_guids` is company-level only. Do not render or save branch selections in normal CRUD/master-data company access fields.
+- Backend local Docker Desktop deploy (auto after backend edits): for Go-code-only changes use `cd backend; .\scripts\deploy-mainapi-fast.ps1`; for image/runtime changes use `docker-compose up -d --no-deps --build mainapi`; always verify `/healthz`. DEV server deploy still needs `deploy dev`.
 - Backend health: `curl.exe --max-time 10 -s -i http://localhost:8888/healthz`
 - Real data check: use the selected DEV database/API path; do not rely on mock business data for completion claims.
 - DEV seed data: use `.agents/skills/dev-data-seeder/SKILL.md`; resolve the active `shopid` first, then seed through real DEV APIs and verify via the same screen API path.

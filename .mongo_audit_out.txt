@@ -1,0 +1,8 @@
+DB=bcaiclouddb
+TOTAL=24
+MATCH:shops=20
+MATCH:shop_user_access_logs=489
+MATCH:organizationBusinessTypes=20
+MATCH:organizationBranches=0
+MATCH:shopUsers=21
+MATCH:organizationDepartments=0

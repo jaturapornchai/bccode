@@ -1,23 +1,24 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1.7
 
 ##
 ## Builder
 ##
 FROM golang:1.26-alpine AS builder
 
-RUN apk add alpine-sdk
-RUN apk add librdkafka-dev
-RUN apk add build-base
+RUN --mount=type=cache,target=/var/cache/apk \
+    apk add --update alpine-sdk librdkafka-dev build-base
 
 WORKDIR /go/app
 
-COPY go.mod /go/app
-COPY go.sum /go/app
-RUN go mod download
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
 
 ADD . /go/app
 
-RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o go-app -tags musl main.go
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o go-app -tags musl main.go
 
 ##
 ## Deploy

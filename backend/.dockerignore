@@ -13,12 +13,22 @@
 *.swp
 *.swo
 
+# Agent/tool caches
+.agents
+.claude
+.cline
+.continue
+.kiro
+.kilocode
+.roo
+
 # OS
 .DS_Store
 Thumbs.db
 
 # Logs
 *.log
+logs/
 tmp/
 
 # Test files

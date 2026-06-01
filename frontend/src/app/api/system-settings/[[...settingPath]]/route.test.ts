@@ -82,9 +82,65 @@ describe("system settings API route security", () => {
     expect(response.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [proxiedUrl, proxiedInit] = fetchMock.mock.calls[0] as [string | URL | Request, RequestInit | undefined];
-    expect(String(proxiedUrl)).toBe("http://localhost:8888/unit/UNIT-GUID");
+    expect(String(proxiedUrl)).toBe("http://localhost:8888/unit/UNIT-GUID?shopid=SHOP001");
     expect(proxiedInit?.method).toBe("DELETE");
     expect(proxiedInit?.body).toBeUndefined();
+  });
+
+  it("keeps email user ids readable by the legacy shop permission endpoint", async () => {
+    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      void url;
+      void init;
+      return Response.json({ success: true, data: { username: "demo.admin01@example.com" } });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      new Request("http://localhost/api/system-settings/user/demo.admin01%40example.com?shopid=SHOP001", {
+        headers: {
+          Authorization: "Bearer test-token",
+          "x-bc-backend-url": "http://localhost:8888/goapi",
+        },
+      }),
+      { params: Promise.resolve({ settingPath: ["user", "demo.admin01%40example.com"] }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [proxiedUrl, proxiedInit] = fetchMock.mock.calls[0] as [string | URL | Request, RequestInit | undefined];
+    expect(String(proxiedUrl)).toBe("http://localhost:8888/shop/permission/demo.admin01@example.com?offset=0&limit=1000");
+    expect(proxiedInit?.method).toBe("GET");
+  });
+
+  it("passes atlas detail ids as email and cartid filters", async () => {
+    process.env.JWT_SECRET_KEY = SECRET;
+    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      void url;
+      void init;
+      return Response.json({ status: "success", code: 200, data: [] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      new Request("http://localhost/api/system-settings/permission_link/demo.admin01%40example.com?shopid=SHOP001", {
+        headers: {
+          Authorization: `Bearer ${signJwt({ username: "owner@example.com", shopid: "SHOP001" })}`,
+          "x-bc-backend-url": "http://localhost:8888/goapi",
+        },
+      }),
+      { params: Promise.resolve({ settingPath: ["permission_link", "demo.admin01%40example.com"] }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, proxiedInit] = fetchMock.mock.calls[0] as [string | URL | Request, RequestInit | undefined];
+    const body = JSON.parse(String(proxiedInit?.body));
+    expect(body).toMatchObject({
+      collection: "employee_permissions",
+      shopid: "SHOP001",
+      email: "demo.admin01@example.com",
+      cartid: "demo.admin01@example.com",
+    });
   });
 });
 

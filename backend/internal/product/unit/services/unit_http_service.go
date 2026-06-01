@@ -83,6 +83,10 @@ func (svc UnitHttpService) getContextTimeoutForImport() (context.Context, contex
 	return context.WithTimeout(context.Background(), importTimeout)
 }
 
+func unitDocFound(doc models.UnitDoc) bool {
+	return doc.ID != primitive.NilObjectID
+}
+
 func (svc *UnitHttpService) ImportUnitsFromFile(file []byte, shopID string, authUsername string) (string, error) {
 	f, err := excelize.OpenReader(bytes.NewReader(file))
 	if err != nil {
@@ -243,7 +247,7 @@ func (svc UnitHttpService) UpdateUnit(shopID string, guid string, authUsername s
 		return err
 	}
 
-	if findDoc.ID == primitive.NilObjectID {
+	if !unitDocFound(findDoc) {
 		return errors.New("document not found")
 	}
 
@@ -258,7 +262,7 @@ func (svc UnitHttpService) UpdateUnit(shopID string, guid string, authUsername s
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, shopID, findDoc.GuidFixed, findDoc)
 
 	if err != nil {
 		return err
@@ -288,7 +292,7 @@ func (svc UnitHttpService) UpdateFieldUnit(shopID string, guid string, authUsern
 		return err
 	}
 
-	if findDoc.ID == primitive.NilObjectID {
+	if !unitDocFound(findDoc) {
 		return errors.New("document not found")
 	}
 
@@ -319,7 +323,7 @@ func (svc UnitHttpService) UpdateFieldUnit(shopID string, guid string, authUsern
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
 
-	err = svc.repo.Update(ctx, shopID, guid, findDoc)
+	err = svc.repo.Update(ctx, shopID, findDoc.GuidFixed, findDoc)
 
 	if err != nil {
 		return err
@@ -368,7 +372,7 @@ func (svc UnitHttpService) deleteByUnitCode(shopID, guid, authUsername string) (
 		return findDoc, err
 	}
 
-	if findDoc.ID == primitive.NilObjectID {
+	if !unitDocFound(findDoc) {
 		return findDoc, nil
 	}
 
@@ -378,7 +382,7 @@ func (svc UnitHttpService) deleteByUnitCode(shopID, guid, authUsername string) (
 		return findDoc, err
 	}
 
-	err = svc.repo.DeleteByGuidfixed(ctx, shopID, guid, authUsername)
+	err = svc.repo.DeleteByGuidfixed(ctx, shopID, findDoc.GuidFixed, authUsername)
 	if err != nil {
 		return findDoc, err
 	}
@@ -465,7 +469,7 @@ func (svc UnitHttpService) InfoUnit(shopID string, guid string) (models.UnitInfo
 		return models.UnitInfo{}, err
 	}
 
-	if findDoc.ID == primitive.NilObjectID {
+	if !unitDocFound(findDoc) {
 		return models.UnitInfo{}, errors.New("document not found")
 	}
 

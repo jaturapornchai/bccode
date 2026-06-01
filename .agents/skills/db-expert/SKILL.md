@@ -13,5 +13,6 @@ description: Use when writing SQL, schema design, migration, or query optimizati
 - **Postgres Querying**: Parameterize queries (`$1`, `$2`), wrap in transactions, run `EXPLAIN ANALYZE` for new queries.
 - **ClickHouse Role**: Use ClickHouse for rebuildable BI/analytics/reporting facts fed from processed projections. It is not transactional source of truth.
 - **ClickHouse Implementation**: Use MergeTree engine. Insert in batch. Track `company_group_id`, `tenant_id`, and `branch_id`.
+- **Pipeline Contract**: Derived stores are fed by `MongoDB -> Kafka -> PostgreSQL -> ClickHouse`. PostgreSQL schema/migrations support projection consumers only; ClickHouse schema supports BI/reporting consumers only. Never design a CRUD write path that starts in PostgreSQL or ClickHouse.
 - **Projection Conflict Rule**: If PostgreSQL or ClickHouse data differs from MongoDB, MongoDB wins. Repair the sync/rebuild path; do not manually patch derived stores as operational truth.
 - **Migrations**: Always provide both UP and DOWN SQL files. Transaction-wrapped.

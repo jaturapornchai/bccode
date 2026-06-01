@@ -37,8 +37,6 @@ import {
   UserX,
   UsersRound,
   ChevronsUpDown,
-  ChevronDown,
-  ChevronRight,
   UploadCloud,
   X,
 } from "lucide-react";
@@ -1232,6 +1230,10 @@ export function SystemSettingsScreen({
           q: query,
           shopid: currentWorkspace.shop.shopid,
         });
+        const firstFieldKey = currentConfig.fields?.[0]?.key;
+        if (firstFieldKey && currentConfig.slug !== "permission_link") {
+          searchParams.set("sort", `${firstFieldKey}:1`);
+        }
         if ((currentConfig.slug === "product_category_group_select_screen" || currentConfig.slug === "productcategorylist") && groupNumberRef.current !== null) {
           searchParams.set("group-number", String(groupNumberRef.current));
         }
@@ -3221,7 +3223,7 @@ function SettingDataList({
                   className={cn(
                     "bc-list-row",
                     isEditing
-                      ? "bg-amber-100 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100"
+                      ? "bg-amber-100/70 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100"
                       : active
                         ? "bg-primary/10 text-primary"
                         : index % 2 === 0
@@ -3277,7 +3279,7 @@ function SettingDataList({
                         type="button"
                         size="icon"
                         variant="outline"
-                        className="size-7 rounded-lg bg-background text-primary hover:bg-primary/10 border-border"
+                        className="size-7 rounded-lg bg-background text-sky-600 border-sky-200 hover:bg-sky-50 dark:text-sky-400 dark:border-sky-900/50 dark:hover:bg-sky-950/30"
                         onClick={() => onEdit(record)}
                         disabled={
                           config.slug === "user" &&
@@ -3311,7 +3313,7 @@ function SettingDataList({
                         type="button"
                         size="icon"
                         variant="outline"
-                        className="size-7 rounded-lg bg-background text-destructive hover:bg-destructive/10 border-border"
+                        className="size-7 rounded-lg bg-background text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900/50 dark:hover:bg-red-950/30"
                         onClick={() => onDelete(record)}
                         disabled={isCreator || isSelfUserRecord(record, auth)}
                         aria-label={text("delete")}
@@ -6385,13 +6387,13 @@ function FieldEditor({
   }
 
   if (field.type === "branch-multi-select") {
-    // Hidden because it is integrated into CompanyBranchTreeSelector
+    // Branch access is inherited from company access in these CRUD screens.
     return null;
   }
 
   if (field.type === "company-multi-select") {
     return (
-      <CompanyBranchTreeSelector
+      <CompanyMultiSelectFieldEditor
         auth={auth}
         form={form}
         language={language}
@@ -9965,7 +9967,7 @@ function companyOptionDisplayName(
   return (localized ?? option.code ?? option.guidfixed ?? "").trim();
 }
 
-function CompanyBranchTreeSelector({
+function CompanyMultiSelectFieldEditor({
   auth,
   form,
   language,
@@ -9979,10 +9981,8 @@ function CompanyBranchTreeSelector({
   workspace: WorkspaceSession | null;
 }) {
   const [shops, setShops] = useState<any[]>([]);
-  const [branchesMap, setBranchesMap] = useState<Record<string, BranchOption[]>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   const selectedShopIds = useMemo(() => {
     const val = form.company_guids;
@@ -9996,26 +9996,6 @@ function CompanyBranchTreeSelector({
     return [];
   }, [form.company_guids]);
 
-  const selectedBranches = useMemo(() => {
-    const raw = selectedBranchesFromValue(form.branches);
-    return raw.map((item) => {
-      const itemCoreKey = stringValue(item.guid_fixed) || stringValue(item.code);
-      if (!itemCoreKey) return item;
-      for (const [shopid, shopBranches] of Object.entries(branchesMap)) {
-        const match = shopBranches.find((br) => 
-          (stringValue(br.guid_fixed) || stringValue(br.code)) === itemCoreKey
-        );
-        if (match) {
-          return {
-            ...item,
-            shopid: shopid,
-          };
-        }
-      }
-      return item;
-    });
-  }, [form.branches, branchesMap]);
-
   useEffect(() => {
     if (!auth || !workspace) return;
     const controller = new AbortController();
@@ -10023,7 +10003,11 @@ function CompanyBranchTreeSelector({
     setLoading(true);
     setError("");
 
-    void fetch(`/api/workspace/shops`, {
+    const params = new URLSearchParams();
+    const activeShopId = stringValue(workspace.shop.shopid);
+    if (activeShopId) params.set("active_shopid", activeShopId);
+
+    void fetch(`/api/workspace/shops${params.size > 0 ? `?${params.toString()}` : ""}`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,
@@ -10036,44 +10020,7 @@ function CompanyBranchTreeSelector({
         if (cancelled) return;
         const shopsList = Array.isArray(shopsPayload.data) ? shopsPayload.data : [];
         setShops(shopsList);
-
-        // Fetch branches for all shops
-        const fetchPromises = shopsList.map(async (shop: any) => {
-          const sid = shop.shopid;
-          const compGuid = String(shop.guid_fixed ?? shop.guidfixed ?? shop.guid ?? "").trim();
-          const params = new URLSearchParams({
-            limit: "1000",
-            offset: "0",
-            company_guid: compGuid,
-          });
-          const response = await fetch(`/api/system-settings/branch?${params.toString()}`, {
-            headers: requestHeaders(auth),
-            cache: "no-store",
-            signal: controller.signal,
-          });
-          if (!response.ok) return { sid, data: [] };
-          const payload = await response.json();
-          const records = extractListRecords(payload);
-          const parsed = records
-            .map(recordToBranchOption)
-            .filter((opt) => opt.guid_fixed || opt.code)
-            .map((opt) => ({
-              ...opt,
-              shopid: sid,
-            }));
-          return { sid, data: parsed };
-        });
-
-        const results = await Promise.all(fetchPromises);
-        const nextMap: Record<string, BranchOption[]> = {};
-        for (const res of results) {
-          nextMap[res.sid] = res.data;
-        }
-
-        if (!cancelled) {
-          setBranchesMap(nextMap);
-          setLoading(false);
-        }
+        setLoading(false);
       })
       .catch((catchError: unknown) => {
         if (cancelled) return;
@@ -10081,8 +10028,8 @@ function CompanyBranchTreeSelector({
           catchError instanceof Error && catchError.message
             ? catchError.message
             : language === "th"
-              ? "โหลดข้อมูลบริษัท/สาขาไม่สำเร็จ"
-              : "Failed to load organizational structure",
+              ? "โหลดข้อมูลบริษัทไม่สำเร็จ"
+              : "Failed to load companies",
         );
         setLoading(false);
       });
@@ -10101,70 +10048,20 @@ function CompanyBranchTreeSelector({
       nextShops = nextShops.filter((id) => id !== shopId);
     }
 
-    // Toggle branches under this shop as well
-    const shopBranches = branchesMap[shopId] || [];
-    let nextBranches = [...selectedBranches];
-    if (checked) {
-      for (const br of shopBranches) {
-        if (!nextBranches.some((item) => branchKeyOf(item) === branchKeyOf(br))) {
-          nextBranches.push(br);
-        }
-      }
-    } else {
-      const shopBranchKeys = new Set(shopBranches.map((br) => branchKeyOf(br)));
-      nextBranches = nextBranches.filter((item) => !shopBranchKeys.has(branchKeyOf(item)));
-    }
-
     setForm({
       ...form,
       company_guids: nextShops,
-      branches: nextBranches,
     });
-  }
-
-  function handleToggleBranch(shopId: string, br: BranchOption, checked: boolean) {
-    const brKey = branchKeyOf(br);
-    let nextBranches = [...selectedBranches];
-    if (checked) {
-      if (!nextBranches.some((item) => branchKeyOf(item) === brKey)) {
-        nextBranches.push(br);
-      }
-    } else {
-      nextBranches = nextBranches.filter((item) => branchKeyOf(item) !== brKey);
-    }
-
-    const shopBranches = branchesMap[shopId] || [];
-    const hasAnyChecked = shopBranches.some((b) =>
-      checked ? branchKeyOf(b) === brKey || nextBranches.some((item) => branchKeyOf(item) === branchKeyOf(b))
-              : nextBranches.some((item) => branchKeyOf(item) === branchKeyOf(b))
-    );
-
-    let nextShops = [...selectedShopIds];
-    if (hasAnyChecked) {
-      if (!nextShops.includes(shopId)) nextShops.push(shopId);
-    } else {
-      nextShops = nextShops.filter((id) => id !== shopId);
-    }
-
-    setForm({
-      ...form,
-      company_guids: nextShops,
-      branches: nextBranches,
-    });
-  }
-
-  function toggleCollapsed(shopId: string) {
-    setCollapsed((prev) => ({ ...prev, [shopId]: !prev[shopId] }));
   }
 
   return (
     <section className="grid w-full gap-3 rounded-2xl border border-border bg-background p-4 text-sm font-semibold shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
-        <span>{language === "th" ? "สิทธิ์การเข้าถึงบริษัทและสาขา" : "Company & Branch Access"}</span>
+        <span>{language === "th" ? "สิทธิ์การเข้าถึงบริษัท" : "Company Access"}</span>
         {loading ? (
           <span className="flex items-center gap-1 text-xs font-normal text-muted-foreground animate-pulse">
             <Loader2 className="size-3 animate-spin" />
-            {language === "th" ? "กำลังโหลดข้อมูลโครงสร้าง…" : "Loading structure…"}
+            {language === "th" ? "กำลังโหลดข้อมูลบริษัท…" : "Loading companies…"}
           </span>
         ) : null}
       </div>
@@ -10182,74 +10079,21 @@ function CompanyBranchTreeSelector({
             const sid = shop.shopid;
             const shopName = shop.names?.find((n: any) => n.code === language)?.name || shop.name1 || shop.name || sid;
             const isShopChecked = selectedShopIds.includes(sid);
-            const shopBranches = branchesMap[sid] || [];
-            const isCollapsed = collapsed[sid];
-            const selectedShopBranchesCount = shopBranches.filter((b) =>
-              selectedBranches.some((item) => branchKeyOf(item) === branchKeyOf(b))
-            ).length;
 
             return (
-              <div key={sid} className="flex flex-col gap-1.5 border border-border/60 bg-card rounded-xl p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <button
-                      type="button"
-                      onClick={() => toggleCollapsed(sid)}
-                      className="p-1 hover:bg-muted rounded text-muted-foreground"
-                    >
-                      {isCollapsed ? (
-                        <ChevronRight className="size-4" />
-                      ) : (
-                        <ChevronDown className="size-4" />
-                      )}
-                    </button>
-                    <input
-                      type="checkbox"
-                      id={`shop-${sid}`}
-                      checked={isShopChecked}
-                      onChange={(e) => handleToggleShop(sid, e.target.checked)}
-                      className="size-4 text-primary border-border rounded cursor-pointer"
-                    />
-                    <label htmlFor={`shop-${sid}`} className="font-bold cursor-pointer truncate flex items-center gap-1.5 select-none">
-                      <Building2 className="size-4 text-primary shrink-0" />
-                      <span>{shopName}</span>
-                    </label>
-                  </div>
-                  {shopBranches.length > 0 ? (
-                    <span className="text-xs font-normal text-muted-foreground shrink-0">
-                      {language === "th"
-                        ? `เลือก ${selectedShopBranchesCount} / ${shopBranches.length} สาขา`
-                        : `${selectedShopBranchesCount} / ${shopBranches.length} selected`}
-                    </span>
-                  ) : null}
-                </div>
-
-                {!isCollapsed && shopBranches.length > 0 ? (
-                  <div className="pl-9 border-l border-border/80 ml-3.5 mt-1 flex flex-col gap-2">
-                    {shopBranches.map((br) => {
-                      const brKey = branchKeyOf(br);
-                      const isBrChecked = selectedBranches.some((item) => branchKeyOf(item) === brKey);
-                      const brName = branchOptionDisplayName(br, language);
-
-                      return (
-                        <label
-                          key={brKey}
-                          className="flex items-center gap-2.5 cursor-pointer py-0.5 select-none font-normal text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isBrChecked}
-                            onChange={(e) => handleToggleBranch(sid, br, e.target.checked)}
-                            className="size-3.5 text-primary border-border rounded cursor-pointer"
-                          />
-                          <GitBranch className="size-3.5 text-sky-500 shrink-0" />
-                          <span className="text-xs">{brName}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                ) : null}
-              </div>
+              <label
+                key={sid}
+                className="flex min-w-0 cursor-pointer items-center gap-2.5 rounded-xl border border-border/60 bg-card p-3 font-bold transition-colors hover:bg-muted/40"
+              >
+                <input
+                  type="checkbox"
+                  checked={isShopChecked}
+                  onChange={(event) => handleToggleShop(sid, event.target.checked)}
+                  className="size-4 cursor-pointer rounded border-border text-primary"
+                />
+                <Building2 className="size-4 shrink-0 text-primary" />
+                <span className="min-w-0 truncate">{shopName}</span>
+              </label>
             );
           })}
         </div>
@@ -12593,6 +12437,13 @@ function buildPayload(
     } else {
       setByPath(payload, field.key, String(value ?? "").trim());
     }
+  }
+
+  if (
+    config.fields.some((field) => field.type === "company-multi-select") &&
+    !config.fields.some((field) => field.type === "branch-multi-select")
+  ) {
+    delete payload.branches;
   }
 
   if (config.kind === "atlas") {
