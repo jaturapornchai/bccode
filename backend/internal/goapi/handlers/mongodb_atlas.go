@@ -83,11 +83,12 @@ func atlasTenantFilter(tenantID string) bson.M {
 	}
 }
 
-func atlasIdentityFilter(guidFixed string, email string, cartID string) bson.M {
+func atlasIdentityFilter(guidFixed string, email string, cartID string, userUID string) bson.M {
 	guidFixed = strings.TrimSpace(guidFixed)
 	email = strings.TrimSpace(email)
 	cartID = strings.TrimSpace(cartID)
-	identityFilters := make([]bson.M, 0, 2)
+	userUID = strings.TrimSpace(userUID)
+	identityFilters := make([]bson.M, 0, 3)
 	if guidFixed != "" {
 		identityFilters = append(identityFilters,
 			bson.M{"guid_fixed": guidFixed},
@@ -96,6 +97,9 @@ func atlasIdentityFilter(guidFixed string, email string, cartID string) bson.M {
 	}
 	if email != "" && cartID != "" && (email != guidFixed || cartID != guidFixed) {
 		identityFilters = append(identityFilters, bson.M{"email": email, "cartid": cartID})
+	}
+	if userUID != "" {
+		identityFilters = append(identityFilters, bson.M{"user_uid": userUID})
 	}
 	if len(identityFilters) == 0 {
 		return bson.M{}
@@ -167,6 +171,7 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 		ShopIDAlt   string                 `json:"shop_id"`
 		Email       string                 `json:"email"`
 		CartId      string                 `json:"cartid"`
+		UserUID     string                 `json:"user_uid"`
 		Data        map[string]interface{} `json:"data"`
 		Upsert      bool                   `json:"upsert"`
 	}
@@ -204,14 +209,14 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 	}
 	reqBody.GuidFixed = strings.TrimSpace(reqBody.GuidFixed)
 	usesLegacyIdentity := reqBody.GuidFixed == "" && strings.TrimSpace(reqBody.Email) != "" && strings.TrimSpace(reqBody.CartId) != ""
-	if reqBody.GuidFixed == "" && reqBody.Email == "" {
+	if reqBody.GuidFixed == "" && reqBody.Email == "" && reqBody.UserUID == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
 			"message": "guid_fixed is required and cannot be empty",
 		})
 	}
-	if reqBody.GuidFixed == "" && reqBody.CartId == "" {
+	if reqBody.GuidFixed == "" && reqBody.UserUID == "" && reqBody.CartId == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
@@ -221,7 +226,7 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 
 	filter := andAtlasFilters(
 		atlasTenantFilter(reqBody.ShopId),
-		atlasIdentityFilter(reqBody.GuidFixed, reqBody.Email, reqBody.CartId),
+		atlasIdentityFilter(reqBody.GuidFixed, reqBody.Email, reqBody.CartId, reqBody.UserUID),
 	)
 
 	// ใช้ data ทั้งหมดสำหรับ update
@@ -298,6 +303,7 @@ func MongoAtlasDeleteHandler(c echo.Context) error {
 		ShopIDAlt   string `json:"shop_id"`
 		Email       string `json:"email"`
 		CartId      string `json:"cartid"`
+		UserUID     string `json:"user_uid"`
 		DeleteMany  bool   `json:"delete_many"` // true = deleteMany, false = deleteOne
 	}
 
@@ -333,14 +339,14 @@ func MongoAtlasDeleteHandler(c echo.Context) error {
 		})
 	}
 	reqBody.GuidFixed = strings.TrimSpace(reqBody.GuidFixed)
-	if reqBody.GuidFixed == "" && reqBody.Email == "" {
+	if reqBody.GuidFixed == "" && reqBody.Email == "" && reqBody.UserUID == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
 			"message": "guid_fixed is required and cannot be empty",
 		})
 	}
-	if reqBody.GuidFixed == "" && reqBody.CartId == "" {
+	if reqBody.GuidFixed == "" && reqBody.UserUID == "" && reqBody.CartId == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
@@ -350,7 +356,7 @@ func MongoAtlasDeleteHandler(c echo.Context) error {
 
 	filter := andAtlasFilters(
 		atlasTenantFilter(reqBody.ShopId),
-		atlasIdentityFilter(reqBody.GuidFixed, reqBody.Email, reqBody.CartId),
+		atlasIdentityFilter(reqBody.GuidFixed, reqBody.Email, reqBody.CartId, reqBody.UserUID),
 	)
 
 	// Perform delete
@@ -415,6 +421,7 @@ func MongoAtlasGetHandler(c echo.Context) error {
 		ShopIDAlt   string `json:"shop_id"`
 		Email       string `json:"email"`
 		CartId      string `json:"cartid"`
+		UserUID     string `json:"user_uid"`
 		Limit       int64  `json:"limit"`
 		Skip        int64  `json:"skip"`
 	}
@@ -443,10 +450,10 @@ func MongoAtlasGetHandler(c echo.Context) error {
 	}
 
 	filter := atlasTenantFilter(reqBody.ShopId)
-	if reqBody.GuidFixed != "" || reqBody.Email != "" || reqBody.CartId != "" {
+	if reqBody.GuidFixed != "" || reqBody.Email != "" || reqBody.CartId != "" || reqBody.UserUID != "" {
 		filter = andAtlasFilters(
 			filter,
-			atlasIdentityFilter(reqBody.GuidFixed, reqBody.Email, reqBody.CartId),
+			atlasIdentityFilter(reqBody.GuidFixed, reqBody.Email, reqBody.CartId, reqBody.UserUID),
 		)
 	}
 

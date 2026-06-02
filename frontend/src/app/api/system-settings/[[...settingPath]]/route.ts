@@ -235,6 +235,7 @@ function buildGetInit(request: Request, config: SystemSettingConfig, id = ""): R
       body.guid_fixed = id;
       body.email = id;
       body.cartid = id;
+      if (config.collection === "employee_permissions") body.user_uid = id;
     }
     return {
       method: "POST",
@@ -333,6 +334,7 @@ function buildWritePayload(request: Request, config: SystemSettingConfig, id: st
       guid_fixed: key,
       email: legacyKey,
       cartid: legacyKey,
+      user_uid: typeof payload.user_uid === "string" ? payload.user_uid : undefined,
       data: { ...atlasData, holding_code: String(payload.holding_code ?? shopid), guid_fixed: key },
       upsert: true,
     };
@@ -376,6 +378,7 @@ function buildDeletePayload(
       guid_fixed: id,
       email: id,
       cartid: id,
+      user_uid: typeof body.user_uid === "string" ? body.user_uid : undefined,
       delete_many: false,
     };
   }

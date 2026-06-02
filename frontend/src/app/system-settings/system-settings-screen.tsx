@@ -1291,7 +1291,7 @@ export function SystemSettingsScreen({
         if (currentConfig.slug === "permission_link") {
           nextRecords = nextRecords.map((r: any) => ({
             ...r,
-            employee_code: r.user_uid || r.uid || r.username,
+            employee_code: r.user_name || r.username || r.employee_code || r.email || r.user_uid || r.uid,
             employee_name: r.user_profile_name || r.name || r.username,
             user_uid: r.user_uid || r.uid,
           }));
@@ -1559,12 +1559,12 @@ export function SystemSettingsScreen({
     setNotice(null);
 
     if (auth && workspace && currentConfig.slug === "permission_link") {
-      const empCode = record.employee_code || record.employeeCode || recordId(record, currentConfig);
-      if (empCode) {
+      const lookupId = record.user_uid || record.uid || record.employee_code || record.employeeCode || recordId(record, currentConfig);
+      if (lookupId) {
         try {
           const params = new URLSearchParams({ shopid: workspace.shop.shopid });
           const response = await fetch(
-            `/api/system-settings/permission_link/${encodeURIComponent(String(empCode))}?${params.toString()}`,
+            `/api/system-settings/permission_link/${encodeURIComponent(String(lookupId))}?${params.toString()}`,
             {
               headers: requestHeaders(auth),
               cache: "no-store",
@@ -1835,6 +1835,9 @@ export function SystemSettingsScreen({
           body: JSON.stringify({
             backendUrl: auth.backendUrl,
             shopid: workspace.shop.shopid,
+            ...(currentConfig.slug === "permission_link"
+              ? { user_uid: record.user_uid ?? record.uid }
+              : {}),
           }),
         },
       );
@@ -5487,6 +5490,7 @@ function isEmployeeNameField(field: SystemSettingField): boolean {
 
 type PermissionLinkUserOption = {
   code: string;
+  userUid: string;
   name: string;
   subtitle: string;
   isDisabled: boolean;
@@ -5495,12 +5499,14 @@ type PermissionLinkUserOption = {
 function permissionLinkUserOption(
   record: SettingRecord,
 ): PermissionLinkUserOption {
-  const code = stringValue(record.username ?? record.email ?? record.uid);
+  const userUid = stringValue(record.user_uid ?? record.uid);
+  const code = stringValue(record.user_name ?? record.username ?? record.employee_code ?? userUid);
   const name =
-    stringValue(record.name ?? record.email ?? record.username) || code;
-  const subtitle = stringValue(record.email) || stringValue(record.uid);
+    stringValue(record.user_profile_name ?? record.name ?? record.email ?? record.username) || code;
+  const subtitle = stringValue(record.email) || userUid;
   return {
     code,
+    userUid,
     name,
     subtitle,
     isDisabled: Boolean(
@@ -5586,7 +5592,7 @@ function PermissionLinkUserSelector({
         setUsers(
           normalizeRecords(payload, userConfig)
             .map(permissionLinkUserOption)
-            .filter((user) => user.code),
+            .filter((user) => user.code && user.userUid),
         );
       } catch (loadError) {
         if (!cancelled)
@@ -5607,7 +5613,7 @@ function PermissionLinkUserSelector({
 
   function choose(user: PermissionLinkUserOption) {
     if (user.isDisabled) return;
-    setForm({ ...form, employee_code: user.code, employee_name: user.name, user_uid: user.code });
+    setForm({ ...form, employee_code: user.code, employee_name: user.name, user_uid: user.userUid });
     setQuery("");
     setUsers([]);
   }
