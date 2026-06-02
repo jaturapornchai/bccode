@@ -147,7 +147,8 @@ type SettingRecord = Record<string, unknown>;
 type FormState = Record<string, unknown>;
 type Notice = { type: "error" | "info" | "success"; text: string } | null;
 type ProductUnitOption = {
-  unitcode: string;
+  unit_code?: string;
+  unitcode?: string;
   names?: { code?: string; name?: string }[];
 };
 type AuthenticatedImageCacheEntry = {
@@ -560,7 +561,7 @@ const emptyStandardUnitDialog: StandardUnitDialogState = {
 
 const companySetupDefaults: FormState = {
   "settings.language": "th",
-  "settings.languageconfigs": defaultLanguageConfigs("th"),
+  "settings.language_configs": defaultLanguageConfigs("th"),
 };
 
 const branchSetupDefaults: FormState = {
@@ -880,7 +881,7 @@ const fieldBackendKeys: Record<string, string> = {
   "company.settings.isusebranch": "use_branch_system",
   "company.settings.isusedepartment": "use_department_system",
   "company.settings.language": "default_language",
-  "company.settings.languageconfigs": "active_languages",
+  "company.settings.language_configs": "active_languages",
   "company.settings.tax_id": "tax_id",
   "company.settings.timezone": "timezone",
   "company.settings.usebuddhistcalendar": "year_type",
@@ -899,19 +900,41 @@ const fieldBackendKeys: Record<string, string> = {
   "user.department": "department",
   "user.line_user_id": "line_user_id",
   "user.line_display_name": "line_display_name",
-  "permission_definition.permissionCode": "permission_code",
-  "permission_definition.permissionName": "permission_name",
-  "permission_definition.branches": "branch_permissions",
-  "approval_setting.approvalCode": "approval_code",
-  "approval_setting.approvalName": "approval_name",
+  "permission_definition.permission_code": "permission_code",
+  "permission_definition.permission_name": "permission_name",
+  "permission_definition.access_rules": "access_rules",
+  "approval_setting.approval_code": "approval_code",
+  "approval_setting.approval_name": "approval_name",
   "approval_setting.approvals": "approval_permission",
-  "permission_link.employeeCode": "user_employee_code",
-  "permission_link.employeeName": "name",
-  "permission_link.permissionCodes": "permission_codes",
-  "permission_link.approvalCodes": "approval_codes",
+  "permission_link.employee_code": "user_employee_code",
+  "permission_link.employee_name": "name",
+  "permission_link.permission_codes": "permission_codes",
+  "permission_link.approval_codes": "approval_codes",
 };
 
 const fieldValueAliases: Record<string, string[]> = {
+  "company.settings.language_configs": ["settings.languageconfigs"],
+  "productunit.unit_code": ["unitcode"],
+  "productunit.business_codes": ["company_guids"],
+  "employee.business_codes": ["company_guids"],
+  "user.business_codes": ["company_guids"],
+  "approval_setting.approval_code": ["approvalCode"],
+  "approval_setting.approval_name": ["approvalName"],
+  "approval_setting.is_active": ["isActive"],
+  "permission_definition.permission_code": ["permissionCode"],
+  "permission_definition.permission_name": ["permissionName"],
+  "permission_definition.is_active": ["isActive"],
+  "permission_definition.access_rules": ["branches"],
+  "permission_group.group_code": ["groupCode"],
+  "permission_group.group_name": ["groupName"],
+  "permission_group.is_active": ["isActive"],
+  "permission_group.permission_codes": ["permissionCodes"],
+  "permission_link.employee_code": ["employeeCode"],
+  "permission_link.employee_name": ["employeeName"],
+  "permission_link.group_code": ["groupCode"],
+  "permission_link.business_codes": ["company_guids"],
+  "permission_link.permission_codes": ["permissionCodes"],
+  "permission_link.approval_codes": ["approvalCodes"],
   "branch.contact.country_code": ["contact.countrycode"],
   "branch.contact.district_code": ["contact.districtcode"],
   "branch.contact.phone_number": ["contact.phonenumber"],
@@ -1268,8 +1291,9 @@ export function SystemSettingsScreen({
         if (currentConfig.slug === "permission_link") {
           nextRecords = nextRecords.map((r: any) => ({
             ...r,
-            employeeCode: r.username,
-            employeeName: r.user_profile_name || r.name || r.username,
+            employee_code: r.user_uid || r.uid || r.username,
+            employee_name: r.user_profile_name || r.name || r.username,
+            user_uid: r.user_uid || r.uid,
           }));
         }
         const scopedRecords =
@@ -1535,7 +1559,7 @@ export function SystemSettingsScreen({
     setNotice(null);
 
     if (auth && workspace && currentConfig.slug === "permission_link") {
-      const empCode = record.employeeCode || recordId(record, currentConfig);
+      const empCode = record.employee_code || record.employeeCode || recordId(record, currentConfig);
       if (empCode) {
         try {
           const params = new URLSearchParams({ shopid: workspace.shop.shopid });
@@ -1553,8 +1577,8 @@ export function SystemSettingsScreen({
               const mergedRecord = {
                 ...record,
                 ...detail,
-                employeeCode: record.employeeCode,
-                employeeName: record.employeeName,
+                employee_code: record.employee_code ?? record.employeeCode,
+                employee_name: record.employee_name ?? record.employeeName,
               };
               setEditing(mergedRecord);
               setForm(formFromRecord(mergedRecord, currentConfig, language));
@@ -2043,7 +2067,7 @@ export function SystemSettingsScreen({
         ...current,
         loading: false,
         options,
-        selectedCodes: options.map((unit) => unit.unitcode),
+        selectedCodes: options.map(productUnitCode).filter(Boolean),
         source: isRecord(payload) ? stringValue(payload.source) : "",
       }));
     } catch (error) {
@@ -2105,7 +2129,7 @@ export function SystemSettingsScreen({
   function selectAllStandardUnits() {
     setStandardUnitDialog((current) => ({
       ...current,
-      selectedCodes: current.options.map((unit) => unit.unitcode),
+      selectedCodes: current.options.map(productUnitCode).filter(Boolean),
     }));
   }
 
@@ -3489,8 +3513,8 @@ function CompanyMultiSelectCell({
       .then((payload) => {
         if (payload && payload.success && Array.isArray(payload.data)) {
           const parsed = payload.data.map((shop: any) => ({
-            guidfixed: shop.shopid,
-            code: "",
+            guidfixed: shop.business_code || shop.code || shop.shopid,
+            code: shop.business_code || shop.code || "",
             names: shop.names || [{ code: "th", name: shop.name1 || shop.name || "" }]
           }));
           setOptions(parsed);
@@ -3638,9 +3662,9 @@ function settingListColumns(
         render: (record) => (
           <span
             className="block truncate"
-            title={stringValue(record.name ?? record.employeeName)}
+            title={stringValue(record.name ?? record.employee_name ?? record.employeeName)}
           >
-            {stringValue(record.name ?? record.employeeName) || "-"}
+            {stringValue(record.name ?? record.employee_name ?? record.employeeName) || "-"}
           </span>
         ),
       },
@@ -4003,7 +4027,7 @@ function SettingDetailPanel({
           }
           if (
             config.slug === "permission_definition" &&
-            field.key === "branches"
+            isPermissionAccessRulesField(field)
           ) {
             const dateTimeScope = resolveDateTimeScope(workspace);
             return (
@@ -4033,7 +4057,7 @@ function SettingDetailPanel({
           if (
             (config.slug === "permission_link" ||
               config.slug === "permission_group") &&
-            (field.key === "permissionCodes" || field.key === "approvalCodes")
+            (isPermissionCodesField(field) || isApprovalCodesField(field))
           ) {
             return (
               <div className="md:col-span-2" key={field.key}>
@@ -4358,12 +4382,12 @@ function fieldGridItemClass(
     return "min-w-0 md:col-span-2";
   }
   if (
-    (config.slug === "permission_definition" && field.key === "branches") ||
+    (config.slug === "permission_definition" && isPermissionAccessRulesField(field)) ||
     (config.slug === "approval_setting" && field.key === "approvals") ||
     (config.slug === "permission_link" &&
-      (field.key === "employeeCode" ||
-        field.key === "permissionCodes" ||
-        field.key === "approvalCodes"))
+      (isEmployeeCodeField(field) ||
+        isPermissionCodesField(field) ||
+        isApprovalCodesField(field)))
   ) {
     return "min-w-0 md:col-span-2";
   }
@@ -5183,11 +5207,12 @@ function StandardUnitDialog({
             </div>
           ) : dialog.options.length ? (
             dialog.options.map((unit) => {
-              const checked = dialog.selectedCodes.includes(unit.unitcode);
+              const unitCode = productUnitCode(unit);
+              const checked = dialog.selectedCodes.includes(unitCode);
               return (
                 <label
                   className="flex min-w-0 cursor-pointer items-center gap-2 rounded-2xl border border-border bg-background px-3 py-2 text-sm font-semibold"
-                  key={unit.unitcode}
+                  key={unitCode}
                 >
                   <input
                     className="size-4 shrink-0 accent-primary"
@@ -5195,14 +5220,14 @@ function StandardUnitDialog({
                     checked={checked}
                     disabled={dialog.saving}
                     onChange={(event) =>
-                      onToggle(unit.unitcode, event.target.checked)
+                      onToggle(unitCode, event.target.checked)
                     }
                   />
                   <span className="min-w-0 flex-1 truncate">
                     {unitDisplayName(unit, language)}
                   </span>
                   <b className="shrink-0 text-xs text-muted-foreground">
-                    {unit.unitcode}
+                    {unitCode}
                   </b>
                 </label>
               );
@@ -5395,16 +5420,22 @@ function permissionLinkOption(
   isApproval: boolean,
 ): PermissionLinkOption {
   const code = stringValue(
-    isApproval ? record.approvalCode : record.permissionCode,
+    isApproval
+      ? record.approval_code ?? record.approvalCode
+      : record.permission_code ?? record.permissionCode,
   );
   const name =
-    stringValue(isApproval ? record.approvalName : record.permissionName) ||
+    stringValue(
+      isApproval
+        ? record.approval_name ?? record.approvalName
+        : record.permission_name ?? record.permissionName,
+    ) ||
     code;
   const description = stringValue(record.description);
   return {
     code,
     description,
-    isActive: Boolean(record.isActive ?? record.isactive ?? true),
+    isActive: Boolean(record.is_active ?? record.isActive ?? record.isactive ?? true),
     name,
   };
 }
@@ -5432,6 +5463,26 @@ function stringArrayFromForm(value: unknown): string[] {
 
 function uniqueStrings(values: string[]): string[] {
   return Array.from(new Set(values.filter(Boolean)));
+}
+
+function isPermissionAccessRulesField(field: SystemSettingField): boolean {
+  return field.key === "access_rules" || field.key === "branches";
+}
+
+function isPermissionCodesField(field: SystemSettingField): boolean {
+  return field.key === "permission_codes" || field.key === "permissionCodes";
+}
+
+function isApprovalCodesField(field: SystemSettingField): boolean {
+  return field.key === "approval_codes" || field.key === "approvalCodes";
+}
+
+function isEmployeeCodeField(field: SystemSettingField): boolean {
+  return field.key === "employee_code" || field.key === "employeeCode";
+}
+
+function isEmployeeNameField(field: SystemSettingField): boolean {
+  return field.key === "employee_name" || field.key === "employeeName";
 }
 
 type PermissionLinkUserOption = {
@@ -5481,8 +5532,8 @@ function PermissionLinkUserSelector({
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const selectedCode = stringValue(form.employeeCode);
-  const selectedName = stringValue(form.employeeName);
+  const selectedCode = stringValue(form.employee_code ?? form.employeeCode);
+  const selectedName = stringValue(form.employee_name ?? form.employeeName);
   const fallbackLabel =
     field.label[language] ?? field.label.en ?? field.label.th;
   const labelKey =
@@ -5556,7 +5607,7 @@ function PermissionLinkUserSelector({
 
   function choose(user: PermissionLinkUserOption) {
     if (user.isDisabled) return;
-    setForm({ ...form, employeeCode: user.code, employeeName: user.name });
+    setForm({ ...form, employee_code: user.code, employee_name: user.name, user_uid: user.code });
     setQuery("");
     setUsers([]);
   }
@@ -5684,7 +5735,7 @@ function PermissionLinkMultiSelectEditor({
   setForm?: (form: FormState) => void;
   workspace: WorkspaceSession | null;
 }) {
-  const isApproval = field.key === "approvalCodes";
+  const isApproval = isApprovalCodesField(field);
   const sourceConfig = useMemo(
     () =>
       getSystemSettingConfig(
@@ -5697,7 +5748,7 @@ function PermissionLinkMultiSelectEditor({
   const [error, setError] = useState("");
   const selectedCodes = stringArrayFromForm(form[field.key]);
   const isGroup = config?.slug === "permission_group";
-  const selectedUserCode = isGroup ? "group" : stringValue(form.employeeCode);
+  const selectedUserCode = isGroup ? "group" : stringValue(form.employee_code ?? form.employeeCode);
   const fallbackLabel =
     field.label[language] ?? field.label.en ?? field.label.th;
   const labelKey =
@@ -5861,7 +5912,7 @@ function PermissionMatrixEditor({
   text: (key: keyof typeof uiEn) => string;
 }) {
   const branchKey = dateTimeScope.key || "company";
-  const branches = permissionBranchesFromForm(form.branches);
+  const branches = permissionBranchesFromForm(form.access_rules ?? form.branches);
   const branchPermission = permissionBranchValue(branches, branchKey);
   const menus = isRecord(branchPermission.menus) ? branchPermission.menus : {};
 
@@ -5871,7 +5922,7 @@ function PermissionMatrixEditor({
     checked: boolean,
   ) {
     if (readOnly || !setForm) return;
-    const nextBranches = permissionBranchesFromForm(form.branches);
+    const nextBranches = permissionBranchesFromForm(form.access_rules ?? form.branches);
     const nextBranch = permissionBranchValue(nextBranches, branchKey);
     const nextMenus = isRecord(nextBranch.menus) ? { ...nextBranch.menus } : {};
     const currentMenu = isRecord(nextMenus[menuId])
@@ -5884,7 +5935,7 @@ function PermissionMatrixEditor({
       ...dateTimeScopePayload(dateTimeScope),
       menus: nextMenus,
     };
-    setForm({ ...form, branches: nextBranches });
+    setForm({ ...form, access_rules: nextBranches });
   }
 
   return (
@@ -6042,7 +6093,7 @@ function FieldEditor({
     field.helper?.[language] ?? field.helper?.en ?? field.helper?.th;
   const value = form[field.key];
 
-  if (config.slug === "permission_definition" && field.key === "branches") {
+  if (config.slug === "permission_definition" && isPermissionAccessRulesField(field)) {
     return (
       <PermissionMatrixEditor
         dateTimeScope={dateTimeScope}
@@ -6068,7 +6119,7 @@ function FieldEditor({
     );
   }
 
-  if (config.slug === "permission_link" && field.key === "employeeCode") {
+  if (config.slug === "permission_link" && isEmployeeCodeField(field)) {
     return (
       <label className="grid gap-1 text-sm font-semibold">
         <span>{label}</span>
@@ -6077,7 +6128,7 @@ function FieldEditor({
     );
   }
 
-  if (config.slug === "permission_link" && field.key === "employeeName") {
+  if (config.slug === "permission_link" && isEmployeeNameField(field)) {
     return (
       <label className="grid gap-1 text-sm font-semibold">
         <span>{label}</span>
@@ -6088,7 +6139,7 @@ function FieldEditor({
 
   if (
     (config.slug === "permission_link" || config.slug === "permission_group") &&
-    (field.key === "permissionCodes" || field.key === "approvalCodes")
+    (isPermissionCodesField(field) || isApprovalCodesField(field))
   ) {
     return (
       <PermissionLinkMultiSelectEditor
@@ -6395,6 +6446,7 @@ function FieldEditor({
     return (
       <CompanyMultiSelectFieldEditor
         auth={auth}
+        field={field}
         form={form}
         language={language}
         setForm={setForm}
@@ -6425,8 +6477,8 @@ function FieldEditor({
         [field.key]: optionValueToFormValue(nextValue, field),
       };
       if (config.kind === "company" && field.key === "settings.language") {
-        nextForm["settings.languageconfigs"] = setDefaultLanguageConfig(
-          nextForm["settings.languageconfigs"],
+        nextForm["settings.language_configs"] = setDefaultLanguageConfig(
+          nextForm["settings.language_configs"] ?? nextForm["settings.languageconfigs"],
           nextValue,
         );
       }
@@ -7787,7 +7839,7 @@ function LanguageConfigsEditor({
 }) {
   const defaultCode = supportedLanguageCode(form["settings.language"], "th");
   const rows = normalizeLanguageConfigs(
-    form["settings.languageconfigs"],
+    form["settings.language_configs"] ?? form["settings.languageconfigs"],
     defaultCode,
   );
   const usedCodes = new Set(rows.map((row) => row.code));
@@ -7809,7 +7861,7 @@ function LanguageConfigsEditor({
     setForm({
       ...form,
       "settings.language": primary,
-      "settings.languageconfigs": normalized,
+      "settings.language_configs": normalized,
     });
   }
 
@@ -8536,7 +8588,7 @@ function nameEditorLanguageCodes(
 ): string[] {
   if (config.kind === "company") {
     return normalizeLanguageConfigs(
-      form["settings.languageconfigs"],
+      form["settings.language_configs"] ?? form["settings.languageconfigs"],
       form["settings.language"],
     ).map((row) => row.code);
   }
@@ -8547,7 +8599,7 @@ function nameEditorLanguageCodes(
     const shopInfo = isRecord(workspace.shopInfo) ? workspace.shopInfo : {};
     const settings = isRecord(shopInfo.settings) ? shopInfo.settings : {};
 
-    const rawConfigs = settings.languageconfigs ?? shopInfo["settings.languageconfigs"] ?? shopInfo.languageconfigs;
+    const rawConfigs = settings.language_configs ?? settings.languageconfigs ?? shopInfo["settings.language_configs"] ?? shopInfo["settings.languageconfigs"] ?? shopInfo.languageconfigs;
     const rawLang = settings.language ?? shopInfo["settings.language"] ?? shopInfo.language;
 
     if (Array.isArray(rawConfigs)) {
@@ -9523,7 +9575,7 @@ function BranchMultiSelectFieldEditor({
     setError("");
 
     let shopids: string[] = [];
-    const formCompanies = form.company_guids;
+    const formCompanies = form.business_codes ?? form.company_guids;
     if (Array.isArray(formCompanies) && formCompanies.length > 0) {
       shopids = formCompanies
         .map((s) => (typeof s === "string" ? s.trim() : stringValue(s?.guid_fixed ?? s?.shopid ?? "")))
@@ -9603,7 +9655,7 @@ function BranchMultiSelectFieldEditor({
       cancelled = true;
       controller.abort();
     };
-  }, [auth, language, workspace, form.company_guids]);
+  }, [auth, language, workspace, form.business_codes, form.company_guids]);
 
   function commitSelection(next: BranchOption[]) {
     setForm({ ...form, [field.key]: next });
@@ -9969,12 +10021,14 @@ function companyOptionDisplayName(
 
 function CompanyMultiSelectFieldEditor({
   auth,
+  field,
   form,
   language,
   setForm,
   workspace,
 }: {
   auth: AuthSession | null;
+  field: SystemSettingField;
   form: FormState;
   language: LanguageCode;
   setForm: (form: FormState) => void;
@@ -9985,7 +10039,7 @@ function CompanyMultiSelectFieldEditor({
   const [error, setError] = useState("");
 
   const selectedShopIds = useMemo(() => {
-    const val = form.company_guids;
+    const val = form[field.key] ?? form.company_guids;
     if (Array.isArray(val)) {
       return val.map((item) => {
         if (typeof item === "string") return item.trim();
@@ -9994,7 +10048,7 @@ function CompanyMultiSelectFieldEditor({
       }).filter(Boolean);
     }
     return [];
-  }, [form.company_guids]);
+  }, [field.key, form]);
 
   useEffect(() => {
     if (!auth || !workspace) return;
@@ -10050,7 +10104,7 @@ function CompanyMultiSelectFieldEditor({
 
     setForm({
       ...form,
-      company_guids: nextShops,
+      [field.key]: nextShops,
     });
   }
 
@@ -10076,7 +10130,7 @@ function CompanyMultiSelectFieldEditor({
       {!loading && !error && shops.length > 0 ? (
         <div className="flex flex-col gap-2.5 py-1">
           {shops.map((shop) => {
-            const sid = shop.shopid;
+            const sid = stringValue(shop.business_code ?? shop.code ?? shop.shopid);
             const shopName = shop.names?.find((n: any) => n.code === language)?.name || shop.name1 || shop.name || sid;
             const isShopChecked = selectedShopIds.includes(sid);
 
@@ -12107,8 +12161,8 @@ function defaultForm(
           ? defaultPaymentRoundingJson()
           : field.key === "pointconfig"
             ? defaultPointConfigJson()
-            : field.key === "permissionCodes" ||
-                field.key === "approvalCodes" ||
+            : isPermissionCodesField(field) ||
+                isApprovalCodesField(field) ||
                 field.key === "allowed_tools"
               ? "[]"
               : "{}";
@@ -12132,17 +12186,17 @@ function defaultForm(
     form.priority = "1";
   }
   if (config.slug === "approval_setting") {
-    form.approvalCode = "default";
-    form.approvalName = "Default";
-    form.isActive = true;
+    form.approval_code = "default";
+    form.approval_name = "Default";
+    form.is_active = true;
     form.approvals = {};
   }
   if (config.slug === "permission_definition") {
-    form.branches = {};
+    form.access_rules = {};
   }
   if (config.slug === "permission_link") {
-    form.permissionCodes = [];
-    form.approvalCodes = [];
+    form.permission_codes = [];
+    form.approval_codes = [];
   }
   applyCompanyDefaults(form, config);
   applyBranchDefaults(form, config);
@@ -12175,7 +12229,7 @@ function formFromRecord(
     else if (
       field.type === "json" &&
       config.slug === "permission_definition" &&
-      field.key === "branches"
+      isPermissionAccessRulesField(field)
     )
       form[field.key] = isRecord(value) ? value : {};
     else if (
@@ -12187,14 +12241,14 @@ function formFromRecord(
     else if (
       field.type === "json" &&
       config.slug === "permission_link" &&
-      (field.key === "permissionCodes" || field.key === "approvalCodes")
+      (isPermissionCodesField(field) || isApprovalCodesField(field))
     )
       form[field.key] = stringArrayFromForm(value);
     else if (field.type === "json")
       form[field.key] = JSON.stringify(
         value ??
-          (field.key === "permissionCodes" ||
-          field.key === "approvalCodes" ||
+          (isPermissionCodesField(field) ||
+          isApprovalCodesField(field) ||
           field.key === "allowed_tools"
             ? []
             : {}),
@@ -12225,7 +12279,7 @@ function formFromRecord(
             typeof v === "string"
               ? v.trim()
               : isRecord(v)
-                ? String(v.guidfixed ?? v.guid_fixed ?? "")
+                ? String(v.business_code ?? v.code ?? v.guidfixed ?? v.guid_fixed ?? "")
                 : "",
           ).filter(Boolean)
         : [];
@@ -12233,10 +12287,10 @@ function formFromRecord(
   }
   if (config.slug === "company") {
     const languageConfigs = normalizeLanguageConfigs(
-      getByPath(record, "settings.languageconfigs"),
+      getByPath(record, "settings.language_configs") ?? getByPath(record, "settings.languageconfigs"),
       getByPath(record, "settings.language"),
     );
-    form["settings.languageconfigs"] = languageConfigs;
+    form["settings.language_configs"] = languageConfigs;
     form["settings.language"] = languageConfigs[0]?.code ?? "th";
   }
   applyCompanyDefaults(form, config);
@@ -12312,11 +12366,12 @@ function applyCountryDefaultsToForm(
 function syncCompanyLanguageForm(form: FormState) {
   const defaultCode = supportedLanguageCode(form["settings.language"], "th");
   const configs = normalizeLanguageConfigs(
-    form["settings.languageconfigs"],
+    form["settings.language_configs"] ?? form["settings.languageconfigs"],
     defaultCode,
   );
   form["settings.language"] = configs[0]?.code ?? defaultCode;
-  form["settings.languageconfigs"] = configs;
+  form["settings.language_configs"] = configs;
+  delete form["settings.languageconfigs"];
 }
 
 function setFormValueIfEmpty(form: FormState, key: string, value: unknown) {
@@ -12396,7 +12451,7 @@ function buildPayload(
               typeof v === "string"
                 ? v.trim()
                 : isRecord(v)
-                  ? String(v.guidfixed ?? v.guid_fixed ?? "")
+                  ? String(v.business_code ?? v.code ?? v.guidfixed ?? v.guid_fixed ?? "")
                   : "",
             ).filter(Boolean)
           : [],
@@ -12448,12 +12503,13 @@ function buildPayload(
 
   if (config.kind === "atlas") {
     const now = new Date().toISOString();
-    payload.shopid = workspace.shop.shopid;
-    payload.updatedAt = now;
-    payload.updatedBy = auth.username;
+    payload.holding_code = workspace.shop.shopid;
+    payload.guid_fixed = stringValue(payload.guid_fixed) || newClientGuidFixed();
+    payload.updated_at = now;
+    payload.updated_by = auth.username;
     if (!editing) {
-      payload.createdAt = now;
-      payload.createdBy = auth.username;
+      payload.created_at = now;
+      payload.created_by = auth.username;
     }
   }
 
@@ -12477,11 +12533,12 @@ function buildPayload(
 
   if (config.kind === "company") {
     const configs = normalizeLanguageConfigs(
-      getByPath(payload, "settings.languageconfigs"),
+      getByPath(payload, "settings.language_configs") ?? getByPath(payload, "settings.languageconfigs"),
       form["settings.language"] ?? getByPath(payload, "settings.language"),
       { forcePrimaryFirst: true },
     );
-    setByPath(payload, "settings.languageconfigs", configs);
+    setByPath(payload, "settings.language_configs", configs);
+    deleteByPath(payload, "settings.languageconfigs");
     setByPath(payload, "settings.language", configs[0]?.code ?? "th");
     payload.shopid = workspace.shop.shopid;
   }
@@ -12564,6 +12621,13 @@ function buildPayload(
   }
 
   return payload;
+}
+
+function newClientGuidFixed(): string {
+  return (
+    globalThis.crypto?.randomUUID?.() ??
+    `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`
+  );
 }
 
 function resolveDateTimeScope(
@@ -12692,6 +12756,14 @@ function recordId(
       record.guidfixed ??
       record.id ??
       record._id ??
+      record.approval_code ??
+      record.permission_code ??
+      record.group_code ??
+      record.employee_code ??
+      record.approvalCode ??
+      record.permissionCode ??
+      record.groupCode ??
+      record.employeeCode ??
       record.code ??
       record.shopid ??
       record.provider_name ??
@@ -12713,8 +12785,11 @@ function recordTitle(
   const localized = localizedValue(names, language);
   if (localized) return localized;
   return String(
-    record.name ??
+      record.name ??
       record.name1 ??
+      record.permission_name ??
+      record.approval_name ??
+      record.employee_name ??
       record.permissionName ??
       record.approvalName ??
       record.employeeName ??
@@ -12810,9 +12885,13 @@ function optionLabel(
 function isProductUnitOption(value: unknown): value is ProductUnitOption {
   return (
     isRecord(value) &&
-    typeof value.unitcode === "string" &&
-    value.unitcode.trim().length > 0
+    typeof productUnitCode(value) === "string" &&
+    productUnitCode(value).length > 0
   );
+}
+
+function productUnitCode(unit: ProductUnitOption | SettingRecord): string {
+  return stringValue(unit.unit_code ?? unit.unitcode);
 }
 
 function unitDisplayName(
@@ -12830,7 +12909,7 @@ function unitDisplayName(
       .find((name) => name.code?.toLowerCase() === "th" && name.name?.trim())
       ?.name?.trim() ??
     names.find((name) => name.name?.trim())?.name?.trim() ??
-    unit.unitcode
+    productUnitCode(unit)
   );
 }
 
@@ -13498,7 +13577,9 @@ function parseJsonField(value: unknown, key: string): unknown {
   if (typeof value !== "string") return value;
   const trimmed = value.trim();
   if (!trimmed)
-    return key === "permissionCodes" ||
+    return key === "permission_codes" ||
+      key === "permissionCodes" ||
+      key === "approval_codes" ||
       key === "approvalCodes" ||
       key === "allowed_tools"
       ? []

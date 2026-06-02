@@ -28,7 +28,8 @@ Purpose: keep Codex, Claude Code, and other agents fast. Read this file first, t
 - Operational CRUD data flow: write/read MongoDB first; propagate writes through `MongoDB -> Kafka -> PostgreSQL -> ClickHouse`. Use PostgreSQL/ClickHouse only from explicit rebuild/sync/projection/BI workers.
 - Frontend CRUD mutations: create/edit/delete screens call MongoDB-backed operational APIs only; Kafka/projection fan-out is backend responsibility.
 - Data-list row click: select and show read-only detail only. Edit mode requires the pencil/edit action; amber/orange row highlight is editing-only.
-- Company access selectors: `company_guids` is company-level only. Do not render or save branch selections in normal CRUD/master-data company access fields.
+- Model-sensitive system settings/access work: read `D:\bccode-model\rules.md`, `D:\bccode-model\system_settings_access_menu.md`, and the relevant model doc before changing API fields, CRUD identity, tenant scope, or cross-record references.
+- Company access selectors: `business_codes` is company-level only. Do not render or save branch selections in normal CRUD/master-data company access fields. Read legacy `company_guids` only as a compatibility alias.
 - Backend local Docker Desktop deploy (auto after backend edits): for Go-code-only changes use `cd backend; .\scripts\deploy-mainapi-fast.ps1`; for image/runtime changes use `docker-compose up -d --no-deps --build mainapi`; always verify `/healthz`. DEV server deploy still needs `deploy dev`.
 - Backend health: `curl.exe --max-time 10 -s -i http://localhost:8888/healthz`
 - Real data check: use the selected DEV database/API path; do not rely on mock business data for completion claims.

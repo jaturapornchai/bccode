@@ -165,8 +165,10 @@ function getRequestedShopId(request: Request, body?: Record<string, unknown>): s
   const value =
     body?.shopid ??
     body?.shop_id ??
+    body?.holding_code ??
     url.searchParams.get("shopid") ??
     url.searchParams.get("shop_id") ??
+    url.searchParams.get("holding_code") ??
     "";
   return String(value).trim();
 }
@@ -225,10 +227,12 @@ function buildGetInit(request: Request, config: SystemSettingConfig, id = ""): R
     const body: Record<string, unknown> = {
       collection: config.collection,
       shopid,
+      holding_code: shopid,
       limit: Number(url.searchParams.get("limit") ?? "1000"),
       skip: Number(url.searchParams.get("offset") ?? "0"),
     };
     if (id) {
+      body.guid_fixed = id;
       body.email = id;
       body.cartid = id;
     }
@@ -291,7 +295,7 @@ function buildDeletePath(request: Request, config: SystemSettingConfig, id: stri
 function buildWritePayload(request: Request, config: SystemSettingConfig, id: string, body: Record<string, unknown>): Record<string, unknown> {
   const payload = stripProxyKeys(body);
   const url = new URL(request.url);
-  const shopid = String(payload.shopid ?? payload.shop_id ?? url.searchParams.get("shopid") ?? "");
+  const shopid = String(payload.shopid ?? payload.shop_id ?? payload.holding_code ?? url.searchParams.get("shopid") ?? url.searchParams.get("holding_code") ?? "");
 
   if (config.kind === "restaurant-setting") {
     const { guid_fixed: _guidfixed, ...rest } = payload;
@@ -303,15 +307,33 @@ function buildWritePayload(request: Request, config: SystemSettingConfig, id: st
   }
 
   if (config.kind === "atlas") {
-    const key = String(payload[config.idField ?? ""] ?? id);
-    const { _id: _mongoId, ...atlasData } = payload;
+    const key = String(payload.guid_fixed ?? payload[config.idField ?? ""] ?? id);
+    const legacyKey = id && id !== key ? id : "";
+    const {
+      _id: _mongoId,
+      shopid: _legacyShopID,
+      shop_id: _legacyShopIDAlt,
+      updatedAt: _legacyUpdatedAt,
+      updatedBy: _legacyUpdatedBy,
+      createdAt: _legacyCreatedAt,
+      createdBy: _legacyCreatedBy,
+      ...atlasData
+    } = payload;
     void _mongoId;
+    void _legacyShopID;
+    void _legacyShopIDAlt;
+    void _legacyUpdatedAt;
+    void _legacyUpdatedBy;
+    void _legacyCreatedAt;
+    void _legacyCreatedBy;
     return {
       collection: config.collection,
       shopid,
-      email: key,
-      cartid: key,
-      data: { ...atlasData, shopid },
+      holding_code: String(payload.holding_code ?? shopid),
+      guid_fixed: key,
+      email: legacyKey,
+      cartid: legacyKey,
+      data: { ...atlasData, holding_code: String(payload.holding_code ?? shopid), guid_fixed: key },
       upsert: true,
     };
   }
@@ -344,12 +366,14 @@ function buildDeletePayload(
   body: Record<string, unknown>,
 ): Record<string, unknown> | undefined {
   const url = new URL(request.url);
-  const shopid = String(body.shopid ?? body.shop_id ?? url.searchParams.get("shopid") ?? "");
+  const shopid = String(body.shopid ?? body.shop_id ?? body.holding_code ?? url.searchParams.get("shopid") ?? url.searchParams.get("holding_code") ?? "");
 
   if (config.kind === "atlas") {
     return {
       collection: config.collection,
       shopid,
+      holding_code: String(body.holding_code ?? shopid),
+      guid_fixed: id,
       email: id,
       cartid: id,
       delete_many: false,

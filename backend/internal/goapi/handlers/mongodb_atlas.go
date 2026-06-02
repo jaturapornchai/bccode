@@ -9,6 +9,7 @@ import (
 	"smlcloudplatform/internal/goapi/config"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/myglobal"
+	"smlcloudplatform/internal/utils"
 	msmodels "smlcloudplatform/pkg/microservice/models"
 
 	"github.com/labstack/echo/v4"
@@ -66,6 +67,58 @@ func normalizedAtlasShopID(shopid string, shopID string) string {
 	return strings.TrimSpace(shopID)
 }
 
+func normalizedAtlasTenantID(holdingCode string, shopid string, shopID string) string {
+	if strings.TrimSpace(holdingCode) != "" {
+		return strings.TrimSpace(holdingCode)
+	}
+	return normalizedAtlasShopID(shopid, shopID)
+}
+
+func atlasTenantFilter(tenantID string) bson.M {
+	return bson.M{
+		"$or": []bson.M{
+			{"holding_code": tenantID},
+			{"shopid": tenantID},
+		},
+	}
+}
+
+func atlasIdentityFilter(guidFixed string, email string, cartID string) bson.M {
+	guidFixed = strings.TrimSpace(guidFixed)
+	email = strings.TrimSpace(email)
+	cartID = strings.TrimSpace(cartID)
+	identityFilters := make([]bson.M, 0, 2)
+	if guidFixed != "" {
+		identityFilters = append(identityFilters,
+			bson.M{"guid_fixed": guidFixed},
+			bson.M{"email": guidFixed, "cartid": guidFixed},
+		)
+	}
+	if email != "" && cartID != "" && (email != guidFixed || cartID != guidFixed) {
+		identityFilters = append(identityFilters, bson.M{"email": email, "cartid": cartID})
+	}
+	if len(identityFilters) == 0 {
+		return bson.M{}
+	}
+	if len(identityFilters) == 1 {
+		return identityFilters[0]
+	}
+	return bson.M{"$or": identityFilters}
+}
+
+func andAtlasFilters(filters ...bson.M) bson.M {
+	active := make([]bson.M, 0, len(filters))
+	for _, filter := range filters {
+		if len(filter) > 0 {
+			active = append(active, filter)
+		}
+	}
+	if len(active) == 1 {
+		return active[0]
+	}
+	return bson.M{"$and": active}
+}
+
 func validateAtlasTenant(c echo.Context, requestShopID string) error {
 	userInfo, ok := c.Get("UserInfo").(msmodels.UserInfo)
 	if !ok || userInfo.ShopID == "" {
@@ -80,7 +133,7 @@ func validateAtlasTenant(c echo.Context, requestShopID string) error {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "shopid is required",
+			"message": "holding_code is required",
 		})
 	}
 	if requestShopID != userInfo.ShopID {
@@ -106,14 +159,16 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 	}
 
 	var reqBody struct {
-		Database   string                 `json:"database"` // optional - ถ้าไม่ระบุจะใช้ default
-		Collection string                 `json:"collection"`
-		ShopId     string                 `json:"shopid"`
-		ShopIDAlt  string                 `json:"shop_id"`
-		Email      string                 `json:"email"`
-		CartId     string                 `json:"cartid"`
-		Data       map[string]interface{} `json:"data"`
-		Upsert     bool                   `json:"upsert"`
+		Database    string                 `json:"database"` // optional - ถ้าไม่ระบุจะใช้ default
+		Collection  string                 `json:"collection"`
+		HoldingCode string                 `json:"holding_code"`
+		GuidFixed   string                 `json:"guid_fixed"`
+		ShopId      string                 `json:"shopid"`
+		ShopIDAlt   string                 `json:"shop_id"`
+		Email       string                 `json:"email"`
+		CartId      string                 `json:"cartid"`
+		Data        map[string]interface{} `json:"data"`
+		Upsert      bool                   `json:"upsert"`
 	}
 
 	if err := c.Bind(&reqBody); err != nil {
@@ -134,7 +189,7 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 		})
 	}
 
-	reqBody.ShopId = normalizedAtlasShopID(reqBody.ShopId, reqBody.ShopIDAlt)
+	reqBody.ShopId = normalizedAtlasTenantID(reqBody.HoldingCode, reqBody.ShopId, reqBody.ShopIDAlt)
 	if err := validateAtlasTenant(c, reqBody.ShopId); err != nil {
 		return err
 	}
@@ -147,14 +202,16 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 			"message": "shopid is required and cannot be empty",
 		})
 	}
-	if reqBody.Email == "" {
+	reqBody.GuidFixed = strings.TrimSpace(reqBody.GuidFixed)
+	usesLegacyIdentity := reqBody.GuidFixed == "" && strings.TrimSpace(reqBody.Email) != "" && strings.TrimSpace(reqBody.CartId) != ""
+	if reqBody.GuidFixed == "" && reqBody.Email == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "email is required and cannot be empty",
+			"message": "guid_fixed is required and cannot be empty",
 		})
 	}
-	if reqBody.CartId == "" {
+	if reqBody.GuidFixed == "" && reqBody.CartId == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
@@ -162,22 +219,28 @@ func MongoAtlasUpdateHandler(c echo.Context) error {
 		})
 	}
 
-	// Build filter - ใช้ทั้ง 3 ตัวในการค้นหา (unique combination)
-	filter := bson.M{
-		"shopid": reqBody.ShopId,
-		"email":  reqBody.Email,
-		"cartid": reqBody.CartId,
-	}
+	filter := andAtlasFilters(
+		atlasTenantFilter(reqBody.ShopId),
+		atlasIdentityFilter(reqBody.GuidFixed, reqBody.Email, reqBody.CartId),
+	)
 
 	// ใช้ data ทั้งหมดสำหรับ update
 	if reqBody.Data == nil {
 		reqBody.Data = make(map[string]interface{})
 	}
 
-	// เพิ่ม identifiers ลงใน data (บังคับทั้ง 3 ตัว)
-	reqBody.Data["shopid"] = reqBody.ShopId
-	reqBody.Data["email"] = reqBody.Email
-	reqBody.Data["cartid"] = reqBody.CartId
+	if strings.TrimSpace(reqBody.GuidFixed) == "" {
+		reqBody.GuidFixed = utils.NewGUID()
+	}
+
+	// เพิ่ม identifiers ลงใน data ตาม model ใหม่ และเก็บ legacy key เฉพาะ request เก่าที่ไม่มี guid_fixed
+	reqBody.Data["holding_code"] = reqBody.ShopId
+	reqBody.Data["guid_fixed"] = reqBody.GuidFixed
+	if usesLegacyIdentity {
+		reqBody.Data["shopid"] = reqBody.ShopId
+		reqBody.Data["email"] = reqBody.Email
+		reqBody.Data["cartid"] = reqBody.CartId
+	}
 
 	// เพิ่ม timestamp
 	reqBody.Data["updated_at"] = time.Now()
@@ -227,13 +290,15 @@ func MongoAtlasDeleteHandler(c echo.Context) error {
 	}
 
 	var reqBody struct {
-		Database   string `json:"database"` // optional - ถ้าไม่ระบุจะใช้ default
-		Collection string `json:"collection"`
-		ShopId     string `json:"shopid"`
-		ShopIDAlt  string `json:"shop_id"`
-		Email      string `json:"email"`
-		CartId     string `json:"cartid"`
-		DeleteMany bool   `json:"delete_many"` // true = deleteMany, false = deleteOne
+		Database    string `json:"database"` // optional - ถ้าไม่ระบุจะใช้ default
+		Collection  string `json:"collection"`
+		HoldingCode string `json:"holding_code"`
+		GuidFixed   string `json:"guid_fixed"`
+		ShopId      string `json:"shopid"`
+		ShopIDAlt   string `json:"shop_id"`
+		Email       string `json:"email"`
+		CartId      string `json:"cartid"`
+		DeleteMany  bool   `json:"delete_many"` // true = deleteMany, false = deleteOne
 	}
 
 	if err := c.Bind(&reqBody); err != nil {
@@ -254,7 +319,7 @@ func MongoAtlasDeleteHandler(c echo.Context) error {
 		})
 	}
 
-	reqBody.ShopId = normalizedAtlasShopID(reqBody.ShopId, reqBody.ShopIDAlt)
+	reqBody.ShopId = normalizedAtlasTenantID(reqBody.HoldingCode, reqBody.ShopId, reqBody.ShopIDAlt)
 	if err := validateAtlasTenant(c, reqBody.ShopId); err != nil {
 		return err
 	}
@@ -267,14 +332,15 @@ func MongoAtlasDeleteHandler(c echo.Context) error {
 			"message": "shopid is required and cannot be empty",
 		})
 	}
-	if reqBody.Email == "" {
+	reqBody.GuidFixed = strings.TrimSpace(reqBody.GuidFixed)
+	if reqBody.GuidFixed == "" && reqBody.Email == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
-			"message": "email is required and cannot be empty",
+			"message": "guid_fixed is required and cannot be empty",
 		})
 	}
-	if reqBody.CartId == "" {
+	if reqBody.GuidFixed == "" && reqBody.CartId == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  "error",
 			"code":    400,
@@ -282,12 +348,10 @@ func MongoAtlasDeleteHandler(c echo.Context) error {
 		})
 	}
 
-	// Build filter - ใช้ทั้ง 3 ตัว (unique combination)
-	filter := bson.M{
-		"shopid": reqBody.ShopId,
-		"email":  reqBody.Email,
-		"cartid": reqBody.CartId,
-	}
+	filter := andAtlasFilters(
+		atlasTenantFilter(reqBody.ShopId),
+		atlasIdentityFilter(reqBody.GuidFixed, reqBody.Email, reqBody.CartId),
+	)
 
 	// Perform delete
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -343,14 +407,16 @@ func MongoAtlasGetHandler(c echo.Context) error {
 	}
 
 	var reqBody struct {
-		Database   string `json:"database"` // optional - ถ้าไม่ระบุจะใช้ default
-		Collection string `json:"collection"`
-		ShopId     string `json:"shopid"`
-		ShopIDAlt  string `json:"shop_id"`
-		Email      string `json:"email"`
-		CartId     string `json:"cartid"`
-		Limit      int64  `json:"limit"`
-		Skip       int64  `json:"skip"`
+		Database    string `json:"database"` // optional - ถ้าไม่ระบุจะใช้ default
+		Collection  string `json:"collection"`
+		HoldingCode string `json:"holding_code"`
+		GuidFixed   string `json:"guid_fixed"`
+		ShopId      string `json:"shopid"`
+		ShopIDAlt   string `json:"shop_id"`
+		Email       string `json:"email"`
+		CartId      string `json:"cartid"`
+		Limit       int64  `json:"limit"`
+		Skip        int64  `json:"skip"`
 	}
 
 	if err := c.Bind(&reqBody); err != nil {
@@ -371,30 +437,17 @@ func MongoAtlasGetHandler(c echo.Context) error {
 		})
 	}
 
-	reqBody.ShopId = normalizedAtlasShopID(reqBody.ShopId, reqBody.ShopIDAlt)
+	reqBody.ShopId = normalizedAtlasTenantID(reqBody.HoldingCode, reqBody.ShopId, reqBody.ShopIDAlt)
 	if err := validateAtlasTenant(c, reqBody.ShopId); err != nil {
 		return err
 	}
 
-	// Build filter - ไม่บังคับทั้ง 3 ตัว (optional)
-	filter := bson.M{}
-	if reqBody.ShopId != "" {
-		filter["shopid"] = reqBody.ShopId
-	}
-	if reqBody.Email != "" {
-		filter["email"] = reqBody.Email
-	}
-	if reqBody.CartId != "" {
-		filter["cartid"] = reqBody.CartId
-	}
-
-	// ต้องมีอย่างน้อย 1 identifier
-	if len(filter) == 0 {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"status":  "error",
-			"code":    400,
-			"message": "At least one identifier (shopid, email, or cartid) is required",
-		})
+	filter := atlasTenantFilter(reqBody.ShopId)
+	if reqBody.GuidFixed != "" || reqBody.Email != "" || reqBody.CartId != "" {
+		filter = andAtlasFilters(
+			filter,
+			atlasIdentityFilter(reqBody.GuidFixed, reqBody.Email, reqBody.CartId),
+		)
 	}
 
 	// Query options

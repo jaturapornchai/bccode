@@ -10,7 +10,8 @@ description: Use when working with the BC Account business system. Knows domain 
 
 ## 2. Multi-Tenant Structure
 - **Boundary**: `tenant_id` = one company/business/legal entity/workspace. One user can access many tenants through memberships/roles.
-- **Physical Keys**: Core physical storage uses `shopid` (Postgres, Mongo collections, Kafka, ClickHouse). GoAPI/MCP DTOs use `shop_id`. Maintain correct logical-to-physical mapping.
+- **Model Baseline**: For new/changed ERP model contracts, read `D:\bccode-model\rules.md` and the relevant model file first. Use `holding_code` for tenant scope, `guid_fixed` for CRUD identity, and business codes such as `business_code`, `business_codes`, and `unit_code` for cross-record references.
+- **Runtime Compatibility Keys**: Current runtime paths may still expose `shopid` or `shop_id`. Treat them as compatibility mapping only; do not introduce new persisted/API contracts that depend on `shopid` when the model baseline requires `holding_code`.
 - **Branch Scope**: `branch_id` / branch code is scoped under `tenant_id`. Departments, working days, and holidays are branch-scoped (branches can have different calendars, timezones, and calendars).
 
 ## 2.1 Data Store Roles
@@ -23,7 +24,7 @@ description: Use when working with the BC Account business system. Knows domain 
 - **ClickHouse**: rebuildable BI/analytics/reporting store fed from processed facts. Never treat ClickHouse as transactional source of truth.
 - **Projection Conflict Rule**: If PostgreSQL or ClickHouse differs from MongoDB, MongoDB wins. Fix sync/rebuild code or data pipelines instead of treating projections as operational truth.
 - **Product Classification**: `item_type` is 0=Stock, 1=Service, 2=Set, 3=Not Stock. `materialtype` is 0=General, 1=Material, 2=Semi-Finished, 3=Set, 4=Agricultural. Product Set records must use `item_type=2` together with `materialtype=3` in MongoDB and relational projections; API writes and projection consumers must reject mismatched Set classification instead of correcting it silently.
-- **Product Unit Access**: Product unit master data uses `units.company_guids` for company-level availability. Do not model or edit branch-level access on product units. Products, barcodes, and business documents reference units by `unitcode`; `guid_fixed` remains the immutable CRUD/sync identity.
+- **Product Unit Access**: Product unit master data uses `units.business_codes` for company-level availability. Do not model or edit branch-level access on product units. Products, barcodes, and business documents reference units by `unit_code`; `guid_fixed` remains the immutable CRUD/sync identity. Read legacy `company_guids` or `unitcode` only as transition aliases.
 
 ## 3. Legal & Settings Rules
 - **Head Office**: Branch code `00000` with Thai name `สำนักงานใหญ่`. Pad/normalize branch code inputs to 5 digits (e.g. `1` -> `00001`). Do not delete `00000`.
