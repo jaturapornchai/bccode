@@ -2,6 +2,7 @@
 
 import {
   AlertCircle,
+  Check,
   FolderOpen,
   Loader2,
   Package,
@@ -1291,7 +1292,7 @@ const [pickerType, setPickerType] = useState<string>("");
 
               {/* Tab: restaurant */}
               {productTab === "restaurant" && (
-                <TabProductRestaurant value={editProduct} onChange={setEditProduct} auth={auth} language={lang} shopLanguages={activeLanguages} isSetOnly={isSetOnly} />
+                <TabProductRestaurant value={editProduct} onChange={setEditProduct} auth={auth} workspace={workspace} language={lang} shopLanguages={activeLanguages} isSetOnly={isSetOnly} />
               )}
 
               {/* Tab: timeforsales */}
@@ -1886,6 +1887,29 @@ function setNameXEntry(list: NameX[] | undefined, code: string, name: string): N
 
 type ProductStateAction = Dispatch<SetStateAction<Product | null>>;
 
+type ProductVariantTemplateRecord = {
+  guidfixed?: string;
+  guid_fixed?: string;
+  code?: string;
+  names?: NameX[] | Record<string, string>;
+  option_tiers?: unknown;
+};
+
+type ProductVariantTemplateOptionTier = {
+  tier_no?: number;
+  option_code?: string;
+  name?: string;
+  names?: NameX[] | Record<string, string>;
+  values?: unknown;
+};
+
+type ProductVariantTemplateValue = {
+  value_code?: string;
+  value_text?: string;
+  name?: string;
+  names?: NameX[] | Record<string, string>;
+};
+
 function TabProductMedia({
   value,
   onChange,
@@ -2076,6 +2100,7 @@ function TabProductRestaurant({
   value,
   onChange,
   auth,
+  workspace,
   language,
   shopLanguages,
   isSetOnly = false,
@@ -2083,6 +2108,7 @@ function TabProductRestaurant({
   value: Product;
   onChange: ProductStateAction;
   auth: AuthSession | null;
+  workspace: WorkspaceSession | null;
   language: string;
   shopLanguages: string[];
   isSetOnly?: boolean;
@@ -2146,7 +2172,7 @@ function TabProductRestaurant({
         </>
       )}
 
-      <ProductOptionsEditor value={value} onChange={onChange} shopLanguages={shopLanguages} language={language} isSetOnly={isSetOnly} />
+      <ProductOptionsEditor value={value} onChange={onChange} shopLanguages={shopLanguages} language={language} isSetOnly={isSetOnly} auth={auth} workspace={workspace} />
     </div>
   );
 }
@@ -2247,19 +2273,93 @@ function ProductOptionsEditor({
   shopLanguages,
   language,
   isSetOnly = false,
+  auth,
+  workspace,
 }: {
   value: Product;
   onChange: ProductStateAction;
   shopLanguages: string[];
   language: string;
   isSetOnly?: boolean;
+  auth: AuthSession | null;
+  workspace: WorkspaceSession | null;
 }) {
   const textOpt = getBarcodeText(language);
+  const [templates, setTemplates] = useState<ProductVariantTemplateRecord[]>([]);
+  const [templateLoading, setTemplateLoading] = useState(false);
+  const [templateError, setTemplateError] = useState("");
+  const [selectedTemplateCode, setSelectedTemplateCode] = useState("");
   const setOptions = useCallback(
     (mutator: (rows: ProductOption[]) => ProductOption[]) =>
       onChange((c) => c ? ({ ...c, options: mutator(c.options || []) } as Product) : null),
     [onChange],
   );
+  const loadTemplates = useCallback(async () => {
+    if (!auth) return;
+    setTemplateLoading(true);
+    setTemplateError("");
+    try {
+      const params = new URLSearchParams({
+        limit: "100",
+        offset: "0",
+        page: "1",
+        sort: "code:1",
+      });
+      const holdingCode =
+        workspaceHoldingCode(workspace) || value.holding_code || "";
+      if (holdingCode) params.set("holding_code", holdingCode);
+      const response = await fetch(`/api/system-settings/product_variant_matrix?${params.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${auth.token}`,
+          "x-bc-backend-url": auth.backendUrl,
+        },
+        cache: "no-store",
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        success?: boolean;
+        data?: unknown;
+        message?: string;
+      } | null;
+      if (!response.ok || payload?.success === false) {
+        throw new Error(payload?.message || "โหลดแม่แบบไม่สำเร็จ");
+      }
+      const rows = Array.isArray(payload?.data)
+        ? payload.data
+        : isRecordLike(payload?.data) && Array.isArray(payload.data.data)
+          ? payload.data.data
+          : [];
+      const nextTemplates = rows.filter(isRecordLike) as ProductVariantTemplateRecord[];
+      setTemplates(nextTemplates);
+      setSelectedTemplateCode((current) => current || templateRecordKey(nextTemplates[0]) || "");
+    } catch (error) {
+      setTemplates([]);
+      setTemplateError(error instanceof Error ? error.message : "โหลดแม่แบบไม่สำเร็จ");
+    } finally {
+      setTemplateLoading(false);
+    }
+  }, [auth, value.holding_code, workspace]);
+
+  useEffect(() => {
+    void loadTemplates();
+  }, [loadTemplates]);
+
+  const selectedTemplate = templates.find((item) => templateRecordKey(item) === selectedTemplateCode);
+  const applySelectedTemplate = () => {
+    if (!selectedTemplate) return;
+    const nextOptions = productOptionsFromVariantTemplate(selectedTemplate, shopLanguages, language);
+    if (nextOptions.length === 0) {
+      setTemplateError(language === "th" ? "แม่แบบนี้ยังไม่มีแกนตัวเลือก" : "This template has no option tiers.");
+      return;
+    }
+    onChange((current) =>
+      current
+        ? ({
+            ...current,
+            options: nextOptions,
+          } as Product)
+        : null,
+    );
+  };
 
   return (
     <Section
@@ -2281,6 +2381,68 @@ function ProductOptionsEditor({
         </Button>
       }
     >
+      <div className="mb-3 grid gap-2 rounded-md border border-primary/20 bg-primary/5 p-3">
+        <div className="flex flex-wrap items-end gap-2">
+          <FieldRow
+            label={language === "th" ? "ใช้แม่แบบชุดตัวเลือก" : "Use option set template"}
+            hint={
+              language === "th"
+                ? "เหมาะกับสินค้าที่ซ้ำกัน เช่น สี > ไซซ์ หรือ ไซซ์ > สี ตามลำดับที่ตั้งไว้"
+                : "Useful for repeated products, such as color > size or size > color."
+            }
+          >
+            <select
+              className="h-10 w-full rounded-md border border-input bg-background px-2 text-sm"
+              value={selectedTemplateCode}
+              onChange={(event) => setSelectedTemplateCode(event.target.value)}
+              disabled={templateLoading || templates.length === 0}
+            >
+              <option value="">
+                {templateLoading
+                  ? language === "th"
+                    ? "กำลังโหลดแม่แบบ..."
+                    : "Loading templates..."
+                  : language === "th"
+                    ? "เลือกแม่แบบ"
+                    : "Select template"}
+              </option>
+              {templates.map((template) => (
+                <option key={templateRecordKey(template)} value={templateRecordKey(template)}>
+                  {templateDisplayName(template, language)}
+                </option>
+              ))}
+            </select>
+          </FieldRow>
+          <Button
+            className="h-10"
+            type="button"
+            variant="outline"
+            onClick={applySelectedTemplate}
+            disabled={!selectedTemplate || templateLoading}
+          >
+            <Check className="mr-1 h-4 w-4" />
+            {language === "th" ? "ใช้แม่แบบ" : "Apply template"}
+          </Button>
+          <Button
+            className="h-10"
+            type="button"
+            variant="ghost"
+            onClick={() => void loadTemplates()}
+            disabled={templateLoading || !auth}
+          >
+            <RefreshCcw className={cn("mr-1 h-4 w-4", templateLoading && "animate-spin")} />
+            {language === "th" ? "รีเฟรช" : "Refresh"}
+          </Button>
+        </div>
+        {selectedTemplate ? (
+          <p className="text-xs font-medium text-muted-foreground">
+            {templateOptionOrderText(selectedTemplate, language)}
+          </p>
+        ) : null}
+        {templateError ? (
+          <p className="text-xs font-semibold text-destructive">{templateError}</p>
+        ) : null}
+      </div>
       {(!value.options || value.options.length === 0) ? (
         <p className="text-sm text-muted-foreground">—</p>
       ) : (
@@ -2526,6 +2688,119 @@ function ProductOptionsEditor({
       )}
     </Section>
   );
+}
+
+function productOptionsFromVariantTemplate(
+  template: ProductVariantTemplateRecord,
+  shopLanguages: string[],
+  language: string,
+): ProductOption[] {
+  const tiers = variantTemplateArray(template.option_tiers)
+    .map((item) => item as ProductVariantTemplateOptionTier)
+    .sort((first, second) => Number(first.tier_no ?? 0) - Number(second.tier_no ?? 0));
+  return tiers
+    .map((tier, index) => {
+      const values = variantTemplateArray(tier.values).map(
+        (item) => item as ProductVariantTemplateValue,
+      );
+      const tierLabel =
+        variantTemplateLocalizedText(tier.names, language) ||
+        tier.name ||
+        tier.option_code ||
+        `${language === "th" ? "ตัวเลือก" : "Option"} ${index + 1}`;
+      return {
+        guid: cryptoRandomId(),
+        names: namesForAllLanguages(tierLabel, shopLanguages),
+        choicetype: 1,
+        minselect: values.length > 0 ? 1 : 0,
+        maxselect: values.length > 0 ? 1 : 0,
+        choices: values.map((value) => {
+          const choiceLabel =
+            variantTemplateLocalizedText(value.names, language) ||
+            value.value_text ||
+            value.name ||
+            value.value_code ||
+            "";
+          return {
+            guid: cryptoRandomId(),
+            names: namesForAllLanguages(choiceLabel, shopLanguages),
+            imageuri: "",
+            refbarcode: "",
+            refbarcodenames: [],
+            refproductcode: "",
+            refunitcode: "",
+            isstock: false,
+            isdefault: false,
+            qty: 1,
+            price: "",
+          };
+        }),
+      } satisfies ProductOption;
+    })
+    .filter((option) => pickName(option.names, language) || option.choices.length > 0);
+}
+
+function templateRecordKey(template: ProductVariantTemplateRecord | undefined): string {
+  if (!template) return "";
+  return String(template.guidfixed || template.guid_fixed || template.code || "");
+}
+
+function templateDisplayName(template: ProductVariantTemplateRecord, language: string): string {
+  const name = variantTemplateLocalizedText(template.names, language);
+  const code = String(template.code || "").trim();
+  return [name, code].filter(Boolean).join(" / ") || templateRecordKey(template) || "-";
+}
+
+function templateOptionOrderText(template: ProductVariantTemplateRecord, language: string): string {
+  const tiers = variantTemplateArray(template.option_tiers)
+    .map((item) => item as ProductVariantTemplateOptionTier)
+    .sort((first, second) => Number(first.tier_no ?? 0) - Number(second.tier_no ?? 0));
+  const names = tiers
+    .map((tier) => variantTemplateLocalizedText(tier.names, language) || tier.name || tier.option_code || "")
+    .filter(Boolean);
+  if (names.length === 0) return language === "th" ? "แม่แบบนี้ยังไม่มีลำดับตัวเลือก" : "This template has no option order.";
+  return language === "th"
+    ? `ลำดับที่ลูกค้าจะเลือก: ${names.join(" > ")}`
+    : `Customer choice order: ${names.join(" > ")}`;
+}
+
+function variantTemplateArray(value: unknown): unknown[] {
+  if (Array.isArray(value)) return value;
+  if (typeof value !== "string") return [];
+  const parsed = safeProductJsonParse(value.trim() || "[]", []);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+function variantTemplateLocalizedText(value: unknown, language: string): string {
+  if (!value) return "";
+  if (Array.isArray(value)) return pickName(value as NameX[], language);
+  if (isRecordLike(value)) {
+    return String(value[language] || value.th || value.en || "").trim();
+  }
+  return String(value).trim();
+}
+
+function namesForAllLanguages(label: string, languages: string[]): NameX[] {
+  const normalizedLanguages = languages.length > 0 ? languages : ["th", "en"];
+  return normalizedLanguages.map((code) => ({ code, name: label }));
+}
+
+function isRecordLike(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function safeProductJsonParse(value: string, fallback: unknown): unknown {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+function workspaceHoldingCode(workspace: WorkspaceSession | null): string {
+  if (!workspace) return "";
+  const shop = workspace.shop as Record<string, unknown>;
+  return String(shop.holding_code || shop.code || "").trim();
 }
 
 function TabProductTimeForSale({
