@@ -160,7 +160,7 @@ export function MenuDataTable({ data, dictionary, globalSearch, onGlobalSearchCh
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <label className="relative w-full min-w-0 sm:max-w-sm">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="pl-9" placeholder={backendText(dictionary, "search_menu_group_route")} value={globalSearch} onChange={(event) => onGlobalSearchChange(event.target.value)} />
+          <Input className="!pl-10" placeholder={backendText(dictionary, "search_menu_group_route")} value={globalSearch} onChange={(event) => onGlobalSearchChange(event.target.value)} />
         </label>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

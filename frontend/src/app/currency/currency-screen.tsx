@@ -633,7 +633,7 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
           <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
             <label className="relative block min-w-0">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input className="pl-9" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={text("search")} />
+              <Input className="!pl-10" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={text("search")} />
             </label>
             <Button type="button" variant="outline" onClick={() => void loadCurrencies(auth)} disabled={loading || !auth}>
               {loading ? <Loader2 className="animate-spin" /> : <RefreshCcw />}
@@ -853,7 +853,7 @@ function CurrencyFormPanel({
             <label className="relative block min-w-0">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                className="pl-9"
+                className="!pl-10"
                 value={symbolQuery}
                 onChange={(event) => setSymbolQuery(event.target.value)}
                 placeholder={text("symbolSearch")}

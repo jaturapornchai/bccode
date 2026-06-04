@@ -156,6 +156,20 @@ export interface MarketplaceProductMap {
 }
 
 /** Sub/variation barcode marketplace mapping — matches Go `MarketplaceSKUMap`. */
+export interface MarketplaceDimensionStock {
+  dimension_key: string;
+  dimension_name: string;
+  market_dimension_id: string;
+  available_qty: number;
+  reserved_qty: number;
+  inbound_qty: number;
+  oversell_buffer_qty: number;
+  last_platform_stock: number;
+  last_synced_at: string;
+  last_sync_status: string;
+  last_sync_error: string;
+}
+
 export interface MarketplaceSKUMap {
   platform: string;
   account_id: string;
@@ -173,9 +187,37 @@ export interface MarketplaceSKUMap {
   custom_price: number;
   platform_price: number;
   platform_stock: number;
+  marketplace_dimension_stocks: MarketplaceDimensionStock[];
   status: string;
   sync_enabled: boolean;
   last_sync_at: string;
+}
+
+export function emptyMarketplaceSKUMap(
+  platform: MarketplacePlatform,
+  holdingCode = "",
+  marketItemId = "",
+): MarketplaceSKUMap {
+  return {
+    platform,
+    account_id: "",
+    holding_code: holdingCode,
+    market_item_id: marketItemId,
+    market_model_id: "",
+    seller_sku: "",
+    shop_sku: "",
+    gtin: "",
+    currency: "THB",
+    sync_stock: true,
+    sync_price: true,
+    custom_price: 0,
+    platform_price: 0,
+    platform_stock: 0,
+    marketplace_dimension_stocks: [],
+    status: "",
+    sync_enabled: true,
+    last_sync_at: "",
+  };
 }
 
 /** Build an empty marketplace listing map for a given platform. */

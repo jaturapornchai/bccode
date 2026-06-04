@@ -214,7 +214,7 @@ export function ProductPriceHistoryScreen({ embedded = false, language: external
             <label className="relative block min-w-0">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                className="pl-9"
+                className="!pl-10"
                 placeholder={dictionary.search}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}

@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 )
 
@@ -88,9 +89,24 @@ func TestMarketplaceSKUMapJSONRoundTrip(t *testing.T) {
 		CustomPrice:   89,
 		PlatformPrice: 95,
 		PlatformStock: 7,
-		Status:        "UNLIST",
-		SyncEnabled:   true,
-		LastSyncAt:    "2026-05-29T11:00:00Z",
+		MarketplaceDimensionStocks: &[]MarketplaceDimensionStock{
+			{
+				DimensionKey:      "color:red|size:m",
+				DimensionName:     "แดง / M",
+				MarketDimensionID: "SHP-MODEL-RED-M",
+				AvailableQty:      12,
+				ReservedQty:       2,
+				InboundQty:        3,
+				OversellBufferQty: 1,
+				LastPlatformStock: 10,
+				LastSyncedAt:      "2026-05-29T11:00:00Z",
+				LastSyncStatus:    "synced",
+				LastSyncError:     "",
+			},
+		},
+		Status:      "UNLIST",
+		SyncEnabled: true,
+		LastSyncAt:  "2026-05-29T11:00:00Z",
 	}
 
 	raw, err := json.Marshal(in)
@@ -103,7 +119,7 @@ func TestMarketplaceSKUMapJSONRoundTrip(t *testing.T) {
 		t.Fatalf("unmarshal failed: %v", err)
 	}
 
-	if out != in {
+	if !reflect.DeepEqual(out, in) {
 		t.Fatalf("round-trip mismatch:\n got  %+v\n want %+v", out, in)
 	}
 }

@@ -399,7 +399,7 @@ export function MapPickerDialog({
         >
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            className="h-9 pl-9"
+            className="h-9 !pl-10"
             placeholder={text(language, "search")}
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}

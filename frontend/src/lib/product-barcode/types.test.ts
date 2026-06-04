@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MARKETPLACE_PLATFORMS, emptyMarketplaceProductMap } from "./types";
+import { MARKETPLACE_PLATFORMS, emptyMarketplaceProductMap, emptyMarketplaceSKUMap } from "./types";
 
 describe("product barcode marketplace contracts", () => {
   it("supports all planned marketplace import and sync channels", () => {
@@ -25,6 +25,16 @@ describe("product barcode marketplace contracts", () => {
       specification_groups: [],
       raw_attributes: [],
       payload_examples: [],
+    });
+  });
+
+  it("builds marketplace SKU mappings with dimension stock projections", () => {
+    expect(emptyMarketplaceSKUMap("shopee", "shop-a", "ITEM-1")).toMatchObject({
+      platform: "shopee",
+      holding_code: "shop-a",
+      market_item_id: "ITEM-1",
+      platform_stock: 0,
+      marketplace_dimension_stocks: [],
     });
   });
 });

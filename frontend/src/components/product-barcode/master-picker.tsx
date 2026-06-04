@@ -260,14 +260,14 @@ export function MasterPicker({
       </div>
       <div className="border-b border-border px-3 py-2">
         <div className="relative">
-          <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input
             autoFocus
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={text.pickerSearch}
-            className="h-9 pl-8"
+            className="h-9 !pl-10"
           />
         </div>
       </div>

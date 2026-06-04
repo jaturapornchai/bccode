@@ -898,11 +898,11 @@ const [pickerType, setPickerType] = useState<string>("");
         )}>
           <div className="p-3 border-b border-border">
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder={text.search}
-                className="pl-8"
+                className="!pl-10"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
               />
@@ -1148,9 +1148,9 @@ const [pickerType, setPickerType] = useState<string>("");
 
                   {/* ประเภทสินค้าหลัก (Radio Groups) */}
                   {!isSetOnly && (
-                    <div className="border border-border bg-card rounded-lg p-4 space-y-4 shadow-sm">
-                      <h4 className="font-bold text-base text-foreground border-b border-border pb-2">ประเภทสินค้าหลัก</h4>
-                      <div className="grid gap-6 md:grid-cols-2">
+                    <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
+                      <h4 className="border-b border-border pb-1.5 text-sm font-bold text-foreground">ประเภทสินค้าหลัก</h4>
+                      <div className="mt-3 grid items-start gap-3 md:grid-cols-2">
                         <RadioOptionGroup
                           label={text.itemTypeLabel}
                           value={editProduct.item_type ?? 0}
@@ -1168,9 +1168,9 @@ const [pickerType, setPickerType] = useState<string>("");
                   )}
 
                   {/* การตั้งค่าภาษี (Radio Groups) */}
-                  <div className="border border-border bg-card rounded-lg p-4 space-y-4 shadow-sm">
-                    <h4 className="font-bold text-base text-foreground border-b border-border pb-2">การตั้งค่าภาษี</h4>
-                    <div className="grid gap-6 md:grid-cols-1">
+                  <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
+                    <h4 className="border-b border-border pb-1.5 text-sm font-bold text-foreground">การตั้งค่าภาษี</h4>
+                    <div className="mt-3 grid items-start gap-3">
                       <RadioOptionGroup
                         label="ประเภทภาษี"
                         value={editProduct.vat_type ?? 0}
@@ -1402,30 +1402,30 @@ const [pickerType, setPickerType] = useState<string>("");
             </form>
           ) : selectedProduct ? (
             /* Product View Details Mode (Aligned with ProductBarcodeDetail layout) */
-            <Card className="min-w-0 overflow-hidden xl:flex xl:h-full xl:min-h-0 xl:flex-col shadow-md border border-border bg-card rounded-2xl relative">
+            <Card className="relative min-w-0 overflow-hidden rounded-lg border border-border bg-card shadow-sm xl:flex xl:h-full xl:min-h-0 xl:flex-col">
               {/* Top Accent line */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-primary/80 to-primary/40" />
+              <div className="absolute left-0 right-0 top-0 h-1 bg-primary" />
 
-              <CardHeader className="shrink-0 border-b border-border p-5 bg-muted/5">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="min-w-0 space-y-1">
-                    <span className="text-[9px] font-bold text-primary uppercase tracking-widest block">{text.detailTitle}</span>
-                    <h3 className="text-2xl font-extrabold text-foreground break-words whitespace-normal leading-tight">{selectedProduct.code}</h3>
-                    <p className="text-sm font-semibold text-muted-foreground break-words whitespace-normal mt-0.5 leading-snug">{pickName(selectedProduct.names, lang)}</p>
+              <CardHeader className="shrink-0 border-b border-border bg-muted/5 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="block text-[10px] font-bold text-primary">{text.detailTitle}</span>
+                    <h3 className="break-words text-xl font-extrabold leading-tight text-foreground">{selectedProduct.code}</h3>
+                    <p className="mt-0.5 break-words text-xs font-semibold leading-snug text-muted-foreground">{pickName(selectedProduct.names, lang)}</p>
                   </div>
-                  <div className="flex flex-wrap justify-end gap-2 shrink-0">
-                    <Button variant="outline" size="sm" className="rounded-lg font-bold text-xs h-9 cursor-pointer" onClick={() => handleEditOpen(selectedProduct)}>
-                      <Pencil className="h-4 w-4 mr-1 text-primary animate-pulse" />
+                  <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                    <Button variant="outline" size="sm" className="h-8 rounded-lg text-xs font-bold" onClick={() => handleEditOpen(selectedProduct)}>
+                      <Pencil className="mr-1 h-3.5 w-3.5 text-primary" />
                       {text.edit}
                     </Button>
-                    <Button variant="destructive" size="sm" className="rounded-lg font-bold text-xs h-9 cursor-pointer" onClick={() => void handleDelete(selectedProduct)}>
-                      <Trash2 className="h-4 w-4 mr-1" />
+                    <Button variant="destructive" size="sm" className="h-8 rounded-lg text-xs font-bold" onClick={() => void handleDelete(selectedProduct)}>
+                      <Trash2 className="mr-1 h-3.5 w-3.5" />
                       {text.delete}
                     </Button>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="grid gap-4 overflow-y-auto p-4 xl:min-h-0 xl:flex-1">
+              <CardContent className="grid gap-2 overflow-y-auto p-3 xl:min-h-0 xl:flex-1 xl:grid-cols-2">
                 {/* 1. Basic Info */}
                 <DetailSection
                   title={text.basicInfoCard ?? "ข้อมูลพื้นฐานสินค้า"}
@@ -1437,13 +1437,20 @@ const [pickerType, setPickerType] = useState<string>("");
                         : (itemTypes.find((t) => t.value === selectedProduct.item_type)?.label ?? String(selectedProduct.item_type ?? "-"))
                     }] : []),
                     {
-                      label: text.vatType,
+                      label: "สถานะภาษีมูลค่าเพิ่ม",
                       value: vatTypes.find((t) => t.value === selectedProduct.vat_type)?.label ?? String(selectedProduct.vat_type ?? "-")
+                    },
+                    {
+                      label: "รหัสประเภทภาษี",
+                      value: String(selectedProduct.tax_type ?? selectedProduct.vat_type ?? "-")
                     },
                     ...(!isSetOnly ? [{
                       label: text.materialType,
                       value: materialTypes.find((t) => t.value === selectedProduct.materialtype)?.label ?? String(selectedProduct.materialtype ?? "-")
-                    }] : [])
+                    }] : []),
+                    { label: "รหัสหน่วยหลัก", value: selectedProduct.unitcode || selectedProduct.item_unit_code || "-" },
+                    { label: "ชื่อหน่วยหลัก", value: pickName(selectedProduct.unitnames || selectedProduct.itemunitnames, lang) || "-" },
+                    { label: "มิติสินค้า", value: formatDimensionList(selectedProduct.dimensions, lang) }
                   ]}
                 />
 
@@ -1456,12 +1463,40 @@ const [pickerType, setPickerType] = useState<string>("");
                       value: selectedProduct.group_code ? `${selectedProduct.group_code} — ${pickName(selectedProduct.group_names, lang)}` : "-"
                     },
                     {
+                      label: text.groupsubone,
+                      value: selectedProduct.groupsubonecode ? `${selectedProduct.groupsubonecode} — ${pickName(selectedProduct.groupsubonenames, lang)}` : "-"
+                    },
+                    {
+                      label: text.groupsubtwo,
+                      value: selectedProduct.groupsubtwocode ? `${selectedProduct.groupsubtwocode} — ${pickName(selectedProduct.groupsubtwonames, lang)}` : "-"
+                    },
+                    {
                       label: text.brand,
                       value: selectedProduct.brand_code ? `${selectedProduct.brand_code} — ${pickName(selectedProduct.brandnames, lang)}` : "-"
                     },
                     {
                       label: text.category,
                       value: selectedProduct.categorycode ? `${selectedProduct.categorycode} — ${pickName(selectedProduct.category_names, lang)}` : "-"
+                    },
+                    {
+                      label: text.class,
+                      value: selectedProduct.classcode ? `${selectedProduct.classcode} — ${pickName(selectedProduct.classnames, lang)}` : "-"
+                    },
+                    {
+                      label: text.design,
+                      value: selectedProduct.designcode ? `${selectedProduct.designcode} — ${pickName(selectedProduct.designnames, lang)}` : "-"
+                    },
+                    {
+                      label: text.model,
+                      value: selectedProduct.modelcode ? `${selectedProduct.modelcode} — ${pickName(selectedProduct.modelnames, lang)}` : "-"
+                    },
+                    {
+                      label: text.pattern,
+                      value: selectedProduct.patterncode ? `${selectedProduct.patterncode} — ${pickName(selectedProduct.patternnames, lang)}` : "-"
+                    },
+                    {
+                      label: text.grade,
+                      value: selectedProduct.gradecode ? `${selectedProduct.gradecode} — ${pickName(selectedProduct.gradenames, lang)}` : "-"
                     }
                   ]}
                 />
@@ -1475,6 +1510,19 @@ const [pickerType, setPickerType] = useState<string>("");
                     { label: text.maxPoint, value: String(selectedProduct.maxpoint ?? 0) },
                     { label: text.qty, value: String(selectedProduct.qty ?? 0) },
                     { label: text.stockBarcode, value: selectedProduct.stockbarcode || "-" }
+                  ]}
+                />
+
+                <DetailSection
+                  title={text.tabUnitsBarcode ?? "หน่วยนับและบาร์โค้ด"}
+                  fields={[
+                    { label: "ใช้หลายบาร์โค้ด", value: formatYesNo(selectedProduct.isusesubbarcodes) },
+                    { label: "เงื่อนไขแปลงหน่วย", value: formatYesNo(selectedProduct.condition) },
+                    { label: "ตัวตั้ง", value: String(selectedProduct.standvalue ?? "-") },
+                    { label: "ตัวหาร", value: String(selectedProduct.dividevalue ?? "-") },
+                    { label: "บาร์โค้ดย่อย", value: formatRefBarcodeList(selectedProduct.refbarcodes, lang) },
+                    { label: "บาร์โค้ดสินค้า", value: formatRefBarcodeList(selectedProduct.barcodes, lang) },
+                    { label: "ส่วนประกอบ BOM", value: formatBomList(selectedProduct.bom, lang) }
                   ]}
                 />
 
@@ -1495,16 +1543,68 @@ const [pickerType, setPickerType] = useState<string>("");
                   ]}
                 />
 
+                <DetailSection
+                  title={text.tabRestaurant ?? "ร้านอาหาร/POS"}
+                  fields={[
+                    { label: text.isForRestaurant, value: formatYesNo(selectedProduct.restaurant?.isforrestaurant) },
+                    { label: text.isForTakeaway, value: formatYesNo(selectedProduct.restaurant?.isfortakeaway) },
+                    { label: text.isForDelivery, value: formatYesNo(selectedProduct.restaurant?.isfordelivery) },
+                    { label: text.isForCustomer, value: formatYesNo(selectedProduct.restaurant?.isforcustomer) },
+                    { label: text.isForCustomerPreOrder, value: formatYesNo(selectedProduct.restaurant?.isforcustomerpreorder) },
+                    { label: text.isALaCarte, value: formatYesNo(selectedProduct.isalacarte) },
+                    { label: text.isStockForRestaurant, value: formatYesNo(selectedProduct.isstockforrestaurant) },
+                    { label: text.isSplitUnitPrint, value: formatYesNo(selectedProduct.issplitunitprint) },
+                    { label: text.isOnlyStaff, value: formatYesNo(selectedProduct.isonlystaff) },
+                    { label: text.foodType, value: foodTypes.find((t) => t.value === selectedProduct.foodtype)?.label ?? String(selectedProduct.foodtype ?? "-") },
+                    { label: "บริการสั่งอาหาร", value: formatNamedList(selectedProduct.ordertypes, lang) },
+                    { label: "ชุดตัวเลือกสินค้า", value: formatOptionList(selectedProduct.options, lang) }
+                  ]}
+                />
+
+                <DetailSection
+                  title={`${text.tabTimeForSales} / ${text.tabBusinessBranchShort}`}
+                  fields={[
+                    { label: text.tabTimeForSales, value: formatTimeForSaleList(selectedProduct.timeforsales) },
+                    { label: text.businessTypes ?? "ประเภทธุรกิจ", value: formatNamedList(selectedProduct.businesstypes, lang) },
+                    { label: text.ignoreBranches ?? "สาขาที่ยกเว้น", value: formatNamedList(selectedProduct.ignorebranches, lang) }
+                  ]}
+                />
+
+                <DetailSection
+                  title={`${text.tabMedia} / Marketplace`}
+                  fields={[
+                    { label: "ใช้รูปหรือสี", value: formatYesNo(selectedProduct.useimageorcolor) },
+                    { label: "สี", value: selectedProduct.colorselect || selectedProduct.colorselecthex || "-" },
+                    { label: "รูปหลัก", value: selectedProduct.imageuri || "-" },
+                    { label: "รูปทั้งหมด", value: formatImageList(selectedProduct.images) },
+                    { label: "Marketplace", value: formatMarketplaceProductList(selectedProduct.marketplace_products) },
+                    { label: "คำเตือน", value: selectedProduct.alertdescription || "-" },
+                    { label: "รายละเอียด", value: selectedProduct.description || "-" }
+                  ]}
+                />
+
+                <DetailSection
+                  title={text.tabMisc ?? "อื่น ๆ"}
+                  fields={[
+                    { label: "รหัสภายในสินค้า", value: selectedProduct.guidfixed || "-" },
+                    { label: "รหัส Holding", value: selectedProduct.holding_code || "-" },
+                    { label: "GUID หน่วยนับ", value: selectedProduct.unitguid || "-" },
+                    { label: "เปิดคำเตือน", value: formatYesNo(selectedProduct.isalert) },
+                    { label: "ข้อความคำเตือน", value: selectedProduct.alertdescription || "-" },
+                    { label: "รายละเอียดสินค้า", value: selectedProduct.description || "-" }
+                  ]}
+                />
+
                 {/* 5. Manufacturers & Suppliers */}
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <section className="rounded-xl border border-border/60 bg-muted/5 p-4 space-y-3">
-                    <h3 className="text-xs font-bold text-primary/80 uppercase tracking-wider border-b border-border/40 pb-2">{text.manufacturers}</h3>
+                <div className="grid gap-2 sm:grid-cols-2 xl:col-span-2">
+                  <section className="rounded-lg border border-border/60 bg-muted/5 p-2">
+                    <h3 className="border-b border-border/40 pb-1 text-xs font-bold text-primary">{text.manufacturers}</h3>
                     {(!selectedProduct.manufacturers || selectedProduct.manufacturers.length === 0) ? (
-                      <p className="text-xs text-muted-foreground italic py-1">{text.noManufacturerInfo}</p>
+                      <p className="py-1 text-xs italic text-muted-foreground">{text.noManufacturerInfo}</p>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="mt-1 grid gap-1">
                         {selectedProduct.manufacturers.map((m) => (
-                          <div key={m.guid_fixed} className="bg-background/60 backdrop-blur-sm p-3 rounded-lg border border-border/50 text-xs font-bold text-foreground hover:border-primary/30 hover:shadow-sm transition-all duration-300 break-words whitespace-normal">
+                          <div key={m.guid_fixed} className="break-words rounded-md border border-border/50 bg-background/70 px-2 py-1 text-xs font-semibold text-foreground">
                             {m.code} — {pickName(m.names, lang)}
                           </div>
                         ))}
@@ -1512,14 +1612,14 @@ const [pickerType, setPickerType] = useState<string>("");
                     )}
                   </section>
 
-                  <section className="rounded-xl border border-border/60 bg-muted/5 p-4 space-y-3">
-                    <h3 className="text-xs font-bold text-primary/80 uppercase tracking-wider border-b border-border/40 pb-2">{text.suppliers}</h3>
+                  <section className="rounded-lg border border-border/60 bg-muted/5 p-2">
+                    <h3 className="border-b border-border/40 pb-1 text-xs font-bold text-primary">{text.suppliers}</h3>
                     {(!selectedProduct.suppliers || selectedProduct.suppliers.length === 0) ? (
-                      <p className="text-xs text-muted-foreground italic py-1">{text.noSupplierInfo}</p>
+                      <p className="py-1 text-xs italic text-muted-foreground">{text.noSupplierInfo}</p>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="mt-1 grid gap-1">
                         {selectedProduct.suppliers.map((s) => (
-                          <div key={s.guid_fixed} className="bg-background/60 backdrop-blur-sm p-3 rounded-lg border border-border/50 text-xs font-bold text-foreground hover:border-primary/30 hover:shadow-sm transition-all duration-300 break-words whitespace-normal">
+                          <div key={s.guid_fixed} className="break-words rounded-md border border-border/50 bg-background/70 px-2 py-1 text-xs font-semibold text-foreground">
                             {s.code} — {pickName(s.names, lang)}
                           </div>
                         ))}
@@ -1575,14 +1675,14 @@ const [pickerType, setPickerType] = useState<string>("");
 
             <div className="border-b border-border px-4 py-3">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   autoFocus
                   type="search"
                   value={barcodeSearchInput}
                   onChange={(event) => setBarcodeSearchInput(event.target.value)}
                   placeholder={text.searchBarcodeOrName}
-                  className="h-9 pl-9"
+                  className="h-9 !pl-10"
                 />
               </div>
             </div>
@@ -1710,14 +1810,14 @@ function RadioOptionGroup<T extends RadioOptionValue>({
   onChange: (next: T) => void;
 }) {
   return (
-    <fieldset className="rounded-md border border-border bg-background px-3 py-2">
+    <fieldset className="rounded-md border border-border bg-background px-2.5 py-2">
       <legend className="px-1 text-xs font-semibold text-muted-foreground">{label}</legend>
-      <div className="flex flex-wrap gap-x-5 gap-y-2">
+      <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
         {options.map((option) => (
           <label
             key={String(option.value)}
             className={cn(
-              "flex min-h-8 w-auto cursor-pointer items-center gap-2 text-sm",
+              "flex min-h-7 w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-xs font-medium hover:bg-muted/60",
               option.disabled && "cursor-not-allowed opacity-60",
             )}
           >
@@ -1728,7 +1828,7 @@ function RadioOptionGroup<T extends RadioOptionValue>({
               onChange={() => onChange(option.value)}
               className="size-4"
             />
-            <span>{option.label}</span>
+            <span className="whitespace-normal break-words">{option.label}</span>
           </label>
         ))}
       </div>
@@ -2895,13 +2995,124 @@ type DetailFieldItem = {
   value: string;
 };
 
+function formatYesNo(value?: boolean) {
+  return value ? "ใช่" : "ไม่ใช่";
+}
+
+function formatNamedList(items: Array<{ code?: string; names?: NameX[] }> | undefined, language: string) {
+  if (!items || items.length === 0) return "-";
+  return items
+    .map((item) => [item.code, pickName(item.names, language)].filter(Boolean).join(" — "))
+    .filter(Boolean)
+    .join(", ");
+}
+
+function formatRefBarcodeList(items: RefProductBarcode[] | undefined, language: string) {
+  if (!items || items.length === 0) return "-";
+  return items
+    .map((item) => {
+      const barcodeText = [item.barcode, pickName(item.names, language), item.item_unit_code].filter(Boolean).join(" / ");
+      const marketplaceText = (item.marketplace_sku_mappings || [])
+        .map((mapping) => {
+          const stockText = (mapping.marketplace_dimension_stocks || [])
+            .map((stock) => `${stock.dimension_name || stock.dimension_key}: พร้อมขาย ${stock.available_qty}`)
+            .join("; ");
+          return [
+            [mapping.platform, mapping.holding_code, mapping.seller_sku].filter(Boolean).join(" / "),
+            stockText,
+          ].filter(Boolean).join(" => ");
+        })
+        .filter(Boolean)
+        .join(" | ");
+      return marketplaceText ? `${barcodeText}\n${marketplaceText}` : barcodeText;
+    })
+    .join("\n");
+}
+
+function formatBomList(items: BOMProductBarcode[] | undefined, language: string) {
+  if (!items || items.length === 0) return "-";
+  return items
+    .map((item) => {
+      const name = pickName(item.names, language);
+      const qty = item.qty == null ? "" : ` x ${item.qty}`;
+      return [item.barcode, name, item.item_unit_code].filter(Boolean).join(" / ") + qty;
+    })
+    .join(", ");
+}
+
+function formatOptionList(items: ProductOption[] | undefined, language: string) {
+  if (!items || items.length === 0) return "-";
+  return items
+    .map((item) => {
+      const name = pickName(item.names, language) || "ชุดตัวเลือก";
+      const choiceText = (item.choices || [])
+        .map((choice) => {
+          const choiceName = pickName(choice.names, language) || choice.refbarcode || "ตัวเลือก";
+          const price = choice.price ? `ราคา ${choice.price}` : "";
+          const qty = choice.qty == null ? "" : `จำนวน ${choice.qty}`;
+          return [choiceName, price, qty].filter(Boolean).join(" ");
+        })
+        .join("; ");
+      return choiceText ? `${name}: ${choiceText}` : name;
+    })
+    .join(", ");
+}
+
+function formatImageList(items: ProductImage[] | undefined) {
+  if (!items || items.length === 0) return "-";
+  return items
+    .map((item) => `#${item.xorder}: ${item.uri}`)
+    .join("\n");
+}
+
+function formatDimensionList(items: Product["dimensions"], language: string) {
+  if (!items || items.length === 0) return "-";
+  return items
+    .map((item) => {
+      const dimensionName = pickName(item.names, language) || item.guidfixed;
+      const choiceName = pickName(item.item?.names, language) || item.item?.guidfixed || "-";
+      return `${dimensionName}: ${choiceName}${item.isdisabled || item.item?.isdisabled ? " (ปิดใช้)" : ""}`;
+    })
+    .join(", ");
+}
+
+function formatMarketplaceProductList(items: Product["marketplace_products"]) {
+  if (!items || items.length === 0) return "-";
+  return items
+    .map((item) =>
+      [
+        item.platform,
+        item.account_id,
+        item.market_item_id,
+        item.seller_sku || item.shop_sku,
+        item.status,
+        item.sync_enabled ? "sync" : "ไม่ sync",
+      ]
+        .filter(Boolean)
+        .join(" / "),
+    )
+    .join("\n");
+}
+
+function formatTimeForSaleList(items: ProductTimeForSale[] | undefined) {
+  if (!items || items.length === 0) return "-";
+  return items
+    .map((item) => {
+      const dateRange = [item.fromdate, item.todate].filter(Boolean).join("-");
+      const timeRange = [item.fromtime, item.totime].filter(Boolean).join("-");
+      return [dateRange, timeRange].filter(Boolean).join(" ");
+    })
+    .filter(Boolean)
+    .join(", ");
+}
+
 function DetailSection({ fields, title }: { fields: DetailFieldItem[]; title: string }) {
   return (
-    <section className="rounded-xl border border-border/60 bg-muted/5 p-4 space-y-3">
-      <h3 className="text-xs font-bold text-primary/80 uppercase tracking-wider border-b border-border/40 pb-2">{title}</h3>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {fields.map((field) => (
-          <DetailField key={`${title}-${field.label}`} label={field.label} value={field.value} />
+    <section className="rounded-lg border border-border/60 bg-muted/5 p-2">
+      <h3 className="border-b border-border/40 pb-1 text-xs font-bold text-primary">{title}</h3>
+      <div className="mt-1 grid gap-1 sm:grid-cols-2 2xl:grid-cols-3">
+        {fields.map((field, index) => (
+          <DetailField key={`${title}-${field.label}-${index}`} label={field.label} value={field.value} />
         ))}
       </div>
     </section>
@@ -2910,9 +3121,9 @@ function DetailSection({ fields, title }: { fields: DetailFieldItem[]; title: st
 
 function DetailField({ label, value }: DetailFieldItem) {
   return (
-    <div className="min-w-0 rounded-xl border border-border/50 bg-background/60 backdrop-blur-sm p-3 hover:border-primary/30 hover:shadow-sm transition-all duration-300">
-      <p className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-wider">{label}</p>
-      <p className="mt-1 break-words text-sm font-bold text-foreground leading-normal">{value || "-"}</p>
+    <div className="min-w-0 rounded-md border border-border/50 bg-background/70 px-2 py-1">
+      <p className="text-[10px] font-bold leading-tight text-muted-foreground">{label}</p>
+      <p className="mt-0.5 whitespace-pre-line break-words text-xs font-bold leading-snug text-foreground">{value || "-"}</p>
     </div>
   );
 }

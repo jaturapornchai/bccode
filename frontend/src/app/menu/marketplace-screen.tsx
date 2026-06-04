@@ -42,7 +42,8 @@ import {
   type ProductBarcode,
   type MarketplaceProductMap,
   type MarketplaceSKUMap,
-  emptyMarketplaceProductMap
+  emptyMarketplaceProductMap,
+  emptyMarketplaceSKUMap,
 } from "@/lib/product-barcode/types";
 import { cn } from "@/lib/utils";
 
@@ -312,22 +313,10 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
           const matchMapIdx = mappings.findIndex(m => m.platform === platform && m.holding_code === holdingCode);
 
           const mappingData: MarketplaceSKUMap = {
-            platform,
-            account_id: "",
-            holding_code: holdingCode,
-            market_item_id: marketItemId,
+            ...emptyMarketplaceSKUMap(platform, holdingCode, marketItemId),
             market_model_id: marketModelId,
             seller_sku: sellerSku || subB.seller_sku || "",
-            shop_sku: "",
-            gtin: "",
-            currency: "THB",
-            sync_stock: true,
-            sync_price: true,
-            custom_price: 0,
-            platform_price: 0,
-            platform_stock: 0,
             status: "LIVE",
-            sync_enabled: true,
             last_sync_at: new Date().toISOString(),
           };
 
@@ -693,12 +682,12 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
           {/* Search & Filter Toolbar */}
           <div className="flex items-center gap-3">
             <div className="relative w-full max-w-xs">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="ค้นหาบาร์โค้ด, รหัสสินค้า, ชื่อ..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 h-9"
+                className="h-9 !pl-10"
               />
             </div>
           </div>

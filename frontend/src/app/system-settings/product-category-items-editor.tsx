@@ -338,13 +338,13 @@ export function ProductCategoryItemsEditor({
 
           <div className="border-b border-border p-4 bg-muted/20">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 autoFocus
                 placeholder={language === "th" ? "ค้นหาด้วยรหัสสินค้า, บาร์โค้ด หรือชื่อสินค้า..." : "Search by code, barcode, or name..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-10 pl-9 rounded-lg border-input bg-background"
+                className="h-10 !pl-10 rounded-lg border-input bg-background"
               />
             </div>
           </div>

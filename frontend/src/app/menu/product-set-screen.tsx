@@ -148,14 +148,14 @@ function BarcodePickerModal({
 
         <div className="border-b border-border p-3">
           <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               autoFocus
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="ค้นหาบาร์โค้ด หรือชื่อสินค้า..."
-              className="h-9 pl-9"
+              className="h-9 !pl-10"
             />
           </div>
         </div>
@@ -854,11 +854,11 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
 
           <div className="p-3 border-b border-border bg-card">
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="ค้นหารหัส หรือชื่อสินค้าชุด..."
-                className="pl-8 h-9 bg-background"
+                className="h-9 !pl-10 bg-background"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
               />

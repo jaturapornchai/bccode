@@ -486,24 +486,39 @@ type MarketplaceProductMap struct {
 // MarketplaceSKUMap maps a sub/variation barcode (RefProductBarcode) to a
 // marketplace SKU. Same unified field set as MarketplaceProductMap minus the
 // item-level catalog fields, so sub-barcode variations sync consistently.
+type MarketplaceDimensionStock struct {
+	DimensionKey      string  `json:"dimension_key" bson:"dimension_key"`
+	DimensionName     string  `json:"dimension_name" bson:"dimension_name"`
+	MarketDimensionID string  `json:"market_dimension_id" bson:"market_dimension_id"`
+	AvailableQty      float64 `json:"available_qty" bson:"available_qty"`
+	ReservedQty       float64 `json:"reserved_qty" bson:"reserved_qty"`
+	InboundQty        float64 `json:"inbound_qty" bson:"inbound_qty"`
+	OversellBufferQty float64 `json:"oversell_buffer_qty" bson:"oversell_buffer_qty"`
+	LastPlatformStock float64 `json:"last_platform_stock" bson:"last_platform_stock"`
+	LastSyncedAt      string  `json:"last_synced_at" bson:"last_synced_at"`
+	LastSyncStatus    string  `json:"last_sync_status" bson:"last_sync_status"`
+	LastSyncError     string  `json:"last_sync_error" bson:"last_sync_error"`
+}
+
 type MarketplaceSKUMap struct {
-	Platform      string                   `json:"platform" bson:"platform"`
-	AccountID     string                   `json:"account_id" bson:"account_id"`
-	HoldingCode   string                   `json:"holding_code" bson:"holding_code"`
-	MarketItemID  string                   `json:"market_item_id" bson:"market_item_id"`
-	MarketModelID string                   `json:"market_model_id" bson:"market_model_id"`
-	SellerSKU     string                   `json:"seller_sku" bson:"seller_sku"`
-	ShopSKU       string                   `json:"shop_sku" bson:"shop_sku"`
-	GTIN          string                   `json:"gtin" bson:"gtin"`
-	MediaAssets   *[]MarketplaceMediaAsset `json:"media_assets" bson:"media_assets"`
-	RawAttributes *[]MarketplaceAttribute  `json:"raw_attributes" bson:"raw_attributes"`
-	Currency      string                   `json:"currency" bson:"currency"`
-	SyncStock     bool                     `json:"sync_stock" bson:"sync_stock"`
-	SyncPrice     bool                     `json:"sync_price" bson:"sync_price"`
-	CustomPrice   float64                  `json:"custom_price" bson:"custom_price"`
-	PlatformPrice float64                  `json:"platform_price" bson:"platform_price"`
-	PlatformStock int                      `json:"platform_stock" bson:"platform_stock"`
-	Status        string                   `json:"status" bson:"status"`
-	SyncEnabled   bool                     `json:"sync_enabled" bson:"sync_enabled"`
-	LastSyncAt    string                   `json:"last_sync_at" bson:"last_sync_at"`
+	Platform                   string                       `json:"platform" bson:"platform"`
+	AccountID                  string                       `json:"account_id" bson:"account_id"`
+	HoldingCode                string                       `json:"holding_code" bson:"holding_code"`
+	MarketItemID               string                       `json:"market_item_id" bson:"market_item_id"`
+	MarketModelID              string                       `json:"market_model_id" bson:"market_model_id"`
+	SellerSKU                  string                       `json:"seller_sku" bson:"seller_sku"`
+	ShopSKU                    string                       `json:"shop_sku" bson:"shop_sku"`
+	GTIN                       string                       `json:"gtin" bson:"gtin"`
+	MediaAssets                *[]MarketplaceMediaAsset     `json:"media_assets" bson:"media_assets"`
+	RawAttributes              *[]MarketplaceAttribute      `json:"raw_attributes" bson:"raw_attributes"`
+	Currency                   string                       `json:"currency" bson:"currency"`
+	SyncStock                  bool                         `json:"sync_stock" bson:"sync_stock"`
+	SyncPrice                  bool                         `json:"sync_price" bson:"sync_price"`
+	CustomPrice                float64                      `json:"custom_price" bson:"custom_price"`
+	PlatformPrice              float64                      `json:"platform_price" bson:"platform_price"`
+	PlatformStock              int                          `json:"platform_stock" bson:"platform_stock"`
+	MarketplaceDimensionStocks *[]MarketplaceDimensionStock `json:"marketplace_dimension_stocks" bson:"marketplace_dimension_stocks"`
+	Status                     string                       `json:"status" bson:"status"`
+	SyncEnabled                bool                         `json:"sync_enabled" bson:"sync_enabled"`
+	LastSyncAt                 string                       `json:"last_sync_at" bson:"last_sync_at"`
 }

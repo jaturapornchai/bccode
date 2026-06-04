@@ -10,9 +10,11 @@ import { cn } from "@/lib/utils";
 import {
   type Product,
   type MarketplaceProductMap,
+  type MarketplaceDimensionStock,
   type MarketplaceSKUMap,
   type RefProductBarcode,
   emptyMarketplaceProductMap,
+  emptyMarketplaceSKUMap,
 } from "@/lib/product-barcode/types";
 
 type ProductStateAction = (
@@ -216,22 +218,10 @@ export function TabProductMarketplace({
       let nextMappings = [...mappings];
 
       const mappingData: MarketplaceSKUMap = {
-        platform,
-        account_id: "",
-        holding_code: holdingCode,
-        market_item_id: marketItemId,
+        ...emptyMarketplaceSKUMap(platform, holdingCode, marketItemId),
+        status: "LIVE",
         market_model_id: marketModelId,
         seller_sku: sellerSku || entry.seller_sku || "",
-        shop_sku: "",
-        gtin: "",
-        currency: "THB",
-        sync_stock: true,
-        sync_price: true,
-        custom_price: 0,
-        platform_price: 0,
-        platform_stock: 0,
-        status: "LIVE",
-        sync_enabled: true,
         last_sync_at: new Date().toISOString(),
       };
 
@@ -348,30 +338,71 @@ export function TabProductMarketplace({
           nextMappings[matchIdx] = { ...nextMappings[matchIdx], ...fields };
         } else {
           nextMappings.push({
-            platform,
-            account_id: "",
-            holding_code: holdingCode,
-            market_item_id: market_item_id,
-            market_model_id: "",
+            ...emptyMarketplaceSKUMap(platform, holdingCode, market_item_id),
             seller_sku: row.seller_sku || "",
-            shop_sku: "",
-            gtin: "",
-            currency: "THB",
-            sync_stock: true,
-            sync_price: true,
-            custom_price: 0,
-            platform_price: 0,
-            platform_stock: 0,
-            status: "",
-            sync_enabled: true,
-            last_sync_at: "",
             ...fields,
-          } as MarketplaceSKUMap);
+          });
         }
         return { ...row, marketplace_sku_mappings: nextMappings };
       }),
     );
   }, [platform, setRefBarcodes]);
+
+  const updateDimensionStocks = useCallback(
+    (barcodeIdx: number, holdingCode: string, mutator: (rows: MarketplaceDimensionStock[]) => MarketplaceDimensionStock[]) => {
+      const marketItemId = value.marketplace_products?.find(
+        (m) => m.platform === platform && m.holding_code === holdingCode,
+      )?.market_item_id || "";
+
+      handleSkuMapChange(barcodeIdx, holdingCode, {
+        marketplace_dimension_stocks: mutator(
+          value.refbarcodes?.[barcodeIdx]?.marketplace_sku_mappings?.find(
+            (m) => m.platform === platform && m.holding_code === holdingCode,
+          )?.marketplace_dimension_stocks || [],
+        ),
+        market_item_id: marketItemId,
+      });
+    },
+    [handleSkuMapChange, platform, value.marketplace_products, value.refbarcodes],
+  );
+
+  const addDimensionStock = useCallback(
+    (barcodeIdx: number, holdingCode: string) => {
+      updateDimensionStocks(barcodeIdx, holdingCode, (rows) => [
+        ...rows,
+        {
+          dimension_key: "",
+          dimension_name: "",
+          market_dimension_id: "",
+          available_qty: 0,
+          reserved_qty: 0,
+          inbound_qty: 0,
+          oversell_buffer_qty: 0,
+          last_platform_stock: 0,
+          last_synced_at: "",
+          last_sync_status: "",
+          last_sync_error: "",
+        },
+      ]);
+    },
+    [updateDimensionStocks],
+  );
+
+  const updateDimensionStock = useCallback(
+    (barcodeIdx: number, holdingCode: string, rowIdx: number, fields: Partial<MarketplaceDimensionStock>) => {
+      updateDimensionStocks(barcodeIdx, holdingCode, (rows) =>
+        rows.map((row, idx) => (idx === rowIdx ? { ...row, ...fields } : row)),
+      );
+    },
+    [updateDimensionStocks],
+  );
+
+  const removeDimensionStock = useCallback(
+    (barcodeIdx: number, holdingCode: string, rowIdx: number) => {
+      updateDimensionStocks(barcodeIdx, holdingCode, (rows) => rows.filter((_, idx) => idx !== rowIdx));
+    },
+    [updateDimensionStocks],
+  );
 
   // Update SKU dimensions (TikTok specific package size overrides)
   const handleSkuDimensionsChange = useCallback((barcodeIdx: number, fields: Partial<RefProductBarcode>) => {
@@ -614,15 +645,7 @@ export function TabProductMarketplace({
                     // Find mapping for this platform and holding_code
                     const mapping = entry.marketplace_sku_mappings?.find(
                       (m) => m.platform === platform && m.holding_code === holdingCode
-                    ) || {
-                      platform,
-                      holding_code: holdingCode,
-                      market_item_id: item.market_item_id,
-                      market_model_id: "",
-                      sync_stock: true,
-                      sync_price: true,
-                      custom_price: 0,
-                    };
+                    ) || emptyMarketplaceSKUMap(platform, holdingCode, item.market_item_id);
 
                     return (
                       <div
@@ -660,6 +683,13 @@ export function TabProductMarketplace({
                               min={0}
                             />
                           </FieldRow>
+                          <FieldRow label="ยอดคงเหลือรวมบน Marketplace">
+                            <NumberField
+                              value={mapping.platform_stock ?? 0}
+                              onChange={(n) => handleSkuMapChange(barcodeIdx, holdingCode, { platform_stock: n })}
+                              min={0}
+                            />
+                          </FieldRow>
                           <div className="flex flex-col justify-end gap-2 pb-2">
                             <Toggle
                               checked={mapping.sync_stock ?? true}
@@ -672,6 +702,103 @@ export function TabProductMarketplace({
                               label="ซิงค์ราคาขายบนเว็บบอร์ด"
                             />
                           </div>
+                        </div>
+
+                        <div className="rounded-md border border-border/60 bg-background/60 p-2">
+                          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                              <span className="block text-xs font-semibold text-foreground">ยอดคงเหลือตามมิติบน Marketplace</span>
+                              <span className="text-[11px] text-muted-foreground">
+                                ใช้เป็นยอดพร้อมขายแยกสี/ไซซ์/ตัวเลือกของแต่ละ marketplace ไม่ใช่ยอดบัญชีสต๊อกจริง
+                              </span>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => addDimensionStock(barcodeIdx, holdingCode)}
+                            >
+                              <Plus className="mr-1 h-3.5 w-3.5" />
+                              เพิ่มมิติ
+                            </Button>
+                          </div>
+
+                          {(!mapping.marketplace_dimension_stocks || mapping.marketplace_dimension_stocks.length === 0) ? (
+                            <p className="rounded border border-dashed border-border px-2 py-2 text-center text-xs text-muted-foreground">
+                              ยังไม่มียอดคงเหลือตามมิติ
+                            </p>
+                          ) : (
+                            <div className="space-y-2">
+                              {mapping.marketplace_dimension_stocks.map((dimensionStock, rowIdx) => (
+                                <div
+                                  key={`${dimensionStock.dimension_key || "dimension"}-${rowIdx}`}
+                                  className="grid gap-2 rounded-md border border-border/60 bg-muted/10 p-2 lg:grid-cols-[minmax(110px,1fr)_minmax(120px,1fr)_minmax(120px,1fr)_repeat(4,minmax(86px,0.75fr))_36px]"
+                                >
+                                  <FieldRow label="รหัสมิติ">
+                                    <Input
+                                      value={dimensionStock.dimension_key}
+                                      placeholder="color:red|size:m"
+                                      onChange={(e) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { dimension_key: e.target.value })}
+                                    />
+                                  </FieldRow>
+                                  <FieldRow label="ชื่อมิติ">
+                                    <Input
+                                      value={dimensionStock.dimension_name}
+                                      placeholder="แดง / M"
+                                      onChange={(e) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { dimension_name: e.target.value })}
+                                    />
+                                  </FieldRow>
+                                  <FieldRow label="รหัสมิติบนเว็บ">
+                                    <Input
+                                      value={dimensionStock.market_dimension_id}
+                                      placeholder="model id"
+                                      onChange={(e) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { market_dimension_id: e.target.value })}
+                                    />
+                                  </FieldRow>
+                                  <FieldRow label="พร้อมขาย">
+                                    <NumberField
+                                      value={dimensionStock.available_qty}
+                                      onChange={(n) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { available_qty: n })}
+                                      min={0}
+                                    />
+                                  </FieldRow>
+                                  <FieldRow label="จอง">
+                                    <NumberField
+                                      value={dimensionStock.reserved_qty}
+                                      onChange={(n) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { reserved_qty: n })}
+                                      min={0}
+                                    />
+                                  </FieldRow>
+                                  <FieldRow label="รับเข้า">
+                                    <NumberField
+                                      value={dimensionStock.inbound_qty}
+                                      onChange={(n) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { inbound_qty: n })}
+                                      min={0}
+                                    />
+                                  </FieldRow>
+                                  <FieldRow label="กัน oversell">
+                                    <NumberField
+                                      value={dimensionStock.oversell_buffer_qty}
+                                      onChange={(n) => updateDimensionStock(barcodeIdx, holdingCode, rowIdx, { oversell_buffer_qty: n })}
+                                      min={0}
+                                    />
+                                  </FieldRow>
+                                  <div className="flex items-end justify-end">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="size-8 text-destructive hover:bg-destructive/10"
+                                      onClick={() => removeDimensionStock(barcodeIdx, holdingCode, rowIdx)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
                         {/* TikTok Shop variant logistics packages */}

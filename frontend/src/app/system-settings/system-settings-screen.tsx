@@ -2431,9 +2431,9 @@ export function SystemSettingsScreen({
                 </Button>
               </div>
               <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  className="pl-9 h-9"
+                  className="h-9 !pl-10"
                   placeholder={language === "th" ? "ค้นหาสูตร..." : "Search recipe..."}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -2712,7 +2712,7 @@ export function SystemSettingsScreen({
                 <label className="relative block min-w-0">
                   <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    className="h-8 pl-9"
+                    className="h-8 !pl-10"
                     placeholder={`${text("search")} ${title}`}
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
@@ -5205,7 +5205,7 @@ function StandardUnitDialog({
           <label className="relative block min-w-0">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              className="pl-9"
+              className="!pl-10"
               placeholder={text("search")}
               value={dialog.query}
               onChange={(event) => onQueryChange(event.target.value)}
@@ -6450,9 +6450,9 @@ function UserAccessAuditReportPanel({
         <div className="grid gap-2 md:grid-cols-[minmax(260px,0.45fr)_minmax(360px,1fr)]">
           <div className="grid gap-2 rounded-xl border border-border bg-muted/20 p-2">
             <label className="relative">
-              <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                className="h-9 pl-9 text-sm"
+                className="h-9 !pl-10 text-sm"
                 placeholder={language === "th" ? "ค้นหาผู้ใช้งาน" : "Search users"}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
@@ -11732,7 +11732,7 @@ function BranchPickerDialog({
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             autoFocus
-            className="h-9 pl-9"
+            className="h-9 !pl-10"
             placeholder={searchPlaceholder}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -12316,7 +12316,7 @@ function BranchUnifiedView({
         <label className="relative block">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            className="h-8 pl-9"
+            className="h-8 !pl-10"
             placeholder={`${text("search")} ${branchDisplayLabel(language)}`}
             value={query}
             onChange={(event) => setQuery(event.target.value)}

@@ -906,7 +906,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
         <aside className="flex max-h-dvh min-w-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain border-b border-border bg-card/80 p-3 lg:sticky lg:top-0 lg:h-dvh lg:border-b-0 lg:border-r">
           <label className="relative mb-3 block">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input className="pl-9" placeholder={mt(backendLanguage, "searchMenu")} value={globalSearch} onChange={(event) => setGlobalSearch(event.target.value)} />
+            <Input className="!pl-10" placeholder={mt(backendLanguage, "searchMenu")} value={globalSearch} onChange={(event) => setGlobalSearch(event.target.value)} />
           </label>
 
           <nav aria-label={mt(backendLanguage, "navigation")} className="grid w-full max-w-full gap-2" role="tree">
@@ -1000,7 +1000,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                 </div>
                 <label className="relative min-w-52 flex-[1_1_22rem]">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input className="h-8 pl-9" placeholder={mt(backendLanguage, "searchMenu")} value={globalSearch} onChange={(event) => setGlobalSearch(event.target.value)} />
+                  <Input className="h-8 !pl-10" placeholder={mt(backendLanguage, "searchMenu")} value={globalSearch} onChange={(event) => setGlobalSearch(event.target.value)} />
                 </label>
                 <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1.5">
                 <Button variant="outline" size="icon" className="h-8 w-8" aria-label={backendText(backendLanguage, "notification")}>

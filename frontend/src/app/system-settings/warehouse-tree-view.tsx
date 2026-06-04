@@ -933,9 +933,9 @@ export function WarehouseTreeView({
                   ? "ค้นหาคลังสินค้า โซน หรือชั้นวาง..."
                   : "Search warehouse, location, or shelf..."
               }
-              className="h-8 text-xs pl-8 pr-3 rounded-lg"
+              className="h-8 !pl-10 pr-3 text-xs rounded-lg"
             />
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/60">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60">
               <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
