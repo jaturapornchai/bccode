@@ -1683,7 +1683,7 @@ function Toggle({
   disabled?: boolean;
 }) {
   return (
-    <label className={cn("flex cursor-pointer items-center gap-2 text-sm", disabled && "cursor-not-allowed opacity-60")}>
+    <label className={cn("flex w-auto cursor-pointer items-center gap-2 text-sm", disabled && "cursor-not-allowed opacity-60")}>
       <input
         type="checkbox"
         checked={checked}
@@ -1717,7 +1717,7 @@ function RadioOptionGroup<T extends RadioOptionValue>({
           <label
             key={String(option.value)}
             className={cn(
-              "flex min-h-8 cursor-pointer items-center gap-2 text-sm",
+              "flex min-h-8 w-auto cursor-pointer items-center gap-2 text-sm",
               option.disabled && "cursor-not-allowed opacity-60",
             )}
           >
