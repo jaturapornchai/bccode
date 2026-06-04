@@ -1402,20 +1402,23 @@ const [pickerType, setPickerType] = useState<string>("");
             </form>
           ) : selectedProduct ? (
             /* Product View Details Mode (Aligned with ProductBarcodeDetail layout) */
-            <Card className="min-w-0 overflow-hidden xl:flex xl:h-full xl:min-h-0 xl:flex-col shadow-sm border border-border bg-card">
-              <CardHeader className="shrink-0 border-b border-border p-4 bg-muted/5">
+            <Card className="min-w-0 overflow-hidden xl:flex xl:h-full xl:min-h-0 xl:flex-col shadow-md border border-border bg-card rounded-2xl relative">
+              {/* Top Accent line */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-primary/80 to-primary/40" />
+
+              <CardHeader className="shrink-0 border-b border-border p-5 bg-muted/5">
                 <div className="flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">{text.detailTitle}</span>
-                    <h3 className="text-xl font-bold text-foreground truncate mt-0.5">{selectedProduct.code}</h3>
-                    <p className="text-sm text-muted-foreground truncate mt-0.5">{pickName(selectedProduct.names, lang)}</p>
+                  <div className="min-w-0 space-y-1">
+                    <span className="text-[9px] font-bold text-primary uppercase tracking-widest block">{text.detailTitle}</span>
+                    <h3 className="text-2xl font-extrabold text-foreground break-words whitespace-normal leading-tight">{selectedProduct.code}</h3>
+                    <p className="text-sm font-semibold text-muted-foreground break-words whitespace-normal mt-0.5 leading-snug">{pickName(selectedProduct.names, lang)}</p>
                   </div>
                   <div className="flex flex-wrap justify-end gap-2 shrink-0">
-                    <Button variant="outline" size="sm" onClick={() => handleEditOpen(selectedProduct)}>
-                      <Pencil className="h-4 w-4 mr-1 text-primary" />
+                    <Button variant="outline" size="sm" className="rounded-lg font-bold text-xs h-9 cursor-pointer" onClick={() => handleEditOpen(selectedProduct)}>
+                      <Pencil className="h-4 w-4 mr-1 text-primary animate-pulse" />
                       {text.edit}
                     </Button>
-                    <Button variant="destructive" size="sm" onClick={() => void handleDelete(selectedProduct)}>
+                    <Button variant="destructive" size="sm" className="rounded-lg font-bold text-xs h-9 cursor-pointer" onClick={() => void handleDelete(selectedProduct)}>
                       <Trash2 className="h-4 w-4 mr-1" />
                       {text.delete}
                     </Button>
@@ -1494,14 +1497,14 @@ const [pickerType, setPickerType] = useState<string>("");
 
                 {/* 5. Manufacturers & Suppliers */}
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <section className="rounded-2xl border border-border p-3 space-y-2 bg-background">
-                    <h3 className="text-sm font-semibold">{text.manufacturers}</h3>
+                  <section className="rounded-xl border border-border/60 bg-muted/5 p-4 space-y-3">
+                    <h3 className="text-xs font-bold text-primary/80 uppercase tracking-wider border-b border-border/40 pb-2">{text.manufacturers}</h3>
                     {(!selectedProduct.manufacturers || selectedProduct.manufacturers.length === 0) ? (
                       <p className="text-xs text-muted-foreground italic py-1">{text.noManufacturerInfo}</p>
                     ) : (
-                      <div className="space-y-1">
+                      <div className="space-y-2">
                         {selectedProduct.manufacturers.map((m) => (
-                          <div key={m.guid_fixed} className="bg-muted/40 p-2 rounded text-xs border border-border/40 truncate">
+                          <div key={m.guid_fixed} className="bg-background/60 backdrop-blur-sm p-3 rounded-lg border border-border/50 text-xs font-bold text-foreground hover:border-primary/30 hover:shadow-sm transition-all duration-300 break-words whitespace-normal">
                             {m.code} — {pickName(m.names, lang)}
                           </div>
                         ))}
@@ -1509,14 +1512,14 @@ const [pickerType, setPickerType] = useState<string>("");
                     )}
                   </section>
 
-                  <section className="rounded-2xl border border-border p-3 space-y-2 bg-background">
-                    <h3 className="text-sm font-semibold">{text.suppliers}</h3>
+                  <section className="rounded-xl border border-border/60 bg-muted/5 p-4 space-y-3">
+                    <h3 className="text-xs font-bold text-primary/80 uppercase tracking-wider border-b border-border/40 pb-2">{text.suppliers}</h3>
                     {(!selectedProduct.suppliers || selectedProduct.suppliers.length === 0) ? (
                       <p className="text-xs text-muted-foreground italic py-1">{text.noSupplierInfo}</p>
                     ) : (
-                      <div className="space-y-1">
+                      <div className="space-y-2">
                         {selectedProduct.suppliers.map((s) => (
-                          <div key={s.guid_fixed} className="bg-muted/40 p-2 rounded text-xs border border-border/40 truncate">
+                          <div key={s.guid_fixed} className="bg-background/60 backdrop-blur-sm p-3 rounded-lg border border-border/50 text-xs font-bold text-foreground hover:border-primary/30 hover:shadow-sm transition-all duration-300 break-words whitespace-normal">
                             {s.code} — {pickName(s.names, lang)}
                           </div>
                         ))}
@@ -2894,9 +2897,9 @@ type DetailFieldItem = {
 
 function DetailSection({ fields, title }: { fields: DetailFieldItem[]; title: string }) {
   return (
-    <section className="rounded-2xl border border-border p-3">
-      <h3 className="mb-2 text-sm font-semibold">{title}</h3>
-      <div className="grid gap-2 sm:grid-cols-2">
+    <section className="rounded-xl border border-border/60 bg-muted/5 p-4 space-y-3">
+      <h3 className="text-xs font-bold text-primary/80 uppercase tracking-wider border-b border-border/40 pb-2">{title}</h3>
+      <div className="grid gap-3 sm:grid-cols-2">
         {fields.map((field) => (
           <DetailField key={`${title}-${field.label}`} label={field.label} value={field.value} />
         ))}
@@ -2907,9 +2910,9 @@ function DetailSection({ fields, title }: { fields: DetailFieldItem[]; title: st
 
 function DetailField({ label, value }: DetailFieldItem) {
   return (
-    <div className="min-w-0 rounded-xl border border-border bg-background p-2">
-      <p className="text-xs font-semibold text-muted-foreground">{label}</p>
-      <p className="mt-1 break-words text-sm font-medium">{value || "-"}</p>
+    <div className="min-w-0 rounded-xl border border-border/50 bg-background/60 backdrop-blur-sm p-3 hover:border-primary/30 hover:shadow-sm transition-all duration-300">
+      <p className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-wider">{label}</p>
+      <p className="mt-1 break-words text-sm font-bold text-foreground leading-normal">{value || "-"}</p>
     </div>
   );
 }
