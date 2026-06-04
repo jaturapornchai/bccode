@@ -1893,6 +1893,7 @@ type ProductVariantTemplateRecord = {
   code?: string;
   names?: NameX[] | Record<string, string>;
   option_tiers?: unknown;
+  sku_combinations?: unknown;
 };
 
 type ProductVariantTemplateOptionTier = {
@@ -1908,6 +1909,16 @@ type ProductVariantTemplateValue = {
   value_text?: string;
   name?: string;
   names?: NameX[] | Record<string, string>;
+};
+
+type ProductVariantTemplateSku = {
+  seller_sku?: string;
+  barcode?: string;
+  gtin?: string;
+  option_values?: unknown;
+  sale_price?: number | string;
+  cost?: number | string;
+  opening_stock?: number | string;
 };
 
 function TabProductMedia({
@@ -2288,7 +2299,9 @@ function ProductOptionsEditor({
   const [templates, setTemplates] = useState<ProductVariantTemplateRecord[]>([]);
   const [templateLoading, setTemplateLoading] = useState(false);
   const [templateError, setTemplateError] = useState("");
+  const [templatePanelOpen, setTemplatePanelOpen] = useState(true);
   const [selectedTemplateCode, setSelectedTemplateCode] = useState("");
+  const [selectedSkuTemplateKey, setSelectedSkuTemplateKey] = useState("");
   const setOptions = useCallback(
     (mutator: (rows: ProductOption[]) => ProductOption[]) =>
       onChange((c) => c ? ({ ...c, options: mutator(c.options || []) } as Product) : null),
@@ -2331,6 +2344,7 @@ function ProductOptionsEditor({
       const nextTemplates = rows.filter(isRecordLike) as ProductVariantTemplateRecord[];
       setTemplates(nextTemplates);
       setSelectedTemplateCode((current) => current || templateRecordKey(nextTemplates[0]) || "");
+      setSelectedSkuTemplateKey("");
     } catch (error) {
       setTemplates([]);
       setTemplateError(error instanceof Error ? error.message : "โหลดแม่แบบไม่สำเร็จ");
@@ -2344,9 +2358,18 @@ function ProductOptionsEditor({
   }, [loadTemplates]);
 
   const selectedTemplate = templates.find((item) => templateRecordKey(item) === selectedTemplateCode);
+  const templateSkuRows = selectedTemplate ? templateSkuCombinationRows(selectedTemplate) : [];
+  const selectedTemplateSku = templateSkuRows.find(
+    (sku, index) => templateSkuKey(sku, index) === selectedSkuTemplateKey,
+  );
   const applySelectedTemplate = () => {
     if (!selectedTemplate) return;
-    const nextOptions = productOptionsFromVariantTemplate(selectedTemplate, shopLanguages, language);
+    const nextOptions = productOptionsFromVariantTemplate(
+      selectedTemplate,
+      shopLanguages,
+      language,
+      selectedTemplateSku,
+    );
     if (nextOptions.length === 0) {
       setTemplateError(language === "th" ? "แม่แบบนี้ยังไม่มีแกนตัวเลือก" : "This template has no option tiers.");
       return;
@@ -2365,23 +2388,54 @@ function ProductOptionsEditor({
     <Section
       title={isSetOnly ? "จัดการตัวเลือกสินค้าในชุด (เช่น เลือก Case, RAM, CPU, สี)" : textOpt.options}
       action={
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            setOptions((rows) => [
-              ...rows,
-              { guid: cryptoRandomId(), names: [], choicetype: 0, choices: [] },
-            ])
-          }
-        >
-          <Plus className="mr-1 h-4 w-4" />
-          {textOpt.optionAdd}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant={templatePanelOpen ? "default" : "outline"}
+            size="sm"
+            onClick={() => setTemplatePanelOpen((current) => !current)}
+          >
+            <Box className="mr-1 h-4 w-4" />
+            {language === "th" ? "แม่แบบ" : "Template"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setOptions((rows) => [
+                ...rows,
+                { guid: cryptoRandomId(), names: [], choicetype: 0, choices: [] },
+              ])
+            }
+          >
+            <Plus className="mr-1 h-4 w-4" />
+            {textOpt.optionAdd}
+          </Button>
+        </div>
       }
     >
-      <div className="mb-3 grid gap-2 rounded-md border border-primary/20 bg-primary/5 p-3">
+      {templatePanelOpen ? (
+      <div className="mb-3 grid gap-2 rounded-md border border-primary/30 bg-primary/5 p-3 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-primary/15 pb-2">
+          <div className="flex items-center gap-2">
+            <Badge className="rounded-md" variant="secondary">
+              {language === "th" ? "แม่แบบ" : "Template"}
+            </Badge>
+            <span className="text-sm font-semibold">
+              {language === "th" ? "เลือกจากชุดตัวเลือกหรือ SKU ที่เคยตั้งไว้" : "Use a saved option set or SKU as template"}
+            </span>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setTemplatePanelOpen(false)}
+          >
+            <X className="mr-1 h-4 w-4" />
+            {language === "th" ? "ซ่อน" : "Hide"}
+          </Button>
+        </div>
         <div className="flex flex-wrap items-end gap-2">
           <FieldRow
             label={language === "th" ? "ใช้แม่แบบชุดตัวเลือก" : "Use option set template"}
@@ -2394,7 +2448,10 @@ function ProductOptionsEditor({
             <select
               className="h-10 w-full rounded-md border border-input bg-background px-2 text-sm"
               value={selectedTemplateCode}
-              onChange={(event) => setSelectedTemplateCode(event.target.value)}
+              onChange={(event) => {
+                setSelectedTemplateCode(event.target.value);
+                setSelectedSkuTemplateKey("");
+              }}
               disabled={templateLoading || templates.length === 0}
             >
               <option value="">
@@ -2413,15 +2470,51 @@ function ProductOptionsEditor({
               ))}
             </select>
           </FieldRow>
+          <FieldRow
+            label={language === "th" ? "เลือก SKU แม่แบบ" : "SKU template"}
+            hint={
+              language === "th"
+                ? "เลือก SKU ตัวอย่างเพื่อเติมเฉพาะสี/ไซซ์/ตัวเลือกของ SKU นั้น หรือเลือกทั้งหมดเพื่อใช้ทั้งชุด"
+                : "Pick a SKU sample to apply only that SKU's options, or use all options from the set."
+            }
+          >
+            <select
+              className="h-10 w-full rounded-md border border-input bg-background px-2 text-sm"
+              value={selectedSkuTemplateKey}
+              onChange={(event) => setSelectedSkuTemplateKey(event.target.value)}
+              disabled={!selectedTemplate || templateSkuRows.length === 0}
+            >
+              <option value="">
+                {templateSkuRows.length === 0
+                  ? language === "th"
+                    ? "ไม่มีรายการ SKU ในแม่แบบนี้"
+                    : "No SKU rows in this template"
+                  : language === "th"
+                    ? "ใช้ทุกค่าตัวเลือกในชุด"
+                    : "Use all option values"}
+              </option>
+              {templateSkuRows.map((sku, index) => (
+                <option key={templateSkuKey(sku, index)} value={templateSkuKey(sku, index)}>
+                  {templateSkuDisplayName(sku, index, language)}
+                </option>
+              ))}
+            </select>
+          </FieldRow>
           <Button
-            className="h-10"
+            className="h-10 bg-primary text-primary-foreground hover:bg-primary/90"
             type="button"
-            variant="outline"
+            variant="default"
             onClick={applySelectedTemplate}
             disabled={!selectedTemplate || templateLoading}
           >
             <Check className="mr-1 h-4 w-4" />
-            {language === "th" ? "ใช้แม่แบบ" : "Apply template"}
+            {selectedTemplateSku
+              ? language === "th"
+                ? "ใช้ SKU แม่แบบ"
+                : "Apply SKU template"
+              : language === "th"
+                ? "ใช้แม่แบบ"
+                : "Apply template"}
           </Button>
           <Button
             className="h-10"
@@ -2435,14 +2528,16 @@ function ProductOptionsEditor({
           </Button>
         </div>
         {selectedTemplate ? (
-          <p className="text-xs font-medium text-muted-foreground">
-            {templateOptionOrderText(selectedTemplate, language)}
-          </p>
+          <div className="grid gap-1 text-xs font-medium text-muted-foreground">
+            <p>{templateOptionOrderText(selectedTemplate, language)}</p>
+            <p>{templateSkuSummaryText(selectedTemplate, language)}</p>
+          </div>
         ) : null}
         {templateError ? (
           <p className="text-xs font-semibold text-destructive">{templateError}</p>
         ) : null}
       </div>
+      ) : null}
       {(!value.options || value.options.length === 0) ? (
         <p className="text-sm text-muted-foreground">—</p>
       ) : (
@@ -2694,15 +2789,23 @@ function productOptionsFromVariantTemplate(
   template: ProductVariantTemplateRecord,
   shopLanguages: string[],
   language: string,
+  skuTemplate?: ProductVariantTemplateSku,
 ): ProductOption[] {
   const tiers = variantTemplateArray(template.option_tiers)
     .map((item) => item as ProductVariantTemplateOptionTier)
     .sort((first, second) => Number(first.tier_no ?? 0) - Number(second.tier_no ?? 0));
+  const skuOptionValues = skuTemplate
+    ? variantTemplateScalarArray(skuTemplate.option_values)
+    : [];
   return tiers
     .map((tier, index) => {
-      const values = variantTemplateArray(tier.values).map(
+      const allValues = variantTemplateArray(tier.values).map(
         (item) => item as ProductVariantTemplateValue,
       );
+      const selectedSkuValue = skuOptionValues[index];
+      const values = selectedSkuValue
+        ? [findTemplateValue(allValues, selectedSkuValue)]
+        : allValues;
       const tierLabel =
         variantTemplateLocalizedText(tier.names, language) ||
         tier.name ||
@@ -2764,11 +2867,98 @@ function templateOptionOrderText(template: ProductVariantTemplateRecord, languag
     : `Customer choice order: ${names.join(" > ")}`;
 }
 
+function templateSkuCombinationRows(template: ProductVariantTemplateRecord): ProductVariantTemplateSku[] {
+  return variantTemplateArray(template.sku_combinations)
+    .filter(isRecordLike)
+    .map((item) => item as ProductVariantTemplateSku);
+}
+
+function templateSkuKey(sku: ProductVariantTemplateSku, index: number): string {
+  return [
+    sku.seller_sku,
+    sku.barcode,
+    sku.gtin,
+    variantTemplateScalarArray(sku.option_values).join("|"),
+    index,
+  ]
+    .filter((item) => String(item ?? "").trim())
+    .join("::");
+}
+
+function templateSkuDisplayName(
+  sku: ProductVariantTemplateSku,
+  index: number,
+  language: string,
+): string {
+  const optionText = variantTemplateScalarArray(sku.option_values).join(" / ");
+  const identity = [sku.seller_sku, sku.barcode || sku.gtin]
+    .map((item) => String(item ?? "").trim())
+    .filter(Boolean)
+    .join(" / ");
+  const price = sku.sale_price || sku.cost
+    ? [
+        sku.sale_price ? `${language === "th" ? "ขาย" : "price"} ${sku.sale_price}` : "",
+        sku.cost ? `${language === "th" ? "ทุน" : "cost"} ${sku.cost}` : "",
+      ].filter(Boolean).join(", ")
+    : "";
+  return [
+    `${language === "th" ? "SKU" : "SKU"} ${index + 1}`,
+    optionText,
+    identity,
+    price,
+  ].filter(Boolean).join(" - ");
+}
+
+function templateSkuSummaryText(
+  template: ProductVariantTemplateRecord,
+  language: string,
+): string {
+  const count = templateSkuCombinationRows(template).length;
+  return language === "th"
+    ? `มี SKU ในแม่แบบ ${count} รายการให้เลือกใช้`
+    : `${count} SKU rows are available as templates.`;
+}
+
+function findTemplateValue(
+  values: ProductVariantTemplateValue[],
+  selectedValue: string,
+): ProductVariantTemplateValue {
+  const normalized = selectedValue.trim().toLowerCase();
+  const matched = values.find((value) => {
+    const candidates = [
+      value.value_code,
+      value.value_text,
+      value.name,
+      variantTemplateLocalizedText(value.names, "th"),
+      variantTemplateLocalizedText(value.names, "en"),
+    ];
+    return candidates.some(
+      (candidate) => String(candidate ?? "").trim().toLowerCase() === normalized,
+    );
+  });
+  return matched ?? { value_code: selectedValue, value_text: selectedValue };
+}
+
 function variantTemplateArray(value: unknown): unknown[] {
   if (Array.isArray(value)) return value;
   if (typeof value !== "string") return [];
   const parsed = safeProductJsonParse(value.trim() || "[]", []);
   return Array.isArray(parsed) ? parsed : [];
+}
+
+function variantTemplateScalarArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item ?? "").trim()).filter(Boolean);
+  }
+  if (typeof value === "string") {
+    const parsed = safeProductJsonParse(value.trim(), undefined);
+    if (Array.isArray(parsed)) return variantTemplateScalarArray(parsed);
+    return value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return [];
 }
 
 function variantTemplateLocalizedText(value: unknown, language: string): string {
