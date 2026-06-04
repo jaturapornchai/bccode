@@ -866,6 +866,31 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
       </header>
       ) : null}
 
+      {embedded ? (
+        <div className="flex shrink-0 items-center justify-between border-b border-border bg-card px-4 py-3">
+          <div>
+            <h2 className="text-lg font-bold">{text.title}</h2>
+            <p className="text-xs text-muted-foreground">{text.subtitle}</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" type="button" onClick={() => void loadBarcodes()} disabled={loading}>
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCcw size={16} />}
+              {text.refresh}
+            </Button>
+            {selected ? (
+              <Button size="sm" type="button" onClick={() => void openCopyEditor()}>
+                <Copy size={16} />
+                เพิ่ม (Copy)
+              </Button>
+            ) : null}
+            <Button size="sm" type="button" onClick={() => void openCreateEditor()}>
+              <Plus size={16} />
+              {text.add}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       {notice ? (
         <div
           className={cn(
@@ -917,10 +942,6 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
               </Button>
               {embedded ? (
                 <>
-                  <Button variant="outline" size="sm" type="button" onClick={() => void loadBarcodes()} disabled={loading}>
-                    <RefreshCcw size={16} />
-                    {text.refresh}
-                  </Button>
                   <Button variant="outline" size="sm" type="button" onClick={exportCsv} disabled={items.length === 0}>
                     <Download size={16} />
                     {text.export}
@@ -940,16 +961,6 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
                   <Button variant="outline" size="sm" type="button" onClick={() => void deleteSelected()} disabled={!selectMode || checkedBarcodes.length === 0}>
                     <Trash2 size={16} />
                     {checkedBarcodes.length || ""}
-                  </Button>
-                  {selected ? (
-                    <Button size="sm" type="button" onClick={() => void openCopyEditor()}>
-                      <Copy size={16} />
-                      เพิ่ม (Copy)
-                    </Button>
-                  ) : null}
-                  <Button size="sm" type="button" onClick={() => void openCreateEditor()}>
-                    <Plus size={16} />
-                    {text.add}
                   </Button>
                 </>
               ) : null}
@@ -1090,7 +1101,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
             embedded
           />
         ) : (
-          <ProductBarcodeDetail item={selected} onCopy={() => void openCopyEditor()} onDelete={() => void deleteCurrentItem()} onEdit={() => void openEditEditor()} text={text} />
+          <ProductBarcodeDetail item={selected} onDelete={() => void deleteCurrentItem()} onEdit={() => void openEditEditor()} text={text} />
         )}
       </div>
       {selected && !editorOpen ? (
@@ -1241,13 +1252,11 @@ function BarcodeRow({
 
 function ProductBarcodeDetail({
   item,
-  onCopy,
   onDelete,
   onEdit,
   text,
 }: {
   item: ProductBarcodeRecord | null;
-  onCopy: () => void;
   onDelete: () => void;
   onEdit: () => void;
   text: BarcodeText;
@@ -1372,10 +1381,6 @@ function ProductBarcodeDetail({
             {text.detailTitle}
           </CardTitle>
           <div className="flex flex-wrap justify-end gap-2">
-            <Button disabled={!item} onClick={onCopy} size="sm" variant="outline">
-              <Copy size={16} />
-              {text.copy}
-            </Button>
             <Button disabled={!item} onClick={onDelete} size="sm" variant="outline">
               <Trash2 size={16} />
               {text.delete}
