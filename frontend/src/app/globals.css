@@ -312,6 +312,14 @@ button {
   appearance: none;
 }
 
+input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]),
+textarea {
+  background-color: transparent !important;
+  background: transparent !important;
+  padding: 0px 4px !important;
+  margin: 0px !important;
+}
+
 main,
 section,
 form,
@@ -396,47 +404,7 @@ main.min-h-screen header.bg-card {
     var(--panel-strong);
   box-shadow: var(--shadow-card);
 }
-
-
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-
-button {
-  appearance: none;
-}
-
-main,
-section,
-form,
-fieldset,
-label,
-textarea {
-  width: 100%;
-  max-width: 100%;
-}
-
-a {
-  color: var(--indigo);
-  font-weight: 700;
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
-main.min-h-dvh,
-main.min-h-screen,
-main.bg-background {
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--primary) 8%, transparent), transparent 38%),
-    linear-gradient(315deg, color-mix(in srgb, var(--amber) 8%, transparent), transparent 34%),
-    var(--bg);
-}
+/* Duplicate base styles block removed */
 
 .bg-background {
   background-color: var(--bg);

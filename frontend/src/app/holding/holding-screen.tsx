@@ -5,6 +5,7 @@ import {
   ArrowRight,
   Building2,
   CheckCircle2,
+  GitBranch,
   KeyRound,
   Loader2,
   LogOut,
@@ -1061,40 +1062,88 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
 
                 return (
                   <div
-                    className="shop-card holding-card"
+                    className="group/card relative flex items-center justify-between p-4 rounded-xl border border-border/60 bg-card/75 backdrop-blur-md overflow-hidden shadow-sm hover:shadow-md hover:border-primary/30 hover:scale-[1.01] transition-all duration-300 gap-3"
                     key={holdingCode || index}
                   >
+                    {/* Left color ribbon indicator */}
+                    <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${
+                      index % 2 === 0 ? "from-primary to-primary/60" : "from-teal-600 to-teal-500/60"
+                    }`} />
+
+                    {/* Left side: Avatar + Holding details */}
                     <button
-                      className="holding-card-select"
+                      className="flex-1 flex items-center gap-3 text-left border-0 bg-transparent p-0 cursor-pointer disabled:cursor-wait"
                       disabled={Boolean(busyHoldingCode)}
                       onClick={() => void selectHolding(shop)}
                       type="button"
                     >
-                      <span className={`shop-avatar tone-${index % 6}`}>
-                        {busy ? <Loader2 className="spin" aria-hidden="true" size={20} /> : <Building2 aria-hidden="true" size={20} />}
+                      {/* Avatar */}
+                      <span className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-300 group-hover/card:scale-105 group-hover/card:rotate-2 ${
+                        index % 2 === 0
+                          ? "bg-primary/10 text-primary"
+                          : "bg-teal-500/10 text-teal-600 dark:text-teal-400"
+                      }`}>
+                        {busy ? (
+                          <Loader2 className="spin" aria-hidden="true" size={18} />
+                        ) : (
+                          <Building2 aria-hidden="true" size={18} />
+                        )}
                       </span>
-                      <span className="shop-main">
-                        <strong>{shopDisplayName(shop)}</strong>
-                        <small>{ht(language, "holdingCode")}: {holdingCode}</small>
-                      </span>
-                      <span className="shop-badges">
-                        {companyCount > 0 ? <b>{companyCount}</b> : null}
-                        {branchCount > 0 ? <em>{branchCount}</em> : null}
-                        <b>{ht(language, "choose")} <ArrowRight aria-hidden="true" size={13} /></b>
-                      </span>
+
+                      {/* Info & Badges */}
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex flex-wrap items-baseline gap-x-2">
+                          <strong className="text-sm font-bold text-foreground tracking-tight leading-snug group-hover/card:text-primary transition-colors duration-200">
+                            {shopDisplayName(shop)}
+                          </strong>
+                          <span className="font-mono text-[9px] px-1.5 py-0.2 bg-muted border border-border/50 text-muted-foreground rounded uppercase font-bold shrink-0">
+                            {holdingCode}
+                          </span>
+                        </div>
+
+                        {/* Horizontal stats */}
+                        <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                          {companyCount > 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/5 text-primary border border-primary/10">
+                              <Building2 size={10} />
+                              <span>{companyCount} {language === "th" ? "บริษัท" : "Companies"}</span>
+                            </span>
+                          ) : null}
+                          {branchCount > 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-500/5 text-teal-600 dark:text-teal-400 border border-teal-500/10">
+                              <GitBranch size={10} />
+                              <span>{branchCount} {language === "th" ? "สาขา" : "Branches"}</span>
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
                     </button>
-                    {canEdit ? (
+
+                    {/* Right side: Edit & Choose actions */}
+                    <div className="flex items-center gap-1.5 shrink-0 z-10">
+                      {canEdit ? (
+                        <button
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/5 border border-transparent hover:border-primary/10 transition-all cursor-pointer"
+                          disabled={Boolean(busyHoldingCode || savingHoldingCode)}
+                          onClick={() => startEditHolding(shop)}
+                          type="button"
+                          aria-label={`${ht(language, "edit")} ${shopDisplayName(shop)}`}
+                          title={ht(language, "edit")}
+                        >
+                          <Pencil aria-hidden="true" size={14} />
+                        </button>
+                      ) : null}
+
                       <button
-                        className="icon-button holding-edit-button"
-                        disabled={Boolean(busyHoldingCode || savingHoldingCode)}
-                        onClick={() => startEditHolding(shop)}
+                        className="h-8 px-3.5 rounded-lg flex items-center gap-1 text-[11px] font-bold bg-primary text-primary-foreground hover:brightness-110 shadow-sm transition-all cursor-pointer"
+                        disabled={Boolean(busyHoldingCode)}
+                        onClick={() => void selectHolding(shop)}
                         type="button"
-                        aria-label={`${ht(language, "edit")} ${shopDisplayName(shop)}`}
-                        title={ht(language, "edit")}
                       >
-                        <Pencil aria-hidden="true" size={17} />
+                        <span>{ht(language, "choose")}</span>
+                        <ArrowRight aria-hidden="true" size={12} className="transition-transform group-hover/card:translate-x-0.5" />
                       </button>
-                    ) : null}
+                    </div>
                   </div>
                 );
               })}
