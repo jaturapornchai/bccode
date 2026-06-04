@@ -848,7 +848,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
             {selected ? (
               <Button size="sm" onClick={() => void openCopyEditor()}>
                 <Copy size={16} />
-                เพิ่ม (Copy)
+                คัดลอก
               </Button>
             ) : null}
             <Button size="sm" onClick={() => void openCreateEditor()}>
@@ -880,7 +880,7 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
             {selected ? (
               <Button size="sm" type="button" onClick={() => void openCopyEditor()}>
                 <Copy size={16} />
-                เพิ่ม (Copy)
+                คัดลอก
               </Button>
             ) : null}
             <Button size="sm" type="button" onClick={() => void openCreateEditor()}>

@@ -878,7 +878,7 @@ const [pickerType, setPickerType] = useState<string>("");
           {selectedProduct ? (
             <Button variant="default" size="sm" onClick={handleCreateCopyOpen}>
               <Copy className="h-4 w-4" />
-              เพิ่ม (Copy)
+              คัดลอก
             </Button>
           ) : null}
           <Button variant="default" size="sm" onClick={handleCreateOpen}>

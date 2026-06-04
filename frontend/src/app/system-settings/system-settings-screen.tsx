@@ -2787,7 +2787,7 @@ export function SystemSettingsScreen({
                         }
                       >
                         <Copy />
-                        {language === "th" ? "เพิ่ม (Copy)" : "Add (Copy)"}
+                        {language === "th" ? "คัดลอก" : "Copy"}
                       </Button>
                     ) : null}
                     <Button

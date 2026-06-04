@@ -817,7 +817,7 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
           {selectedProduct ? (
             <Button variant="default" size="sm" onClick={handleCreateCopyOpen} className="h-9 bg-primary hover:bg-primary/95 text-primary-foreground font-bold shadow-md shadow-primary/20">
               <Copy className="h-4 w-4 mr-1" />
-              เพิ่ม (Copy)
+              คัดลอก
             </Button>
           ) : null}
           <Button variant="default" size="sm" onClick={handleCreateOpen} className="h-9 bg-primary hover:bg-primary/95 text-primary-foreground font-bold shadow-md shadow-primary/20">
