@@ -589,7 +589,6 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
     base.holding_code = activeHoldingCode;
     const next = rawToProductBarcode(selected.raw, base);
     next.guidfixed = "";
-    next.barcode = "";
     next.holding_code = activeHoldingCode;
     setEditorBarcode(next);
     setEditorOpen(true);
@@ -598,7 +597,6 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
   function copyCurrentEditorValue() {
     const next = JSON.parse(JSON.stringify(editorBarcode)) as ProductBarcodeObject;
     next.guidfixed = "";
-    next.barcode = "";
     next.holding_code = activeHoldingCode;
     setEditorMode("create");
     setEditorGuid("");
@@ -847,6 +845,12 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
               <Trash2 size={16} />
               {checkedBarcodes.length || ""}
             </Button>
+            {selected ? (
+              <Button size="sm" onClick={() => void openCopyEditor()}>
+                <Copy size={16} />
+                เพิ่ม (Copy)
+              </Button>
+            ) : null}
             <Button size="sm" onClick={() => void openCreateEditor()}>
               <Plus size={16} />
               {text.add}
@@ -937,6 +941,12 @@ export function ProductBarcodeScreen({ embedded = false, language = "th" }: Prod
                     <Trash2 size={16} />
                     {checkedBarcodes.length || ""}
                   </Button>
+                  {selected ? (
+                    <Button size="sm" type="button" onClick={() => void openCopyEditor()}>
+                      <Copy size={16} />
+                      เพิ่ม (Copy)
+                    </Button>
+                  ) : null}
                   <Button size="sm" type="button" onClick={() => void openCreateEditor()}>
                     <Plus size={16} />
                     {text.add}

@@ -7,6 +7,7 @@ import {
   Package,
   Pencil,
   Plus,
+  Copy,
   RefreshCw,
   Search,
   Trash2,
@@ -525,6 +526,20 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
     setEditorOpen(true);
   };
 
+  const handleCreateCopyOpen = () => {
+    if (!selectedProduct) return;
+    setEditorMode("create");
+    setEditProduct({
+      ...selectedProduct,
+      guidfixed: "",
+      holding_code: activeHoldingCode,
+      item_type: 2,
+      materialtype: 3,
+    });
+    setActiveTab("general");
+    setEditorOpen(true);
+  };
+
   const handleEditOpen = (p: Product) => {
     setEditorMode("edit");
     setEditProduct({ ...p });
@@ -799,6 +814,12 @@ export function ProductSetScreen({ embedded = false, language = "th" }: ProductS
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             โหลดใหม่
           </Button>
+          {selectedProduct ? (
+            <Button variant="default" size="sm" onClick={handleCreateCopyOpen} className="h-9 bg-primary hover:bg-primary/95 text-primary-foreground font-bold shadow-md shadow-primary/20">
+              <Copy className="h-4 w-4 mr-1" />
+              เพิ่ม (Copy)
+            </Button>
+          ) : null}
           <Button variant="default" size="sm" onClick={handleCreateOpen} className="h-9 bg-primary hover:bg-primary/95 text-primary-foreground font-bold shadow-md shadow-primary/20">
             <Plus className="h-4 w-4 mr-1" />
             สร้างสินค้าชุดใหม่
