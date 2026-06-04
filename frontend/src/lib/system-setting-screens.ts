@@ -1211,7 +1211,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
           },
         },
         {
-          ...jsonField("media_assets", "โครงสร้างรูปภาพ/วิดีโอ", "Media asset structure"),
+          ...jsonField("media_assets", "รูปภาพและวิดีโอสินค้า", "Product media"),
           placeholder: `[{"kind":"main","uri":"images/products/example-main.webp","sort_order":1},{"kind":"sku","option_code":"COLOR","option_value":"BLACK","uri":"images/products/example-black.webp"}]`,
           helper: {
             th: "รองรับรูปหลัก รูปเพิ่มเติม รูปตามตัวเลือก วิดีโอ ตารางไซซ์ และรูปในรายละเอียดสินค้า",
@@ -1227,7 +1227,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
           },
         },
         {
-          ...jsonField("import_attribute_maps", "แผนที่ Attribute นำเข้า", "Import attribute maps"),
+          ...jsonField("import_attribute_maps", "จับคู่ชื่อจากไฟล์นำเข้า", "Import name matching"),
           placeholder: `[{"source_name":"Color","target_option_code":"COLOR"},{"source_name":"Storage","target_option_code":"STORAGE"}]`,
           helper: {
             th: "ใช้แมพชื่อ attribute จากข้อมูลนำเข้าให้เข้ากับแกนตัวเลือกของระบบ โดยไม่ต้องแสดงแหล่งที่มา",
@@ -1235,7 +1235,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
           },
         },
         {
-          ...jsonField("integration_profiles", "โครงสร้างเชื่อมต่อภายนอก", "External integration profiles"),
+          ...jsonField("integration_profiles", "การเชื่อมต่อช่องทางขาย", "Sales channel connections"),
           placeholder: `[{"channel":"external","sku_fields":["seller_sku","barcode","price","stock"]}]`,
           helper: {
             th: "เก็บรายละเอียดสำหรับ import/sync ภายนอกไว้ให้ระบบใช้ ไม่ใช้เป็นข้อความแสดงที่มาของสินค้า",
@@ -1243,11 +1243,11 @@ function productMasterConfigs(): SystemSettingConfig[] {
           },
         },
         {
-          ...jsonField("payload_examples", "ตัวอย่าง payload", "Payload examples"),
+          ...jsonField("payload_examples", "ตัวอย่างข้อมูลนำเข้า/ส่งออก", "Import/export examples"),
           placeholder: `[{"direction":"import","use_case":"product_detail","payload":{"title":"Example","images":[],"attributes":[],"skus":[]}}]`,
           helper: {
-            th: "เก็บตัวอย่าง JSON สำหรับทีมพัฒนา/ตัวนำเข้า ไม่ใช้เป็นข้อความแสดงในหน้าขายปกติ",
-            en: "Stores sample JSON for developers/importers, not as normal product display text.",
+            th: "เก็บตัวอย่างข้อมูลสำหรับทีมพัฒนา/ตัวนำเข้า ไม่ใช้เป็นข้อความแสดงในหน้าขายปกติ",
+            en: "Stores sample data for developers/importers, not as normal product display text.",
           },
         },
         companyMultiSelectField("business_codes", "สิทธิ์การเข้าถึงบริษัท", "Active companies"),

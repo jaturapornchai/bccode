@@ -2,7 +2,9 @@
 
 import {
   AlertCircle,
+  ArrowDown,
   ArrowLeft,
+  ArrowUp,
   BadgeCheck,
   Bot,
   Building2,
@@ -4038,6 +4040,18 @@ function SettingDetailPanel({
               </div>
             );
           }
+          if (isProductVariantStructuredField(config, field)) {
+            return (
+              <div className={fieldGridItemClass(field, config)} key={field.key}>
+                <ProductVariantStructuredReadOnlyDetail
+                  field={field}
+                  label={fieldLabel(field, language, config, dictionary)}
+                  language={language}
+                  value={recordValueForField(record, config, field)}
+                />
+              </div>
+            );
+          }
           if (field.type === "time-sale-list") {
             return (
               <div className={fieldGridItemClass(field, config)} key={field.key}>
@@ -7773,6 +7787,563 @@ function workspaceBusinessCode(workspace: WorkspaceSession | null): string {
   );
 }
 
+const productVariantStructuredFieldKeys = new Set([
+  "option_tiers",
+  "sku_combinations",
+  "media_assets",
+  "specification_groups",
+  "import_attribute_maps",
+  "integration_profiles",
+  "payload_examples",
+]);
+
+type VariantColumn = {
+  key: string;
+  labelTh: string;
+  labelEn: string;
+  kind?: "number" | "csv";
+  placeholder?: string;
+};
+
+const variantFieldColumns: Record<string, VariantColumn[]> = {
+  option_tiers: [
+    { key: "tier_no", labelTh: "ลำดับ", labelEn: "Tier", kind: "number" },
+    { key: "option_code", labelTh: "รหัสแกน", labelEn: "Option code", placeholder: "COLOR" },
+    { key: "name", labelTh: "ชื่อแกน", labelEn: "Option name", placeholder: "สี/Color" },
+  ],
+  sku_combinations: [
+    { key: "seller_sku", labelTh: "SKU", labelEn: "SKU" },
+    { key: "barcode", labelTh: "บาร์โค้ด", labelEn: "Barcode" },
+    { key: "gtin", labelTh: "GTIN", labelEn: "GTIN" },
+    { key: "option_values", labelTh: "ค่าตัวเลือก", labelEn: "Options", kind: "csv", placeholder: "BLACK, 128GB" },
+    { key: "sale_price", labelTh: "ราคาขาย", labelEn: "Price", kind: "number" },
+    { key: "cost", labelTh: "ต้นทุน", labelEn: "Cost", kind: "number" },
+    { key: "opening_stock", labelTh: "สต๊อกต้น", labelEn: "Opening stock", kind: "number" },
+  ],
+  media_assets: [
+    { key: "kind", labelTh: "ชนิดสื่อ", labelEn: "Media type", placeholder: "main / gallery / sku / video" },
+    { key: "uri", labelTh: "ที่อยู่ไฟล์", labelEn: "File path" },
+    { key: "option_code", labelTh: "รหัสแกน", labelEn: "Option code" },
+    { key: "option_value", labelTh: "ค่าตัวเลือก", labelEn: "Option value" },
+    { key: "sort_order", labelTh: "ลำดับ", labelEn: "Sort", kind: "number" },
+  ],
+  specification_groups: [
+    { key: "group_code", labelTh: "รหัสกลุ่ม", labelEn: "Group code" },
+    { key: "group_name", labelTh: "ชื่อกลุ่ม", labelEn: "Group name" },
+  ],
+  import_attribute_maps: [
+    { key: "source_name", labelTh: "ชื่อจากไฟล์นำเข้า", labelEn: "Imported name" },
+    { key: "target_option_code", labelTh: "รหัสแกนในระบบ", labelEn: "System option code" },
+  ],
+  integration_profiles: [
+    { key: "channel", labelTh: "ช่องทาง", labelEn: "Channel", placeholder: "shopee / lazada / external" },
+    { key: "sku_fields", labelTh: "ช่อง SKU", labelEn: "SKU fields", kind: "csv", placeholder: "seller_sku, barcode, price, stock" },
+    { key: "media_keys", labelTh: "ช่องรูป/วิดีโอ", labelEn: "Media keys", kind: "csv" },
+    { key: "price_keys", labelTh: "ช่องราคา", labelEn: "Price keys", kind: "csv" },
+    { key: "stock_keys", labelTh: "ช่องสต๊อก", labelEn: "Stock keys", kind: "csv" },
+  ],
+  payload_examples: [
+    { key: "direction", labelTh: "ทิศทาง", labelEn: "Direction", placeholder: "import / export" },
+    { key: "use_case", labelTh: "กรณีใช้งาน", labelEn: "Use case" },
+    { key: "channel", labelTh: "ช่องทาง", labelEn: "Channel" },
+    { key: "note", labelTh: "หมายเหตุ", labelEn: "Note" },
+  ],
+};
+
+function isProductVariantStructuredField(
+  config: SystemSettingConfig,
+  field: SystemSettingField,
+): boolean {
+  return (
+    config.slug === "product_variant_matrix" &&
+    productVariantStructuredFieldKeys.has(field.key)
+  );
+}
+
+function VariantTemplateFieldEditor({
+  field,
+  form,
+  label,
+  language,
+  setForm,
+}: {
+  field: SystemSettingField;
+  form: FormState;
+  label: string;
+  language: LanguageCode;
+  setForm: (form: FormState) => void;
+}) {
+  const items = variantArrayValue(form[field.key]);
+  const columns = variantFieldColumns[field.key] ?? [];
+  const addLabel = language === "th" ? "เพิ่มรายการ" : "Add item";
+  const emptyText =
+    language === "th"
+      ? "ยังไม่มีรายการ กดเพิ่มรายการเพื่อเริ่มกรอก"
+      : "No items yet. Add an item to start.";
+
+  const setItems = (nextItems: SettingRecord[]) => {
+    setForm({ ...form, [field.key]: nextItems });
+  };
+
+  const updateItem = (index: number, key: string, value: unknown) => {
+    setItems(
+      items.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [key]: value } : item,
+      ),
+    );
+  };
+  const moveItem = (index: number, direction: -1 | 1) => {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= items.length) return;
+    const nextItems = [...items];
+    [nextItems[index], nextItems[nextIndex]] = [
+      nextItems[nextIndex],
+      nextItems[index],
+    ];
+    setItems(
+      field.key === "option_tiers"
+        ? nextItems.map((item, itemIndex) => ({
+            ...item,
+            tier_no: itemIndex + 1,
+          }))
+        : nextItems,
+    );
+  };
+
+  return (
+    <section className="grid gap-2 rounded-2xl border border-border bg-background p-2 text-sm md:col-span-2">
+      <header className="flex flex-wrap items-start justify-between gap-2 border-b border-border pb-2">
+        <div className="grid gap-0.5">
+          <h3 className="text-sm font-semibold">
+            {label}
+            {field.required ? " *" : ""}
+          </h3>
+          {field.helper ? (
+            <p className="text-xs leading-snug text-muted-foreground">
+              {field.helper[language] ?? field.helper.en ?? field.helper.th}
+            </p>
+          ) : null}
+        </div>
+        <Button
+          className="h-8 gap-1 rounded-xl px-2 text-xs"
+          type="button"
+          variant="outline"
+          onClick={() => setItems([...items, defaultVariantItem(field.key, items.length)])}
+        >
+          <Plus className="size-3.5" />
+          {addLabel}
+        </Button>
+      </header>
+      {items.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-3 text-xs text-muted-foreground">
+          {emptyText}
+        </div>
+      ) : (
+        <div className="grid gap-2">
+          {items.map((item, index) => (
+            <article
+              className="grid gap-2 rounded-xl border border-border bg-muted/20 p-2"
+              key={`${field.key}-${index}`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="secondary" className="rounded-lg text-[11px]">
+                    {field.key === "option_tiers"
+                      ? language === "th"
+                        ? `ลำดับเลือก ${index + 1}`
+                        : `Choice order ${index + 1}`
+                      : language === "th"
+                        ? `รายการ ${index + 1}`
+                        : `Item ${index + 1}`}
+                  </Badge>
+                  {field.key === "option_tiers" ? (
+                    <span className="text-[11px] font-medium text-muted-foreground">
+                      {language === "th"
+                        ? "ผู้ใช้เลือกตามลำดับนี้ เช่น สีก่อนไซซ์ หรือไซซ์ก่อนสี"
+                        : "Users choose in this order, such as color before size or size before color."}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="flex items-center gap-1">
+                  {field.key === "option_tiers" ? (
+                    <>
+                      <Button
+                        aria-label={
+                          language === "th" ? "เลื่อนขึ้น" : "Move up"
+                        }
+                        className="size-8 rounded-xl p-0"
+                        disabled={index === 0}
+                        type="button"
+                        variant="outline"
+                        onClick={() => moveItem(index, -1)}
+                      >
+                        <ArrowUp className="size-4" />
+                      </Button>
+                      <Button
+                        aria-label={
+                          language === "th" ? "เลื่อนลง" : "Move down"
+                        }
+                        className="size-8 rounded-xl p-0"
+                        disabled={index === items.length - 1}
+                        type="button"
+                        variant="outline"
+                        onClick={() => moveItem(index, 1)}
+                      >
+                        <ArrowDown className="size-4" />
+                      </Button>
+                    </>
+                  ) : null}
+                  <Button
+                    aria-label={language === "th" ? "ลบรายการ" : "Remove item"}
+                    className="size-8 rounded-xl p-0 text-destructive"
+                    type="button"
+                    variant="outline"
+                    onClick={() =>
+                      setItems(items.filter((_, itemIndex) => itemIndex !== index))
+                    }
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                {columns.map((column) => (
+                  <VariantInput
+                    column={column}
+                    key={column.key}
+                    language={language}
+                    value={item[column.key]}
+                    onChange={(nextValue) => updateItem(index, column.key, nextValue)}
+                  />
+                ))}
+              </div>
+              {field.key === "option_tiers" ? (
+                <VariantNestedRowsEditor
+                  columns={[
+                    { key: "value_code", labelTh: "รหัสค่า", labelEn: "Value code" },
+                    { key: "value_text", labelTh: "ชื่อค่า", labelEn: "Value name" },
+                  ]}
+                  items={variantArrayValue(item.values)}
+                  language={language}
+                  title={language === "th" ? "ค่าของแกนนี้" : "Option values"}
+                  onChange={(nextRows) => updateItem(index, "values", nextRows)}
+                />
+              ) : null}
+              {field.key === "specification_groups" ? (
+                <VariantNestedRowsEditor
+                  columns={[
+                    { key: "attribute_code", labelTh: "รหัสคุณสมบัติ", labelEn: "Attribute code" },
+                    { key: "attribute_name", labelTh: "ชื่อคุณสมบัติ", labelEn: "Attribute name" },
+                    { key: "input_type", labelTh: "ชนิดช่องกรอก", labelEn: "Input type" },
+                    { key: "scope", labelTh: "ระดับข้อมูล", labelEn: "Scope" },
+                  ]}
+                  items={variantArrayValue(item.attributes)}
+                  language={language}
+                  title={language === "th" ? "คุณสมบัติในกลุ่มนี้" : "Attributes"}
+                  onChange={(nextRows) => updateItem(index, "attributes", nextRows)}
+                />
+              ) : null}
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function VariantNestedRowsEditor({
+  columns,
+  items,
+  language,
+  onChange,
+  title,
+}: {
+  columns: VariantColumn[];
+  items: SettingRecord[];
+  language: LanguageCode;
+  onChange: (items: SettingRecord[]) => void;
+  title: string;
+}) {
+  const updateRow = (index: number, key: string, value: unknown) => {
+    onChange(
+      items.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [key]: value } : item,
+      ),
+    );
+  };
+  return (
+    <div className="grid gap-2 rounded-xl border border-border bg-background/80 p-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs font-semibold text-muted-foreground">
+          {title}
+        </span>
+        <Button
+          className="h-7 gap-1 rounded-lg px-2 text-[11px]"
+          type="button"
+          variant="outline"
+          onClick={() => onChange([...items, {}])}
+        >
+          <Plus className="size-3" />
+          {language === "th" ? "เพิ่ม" : "Add"}
+        </Button>
+      </div>
+      {items.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          {language === "th" ? "ยังไม่มีรายการย่อย" : "No rows yet."}
+        </p>
+      ) : (
+        <div className="grid gap-2">
+          {items.map((item, index) => (
+            <div
+              className="grid gap-2 rounded-lg border border-border bg-muted/20 p-2 md:grid-cols-[1fr_1fr_auto]"
+              key={`nested-${index}`}
+            >
+              {columns.map((column) => (
+                <VariantInput
+                  column={column}
+                  key={column.key}
+                  language={language}
+                  value={item[column.key]}
+                  onChange={(nextValue) => updateRow(index, column.key, nextValue)}
+                />
+              ))}
+              <Button
+                aria-label={language === "th" ? "ลบรายการย่อย" : "Remove row"}
+                className="size-8 self-end rounded-xl p-0 text-destructive"
+                type="button"
+                variant="outline"
+                onClick={() => onChange(items.filter((_, itemIndex) => itemIndex !== index))}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VariantInput({
+  column,
+  language,
+  onChange,
+  value,
+}: {
+  column: VariantColumn;
+  language: LanguageCode;
+  onChange: (value: unknown) => void;
+  value: unknown;
+}) {
+  const label = language === "th" ? column.labelTh : column.labelEn;
+  const inputValue =
+    column.kind === "csv" && Array.isArray(value)
+      ? value.map((item) => stringValue(item)).join(", ")
+      : stringValue(value);
+  return (
+    <label className="grid min-w-0 gap-1 text-xs font-semibold">
+      <span className="text-muted-foreground">{label}</span>
+      <Input
+        className="h-9"
+        inputMode={column.kind === "number" ? "decimal" : undefined}
+        placeholder={column.placeholder}
+        type={column.kind === "number" ? "number" : "text"}
+        value={inputValue}
+        onChange={(event) => {
+          const nextValue = event.target.value;
+          if (column.kind === "number") {
+            onChange(nextValue === "" ? "" : Number(nextValue));
+            return;
+          }
+          if (column.kind === "csv") {
+            onChange(
+              nextValue
+                .split(",")
+                .map((item) => item.trim())
+                .filter(Boolean),
+            );
+            return;
+          }
+          onChange(nextValue);
+        }}
+      />
+    </label>
+  );
+}
+
+function variantArrayValue(value: unknown): SettingRecord[] {
+  const source =
+    typeof value === "string" ? safeJsonParse(value.trim() || "[]", []) : value;
+  if (!Array.isArray(source)) return [];
+  return source.map((item) => (isRecord(item) ? item : { value: item }));
+}
+
+function defaultVariantItem(key: string, index: number): SettingRecord {
+  if (key === "option_tiers") return { tier_no: index + 1, values: [] };
+  if (key === "specification_groups") return { attributes: [] };
+  return {};
+}
+
+function ProductVariantStructuredReadOnlyDetail({
+  field,
+  label,
+  language,
+  value,
+}: {
+  field: SystemSettingField;
+  label: string;
+  language: LanguageCode;
+  value: unknown;
+}) {
+  const items = variantArrayValue(value);
+  const columns = variantFieldColumns[field.key] ?? [];
+  return (
+    <section className="grid gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
+        <span className="text-xs font-semibold text-muted-foreground">
+          {label}
+        </span>
+        <Badge variant="secondary" className="rounded-lg text-[11px]">
+          {items.length} {language === "th" ? "รายการ" : "items"}
+        </Badge>
+      </header>
+      {items.length === 0 ? (
+        <span className="text-sm font-medium text-muted-foreground">-</span>
+      ) : (
+        <div className="grid gap-2">
+          {items.map((item, index) => (
+            <article
+              className="grid gap-2 rounded-lg border border-border bg-muted/20 p-2"
+              key={`${field.key}-readonly-${index}`}
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary" className="rounded-lg text-[11px]">
+                  {field.key === "option_tiers"
+                    ? language === "th"
+                      ? `ลำดับเลือก ${index + 1}`
+                      : `Choice order ${index + 1}`
+                    : language === "th"
+                      ? `รายการ ${index + 1}`
+                      : `Item ${index + 1}`}
+                </Badge>
+                {field.key === "option_tiers" ? (
+                  <span className="text-[11px] text-muted-foreground">
+                    {language === "th"
+                      ? "ใช้กำหนดว่าผู้ใช้เลือกสี/ไซซ์/ตัวเลือกใดก่อนหลัง"
+                      : "Controls which option tier users choose first."}
+                  </span>
+                ) : null}
+              </div>
+              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                {columns.map((column) => (
+                  <VariantReadOnlyCell
+                    column={column}
+                    key={column.key}
+                    language={language}
+                    value={item[column.key]}
+                  />
+                ))}
+              </div>
+              {field.key === "option_tiers" ? (
+                <VariantReadOnlyNestedRows
+                  columns={[
+                    { key: "value_code", labelTh: "รหัสค่า", labelEn: "Value code" },
+                    { key: "value_text", labelTh: "ชื่อค่า", labelEn: "Value name" },
+                  ]}
+                  items={variantArrayValue(item.values)}
+                  language={language}
+                  title={language === "th" ? "ค่าของแกนนี้" : "Option values"}
+                />
+              ) : null}
+              {field.key === "specification_groups" ? (
+                <VariantReadOnlyNestedRows
+                  columns={[
+                    { key: "attribute_code", labelTh: "รหัสคุณสมบัติ", labelEn: "Attribute code" },
+                    { key: "attribute_name", labelTh: "ชื่อคุณสมบัติ", labelEn: "Attribute name" },
+                    { key: "input_type", labelTh: "ชนิดช่องกรอก", labelEn: "Input type" },
+                    { key: "scope", labelTh: "ระดับข้อมูล", labelEn: "Scope" },
+                  ]}
+                  items={variantArrayValue(item.attributes)}
+                  language={language}
+                  title={language === "th" ? "คุณสมบัติในกลุ่มนี้" : "Attributes"}
+                />
+              ) : null}
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function VariantReadOnlyNestedRows({
+  columns,
+  items,
+  language,
+  title,
+}: {
+  columns: VariantColumn[];
+  items: SettingRecord[];
+  language: LanguageCode;
+  title: string;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div className="grid gap-2 rounded-lg border border-border bg-background/80 p-2">
+      <span className="text-xs font-semibold text-muted-foreground">
+        {title}
+      </span>
+      <div className="grid gap-2">
+        {items.map((item, index) => (
+          <div
+            className="grid gap-2 rounded-md border border-border bg-muted/20 p-2 md:grid-cols-2 xl:grid-cols-4"
+            key={`readonly-nested-${index}`}
+          >
+            {columns.map((column) => (
+              <VariantReadOnlyCell
+                column={column}
+                key={column.key}
+                language={language}
+                value={item[column.key]}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function VariantReadOnlyCell({
+  column,
+  language,
+  value,
+}: {
+  column: VariantColumn;
+  language: LanguageCode;
+  value: unknown;
+}) {
+  const label = language === "th" ? column.labelTh : column.labelEn;
+  return (
+    <div className="grid min-w-0 gap-0.5 rounded-md border border-border bg-background/80 px-2 py-1.5">
+      <span className="text-[11px] font-semibold text-muted-foreground">
+        {label}
+      </span>
+      <b className="min-w-0 break-words text-xs font-semibold text-foreground">
+        {variantDisplayValue(value)}
+      </b>
+    </div>
+  );
+}
+
+function variantDisplayValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    const text = value.map((item) => stringValue(item)).filter(Boolean).join(", ");
+    return text || "-";
+  }
+  return stringValue(value) || "-";
+}
+
 function FieldEditor({
   auth,
   config,
@@ -7798,6 +8369,18 @@ function FieldEditor({
   const helper =
     field.helper?.[language] ?? field.helper?.en ?? field.helper?.th;
   const value = form[field.key];
+
+  if (isProductVariantStructuredField(config, field)) {
+    return (
+      <VariantTemplateFieldEditor
+        field={field}
+        form={form}
+        label={label}
+        language={language}
+        setForm={setForm}
+      />
+    );
+  }
 
   if (config.slug === "permission_definition" && isPermissionAccessRulesField(field)) {
     return (
